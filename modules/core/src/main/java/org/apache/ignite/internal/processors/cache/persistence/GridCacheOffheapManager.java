@@ -38,6 +38,7 @@ import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageSupport;
+import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
@@ -869,6 +870,21 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         return size;
     }
 
+    /** {@inheritDoc} */
+    @Override public void preloadPartition(int part) throws IgniteCheckedException {
+        if (grp.isLocal()) {
+            dataStore(part).preload();
+
+            return;
+        }
+
+        GridDhtLocalPartition locPart = grp.topology().localPartition(part, AffinityTopologyVersion.NONE, false, false);
+
+        assert locPart != null && locPart.reservations() > 0;
+
+        locPart.dataStore().preload();
+    }
+
     /**
      * Calculates free space of all partition data stores - number of bytes available for use in allocated pages.
      *
@@ -1387,6 +1403,31 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         /** {@inheritDoc} */
                         @Override public PendingEntriesTree pendingTree() {
                             return pendingTree0;
+                        }
+
+                        /** {@inheritDoc} */
+                        @Override public void preload() throws IgniteCheckedException {
+                            IgnitePageStoreManager pageStoreMgr = ctx.pageStore();
+
+                            if (pageStoreMgr == null)
+                                return;
+
+                            final int pages = pageStoreMgr.pages(grp.groupId(), partId);
+
+                            long pageId = pageMem.partitionMetaPageId(grp.groupId(), partId);
+
+                            // For each page sequentially pin/unpin.
+                            for (int pageNo = 0; pageNo < pages; pageId++, pageNo++) {
+                                long pagePointer = -1;
+
+                                try {
+                                    pagePointer = pageMem.acquirePage(grp.groupId(), pageId);
+                                }
+                                finally {
+                                    if (pagePointer != -1)
+                                        pageMem.releasePage(grp.groupId(), pageId, pagePointer);
+                                }
+                            }
                         }
                     };
 
@@ -2244,6 +2285,14 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void preload() throws IgniteCheckedException {
+            CacheDataStore delegate0 = init0(true);
+
+            if (delegate0 != null)
+                delegate0.preload();
         }
     }
 
