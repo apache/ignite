@@ -77,12 +77,31 @@ describe('sql fields query test suite >', () => {
             catch(error => done.fail(error));
     });
 
-    it('get all with page size', (done) => {
+    it('get all with page size lazy default', (done) => {
         Promise.resolve().
             then(async () => {
                 let cache = igniteClient.getCache(CACHE_NAME);
                 const cursor = await cache.query(
                     new SqlFieldsQuery(`SELECT * FROM ${TABLE_NAME}`).setPageSize(1));
+                const set = new Set();
+                for (let fields of await cursor.getAll()) {
+                    expect(fields.length).toBe(2);
+                    expect(generateValue(fields[0]) === fields[1]).toBe(true);
+                    set.add(fields[0]);
+                    expect(fields[0] >= 0 && fields[0] < ELEMENTS_NUMBER).toBe(true);
+                }
+                expect(set.size).toBe(ELEMENTS_NUMBER);
+            }).
+            then(done).
+            catch(error => done.fail(error));
+    });
+
+    it('get all with page size lazy false', (done) => {
+        Promise.resolve().
+            then(async () => {
+                let cache = igniteClient.getCache(CACHE_NAME);
+                const cursor = await cache.query(
+                    new SqlFieldsQuery(`SELECT * FROM ${TABLE_NAME}`).setPageSize(1).setLazy(false));
                 const set = new Set();
                 for (let fields of await cursor.getAll()) {
                     expect(fields.length).toBe(2);

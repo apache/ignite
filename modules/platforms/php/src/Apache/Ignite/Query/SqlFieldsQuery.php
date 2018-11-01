@@ -64,7 +64,7 @@ class SqlFieldsQuery extends SqlQuery
      *     Statement type            :    STATEMENT_TYPE_ANY
      *     Enforce join order flag   :    false
      *     Collocated flag           :    false
-     *     Lazy query execution flag :    false
+     *     Lazy query execution flag :    true
      *     Include field names flag  :    false
      * </pre>
      * Every setting may be changed using set methods.
@@ -82,7 +82,7 @@ class SqlFieldsQuery extends SqlQuery
         $this->statementType = SqlFieldsQuery::STATEMENT_TYPE_ANY;
         $this->enforceJoinOrder = false;
         $this->collocated = false;
-        $this->lazy = false;
+        $this->lazy = true;
         $this->includeFieldNames = false;
     }
 
