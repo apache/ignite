@@ -1939,7 +1939,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      * We have to do this without explicit {@link Connection} as long as there's no other way to bypass validation and
      * supply a malformed {@link ConnectionProperties} to {@link JdbcThinTcpIo}.
      */
-    @SuppressWarnings({"ThrowFromFinallyBlock"})
     public void testInvalidNestedTxModeOnServerSide() throws SQLException, NoSuchMethodException,
         IllegalAccessException, InvocationTargetException, InstantiationException, IOException {
         ConnectionPropertiesImpl connProps = new ConnectionPropertiesImpl();

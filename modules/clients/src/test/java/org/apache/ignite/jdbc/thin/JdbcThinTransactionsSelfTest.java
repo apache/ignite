@@ -436,7 +436,6 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
      * Test that exception in one of the statements does not kill connection worker altogether.
      * @throws SQLException if failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testParsingErrorHasNoSideEffect() throws SQLException {
         try (Connection c = c(false, NestedTxMode.ERROR)) {
             try (Statement s = c.createStatement()) {

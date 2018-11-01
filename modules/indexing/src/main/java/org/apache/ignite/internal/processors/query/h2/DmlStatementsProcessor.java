@@ -774,7 +774,6 @@ public class DmlStatementsProcessor {
      * @param pageSize Batch size for streaming, anything <= 0 for single page operations.
      * @return Results of DELETE (number of items affected AND keys that failed to be updated).
      */
-    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored"})
     private UpdateResult doDelete(GridCacheContext cctx, Iterable<List<?>> cursor, int pageSize)
         throws IgniteCheckedException {
         DmlBatchSender sender = new DmlBatchSender(cctx, pageSize, 1);
