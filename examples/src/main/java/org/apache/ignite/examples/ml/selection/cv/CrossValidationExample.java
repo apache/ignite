@@ -45,7 +45,7 @@ public class CrossValidationExample {
      *
      * @param args Command line arguments, none required.
      */
-    public static void main(String... args) throws InterruptedException {
+    public static void main(String... args) {
         System.out.println(">>> Cross validation score calculator example started.");
 
         // Start ignite grid.

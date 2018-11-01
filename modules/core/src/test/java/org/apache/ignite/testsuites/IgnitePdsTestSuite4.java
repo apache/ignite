@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuo
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsRecoveryAfterFileCorruptionTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTaskCancelingTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPageEvictionDuringPartitionClearTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPartitionPreloadTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsTransactionsHangTest;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileDownloaderTest;
 
@@ -46,6 +47,8 @@ public class IgnitePdsTestSuite4 extends TestSuite {
         suite.addTestSuite(IgniteClusterActivateDeactivateTestWithPersistenceAndMemoryReuse.class);
 
         suite.addTestSuite(FreeListLazyInitializationTest.class);
+
+        suite.addTestSuite(IgnitePdsPartitionPreloadTest.class);
 
         return suite;
     }

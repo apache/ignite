@@ -78,7 +78,6 @@ import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicWit
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalFullApiMultithreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalWithGroupFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.persistence.standbycluster.extended.GridActivateExtensionTest;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 
 /**

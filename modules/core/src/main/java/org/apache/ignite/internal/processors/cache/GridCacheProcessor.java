@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import javax.management.MBeanServer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -2211,8 +2210,6 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
         boolean affNode = checkForAffinityNode(desc, reqNearCfg, ccfg);
 
-        preparePageStore(desc, affNode);
-
         CacheGroupContext grp = prepareCacheGroup(desc, exchTopVer, cacheObjCtx, affNode, startCfg.getGroupName());
 
         GridCacheContext cacheCtx = createCache(ccfg,
@@ -2265,7 +2262,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
      * @param affNode {@code true} if it is affinity node for cache.
      * @throws IgniteCheckedException if failed.
      */
-    private void preparePageStore(DynamicCacheDescriptor desc, boolean affNode) throws IgniteCheckedException {
+    public void preparePageStore(DynamicCacheDescriptor desc, boolean affNode) throws IgniteCheckedException {
         if (sharedCtx.pageStore() != null && affNode)
             initializationProtector.protect(
                 desc.groupDescriptor().groupId(),

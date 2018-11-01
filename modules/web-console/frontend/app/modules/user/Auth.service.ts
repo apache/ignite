@@ -15,64 +15,53 @@
  * limitations under the License.
  */
 
-/**
- * @typedef {object} SignupUserInfo
- * @prop {string} email
- * @prop {string} password
- * @prop {string} firstName
- * @prop {string} lastName
- * @prop {string} company
- * @prop {string} country
- */
+import {StateService} from '@uirouter/angularjs';
+import MessagesFactory from '../../services/Messages.service';
+import {service as GettingsStartedFactory} from '../../modules/getting-started/GettingStarted.provider';
+import UserServiceFactory from './User.service';
+
+type SignupUserInfo = {
+    email: string,
+    password: string,
+    firstName: string,
+    lastName: string,
+    company: string,
+    country: string,
+};
+
+type AuthActions = 'signin' | 'signup' | 'password/forgot';
+type AuthOptions = {email:string, password:string}|SignupUserInfo|{email:string};
 
 export default class AuthService {
     static $inject = ['$http', '$rootScope', '$state', '$window', 'IgniteMessages', 'gettingStarted', 'User'];
-    /**
-     * @param {ng.IHttpService} $http
-     * @param {ng.IRootScopeService} $root
-     * @param {import('@uirouter/angularjs').StateService} $state
-     * @param {ng.IWindowService} $window
-     * @param {ReturnType<typeof import('app/services/Messages.service').default>} Messages
-     * @param {ReturnType<typeof import('app/modules/getting-started/GettingStarted.provider').service>} gettingStarted
-     * @param {ReturnType<typeof import('./User.service').default>} User
-     */
-    constructor($http, $root, $state, $window, Messages, gettingStarted, User) {
-        this.$http = $http;
-        this.$root = $root;
-        this.$state = $state;
-        this.$window = $window;
-        this.Messages = Messages;
-        this.gettingStarted = gettingStarted;
-        this.User = User;
+
+    constructor(
+        private $http: ng.IHttpService,
+        private $root: ng.IRootScopeService,
+        private $state: StateService,
+        private $window: ng.IWindowService,
+        private Messages: ReturnType<typeof MessagesFactory>,
+        private gettingStarted: ReturnType<typeof GettingsStartedFactory>,
+        private User: ReturnType<typeof UserServiceFactory>
+    ) {}
+
+    signup(userInfo: SignupUserInfo, loginAfterSignup: boolean = true) {
+        return this._auth('signup', userInfo, loginAfterSignup);
     }
-    /**
-     * @param {SignupUserInfo} userInfo
-     */
-    signnup(userInfo) {
-        return this._auth('signup', userInfo);
-    }
-    /**
-     * @param {string} email
-     * @param {string} password
-     */
-    signin(email, password) {
+
+    signin(email: string, password: string) {
         return this._auth('signin', {email, password});
     }
-    /**
-     * @param {string} email
-     */
-    remindPassword(email) {
+
+    remindPassword(email: string) {
         return this._auth('password/forgot', {email}).then(() => this.$state.go('password.send'));
     }
 
     // TODO IGNITE-7994: Remove _auth and move API calls to corresponding methods
     /**
      * Performs the REST API call.
-     * @private
-     * @param {('signin'|'signup'|'password/forgot')} action
-     * @param {{email:string,password:string}|SignupUserInfo|{email:string}} userInfo
      */
-    _auth(action, userInfo) {
+    private _auth(action: AuthActions, userInfo: AuthOptions, loginAfterwards: boolean = true) {
         return this.$http.post('/api/v1/' + action, userInfo)
             .then(() => {
                 if (action === 'password/forgot')
@@ -80,11 +69,12 @@ export default class AuthService {
 
                 this.User.read()
                     .then((user) => {
-                        this.$root.$broadcast('user', user);
-
-                        this.$state.go('default-state');
-
-                        this.$root.gettingStarted.tryShow();
+                        if (loginAfterwards) {
+                            this.$root.$broadcast('user', user);
+                            this.$state.go('default-state');
+                            this.$root.gettingStarted.tryShow();
+                        } else
+                            this.$root.$broadcast('userCreated');
                     });
             });
     }
