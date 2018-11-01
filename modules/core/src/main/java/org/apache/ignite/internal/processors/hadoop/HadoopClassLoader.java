@@ -383,7 +383,6 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
      * @param clsName Class name.
      * @return Whether class must be loaded by current classloader without delegation.
      */
-    @SuppressWarnings("RedundantIfStatement")
     public static boolean loadByCurrentClassloader(String clsName) {
         // All impl classes.
         if (clsName.startsWith("org.apache.ignite.internal.processors.hadoop.impl"))

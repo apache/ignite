@@ -270,7 +270,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @throws IgniteCheckedException If failed.
      * @throws GridDistributedLockCancelledException If lock has been cancelled.
      */
-    @SuppressWarnings({"RedundantTypeArguments"})
     @Nullable private GridDhtTxRemote startRemoteTx(UUID nodeId,
         GridDhtLockRequest req,
         GridDhtLockResponse res)
@@ -1609,7 +1608,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param nodeId Node ID.
      * @param req Request.
      */
-    @SuppressWarnings({"RedundantTypeArguments"})
     private void clearLocks(UUID nodeId, GridDistributedUnlockRequest req) {
         assert nodeId != null;
 
@@ -1664,7 +1662,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param nodeId Sender ID.
      * @param req Request.
      */
-    @SuppressWarnings({"RedundantTypeArguments"})
     private void processNearUnlockRequest(UUID nodeId, GridNearUnlockRequest req) {
         assert ctx.affinityNode();
         assert nodeId != null;
