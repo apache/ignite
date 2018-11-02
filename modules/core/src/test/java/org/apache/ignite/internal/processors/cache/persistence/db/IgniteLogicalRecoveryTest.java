@@ -61,6 +61,9 @@ import org.junit.Assert;
  * A set of tests that check correctness of logical recovery performed during node start.
  */
 public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
+    /** */
+    private static final int[] EVTS_DISABLED = {};
+
     /** Shared group name. */
     private static final String SHARED_GROUP_NAME = "group";
 
@@ -73,8 +76,11 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     /** Io factory. */
     private FileIOFactory ioFactory;
 
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setIncludeEventTypes(EVTS_DISABLED);
 
         cfg.setConsistentId(igniteInstanceName);
 
@@ -381,7 +387,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private class AggregateCacheLoader {
+    private static class AggregateCacheLoader {
         /** Ignite. */
         IgniteEx ignite;
 
@@ -432,7 +438,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         /**
          * @param ignite Ignite.
          */
-        public void consistencyCheck(IgniteEx ignite) throws IgniteCheckedException {
+        public void consistencyCheck(IgniteEx ignite) {
             if (cacheLoaders != null)
                 for (CacheLoader cacheLoader : cacheLoaders.keySet())
                     cacheLoader.consistencyCheck(ignite);
@@ -567,9 +573,12 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
             return "null";
 
         StringBuilder sb = new StringBuilder();
+
         sb.append('[');
+
         for (int i = 0; i < Math.min(arr.length, 10); i++)
-            sb.append(i + ",");
+            sb.append(i).append(",");
+
         sb.append(']');
 
         return sb.toString();
