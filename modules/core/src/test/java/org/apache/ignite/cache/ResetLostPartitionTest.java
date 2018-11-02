@@ -161,10 +161,10 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
         Ignite igniteClient = startGrid(getClientConfiguration("client"));
 
         for (String cacheName : CACHE_NAMES) {
-            IgniteCache<String, String> cache = igniteClient.cache(cacheName);
+            IgniteCache<Integer, String> cache = igniteClient.cache(cacheName);
 
             for (int j = 0; j < CACHE_SIZE; j++)
-                cache.put("Key" + "_" + j, "Value" + j);
+                cache.put(j, "Value" + j);
         }
 
         stopGrid("client");
