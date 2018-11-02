@@ -49,6 +49,12 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /**
+     * Used to test disabled lazy mode for whole suite.
+     * Must be removed when support lazy=false will be removed.
+     */
+    private static boolean DFLT_LAZY = true;
+
     /** SQL Query. */
     private String sql;
 
@@ -72,7 +78,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
     private boolean replicatedOnly;
 
     /** Lazy mode is default since Ignite v.2.8. */
-    private boolean lazy = true;
+    private boolean lazy = DFLT_LAZY;
 
     /** Partitions for query */
     private int[] parts;
