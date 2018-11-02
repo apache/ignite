@@ -1898,13 +1898,16 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         Collection<InetSocketAddress> res = new ArrayList<>();
 
         for (InetSocketAddress addr : ipFinder.getRegisteredAddresses()) {
-            if (addr.getPort() == 0) {
-                // TcpDiscoveryNode.discoveryPort() returns an correct port for a server node and 0 for client node.
-                int port = locNode.discoveryPort() != 0 ? locNode.discoveryPort() : DFLT_PORT;
-
-                addr = addr.isUnresolved() ? new InetSocketAddress(addr.getHostName(), port) :
-                    new InetSocketAddress(addr.getAddress(), port);
-            }
+            // TcpDiscoveryNode.discoveryPort() returns an correct port for a server node and 0 for client node.
+            if (addr.getPort() == 0)
+                continue;
+//            {
+//                // TcpDiscoveryNode.discoveryPort() returns an correct port for a server node and 0 for client node.
+//                int port = locNode.discoveryPort(); // locNode.discoveryPort() != 0 ?  : DFLT_PORT;
+//
+//                addr = addr.isUnresolved() ? new InetSocketAddress(addr.getHostName(), port) :
+//                    new InetSocketAddress(addr.getAddress(), port);
+//            }
 
             res.add(addr);
         }
