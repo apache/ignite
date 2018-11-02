@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -278,16 +279,9 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
             assert this.part == -1;
 
             if (part.state() == GridDhtPartitionState.LOST) {
-                GridDhtTopologyFuture topFut = cctx.shared().exchange().lastFinishedFuture();
-
-                if (topFut != null) {
-                    Throwable ex = topFut.validateCache(cctx, recovery, /*read*/true, key, null);
-
-                    assert ex != null : "Partition in LOST state shoulde throws exception on validate, " +
-                        "[cache=" + cctx.name() + ", part=" + part.id() + ", topVer=" + topVer + ", key=" + key + "]";
-
-                    onDone(null, ex);
-                }
+                onDone(null, new CacheInvalidStateException("Failed to execute cache operation " +
+                    "(all partition owners have left the grid, partition data has been lost) [" +
+                    "cacheName=" + cctx.name() + ", part=" + part + ", key=" + key + ']'));
 
                 return false;
             }
