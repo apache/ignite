@@ -124,9 +124,6 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
         local.cluster().active(true);
 
         try (IgniteDataStreamer streamer = local.dataStreamer(CACHE_NAME)) {
-            streamer.allowOverwrite(true);
-
-
             for (long i = 0; i < KEY_CNT; ++i) {
                 streamer.addData(i, new Value(i));
 
@@ -139,7 +136,7 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
 
         U.sleep(5_000);
 
-        stopAllGrids();
+        stopAllGrids(false);
     }
 
     /** {@inheritDoc} */
@@ -166,7 +163,7 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
 
         loc.cluster().active(true);
 
-        stopGrid(0);
+        stopGrid(0, false);
     }
 
     /** {@inheritDoc} */
@@ -175,7 +172,7 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
 
         IgniteProcessProxy.killAll();
 
-        stopAllGrids();
+        stopAllGrids(false);
     }
 
     /**
