@@ -173,6 +173,7 @@ public class OdbcUtils {
         String msg = err.getMessage();
 
         Throwable e = err.getCause();
+
         while (e != null) {
             if (e.getClass().getCanonicalName().equals("org.h2.jdbc.JdbcSQLException")) {
                 msg = e.getMessage();

@@ -952,10 +952,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         timeout = threshold - U.currentTimeMillis();
                     }
-                    catch (InterruptedException ignored) {
+                    catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
 
-                        throw new IgniteSpiException("Thread has been interrupted.");
+                        throw new IgniteSpiException("Thread has been interrupted.", e);
                     }
                 }
 
@@ -2693,7 +2693,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /** */
-        protected void body() throws InterruptedException {
+        @Override protected void body() throws InterruptedException {
             Throwable err = null;
 
             try {
@@ -6871,7 +6871,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param msgBytes Optional message bytes.
          */
         void addMessage(TcpDiscoveryAbstractMessage msg, @Nullable byte[] msgBytes) {
-            T2 t = new T2<>(msg, msgBytes);
+            T2<TcpDiscoveryAbstractMessage, byte[]> t = new T2<>(msg, msgBytes);
 
             if (msg.highPriority())
                 queue.addFirst(t);
