@@ -210,9 +210,12 @@ import org.apache.ignite.internal.processors.query.h2.sql.H2CompareBigQueryDistr
 import org.apache.ignite.internal.processors.query.h2.sql.H2CompareBigQueryTest;
 import org.apache.ignite.internal.processors.sql.IgniteCachePartitionedAtomicColumnConstraintsTest;
 import org.apache.ignite.internal.processors.sql.IgniteCachePartitionedTransactionalColumnConstraintsTest;
+import org.apache.ignite.internal.processors.sql.IgniteCachePartitionedTransactionalSnapshotColumnConstraintTest;
 import org.apache.ignite.internal.processors.sql.IgniteCacheReplicatedAtomicColumnConstraintsTest;
 import org.apache.ignite.internal.processors.sql.IgniteCacheReplicatedTransactionalColumnConstraintsTest;
+import org.apache.ignite.internal.processors.sql.IgniteCacheReplicatedTransactionalSnapshotColumnConstraintTest;
 import org.apache.ignite.internal.processors.sql.IgniteSQLColumnConstraintsTest;
+import org.apache.ignite.internal.processors.sql.IgniteTransactionSQLColumnConstraintTest;
 import org.apache.ignite.internal.processors.sql.SqlConnectorConfigurationValidationSelfTest;
 import org.apache.ignite.internal.sql.SqlParserBulkLoadSelfTest;
 import org.apache.ignite.internal.sql.SqlParserCreateIndexSelfTest;
@@ -477,11 +480,14 @@ public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
         suite.addTest(new JUnit4TestAdapter(IgniteSqlDefaultValueTest.class));
         suite.addTest(new JUnit4TestAdapter(IgniteDecimalSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(IgniteSQLColumnConstraintsTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteTransactionSQLColumnConstraintTest.class));
 
         suite.addTest(new JUnit4TestAdapter(IgniteCachePartitionedAtomicColumnConstraintsTest.class));
         suite.addTest(new JUnit4TestAdapter(IgniteCachePartitionedTransactionalColumnConstraintsTest.class));
         suite.addTest(new JUnit4TestAdapter(IgniteCacheReplicatedAtomicColumnConstraintsTest.class));
         suite.addTest(new JUnit4TestAdapter(IgniteCacheReplicatedTransactionalColumnConstraintsTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteCachePartitionedTransactionalSnapshotColumnConstraintTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheReplicatedTransactionalSnapshotColumnConstraintTest.class));
 
         // H2 Rows on-heap cache
         suite.addTest(new JUnit4TestAdapter(H2RowCacheSelfTest.class));
