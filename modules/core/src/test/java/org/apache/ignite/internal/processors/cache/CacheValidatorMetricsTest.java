@@ -103,14 +103,14 @@ public class CacheValidatorMetricsTest extends GridCommonAbstractTest implements
 
         startGrid(2);
 
-        awaitPartitionMapExchange();
+        waitForRebalancing();
 
         assertCacheStatus(CACHE_NAME_1, true, true);
         assertCacheStatus(CACHE_NAME_2, true, true);
 
         stopGrid(1);
 
-        awaitPartitionMapExchange();
+        waitForRebalancing();
 
         // Invalid for writing due to invalid topology.
         assertCacheStatus(CACHE_NAME_1, true, false);
