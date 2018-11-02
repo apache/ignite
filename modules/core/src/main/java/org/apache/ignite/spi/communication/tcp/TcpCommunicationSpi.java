@@ -1844,7 +1844,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * When set to a positive number, communication SPI will monitor clients outbound message queue sizes and will drop
      * those clients whose queue exceeded this limit.
      * <p/>
-     * Usually this value should be set to the same or grater value as {@link #getMessageQueueLimit()} which controls
+     * Usually this value should be set to less value than {@link #getMessageQueueLimit()} which controls
      * message back-pressure for server nodes. The default value for this parameter is {@code 0}
      * which means {@code unlimited}.
      *
@@ -2208,8 +2208,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 "since may produce significant delays with some scenarios.");
 
         if (slowClientQueueLimit > 0 && msgQueueLimit > 0 && slowClientQueueLimit >= msgQueueLimit) {
-            U.quietAndWarn(log, "Slow client queue limit should set less than or equal to message queue limit " +
-                "(for effect) [msgQueueLimit=" + msgQueueLimit +
+            U.quietAndWarn(log, "Slow client queue limit is set to a value greater than or equal to message " +
+                "queue limit (slow client queue limit will have no effect) [msgQueueLimit=" + msgQueueLimit +
                 ", slowClientQueueLimit=" + slowClientQueueLimit + ']');
         }
 
