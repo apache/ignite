@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.compress;
 
+import java.nio.file.Path;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -59,6 +60,14 @@ public final class FileSystemUtils {
 
         if (e != null || fs == null)
             throw new IgniteException("Native file system API is not supported on " + U.osString(), e);
+    }
+
+    /**
+     * @param path File system path.
+     * @return File system block size or negative value if not supported.
+     */
+    public static int getFileSystemBlockSize(Path path) {
+        return fs == null ? -1 : fs.getFileSystemBlockSize(path);
     }
 
     /**

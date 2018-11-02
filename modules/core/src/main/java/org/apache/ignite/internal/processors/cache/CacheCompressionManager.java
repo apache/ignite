@@ -15,14 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence;
+package org.apache.ignite.internal.processors.cache;
 
+import java.io.File;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.PageCompression;
 import org.apache.ignite.internal.pagemem.store.PageStore;
-import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -44,6 +45,8 @@ public class CacheCompressionManager extends GridCacheManagerAdapter {
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
+        compressProc = cctx.kernalContext().compress();
+
         CacheConfiguration cfg = cctx.config();
 
         pageCompression = cfg.getPageCompression();
@@ -57,8 +60,13 @@ public class CacheCompressionManager extends GridCacheManagerAdapter {
                 checkCompressionLevelBounds(lvl, pageCompression) :
                 getDefaultCompressionLevel(pageCompression);
 
-            compressProc = cctx.kernalContext().compress();
-            compressProc.checkPageCompressionSupported();
+            DataStorageConfiguration dsCfg = cctx.kernalContext().config().getDataStorageConfiguration();
+
+            File dbPath = cctx.kernalContext().pdsFolderResolver().resolveFolders().persistentStoreRootPath();
+
+            assert dbPath != null;
+
+            compressProc.checkPageCompressionSupported(dbPath.toPath(), dsCfg.getPageSize());
         }
     }
 

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.compress;
 
 import com.github.luben.zstd.Zstd;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import net.jpountz.lz4.LZ4Compressor;
 import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4FastDecompressor;
@@ -61,7 +62,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
     }
 
     /** {@inheritDoc} */
-    @Override public void checkPageCompressionSupported() throws IgniteCheckedException {
+    @Override public void checkPageCompressionSupported(Path storagePath, int pageSize) throws IgniteCheckedException {
         if (testMode)
             return;
 
@@ -69,6 +70,20 @@ public class CompressionProcessorImpl extends CompressionProcessor {
             throw new IgniteCheckedException("Currently page compression is supported only for Linux.");
 
         FileSystemUtils.checkSupported();
+
+        int fsBlockSize = FileSystemUtils.getFileSystemBlockSize(storagePath);
+
+        if (fsBlockSize <= 0)
+            throw new IgniteCheckedException("Failed to get file system block size: " + storagePath);
+
+        if (!U.isPow2(fsBlockSize))
+            throw new IgniteCheckedException("Storage block size must be power of 2: " + fsBlockSize);
+
+        if (pageSize < fsBlockSize * 2) {
+            throw new IgniteCheckedException("Page size (now configured to " + pageSize + " bytes) " +
+                "must be at least 2 times larger than the underlying storage block size (detected to be " + fsBlockSize +
+                " bytes at '" + storagePath + "') for page compression.");
+        }
     }
 
     /** {@inheritDoc} */
@@ -81,16 +96,8 @@ public class CompressionProcessorImpl extends CompressionProcessor {
     ) throws IgniteCheckedException {
         assert compression != null;
         assert U.isPow2(pageSize): pageSize;
+        assert U.isPow2(blockSize): blockSize;
         assert page.position() == 0 && page.limit() == pageSize;
-
-        if (!U.isPow2(blockSize))
-            throw new IgniteCheckedException("Storage block size must be power of 2: " + blockSize);
-
-        if (pageSize < blockSize * 2) {
-            throw new IgniteCheckedException("Page size (now configured to " + pageSize + " bytes) " +
-                "must be at least 2 times larger than the underlying storage block size (detected to be " + blockSize +
-                " bytes) for page compression.");
-        }
 
         PageIO io = PageIO.getPageIO(page);
 

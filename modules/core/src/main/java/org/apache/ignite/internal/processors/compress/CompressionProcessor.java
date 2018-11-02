@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.compress;
 
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.PageCompression;
 import org.apache.ignite.internal.GridKernalContext;
@@ -127,13 +128,15 @@ public class CompressionProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException Always.
      */
     private static <T> T fail() throws IgniteCheckedException {
-        throw new IgniteCheckedException("Make sure that ignite-compression module is in classpath.");
+        throw new IgniteCheckedException("Make sure that ignite-compress module is in classpath.");
     }
 
     /**
+     * @param storagePath Storage path.
+     * @param pageSize Page size.
      * @throws IgniteCheckedException If compression is not supported.
      */
-    public void checkPageCompressionSupported() throws IgniteCheckedException {
+    public void checkPageCompressionSupported(Path storagePath, int pageSize) throws IgniteCheckedException {
         fail();
     }
 
