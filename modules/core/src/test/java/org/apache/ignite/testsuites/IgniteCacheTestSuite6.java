@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.CacheNoAffinityExchangeTest;
 import org.apache.ignite.internal.processors.cache.PartitionedAtomicCacheGetsDistributionTest;
 import org.apache.ignite.internal.processors.cache.PartitionedTransactionalOptimisticCacheGetsDistributionTest;
 import org.apache.ignite.internal.processors.cache.PartitionedTransactionalPessimisticCacheGetsDistributionTest;
@@ -108,6 +109,8 @@ public class IgniteCacheTestSuite6 extends TestSuite {
 
         suite.addTestSuite(PartitionsExchangeCoordinatorFailoverTest.class);
         suite.addTestSuite(CacheTryLockMultithreadedTest.class);
+
+        suite.addTestSuite(CacheNoAffinityExchangeTest.class);
 
         //suite.addTestSuite(CacheClientsConcurrentStartTest.class);
         //suite.addTestSuite(GridCacheRebalancingOrderingTest.class);

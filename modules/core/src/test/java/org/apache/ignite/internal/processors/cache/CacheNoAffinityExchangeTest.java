@@ -43,13 +43,18 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+/**
+ *
+ */
 public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
-
+    /** */
     private volatile boolean startClient;
 
+    /** */
     private final TcpDiscoveryIpFinder CLIENT_IP_FINDER = new TcpDiscoveryVmIpFinder()
         .setAddresses(Collections.singleton("127.0.0.1:47500"));
 
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -64,12 +69,16 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
         super.afterTest();
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testNoAffinityChangeOnClientJoin() throws Exception {
         Ignite ig = startGrids(4);
 
@@ -124,6 +133,9 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
         latch.countDown();
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testNoAffinityChangeOnClientLeft() throws Exception {
         Ignite ig = startGrids(4);
 
@@ -180,9 +192,14 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
         latch.countDown();
     }
 
+    /**
+     *
+     */
     public static class TestDiscoverySpi extends TcpDiscoverySpi {
+        /** */
         private volatile CountDownLatch latch;
 
+        /** {@inheritDoc} */
         @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
             if (msg instanceof TcpDiscoveryNodeAddFinishedMessage || msg instanceof TcpDiscoveryNodeLeftMessage || msg instanceof TcpDiscoveryNodeFailedMessage) {
                 CountDownLatch latch0 = latch;
