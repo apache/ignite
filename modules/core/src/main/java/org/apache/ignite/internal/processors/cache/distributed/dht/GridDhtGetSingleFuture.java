@@ -246,7 +246,8 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
         if (!map(key)) {
             retry = cctx.affinity().partition(key);
 
-            onDone((GridCacheEntryInfo)null);
+            if (!isDone())
+                onDone((GridCacheEntryInfo)null);
 
             return;
         }
@@ -276,11 +277,33 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
 
             assert this.part == -1;
 
+            if (part.state() == GridDhtPartitionState.LOST) {
+                GridDhtTopologyFuture topFut = cctx.shared().exchange().lastFinishedFuture();
+
+                if (topFut != null) {
+                    Throwable ex = topFut.validateCache(cctx, recovery, /*read*/true, key, null);
+
+                    assert ex != null : "Partition in LOST state shoulde throws exception on validate, " +
+                        "[cache=" + cctx.name() + ", part=" + part.id() + ", topVer=" + topVer + ", key=" + key + "]";
+
+                    onDone(null, ex);
+                }
+
+                return false;
+            }
+
             // By reserving, we make sure that partition won't be unloaded while processed.
             if (part.reserve()) {
-                this.part = part.id();
+                if (part.state() == GridDhtPartitionState.OWNING) {
+                    this.part = part.id();
 
-                return true;
+                    return true;
+                }
+                else {
+                    part.release();
+
+                    return false;
+                }
             }
             else
                 return false;

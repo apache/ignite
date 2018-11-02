@@ -305,14 +305,36 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
             if (part == null)
                 return false;
 
+            if (part.state() == GridDhtPartitionState.LOST) {
+                GridDhtTopologyFuture topFut = cctx.shared().exchange().lastFinishedFuture();
+
+                if (topFut != null) {
+                    Throwable ex = topFut.validateCache(cctx, recovery, /*read*/true, key, null);
+
+                    assert ex != null : "Partition in LOST state should throws exception on validate, " +
+                        "[cache=" + cctx.name() + ", part=" + part.id() + ", topVer=" + topVer + ", key=" + key + "]";
+
+                    onDone(null, ex);
+                }
+
+                return false;
+            }
+
             if (parts == null || !F.contains(parts, part.id())) {
                 // By reserving, we make sure that partition won't be unloaded while processed.
                 if (part.reserve()) {
-                    parts = parts == null ? new int[1] : Arrays.copyOf(parts, parts.length + 1);
+                    if (part.state() == GridDhtPartitionState.OWNING) {
+                        parts = parts == null ? new int[1] : Arrays.copyOf(parts, parts.length + 1);
 
-                    parts[parts.length - 1] = part.id();
+                        parts[parts.length - 1] = part.id();
 
-                    return true;
+                        return true;
+                    }
+                    else {
+                        part.release();
+
+                        return false;
+                    }
                 }
                 else
                     return false;
