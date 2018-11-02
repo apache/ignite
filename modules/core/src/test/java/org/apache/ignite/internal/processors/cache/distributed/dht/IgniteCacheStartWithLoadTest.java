@@ -147,7 +147,7 @@ public class IgniteCacheStartWithLoadTest extends GridCommonAbstractTest {
             }
         });
 
-        U.sleep(SF.apply(60_000));
+        U.sleep(SF.applyLB(60_000, 5_000));
 
         cacheRestartStop.set(true);
         txLoadStop.set(true);

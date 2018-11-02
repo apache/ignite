@@ -477,7 +477,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
             t.start();
 
-            Thread.sleep(SF.apply(20_000));
+            Thread.sleep(SF.applyLB(20_000, 2_000));
 
             done.set(true);
 

@@ -106,7 +106,7 @@ import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
  */
 public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /** */
-    public static final int DURATION = SF.apply(60_000);
+    public static final int DURATION = SF.applyLB(60_000, 5_000);
 
     /** */
     private static final String CACHE_NAME = "test";
@@ -356,7 +356,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         U.awaitQuiet(keyLocked);
 
-        final int txCnt = SF.apply(250);
+        final int txCnt = SF.applyLB(250, 25);
 
         final IgniteKernal k = (IgniteKernal)tryLockNode;
 

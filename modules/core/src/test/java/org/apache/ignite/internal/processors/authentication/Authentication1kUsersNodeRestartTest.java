@@ -83,6 +83,8 @@ public class Authentication1kUsersNodeRestartTest extends GridCommonAbstractTest
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        AuthorizationContext.clear();
+
         stopAllGrids();
 
         super.afterTest();
@@ -112,6 +114,9 @@ public class Authentication1kUsersNodeRestartTest extends GridCommonAbstractTest
                 catch (IgniteCheckedException e) {
                     throw new IgniteException(e);
                 }
+                finally {
+                    AuthorizationContext.clear();
+                }
             }
         );
 
@@ -124,6 +129,9 @@ public class Authentication1kUsersNodeRestartTest extends GridCommonAbstractTest
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException(e);
+                }
+                finally {
+                    AuthorizationContext.clear();
                 }
             }
         );
