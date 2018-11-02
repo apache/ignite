@@ -66,6 +66,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.ExchangeLatchManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionFullCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
@@ -180,14 +181,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /** */
     private final ConcurrentMap<AffinityTopologyVersion, AffinityReadyFuture> readyFuts =
         new ConcurrentSkipListMap<>();
-
-    /**
-     * Latest started rebalance topology version but possibly not finished yet. Value {@code NONE}
-     * means that previous rebalance is undefined and the new one should be initiated.
-     *
-     * Should not be used to determine latest rebalanced topology.
-     */
-    private volatile AffinityTopologyVersion rebTopVer = AffinityTopologyVersion.NONE;
 
     /** */
     private GridFutureAdapter<?> reconnectExchangeFut;
@@ -867,13 +860,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      */
     public AffinityTopologyVersion readyAffinityVersion() {
         return exchFuts.readyTopVer();
-    }
-
-    /**
-     * @return Latest rebalance topology version or {@code NONE} if there is no info.
-     */
-    public AffinityTopologyVersion rebalanceTopologyVersion() {
-        return rebTopVer;
     }
 
     /**
@@ -2788,9 +2774,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 if (grp.isLocal())
                                     continue;
 
-                                if (grp.preloader().rebalanceRequired(rebTopVer, exchFut))
-                                    rebTopVer = AffinityTopologyVersion.NONE;
-
                                 changed |= grp.topology().afterExchange(exchFut);
                             }
 
@@ -2798,11 +2781,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 refreshPartitions();
                         }
 
-                        // Schedule rebalance if force rebalance or force reassign occurs.
-                        if (exchFut == null)
-                            rebTopVer = AffinityTopologyVersion.NONE;
-
-                        if (!cctx.kernalContext().clientNode() && rebTopVer.equals(AffinityTopologyVersion.NONE)) {
+                        if (!cctx.kernalContext().clientNode()) {
                             assignsMap = new HashMap<>();
 
                             IgniteCacheSnapshotManager snp = cctx.snapshot();
@@ -2819,9 +2798,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     assigns = grp.preloader().generateAssignments(exchId, exchFut);
 
                                 assignsMap.put(grp.groupId(), assigns);
-
-                                if (resVer == null)
-                                    resVer = grp.topology().readyTopologyVersion();
                             }
                         }
                     }
@@ -2830,7 +2806,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         busy = false;
                     }
 
-                    if (assignsMap != null && rebTopVer.equals(AffinityTopologyVersion.NONE)) {
+                    if (assignsMap != null) {
                         int size = assignsMap.size();
 
                         NavigableMap<Integer, List<Integer>> orderMap = new TreeMap<>();
@@ -2868,6 +2844,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 if (assigns != null)
                                     assignsCancelled |= assigns.cancelled();
 
+                                // Cancels previous rebalance future (in case it's not done yet).
+                                // Sends previous rebalance stopped event (if necessary).
+                                // Creates new rebalance future.
+                                // Sends current rebalance started event (if necessary).
+                                // Finishes cache sync future (on empty assignments).
                                 Runnable cur = grp.preloader().addAssignments(assigns,
                                     forcePreload,
                                     cnt,
@@ -2885,7 +2866,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         if (forcedRebFut != null)
                             forcedRebFut.markInitialized();
 
-                        if (assignsCancelled || hasPendingExchange()) {
+                        if (assignsCancelled) { // Pending exchange.
                             U.log(log, "Skipping rebalancing (obsolete exchange ID) " +
                                 "[top=" + resVer + ", evt=" + exchId.discoveryEventName() +
                                 ", node=" + exchId.nodeId() + ']');
@@ -2893,31 +2874,25 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         else if (r != null) {
                             Collections.reverse(rebList);
 
-                            U.log(log, "Rebalancing scheduled [order=" + rebList +
-                                ", top=" + resVer + ", force=" + (exchFut == null) +
-                                ", evt=" + exchId.discoveryEventName() +
-                                ", node=" + exchId.nodeId() + ']');
+                            U.log(log, "Rebalancing scheduled [order=" + rebList + "]");
 
-                            rebTopVer = resVer;
+                            if (!hasPendingExchange()) {
+                                U.log(log, "Rebalancing started " +
+                                    "[top=" + resVer + ", evt=" + exchId.discoveryEventName() +
+                                    ", node=" + exchId.nodeId() + ']');
 
-                            // Start rebalancing cache groups chain. Each group will be rebalanced
-                            // sequentially one by one e.g.:
-                            // ignite-sys-cache -> cacheGroupR1 -> cacheGroupP2 -> cacheGroupR3
-                            r.run();
+                                r.run(); // Starts rebalancing routine.
+                            }
+                            else
+                                U.log(log, "Skipping rebalancing (obsolete exchange ID) " +
+                                    "[top=" + resVer + ", evt=" + exchId.discoveryEventName() +
+                                    ", node=" + exchId.nodeId() + ']');
                         }
                         else
                             U.log(log, "Skipping rebalancing (nothing scheduled) " +
-                                "[top=" + resVer + ", force=" + (exchFut == null) +
-                                ", evt=" + exchId.discoveryEventName() +
+                                "[top=" + resVer + ", evt=" + exchId.discoveryEventName() +
                                 ", node=" + exchId.nodeId() + ']');
                     }
-                    else
-                        U.log(log, "Skipping rebalancing (no affinity changes) " +
-                            "[top=" + resVer +
-                            ", rebTopVer=" + rebTopVer +
-                            ", evt=" + exchId.discoveryEventName() +
-                            ", evtNode=" + exchId.nodeId() +
-                            ", client=" + cctx.kernalContext().clientNode() + ']');
                 }
                 catch (IgniteInterruptedCheckedException e) {
                     throw e;
