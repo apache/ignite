@@ -130,7 +130,6 @@ import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlType.fro
 /**
  * H2 Query parser.
  */
-@SuppressWarnings("TypeMayBeWeakened")
 public class GridSqlQueryParser {
     /** */
     private static final GridSqlOperationType[] COMPARISON_TYPES =

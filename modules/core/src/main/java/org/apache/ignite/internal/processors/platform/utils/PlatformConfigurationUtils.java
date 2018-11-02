@@ -406,7 +406,6 @@ public class PlatformConfigurationUtils {
      * @param out Stream.
      * @param cfg NearCacheConfiguration.
      */
-    @SuppressWarnings("TypeMayBeWeakened")
     private static void writeNearConfiguration(BinaryRawWriter out, NearCacheConfiguration cfg) {
         assert cfg != null;
 
@@ -461,7 +460,6 @@ public class PlatformConfigurationUtils {
      * @param out Stream.
      * @param p Policy.
      */
-    @SuppressWarnings("TypeMayBeWeakened")
     private static void writeEvictionPolicy(BinaryRawWriter out, EvictionPolicy p) {
         if (p instanceof FifoEvictionPolicy) {
             out.writeByte((byte)1);

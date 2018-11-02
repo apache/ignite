@@ -180,7 +180,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param grp Cache group.
      * @param id Partition ID.
      */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     public GridDhtLocalPartition(GridCacheSharedContext ctx,
         CacheGroupContext grp,
         int id) {
@@ -1224,7 +1223,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"OverlyStrongTypeCast"})
     @Override public boolean equals(Object obj) {
         return obj instanceof GridDhtLocalPartition && (obj == this || ((GridDhtLocalPartition)obj).id() == id);
     }

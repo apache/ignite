@@ -1273,7 +1273,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if predicates passed.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings({"ErrorNotRethrown"})
     public <E> boolean isAll(E e, @Nullable IgnitePredicate<? super E>[] p) throws IgniteCheckedException {
         if (F.isEmpty(p))
             return true;
@@ -2331,7 +2330,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         IgniteBiTuple<String, String> t = stash.get();
 

@@ -108,7 +108,6 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"ConstantConditions"})
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
@@ -154,7 +153,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
      * @param g Grid.
      * @return Dht cache.
      */
-    @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
+    @SuppressWarnings({"unchecked"})
     private GridDhtCacheAdapter<Integer, String> dht(Ignite g) {
         return ((GridNearCacheAdapter)((IgniteKernal)g).internalCache(DEFAULT_CACHE_NAME)).dht();
     }

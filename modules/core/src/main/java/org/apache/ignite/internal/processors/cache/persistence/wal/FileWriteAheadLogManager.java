@@ -1865,7 +1865,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * @return <ul><li>{@code True} if can read, no lock is held, </li><li>{@code false} if work segment, need
          * release segment later, use {@link #releaseWorkSegment} for unlock</li> </ul>
          */
-        @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
         public boolean checkCanReadArchiveOrReserveWorkSegment(long absIdx) {
             return segmentAware.checkCanReadArchiveOrReserveWorkSegment(absIdx);
         }
@@ -1873,7 +1872,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /**
          * @param absIdx Segment absolute index.
          */
-        @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
         public void releaseWorkSegment(long absIdx) {
             segmentAware.releaseWorkSegment(absIdx);
         }
@@ -3294,7 +3292,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /**
      * WAL writer worker.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     private class WALWriter extends GridWorker {
         /** Unconditional flush. */
         private static final long UNCONDITIONAL_FLUSH = -1L;
@@ -3485,7 +3482,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /**
          * @param expPos Expected position.
          */
-        @SuppressWarnings("ForLoopReplaceableByForEach")
         void flushBuffer(long expPos) throws IgniteCheckedException {
             if (mmap)
                 return;

@@ -6696,7 +6696,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /**
      * @return Common serialization error.
      */
-    @SuppressWarnings("UnnecessaryReturnStatement")
     private static IgniteSQLException serializationError() {
         return new IgniteSQLException("Cannot serialize transaction due to write conflict (transaction is marked for rollback)", TRANSACTION_SERIALIZATION_ERROR);
     }

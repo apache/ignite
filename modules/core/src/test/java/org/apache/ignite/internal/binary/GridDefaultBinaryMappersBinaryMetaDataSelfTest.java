@@ -325,7 +325,6 @@ public class GridDefaultBinaryMappersBinaryMetaDataSelfTest extends GridCommonAb
 
     /**
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class TestObject1 {
         /** */
         private int intVal;
@@ -381,7 +380,6 @@ public class GridDefaultBinaryMappersBinaryMetaDataSelfTest extends GridCommonAb
 
     /**
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class TestObject3 {
         /** */
         private int intVal;

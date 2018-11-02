@@ -116,7 +116,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
     @Override public void onKernalStop() {
         if (log.isDebugEnabled())
             log.debug("DHT rebalancer onKernalStop callback.");
@@ -514,7 +513,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
      * @param keys Keys to request.
      * @return Future for request.
      */
-    @SuppressWarnings({"unchecked", "RedundantCast"})
     @Override public GridDhtFuture<Object> request(GridCacheContext cctx,
         Collection<KeyCacheObject> keys,
         AffinityTopologyVersion topVer) {
