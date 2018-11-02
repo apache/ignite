@@ -6263,7 +6263,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     null,
                     keepBinary);
 
-                Object interceptorVal = cctx.config().getInterceptor().onBeforePut(interceptEntry, updated0);
+                Object interceptorVal = updated0;
+
+                if(!changesFromAnotherDataCenter())
+                    interceptorVal = cctx.config().getInterceptor().onBeforePut(interceptEntry, updated0);
 
                 if (interceptorVal == null) {
                     treeOp = IgniteTree.OperationType.NOOP;
@@ -6344,6 +6347,14 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 transformed);
         }
 
+        private boolean changesFromAnotherDataCenter(){
+            byte locDataCenterId = newVer.dataCenterId();
+
+            byte newEntryDataCenterId = conflictVer == null ? 0 : conflictVer.dataCenterId();
+
+            return locDataCenterId != newEntryDataCenterId;
+        }
+
         /**
          * @param conflictCtx Conflict context.
          * @param invokeRes Entry processor result (for invoke operation).
@@ -6371,7 +6382,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     null,
                     keepBinary);
 
-                interceptRes = cctx.config().getInterceptor().onBeforeRemove(intercepEntry);
+                if(!changesFromAnotherDataCenter())
+                    interceptRes = cctx.config().getInterceptor().onBeforeRemove(intercepEntry);
+                else
+                    interceptRes = new IgniteBiTuple<>(false, intercepEntry);
 
                 if (cctx.cancelRemove(interceptRes)) {
                     treeOp = IgniteTree.OperationType.NOOP;
