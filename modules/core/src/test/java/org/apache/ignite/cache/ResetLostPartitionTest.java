@@ -102,7 +102,7 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
                 .setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE)
                 .setAffinity(new RendezvousAffinityFunction(false, 1024))
                 .setIndexedTypes(String.class, String.class),
-//
+
             new CacheConfiguration<>(CACHE_NAMES[2])
                 .setCacheMode(CacheMode.PARTITIONED)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)

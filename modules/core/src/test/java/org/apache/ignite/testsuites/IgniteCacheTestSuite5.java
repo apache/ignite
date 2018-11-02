@@ -20,7 +20,6 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.GridCacheAffinityBackupsSelfTest;
 import org.apache.ignite.IgniteCacheAffinitySelfTest;
-import org.apache.ignite.cache.ResetLostPartitionTest;
 import org.apache.ignite.cache.affinity.AffinityClientNodeSelfTest;
 import org.apache.ignite.cache.affinity.AffinityDistributionLoggingTest;
 import org.apache.ignite.cache.affinity.AffinityHistoryCleanupTest;
