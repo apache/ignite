@@ -23,12 +23,20 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
+import static org.apache.ignite.testframework.junits.GridAbstractTest.testIsRunning;
+
 /**
  * Stops node and fails test.
  */
 public class TestFailingFailureHandler extends StopNodeFailureHandler {
     /** {@inheritDoc} */
     @Override public boolean handle(Ignite ignite, FailureContext failureCtx) {
+        if (!testIsRunning) {
+            ignite.log().info("Critical issue detected after test finished. Test failure handler ignore it.");
+
+            return true;
+        }
+
         boolean nodeStopped = super.handle(ignite, failureCtx);
 
         TestCase.fail(failureCtx.toString());

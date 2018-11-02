@@ -169,6 +169,9 @@ public abstract class GridAbstractTest extends TestCase {
     /** */
     protected static final String DEFAULT_CACHE_NAME = "default";
 
+    /** Show that test is currently running. */
+    public static volatile boolean testIsRunning = false;
+
     /** */
     private transient boolean startGrid;
 
@@ -2120,6 +2123,8 @@ public abstract class GridAbstractTest extends TestCase {
 
         Thread runner = new IgniteThread(getTestIgniteInstanceName(), "test-runner", new Runnable() {
             @Override public void run() {
+                testIsRunning = true;
+
                 try {
                     runTestInternal();
                 }
@@ -2128,6 +2133,8 @@ public abstract class GridAbstractTest extends TestCase {
 
                     ex.set(hnd != null ? hnd.apply(e) : e);
                 }
+
+                testIsRunning = false;
             }
         });
 
