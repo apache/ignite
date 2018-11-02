@@ -80,6 +80,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -105,7 +106,7 @@ import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
  */
 public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /** */
-    public static final int DURATION = sf.apply(60_000);
+    public static final int DURATION = SF.apply(60_000);
 
     /** */
     private static final String CACHE_NAME = "test";
@@ -355,7 +356,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         U.awaitQuiet(keyLocked);
 
-        final int txCnt = sf.apply(250);
+        final int txCnt = SF.apply(250);
 
         final IgniteKernal k = (IgniteKernal)tryLockNode;
 

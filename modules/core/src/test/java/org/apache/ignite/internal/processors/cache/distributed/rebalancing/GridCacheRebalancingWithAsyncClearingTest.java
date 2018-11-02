@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 
@@ -104,7 +105,7 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
         ig.cluster().active(true);
 
         // High number of keys triggers long partition eviction.
-        final int keysCount = sf.apply(300_000);
+        final int keysCount = SF.apply(300_000);
 
         try (IgniteDataStreamer<Integer, Integer> ds = ig.dataStreamer(CACHE_NAME)) {
             log.info("Writing initial data...");
@@ -196,13 +197,13 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
         ignite.cluster().active(true);
 
         // High number of keys triggers long partition eviction.
-        final int keysCount = sf.apply(300_000);
+        final int keysCnt = SF.apply(300_000);
 
         try (IgniteDataStreamer<Integer, Integer> ds = ignite.dataStreamer(CACHE_NAME)) {
             log.info("Writing initial data...");
 
             ds.allowOverwrite(true);
-            for (int k = 1; k <= keysCount; k++) {
+            for (int k = 1; k <= keysCnt; k++) {
                 ds.addData(k, k);
 
                 if (k % 10_000 == 0)
@@ -231,10 +232,12 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
         awaitPartitionMapExchange();
 
         // Check no data loss.
-        for (int k = 1; k <= keysCount; k++) {
-            Integer value = (Integer) ignite.cache(CACHE_NAME).get(k);
-            Assert.assertNotNull("Value for " + k + " is null", value);
-            Assert.assertEquals("Check failed for " + k + " = " + value, k, (int) value);
+        for (int k = 1; k <= keysCnt; k++) {
+            Integer val = (Integer) ignite.cache(CACHE_NAME).get(k);
+
+            Assert.assertNotNull("Value for " + k + " is null", val);
+
+            Assert.assertEquals("Check failed for " + k + " = " + val, k, (int)val);
         }
     }
 }

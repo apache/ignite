@@ -33,6 +33,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -146,7 +147,7 @@ public class IgniteCacheStartWithLoadTest extends GridCommonAbstractTest {
             }
         });
 
-        U.sleep(sf.apply(60_000));
+        U.sleep(SF.apply(60_000));
 
         cacheRestartStop.set(true);
         txLoadStop.set(true);
