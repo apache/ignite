@@ -255,7 +255,7 @@ public class GridDhtPartitionFullMap extends HashMap<UUID, GridDhtPartitionMap> 
 
     /** {@inheritDoc} */
     @Override public int compareTo(@NotNull GridDhtPartitionFullMap o) {
-//        assert nodeId.equals(o.nodeId); TODO
+        assert nodeId.equals(o.nodeId);
 
         return Long.compare(updateSeq, o.updateSeq);
     }
