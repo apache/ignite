@@ -2486,21 +2486,22 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
 
-            checkpointReadLock();
-            try {
-                for (int i = 0; i < grp.affinity().partitions(); i++) {
-                    T2<Integer, Long> restore = partStates.get(new T2<>(grpId, i));
+            for (int i = 0; i < grp.affinity().partitions(); i++) {
+                T2<Integer, Long> restore = partStates.get(new T2<>(grpId, i));
 
-                    if (storeMgr.exists(grpId, i)) {
-                        storeMgr.ensure(grpId, i);
+                if (storeMgr.exists(grpId, i)) {
+                    storeMgr.ensure(grpId, i);
 
-                        if (storeMgr.pages(grpId, i) <= 1)
-                            continue;
+                    if (storeMgr.pages(grpId, i) <= 1)
+                        continue;
 
-                        if (log.isDebugEnabled())
-                            log.debug("Creating partition on recovery (exists in page store) " +
-                                "[grp=" + grp.cacheOrGroupName() + ", p=" + i + "]");
+                    if (log.isDebugEnabled())
+                        log.debug("Creating partition on recovery (exists in page store) " +
+                            "[grp=" + grp.cacheOrGroupName() + ", p=" + i + "]");
 
+                    checkpointReadLock();
+
+                    try {
                         GridDhtLocalPartition part = grp.topology().forceCreatePartition(i);
 
                         assert part != null;
@@ -2556,38 +2557,31 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             pageMem.releasePage(grpId, partMetaId, partMetaPage);
                         }
                     }
-                    else if (restore != null) {
-                        if (log.isDebugEnabled())
-                            log.debug("Creating partition on recovery (exists in WAL) " +
-                                "[grp=" + grp.cacheOrGroupName() + ", p=" + i + "]");
-
-                        GridDhtLocalPartition part = grp.topology().forceCreatePartition(i);
-
-                        assert part != null;
-
-                        // TODO: https://issues.apache.org/jira/browse/IGNITE-6097
-                        grp.offheap().onPartitionInitialCounterUpdated(i, 0);
-
-                        updateState(part, restore.get1());
-
-                        if (log.isDebugEnabled())
-                            log.debug("Restored partition state (from WAL) " +
-                                "[grp=" + grp.cacheOrGroupName() + ", p=" + i + ", state=" + part.state() +
-                                "updCntr=" + part.initialUpdateCounter() + "]");
+                    finally {
+                        checkpointReadUnlock();
                     }
+                }
+                else if (restore != null) {
+                    if (log.isDebugEnabled())
+                        log.debug("Creating partition on recovery (exists in WAL) " +
+                            "[grp=" + grp.cacheOrGroupName() + ", p=" + i + "]");
 
-                    cntParts++;
+                    GridDhtLocalPartition part = grp.topology().forceCreatePartition(i);
+
+                    assert part != null;
+
+                    // TODO: https://issues.apache.org/jira/browse/IGNITE-6097
+                    grp.offheap().onPartitionInitialCounterUpdated(i, 0);
+
+                    updateState(part, restore.get1());
+
+                    if (log.isDebugEnabled())
+                        log.debug("Restored partition state (from WAL) " +
+                            "[grp=" + grp.cacheOrGroupName() + ", p=" + i + ", state=" + part.state() +
+                            "updCntr=" + part.initialUpdateCounter() + "]");
                 }
 
-                if (grp.offheap() instanceof GridCacheOffheapManager) {
-                    GridCacheOffheapManager offheap = (GridCacheOffheapManager)grp.offheap();
-
-                    removeCheckpointListener(offheap);
-                    addCheckpointListener(offheap);
-                }
-            }
-            finally {
-                checkpointReadUnlock();
+                cntParts++;
             }
 
             // After partition states are restored, it is necessary to update internal data structures in topology.

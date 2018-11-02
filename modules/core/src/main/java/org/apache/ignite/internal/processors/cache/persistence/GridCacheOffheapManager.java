@@ -144,6 +144,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             metastoreRoot.pageId().pageId(),
             metastoreRoot.isAllocated(),
             ctx.kernalContext().failure());
+
+        ((GridCacheDatabaseSharedManager)ctx.database()).addCheckpointListener(this);
     }
 
     /**
