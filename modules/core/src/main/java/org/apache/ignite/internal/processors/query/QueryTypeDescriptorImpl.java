@@ -212,7 +212,6 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void setValue(String field, Object key, Object val, Object propVal)
         throws IgniteCheckedException {
         assert field != null;

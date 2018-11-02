@@ -200,7 +200,6 @@ public class GridTuple4<V1, V2, V3, V4> implements Iterable<Object>, Externaliza
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntDeclareCloneNotSupportedException"})
     @Override public Object clone() {
         try {
             return super.clone();

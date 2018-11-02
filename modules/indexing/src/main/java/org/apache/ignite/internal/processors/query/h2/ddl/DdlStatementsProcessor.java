@@ -119,7 +119,6 @@ public class DdlStatementsProcessor {
      * @param cmd Command.
      * @return Result.
      */
-    @SuppressWarnings("unchecked")
     public FieldsQueryCursor<List<?>> runDdlStatement(String sql, SqlCommand cmd) {
         IgniteInternalFuture fut = null;
 
@@ -258,7 +257,7 @@ public class DdlStatementsProcessor {
      * @param prepared Prepared.
      * @return Cursor on query results.
      */
-    @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
+    @SuppressWarnings({"unchecked"})
     public FieldsQueryCursor<List<?>> runDdlStatement(String sql, Prepared prepared) {
         IgniteInternalFuture fut = null;
 

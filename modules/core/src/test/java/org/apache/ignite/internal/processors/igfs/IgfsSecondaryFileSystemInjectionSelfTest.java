@@ -93,7 +93,6 @@ public class IgfsSecondaryFileSystemInjectionSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"UnusedDeclaration"})
     public void testInjectPrimaryByField() throws Exception {
         secondary = new TestBaseSecondaryFsMock() {
             @FileSystemResource
@@ -120,7 +119,6 @@ public class IgfsSecondaryFileSystemInjectionSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"UnusedDeclaration"})
     public void testInjectPrimaryByMethods() throws Exception {
         secondary = new TestBaseSecondaryFsMock() {
             /** Ignite instance. */

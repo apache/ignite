@@ -127,7 +127,6 @@ public class JdbcThinComplexDmlDdlSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testCreateSelectDrop() throws Exception {
         conn = createConnection();
 
