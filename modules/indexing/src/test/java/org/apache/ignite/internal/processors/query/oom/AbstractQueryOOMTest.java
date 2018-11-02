@@ -244,8 +244,7 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
      * @throws Exception On error.
      */
     public void testHeavyGroupByPkLazy() throws Exception {
-//        fail("https://issues.apache.org/jira/browse/IGNITE-9933");
-        checkQuery("SELECT id, sum(val) from test GROUP BY id", KEY_CNT, true);
+        checkQuery("SELECT id, sum(val) from test GROUP BY id", KEY_CNT, true, true);
     }
 
     /**
