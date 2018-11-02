@@ -103,11 +103,13 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionDestroyRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
@@ -2293,7 +2295,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     ) throws IgniteCheckedException {
         cctx.walState().runWithOutWAL(() -> {
             if (it != null)
-                applyUpdates(it, stopPred, entryPred);
+                applyUpdates(it, stopPred, entryPred, false);
 
             checkpointReadLock();
 
@@ -2315,12 +2317,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param it WAL iterator.
      * @param stopPred WAL record predicate for stopping iteration.
      * @param entryPred Data record and corresponding data entries predicate.
+     * @param lockEntries If true, update will be performed under entry lock.
      */
     public void applyUpdates(
         WALIterator it,
         @Nullable IgnitePredicate<WALRecord> stopPred,
-        IgniteBiPredicate<WALRecord, DataEntry> entryPred)
-    {
+        IgniteBiPredicate<WALRecord, DataEntry> entryPred,
+        boolean lockEntries
+    ) {
         while (it.hasNext()) {
             IgniteBiTuple<WALPointer, WALRecord> next = it.next();
 
@@ -2344,7 +2348,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                     GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
                                     if (cacheCtx != null)
-                                        applyUpdate(cacheCtx, dataEntry);
+                                        applyUpdate(cacheCtx, dataEntry, lockEntries);
                                     else if (log != null) {
                                         log.warning("Cache (cacheId=" + cacheId +
                                             ") is not started, can't apply updates.");
@@ -2420,7 +2424,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             if (!ignoreGrps.contains(cacheDesc.groupId())) {
                                 GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
-                                applyUpdate(cacheCtx, dataEntry);
+                                applyUpdate(cacheCtx, dataEntry, false);
 
                                 applied++;
                             }
@@ -2683,9 +2687,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * @param cacheCtx Cache context to apply an update.
      * @param dataEntry Data entry to apply.
+     * @param lockEntry If true, update will be performed under entry lock.
      * @throws IgniteCheckedException If failed to restore.
      */
-    private void applyUpdate(GridCacheContext cacheCtx, DataEntry dataEntry) throws IgniteCheckedException {
+    private void applyUpdate(
+        GridCacheContext cacheCtx,
+        DataEntry dataEntry,
+        boolean lockEntry
+    ) throws IgniteCheckedException {
         int partId = dataEntry.partitionId();
 
         if (partId == -1)
@@ -2693,28 +2702,62 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         GridDhtLocalPartition locPart = cacheCtx.isLocal() ? null : cacheCtx.topology().forceCreatePartition(partId);
 
+        GridCacheEntryEx entryEx = null;
+
         switch (dataEntry.op()) {
             case CREATE:
             case UPDATE:
-                cacheCtx.offheap().update(
-                    cacheCtx,
-                    dataEntry.key(),
-                    dataEntry.value(),
-                    dataEntry.writeVersion(),
-                    0L,
-                    locPart,
-                    null);
+                if (lockEntry) {
+                    entryEx = cacheCtx.isNear() ? cacheCtx.near().dht().entryEx(dataEntry.key()) :
+                        cacheCtx.cache().entryEx(dataEntry.key());
 
-                if (dataEntry.partitionCounter() != 0)
-                    cacheCtx.offheap().onPartitionInitialCounterUpdated(partId, dataEntry.partitionCounter());
+                    entryEx.lockEntry();
+                }
+
+                try {
+                    cacheCtx.offheap().update(
+                        cacheCtx,
+                        dataEntry.key(),
+                        dataEntry.value(),
+                        dataEntry.writeVersion(),
+                        0L,
+                        locPart,
+                        null);
+
+                    if (dataEntry.partitionCounter() != 0)
+                        cacheCtx.offheap().onPartitionInitialCounterUpdated(partId, dataEntry.partitionCounter());
+                }
+                finally {
+                    if (lockEntry) {
+                        entryEx.unlockEntry();
+
+                        entryEx.context().evicts().touch(entryEx, AffinityTopologyVersion.NONE);
+                    }
+                }
 
                 break;
 
             case DELETE:
-                cacheCtx.offheap().remove(cacheCtx, dataEntry.key(), partId, locPart);
+                if (lockEntry) {
+                    entryEx = cacheCtx.isNear() ? cacheCtx.near().dht().entryEx(dataEntry.key()) :
+                        cacheCtx.cache().entryEx(dataEntry.key());
 
-                if (dataEntry.partitionCounter() != 0)
-                    cacheCtx.offheap().onPartitionInitialCounterUpdated(partId, dataEntry.partitionCounter());
+                    entryEx.lockEntry();
+                }
+
+                try {
+                    cacheCtx.offheap().remove(cacheCtx, dataEntry.key(), partId, locPart);
+
+                    if (dataEntry.partitionCounter() != 0)
+                        cacheCtx.offheap().onPartitionInitialCounterUpdated(partId, dataEntry.partitionCounter());
+                }
+                finally {
+                    if (lockEntry) {
+                        entryEx.unlockEntry();
+
+                        entryEx.context().evicts().touch(entryEx, AffinityTopologyVersion.NONE);
+                    }
+                }
 
                 break;
 
