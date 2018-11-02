@@ -202,9 +202,6 @@ public abstract class GridAbstractTest extends TestCase {
     /** Lazily initialized current test method. */
     private volatile Method currTestMtd;
 
-    /**  */
-    protected static final ScaleFactorUtil sf = new ScaleFactorUtil();
-
     /**
      *
      */
@@ -2735,43 +2732,4 @@ public abstract class GridAbstractTest extends TestCase {
         public abstract void run(Ignite ignite, IgniteCache<K, V> cache) throws Exception;
     }
 
-    /**
-     * Test parameters scale factor util.
-     */
-    protected static class ScaleFactorUtil {
-        /** Test speed scale factor property name */
-        private static final String TEST_SCALE_FACTOR_PROPERTY = "TEST_SCALE_FACTOR";
-
-        /** Test speed scale factor. */
-        private final double testScaleFactor = readScaleFactor();
-
-        /** */
-        private static double readScaleFactor() {
-            double scaleFactor = Double.parseDouble(System.getProperty(TEST_SCALE_FACTOR_PROPERTY, "1.0"));
-            scaleFactor = Math.max(scaleFactor, 0.1);
-            scaleFactor = Math.min(scaleFactor, 1.0);
-
-            return scaleFactor;
-        }
-
-        /** */
-        public int apply(int val) {
-            return (int) (testScaleFactor * val);
-        }
-
-        /** */
-        public int apply(int val, int lowerBound, int upperBound) {
-            return applyUB(applyLB(val, lowerBound), upperBound);
-        }
-
-        /** Apply scale factor with lower bound */
-        public int applyLB(int val, int lowerBound) {
-            return Math.max((int) (testScaleFactor * val), lowerBound);
-        }
-
-        /** Apply scale factor with upper bound */
-        public int applyUB(int val, int upperBound) {
-            return Math.min((int) (testScaleFactor * val), upperBound);
-        }
-    }
 }
