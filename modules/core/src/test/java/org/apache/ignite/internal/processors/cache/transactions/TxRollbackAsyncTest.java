@@ -375,7 +375,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
             ", useTimeout=" + useTimeout +
             ", seed=" + seed);
 
-        IgniteInternalFuture<?> txFut = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> txFut = runAsync(new Runnable() {
             @Override public void run() {
                 U.awaitQuiet(keyLocked);
 
@@ -401,9 +401,9 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                 txReadyFut.onDone((Transaction)null);
             }
-        }, 1, "tx-get-thread");
+        }, "tx-get-thread");
 
-        IgniteInternalFuture<?> rollbackFut = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> rollbackFut = runAsync(new Runnable() {
             @Override public void run() {
                 Set<IgniteUuid> rolledBackVers = new HashSet<>();
 
@@ -435,7 +435,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                         rolledBackVers.add(tx.xid());
 
-                        if (proc % 100 == 0)
+                        if (proc % (txCnt / 10) == 0)
                             log.info("Rolled back: " + proc);
 
                         proc++;
@@ -445,7 +445,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                     }
                 }
             }
-        }, 1, "tx-rollback-thread");
+        }, "tx-rollback-thread");
 
         rollbackFut.get();
 
