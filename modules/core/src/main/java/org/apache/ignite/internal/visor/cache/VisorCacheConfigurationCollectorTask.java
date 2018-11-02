@@ -40,7 +40,6 @@ public class VisorCacheConfigurationCollectorTask
         return new VisorCacheConfigurationCollectorJob(arg, debug);
     }
 
-
     /** {@inheritDoc} */
     @Override protected @Nullable Map<String, VisorCacheConfiguration> reduce0(
         List<ComputeJobResult> results
@@ -48,7 +47,7 @@ public class VisorCacheConfigurationCollectorTask
         if (results == null)
             return null;
 
-        if(results.size() == 1)
+        if (results.size() == 1)
             return results.get(0).getData();
 
         Map<String, VisorCacheConfiguration> map = new HashMap<>();

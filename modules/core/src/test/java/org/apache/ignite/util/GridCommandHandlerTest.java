@@ -1269,17 +1269,17 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
     /** */
     public void testCacheConfigSingleLineOutputFormatSingleNodeSignleCache() throws Exception {
-        testCacheConfigSingleLineOutputFormat(1,1);
+        testCacheConfigSingleLineOutputFormat(1, 1);
     }
 
     /** */
     public void testCacheConfigSingleLineOutputFormatTwoNodeSignleCache() throws Exception {
-        testCacheConfigSingleLineOutputFormat(2,1);
+        testCacheConfigSingleLineOutputFormat(2, 1);
     }
 
     /** */
     public void testCacheConfigSingleLineOutputFormatTwoNodeManyCaches() throws Exception {
-        testCacheConfigSingleLineOutputFormat(2,100);
+        testCacheConfigSingleLineOutputFormat(2, 100);
     }
 
     /** */
