@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -2544,31 +2545,74 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
             try {
-                int cacheId = grp.storeCacheIdInDataPage() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
-
-                if (key.partition() == -1)
-                    key.partition(partId);
-
-                MvccDataRow dataRow = new MvccDataRow(key, val, ver, partId, expireTime, cacheId, mvccVer, null);
+                int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
                 CacheObjectContext coCtx = cctx.cacheObjectContext();
 
                 // Make sure value bytes initialized.
                 key.valueBytes(coCtx);
-                val.valueBytes(coCtx);
+
+                if (val != null)
+                    val.valueBytes(coCtx);
+
+                MvccSnapshotWithoutTxs mvccSnapshot = new MvccSnapshotWithoutTxs(mvccVer.coordinatorVersion(),
+                    mvccVer.counter(), mvccVer.operationCounter(), MvccUtils.MVCC_COUNTER_NA);
+
+                MvccUpdateDataRow updateRow = new MvccUpdateDataRow(
+                    cctx,
+                    key,
+                    val,
+                    ver,
+                    partId,
+                    0L,
+                    mvccSnapshot,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false);
 
                 assert cctx.shared().database().checkpointLockIsHeldByThread();
 
-                rowStore.addRow(dataRow);
+                dataTree.visit(new MvccMaxSearchRow(cacheId, key), new MvccMinSearchRow(cacheId, key), updateRow);
 
-                assert dataRow.link() != 0 : dataRow;
+                ResultType res = updateRow.resultType();
 
-                if (grp.sharedGroup() && dataRow.cacheId() == CU.UNDEFINED_CACHE_ID)
-                    dataRow.cacheId(cctx.cacheId());
+                assert res == ResultType.PREV_NULL || res == ResultType.PREV_NOT_NULL;
 
-                CacheDataRow old = dataTree.put(dataRow);
+                if (res == ResultType.PREV_NOT_NULL) {
+                    CacheDataRow oldRow = updateRow.oldRow();
 
-                finishUpdate(cctx, dataRow, old);
+                    assert oldRow != null && oldRow.link() != 0 : oldRow;
+
+                    rowStore.updateDataRow(oldRow.link(), mvccUpdateMarker, mvccSnapshot);
+                }
+
+                if (val != null) {
+                    if (!grp.storeCacheIdInDataPage() && updateRow.cacheId() != CU.UNDEFINED_CACHE_ID) {
+                        updateRow.cacheId(CU.UNDEFINED_CACHE_ID);
+
+                        rowStore.addRow(updateRow);
+
+                        updateRow.cacheId(cctx.cacheId());
+                    }
+                    else
+                        rowStore.addRow(updateRow);
+
+                    boolean old = dataTree.putx(updateRow);
+
+                    assert !old;
+
+                    GridCacheQueryManager qryMgr = cctx.queries();
+
+                    if (qryMgr.enabled())
+                        qryMgr.store(updateRow, null, true);
+
+                    cleanup(cctx, updateRow.cleanupRows());
+                }
             }
             finally {
                 busyLock.leaveBusy();
