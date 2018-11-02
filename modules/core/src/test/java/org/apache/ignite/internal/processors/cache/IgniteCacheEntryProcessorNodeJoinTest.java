@@ -42,6 +42,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -61,13 +62,13 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
     private static final int GRID_CNT = 2;
 
     /** Number of increment iterations. */
-    private final int INCREMENTS = sf.apply(100);
+    private final int INCREMENTS = SF.apply(100);
 
     /** Number of test iterations. */
-    private final int ITERATIONS = sf.applyLB(10, 2);
+    private final int ITERATIONS = SF.applyLB(10, 2);
 
     /** */
-    private final int KEYS = sf.apply(50);
+    private final int KEYS = SF.apply(50);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
