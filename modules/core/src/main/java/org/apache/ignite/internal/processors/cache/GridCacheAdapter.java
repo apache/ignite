@@ -823,9 +823,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
-        //TODO IGNITE-7955
-        MvccUtils.verifyMvccOperationSupport(ctx, "Peek");
-
         PeekModes modes = parsePeekModes(peekModes, false);
 
         KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
@@ -897,7 +894,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     ctx.shared().database().checkpointReadLock();
 
                     try {
-                        cacheVal = e.peek(modes.heap, modes.offheap, topVer, plc);
+                        cacheVal = ctx.mvccEnabled()
+                            ? e.mvccPeek(modes.heap && !modes.offheap)
+                            : e.peek(modes.heap, modes.offheap, topVer, plc);
                     }
                     catch (GridCacheEntryRemovedException ignore) {
                         if (log.isDebugEnabled())

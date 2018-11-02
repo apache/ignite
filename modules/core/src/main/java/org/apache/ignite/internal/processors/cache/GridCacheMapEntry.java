@@ -67,8 +67,12 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
+import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccUpdateResult;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.ResultType;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLastCommittedSearchClosure;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccMaxSearchRow;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccMinSearchRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheLazyPlainVersionedEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
@@ -80,6 +84,7 @@ import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFilter
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.IgniteTree;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -3079,6 +3084,39 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      */
     int hash() {
         return hash;
+    }
+
+    @Override public CacheObject mvccPeek(boolean onheapOnly) throws IgniteCheckedException {
+        if (onheapOnly)
+            return null;
+
+        lockEntry();
+
+        try {
+//            checkObsolete();
+
+//            CacheDataRow row = cctx.offheap().mvccRead(cctx, key, new MvccSnapshotWithoutTxs(Long.MAX_VALUE, Long.MAX_VALUE, 0, 0));
+
+            IgniteCacheOffheapManager.CacheDataStore dataStore = cctx.offheap().dataStore(localPartition());
+
+            if (dataStore == null)
+                return null;
+
+            CacheDataTree dataTree = IgniteUtils.field(dataStore, "dataTree");
+
+            int cacheId = cctx.group().sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
+
+            MvccLastCommittedSearchClosure searchClosure = new MvccLastCommittedSearchClosure(cctx, key);
+
+            dataTree.iterate(new MvccMaxSearchRow(cacheId, key), new MvccMinSearchRow(cacheId, key), searchClosure);
+
+            CacheDataRow row = searchClosure.row();
+
+            return row != null ? row.value() : null;
+        }
+        finally {
+            unlockEntry();
+        }
     }
 
     /** {@inheritDoc} */
