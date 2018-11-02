@@ -316,7 +316,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private long rebalanceThrottle = DFLT_REBALANCE_THROTTLE;
 
     /** */
-    private CacheInterceptor<?, ?> interceptor;
+    private CacheInterceptor<K, V> interceptor;
 
     /** */
     private Class<?>[] sqlFuncCls;
@@ -1617,9 +1617,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @return Cache interceptor.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public CacheInterceptor<K, V> getInterceptor() {
-        return (CacheInterceptor<K, V>)interceptor;
+        return interceptor;
     }
 
     /**
