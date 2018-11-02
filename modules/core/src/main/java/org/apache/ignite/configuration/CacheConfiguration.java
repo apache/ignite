@@ -50,9 +50,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -60,6 +58,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.CachePluginConfiguration;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
+import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -317,7 +317,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private long rebalanceThrottle = DFLT_REBALANCE_THROTTLE;
 
     /** */
-    private CacheInterceptor<?, ?> interceptor;
+    private CacheInterceptor<K, V> interceptor;
 
     /** */
     private Class<?>[] sqlFuncCls;
@@ -1627,9 +1627,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @return Cache interceptor.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public CacheInterceptor<K, V> getInterceptor() {
-        return (CacheInterceptor<K, V>)interceptor;
+        return interceptor;
     }
 
     /**
