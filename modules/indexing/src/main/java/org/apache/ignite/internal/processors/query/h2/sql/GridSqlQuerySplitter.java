@@ -999,7 +999,6 @@ public class GridSqlQuerySplitter {
      * @param prnt Parent expression.
      * @param childIdx Child index.
      */
-    @SuppressWarnings("SuspiciousMethodCalls")
     private void pushDownColumnsInExpression(
         Set<GridSqlAlias> tblAliases,
         Map<String,GridSqlAlias> cols,

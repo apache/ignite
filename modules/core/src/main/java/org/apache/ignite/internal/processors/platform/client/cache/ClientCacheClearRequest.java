@@ -36,7 +36,6 @@ public class ClientCacheClearRequest extends ClientCacheRequest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         authorize(ctx, SecurityPermission.CACHE_REMOVE);
 

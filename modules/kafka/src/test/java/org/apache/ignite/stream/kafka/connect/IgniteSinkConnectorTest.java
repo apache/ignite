@@ -90,7 +90,6 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
     private static Ignite grid;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected void beforeTest() throws Exception {
         kafkaBroker = new TestKafkaBroker();
 
@@ -128,7 +127,6 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected void beforeTestsStarted() throws Exception {
         IgniteConfiguration cfg = loadConfiguration("modules/kafka/src/test/resources/example-ignite.xml");
 

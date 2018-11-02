@@ -58,7 +58,6 @@ import static org.apache.ignite.IgniteSystemProperties.getInteger;
 /**
  * Merge index.
  */
-@SuppressWarnings("AtomicFieldUpdaterIssues")
 public abstract class GridMergeIndex extends BaseIndex {
     /** */
     private static final int MAX_FETCH_SIZE = getInteger(IGNITE_SQL_MERGE_TABLE_MAX_SIZE, 10_000);
