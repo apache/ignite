@@ -77,7 +77,7 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected boolean isRemoteJvm(String igniteInstanceName) {
-        return igniteInstanceName.contains("remote");
+        return igniteInstanceName.startsWith("remote");
     }
 
     /** {@inheritDoc} */
@@ -137,6 +137,8 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
+        U.sleep(5_000);
+
         stopAllGrids();
     }
 
@@ -155,6 +157,8 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
+        log.info("Restart cluster");
+
         Ignite loc = startGrid(0);
 
         for (int i = 0; i < RMT_NODES_CNT; ++i)
@@ -162,7 +166,7 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
 
         loc.cluster().active(true);
 
-//        stopGrid(0);
+        stopGrid(0);
     }
 
     /** {@inheritDoc} */
@@ -332,7 +336,7 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
     public void checkQuery(String sql, long expectedRowCnt, boolean lazy, boolean collocated) throws Exception {
         try (Connection c = DriverManager.getConnection(
             "jdbc:ignite:thin://127.0.0.1:10800..10850/\"test_cache\"" +
-                "?collocated=tue" + collocated +
+                "?collocated=" + collocated +
                 "&lazy=" + lazy)) {
             try (Statement stmt = c.createStatement()) {
                 log.info("Run heavy query: " + sql);
