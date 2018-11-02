@@ -113,9 +113,6 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /** */
     private boolean client;
 
-    /** No-Op failure handler. */
-    private boolean noOpFailureHnd;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -145,16 +142,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        noOpFailureHnd = false;
-    }
-
-    /** {@inheritDoc} */
     @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        if (noOpFailureHnd)
-            return new NoOpFailureHandler();
-
-        return super.getFailureHandler(igniteInstanceName);
+        return new NoOpFailureHandler();
     }
 
     /** {@inheritDoc} */
@@ -5116,8 +5105,6 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
      * @return Restart thread future.
      */
     private IgniteInternalFuture<?> restartFuture(final AtomicBoolean stop, final IgniteInternalFuture<?> fut) {
-        noOpFailureHnd = true;
-
         return GridTestUtils.runAsync(new Callable<Object>() {
             private boolean stop() {
                 if (stop != null)
