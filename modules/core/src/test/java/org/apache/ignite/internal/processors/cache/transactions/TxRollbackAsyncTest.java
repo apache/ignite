@@ -254,7 +254,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (Exception e) {
+        catch (Exception ignore) {
             // Expected.
         }
 
@@ -263,7 +263,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (Exception e) {
+        catch (Exception ignore) {
             // Expected.
         }
 
@@ -272,7 +272,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (Exception e) {
+        catch (Exception ignore) {
             // Expected.
         }
 
@@ -286,7 +286,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (Exception e) {
+        catch (Exception ignore) {
             // Expected.
         }
 
@@ -295,7 +295,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (Exception e) {
+        catch (Exception ignore) {
             // Expected.
         }
 
@@ -304,7 +304,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (Exception e) {
+        catch (Exception ignore) {
             // Expected.
         }
 
@@ -394,7 +394,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                         assertNull(o); // If rolled back by close, previous get will return null.
                     }
-                    catch (Exception e) {
+                    catch (Exception ignore) {
                         // If rolled back by rollback, previous get will throw an exception.
                     }
                 }
@@ -828,7 +828,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                 fail("timeout");
             }
-            catch (Exception e) {
+            catch (Exception ignore) {
                 // No-op.
             }
 
@@ -837,7 +837,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                 fail("setRollbackOnly");
             }
-            catch (Exception e) {
+            catch (Exception ignore) {
                 // No-op.
             }
 
@@ -846,7 +846,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                 fail("commit");
             }
-            catch (Exception e) {
+            catch (Exception ignore) {
                 // No-op.
             }
 
@@ -855,7 +855,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                 fail("commitAsync");
             }
-            catch (Exception e) {
+            catch (Exception ignore) {
                 // No-op.
             }
 
@@ -864,7 +864,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                 fail("suspend");
             }
-            catch (Exception e) {
+            catch (Exception ignore) {
                 // No-op.
             }
 
@@ -873,7 +873,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                 fail("resume");
             }
-            catch (Exception e) {
+            catch (Exception ignore) {
                 // No-op.
             }
 
@@ -889,7 +889,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteCheckedException ignore) {
             // No-op.
         }
     }
@@ -926,7 +926,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                     fail();
                 }
-                catch (Exception e) {
+                catch (Exception ignore) {
                     // Expected.
                 }
             }
@@ -957,7 +957,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                             fail();
                         }
-                        catch (Exception e) {
+                        catch (Exception ignore) {
                             // Expected.
                         }
                     }
