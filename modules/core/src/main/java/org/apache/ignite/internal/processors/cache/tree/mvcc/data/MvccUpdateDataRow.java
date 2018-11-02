@@ -405,8 +405,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
 
                     unsetFlags(CAN_WRITE); // No need to acquire write locks anymore
                 }
-                else if (txState == TxState.ABORTED) {
-                    // save aborted version to fast check new version of next row
+                else if (txState == TxState.ABORTED) { // save aborted version to fast check new version of next row
                     resCrd = rowCrd;
                     resCntr = rowCntr;
                 }

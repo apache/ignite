@@ -100,7 +100,7 @@ public class MvccCachingManager extends GridCacheSharedManagerAdapter {
 
         if (log.isDebugEnabled()) {
             log.debug("Added entry to mvcc cache: [key=" + key + ", val=" + val + ", oldVal=" + oldVal +
-                ", primary=" + primary + ", mvccVersion=" + mvccVer + ", cacheId=" + cacheId + ", ver=" + ver +']');
+                ", primary=" + primary + ", mvccVer=" + mvccVer + ", cacheId=" + cacheId + ", ver=" + ver +']');
         }
 
         GridCacheContext ctx0 = cctx.cacheContext(cacheId);

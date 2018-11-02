@@ -54,7 +54,8 @@ public class TxRecord extends TimeStampRecord {
     @Nullable private Map<Short, Collection<Short>> participatingNodes;
 
     /**
-     *  @param state Transaction state.
+     *
+     * @param state Transaction state.
      * @param nearXidVer Transaction id.
      * @param writeVer Transaction entries write topology version.
      * @param mvccVer Transaction snapshot version.
