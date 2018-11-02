@@ -421,7 +421,6 @@ public class IgniteConfiguration {
     private String[] includeProps;
 
     /** Frequency of metrics log print out. */
-    @SuppressWarnings("RedundantFieldInitialization")
     private long metricsLogFreq = DFLT_METRICS_LOG_FREQ;
 
     /** Local event listeners. */

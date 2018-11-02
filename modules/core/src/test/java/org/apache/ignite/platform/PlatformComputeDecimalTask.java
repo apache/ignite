@@ -35,7 +35,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-@SuppressWarnings({"ConstantConditions", "UnusedDeclaration"})
+@SuppressWarnings({"ConstantConditions"})
 public class PlatformComputeDecimalTask extends ComputeTaskAdapter<Object[], BigDecimal> {
     /** {@inheritDoc} */
     @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object[] arg) {
@@ -43,7 +43,6 @@ public class PlatformComputeDecimalTask extends ComputeTaskAdapter<Object[], Big
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     @Nullable @Override public BigDecimal reduce(List<ComputeJobResult> results) {
         ComputeJobResult res = results.get(0);
 

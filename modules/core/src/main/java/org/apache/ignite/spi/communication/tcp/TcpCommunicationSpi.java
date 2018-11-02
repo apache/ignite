@@ -1092,7 +1092,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     private long maxConnTimeout = DFLT_MAX_CONN_TIMEOUT;
 
     /** Reconnect attempts count. */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     private int reconCnt = DFLT_RECONNECT_CNT;
 
     /** Socket send buffer. */
@@ -4617,7 +4616,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("ThrowFromFinallyBlock")
         @Override public void applyx(InputStream in, OutputStream out) throws IgniteCheckedException {
             try {
                 // Handshake.

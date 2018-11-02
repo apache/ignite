@@ -67,7 +67,7 @@ public class GridLeanMapPerformanceTest extends GridCommonAbstractTest {
      * @param map Map.
      * @throws Exception In case of error.
      */
-    @SuppressWarnings({"StatementWithEmptyBody", "UnusedDeclaration"})
+    @SuppressWarnings({"StatementWithEmptyBody"})
     private void iterate(Map<Integer, Integer> map) throws Exception {
         for (int i = 1; i <= ITER_CNT; i++) {
             // Iterate through entries.
