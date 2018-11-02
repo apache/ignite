@@ -21,6 +21,7 @@ import java.lang.reflect.Field;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
@@ -1760,6 +1761,27 @@ public class GridSqlQueryParser {
         }
 
         return null;
+    }
+
+    /**
+     * @return All known cache IDs.
+     */
+    public Collection<Integer> cacheIds() {
+        ArrayList<Integer> res = new ArrayList<>(1);
+
+        for (Object o : h2ObjToGridObj.values()) {
+            if (o instanceof GridSqlAlias)
+                o = GridSqlAlias.unwrap((GridSqlAst)o);
+
+            if (o instanceof GridSqlTable) {
+                GridH2Table tbl = ((GridSqlTable)o).dataTable();
+
+                if (tbl != null)
+                    res.add(tbl.cacheId());
+            }
+        }
+
+        return res;
     }
 
     /**
