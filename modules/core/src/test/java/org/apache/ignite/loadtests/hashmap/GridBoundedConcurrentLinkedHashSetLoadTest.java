@@ -63,7 +63,7 @@ public class GridBoundedConcurrentLinkedHashSetLoadTest {
 
         // Thread that measures and outputs performance statistics.
         Thread collector = new Thread(new Runnable() {
-            @SuppressWarnings({"BusyWait", "InfiniteLoopStatement"})
+            @SuppressWarnings({"BusyWait"})
             @Override public void run() {
                 GridCumulativeAverage avgTasksPerSec = new GridCumulativeAverage();
 
@@ -92,7 +92,6 @@ public class GridBoundedConcurrentLinkedHashSetLoadTest {
 
         for (int i = 0; i < threadCnt; i++)
             producers.add(new Callable<Object>() {
-                @SuppressWarnings({"unchecked", "InfiniteLoopStatement"})
                 @Override public Object call() throws Exception {
                     UUID id = UUID.randomUUID();
 

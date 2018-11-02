@@ -704,4 +704,9 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Compression processor.
      */
     public CompressionProcessor compress();
+
+    /**
+     * @return {@code True} if node is in recovery mode (before join to topology).
+     */
+    public boolean recoveryMode();
 }
