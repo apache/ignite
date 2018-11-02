@@ -29,6 +29,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -50,6 +51,7 @@ import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
     /** */
     private static final long KEY_CNT = 2_000_000L;
+//    private static final long KEY_CNT = 2_000L;
 
     /** */
     private static final String CACHE_NAME = "test_cache";
@@ -108,20 +110,11 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
     protected abstract int queryParallelism();
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        cleanPersistenceDir();
-
-        stopAllGrids();
-
-        IgniteProcessProxy.killAll();
-    }
-
-    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
+
+        cleanPersistenceDir();
 
         Ignite local = startGrid(0);
 
@@ -148,6 +141,17 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        cleanPersistenceDir();
+
+        stopAllGrids();
+
+        IgniteProcessProxy.killAll();
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
@@ -158,7 +162,7 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
 
         loc.cluster().active(true);
 
-        stopGrid(0);
+//        stopGrid(0);
     }
 
     /** {@inheritDoc} */
@@ -181,6 +185,7 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
      * @throws Exception On error.
      */
     public void testHeavyScanNonLazy() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9480");
         checkQueryExpectOOM("SELECT * from test", false);
     }
 
@@ -189,14 +194,16 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
      * @throws Exception On error.
      */
     public void testHeavySortByPkLazy() throws Exception {
-        checkQueryExpectOOM("SELECT * from test ORDER BY ID", true);
+        fail("https://issues.apache.org/jira/browse/IGNITE-9933");
+        checkQueryExpectOOM("SELECT * from test ORDER BY id", true);
     }
 
     /**
      * @throws Exception On error.
      */
     public void testHeavySortByPkNotLazy() throws Exception {
-        checkQueryExpectOOM("SELECT * from test ORDER BY ID", false);
+        fail("https://issues.apache.org/jira/browse/IGNITE-9480");
+        checkQueryExpectOOM("SELECT * from test ORDER BY id", false);
     }
 
     /**
@@ -204,21 +211,23 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
      * @throws Exception On error.
      */
     public void testHeavySortByIndexLazy() throws Exception {
-        checkQueryExpectOOM("SELECT * from test ORDER BY INDEXED", true);
+        fail("https://issues.apache.org/jira/browse/IGNITE-9933");
+        checkQueryExpectOOM("SELECT * from test ORDER BY indexed", true);
     }
 
     /**
      * @throws Exception On error.
      */
     public void testHeavySortByIndexNotLazy() throws Exception {
-        checkQueryExpectOOM("SELECT * from test ORDER BY INDEXED", false);
+        fail("https://issues.apache.org/jira/browse/IGNITE-9480");
+        checkQueryExpectOOM("SELECT * from test ORDER BY indexed", false);
     }
 
     /**
-     * OOM on reduce. See IGNITE-9933
      * @throws Exception On error.
      */
     public void testHeavySortByNotIndexLazy() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9480");
         checkQueryExpectOOM("SELECT * from test ORDER BY STR", true);
     }
 
@@ -226,8 +235,27 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
      * @throws Exception On error.
      */
     public void testHeavySortByNotIndexNotLazy() throws Exception {
-        checkQueryExpectOOM("SELECT * from test ORDER BY STR", false);
+        fail("https://issues.apache.org/jira/browse/IGNITE-9480");
+        checkQueryExpectOOM("SELECT * from test ORDER BY str", false);
     }
+
+    /**
+     * OOM on reduce. See IGNITE-9933
+     * @throws Exception On error.
+     */
+    public void testHeavyGroupByPkLazy() throws Exception {
+//        fail("https://issues.apache.org/jira/browse/IGNITE-9933");
+        checkQuery("SELECT id, sum(val) from test GROUP BY id", KEY_CNT, true);
+    }
+
+    /**
+     * @throws Exception On error.
+     */
+    public void testHeavyGroupByPkNotLazy() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9480");
+        checkQueryExpectOOM("SELECT sum(val) from test GROUP BY id", false);
+    }
+
 
     /**
      * @param sql Query.
@@ -292,10 +320,23 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
      * @throws Exception On failure.
      */
     public void checkQuery(String sql, long expectedRowCnt, boolean lazy) throws Exception {
+        checkQuery(sql, expectedRowCnt, lazy, false);
+    }
+
+    /**
+     * @param sql Query.
+     * @param expectedRowCnt Expected row count.
+     * @param lazy Lazy mode.
+     * @param collocated Collocated group by flag.
+     * @throws Exception On failure.
+     */
+    public void checkQuery(String sql, long expectedRowCnt, boolean lazy, boolean collocated) throws Exception {
         try (Connection c = DriverManager.getConnection(
-            "jdbc:ignite:thin://127.0.0.1:10800..10850/\"test_cache\"?lazy=" + lazy)) {
+            "jdbc:ignite:thin://127.0.0.1:10800..10850/\"test_cache\"" +
+                "?collocated=tue" + collocated +
+                "&lazy=" + lazy)) {
             try (Statement stmt = c.createStatement()) {
-                log.info("Run heavy join");
+                log.info("Run heavy query: " + sql);
 
                 stmt.execute(sql);
 
