@@ -413,7 +413,6 @@ public class GridH2Table extends TableBase {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     @Override public void removeChildrenAndResources(Session ses) {
         lock(true);
 

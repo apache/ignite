@@ -973,7 +973,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     @Override public void dynamicIndexDrop(final String schemaName, String idxName, boolean ifExists)
         throws IgniteCheckedException{
         String sql = H2Utils.indexDropSql(schemaName, idxName, ifExists);
@@ -1075,7 +1074,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(String schemaName,
         String cacheName, String qry, String typeName, IndexingQueryFilter filters) throws IgniteCheckedException {
         H2TableDescriptor tbl = tableDescriptor(schemaName, cacheName, typeName);
@@ -1111,7 +1109,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     public GridQueryFieldsResult queryLocalSqlFields(String schemaName, String qry, @Nullable Collection<Object> params,
         IndexingQueryFilter filter, boolean enforceJoinOrder, boolean startTx, int timeout,
         GridQueryCancel cancel) throws IgniteCheckedException {
@@ -1133,7 +1130,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     GridQueryFieldsResult queryLocalSqlFields(final String schemaName, String qry,
         @Nullable final Collection<Object> params, final IndexingQueryFilter filter, boolean enforceJoinOrder,
         boolean startTx, int qryTimeout, final GridQueryCancel cancel,
@@ -2116,7 +2112,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param tx Transaction.
      * @throws IgniteCheckedException if failed.
      */
-    @SuppressWarnings("ThrowFromFinallyBlock")
     private void doCommit(@NotNull GridNearTxLocal tx) throws IgniteCheckedException {
         try {
             // TODO: Why checking for rollback only?
@@ -2133,7 +2128,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param tx Transaction.
      * @throws IgniteCheckedException if failed.
      */
-    @SuppressWarnings("ThrowFromFinallyBlock")
     private void doRollback(@NotNull GridNearTxLocal tx) throws IgniteCheckedException {
         try {
             tx.rollback();
@@ -3179,7 +3173,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"NonThreadSafeLazyInitialization", "deprecation"})
+    @SuppressWarnings({"deprecation"})
     @Override public void start(GridKernalContext ctx, GridSpinBusyLock busyLock) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Starting cache query index...");

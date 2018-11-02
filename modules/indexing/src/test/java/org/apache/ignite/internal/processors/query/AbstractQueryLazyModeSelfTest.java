@@ -466,7 +466,6 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
      * @param qry Query.
      * @return Cursor.
      */
-    @SuppressWarnings("unchecked")
     private FieldsQueryCursor<List<?>> execute(Ignite node, SqlFieldsQuery qry) {
         return cache(node).query(qry.setLazy(lazy()));
     }

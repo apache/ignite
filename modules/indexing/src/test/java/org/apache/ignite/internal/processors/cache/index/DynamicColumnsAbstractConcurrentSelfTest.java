@@ -1013,7 +1013,6 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      *
      * @param node Node.
      */
-    @SuppressWarnings("SuspiciousMethodCalls")
     private static CountDownLatch blockIndexing(Ignite node) {
         UUID nodeId = ((IgniteEx)node).localNode().id();
 

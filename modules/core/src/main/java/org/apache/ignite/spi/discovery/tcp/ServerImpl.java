@@ -1038,7 +1038,6 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @return {@code true} if send succeeded.
      * @throws IgniteSpiException If any error occurs.
      */
-    @SuppressWarnings({"BusyWait"})
     private boolean sendJoinRequestMessage(DiscoveryDataPacket discoveryData) throws IgniteSpiException {
         TcpDiscoveryAbstractMessage joinReq = new TcpDiscoveryJoinRequestMessage(locNode, discoveryData);
 
@@ -5351,7 +5350,6 @@ class ServerImpl extends TcpDiscoveryImpl {
          *
          * @param msg Discard message.
          */
-        @SuppressWarnings("StatementWithEmptyBody")
         private void processDiscardMessage(TcpDiscoveryDiscardMessage msg) {
             assert msg != null;
 

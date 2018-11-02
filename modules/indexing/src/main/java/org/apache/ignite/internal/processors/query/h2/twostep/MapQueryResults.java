@@ -69,7 +69,6 @@ class MapQueryResults {
      * @param cctx Cache context.
      * @param forUpdate {@code SELECT FOR UPDATE} flag.
      */
-    @SuppressWarnings("unchecked")
     MapQueryResults(IgniteH2Indexing h2, long qryReqId, int qrys, @Nullable GridCacheContext<?, ?> cctx,
         boolean forUpdate, boolean lazy, IgniteLogger log) {
         this.forUpdate = forUpdate;

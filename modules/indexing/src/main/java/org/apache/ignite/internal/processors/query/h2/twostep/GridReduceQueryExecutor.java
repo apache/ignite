@@ -47,6 +47,7 @@ import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -112,6 +113,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_RETRY_TIMEOUT;
+import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_SAFE;
+import static org.apache.ignite.cache.PartitionLossPolicy.READ_WRITE_SAFE;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkActive;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
@@ -1713,6 +1716,24 @@ public class GridReduceQueryExecutor {
         Collection<ClusterNode> nodes = null;
         Map<ClusterNode, IntArray> partsMap = null;
         Map<ClusterNode, IntArray> qryMap = null;
+
+        for (int cacheId : cacheIds) {
+            GridCacheContext<?, ?> cctx = cacheContext(cacheId);
+
+            PartitionLossPolicy plc = cctx.config().getPartitionLossPolicy();
+
+            if (plc != READ_ONLY_SAFE && plc != READ_WRITE_SAFE)
+                continue;
+
+            Collection<Integer> lostParts = cctx.topology().lostPartitions();
+
+            for (int part : lostParts) {
+                if (parts == null || Arrays.binarySearch(parts, part) >= 0) {
+                    throw new CacheException("Failed to execute query because cache partition has been " +
+                        "lost [cacheName=" + cctx.name() + ", part=" + part + ']');
+                }
+            }
+        }
 
         if (isPreloadingActive(cacheIds)) {
             if (isReplicatedOnly)

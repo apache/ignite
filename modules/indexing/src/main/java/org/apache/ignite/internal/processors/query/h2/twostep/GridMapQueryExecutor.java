@@ -1349,7 +1349,6 @@ public class GridMapQueryExecutor {
      * @param pageSize Page size.
      * @param removeMapping Remove mapping flag.
      */
-    @SuppressWarnings("unchecked")
     private void sendNextPage(
         MapNodeResults nodeRess,
         ClusterNode node,

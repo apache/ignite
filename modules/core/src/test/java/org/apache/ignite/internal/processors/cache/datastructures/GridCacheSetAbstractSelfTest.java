@@ -411,7 +411,6 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      * @param collocated Collocation flag.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("deprecation")
     private void testIterator(boolean collocated) throws Exception {
         CollectionConfiguration colCfg = config(collocated);
 
@@ -734,7 +733,6 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      * @param collocated Collocation flag.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("WhileLoopReplaceableByForEach")
     private void testCleanup(boolean collocated) throws Exception {
         CollectionConfiguration colCfg = config(collocated);
 
