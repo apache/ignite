@@ -42,8 +42,11 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest2;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -51,11 +54,27 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertTrue;
 
 /**
  *
  */
-public class IgniteCacheCommitDelayTxRecoveryTest extends GridCommonAbstractTest {
+@RunWith(Parameterized.class)
+public class IgniteCacheCommitDelayTxRecoveryTest extends GridCommonAbstractTest2 {
+    /** */
+    @Parameterized.Parameters(name = "with backups={0} and useStore={1}")
+    public static Iterable<Object[]> data() {
+        return Arrays.asList(new Object[][]{
+            {1, false},
+            {2, false},
+            {1, true},
+            {2, true}
+        });
+    }
+
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -70,6 +89,14 @@ public class IgniteCacheCommitDelayTxRecoveryTest extends GridCommonAbstractTest
 
     /** */
     private static volatile CountDownLatch commitFinishLatch;
+
+    /** */
+    @Parameterized.Parameter(0)
+    public int backups;
+
+    /** */
+    @Parameterized.Parameter(1)
+    public boolean useStore;
 
     /** */
     private boolean client;
@@ -97,29 +124,8 @@ public class IgniteCacheCommitDelayTxRecoveryTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
-    public void testRecovery1() throws Exception {
-        checkRecovery(1, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testRecovery2() throws Exception {
-        checkRecovery(2, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testRecoveryStoreEnabled1() throws Exception {
-        checkRecovery(1, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testRecoveryStoreEnabled2() throws Exception {
-        checkRecovery(2, true);
+    @Test public void testRecovery() throws Exception {
+        checkRecovery(backups, useStore);
     }
 
     /**

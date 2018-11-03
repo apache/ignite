@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheColocatedTxPessimisticOriginatingNodeFailureSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionedNearDisabledTxOriginatingNodeFailureSelfTest;
@@ -42,7 +43,7 @@ public class IgniteCacheTxRecoverySelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Cache tx recovery test suite");
 
-        suite.addTestSuite(IgniteCacheCommitDelayTxRecoveryTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheCommitDelayTxRecoveryTest.class));
 
         suite.addTestSuite(IgniteCachePartitionedPrimaryNodeFailureRecoveryTest.class);
         suite.addTestSuite(IgniteCachePartitionedNearDisabledPrimaryNodeFailureRecoveryTest.class);

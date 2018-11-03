@@ -19,7 +19,6 @@ package org.apache.ignite.testframework.junits;
 
 import java.io.ObjectStreamException;
 import java.io.Serializable;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -43,7 +42,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.FactoryBuilder;
-import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -119,8 +117,14 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import org.apache.log4j.Priority;
 import org.apache.log4j.RollingFileAppender;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.rules.TestName;
+import org.junit.rules.TestRule;
+import org.junit.runners.model.Statement;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.FileSystemXmlApplicationContext;
@@ -132,6 +136,9 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
 import static org.apache.ignite.testframework.config.GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER;
 import static org.apache.ignite.testframework.config.GridTestProperties.IGNITE_CFG_PREPROCESSOR_CLS;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Common abstract test for Ignite tests.
@@ -141,7 +148,7 @@ import static org.apache.ignite.testframework.config.GridTestProperties.IGNITE_C
     "ProhibitedExceptionDeclared",
     "JUnitTestCaseWithNonTrivialConstructors"
 })
-public abstract class GridAbstractTest extends TestCase {
+public abstract class GridAbstractTest2 {
     /** Persistence in tests allowed property. */
     public static final String PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY = "PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY";
 
@@ -199,9 +206,6 @@ public abstract class GridAbstractTest extends TestCase {
     /** Number of tests. */
     private int testCnt;
 
-    /** Lazily initialized current test method. */
-    private volatile Method currTestMtd;
-
     /**
      *
      */
@@ -236,7 +240,7 @@ public abstract class GridAbstractTest extends TestCase {
     private static final ConcurrentMap<UUID, Object> serializedObj = new ConcurrentHashMap<>();
 
     /** */
-    protected GridAbstractTest() throws IgniteCheckedException {
+    protected GridAbstractTest2() throws IgniteCheckedException {
         this(false);
 
         log = getTestCounters().getTestResources().getLogger().getLogger(getClass());
@@ -246,7 +250,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param startGrid Start grid flag.
      */
     @SuppressWarnings({"OverriddenMethodCallDuringObjectConstruction"})
-    protected GridAbstractTest(boolean startGrid) {
+    protected GridAbstractTest2(boolean startGrid) {
         assert isJunitFrameworkClass() : "GridAbstractTest class cannot be extended directly " +
             "(use GridCommonAbstractTest class instead).";
 
@@ -574,8 +578,7 @@ public abstract class GridAbstractTest extends TestCase {
         // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
+    @Before public void setUp() throws Exception {
         stopGridErr = false;
 
         clsLdr = Thread.currentThread().getContextClassLoader();
@@ -660,6 +663,12 @@ public abstract class GridAbstractTest extends TestCase {
         ts = System.currentTimeMillis();
     }
 
+    @Rule public TestName name = new TestName();
+
+    private String getName() {
+        return name.getMethodName();
+    }
+
     /**
      * @return Test description.
      */
@@ -672,34 +681,6 @@ public abstract class GridAbstractTest extends TestCase {
      */
     protected String testClassDescription() {
         return GridTestUtils.fullSimpleName(getClass());
-    }
-
-    /**
-     * @return Current test method.
-     * @throws NoSuchMethodError If method wasn't found for some reason.
-     */
-    @NotNull protected Method currentTestMethod() {
-        if (currTestMtd == null) {
-            try {
-                currTestMtd = getClass().getMethod(getName());
-            }
-            catch (NoSuchMethodException e) {
-                throw new NoSuchMethodError("Current test method is not found: " + getName());
-            }
-        }
-
-        return currTestMtd;
-    }
-
-    /**
-     * Search for the annotation of the given type in current test method.
-     *
-     * @param annotationCls Type of annotation to look for.
-     * @param <A> Annotation type.
-     * @return Instance of annotation if it is present in test method.
-     */
-    @Nullable protected <A extends Annotation> A currentTestAnnotation(Class<A> annotationCls) {
-        return currentTestMethod().getAnnotation(annotationCls);
     }
 
     /**
@@ -1689,7 +1670,7 @@ public abstract class GridAbstractTest extends TestCase {
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
-        commSpi.setLocalPort(GridTestUtils.getNextCommPort(getClass()));
+        commSpi.setLocalPort(GridTestUtils.getNextCommPort((Class)getClass()));
         commSpi.setTcpNoDelay(true);
 
         cfg.setCommunicationSpi(commSpi);
@@ -1719,7 +1700,7 @@ public abstract class GridAbstractTest extends TestCase {
 
         if (!F.isEmpty(mcastAddr)) {
             ipFinder.setMulticastGroup(mcastAddr);
-            ipFinder.setMulticastPort(GridTestUtils.getNextMulticastPort(getClass()));
+            ipFinder.setMulticastPort(GridTestUtils.getNextMulticastPort((Class)getClass()));
         }
 
         discoSpi.setIpFinder(ipFinder);
@@ -1787,8 +1768,7 @@ public abstract class GridAbstractTest extends TestCase {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected void tearDown() throws Exception {
+    @After public void tearDown() throws Exception {
         long dur = System.currentTimeMillis() - ts;
 
         info(">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
@@ -2113,62 +2093,65 @@ public abstract class GridAbstractTest extends TestCase {
         return new TestCounters(cfg);
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings({"ProhibitedExceptionDeclared"})
-    @Override protected void runTest() throws Throwable {
-        final AtomicReference<Throwable> ex = new AtomicReference<>();
+    @Rule public TestRule runRule = (base, description) -> new Statement() {
+        @Override public void evaluate() throws Throwable {
+            final AtomicReference<Throwable> ex = new AtomicReference<>();
 
-        Thread runner = new IgniteThread(getTestIgniteInstanceName(), "test-runner", new Runnable() {
-            @Override public void run() {
-                try {
-                    runTestInternal();
-                }
-                catch (Throwable e) {
-                    IgniteClosure<Throwable, Throwable> hnd = errorHandler();
+            Thread runner = new IgniteThread(getTestIgniteInstanceName(), "test-runner", new Runnable() {
+                @Override public void run() {
+                    try {
+                        if (forceFailure)
+                            fail("Forced failure: " + forceFailureMsg);
+                        else
+                            base.evaluate();
+                    }
+                    catch (Throwable e) {
+                        IgniteClosure<Throwable, Throwable> hnd = errorHandler();
 
-                    ex.set(hnd != null ? hnd.apply(e) : e);
+                        ex.set(hnd != null ? hnd.apply(e) : e);
+                    }
                 }
+            });
+
+            runner.start();
+
+            runner.join(isDebug() ? 0 : getTestTimeout());
+
+            if (runner.isAlive()) {
+                U.error(log,
+                    "Test has been timed out and will be interrupted (threads dump will be taken before interruption) [" +
+                    "test=" + getName() + ", timeout=" + getTestTimeout() + ']');
+
+                List<Ignite> nodes = IgnitionEx.allGridsx();
+
+                for (Ignite node : nodes)
+                    ((IgniteKernal)node).dumpDebugInfo();
+
+                // We dump threads to stdout, because we can loose logs in case
+                // the build is cancelled on TeamCity.
+                U.dumpThreads(null);
+
+                U.dumpThreads(log);
+
+                U.interrupt(runner);
+
+                U.join(runner, log);
+
+                throw new TimeoutException("Test has been timed out [test=" + getName() + ", timeout=" +
+                    getTestTimeout() + ']' );
             }
-        });
 
-        runner.start();
+            Throwable t = ex.get();
 
-        runner.join(isDebug() ? 0 : getTestTimeout());
+            if (t != null) {
+                U.error(log, "Test failed.", t);
 
-        if (runner.isAlive()) {
-            U.error(log,
-                "Test has been timed out and will be interrupted (threads dump will be taken before interruption) [" +
-                "test=" + getName() + ", timeout=" + getTestTimeout() + ']');
+                throw t;
+            }
 
-            List<Ignite> nodes = IgnitionEx.allGridsx();
-
-            for (Ignite node : nodes)
-                ((IgniteKernal)node).dumpDebugInfo();
-
-            // We dump threads to stdout, because we can loose logs in case
-            // the build is cancelled on TeamCity.
-            U.dumpThreads(null);
-
-            U.dumpThreads(log);
-
-            U.interrupt(runner);
-
-            U.join(runner, log);
-
-            throw new TimeoutException("Test has been timed out [test=" + getName() + ", timeout=" +
-                getTestTimeout() + ']' );
+            assert !stopGridErr : "Error occurred on grid stop (see log for more details).";
         }
-
-        Throwable t = ex.get();
-
-        if (t != null) {
-            U.error(log, "Test failed.", t);
-
-            throw t;
-        }
-
-        assert !stopGridErr : "Error occurred on grid stop (see log for more details).";
-    }
+    };
 
     /**
      * @return Error handler to process all uncaught exceptions of the test run
@@ -2199,17 +2182,6 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * @throws Throwable If failed.
-     */
-    @SuppressWarnings({"ProhibitedExceptionDeclared"})
-    private void runTestInternal() throws Throwable {
-        if (forceFailure)
-            fail("Forced failure: " + forceFailureMsg);
-        else
-            super.runTest();
-    }
-
-    /**
      * @return Test case timeout.
      */
     protected long getTestTimeout() {
@@ -2231,7 +2203,7 @@ public abstract class GridAbstractTest extends TestCase {
     /**
      * @param store Store.
      */
-    protected static <T> Factory<T> singletonFactory(T store) {
+    protected <T> Factory<T> singletonFactory(T store) {
         return notSerializableProxy(new FactoryBuilder.SingletonFactory<>(store), Factory.class);
     }
 
@@ -2239,7 +2211,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param obj Object that should be wrap proxy
      * @return Created proxy.
      */
-    protected static <T> T notSerializableProxy(final T obj) {
+    protected <T> T notSerializableProxy(final T obj) {
         Class<T> cls = (Class<T>)obj.getClass();
 
         Class<T>[] interfaces = (Class<T>[])cls.getInterfaces();
@@ -2257,7 +2229,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param itfClses Interfaces that should be implemented by proxy (vararg parameter)
      * @return Created proxy.
      */
-    protected static <T> T notSerializableProxy(final T obj, Class<? super T> itfCls, Class<? super T> ... itfClses) {
+    protected <T> T notSerializableProxy(final T obj, Class<? super T> itfCls, Class<? super T> ... itfClses) {
         Class<?>[] itfs = Arrays.copyOf(itfClses, itfClses.length + 3);
 
         itfs[itfClses.length] = itfCls;
@@ -2280,7 +2252,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param obj Object that must not be changed after serialization/deserialization.
      * @return An object to return from writeReplace()
      */
-    private static Object supressSerialization(Object obj) {
+    private Object supressSerialization(Object obj) {
         SerializableProxy res = new SerializableProxy(UUID.randomUUID());
 
         serializedObj.put(res.uuid, obj);
@@ -2395,7 +2367,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param cacheName Cache name.
      * @return Cache group ID for given cache name.
      */
-    protected static final int groupIdForCache(Ignite node, String cacheName) {
+    protected final int groupIdForCache(Ignite node, String cacheName) {
         for (CacheGroupContext grp : ((IgniteKernal)node).context().cache().cacheGroups()) {
             if (grp.hasCache(cacheName))
                 return grp.groupId();
@@ -2626,7 +2598,7 @@ public abstract class GridAbstractTest extends TestCase {
          */
         public int getNumberOfTests() {
             if (numOfTests == -1) {
-                GridAbstractTest this0 = GridAbstractTest.this;
+                GridAbstractTest2 this0 = GridAbstractTest2.this;
 
                 int cnt;
 
@@ -2643,7 +2615,8 @@ public abstract class GridAbstractTest extends TestCase {
                 numOfTests = cnt;
             }
 
-            countTestCases();
+            // t0d0
+//            countTestCases();
 
             return numOfTests;
         }
