@@ -233,7 +233,6 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
     /**
      * Validates clean state on all participating nodes after query cancellation.
      */
-    @SuppressWarnings("unchecked")
     private void checkCleanState() throws IgniteCheckedException {
         for (int i = 0; i < GRIDS_CNT; i++) {
             IgniteEx grid = grid(i);

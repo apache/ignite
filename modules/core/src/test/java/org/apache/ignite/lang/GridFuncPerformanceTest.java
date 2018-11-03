@@ -58,7 +58,6 @@ public class GridFuncPerformanceTest extends GridCommonAbstractTest {
      *
      * @return Duration of the test.
      */
-    @SuppressWarnings({"UnusedDeclaration"})
     private long testBody() {
         int MAX = 20000000;
 

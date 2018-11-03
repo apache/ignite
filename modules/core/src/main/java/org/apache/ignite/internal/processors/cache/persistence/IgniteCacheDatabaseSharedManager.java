@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.management.InstanceNotFoundException;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataStorageMetrics;
@@ -45,6 +46,7 @@ import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
@@ -91,19 +93,25 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     private static final long MAX_PAGE_MEMORY_INIT_SIZE_32_BIT = 2L * 1024 * 1024 * 1024;
 
     /** {@code True} to reuse memory on deactive. */
-    private final boolean reuseMemory = IgniteSystemProperties.getBoolean(IGNITE_REUSE_MEMORY_ON_DEACTIVATE);
+    protected final boolean reuseMemory = IgniteSystemProperties.getBoolean(IGNITE_REUSE_MEMORY_ON_DEACTIVATE);
 
     /** */
-    protected volatile Map<String, DataRegion> dataRegionMap;
+    protected final Map<String, DataRegion> dataRegionMap = new ConcurrentHashMap<>();
+
+    /** Stores memory providers eligible for reuse. */
+    private final Map<String, DirectMemoryProvider> memProviderMap = new ConcurrentHashMap<>();
+
+    /** */
+    private static final String MBEAN_GROUP_NAME = "DataRegionMetrics";
+
+    /** */
+    protected final Map<String, DataRegionMetrics> memMetricsMap = new ConcurrentHashMap<>();
 
     /** */
     private volatile boolean dataRegionsInitialized;
 
     /** */
     private volatile boolean dataRegionsStarted;
-
-    /** */
-    protected Map<String, DataRegionMetrics> memMetricsMap;
 
     /** */
     protected DataRegion dfltDataRegion;
@@ -120,8 +128,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /** First eviction was warned flag. */
     private volatile boolean firstEvictWarn;
 
-    /** Stores memory providers eligible for reuse. */
-    private Map<String, DirectMemoryProvider> memProviderMap;
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
@@ -140,44 +146,88 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Registers MBeans for all DataRegionMetrics configured in this instance.
-     */
-    private void registerMetricsMBeans() {
-        if(U.IGNITE_MBEANS_DISABLED)
-            return;
-
-        IgniteConfiguration cfg = cctx.gridConfig();
-
-        for (DataRegionMetrics memMetrics : memMetricsMap.values()) {
-            DataRegionConfiguration memPlcCfg = dataRegionMap.get(memMetrics.getName()).config();
-
-            registerMetricsMBean((DataRegionMetricsImpl)memMetrics, memPlcCfg, cfg);
-        }
-    }
-
-    /**
-     * @param memMetrics Memory metrics.
-     * @param dataRegionCfg Data region configuration.
      * @param cfg Ignite configuration.
+     * @param groupName Name of group.
+     * @param dataRegionName Metrics MBean name.
+     * @param impl Metrics implementation.
+     * @param clazz Metrics class type.
      */
-    private void registerMetricsMBean(
-        DataRegionMetricsImpl memMetrics,
-        DataRegionConfiguration dataRegionCfg,
-        IgniteConfiguration cfg
+    protected <T> void registerMetricsMBean(
+        IgniteConfiguration cfg,
+        String groupName,
+        String dataRegionName,
+        T impl,
+        Class<T> clazz
     ) {
-        assert !U.IGNITE_MBEANS_DISABLED;
+        if (U.IGNITE_MBEANS_DISABLED)
+            return;
 
         try {
             U.registerMBean(
                 cfg.getMBeanServer(),
                 cfg.getIgniteInstanceName(),
-                "DataRegionMetrics",
-                dataRegionCfg.getName(),
-                new DataRegionMetricsMXBeanImpl(memMetrics, dataRegionCfg),
-                DataRegionMetricsMXBean.class);
+                groupName,
+                dataRegionName,
+                impl,
+                clazz);
         }
         catch (Throwable e) {
-            U.error(log, "Failed to register MBean for DataRegionMetrics with name: '" + memMetrics.getName() + "'", e);
+            U.error(log, "Failed to register MBean with name: " + dataRegionName, e);
+        }
+    }
+
+    /**
+     * @param cfg Ignite configuration.
+     * @param groupName Name of group.
+     * @param name Name of MBean.
+     */
+    protected void unregisterMetricsMBean(
+        IgniteConfiguration cfg,
+        String groupName,
+        String name
+    ) {
+        if (U.IGNITE_MBEANS_DISABLED)
+            return;
+
+        assert cfg != null;
+
+        try {
+            cfg.getMBeanServer().unregisterMBean(
+                U.makeMBeanName(
+                    cfg.getIgniteInstanceName(),
+                    groupName,
+                    name
+                ));
+        }
+        catch (InstanceNotFoundException ignored) {
+            // We tried to unregister a non-existing MBean, not a big deal.
+        }
+        catch (Throwable e) {
+            U.error(log, "Failed to unregister MBean for memory metrics: " + name, e);
+        }
+    }
+
+    /**
+     * Registers MBeans for all DataRegionMetrics configured in this instance.
+     *
+     * @param cfg Ignite configuration.
+     */
+    protected void registerMetricsMBeans(IgniteConfiguration cfg) {
+        if (U.IGNITE_MBEANS_DISABLED)
+            return;
+
+        assert cfg != null;
+
+        for (DataRegionMetrics memMetrics : memMetricsMap.values()) {
+            DataRegionConfiguration memPlcCfg = dataRegionMap.get(memMetrics.getName()).config();
+
+            registerMetricsMBean(
+                cfg,
+                MBEAN_GROUP_NAME,
+                memPlcCfg.getName(),
+                new DataRegionMetricsMXBeanImpl((DataRegionMetricsImpl)memMetrics, memPlcCfg),
+                DataRegionMetricsMXBean.class
+            );
         }
     }
 
@@ -222,11 +272,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      *
      */
-    private void startMemoryPolicies() {
-        for (DataRegion memPlc : dataRegionMap.values()) {
-            memPlc.pageMemory().start();
+    private void startDataRegions() {
+        for (DataRegion region : dataRegionMap.values()) {
+            region.pageMemory().start();
 
-            memPlc.evictionTracker().start();
+            region.evictionTracker().start();
         }
     }
 
@@ -251,12 +301,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     protected void initDataRegions0(DataStorageConfiguration memCfg) throws IgniteCheckedException {
         DataRegionConfiguration[] dataRegionCfgs = memCfg.getDataRegionConfigurations();
-
-        int dataRegions = dataRegionCfgs == null ? 0 : dataRegionCfgs.length;
-
-        dataRegionMap = U.newHashMap(3 + dataRegions);
-        memMetricsMap = U.newHashMap(3 + dataRegions);
-        memProviderMap = reuseMemory ? U.newHashMap(3 + dataRegions) : null;
 
         if (dataRegionCfgs != null) {
             for (DataRegionConfiguration dataRegionCfg : dataRegionCfgs)
@@ -310,17 +354,17 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         DataRegionMetricsImpl memMetrics = new DataRegionMetricsImpl(dataRegionCfg, freeSpaceProvider(dataRegionCfg));
 
-        DataRegion memPlc = initMemory(dataStorageCfg, dataRegionCfg, memMetrics, trackable);
+        DataRegion region = initMemory(dataStorageCfg, dataRegionCfg, memMetrics, trackable);
 
-        dataRegionMap.put(dataRegionName, memPlc);
+        dataRegionMap.put(dataRegionName, region);
 
         memMetricsMap.put(dataRegionName, memMetrics);
 
         if (dataRegionName.equals(dfltMemPlcName))
-            dfltDataRegion = memPlc;
+            dfltDataRegion = region;
         else if (dataRegionName.equals(DFLT_DATA_REG_DEFAULT_NAME))
             U.warn(log, "Data Region with name 'default' isn't used as a default. " +
-                    "Please check Memory Policies configuration.");
+                    "Please, check Data Region configuration.");
     }
 
     /**
@@ -653,13 +697,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @throws IgniteCheckedException If fails.
-     */
-    public void onDoneRestoreBinaryMemory() throws IgniteCheckedException {
-        // No-op.
-    }
-
-    /**
      * Creates file with current timestamp and specific "node-started.bin" suffix
      * and writes into memory recovery pointer.
      *
@@ -693,7 +730,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (memPlcName == null)
             return dfltDataRegion;
 
-        if (dataRegionMap == null)
+        if (dataRegionMap.isEmpty())
             return null;
 
         DataRegion plc;
@@ -729,32 +766,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
         onDeActivate(true);
-    }
-
-    /**
-     * Unregister MBean.
-     * @param name Name of mbean.
-     */
-    private void unregisterMBean(String name) {
-        if(U.IGNITE_MBEANS_DISABLED)
-            return;
-
-        IgniteConfiguration cfg = cctx.gridConfig();
-
-        try {
-            cfg.getMBeanServer().unregisterMBean(
-                U.makeMBeanName(
-                    cfg.getIgniteInstanceName(),
-                    "DataRegionMetrics", name
-                    ));
-        }
-        catch (InstanceNotFoundException ignored) {
-            // We tried to unregister a non-existing MBean, not a big deal.
-        }
-        catch (Throwable e) {
-            U.error(log, "Failed to unregister MBean for memory metrics: " +
-                name, e);
-        }
     }
 
     /** {@inheritDoc} */
@@ -846,11 +857,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /**
      * @param discoEvt Before exchange for the given discovery event.
-     *
-     * @return {@code True} if partitions have been restored from persistent storage.
      */
-    public boolean beforeExchange(GridDhtPartitionsExchangeFuture discoEvt) throws IgniteCheckedException {
-        return false;
+    public void beforeExchange(GridDhtPartitionsExchangeFuture discoEvt) throws IgniteCheckedException {
+
     }
 
     /**
@@ -868,7 +877,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      *
      * @throws IgniteCheckedException If failed.
      */
-    public void onStateRestored() throws IgniteCheckedException {
+    public void onStateRestored(AffinityTopologyVersion topVer) throws IgniteCheckedException {
         // No-op.
     }
 
@@ -1016,7 +1025,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      *
      * @return {@code True} if policy supports memory reuse.
      */
-    private boolean supportsMemoryReuse(DataRegionConfiguration plcCfg) {
+    public boolean supportsMemoryReuse(DataRegionConfiguration plcCfg) {
         return reuseMemory && plcCfg.getSwapPath() == null;
     }
 
@@ -1197,9 +1206,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         assert cfg != null;
 
-        registerMetricsMBeans();
+        registerMetricsMBeans(cctx.gridConfig());
 
-        startMemoryPolicies();
+        startDataRegions();
 
         initPageMemoryDataStructures(cfg);
 
@@ -1220,29 +1229,26 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
             lsnr.beforeStop(this);
 
-        if (dataRegionMap != null) {
-            for (DataRegion memPlc : dataRegionMap.values()) {
-                memPlc.pageMemory().stop(shutdown);
+        for (DataRegion region : dataRegionMap.values()) {
+            region.pageMemory().stop(shutdown);
 
-                memPlc.evictionTracker().stop();
+            region.evictionTracker().stop();
 
-                unregisterMBean(memPlc.memoryMetrics().getName());
+            unregisterMetricsMBean(
+                cctx.gridConfig(),
+                MBEAN_GROUP_NAME,
+                region.memoryMetrics().getName()
+            );
             }
 
-            dataRegionMap.clear();
+        dataRegionMap.clear();
 
-            dataRegionMap = null;
+        if (shutdown && memProviderMap != null)
+            memProviderMap.clear();
 
-            if (shutdown && memProviderMap != null) {
-                memProviderMap.clear();
+        dataRegionsInitialized = false;
 
-                memProviderMap = null;
-            }
-
-            dataRegionsInitialized = false;
-
-            dataRegionsStarted = false;
-        }
+        dataRegionsStarted = false;
     }
 
     /**

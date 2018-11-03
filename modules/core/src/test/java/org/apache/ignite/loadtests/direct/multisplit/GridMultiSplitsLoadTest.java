@@ -44,13 +44,11 @@ public class GridMultiSplitsLoadTest extends GridCommonAbstractTest {
 
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ConstantConditions")
     @Override public String getTestIgniteInstanceName() {
         return null;
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ConstantConditions")
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
         IgniteConfiguration cfg = super.getConfiguration();
 
