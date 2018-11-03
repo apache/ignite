@@ -23,7 +23,7 @@ import java.util.Map;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.visor.VisorMultiNodeTask;
+import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @GridInternal
 public class VisorCacheConfigurationCollectorTask
-    extends VisorMultiNodeTask<VisorCacheConfigurationCollectorTaskArg, Map<String, VisorCacheConfiguration>, Map<String, VisorCacheConfiguration>> {
+    extends VisorOneNodeTask<VisorCacheConfigurationCollectorTaskArg, Map<String, VisorCacheConfiguration>> {
     /** */
     private static final long serialVersionUID = 0L;
 
