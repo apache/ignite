@@ -477,6 +477,8 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
 
                         locCache.put(key, payload);
                     }
+
+                    U.sleep(1);
                 }
                 catch (Exception ignored) { }
             }

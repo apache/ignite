@@ -25,6 +25,7 @@ import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -881,7 +882,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
             rmt.run(new AsyncLoadRunnable());
 
-            Thread.sleep(20_000);
+            Thread.sleep(10_000);
 
             info(">>> Killing remote process...");
 
@@ -896,6 +897,11 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         finally {
             stopAllGrids();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected List<String> additionalRemoteJvmArgs() {
+        return Collections.singletonList("-D" + "IGNITE_QUIET=false");
     }
 
     /**
