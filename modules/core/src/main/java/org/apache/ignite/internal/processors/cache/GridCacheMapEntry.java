@@ -125,6 +125,9 @@ import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
  */
 @SuppressWarnings({"TooBroadScope"})
 public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter implements GridCacheEntryEx {
+    /** Name of property for disabling cache triggering of interceptor by DR events. */
+    public static final String DISABLE_INTERCEPTOR_INVOCATION_ON_DR_EVENTS = "disableInvocationOnDrEvents";
+
     /** */
     private static final byte IS_DELETED_MASK = 0x01;
 
@@ -2510,7 +2513,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     topVer);
             }
 
-            if (intercept) {
+            if (intercept && !c.disableInterceptAfter) {
                 if (c.op == GridCacheOperation.UPDATE) {
                     cctx.config().getInterceptor().onAfterPut(new CacheLazyEntry(
                         cctx,
@@ -5763,6 +5766,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      *
      */
     private static class AtomicCacheUpdateClosure implements IgniteCacheOffheapManager.OffheapInvokeClosure {
+
+        /** Flag for disabling interceptor on updates/deletes by DR events. */
+        private final boolean disableInterceptorOnDrEvts =
+            Boolean.parseBoolean(System.getProperty(DISABLE_INTERCEPTOR_INVOCATION_ON_DR_EVENTS, "false"));
+
         /** */
         private final GridCacheMapEntry entry;
 
@@ -5834,6 +5842,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         /** OldRow expiration flag. */
         private boolean oldRowExpiredFlag = false;
+
+        private boolean disableInterceptAfter = false;
 
         AtomicCacheUpdateClosure(
             GridCacheMapEntry entry,
@@ -6265,7 +6275,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 Object interceptorVal = updated0;
 
-                if(!changesFromAnotherDataCenter())
+                if(disableInterceptorOnDrEvts && changesFromAnotherDataCenter(conflictCtx))
+                    disableInterceptAfter = true;
+                else
                     interceptorVal = cctx.config().getInterceptor().onBeforePut(interceptEntry, updated0);
 
                 if (interceptorVal == null) {
@@ -6347,12 +6359,23 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 transformed);
         }
 
-        private boolean changesFromAnotherDataCenter(){
-            byte locDataCenterId = newVer.dataCenterId();
+        /**
+         * Checks, that change was made on another cluster.
+         *
+         * @param conflictCtx Conflict context associated with change.
+         * @return {@code True} If change was made on another cluster (i.e. change was got by DR) and {@code False}
+         * otherwise.
+         */
+        private boolean changesFromAnotherDataCenter(@Nullable GridCacheVersionConflictContext<?, ?> conflictCtx){
+            if(conflictCtx == null)
+                return false;
 
-            byte newEntryDataCenterId = conflictVer == null ? 0 : conflictVer.dataCenterId();
+            assert conflictCtx.newEntry() instanceof GridCacheLazyPlainVersionedEntry : conflictCtx;
 
-            return locDataCenterId != newEntryDataCenterId;
+            byte srcDcId = conflictCtx.newEntry().dataCenterId();
+            byte locDcId = ((GridCacheLazyPlainVersionedEntry) conflictCtx.newEntry()).cacheContext().dataCenterId();
+
+            return srcDcId != locDcId;
         }
 
         /**
@@ -6382,10 +6405,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     null,
                     keepBinary);
 
-                if(!changesFromAnotherDataCenter())
-                    interceptRes = cctx.config().getInterceptor().onBeforeRemove(intercepEntry);
+                if (disableInterceptorOnDrEvts && changesFromAnotherDataCenter(conflictCtx)) {
+                    disableInterceptAfter = true;
+
+                    interceptRes = new IgniteBiTuple<>(false, intercepEntry.getValue());
+                }
                 else
-                    interceptRes = new IgniteBiTuple<>(false, intercepEntry);
+                    interceptRes = cctx.config().getInterceptor().onBeforeRemove(intercepEntry);
 
                 if (cctx.cancelRemove(interceptRes)) {
                     treeOp = IgniteTree.OperationType.NOOP;

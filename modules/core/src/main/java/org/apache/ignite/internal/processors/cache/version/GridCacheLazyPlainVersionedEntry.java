@@ -106,6 +106,11 @@ public class GridCacheLazyPlainVersionedEntry<K, V> extends GridCachePlainVersio
         return val;
     }
 
+    /**
+     * @return Cache context.
+     */
+    public GridCacheContext cacheContext() { return cctx; }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheLazyPlainVersionedEntry.class, this,
