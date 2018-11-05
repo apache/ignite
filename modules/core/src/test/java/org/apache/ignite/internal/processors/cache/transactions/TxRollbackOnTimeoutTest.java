@@ -79,7 +79,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
  */
 public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     /** */
-    private static final long DURATION = SF.apply(60) * 1000L;
+    private static final long DURATION = SF.apply(60 * 1000);
 
     /** */
     private static final long TX_MIN_TIMEOUT = 1;

@@ -573,6 +573,8 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
     /**
      * Test start 1 transaction, suspendTx it. And then start another transaction, trying to write
      * the same key.
+     *
+     * @throws Exception If failed.
      */
     public void testSuspendTxAndStartNewWithoutCommit() throws Exception {
         executeTestForAllCaches(new CI2Exc<Ignite, IgniteCache<Integer, Integer>>() {
@@ -629,13 +631,9 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
         Map<String, List<List<Integer>>> cacheKeys = generateKeys(srv, TransactionIsolation.values().length);
 
-        for (Ignite node : new Ignite[] {srv, client, clientNear}) {
-            ClusterNode locNode = node.cluster().localNode();
-
-            log.info("Run test for node [node=" + locNode.id() + ", client=" + locNode.isClient() + ']');
-
-            doCheckSuspendTxAndResume(node, cacheKeys);
-        }
+        doCheckSuspendTxAndResume(srv, cacheKeys);
+        doCheckSuspendTxAndResume(client, cacheKeys);
+        doCheckSuspendTxAndResume(clientNear, cacheKeys);
     }
 
     /**
@@ -644,6 +642,10 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     private void doCheckSuspendTxAndResume(Ignite node, Map<String, List<List<Integer>>> cacheKeys) throws Exception {
+        ClusterNode locNode = node.cluster().localNode();
+
+        log.info("Run test for node [node=" + locNode.id() + ", client=" + locNode.isClient() + ']');
+
         List<T2<IgniteCache<Integer, Integer>, List<T2<Transaction, Integer>>>> cacheTxMapping = new ArrayList<>();
 
         for (Map.Entry<String, List<List<Integer>>> cacheKeysEntry : cacheKeys.entrySet()) {
