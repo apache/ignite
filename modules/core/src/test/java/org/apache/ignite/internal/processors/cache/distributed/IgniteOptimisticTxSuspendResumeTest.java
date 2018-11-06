@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -36,7 +37,6 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.PA;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -646,14 +646,14 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
         log.info("Run test for node [node=" + locNode.id() + ", client=" + locNode.isClient() + ']');
 
-        List<T2<IgniteCache<Integer, Integer>, List<T2<Transaction, Integer>>>> cacheTxMapping = new ArrayList<>();
+        Map<IgniteCache<Integer, Integer>, Map<Transaction, Integer>> cacheTxMap = new IdentityHashMap<>();
 
         for (Map.Entry<String, List<List<Integer>>> cacheKeysEntry : cacheKeys.entrySet()) {
             String cacheName = cacheKeysEntry.getKey();
 
             IgniteCache<Integer, Integer> cache = node.cache(cacheName);
 
-            List<T2<Transaction, Integer>> txs = new ArrayList<>();
+            Map<Transaction, Integer> suspendedTxs = new IdentityHashMap<>();
 
             for (List<Integer> keysList : cacheKeysEntry.getValue()) {
                 for (TransactionIsolation isolation : TransactionIsolation.values()) {
@@ -665,7 +665,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
                     tx.suspend();
 
-                    txs.add(new T2<>(tx, key));
+                    suspendedTxs.put(tx, key);
 
                     String msg = "node=" + node.cluster().localNode() +
                         ", cache=" + cacheName + ", isolation=" + isolation + ", key=" + key;
@@ -674,7 +674,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
                 }
             }
 
-            cacheTxMapping.add(new T2<>(cache, txs));
+            cacheTxMap.put(cache, suspendedTxs);
         }
 
         int newNodeIdx = gridCount();
@@ -682,15 +682,13 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
         startGrid(newNodeIdx);
 
         try {
-            for (T2<IgniteCache<Integer, Integer>, List<T2<Transaction, Integer>>>  entry : cacheTxMapping) {
+            for (Map.Entry<IgniteCache<Integer, Integer>, Map<Transaction, Integer>>  entry : cacheTxMap.entrySet()) {
                 IgniteCache<Integer, Integer> cache = entry.getKey();
 
-                List<T2<Transaction, Integer>> txEntries = entry.getValue();
+                for (Map.Entry<Transaction, Integer> suspendedTx : entry.getValue().entrySet()) {
+                    Transaction tx = suspendedTx.getKey();
 
-                for (T2<Transaction, Integer> txEntry : txEntries) {
-                    Transaction tx = txEntry.get1();
-
-                    Integer key = txEntry.get2();
+                    Integer key = suspendedTx.getValue();
 
                     tx.resume();
 
@@ -709,8 +707,8 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
         } finally {
             stopGrid(newNodeIdx);
 
-            for (T2<IgniteCache<Integer, Integer>, List<T2<Transaction, Integer>>> entry : cacheTxMapping)
-                entry.getKey().removeAll();
+            for (IgniteCache<Integer, Integer> cache : cacheTxMap.keySet())
+                cache.removeAll();
         }
     }
 
