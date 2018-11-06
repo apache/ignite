@@ -41,14 +41,17 @@ import java.util.stream.IntStream;
  * Class containing various trainer transformers.
  */
 public class TrainerTransformers {
+    /** Relatively big prime used in seeding. */
+    private static final int MAGIC_PRIME = 953851;
+
     /**
      * Add bagging logic to a given trainer.
      *
-     * @param ensembleSize   Size of ensemble.
+     * @param ensembleSize Size of ensemble.
      * @param subsampleRatio Subsample ratio to whole dataset.
-     * @param aggregator     Aggregator.
-     * @param <M>            Type of one model in ensemble.
-     * @param <L>            Type of labels.
+     * @param aggregator Aggregator.
+     * @param <M> Type of one model in ensemble.
+     * @param <L> Type of labels.
      * @return Bagged trainer.
      */
     public static <M extends Model<Vector, Double>, L> DatasetTrainer<ModelsComposition, L> makeBagged(
@@ -62,11 +65,11 @@ public class TrainerTransformers {
     /**
      * Add bagging logic to a given trainer.
      *
-     * @param ensembleSize   Size of ensemble.
+     * @param ensembleSize Size of ensemble.
      * @param subsampleRatio Subsample ratio to whole dataset.
-     * @param aggregator     Aggregator.
-     * @param <M>            Type of one model in ensemble.
-     * @param <L>            Type of labels.
+     * @param aggregator Aggregator.
+     * @param <M> Type of one model in ensemble.
+     * @param <L> Type of labels.
      * @return Bagged trainer.
      */
     public static <M extends Model<Vector, Double>, L> DatasetTrainer<ModelsComposition, L> makeBagged(
@@ -84,7 +87,7 @@ public class TrainerTransformers {
                 IgniteBiFunction<K, V, Vector> featureExtractor,
                 IgniteBiFunction<K, V, L> lbExtractor) {
                 return runOnEnsemble(
-                    (db, i, fe) -> (() -> trainer.fit(db.withTransformationSeed(transformationSeed + i * 953851), fe, lbExtractor)),
+                    (db, i, fe) -> (() -> trainer.fit(db.withTransformationSeed(transformationSeed + i * MAGIC_PRIME), fe, lbExtractor)),
                     datasetBuilder,
                     ensembleSize,
                     subsampleRatio,
@@ -97,7 +100,7 @@ public class TrainerTransformers {
 
             @Override
             protected boolean checkState(ModelsComposition mdl) {
-                return mdl.getModels().stream().allMatch(m -> trainer.checkState((M) m));
+                return mdl.getModels().stream().allMatch(m -> trainer.checkState((M)m));
             }
 
             @Override
@@ -107,7 +110,7 @@ public class TrainerTransformers {
                 IgniteBiFunction<K, V, Vector> featureExtractor,
                 IgniteBiFunction<K, V, L> lbExtractor) {
                 return runOnEnsemble(
-                    (db, i, fe) -> (() -> trainer.updateModel(((ModelWithMapping<Vector, Double, M>) mdl.getModels().get(i)).model(), db, fe, lbExtractor)),
+                    (db, i, fe) -> (() -> trainer.updateModel(((ModelWithMapping<Vector, Double, M>)mdl.getModels().get(i)).model(), db, fe, lbExtractor)),
                     datasetBuilder,
                     ensembleSize,
                     subsampleRatio,
@@ -125,14 +128,14 @@ public class TrainerTransformers {
      * task of training this model.
      *
      * @param trainingTaskGenerator Training test generator.
-     * @param datasetBuilder        Dataset builder.
-     * @param ensembleSize          Size of ensemble.
-     * @param subsampleRatio        Ratio (subsample size) / (initial dataset size).
-     * @param aggregator            Aggregator of models.
-     * @param environment           Environment.
-     * @param <K>                   Type of keys in dataset builder.
-     * @param <V>                   Type of values in dataset builder.
-     * @param <M>                   Type of model.
+     * @param datasetBuilder Dataset builder.
+     * @param ensembleSize Size of ensemble.
+     * @param subsampleRatio Ratio (subsample size) / (initial dataset size).
+     * @param aggregator Aggregator of models.
+     * @param environment Environment.
+     * @param <K> Type of keys in dataset builder.
+     * @param <V> Type of values in dataset builder.
+     * @param <M> Type of model.
      * @return Composition of models trained on bagged dataset.
      */
     private static <K, V, M extends Model<Vector, Double>> ModelsComposition runOnEnsemble(
@@ -169,7 +172,8 @@ public class TrainerTransformers {
         }
 
         for (int i = 0; i < ensembleSize; i++) {
-            tasks.add(trainingTaskGenerator.apply(bootstrappedBuilder, i, mappings != null ? extractors.get(i) : extractor));
+            tasks.add(
+                trainingTaskGenerator.apply(bootstrappedBuilder, i, mappings != null ? extractors.get(i) : extractor));
         }
 
         List<ModelWithMapping<Vector, Double, M>> models = environment.parallelismStrategy().submit(tasks)
@@ -185,7 +189,7 @@ public class TrainerTransformers {
             }
         }
 
-        double learningTime = (double) (System.currentTimeMillis() - startTs) / 1000.0;
+        double learningTime = (double)(System.currentTimeMillis() - startTs) / 1000.0;
         log.log(MLLogger.VerboseLevel.LOW, "The training time was %.2fs.", learningTime);
         log.log(MLLogger.VerboseLevel.LOW, "Learning finished.");
 
@@ -231,7 +235,7 @@ public class TrainerTransformers {
      */
     private static <K, V> IgniteBiFunction<K, V, Vector> wrapExtractor(IgniteBiFunction<K, V, Vector> featureExtractor,
         int[] featureMapping) {
-        return featureExtractor.andThen((IgniteFunction<Vector, Vector>) featureValues -> {
+        return featureExtractor.andThen((IgniteFunction<Vector, Vector>)featureValues -> {
             double[] newFeaturesValues = new double[featureMapping.length];
             for (int i = 0; i < featureMapping.length; i++) {
                 newFeaturesValues[i] = featureValues.get(featureMapping[i]);

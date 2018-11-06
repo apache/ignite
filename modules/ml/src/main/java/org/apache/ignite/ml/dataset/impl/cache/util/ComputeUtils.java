@@ -48,22 +48,25 @@ public class ComputeUtils {
      */
     private static final String DATA_STORAGE_KEY_TEMPLATE = "part_data_storage_%s";
 
+    /** Relatively big prime used in seeding. */
+    private static final int MAGIC_PRIME = 951091;
+
     /**
      * Calls the specified {@code fun} function on all partitions so that is't guaranteed that partitions with the same
      * index of all specified caches will be placed on the same node and will not be moved before computation is
      * finished. If partitions are placed on different nodes then call will be retried, but not more than {@code
      * retries} times with {@code interval} interval specified in milliseconds.
      *
-     * @param ignite     Ignite instance.
+     * @param ignite Ignite instance.
      * @param cacheNames Collection of cache names.
-     * @param fun        Function to be applied on all partitions.
-     * @param retries    Number of retries for the case when one of partitions not found on the node.
-     * @param interval   Interval of retries for the case when one of partitions not found on the node.
-     * @param <R>        Type of a result.
+     * @param fun Function to be applied on all partitions.
+     * @param retries Number of retries for the case when one of partitions not found on the node.
+     * @param interval Interval of retries for the case when one of partitions not found on the node.
+     * @param <R> Type of a result.
      * @return Collection of results.
      */
     public static <R> Collection<R> affinityCallWithRetries(Ignite ignite, Collection<String> cacheNames,
-                                                            IgniteFunction<Integer, R> fun, int retries, int interval) {
+        IgniteFunction<Integer, R> fun, int retries, int interval) {
         assert cacheNames.size() > 0;
         assert interval >= 0;
 
@@ -96,7 +99,8 @@ public class ComputeUtils {
                     R res = futures.get(part).get();
                     results.add(res);
                     completionFlags.set(part);
-                } catch (IgniteException ignore) {
+                }
+                catch (IgniteException ignore) {
                 }
 
             if (completionFlags.cardinality() == partitions)
@@ -114,15 +118,15 @@ public class ComputeUtils {
      * finished. If partitions are placed on different nodes then call will be retried, but not more than {@code
      * retries} times.
      *
-     * @param ignite     Ignite instance.
+     * @param ignite Ignite instance.
      * @param cacheNames Collection of cache names.
-     * @param fun        Function to be applied on all partitions.
-     * @param retries    Number of retries for the case when one of partitions not found on the node.
-     * @param <R>        Type of a result.
+     * @param fun Function to be applied on all partitions.
+     * @param retries Number of retries for the case when one of partitions not found on the node.
+     * @param <R> Type of a result.
      * @return Collection of results.
      */
     public static <R> Collection<R> affinityCallWithRetries(Ignite ignite, Collection<String> cacheNames,
-                                                            IgniteFunction<Integer, R> fun, int retries) {
+        IgniteFunction<Integer, R> fun, int retries) {
         return affinityCallWithRetries(ignite, cacheNames, fun, retries, 0);
     }
 
@@ -131,18 +135,18 @@ public class ComputeUtils {
      * data} from a partition {@code upstream} and {@code context}. Be aware that this method should be called from
      * the node where partition is placed.
      *
-     * @param ignite                   Ignite instance.
-     * @param upstreamCacheName        Name of an {@code upstream} cache.
-     * @param filter                   Filter for {@code upstream} data.
-     * @param transformersChain             Upstream transformers.
-     * @param datasetCacheName         Name of a partition {@code context} cache.
-     * @param datasetId                Dataset ID.
-     * @param part                     Partition index.
-     * @param partDataBuilder          Partition data builder.
-     * @param <K>                      Type of a key in {@code upstream} data.
-     * @param <V>                      Type of a value in {@code upstream} data.
-     * @param <C>                      Type of a partition {@code context}.
-     * @param <D>                      Type of a partition {@code data}.
+     * @param ignite Ignite instance.
+     * @param upstreamCacheName Name of an {@code upstream} cache.
+     * @param filter Filter for {@code upstream} data.
+     * @param transformersChain Upstream transformers.
+     * @param datasetCacheName Name of a partition {@code context} cache.
+     * @param datasetId Dataset ID.
+     * @param part Partition index.
+     * @param partDataBuilder Partition data builder.
+     * @param <K> Type of a key in {@code upstream} data.
+     * @param <V> Type of a value in {@code upstream} data.
+     * @param <C> Type of a partition {@code context}.
+     * @param <D> Type of a partition {@code data}.
      * @return Partition {@code data}.
      */
     public static <K, V, C extends Serializable, D extends AutoCloseable> D getData(
@@ -154,7 +158,7 @@ public class ComputeUtils {
         int part,
         PartitionDataBuilder<K, V, C, D> partDataBuilder) {
 
-        PartitionDataStorage dataStorage = (PartitionDataStorage) ignite
+        PartitionDataStorage dataStorage = (PartitionDataStorage)ignite
             .cluster()
             .nodeLocalMap()
             .computeIfAbsent(String.format(DATA_STORAGE_KEY_TEMPLATE, datasetId), key -> new PartitionDataStorage());
@@ -197,25 +201,24 @@ public class ComputeUtils {
     /**
      * Remove data from local cache by Dataset ID.
      *
-     * @param ignite    Ingnite instance.
+     * @param ignite Ingnite instance.
      * @param datasetId Dataset ID.
      */
     public static void removeData(Ignite ignite, UUID datasetId) {
         ignite.cluster().nodeLocalMap().remove(String.format(DATA_STORAGE_KEY_TEMPLATE, datasetId));
     }
 
-
     /**
      * Initializes partition {@code context} by loading it from a partition {@code upstream}.
      *
-     * @param ignite            Ignite instance.
+     * @param ignite Ignite instance.
      * @param upstreamCacheName Name of an {@code upstream} cache.
-     * @param filter            Filter for {@code upstream} data.
-     * @param transformersChain  Upstream data {@link Stream} transformers chain.
-     * @param ctxBuilder        Partition {@code context} builder.
-     * @param <K>               Type of a key in {@code upstream} data.
-     * @param <V>               Type of a value in {@code upstream} data.
-     * @param <C>               Type of a partition {@code context}.
+     * @param filter Filter for {@code upstream} data.
+     * @param transformersChain Upstream data {@link Stream} transformers chain.
+     * @param ctxBuilder Partition {@code context} builder.
+     * @param <K> Type of a key in {@code upstream} data.
+     * @param <V> Type of a value in {@code upstream} data.
+     * @param <C> Type of a partition {@code context}.
      */
     public static <K, V, C extends Serializable> void initContext(
         Ignite ignite,
@@ -238,7 +241,7 @@ public class ComputeUtils {
             qry.setFilter(filter);
 
             C ctx;
-            long upstreamTransformationsSeed = seed == null ? new Random().nextLong() : seed + part * 951091;
+            long upstreamTransformationsSeed = seed == null ? new Random().nextLong() : seed + part * MAGIC_PRIME;
             long cnt = computeCount(locUpstreamCache, qry, transformersChain, upstreamTransformationsSeed);
 
             try (QueryCursor<UpstreamEntry<K, V>> cursor = locUpstreamCache.query(qry,
@@ -268,16 +271,16 @@ public class ComputeUtils {
     /**
      * Initializes partition {@code context} by loading it from a partition {@code upstream}.
      *
-     * @param ignite                   Ignite instance.
-     * @param upstreamCacheName        Name of an {@code upstream} cache.
-     * @param filter                   Filter for {@code upstream} data.
-     * @param transformersChain        Transformers of upstream data.
-     * @param datasetCacheName         Name of a partition {@code context} cache.
-     * @param ctxBuilder               Partition {@code context} builder.
-     * @param retries                  Number of retries for the case when one of partitions not found on the node.
-     * @param <K>                      Type of a key in {@code upstream} data.
-     * @param <V>                      Type of a value in {@code upstream} data.
-     * @param <C>                      Type of a partition {@code context}.
+     * @param ignite Ignite instance.
+     * @param upstreamCacheName Name of an {@code upstream} cache.
+     * @param filter Filter for {@code upstream} data.
+     * @param transformersChain Transformers of upstream data.
+     * @param datasetCacheName Name of a partition {@code context} cache.
+     * @param ctxBuilder Partition {@code context} builder.
+     * @param retries Number of retries for the case when one of partitions not found on the node.
+     * @param <K> Type of a key in {@code upstream} data.
+     * @param <V> Type of a value in {@code upstream} data.
+     * @param <C> Type of a partition {@code context}.
      */
     public static <K, V, C extends Serializable> void initContext(
         Ignite ignite,
@@ -294,10 +297,10 @@ public class ComputeUtils {
     /**
      * Extracts partition {@code context} from the Ignite Cache.
      *
-     * @param ignite           Ignite instance.
+     * @param ignite Ignite instance.
      * @param datasetCacheName Dataset cache names.
-     * @param part             Partition index.
-     * @param <C>              Type of a partition {@code context}.
+     * @param part Partition index.
+     * @param <C> Type of a partition {@code context}.
      * @return Partition {@code context}.
      */
     public static <C extends Serializable> C getContext(Ignite ignite, String datasetCacheName, int part) {
@@ -308,10 +311,10 @@ public class ComputeUtils {
     /**
      * Saves the specified partition {@code context} into the Ignite Cache.
      *
-     * @param ignite           Ignite instance.
+     * @param ignite Ignite instance.
      * @param datasetCacheName Dataset cache name.
-     * @param part             Partition index.
-     * @param <C>              Type of a partition {@code context}.
+     * @param part Partition index.
+     * @param <C> Type of a partition {@code context}.
      */
     public static <C extends Serializable> void saveContext(Ignite ignite, String datasetCacheName, int part, C ctx) {
         IgniteCache<Integer, C> datasetCache = ignite.cache(datasetCacheName);

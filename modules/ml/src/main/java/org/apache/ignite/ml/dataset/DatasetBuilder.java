@@ -27,6 +27,7 @@ import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
+import org.apache.ignite.ml.trainers.transformers.SimpleUpstreamTransformer;
 
 /**
  * A builder constructing instances of a {@link Dataset}. Implementations of this interface encapsulate logic of
@@ -63,6 +64,18 @@ public interface DatasetBuilder<K, V> {
      * @return This object.
      */
     public <T> DatasetBuilder<K, V> addStreamTransformer(UpstreamTransformer<K, V, T> transformer);
+
+    /**
+     * Add upstream transformer based on given lambda.
+     *
+     * @param transformer Transformer.
+     * @return This object.
+     */
+    public default DatasetBuilder<K, V> addStreamTransformer(IgniteFunction<Stream<UpstreamEntry<K, V>>,
+        Stream<UpstreamEntry<K, V>>> transformer) {
+        return addStreamTransformer(new SimpleUpstreamTransformer<>(transformer));
+    }
+
 
     /**
      * Seed used by RNG in upstream transformations.
