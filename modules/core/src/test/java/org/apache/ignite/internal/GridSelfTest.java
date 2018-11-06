@@ -109,7 +109,6 @@ public class GridSelfTest extends ClusterGroupAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"TooBroadScope"})
     public void testAsyncListen() throws Exception {
         final String hello = "HELLO!";
 

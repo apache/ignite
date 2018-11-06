@@ -280,7 +280,7 @@ import static org.apache.ignite.internal.util.GridUnsafe.staticFieldOffset;
 /**
  * Collection of utility methods used throughout the system.
  */
-@SuppressWarnings({"UnusedReturnValue", "UnnecessaryFullyQualifiedName", "RedundantStringConstructorCall"})
+@SuppressWarnings({"UnusedReturnValue", "RedundantStringConstructorCall"})
 public abstract class IgniteUtils {
     /** */
     private static final long GB = 1024L * 1024 * 1024;
@@ -2811,7 +2811,6 @@ public abstract class IgniteUtils {
      * @return Byte value.
      * @throws IllegalArgumentException If input character differ from certain hex characters.
      */
-    @SuppressWarnings({"UnnecessaryFullyQualifiedName", "fallthrough"})
     private static byte hexCharToByte(char ch) throws IllegalArgumentException {
         switch (ch) {
             case '0':
@@ -3248,7 +3247,6 @@ public abstract class IgniteUtils {
                         return e.hasMoreElements();
                     }
 
-                    @SuppressWarnings({"IteratorNextCanNotThrowNoSuchElementException"})
                     @Override public T next() {
                         return e.nextElement();
                     }
@@ -3373,7 +3371,7 @@ public abstract class IgniteUtils {
                 assert timer == null;
 
                 timer = new Thread(new Runnable() {
-                    @SuppressWarnings({"BusyWait", "InfiniteLoopStatement"})
+                    @SuppressWarnings({"BusyWait"})
                     @Override public void run() {
                         while (true) {
                             curTimeMillis = System.currentTimeMillis();
@@ -3904,7 +3902,6 @@ public abstract class IgniteUtils {
      * @return Resolved path as URL, or {@code null} if path cannot be resolved.
      * @see #getIgniteHome()
      */
-    @SuppressWarnings({"UnusedCatchParameter"})
     @Nullable public static URL resolveIgniteUrl(String path, boolean metaInf) {
         File f = resolveIgnitePath(path);
 
@@ -5677,7 +5674,6 @@ public abstract class IgniteUtils {
      * @return {@code True} if all entries within map are contained in base map,
      *      {@code false} otherwise.
      */
-    @SuppressWarnings({"SuspiciousMethodCalls"})
     public static boolean containsAll(Map<?, ?> base, Map<?, ?> map) {
         assert base != null;
         assert map != null;
@@ -6286,7 +6282,7 @@ public abstract class IgniteUtils {
      * @param mux Mux to wait on.
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
-    @SuppressWarnings({"WaitNotInLoop", "WaitWhileNotSynced"})
+    @SuppressWarnings({"WaitNotInLoop"})
     public static void wait(Object mux) throws IgniteInterruptedCheckedException {
         try {
             mux.wait();
@@ -6812,7 +6808,6 @@ public abstract class IgniteUtils {
         // Get original context class loader.
         ClassLoader ctxLdr = curThread.getContextClassLoader();
 
-        //noinspection CatchGenericClass
         try {
             curThread.setContextClassLoader(ldr);
 
@@ -7013,7 +7008,6 @@ public abstract class IgniteUtils {
      * @param <T> Element type.
      * @return Passed in array.
      */
-    @SuppressWarnings({"MismatchedReadAndWriteOfArray"})
     public static <T> T[] toArray(Collection<? extends T> c, T[] arr) {
         T[] a = c.toArray(arr);
 
