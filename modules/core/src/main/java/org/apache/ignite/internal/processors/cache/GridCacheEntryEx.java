@@ -712,7 +712,13 @@ public interface GridCacheEntryEx {
      */
     public boolean checkSerializableReadVersion(GridCacheVersion serReadVer) throws GridCacheEntryRemovedException;
 
-    CacheObject mvccPeek(boolean onheapOnly) throws IgniteCheckedException;
+    /**
+     * t0d0
+     * @param onheapOnly
+     * @return
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable public CacheObject mvccPeek(boolean onheapOnly) throws IgniteCheckedException;
 
     /**
      * Peeks into entry without loading value or updating statistics.

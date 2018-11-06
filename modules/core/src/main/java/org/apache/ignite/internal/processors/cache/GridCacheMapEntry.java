@@ -3117,7 +3117,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         return hash;
     }
 
-    @Override public CacheObject mvccPeek(boolean onheapOnly) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Nullable @Override public CacheObject mvccPeek(boolean onheapOnly) throws IgniteCheckedException {
         if (onheapOnly)
             return null;
 
