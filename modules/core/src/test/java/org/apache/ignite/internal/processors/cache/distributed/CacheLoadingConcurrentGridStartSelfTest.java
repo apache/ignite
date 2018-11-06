@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
 import javax.cache.Cache;
 import javax.cache.configuration.FactoryBuilder;
 import javax.cache.integration.CacheLoaderException;
@@ -262,14 +261,10 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
             }
         });
 
-        CountDownLatch startNodesLatch = new CountDownLatch(1);
         IgniteInternalFuture<Object> fut = runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                startNodesLatch.await();
-                for (int i = 2; i < GRIDS_CNT; i++) {
+                for (int i = 2; i < GRIDS_CNT; i++)
                     startGrid(i);
-                    U.sleep(100);
-                }
 
                 return null;
             }
@@ -277,9 +272,8 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
 
         final HashSet<IgniteFuture> set = new HashSet<>();
 
-        /*IgniteInClosure<Ignite> f = new IgniteInClosure<Ignite>() {
+        IgniteInClosure<Ignite> f = new IgniteInClosure<Ignite>() {
             @Override public void apply(Ignite grid) {
-                startNodesLatch.countDown();
                 try (IgniteDataStreamer<Integer, String> dataStreamer = grid.dataStreamer(DEFAULT_CACHE_NAME)) {
                     dataStreamer.allowOverwrite(allowOverwrite);
 
@@ -295,52 +289,26 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
             }
         };
 
-        logTime("f.apply(g0)", () -> f.apply(g0));*/
-
-        boolean stop = false;
-        int pastedKeys = 0;
-        startNodesLatch.countDown();
-        try (IgniteDataStreamer<Integer, String> dataStreamer = g0.dataStreamer(DEFAULT_CACHE_NAME)) {
-
-            dataStreamer.allowOverwrite(allowOverwrite);
-            ((DataStreamerImpl)dataStreamer).maxRemapCount(Integer.MAX_VALUE);
-
-            long startingEndTs = -1L;
-            while (!stop) {
-                set.add(dataStreamer.addData(pastedKeys, "Data"));
-                pastedKeys = pastedKeys + 1;
-
-                if (pastedKeys % 100000 == 0)
-                    log.info("Streaming " + pastedKeys + "'th entry.");
-
-                if (fut.isDone() && startingEndTs == -1)
-                    startingEndTs = System.currentTimeMillis();
-                if (startingEndTs != -1)
-                    restarts = (System.currentTimeMillis() - startingEndTs) < 1000;
-
-                stop = pastedKeys >= KEYS_CNT || (fut.isDone() && !restarts);
-            }
-        }
+        f.apply(g0);
 
         log.info("Data loaded.");
 
         restarts = false;
 
-        logTime("fut.get();", () -> fut.get());
-        logTime("restartFut.get();", () -> restartFut.get());
+        fut.get();
+        restartFut.get();
 
-        logTime("for (IgniteFuture res : set)", () -> {
-            for (IgniteFuture res : set)
-                assertNull(res.get());
-        });
+        for (IgniteFuture res : set)
+            assertNull(res.get());
+
         IgniteCache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         long size = cache.size(CachePeekMode.PRIMARY);
 
-        if (size != pastedKeys) {
+        if (size != KEYS_CNT) {
             Set<Integer> failedKeys = new LinkedHashSet<>();
 
-            for (int i = 0; i < pastedKeys; i++)
+            for (int i = 0; i < KEYS_CNT; i++)
                 if (!cache.containsKey(i)) {
                     log.info("Actual cache size: " + size);
 
@@ -368,7 +336,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
             assert failedKeys.isEmpty() : "Some failed keys: " + failedKeys.toString();
         }
 
-        assertCacheSize(pastedKeys);
+        assertCacheSize();
     }
 
     /**
@@ -393,20 +361,20 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
             fut.get();
         }
 
-        assertCacheSize(KEYS_CNT);
+        assertCacheSize();
     }
 
     /**
      * @throws Exception If failed.
      */
-    private void assertCacheSize(int pastedKeysCount) throws Exception {
+    private void assertCacheSize() throws Exception {
         final IgniteCache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         boolean consistentCache = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 int size = cache.size(CachePeekMode.PRIMARY);
 
-                if (size != pastedKeysCount)
+                if (size != KEYS_CNT)
                     log.info("Cache size: " + size);
 
                 int total = 0;
@@ -414,10 +382,10 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
                 for (int i = 0; i < GRIDS_CNT; i++)
                     total += grid(i).cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.PRIMARY);
 
-                if (total != pastedKeysCount)
+                if (total != KEYS_CNT)
                     log.info("Total size: " + size);
 
-                return size == pastedKeysCount && pastedKeysCount == total;
+                return size == KEYS_CNT && KEYS_CNT == total;
             }
         }, 2 * 60_000);
 

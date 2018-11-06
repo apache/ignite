@@ -41,7 +41,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.FactoryBuilder;
 import junit.framework.TestCase;
@@ -2727,27 +2726,5 @@ public abstract class GridAbstractTest extends TestCase {
          * @param cache Cache.
          */
         public abstract void run(Ignite ignite, IgniteCache<K, V> cache) throws Exception;
-    }
-
-    public <T> T logTime(String msg, SupplierWithE<T> body) throws Exception {
-        long s = System.currentTimeMillis();
-        T res = body.apply();
-        System.out.println("$$$$$$ " + msg + " [TS = " + (System.currentTimeMillis() - s) + "]");
-
-        return res;
-    }
-
-    public void logTime(String msg, RunnableWithE body) throws Exception {
-        long s = System.currentTimeMillis();
-        body.apply();
-        System.out.println("$$$$$$ " + msg + " [TS = " + (System.currentTimeMillis() - s) + "]");
-    }
-
-    public interface SupplierWithE<T> {
-        public T apply() throws Exception;
-    }
-
-    public interface RunnableWithE {
-        public void apply() throws Exception;
     }
 }

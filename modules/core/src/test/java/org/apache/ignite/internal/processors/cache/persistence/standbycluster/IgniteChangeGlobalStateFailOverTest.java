@@ -22,14 +22,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.springframework.util.StreamUtils;
 
 import static java.lang.Thread.sleep;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -201,7 +197,7 @@ public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalState
                 @Override public Void call() throws Exception {
                     while (!stop.get()) {
                         rwLock.writeLock().lock();
-                        
+
                         try {
                             Ignite ig = randomBackUp(false);
 
