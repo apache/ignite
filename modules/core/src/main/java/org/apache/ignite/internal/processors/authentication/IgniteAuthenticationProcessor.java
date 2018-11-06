@@ -160,7 +160,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                 + " Check the DataRegionConfiguration");
         }
 
-        ctx.internalSubscriptionProcessor().registerMetastorageListener(this);
+        ctx.internalSubscriptionProcessor().registerSubscriber(this);
 
         ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_AUTHENTICATION_ENABLED, isEnabled);
 

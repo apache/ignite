@@ -2580,7 +2580,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 ResultType res = updateRow.resultType();
 
-                assert res == ResultType.PREV_NULL || res == ResultType.PREV_NOT_NULL;
+                assert res == ResultType.PREV_NULL || res == ResultType.PREV_NOT_NULL : res;
 
                 if (res == ResultType.PREV_NOT_NULL) {
                     CacheDataRow oldRow = updateRow.oldRow();

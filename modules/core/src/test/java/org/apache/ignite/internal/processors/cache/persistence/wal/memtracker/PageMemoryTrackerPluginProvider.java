@@ -114,6 +114,8 @@ public class PageMemoryTrackerPluginProvider implements PluginProvider<PageMemor
         }
         else
             plugin = new PageMemoryTracker(ctx, null);
+
+        ((IgniteEx)ctx.grid()).context().internalSubscriptionProcessor().registerSubscriber(this);
     }
 
     /** {@inheritDoc} */
@@ -136,7 +138,7 @@ public class PageMemoryTrackerPluginProvider implements PluginProvider<PageMemor
 
     /** {@inheritDoc} */
     @Override public void start(PluginContext ctx) {
-        ((IgniteEx)ctx.grid()).context().internalSubscriptionProcessor().registerDatabaseListener(this);
+        // No-op
     }
 
     /** {@inheritDoc} */

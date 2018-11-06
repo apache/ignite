@@ -164,7 +164,7 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
 
         setFieldValue(WALmgr, "walDisableContext", walDisableContext);
 
-        ig0.context().internalSubscriptionProcessor().registerMetastorageListener(walDisableContext);
+        ig0.context().internalSubscriptionProcessor().registerSubscriber(walDisableContext);
 
         ig0.cluster().active(true);
 

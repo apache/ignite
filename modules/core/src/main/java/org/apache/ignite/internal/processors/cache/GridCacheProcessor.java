@@ -291,6 +291,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         internalCaches = new HashSet<>();
 
         marsh = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
+
+        ctx.internalSubscriptionProcessor().registerSubscriber(recovery);
     }
 
     /**
@@ -771,9 +773,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
     @Override public void start() throws IgniteCheckedException {
-        ctx.internalSubscriptionProcessor().registerMetastorageListener(recovery);
-        ctx.internalSubscriptionProcessor().registerDatabaseListener(recovery);
-
         cachesInfo = new ClusterCachesInfo(ctx);
 
         DeploymentMode depMode = ctx.config().getDeploymentMode();
@@ -5443,11 +5442,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public void afterBinaryMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
             for (DynamicCacheDescriptor cacheDescriptor : persistentCaches()) {
-                // Skip MVCC caches.
-                // TODO: https://issues.apache.org/jira/browse/IGNITE-10052
-                if (cacheDescriptor.cacheConfiguration().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
-                    continue;
-
                 startCacheInRecoveryMode(cacheDescriptor);
 
                 querySchemas.put(cacheDescriptor.cacheId(), cacheDescriptor.schema().copy());

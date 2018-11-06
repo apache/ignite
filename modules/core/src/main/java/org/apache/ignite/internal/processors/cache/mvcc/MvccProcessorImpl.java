@@ -236,7 +236,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     public MvccProcessorImpl(GridKernalContext ctx) {
         super(ctx);
 
-        ctx.internalSubscriptionProcessor().registerDatabaseListener(this);
+        ctx.internalSubscriptionProcessor().registerSubscriber(this);
     }
 
     /** {@inheritDoc} */
@@ -288,10 +288,11 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
     /** {@inheritDoc} */
     @Override public void ensureStarted() throws IgniteCheckedException {
-        if (!ctx.clientNode() && txLog == null) {
+        if (!ctx.clientNode()) {
             assert mvccEnabled && mvccSupported;
 
-            txLog = new TxLog(ctx, ctx.cache().context().database());
+            if (txLog == null)
+                txLog = new TxLog(ctx, ctx.cache().context().database());
 
             startVacuumWorkers();
 
@@ -327,6 +328,15 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     /** {@inheritDoc} */
     @Override public void beforeBinaryMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
         txLogPageStoreInit(mgr);
+
+        boolean hasMvccCaches = ctx.cache().persistentCaches().stream()
+            .anyMatch(c -> c.cacheConfiguration().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT);
+
+        if (hasMvccCaches) {
+            txLog = new TxLog(ctx, mgr);
+
+            mvccEnabled = true;
+        }
     }
 
     /**

@@ -163,7 +163,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     public GridClusterStateProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        ctx.internalSubscriptionProcessor().registerMetastorageListener(this);
+        ctx.internalSubscriptionProcessor().registerSubscriber(this);
     }
 
     /**

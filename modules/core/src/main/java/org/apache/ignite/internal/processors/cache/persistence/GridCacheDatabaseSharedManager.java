@@ -2526,27 +2526,23 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     case TX_RECORD:
                         try {
-                            if (metastoreOnly)
-                                continue;
-
                             TxRecord txRecord = (TxRecord)rec;
 
                             MvccVersion mvccVer = txRecord.mvccVersion();
 
-                            TransactionState state = txRecord.state();
                             byte txState;
 
-                            switch (state) {
+                            switch (txRecord.state()) {
                                 case PREPARED:
                                     txState = TxState.PREPARED;
 
                                     break;
                                 case COMMITTED:
-                                    txState = TxState.PREPARED;
+                                    txState = TxState.COMMITTED;
 
                                     break;
                                 case ROLLED_BACK:
-                                    txState = TxState.PREPARED;
+                                    txState = TxState.ABORTED;
 
                                     break;
                                 default:
@@ -4566,7 +4562,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public void notifyMetaStorageSubscribersOnReadyForRead() throws IgniteCheckedException {
-        metastorageLifecycleLsnrs = cctx.kernalContext().internalSubscriptionProcessor().getMetastorageSubscribers();
+        metastorageLifecycleLsnrs = cctx.kernalContext().internalSubscriptionProcessor().getSubscribers(MetastorageLifecycleListener.class);
 
         readMetastore();
     }
@@ -4768,6 +4764,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     switch (rec.type()) {
                         case METASTORE_DATA_RECORD:
+                        case MVCC_DATA_RECORD:
                         case DATA_RECORD:
                             if (skipDataRecords)
                                 continue;

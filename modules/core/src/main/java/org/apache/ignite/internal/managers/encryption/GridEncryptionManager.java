@@ -154,7 +154,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     public GridEncryptionManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getEncryptionSpi());
 
-        ctx.internalSubscriptionProcessor().registerMetastorageListener(this);
+        ctx.internalSubscriptionProcessor().registerSubscriber(this);
     }
 
     /** {@inheritDoc} */
