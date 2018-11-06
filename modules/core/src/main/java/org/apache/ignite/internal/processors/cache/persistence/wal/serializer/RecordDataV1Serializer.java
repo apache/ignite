@@ -221,7 +221,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @return {@code True} if this record should be encrypted.
      */
     private boolean needEncryption(WALRecord rec) {
-        if (!(rec instanceof WalRecordCacheGroupAware))
+        if (!(rec instanceof WalRecordCacheGroupAware) || rec instanceof MetastoreDataRecord)
             return false;
 
         return needEncryption(((WalRecordCacheGroupAware)rec).groupId());
@@ -1797,7 +1797,6 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @param buf Buffer.
      * @param rowBytes Row bytes.
      */
-    @SuppressWarnings("unchecked")
     private static void putRow(ByteBuffer buf, byte[] rowBytes) {
         assert rowBytes.length > 0;
 
@@ -1925,7 +1924,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      */
     boolean isDataRecordEncrypted(DataRecord rec) {
         for (DataEntry e : rec.writeEntries()) {
-            if(needEncryption(cctx.cacheContext(e.cacheId()).groupId()))
+            if (cctx.cacheContext(e.cacheId()) != null && needEncryption(cctx.cacheContext(e.cacheId()).groupId()))
                 return true;
         }
 
