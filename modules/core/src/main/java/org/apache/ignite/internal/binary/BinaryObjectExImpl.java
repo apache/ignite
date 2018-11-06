@@ -202,7 +202,7 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
 
         BinaryType meta;
 
-        IgniteThread.onEntryProcessorEntered(true);
+        IgniteThread.onForbidBinaryMetadataRequestSectionEntered();
 
         try {
             meta = rawType();
@@ -211,7 +211,7 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
             meta = null;
         }
         finally {
-            IgniteThread.onEntryProcessorLeft();
+            IgniteThread.onForbidBinaryMetadataRequestSectionLeft();
         }
 
         if (meta == null || !S.INCLUDE_SENSITIVE)
