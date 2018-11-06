@@ -125,7 +125,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     static final int HEADER_RECORD_DATA_SIZE = /*Magic*/8 + /*Version*/4;
 
     /** Cache shared context */
-    private final GridCacheSharedContext cctx;
+    protected final GridCacheSharedContext cctx;
 
     /** Size of page used for PageMemory regions. */
     private final int pageSize;
@@ -134,7 +134,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     private final int realPageSize;
 
     /** Cache object processor to reading {@link DataEntry DataEntries} */
-    private final IgniteCacheObjectProcessor co;
+    protected final IgniteCacheObjectProcessor co;
 
     /** Serializer of {@link TxRecord} records. */
     private TxRecordSerializer txRecordSerializer;
@@ -357,7 +357,6 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case PARTITION_DESTROY:
                 return /*cacheId*/4 + /*partId*/4;
 
-            case MVCC_DATA_RECORD:
             case DATA_RECORD:
                 DataRecord dataRec = (DataRecord)record;
 
@@ -503,7 +502,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return 0;
 
             case TX_RECORD:
-                return txRecordSerializer.size((TxRecord)record);
+                return txRecordSerializer.sizeTx((TxRecord)record);
 
             default:
                 throw new UnsupportedOperationException("Type: " + record.type());
@@ -1120,7 +1119,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 throw new EOFException("END OF SEGMENT");
 
             case TX_RECORD:
-                res = txRecordSerializer.read(in);
+                res = txRecordSerializer.readTx(in);
 
                 break;
 
@@ -1690,7 +1689,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case TX_RECORD:
-                txRecordSerializer.write((TxRecord)rec, buf);
+                txRecordSerializer.writeTx((TxRecord)rec, buf);
 
                 break;
 
@@ -1744,17 +1743,6 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @param entry Data entry.
      */
     void putPlainDataEntry(ByteBuffer buf, DataEntry entry) throws IgniteCheckedException {
-        if (entry instanceof MvccDataEntry)
-            putMvccDataEntry(buf, (MvccDataEntry)entry);
-        else
-            putDataEntry(buf, entry);
-    }
-
-    /**
-     * @param buf Buffer to write to.
-     * @param entry Data entry.
-     */
-    void putDataEntry(ByteBuffer buf, DataEntry entry) throws IgniteCheckedException {
         buf.putInt(entry.cacheId());
 
         if (!entry.key().putValue(buf))
@@ -1773,16 +1761,6 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         buf.putInt(entry.partitionId());
         buf.putLong(entry.partitionCounter());
         buf.putLong(entry.expireTime());
-    }
-
-    /**
-     * @param buf Buffer to write to.
-     * @param entry Data entry.
-     */
-    void putMvccDataEntry(ByteBuffer buf, MvccDataEntry entry) throws IgniteCheckedException {
-        putDataEntry(buf, entry);
-
-        RecordV1Serializer.putMvccVersion(buf, entry.mvccVer());
     }
 
     /**
@@ -1813,7 +1791,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @param ver Version to write.
      * @param allowNull Is {@code null}version allowed.
      */
-    private static void putVersion(ByteBuffer buf, GridCacheVersion ver, boolean allowNull) {
+    static void putVersion(ByteBuffer buf, GridCacheVersion ver, boolean allowNull) {
         CacheVersionIO.write(buf, ver, allowNull);
     }
 
@@ -1930,84 +1908,6 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     }
 
     /**
-     * @param in Input to read from.
-     * @return Read entry.
-     */
-    MvccDataEntry readMvccDataEntry(ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
-        int cacheId = in.readInt();
-
-        int keySize = in.readInt();
-        byte keyType = in.readByte();
-        byte[] keyBytes = new byte[keySize];
-        in.readFully(keyBytes);
-
-        int valSize = in.readInt();
-
-        byte valType = 0;
-        byte[] valBytes = null;
-
-        if (valSize >= 0) {
-            valType = in.readByte();
-            valBytes = new byte[valSize];
-            in.readFully(valBytes);
-        }
-
-        byte ord = in.readByte();
-
-        GridCacheOperation op = GridCacheOperation.fromOrdinal(ord & 0xFF);
-
-        GridCacheVersion nearXidVer = readVersion(in, true);
-        GridCacheVersion writeVer = readVersion(in, false);
-
-        int partId = in.readInt();
-        long partCntr = in.readLong();
-        long expireTime = in.readLong();
-
-        MvccVersion mvccVer = RecordV1Serializer.readMvccVersion(in);
-
-        GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
-
-        if (cacheCtx != null) {
-            CacheObjectContext coCtx = cacheCtx.cacheObjectContext();
-
-            KeyCacheObject key = co.toKeyCacheObject(coCtx, keyType, keyBytes);
-
-            if (key.partition() == -1)
-                key.partition(partId);
-
-            CacheObject val = valBytes != null ? co.toCacheObject(coCtx, valType, valBytes) : null;
-
-            return new MvccDataEntry(
-                cacheId,
-                key,
-                val,
-                op,
-                nearXidVer,
-                writeVer,
-                expireTime,
-                partId,
-                partCntr,
-                mvccVer
-            );
-        }
-        else
-            return new LazyDataEntry(
-                cctx,
-                cacheId,
-                keyType,
-                keyBytes,
-                valType,
-                valBytes,
-                op,
-                nearXidVer,
-                writeVer,
-                expireTime,
-                partId,
-                partCntr,
-                mvccVer);
-    }
-
-    /**
      * @param rec Record.
      * @return Real record type.
      */
@@ -2074,7 +1974,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @param allowNull Is {@code null}version allowed.
      * @return Read cache version.
      */
-    private GridCacheVersion readVersion(ByteBufferBackedDataInput in, boolean allowNull) throws IOException {
+    GridCacheVersion readVersion(ByteBufferBackedDataInput in, boolean allowNull) throws IOException {
         // To be able to read serialization protocol version.
         in.ensure(1);
 
@@ -2095,7 +1995,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @return Full data record size.
      * @throws IgniteCheckedException If failed to obtain the length of one of the entries.
      */
-    private int dataSize(DataRecord dataRec) throws IgniteCheckedException {
+    protected int dataSize(DataRecord dataRec) throws IgniteCheckedException {
         boolean encrypted = isDataRecordEncrypted(dataRec);
 
         int sz = 0;
@@ -2121,7 +2021,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @return Entry size.
      * @throws IgniteCheckedException If failed to get key or value bytes length.
      */
-    private int entrySize(DataEntry entry) throws IgniteCheckedException {
+    protected int entrySize(DataEntry entry) throws IgniteCheckedException {
         GridCacheContext cctx = this.cctx.cacheContext(entry.cacheId());
         CacheObjectContext coCtx = cctx.cacheObjectContext();
 
@@ -2134,8 +2034,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             /*write ver*/CacheVersionIO.size(entry.writeVersion(), false) +
             /*part ID*/4 +
             /*expire Time*/8 +
-            /*part cnt*/8 +
-            /*mvcc version*/ ((entry instanceof MvccDataEntry) ? (8 + 8 + 4) : 0);
+            /*part cnt*/8;
     }
 
     /**

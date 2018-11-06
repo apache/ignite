@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Processor enables grid components to register listeners for events
@@ -66,7 +67,7 @@ public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
      * @param type Internal subscriber type.
      * @return Subscribers list.
      */
-    public <T extends InternalSubscriber> List<T> getSubscribers(Class<T> type) {
+    public @NotNull <T extends InternalSubscriber> List<T> getSubscribers(Class<T> type) {
         List<InternalSubscriber> res = lsnrs.get(type);
 
         if (res == null) {

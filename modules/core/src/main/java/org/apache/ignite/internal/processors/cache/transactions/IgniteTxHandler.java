@@ -1849,8 +1849,6 @@ public class IgniteTxHandler {
         assert keys != null && (vals == null || vals.size() == keys.size());
         assert tx != null;
 
-        WALPointer ptr = null;
-
         GridDhtCacheAdapter dht = ctx.dht();
 
         tx.addActiveCache(ctx, false);
@@ -1970,16 +1968,11 @@ public class IgniteTxHandler {
                         updRes.oldValue(), tx.local(), tx.topologyVersion(), snapshot, ctx.cacheId(), tx, futId, batchNum);
 
                 assert updRes.updateFuture() == null : "Entry should not be locked on the backup";
-
-                ptr = updRes.loggedPointer();
             }
             finally {
                 locPart.release();
             }
         }
-
-        if (ptr != null && !ctx.tm().logTxRecords())
-            ctx.shared().wal().flush(ptr, true);
     }
 
     /**

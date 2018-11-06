@@ -236,18 +236,13 @@ public class TxLog implements DbCheckpointListener {
      * @throws IgniteCheckedException If failed.
      */
     public void put(TxKey key, byte state, boolean primary) throws IgniteCheckedException {
+        assert mgr.checkpointLockIsHeldByThread();
+
         Sync sync = syncObject(key);
 
         try {
-            mgr.checkpointReadLock();
-
-            try {
-                synchronized (sync) {
-                    tree.invoke(key, null, new TxLogUpdateClosure(key.major(), key.minor(), state, primary));
-                }
-            }
-            finally {
-                mgr.checkpointReadUnlock();
+            synchronized (sync) {
+                tree.invoke(key, null, new TxLogUpdateClosure(key.major(), key.minor(), state, primary));
             }
         } finally {
             evict(key, sync);
