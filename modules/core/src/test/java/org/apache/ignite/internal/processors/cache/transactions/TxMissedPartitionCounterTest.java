@@ -96,7 +96,7 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
 
         cleanPersistenceDir();
 
-//        System.setProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
+        System.setProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
 //
 //        startGridsMultiThreaded(GRID_CNT);
     }
@@ -111,7 +111,7 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
 
         cleanPersistenceDir();
 
-        //System.clearProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
+        System.clearProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
 
 //        if (!walRebalanceInvoked)
 //            throw new AssertionError("WAL rebalance hasn't been invoked.");
@@ -123,25 +123,9 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
 
         assertNotNull(client.cache(DEFAULT_CACHE_NAME));
 
-        List<Integer> keys = new ArrayList<>();
+        int part = 0;
 
-        int k = 0, c = 0, part = 0, total = 5000;
-
-        // Preload
-        try (IgniteDataStreamer<Object, Object> streamer = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
-            while (c < total) {
-                if (grid(0).affinity(DEFAULT_CACHE_NAME).partition(k) == part) {
-                    streamer.addData(k, k);
-
-                    c++;
-
-                    if (total - c < 2)
-                        keys.add(k);
-                }
-
-                k++;
-            }
-        }
+        List<Integer> keys = loadDataToPartition(part, DEFAULT_CACHE_NAME, 5000, 0, 2);
 
         forceCheckpoint();
 
@@ -219,6 +203,35 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
 
             fail(b.toString());
         }
+    }
+
+    public void testHistory() throws Exception {
+        IgniteEx crd = startGrid(0);
+        startGrid(1);
+
+        crd.cluster().active(true);
+
+        awaitPartitionMapExchange();
+
+        int part = 0;
+
+        List<Integer> keys = loadDataToPartition(part, DEFAULT_CACHE_NAME, 100, 0, 1);
+
+        forceCheckpoint(); // Prevent IGNITE-10088
+
+        stopGrid(1);
+
+        awaitPartitionMapExchange();
+
+        List<Integer> keys1 = loadDataToPartition(part, DEFAULT_CACHE_NAME, 100, 100, 1);
+
+        startGrid(1);
+
+        awaitPartitionMapExchange();
+    }
+
+    public void testNodeRestartWithHolesDuringRebalance() {
+
     }
 
     @Override protected long getTestTimeout() {
