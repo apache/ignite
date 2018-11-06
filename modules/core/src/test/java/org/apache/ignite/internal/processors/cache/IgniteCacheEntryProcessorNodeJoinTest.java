@@ -61,13 +61,10 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
     private static final int GRID_CNT = 2;
 
     /** Number of increment iterations. */
-    private final int INCREMENTS = sf.apply(100);
-
-    /** Number of test iterations. */
-    private final int ITERATIONS = sf.applyLB(10, 2);
+    private static final int INCREMENTS = 10;
 
     /** */
-    private final int KEYS = sf.apply(50);
+    private static final int KEYS = 5;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -145,59 +142,72 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
         // TODO: IGNITE-1525 (test fails with one-phase commit).
         boolean createCache = atomicityMode() == TRANSACTIONAL;
 
-        String cacheName = DEFAULT_CACHE_NAME;
-        if (createCache) {
-            CacheConfiguration ccfg = cacheConfiguration();
+        String cacheName = logTime("starting cache", () -> {
+            if (createCache) {
+                CacheConfiguration ccfg = cacheConfiguration();
 
-            ccfg.setName("cache-2");
-            ccfg.setBackups(2);
+                ccfg.setName("cache-2");
+                ccfg.setBackups(2);
 
-            ignite(0).createCache(ccfg);
+                ignite(0).createCache(ccfg);
 
-            cacheName = ccfg.getName();
-        }
+                return ccfg.getName();
+            }
+            else
+                return DEFAULT_CACHE_NAME;
+        });
 
         try {
             int NODES = GRID_CNT + 1;
 
             final int RESTART_IDX = GRID_CNT + 1;
 
-            for (int iter = 0; iter < ITERATIONS; iter++) {
+            for (int iter = 0; iter < 4; iter++) {
                 final int it = iter;
-                log.info("Iteration: " + it);
+                logTime("one iteration", () -> {
+                    log.info("Iteration: " + it);
 
-                startGrid(RESTART_IDX);
+                    logTime("startGrid(RESTART_IDX)", () -> {
+                        startGrid(RESTART_IDX);
 
-                awaitPartitionMapExchange();
+                        awaitPartitionMapExchange();
+                    });
 
-                final CountDownLatch latch = new CountDownLatch(1);
+                    final CountDownLatch latch = new CountDownLatch(1);
 
-                IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        latch.await();
+                    IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Object>() {
+                        @Override public Object call() throws Exception {
+                            latch.await();
 
-                        stopGrid(RESTART_IDX);
+                            stopGrid(RESTART_IDX);
 
-                        return null;
-                    }
-                }, "stop-thread");
+                            return null;
+                        }
+                    }, "stop-thread");
 
-                int increments = checkIncrement(cacheName, it % 2 == 1, fut, latch);
+                    int increments = logTime("checkIncrement", () -> checkIncrement(cacheName, it % 2 == 1, fut, latch));
 
-                assert increments >= INCREMENTS;
+                    assert increments >= INCREMENTS;
 
-                fut.get();
+                    logTime("fut.get();", () -> {
+                        fut.get();
+                    });
 
-                for (int i = 0; i < KEYS; i++) {
-                    for (int g = 0; g < NODES; g++) {
-                        Set<String> vals = ignite(g).<String, Set<String>>cache(cacheName).get("set-" + i);
+                    logTime("get(\"set-\" + i)", () -> {
+                        for (int i = 0; i < KEYS; i++) {
+                            for (int g = 0; g < NODES; g++) {
+                                Set<String> vals = ignite(g).<String, Set<String>>cache(cacheName).get("set-" + i);
 
-                        assertNotNull(vals);
-                        assertEquals(increments, vals.size());
-                    }
-                }
+                                assertNotNull(vals);
+                                assertEquals(increments, vals.size());
+                            }
+                        }
+                    });
 
-                ignite(0).cache(cacheName).removeAll();
+                    logTime("removeAll", () -> {
+                        ignite(0).cache(cacheName).removeAll();
+                    });
+                });
             }
         }
         finally {

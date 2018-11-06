@@ -277,6 +277,26 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
 
         final HashSet<IgniteFuture> set = new HashSet<>();
 
+        /*IgniteInClosure<Ignite> f = new IgniteInClosure<Ignite>() {
+            @Override public void apply(Ignite grid) {
+                startNodesLatch.countDown();
+                try (IgniteDataStreamer<Integer, String> dataStreamer = grid.dataStreamer(DEFAULT_CACHE_NAME)) {
+                    dataStreamer.allowOverwrite(allowOverwrite);
+
+                    ((DataStreamerImpl)dataStreamer).maxRemapCount(Integer.MAX_VALUE);
+
+                    for (int i = 0; i < KEYS_CNT; i++) {
+                        set.add(dataStreamer.addData(i, "Data"));
+
+                        if (i % 100000 == 0)
+                            log.info("Streaming " + i + "'th entry.");
+                    }
+                }
+            }
+        };
+
+        logTime("f.apply(g0)", () -> f.apply(g0));*/
+
         boolean stop = false;
         int pastedKeys = 0;
         startNodesLatch.countDown();
@@ -306,11 +326,13 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
 
         restarts = false;
 
-        fut.get();
-        restartFut.get();
+        logTime("fut.get();", () -> fut.get());
+        logTime("restartFut.get();", () -> restartFut.get());
 
-        for (IgniteFuture res : set)
-            assertNull(res.get());
+        logTime("for (IgniteFuture res : set)", () -> {
+            for (IgniteFuture res : set)
+                assertNull(res.get());
+        });
         IgniteCache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         long size = cache.size(CachePeekMode.PRIMARY);

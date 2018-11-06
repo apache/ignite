@@ -41,6 +41,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.FactoryBuilder;
 import junit.framework.TestCase;
@@ -199,14 +200,11 @@ public abstract class GridAbstractTest extends TestCase {
     /** Lazily initialized current test method. */
     private volatile Method currTestMtd;
 
-    /**  */
-    protected static final ScaleFactorUtil sf = new ScaleFactorUtil();
-
     /**
      *
      */
     private static final boolean PERSISTENCE_ALLOWED =
-        IgniteSystemProperties.getBoolean(PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, true);
+            IgniteSystemProperties.getBoolean(PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, true);
 
     /**
      *
@@ -403,8 +401,8 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Runs given code in multiple threads and synchronously waits for all threads to complete. If any thread failed,
-     * exception will be thrown out of this method.
+     * Runs given code in multiple threads and synchronously waits for all threads to complete.
+     * If any thread failed, exception will be thrown out of this method.
      *
      * @param r Runnable.
      * @param threadNum Thread number.
@@ -415,8 +413,9 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Runs given code in multiple threads and synchronously waits for all threads to complete. If any thread failed,
-     * exception will be thrown out of this method.
+     * Runs given code in multiple threads and synchronously waits for all
+     * threads to complete. If any thread failed, exception will be thrown
+     * out of this method.
      *
      * @param r Runnable.
      * @param threadNum Thread number.
@@ -428,36 +427,37 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Runs given code in multiple threads. Returns future that ends upon threads completion. If any thread failed,
-     * exception will be thrown out of this method.
+     * Runs given code in multiple threads. Returns future that ends upon
+     * threads completion. If any thread failed, exception will be thrown
+     * out of this method.
      *
      * @param r Runnable.
      * @param threadNum Thread number.
-     * @return Future.
      * @throws Exception If failed.
+     * @return Future.
      */
     protected IgniteInternalFuture<?> multithreadedAsync(Runnable r, int threadNum) throws Exception {
         return multithreadedAsync(r, threadNum, getTestIgniteInstanceName());
     }
 
     /**
-     * Runs given code in multiple threads. Returns future that ends upon threads completion. If any thread failed,
-     * exception will be thrown out of this method.
+     * Runs given code in multiple threads. Returns future that ends upon
+     * threads completion. If any thread failed, exception will be thrown
+     * out of this method.
      *
      * @param r Runnable.
      * @param threadNum Thread number.
      * @param threadName Thread name.
-     * @return Future.
      * @throws Exception If failed.
+     * @return Future.
      */
-    protected IgniteInternalFuture<?> multithreadedAsync(Runnable r, int threadNum,
-        String threadName) throws Exception {
+    protected IgniteInternalFuture<?> multithreadedAsync(Runnable r, int threadNum, String threadName) throws Exception {
         return GridTestUtils.runMultiThreadedAsync(r, threadNum, threadName);
     }
 
     /**
-     * Runs given code in multiple threads and synchronously waits for all threads to complete. If any thread failed,
-     * exception will be thrown out of this method.
+     * Runs given code in multiple threads and synchronously waits for all threads to complete.
+     * If any thread failed, exception will be thrown out of this method.
      *
      * @param c Callable.
      * @param threadNum Thread number.
@@ -468,8 +468,8 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Runs given code in multiple threads and synchronously waits for all threads to complete. If any thread failed,
-     * exception will be thrown out of this method.
+     * Runs given code in multiple threads and synchronously waits for all threads to complete.
+     * If any thread failed, exception will be thrown out of this method.
      *
      * @param c Callable.
      * @param threadNum Thread number.
@@ -481,30 +481,29 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Runs given code in multiple threads and asynchronously waits for all threads to complete. If any thread failed,
-     * exception will be thrown out of this method.
+     * Runs given code in multiple threads and asynchronously waits for all threads to complete.
+     * If any thread failed, exception will be thrown out of this method.
      *
      * @param c Callable.
      * @param threadNum Thread number.
-     * @return Future.
      * @throws Exception If failed.
+     * @return Future.
      */
     protected IgniteInternalFuture<?> multithreadedAsync(Callable<?> c, int threadNum) throws Exception {
         return multithreadedAsync(c, threadNum, getTestIgniteInstanceName());
     }
 
     /**
-     * Runs given code in multiple threads and asynchronously waits for all threads to complete. If any thread failed,
-     * exception will be thrown out of this method.
+     * Runs given code in multiple threads and asynchronously waits for all threads to complete.
+     * If any thread failed, exception will be thrown out of this method.
      *
      * @param c Callable.
      * @param threadNum Thread number.
      * @param threadName Thread name.
-     * @return Future.
      * @throws Exception If failed.
+     * @return Future.
      */
-    protected IgniteInternalFuture<?> multithreadedAsync(Callable<?> c, int threadNum,
-        String threadName) throws Exception {
+    protected IgniteInternalFuture<?> multithreadedAsync(Callable<?> c, int threadNum, String threadName) throws Exception {
         return GridTestUtils.runMultiThreadedAsync(c, threadNum, threadName);
     }
 
@@ -543,8 +542,8 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Called after execution of every test method in class or if {@link #beforeTest()} failed without test method
-     * execution.
+     * Called after execution of every test method in class or
+     * if {@link #beforeTest()} failed without test method execution.
      *
      * @throws Exception If failed.
      */
@@ -564,8 +563,8 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Called after execution of all test methods in class or if {@link #beforeTestsStarted()} failed without execution
-     * of any test methods.
+     * Called after execution of all test methods in class or
+     * if {@link #beforeTestsStarted()} failed without execution of any test methods.
      *
      * @throws Exception If failed.
      */
@@ -606,8 +605,8 @@ public abstract class GridAbstractTest extends TestCase {
         if (isFirstTest()) {
             info(">>> Starting test class: " + testClassDescription() + " <<<");
 
-            if (isSafeTopology())
-                assert G.allGrids().isEmpty() : "Not all Ignite instances stopped before tests execution:" + G.allGrids();
+            if(isSafeTopology())
+                assert G.allGrids().isEmpty() : "Not all Ignite instances stopped before tests execution:" +  G.allGrids();
 
             if (startGrid) {
                 IgniteConfiguration cfg = optimize(getConfiguration());
@@ -1014,7 +1013,7 @@ public abstract class GridAbstractTest extends TestCase {
      */
     protected Ignite startGridWithSpringCtx(String gridName, boolean client, String cfgUrl) throws Exception {
         IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> cfgMap =
-            IgnitionEx.loadConfigurations(cfgUrl);
+                IgnitionEx.loadConfigurations(cfgUrl);
 
         IgniteConfiguration cfg = F.first(cfgMap.get1());
 
@@ -1097,7 +1096,7 @@ public abstract class GridAbstractTest extends TestCase {
 
                     m.setAccessible(true);
 
-                    cfg.setDiscoverySpi((DiscoverySpi)m.invoke(discoverySpi));
+                    cfg.setDiscoverySpi((DiscoverySpi) m.invoke(discoverySpi));
 
                     resetDiscovery = false;
                 }
@@ -1566,9 +1565,8 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Create instance of {@link BinaryMarshaller} suitable for use without starting a grid upon an empty {@link
-     * IgniteConfiguration}.
-     *
+     * Create instance of {@link BinaryMarshaller} suitable for use
+     * without starting a grid upon an empty {@link IgniteConfiguration}.
      * @return Binary marshaller.
      * @throws IgniteCheckedException if failed.
      */
@@ -1577,9 +1575,8 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Create instance of {@link BinaryMarshaller} suitable for use without starting a grid upon given {@link
-     * IgniteConfiguration}.
-     *
+     * Create instance of {@link BinaryMarshaller} suitable for use
+     * without starting a grid upon given {@link IgniteConfiguration}.
      * @return Binary marshaller.
      * @throws IgniteCheckedException if failed.
      */
@@ -1667,9 +1664,9 @@ public abstract class GridAbstractTest extends TestCase {
     /**
      * This method should be overridden by subclasses to change configuration parameters.
      *
+     * @return Grid configuration used for starting of grid.
      * @param igniteInstanceName Ignite instance name.
      * @param rsrcs Resources.
-     * @return Grid configuration used for starting of grid.
      * @throws Exception If failed.
      */
     @SuppressWarnings("deprecation")
@@ -1922,8 +1919,8 @@ public abstract class GridAbstractTest extends TestCase {
 
     /**
      * By default, test would started only if there is no alive Ignite instances and after {@link #afterTestsStopped()}
-     * all started Ignite instances would be stopped. Should return <code>false</code> if alive Ingite instances after
-     * test execution is correct behavior.
+     * all started Ignite instances would be stopped. Should return <code>false</code> if alive Ingite instances
+     * after test execution is correct behavior.
      *
      * @return <code>True</code> by default.
      * @see VariationsTestsConfig#isStopNodes() Example of why instances should not be stopped.
@@ -2027,7 +2024,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param cache Cache.
      * @param job Job.
      */
-    public static <K, V, R> R executeOnLocalOrRemoteJvm(IgniteCache<K, V> cache, TestCacheCallable<K, V, R> job) {
+    public static <K,V,R> R executeOnLocalOrRemoteJvm(IgniteCache<K,V> cache, TestCacheCallable<K,V,R> job) {
         Ignite ignite = cache.unwrap(Ignite.class);
 
         if (!isMultiJvmObject(ignite))
@@ -2086,7 +2083,7 @@ public abstract class GridAbstractTest extends TestCase {
 
             @Override public R call() throws Exception {
                 Ignite ignite = Ignition.ignite(id);
-                IgniteCache<K, V> cache = ignite.cache(cacheName);
+                IgniteCache<K,V> cache = ignite.cache(cacheName);
 
                 return job.call(ignite, cache);
             }
@@ -2139,7 +2136,7 @@ public abstract class GridAbstractTest extends TestCase {
         if (runner.isAlive()) {
             U.error(log,
                 "Test has been timed out and will be interrupted (threads dump will be taken before interruption) [" +
-                    "test=" + getName() + ", timeout=" + getTestTimeout() + ']');
+                "test=" + getName() + ", timeout=" + getTestTimeout() + ']');
 
             List<Ignite> nodes = IgnitionEx.allGridsx();
 
@@ -2157,7 +2154,7 @@ public abstract class GridAbstractTest extends TestCase {
             U.join(runner, log);
 
             throw new TimeoutException("Test has been timed out [test=" + getName() + ", timeout=" +
-                getTestTimeout() + ']');
+                getTestTimeout() + ']' );
         }
 
         Throwable t = ex.get();
@@ -2172,7 +2169,8 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * @return Error handler to process all uncaught exceptions of the test run ({@code null} by default).
+     * @return Error handler to process all uncaught exceptions of the test run
+     *      ({@code null} by default).
      */
     protected IgniteClosure<Throwable, Throwable> errorHandler() {
         return null;
@@ -2257,7 +2255,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param itfClses Interfaces that should be implemented by proxy (vararg parameter)
      * @return Created proxy.
      */
-    protected <T> T notSerializableProxy(final T obj, Class<? super T> itfCls, Class<? super T>... itfClses) {
+    protected <T> T notSerializableProxy(final T obj, Class<? super T> itfCls, Class<? super T> ... itfClses) {
         Class<?>[] itfs = Arrays.copyOf(itfClses, itfClses.length + 3);
 
         itfs[itfClses.length] = itfCls;
@@ -2318,7 +2316,7 @@ public abstract class GridAbstractTest extends TestCase {
             AffinityTopologyVersion exchVer = ctx.cache().context().exchange().readyAffinityVersion();
 
             if (!topVer.equals(exchVer)) {
-                info("Topology version mismatch [node=" + g.name() +
+                info("Topology version mismatch [node="  + g.name() +
                     ", exchVer=" + exchVer +
                     ", topVer=" + topVer + ']');
 
@@ -2333,7 +2331,6 @@ public abstract class GridAbstractTest extends TestCase {
             }
         }
     }
-
     /**
      * @param expSize Expected nodes number.
      * @throws Exception If failed.
@@ -2349,7 +2346,7 @@ public abstract class GridAbstractTest extends TestCase {
                     return false;
                 }
 
-                for (Ignite node : nodes) {
+                for (Ignite node: nodes) {
                     try {
                         IgniteFuture<?> reconnectFut = node.cluster().clientReconnectFuture();
 
@@ -2732,43 +2729,25 @@ public abstract class GridAbstractTest extends TestCase {
         public abstract void run(Ignite ignite, IgniteCache<K, V> cache) throws Exception;
     }
 
-    /**
-     * Test parameters scale factor util.
-     */
-    protected static class ScaleFactorUtil {
-        /** Test speed scale factor property name */
-        private static final String TEST_SCALE_FACTOR_PROPERTY = "TEST_SCALE_FACTOR";
+    public <T> T logTime(String msg, SupplierWithE<T> body) throws Exception {
+        long s = System.currentTimeMillis();
+        T res = body.apply();
+        System.out.println("$$$$$$ " + msg + " [TS = " + (System.currentTimeMillis() - s) + "]");
 
-        /** Test speed scale factor. */
-        private final double testScaleFactor = readScaleFactor();
+        return res;
+    }
 
-        /** */
-        private static double readScaleFactor() {
-            double scaleFactor = Double.parseDouble(System.getProperty(TEST_SCALE_FACTOR_PROPERTY, "1.0"));
-            scaleFactor = Math.max(scaleFactor, 0.1);
-            scaleFactor = Math.min(scaleFactor, 1.0);
+    public void logTime(String msg, RunnableWithE body) throws Exception {
+        long s = System.currentTimeMillis();
+        body.apply();
+        System.out.println("$$$$$$ " + msg + " [TS = " + (System.currentTimeMillis() - s) + "]");
+    }
 
-            return scaleFactor;
-        }
+    public interface SupplierWithE<T> {
+        public T apply() throws Exception;
+    }
 
-        /** */
-        public int apply(int val) {
-            return (int) (testScaleFactor * val);
-        }
-
-        /** */
-        public int apply(int val, int lowerBound, int upperBound) {
-            return applyUB(applyLB(val, lowerBound), upperBound);
-        }
-
-        /** Apply scale factor with lower bound */
-        public int applyLB(int val, int lowerBound) {
-            return Math.max((int) (testScaleFactor * val), lowerBound);
-        }
-
-        /** Apply scale factor with upper bound */
-        public int applyUB(int val, int upperBound) {
-            return Math.min((int) (testScaleFactor * val), upperBound);
-        }
+    public interface RunnableWithE {
+        public void apply() throws Exception;
     }
 }
