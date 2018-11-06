@@ -419,9 +419,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void concurrentStart(final boolean withClients) throws Exception {
-        int iterations = (int)Math.round((double)GridTestUtils.SF.apply(10) / 2);
-
-        assert iterations > 0 : iterations;
+        int iterations = GridTestUtils.SF.apply(5);
 
         for (int i = 0; i < iterations; i++) {
             log.info("Iteration: " + i);

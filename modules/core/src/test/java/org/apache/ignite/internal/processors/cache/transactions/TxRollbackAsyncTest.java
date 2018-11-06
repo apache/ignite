@@ -254,7 +254,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (Exception ignore) {
+        catch (Exception e) {
             // Expected.
         }
 
@@ -263,7 +263,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (Exception ignore) {
+        catch (Exception e) {
             // Expected.
         }
 
@@ -272,7 +272,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (Exception ignore) {
+        catch (Exception e) {
             // Expected.
         }
 
@@ -286,7 +286,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (Exception ignore) {
+        catch (Exception e) {
             // Expected.
         }
 
@@ -295,7 +295,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (Exception ignore) {
+        catch (Exception e) {
             // Expected.
         }
 
@@ -304,7 +304,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (Exception ignore) {
+        catch (Exception e) {
             // Expected.
         }
 
@@ -375,7 +375,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
             ", useTimeout=" + useTimeout +
             ", seed=" + seed);
 
-        IgniteInternalFuture<?> txFut = runAsync(new Runnable() {
+        IgniteInternalFuture<?> txFut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 U.awaitQuiet(keyLocked);
 
@@ -394,16 +394,16 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                         assertNull(o); // If rolled back by close, previous get will return null.
                     }
-                    catch (Exception ignore) {
+                    catch (Exception e) {
                         // If rolled back by rollback, previous get will throw an exception.
                     }
                 }
 
                 txReadyFut.onDone((Transaction)null);
             }
-        }, "tx-get-thread");
+        }, 1, "tx-get-thread");
 
-        IgniteInternalFuture<?> rollbackFut = runAsync(new Runnable() {
+        IgniteInternalFuture<?> rollbackFut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 Set<IgniteUuid> rolledBackVers = new HashSet<>();
 
@@ -435,7 +435,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                         rolledBackVers.add(tx.xid());
 
-                        if (proc % (txCnt / 10) == 0)
+                        if (proc % 100 == 0)
                             log.info("Rolled back: " + proc);
 
                         proc++;
@@ -445,7 +445,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                     }
                 }
             }
-        }, "tx-rollback-thread");
+        }, 1, "tx-rollback-thread");
 
         rollbackFut.get();
 
@@ -828,7 +828,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                 fail("timeout");
             }
-            catch (Exception ignore) {
+            catch (Exception e) {
                 // No-op.
             }
 
@@ -837,7 +837,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                 fail("setRollbackOnly");
             }
-            catch (Exception ignore) {
+            catch (Exception e) {
                 // No-op.
             }
 
@@ -846,7 +846,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                 fail("commit");
             }
-            catch (Exception ignore) {
+            catch (Exception e) {
                 // No-op.
             }
 
@@ -855,7 +855,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                 fail("commitAsync");
             }
-            catch (Exception ignore) {
+            catch (Exception e) {
                 // No-op.
             }
 
@@ -864,7 +864,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                 fail("suspend");
             }
-            catch (Exception ignore) {
+            catch (Exception e) {
                 // No-op.
             }
 
@@ -873,7 +873,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                 fail("resume");
             }
-            catch (Exception ignore) {
+            catch (Exception e) {
                 // No-op.
             }
 
@@ -889,7 +889,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (IgniteCheckedException ignore) {
+        catch (IgniteCheckedException e) {
             // No-op.
         }
     }
@@ -926,7 +926,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                     fail();
                 }
-                catch (Exception ignore) {
+                catch (Exception e) {
                     // Expected.
                 }
             }
@@ -957,7 +957,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                             fail();
                         }
-                        catch (Exception ignore) {
+                        catch (Exception e) {
                             // Expected.
                         }
                     }
