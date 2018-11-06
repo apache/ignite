@@ -163,7 +163,8 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
             final int RESTART_IDX = GRID_CNT + 1;
 
             for (int iter = 0; iter < ITERATIONS; iter++) {
-                log.info("Iteration: " + iter);
+                final int it = iter;
+                log.info("Iteration: " + it);
 
                 startGrid(RESTART_IDX);
 
@@ -181,7 +182,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
                     }
                 }, "stop-thread");
 
-                int increments = checkIncrement(cacheName, iter % 2 == 1, fut, latch);
+                int increments = checkIncrement(cacheName, it % 2 == 1, fut, latch);
 
                 assert increments >= INCREMENTS;
 
