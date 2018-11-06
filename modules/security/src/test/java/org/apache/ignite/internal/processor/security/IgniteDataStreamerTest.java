@@ -22,14 +22,14 @@ import static org.junit.Assert.assertThat;
 public class IgniteDataStreamerTest extends AbstractContextResolverSecurityProcessorTest {
     /** */
     public void testDataStreamer() {
-        successReceiver(succsessClnt, succsessSrv);
-        successReceiver(succsessClnt, failSrv);
-        successReceiver(succsessSrv, succsessSrv);
-        successReceiver(succsessSrv, failSrv);
+        successReceiver(clnt, srv);
+        successReceiver(clnt, srvNoPutPerm);
+        successReceiver(srv, srv);
+        successReceiver(srv, srvNoPutPerm);
 
-        failReceiver(failClnt, succsessSrv);
-        failReceiver(failSrv, succsessSrv);
-        failReceiver(failSrv, failSrv);
+        failReceiver(clntNoPutPerm, srv);
+        failReceiver(srvNoPutPerm, srv);
+        failReceiver(srvNoPutPerm, srvNoPutPerm);
     }
 
     /**

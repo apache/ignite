@@ -17,19 +17,19 @@ import static org.junit.Assert.assertThat;
 public class DistributedClosureTest extends AbstractContextResolverSecurityProcessorTest {
     /** */
     public void testDistributedClosure() {
-        checkSuccess(succsessClnt, failClnt);
-        checkSuccess(succsessClnt, failSrv);
-        checkSuccess(succsessSrv, failClnt);
-        checkSuccess(succsessSrv, failSrv);
-        checkSuccess(succsessSrv, succsessSrv);
-        checkSuccess(succsessClnt, succsessClnt);
+        checkSuccess(clnt, clntNoPutPerm);
+        checkSuccess(clnt, srvNoPutPerm);
+        checkSuccess(srv, clntNoPutPerm);
+        checkSuccess(srv, srvNoPutPerm);
+        checkSuccess(srv, srv);
+        checkSuccess(clnt, clnt);
 
-        checkFail(failClnt, succsessSrv);
-        checkFail(failClnt, succsessClnt);
-        checkFail(failSrv, succsessSrv);
-        checkFail(failSrv, succsessClnt);
-        checkFail(failSrv, failSrv);
-        checkFail(failClnt, failClnt);
+        checkFail(clntNoPutPerm, srv);
+        checkFail(clntNoPutPerm, clnt);
+        checkFail(srvNoPutPerm, srv);
+        checkFail(srvNoPutPerm, clnt);
+        checkFail(srvNoPutPerm, srvNoPutPerm);
+        checkFail(clntNoPutPerm, clntNoPutPerm);
     }
 
     /**

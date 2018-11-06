@@ -22,40 +22,40 @@ import static org.junit.Assert.assertThat;
 public class ScanQueryTest extends AbstractContextResolverSecurityProcessorTest {
     /** */
     public void testScanQuery() throws Exception {
-        putTestData(succsessSrv, CACHE_NAME);
-        putTestData(succsessSrv, SEC_CACHE_NAME);
+        putTestData(srv, CACHE_NAME);
+        putTestData(srv, SEC_CACHE_NAME);
 
         awaitPartitionMapExchange();
 
-        successQuery(succsessClnt, succsessSrv, CACHE_NAME);
-        successQuery(succsessSrv, succsessSrv, CACHE_NAME);
-        successQuery(succsessClnt, succsessSrv, SEC_CACHE_NAME);
-        successQuery(succsessSrv, succsessSrv, SEC_CACHE_NAME);
+        successQuery(clnt, srv, CACHE_NAME);
+        successQuery(srv, srv, CACHE_NAME);
+        successQuery(clnt, srv, SEC_CACHE_NAME);
+        successQuery(srv, srv, SEC_CACHE_NAME);
 
-        successTransform(succsessClnt, succsessSrv, CACHE_NAME);
-        successTransform(succsessSrv, succsessSrv, CACHE_NAME);
-        successTransform(succsessClnt, succsessSrv, SEC_CACHE_NAME);
-        successTransform(succsessSrv, succsessSrv, SEC_CACHE_NAME);
+        successTransform(clnt, srv, CACHE_NAME);
+        successTransform(srv, srv, CACHE_NAME);
+        successTransform(clnt, srv, SEC_CACHE_NAME);
+        successTransform(srv, srv, SEC_CACHE_NAME);
 
-        successQuery(succsessClnt, failSrv, CACHE_NAME);
-        successQuery(succsessSrv, failSrv, CACHE_NAME);
-        successQuery(succsessClnt, failSrv, SEC_CACHE_NAME);
-        successQuery(succsessSrv, failSrv, SEC_CACHE_NAME);
+        successQuery(clnt, srvNoPutPerm, CACHE_NAME);
+        successQuery(srv, srvNoPutPerm, CACHE_NAME);
+        successQuery(clnt, srvNoPutPerm, SEC_CACHE_NAME);
+        successQuery(srv, srvNoPutPerm, SEC_CACHE_NAME);
 
-        successTransform(succsessClnt, failSrv, CACHE_NAME);
-        successTransform(succsessSrv, failSrv, CACHE_NAME);
-        successTransform(succsessClnt, failSrv, SEC_CACHE_NAME);
-        successTransform(succsessSrv, failSrv, SEC_CACHE_NAME);
+        successTransform(clnt, srvNoPutPerm, CACHE_NAME);
+        successTransform(srv, srvNoPutPerm, CACHE_NAME);
+        successTransform(clnt, srvNoPutPerm, SEC_CACHE_NAME);
+        successTransform(srv, srvNoPutPerm, SEC_CACHE_NAME);
 
-        failQuery(failClnt, succsessSrv, CACHE_NAME);
-        failQuery(failSrv, succsessSrv, CACHE_NAME);
-        failQuery(failClnt, succsessSrv, SEC_CACHE_NAME);
-        failQuery(failSrv, succsessSrv, SEC_CACHE_NAME);
+        failQuery(clntNoPutPerm, srv, CACHE_NAME);
+        failQuery(srvNoPutPerm, srv, CACHE_NAME);
+        failQuery(clntNoPutPerm, srv, SEC_CACHE_NAME);
+        failQuery(srvNoPutPerm, srv, SEC_CACHE_NAME);
 
-        failTransform(failClnt, succsessSrv, CACHE_NAME);
-        failTransform(failSrv, succsessSrv, CACHE_NAME);
-        failTransform(failClnt, succsessSrv, SEC_CACHE_NAME);
-        failTransform(failSrv, succsessSrv, SEC_CACHE_NAME);
+        failTransform(clntNoPutPerm, srv, CACHE_NAME);
+        failTransform(srvNoPutPerm, srv, CACHE_NAME);
+        failTransform(clntNoPutPerm, srv, SEC_CACHE_NAME);
+        failTransform(srvNoPutPerm, srv, SEC_CACHE_NAME);
     }
 
     /**

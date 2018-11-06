@@ -34,19 +34,19 @@ import static org.junit.Assert.assertThat;
 public class ExecuteServiceTaskTest extends AbstractContextResolverSecurityProcessorTest {
     /** */
     public void testExecute() throws Exception {
-        successExecute(succsessClnt, failClnt);
-        successExecute(succsessClnt, failSrv);
-        successExecute(succsessSrv, failClnt);
-        successExecute(succsessSrv, failSrv);
-        successExecute(succsessSrv, succsessSrv);
-        successExecute(succsessClnt, succsessClnt);
+        successExecute(clnt, clntNoPutPerm);
+        successExecute(clnt, srvNoPutPerm);
+        successExecute(srv, clntNoPutPerm);
+        successExecute(srv, srvNoPutPerm);
+        successExecute(srv, srv);
+        successExecute(clnt, clnt);
 
-        failExecute(failClnt, succsessSrv);
-        failExecute(failClnt, succsessClnt);
-        failExecute(failSrv, succsessSrv);
-        failExecute(failSrv, succsessClnt);
-        failExecute(failSrv, failSrv);
-        failExecute(failClnt, failClnt);
+        failExecute(clntNoPutPerm, srv);
+        failExecute(clntNoPutPerm, clnt);
+        failExecute(srvNoPutPerm, srv);
+        failExecute(srvNoPutPerm, clnt);
+        failExecute(srvNoPutPerm, srvNoPutPerm);
+        failExecute(clntNoPutPerm, clntNoPutPerm);
     }
 
     /**

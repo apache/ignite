@@ -22,33 +22,46 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecuritySubject;
+import org.apache.ignite.plugin.security.TestSecurityPluginConfiguration;
 
 import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_NODE;
 
+/**
+ * Security processor for test.
+ */
 public class TestSecurityProcessor extends GridProcessorAdapter implements GridSecurityProcessor {
+    /** Permissions. */
+    private static final Map<SecurityCredentials, SecurityPermissionSet> PERMS = new ConcurrentHashMap<>();
 
-    public static final String USER_SECURITY_TOKEN = "USER_SECURITY_TOKEN";
+    /** Config. */
+    private TestSecurityPluginConfiguration cfg;
 
+    /**
+     * @param ctx Context.
+     */
     public TestSecurityProcessor(GridKernalContext ctx) {
         super(ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred)
-        throws IgniteCheckedException {
+    @Override public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) {
 
         return new TestSecurityContext(
             new TestSecuritySubject()
@@ -56,7 +69,7 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
                 .setId(node.id())
                 .setAddr(new InetSocketAddress(F.first(node.addresses()), 0))
                 .setLogin(cred.getUserObject())
-                .setPerms(SecurityPermissionProvider.permission(cred.getUserObject()))
+                .setPerms(PERMS.get(cred))
         );
     }
 
@@ -86,7 +99,7 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
 
         assert securityCtx instanceof TestSecurityContext;
 
-        if(!((TestSecurityContext)securityCtx).operationAllowed(name, perm))
+        if (!((TestSecurityContext)securityCtx).operationAllowed(name, perm))
             throw new SecurityException("Authorization failed [perm=" + perm +
                 ", name=" + name +
                 ", subject=" + securityCtx.subject() + ']');
@@ -94,7 +107,7 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
 
     /** {@inheritDoc} */
     @Override public void onSessionExpired(UUID subjId) {
-
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -106,20 +119,42 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     @Override public void start() throws IgniteCheckedException {
         super.start();
 
-        SecurityCredentials cred = new SecurityCredentials(null, null, securityToken());
+        SecurityCredentials cred = new SecurityCredentials(
+            configuration().getLogin(), configuration().getPwd(), configuration().getUserObj()
+        );
+
+        PERMS.put(cred, configuration().getPermissions());
 
         ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS, cred);
     }
 
+    /** {@inheritDoc} */
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
+        super.stop(cancel);
+
+        PERMS.remove(ctx.nodeAttribute(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS));
+    }
+
     /**
-     * Getting security token.
+     * Security configuration.
      */
-    private Object securityToken() {
-        Map<String, ?> attrs = ctx.config().getUserAttributes();
+    private TestSecurityPluginConfiguration configuration() {
+        if (cfg == null) {
+            IgniteConfiguration igniteCfg = ctx.config();
 
-        assert attrs != null;
+            if (igniteCfg.getPluginConfigurations() != null) {
+                for (PluginConfiguration pluginCfg : igniteCfg.getPluginConfigurations()) {
+                    if (pluginCfg instanceof TestSecurityPluginConfiguration) {
+                        cfg = (TestSecurityPluginConfiguration)pluginCfg;
 
-        return attrs.get(USER_SECURITY_TOKEN);
+                        break;
+                    }
+                }
+            }
+        }
 
+        assert cfg != null;
+
+        return cfg;
     }
 }

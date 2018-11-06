@@ -40,14 +40,14 @@ public class LoadCacheTest extends AbstractContextResolverSecurityProcessorTest 
 
     /** */
     public void testLoadCache() {
-        successLoad(succsessClnt, succsessSrv);
-        successLoad(succsessClnt, failSrv);
-        successLoad(succsessSrv, succsessSrv);
-        successLoad(succsessSrv, failSrv);
+        successLoad(clnt, srv);
+        successLoad(clnt, srvNoPutPerm);
+        successLoad(srv, srv);
+        successLoad(srv, srvNoPutPerm);
 
-        failLoad(failClnt, succsessSrv);
-        failLoad(failSrv, succsessSrv);
-        failLoad(failSrv, failSrv);
+        failLoad(clntNoPutPerm, srv);
+        failLoad(srvNoPutPerm, srv);
+        failLoad(srvNoPutPerm, srvNoPutPerm);
     }
 
     /**
@@ -63,7 +63,7 @@ public class LoadCacheTest extends AbstractContextResolverSecurityProcessorTest 
             new TestClosure(remote.localNode().id(), "key", val)
         );
 
-        assertThat(succsessSrv.cache(CACHE_NAME).get("key"), is(val));
+        assertThat(srv.cache(CACHE_NAME).get("key"), is(val));
     }
 
     /**

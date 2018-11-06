@@ -17,29 +17,23 @@
 
 package org.apache.ignite.internal.processor.security;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.plugin.security.SecurityException;
-import org.apache.ignite.plugin.security.SecurityPermission;
-import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
 /**
  *
  */
-public class AbstractContextResolverSecurityProcessorTest extends GridCommonAbstractTest {
+public class AbstractContextResolverSecurityProcessorTest extends AbstractSecurityTest {
     /** Cache name for tests. */
     protected static final String CACHE_NAME = "TEST_CACHE";
 
@@ -49,38 +43,33 @@ public class AbstractContextResolverSecurityProcessorTest extends GridCommonAbst
     /** Values. */
     protected AtomicInteger values = new AtomicInteger(0);
 
-    /** */
-    protected IgniteEx succsessSrv;
+    /** Sever node that has all permissions. */
+    protected IgniteEx srv;
 
-    /** */
-    protected IgniteEx succsessClnt;
+    /** Client node that has all permissions. */
+    protected IgniteEx clnt;
 
-    /** */
-    protected IgniteEx failSrv;
+    /** Sever node that hasn't put permission to TEST_CACHE. */
+    protected IgniteEx srvNoPutPerm;
 
-    /** */
-    protected IgniteEx failClnt;
+    /** Client node that hasn't put permission to TEST_CACHE. */
+    protected IgniteEx clntNoPutPerm;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        setupSecurityPermissions();
+        srv = startGrid("user_0", builder().build());
 
-        System.setProperty(
-            TestSecurityProcessorProvider.TEST_SECURITY_PROCESSOR_CLS,
-            "org.apache.ignite.internal.processor.security.TestSecurityProcessor"
-        );
+        clnt = startGrid("user_1", builder().build(), true);
 
-        succsessSrv = startGrid("success_server");
+        srvNoPutPerm = startGrid("user_2",
+            builder().appendCachePermissions(CACHE_NAME, CACHE_READ).build());
 
-        succsessClnt = startGrid(getConfiguration("success_client").setClientMode(true));
+        clntNoPutPerm = startGrid("user_3",
+            builder().appendCachePermissions(CACHE_NAME, CACHE_READ).build(), true);
 
-        failSrv = startGrid("fail_server");
-
-        failClnt = startGrid(getConfiguration("fail_client").setClientMode(true));
-
-        grid("success_server").cluster().active(true);
+        grid(0).cluster().active(true);
     }
 
     /** {@inheritDoc} */
@@ -98,37 +87,8 @@ public class AbstractContextResolverSecurityProcessorTest extends GridCommonAbst
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        Map<String, Object> attrs = new HashMap<>();
-
-        attrs.put(TestSecurityProcessor.USER_SECURITY_TOKEN, igniteInstanceName);
-
         return super.getConfiguration(igniteInstanceName)
-            .setDataStorageConfiguration(
-                new DataStorageConfiguration()
-                    .setDefaultDataRegionConfiguration(
-                        new DataRegionConfiguration().setPersistenceEnabled(true)
-                    )
-            )
-            .setAuthenticationEnabled(true)
-            .setUserAttributes(attrs)
             .setCacheConfiguration(getCacheConfigurations());
-    }
-
-    /**
-     *
-     */
-    private void setupSecurityPermissions(){
-        SecurityPermissionProvider.add(
-            SecurityPermissionSetBuilder.create()
-                .defaultAllowAll(true)
-                .build(), "success_server", "success_client"
-        );
-        SecurityPermissionProvider.add(
-            SecurityPermissionSetBuilder.create()
-                .defaultAllowAll(true)
-                .appendCachePermissions(CACHE_NAME, SecurityPermission.CACHE_READ)
-                .build(), "fail_server", "fail_client"
-        );
     }
 
     /**

@@ -45,19 +45,19 @@ public class IgniteMessagingTest extends AbstractContextResolverSecurityProcesso
         //todo Нужно написать тесты когда иточником события является другой узел
         //todo имеющий разрешение на выполнение операции и нет, соответственно.
 
-        successMessaging(succsessClnt, failClnt);
-        successMessaging(succsessClnt, failSrv);
-        successMessaging(succsessSrv, failClnt);
-        successMessaging(succsessSrv, failSrv);
-        //successMessaging(succsessSrv, succsessSrv);
-        //successMessaging(succsessClnt, succsessClnt);
+        successMessaging(clnt, clntNoPutPerm);
+        successMessaging(clnt, srvNoPutPerm);
+        successMessaging(srv, clntNoPutPerm);
+        successMessaging(srv, srvNoPutPerm);
+        //successMessaging(srv, srv);
+        //successMessaging(clnt, clnt);
 
-        failMessaging(failClnt, succsessSrv);
-        failMessaging(failClnt, succsessClnt);
-        failMessaging(failSrv, succsessSrv);
-        failMessaging(failSrv, succsessClnt);
-        //failMessaging(failSrv, failSrv);
-        //failMessaging(failClnt, failClnt);
+        failMessaging(clntNoPutPerm, srv);
+        failMessaging(clntNoPutPerm, clnt);
+        failMessaging(srvNoPutPerm, srv);
+        failMessaging(srvNoPutPerm, clnt);
+        //failMessaging(srvNoPutPerm, srvNoPutPerm);
+        //failMessaging(clntNoPutPerm, clntNoPutPerm);
     }
 
     /**

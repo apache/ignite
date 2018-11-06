@@ -73,6 +73,7 @@ public class TestSecurityProcessorProvider implements PluginProvider {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public @Nullable Object createComponent(PluginContext ctx, Class cls) {
         if (cls.isAssignableFrom(GridSecurityProcessor.class)) {
             String secProcClsName = System.getProperty(
@@ -110,6 +111,7 @@ public class TestSecurityProcessorProvider implements PluginProvider {
                 throw new IgniteException("Failed to load class [cls=" + secProcClsName + "]", e);
             }
         }
+
         return null;
     }
 
@@ -120,22 +122,22 @@ public class TestSecurityProcessorProvider implements PluginProvider {
 
     /** {@inheritDoc} */
     @Override public void start(PluginContext ctx) throws IgniteCheckedException {
-
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
-
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void onIgniteStart() throws IgniteCheckedException {
-
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void onIgniteStop(boolean cancel) {
-
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -145,11 +147,11 @@ public class TestSecurityProcessorProvider implements PluginProvider {
 
     /** {@inheritDoc} */
     @Override public void receiveDiscoveryData(UUID nodeId, Serializable data) {
-
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void validateNewNode(ClusterNode node) throws PluginValidationException {
-
+        // No-op.
     }
 }

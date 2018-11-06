@@ -33,12 +33,12 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 public class EntryProcessorTest extends AbstractContextResolverSecurityProcessorTest {
     /** */
     public void testEntryProcessor() {
-        successEntryProcessor(succsessClnt, succsessSrv);
-        successEntryProcessor(succsessClnt, failSrv);
-        successEntryProcessor(succsessSrv, failSrv);
+        successEntryProcessor(clnt, srv);
+        successEntryProcessor(clnt, srvNoPutPerm);
+        successEntryProcessor(srv, srvNoPutPerm);
 
-        failEntryProcessor(failClnt, succsessSrv);
-        failEntryProcessor(failSrv, succsessSrv);
+        failEntryProcessor(clntNoPutPerm, srv);
+        failEntryProcessor(srvNoPutPerm, srv);
     }
 
     /**

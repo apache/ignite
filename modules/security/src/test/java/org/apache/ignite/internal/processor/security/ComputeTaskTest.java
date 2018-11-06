@@ -45,19 +45,19 @@ import static org.junit.Assert.assertThat;
 public class ComputeTaskTest extends AbstractContextResolverSecurityProcessorTest {
     /** */
     public void testCompute() {
-        checkSuccess(succsessSrv, succsessClnt);
-        checkSuccess(succsessSrv, failSrv);
-        checkSuccess(succsessSrv, failClnt);
-        checkSuccess(succsessClnt, succsessSrv);
-        checkSuccess(succsessClnt, failSrv);
-        checkSuccess(succsessClnt, failClnt);
+        checkSuccess(srv, clnt);
+        checkSuccess(srv, srvNoPutPerm);
+        checkSuccess(srv, clntNoPutPerm);
+        checkSuccess(clnt, srv);
+        checkSuccess(clnt, srvNoPutPerm);
+        checkSuccess(clnt, clntNoPutPerm);
 
-        checkFail(failSrv, succsessSrv);
-        checkFail(failSrv, succsessClnt);
-        checkFail(failSrv, failClnt);
-        checkFail(failClnt, succsessSrv);
-        checkFail(failClnt, failSrv);
-        checkFail(failClnt, succsessClnt);
+        checkFail(srvNoPutPerm, srv);
+        checkFail(srvNoPutPerm, clnt);
+        checkFail(srvNoPutPerm, clntNoPutPerm);
+        checkFail(clntNoPutPerm, srv);
+        checkFail(clntNoPutPerm, srvNoPutPerm);
+        checkFail(clntNoPutPerm, clnt);
     }
 
     /**
@@ -154,7 +154,7 @@ public class ComputeTaskTest extends AbstractContextResolverSecurityProcessorTes
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+        @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable Integer arg) throws IgniteException {
             Map<ComputeJob, ClusterNode> res = new HashMap<>();
 
@@ -188,7 +188,7 @@ public class ComputeTaskTest extends AbstractContextResolverSecurityProcessorTes
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteException {
+        @Override public @Nullable Integer reduce(List<ComputeJobResult> results) throws IgniteException {
             return null;
         }
     }
