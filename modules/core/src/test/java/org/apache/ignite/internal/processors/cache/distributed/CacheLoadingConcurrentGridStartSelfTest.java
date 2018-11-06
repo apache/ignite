@@ -293,13 +293,11 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
                 if (insertedKeys % 100000 == 0)
                     log.info("Streaming " + insertedKeys + "'th entry.");
 
-                //When all nodes started we continue restart nodes during 1 second and stop it after this timeout.
                 if (fut.isDone() && startingEndTs == -1)
                     startingEndTs = System.currentTimeMillis();
-                if (startingEndTs != -1) //Nodes starting was ended and we check restarts duration after it.
+                if (startingEndTs != -1)
                     restarts = (System.currentTimeMillis() - startingEndTs) < 1000;
 
-                //Stop test when all keys were inserted or restarts timeout was exceeded.
                 stop = insertedKeys >= KEYS_CNT || (fut.isDone() && !restarts);
             }
         }
