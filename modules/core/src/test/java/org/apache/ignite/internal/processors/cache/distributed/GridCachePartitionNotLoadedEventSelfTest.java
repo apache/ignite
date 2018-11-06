@@ -118,9 +118,11 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
 
         int key = 0;
 
+        long s = System.currentTimeMillis();
         while (!aff.isPrimary(ignite(0).cluster().localNode(), key)
             || !aff.isBackup(ignite(1).cluster().localNode(), key))
             key++;
+        System.out.println("$$$$$$$ Awaiting topology TS = " + ((System.currentTimeMillis() - s) / 1000));
 
         IgniteCache<Integer, Integer> cache = jcache(2);
 
@@ -137,22 +139,27 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
         stopGrid(0, true);
         stopGrid(1, true);
 
+        s = System.currentTimeMillis();
         awaitPartitionMapExchange();
+        System.out.println("$$$$$$$ Awaiting exchange TS = " + ((System.currentTimeMillis() - s) / 1000));
 
         assert !cache.containsKey(key);
 
-        final long awaitingTimeoutMs = 30 * 1000;
+        s = System.currentTimeMillis();
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 return !lsnr1.lostParts.isEmpty();
             }
-        }, awaitingTimeoutMs));
+        }, 30 * 1000));
+        System.out.println("$$$$$$$ Condition 1 TS = " + ((System.currentTimeMillis() - s) / 1000));
 
+        s = System.currentTimeMillis();
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 return !lsnr2.lostParts.isEmpty();
             }
-        }, awaitingTimeoutMs));
+        }, 30 * 1000));
+        System.out.println("$$$$$$$ Condition 1 TS = " + ((System.currentTimeMillis() - s) / 1000));
     }
 
     /**
