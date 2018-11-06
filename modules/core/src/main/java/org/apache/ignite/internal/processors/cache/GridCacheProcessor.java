@@ -2542,7 +2542,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         grp.onCacheStarted(cacheCtx);
 
-        ctx.query().onCacheStart(cacheCtx, desc.schema() != null ? desc.schema() : new QuerySchema());
+        ctx.query().onCacheStart(cacheCtx, desc.schema() != null ? desc.schema() : new QuerySchema(), desc.sql());
 
         if (log.isInfoEnabled()) {
             log.info("Started cache in recovery mode [name=" + cfg.getName() +
