@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryReq
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_RETRY_TIMEOUT;
@@ -61,13 +62,18 @@ public class DisappearedCacheWasNotFoundMessageSelfTest extends GridCommonAbstra
             fail("No CacheException emitted.");
         }
         catch (CacheException e) {
-            assertTrue(e.getMessage(), e.getMessage().contains("Cache not found on local node"));
+            boolean exp = e.getMessage().contains("Cache not found on local node");
+
+            if (!exp)
+                throw e;
         }
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(LOCAL_IP_FINDER));
 
         cfg.setCommunicationSpi(new TcpCommunicationSpi(){
             /** {@inheritDoc} */
