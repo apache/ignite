@@ -129,7 +129,6 @@ import static org.apache.ignite.internal.util.IgniteTree.OperationType.PUT;
 /**
  *
  */
-@SuppressWarnings("PublicInnerClass")
 public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager {
     /**
      * Throttling timeout in millis which avoid excessive PendingTree access on unwind
@@ -334,6 +333,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             return part != null ? part.dataStore().fullSize() : 0;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void preloadPartition(int p) throws IgniteCheckedException {
+        throw new IgniteCheckedException("Operation only applicable to caches with enabled persistence");
     }
 
     /**
@@ -1553,6 +1557,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public void updateCounter(long start, long delta) {
             pCntr.update(start, delta);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void finalizeUpdateCountres() {
+            pCntr.finalizeUpdateCountres();
         }
 
         /** {@inheritDoc} */
@@ -2899,6 +2908,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public PendingEntriesTree pendingTree() {
             return pendingEntries;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void preload() throws IgniteCheckedException {
+            // No-op.
         }
 
         /**

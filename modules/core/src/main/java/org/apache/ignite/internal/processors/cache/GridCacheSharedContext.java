@@ -584,7 +584,7 @@ public class GridCacheSharedContext<K, V> {
      *
      * @param cacheId Cache id.
      */
-    public @Nullable CacheObjectContext cacheObjectContext(int cacheId) throws IgniteCheckedException {
+    @Nullable public CacheObjectContext cacheObjectContext(int cacheId) throws IgniteCheckedException {
         GridCacheContext<K, V> ctx = ctxMap.get(cacheId);
 
         if (ctx != null)
@@ -1140,5 +1140,13 @@ public class GridCacheSharedContext<K, V> {
      */
     public void readOnlyMode(boolean readOnlyMode) {
         this.readOnlyMode = readOnlyMode;
+    }
+
+    /**
+     * For test purposes.
+     * @param txMgr Tx manager.
+     */
+    public void setTxManager(IgniteTxManager txMgr) {
+        this.txMgr = txMgr;
     }
 }

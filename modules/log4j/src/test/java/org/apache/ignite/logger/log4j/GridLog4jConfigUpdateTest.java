@@ -51,7 +51,6 @@ public class GridLog4jConfigUpdateTest extends TestCase {
      * Check that changing log4j config file causes the logger configuration to be updated.
      * String-accepting constructor is used.
      */
-    @SuppressWarnings("ResultOfMethodCallIgnored")
     public void testConfigChangeStringConstructor() throws Exception {
         checkConfigUpdate(new Log4JLoggerSupplier() {
             @Override public Log4JLogger get(File cfgFile) throws Exception {
@@ -64,7 +63,6 @@ public class GridLog4jConfigUpdateTest extends TestCase {
      * Check that changing log4j config file causes the logger configuration to be updated.
      * String-accepting constructor is used.
      */
-    @SuppressWarnings("ResultOfMethodCallIgnored")
     public void testConfigChangeStringConstructorDefaultDelay() throws Exception {
         checkConfigUpdate(new Log4JLoggerSupplier() {
             @Override public Log4JLogger get(File cfgFile) throws Exception {
@@ -77,7 +75,6 @@ public class GridLog4jConfigUpdateTest extends TestCase {
      * Check that changing log4j config file causes the logger configuration to be updated.
      * File-accepting constructor is used.
      */
-    @SuppressWarnings("ResultOfMethodCallIgnored")
     public void testConfigChangeFileConstructor() throws Exception {
         checkConfigUpdate(new Log4JLoggerSupplier() {
             @Override public Log4JLogger get(File cfgFile) throws Exception {
@@ -90,7 +87,6 @@ public class GridLog4jConfigUpdateTest extends TestCase {
      * Check that changing log4j config file causes the logger configuration to be updated.
      * File-accepting constructor is used.
      */
-    @SuppressWarnings("ResultOfMethodCallIgnored")
     public void testConfigChangeUrlConstructor() throws Exception {
         checkConfigUpdate(new Log4JLoggerSupplier() {
             @Override public Log4JLogger get(File cfgFile) throws Exception {

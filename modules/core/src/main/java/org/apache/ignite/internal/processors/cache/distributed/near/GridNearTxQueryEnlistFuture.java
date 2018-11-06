@@ -32,7 +32,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -363,8 +362,7 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
                 completed = true;
             }
 
-            if (X.hasCause(err, ClusterTopologyCheckedException.class)
-                || (res != null && res.removeMapping())) {
+            if (res != null && res.removeMapping()) {
                 GridDistributedTxMapping m = tx.mappings().get(node.id());
 
                 assert m != null && m.empty();

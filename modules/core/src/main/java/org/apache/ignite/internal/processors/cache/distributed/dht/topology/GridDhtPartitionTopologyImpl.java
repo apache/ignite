@@ -885,8 +885,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             locParts.set(p, part);
 
-            ctx.pageStore().onPartitionCreated(grp.groupId(), p);
-
             return part;
         }
         finally {
@@ -1347,7 +1345,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     @Override public boolean update(
         @Nullable AffinityTopologyVersion exchangeVer,
         GridDhtPartitionFullMap partMap,
@@ -1721,7 +1718,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     @Override public boolean update(
         @Nullable GridDhtPartitionExchangeId exchId,
         GridDhtPartitionMap parts,
@@ -2435,7 +2431,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * @param affVer Affinity version.
      * @return Update sequence.
      */
-    @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     private long updateLocal(int p, GridDhtPartitionState state, long updateSeq, AffinityTopologyVersion affVer) {
         assert lock.isWriteLockedByCurrentThread();
 
@@ -2657,7 +2652,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public CachePartitionPartialCountersMap localUpdateCounters(boolean skipZeros) {
+    @Override public CachePartitionPartialCountersMap localUpdateCounters(boolean skipZeros,
+        boolean finalizeCntrsBeforeCollecting) {
         lock.readLock().lock();
 
         try {
@@ -2677,6 +2673,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 if (part == null)
                     continue;
+
+                if (finalizeCntrsBeforeCollecting)
+                    part.finalizeUpdateCountres();
 
                 long updCntr = part.updateCounter();
                 long initCntr = part.initialUpdateCounter();

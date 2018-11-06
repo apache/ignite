@@ -476,7 +476,7 @@ public class H2TreeIndex extends GridH2IndexBase {
         if(p == null && v == null)
             return null;
 
-        return new H2TreeFilterClosure(p, v, cctx);
+        return new H2TreeFilterClosure(p, v, cctx, log);
     }
 
     /**

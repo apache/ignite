@@ -54,7 +54,7 @@ public abstract class ZookeeperDiscoverySpiAbstractTestSuite extends TestSuite {
      *
      * @param cfg Configuration to change.
      */
-    public synchronized static void preprocessConfiguration(IgniteConfiguration cfg) {
+    public static synchronized void preprocessConfiguration(IgniteConfiguration cfg) {
         if (testingCluster == null)
             throw new IllegalStateException("Test Zookeeper cluster is not started.");
 

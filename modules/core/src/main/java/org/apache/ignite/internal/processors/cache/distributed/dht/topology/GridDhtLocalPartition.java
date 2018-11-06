@@ -79,15 +79,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
  */
 public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements Comparable<GridDhtLocalPartition>, GridReservable {
     /** */
-    private static final GridCacheMapEntryFactory ENTRY_FACTORY = new GridCacheMapEntryFactory() {
-        @Override public GridCacheMapEntry create(
-            GridCacheContext ctx,
-            AffinityTopologyVersion topVer,
-            KeyCacheObject key
-        ) {
-            return new GridDhtCacheEntry(ctx, topVer, key);
-        }
-    };
+    private static final GridCacheMapEntryFactory ENTRY_FACTORY = GridDhtCacheEntry::new;
 
     /** Maximum size for delete queue. */
     public static final int MAX_DELETE_QUEUE_SIZE = Integer.getInteger(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, 200_000);
@@ -180,7 +172,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param grp Cache group.
      * @param id Partition ID.
      */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     public GridDhtLocalPartition(GridCacheSharedContext ctx,
         CacheGroupContext grp,
         int id) {
@@ -1224,7 +1215,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"OverlyStrongTypeCast"})
     @Override public boolean equals(Object obj) {
         return obj instanceof GridDhtLocalPartition && (obj == this || ((GridDhtLocalPartition)obj).id() == id);
     }
@@ -1368,6 +1358,13 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     private static long setSize(long state, int size) {
         return (state & (~0xFFFFFFFF00000000L)) | ((long)size << 32);
+    }
+
+    /**
+     * Flushes pending update counters closing all possible gaps.
+     */
+    public void finalizeUpdateCountres() {
+        store.finalizeUpdateCountres();
     }
 
     /**

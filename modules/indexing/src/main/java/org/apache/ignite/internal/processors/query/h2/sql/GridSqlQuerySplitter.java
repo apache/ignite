@@ -53,6 +53,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Query;
 import org.h2.command.dml.SelectUnion;
+import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
@@ -998,7 +999,6 @@ public class GridSqlQuerySplitter {
      * @param prnt Parent expression.
      * @param childIdx Child index.
      */
-    @SuppressWarnings("SuspiciousMethodCalls")
     private void pushDownColumnsInExpression(
         Set<GridSqlAlias> tblAliases,
         Map<String,GridSqlAlias> cols,
@@ -2342,6 +2342,64 @@ public class GridSqlQuerySplitter {
                 return null;
             }
 
+            case IN: {
+                // Operation should contain at least two children: left (column) and right (const or column).
+                if (op.size() < 2)
+                    return null;
+
+                // Left operand should be column.
+                GridSqlAst left = op.child();
+
+                GridSqlColumn leftCol;
+
+                if (left instanceof GridSqlColumn)
+                    leftCol = (GridSqlColumn)left;
+                else
+                    return null;
+
+                // Can work only with Ignite's tables.
+                if (!(leftCol.column().getTable() instanceof GridH2Table))
+                    return null;
+
+                CacheQueryPartitionInfo[] res = new CacheQueryPartitionInfo[op.size() - 1];
+
+                for (int i = 1; i < op.size(); i++) {
+                    GridSqlAst right = op.child(i);
+
+                    GridSqlConst rightConst;
+                    GridSqlParameter rightParam;
+
+                    if (right instanceof GridSqlConst) {
+                        rightConst = (GridSqlConst)right;
+                        rightParam = null;
+                    }
+                    else if (right instanceof GridSqlParameter) {
+                        rightConst = null;
+                        rightParam = (GridSqlParameter)right;
+                    }
+                    else
+                        // One of members of "IN" list is neither const, nor param, so we do no know it's partition.
+                        // As this is disjunction, not knowing partition of a single element leads to unknown partition
+                        // set globally. Hence, returning null.
+                        return null;
+
+                    CacheQueryPartitionInfo cur = getCacheQueryPartitionInfo(
+                        leftCol.column(),
+                        rightConst,
+                        rightParam,
+                        ctx
+                    );
+
+                    // Same thing as above: single unknown partition in disjunction defeats optimization.
+                    if (cur == null)
+                        return null;
+
+                    res[i - 1] = cur;
+                }
+
+                return res;
+            }
+
             default:
                 return null;
         }
@@ -2362,39 +2420,85 @@ public class GridSqlQuerySplitter {
         GridSqlElement left = op.child(0);
         GridSqlElement right = op.child(1);
 
-        if (!(left instanceof GridSqlColumn))
+        GridSqlColumn leftCol;
+
+        if (left instanceof GridSqlColumn)
+            leftCol = (GridSqlColumn)left;
+        else
             return null;
 
-        if (!(right instanceof GridSqlConst) && !(right instanceof GridSqlParameter))
+        if (!(leftCol.column().getTable() instanceof GridH2Table))
             return null;
 
-        GridSqlColumn column = (GridSqlColumn)left;
+        GridSqlConst rightConst;
+        GridSqlParameter rightParam;
 
-        if (!(column.column().getTable() instanceof GridH2Table))
+        if (right instanceof GridSqlConst) {
+            rightConst = (GridSqlConst)right;
+            rightParam = null;
+        }
+        else if (right instanceof GridSqlParameter) {
+            rightConst = null;
+            rightParam = (GridSqlParameter)right;
+        }
+        else
             return null;
 
-        GridH2Table tbl = (GridH2Table) column.column().getTable();
+        return getCacheQueryPartitionInfo(leftCol.column(), rightConst, rightParam, ctx);
+    }
+
+    /**
+     * Extracts the partition if possible
+     * @param leftCol Column on the lsft side.
+     * @param rightConst Constant on the right side.
+     * @param rightParam Parameter on the right side.
+     * @param ctx Kernal Context.
+     * @return partition info, or {@code null} if none identified
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable private static CacheQueryPartitionInfo getCacheQueryPartitionInfo(
+        Column leftCol,
+        GridSqlConst rightConst,
+        GridSqlParameter rightParam,
+        GridKernalContext ctx
+    ) throws IgniteCheckedException {
+        assert leftCol != null;
+        assert leftCol.getTable() != null;
+        assert leftCol.getTable() instanceof GridH2Table;
+
+        GridH2Table tbl = (GridH2Table)leftCol.getTable();
 
         GridH2RowDescriptor desc = tbl.rowDescriptor();
 
         IndexColumn affKeyCol = tbl.getAffinityKeyColumn();
 
-        int colId = column.column().getColumnId();
+        int colId = leftCol.getColumnId();
 
         if ((affKeyCol == null || colId != affKeyCol.column.getColumnId()) && !desc.isKeyColumn(colId))
             return null;
 
-        if (right instanceof GridSqlConst) {
-            GridSqlConst constant = (GridSqlConst)right;
+        if (rightConst != null) {
+            int part = ctx.affinity().partition(tbl.cacheName(), rightConst.value().getObject());
 
-            return new CacheQueryPartitionInfo(ctx.affinity().partition(tbl.cacheName(),
-                constant.value().getObject()), null, null, -1, -1);
+            return new CacheQueryPartitionInfo(
+                part,
+                null,
+                null,
+                -1,
+                -1
+            );
         }
-
-        GridSqlParameter param = (GridSqlParameter) right;
-
-        return new CacheQueryPartitionInfo(-1, tbl.cacheName(), tbl.getName(),
-            column.column().getType(), param.index());
+        else if (rightParam != null) {
+            return new CacheQueryPartitionInfo(
+                -1,
+                tbl.cacheName(),
+                tbl.getName(),
+                leftCol.getType(),
+                rightParam.index()
+            );
+        }
+        else
+            return null;
     }
 
     /**

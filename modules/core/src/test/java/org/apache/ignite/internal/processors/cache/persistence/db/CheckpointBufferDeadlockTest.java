@@ -336,11 +336,6 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
         private final FileIOFactory delegateFactory = new RandomAccessFileIOFactory();
 
         /** {@inheritDoc} */
-        @Override public FileIO create(File file) throws IOException {
-            return create(file, CREATE, READ, WRITE);
-        }
-
-        /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... openOption) throws IOException {
             final FileIO delegate = delegateFactory.create(file, openOption);
 

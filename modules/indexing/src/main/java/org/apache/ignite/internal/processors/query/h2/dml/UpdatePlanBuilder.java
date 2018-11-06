@@ -493,7 +493,6 @@ public final class UpdatePlanBuilder {
      * @return The update plan for this command.
      * @throws IgniteCheckedException if failed.
      */
-    @SuppressWarnings("ConstantConditions")
     public static UpdatePlan planForBulkLoad(SqlBulkLoadCommand cmd, GridH2Table tbl) throws IgniteCheckedException {
         GridH2RowDescriptor desc = tbl.rowDescriptor();
 
@@ -829,7 +828,7 @@ public final class UpdatePlanBuilder {
     /**
      * Simple supplier that just takes specified element of a given row.
      */
-    private final static class PlainValueSupplier implements KeyValueSupplier {
+    private static final class PlainValueSupplier implements KeyValueSupplier {
         /** Index of column to use. */
         private final int colIdx;
 
