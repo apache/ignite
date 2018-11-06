@@ -468,7 +468,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param msg Discovery message.
      */
-    @SuppressWarnings("ThrowableInstanceNeverThrown")
     public void onSchemaPropose(SchemaProposeDiscoveryMessage msg) {
         UUID opId = msg.operation().id();
 
@@ -494,7 +493,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param msg Message.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void onSchemaFinishDiscovery(SchemaFinishDiscoveryMessage msg) {
         UUID opId = msg.operation().id();
 
@@ -585,7 +583,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param schemaOp Schema operation.
      */
-    @SuppressWarnings({"unchecked", "ThrowableInstanceNeverThrown"})
     private void startSchemaChange(SchemaOperation schemaOp) {
         assert Thread.holdsLock(stateMux);
         assert !schemaOp.started();
@@ -680,7 +677,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param schema Initial schema.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings({"deprecation", "ThrowableResultOfMethodCallIgnored"})
     public void onCacheStart0(GridCacheContext<?, ?> cctx, QuerySchema schema)
         throws IgniteCheckedException {
 
@@ -1411,7 +1407,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cancelTok Cancel token.
      * @throws SchemaOperationException If failed.
      */
-    @SuppressWarnings("StatementWithEmptyBody")
     public void processSchemaOperationLocal(SchemaAbstractOperation op, QueryTypeDescriptorImpl type, IgniteUuid depId,
         SchemaIndexOperationCancellationToken cancelTok) throws SchemaOperationException {
         if (log.isDebugEnabled())
@@ -1487,7 +1482,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param encrypted Encrypted flag.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     public void dynamicTableCreate(String schemaName, QueryEntity entity, String templateName, String cacheName,
         String cacheGroup, @Nullable String dataRegion, String affinityKey, @Nullable CacheAtomicityMode atomicityMode,
         @Nullable CacheWriteSynchronizationMode writeSyncMode, @Nullable Integer backups, boolean ifNotExists,
@@ -1567,7 +1561,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param ifExists Quietly ignore this command if table does not exist.
      * @throws SchemaOperationException if {@code ifExists} is {@code false} and cache was not found.
      */
-    @SuppressWarnings("unchecked")
     public void dynamicTableDrop(String cacheName, String tblName, boolean ifExists) throws SchemaOperationException {
         GridCacheContext currCache = this.curCache.get();
 
@@ -1840,7 +1833,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param prevRow Previous row.
      * @throws IgniteCheckedException In case of error.
      */
-    @SuppressWarnings({"unchecked", "ConstantConditions"})
     public void store(GridCacheContext cctx, CacheDataRow newRow, @Nullable CacheDataRow prevRow,
         boolean prevRowAvailable)
         throws IgniteCheckedException {
@@ -2107,19 +2099,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *      more then one SQL statement.
      * @return Cursor.
      */
-    @SuppressWarnings("unchecked")
     public List<FieldsQueryCursor<List<?>>> querySqlFields(@Nullable final GridCacheContext<?, ?> cctx,
         final SqlFieldsQuery qry, final SqlClientContext cliCtx, final boolean keepBinary,
         final boolean failOnMultipleStmts) {
         checkxEnabled();
 
         validateSqlFieldsQuery(qry, ctx, cctx);
-
-        if (!ctx.state().publicApiActiveState(true)) {
-            throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, that " +
-                "the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes " +
-                "join the cluster. To activate the cluster call Ignite.active(true).");
-        }
 
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
@@ -2526,15 +2511,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         for (QueryField col : cols) {
             try {
                 props.add(new QueryBinaryProperty(
-                    ctx, 
+                    ctx,
                     col.name(),
-                    null, 
-                    Class.forName(col.typeName()), 
-                    false, 
-                    null, 
-                    !col.isNullable(), 
-                    null, 
-                    col.precision(), 
+                    null,
+                    Class.forName(col.typeName()),
+                    false,
+                    null,
+                    !col.isNullable(),
+                    null,
+                    col.precision(),
                     col.scale()));
             }
             catch (ClassNotFoundException e) {
@@ -2616,7 +2601,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Key/value rows.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryText(final String cacheName, final String clause,
         final String resType, final IndexingQueryFilter filters) throws IgniteCheckedException {
         checkEnabled();
@@ -2700,7 +2684,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param clo Closure.
      * @param complete Complete.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public <R> R executeQuery(GridCacheQueryType qryType, String qry, @Nullable GridCacheContext<?, ?> cctx,
         IgniteOutClosureX<R> clo, boolean complete) throws IgniteCheckedException {
         final long startTime = U.currentTimeMillis();

@@ -60,8 +60,8 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLock
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
@@ -75,12 +75,12 @@ import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -106,7 +106,7 @@ import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
  */
 public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /** */
-    public static final int DURATION = 60_000;
+    public static final int DURATION = SF.applyLB(60_000, 5_000);
 
     /** */
     private static final String CACHE_NAME = "test";
@@ -356,7 +356,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         U.awaitQuiet(keyLocked);
 
-        final int txCnt = 1000;
+        final int txCnt = SF.applyLB(250, 25);
 
         final IgniteKernal k = (IgniteKernal)tryLockNode;
 
@@ -639,7 +639,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         final int txSize = 200;
 
         for (int k = 0; k < txSize; k++)
-            grid(0).cache(CACHE_NAME).put(k, (long)0);
+            grid(0).cache(CACHE_NAME).put(k, 0L);
 
         final long seed = System.currentTimeMillis();
 
@@ -711,13 +711,13 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                     tx.commit();
 
-                    completed.add(1);
+                    completed.increment();
                 }
                 catch (Throwable e) {
-                    failed.add(1);
+                    failed.increment();
                 }
 
-                total.add(1);
+                total.increment();
             }
         }, threadCnt, "tx-thread");
 
@@ -728,11 +728,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                 try {
                     IgniteFuture<Void> rollbackFut = tx.rollbackAsync();
 
-                    rollbackFut.listen(new IgniteInClosure<IgniteFuture<Void>>() {
-                        @Override public void apply(IgniteFuture<Void> fut) {
-                            tx.close();
-                        }
-                    });
+                    rollbackFut.listen(fut -> tx.close());
                 }
                 catch (Throwable t) {
                     log.error("Exception on async rollback", t);
@@ -762,7 +758,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                 // Rollback all transaction
                 while((tx = nodeQ.poll()) != null) {
-                    rolledBack.add(1);
+                    rolledBack.increment();
 
                     doSleep(r.nextInt(50)); // Add random sleep to increase completed txs count.
 
@@ -787,7 +783,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         try {
             rollbackFut.get();
         }
-        catch (IgniteFutureCancelledCheckedException e) {
+        catch (IgniteFutureCancelledCheckedException ignore) {
             // Expected.
         }
 
@@ -796,7 +792,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
             Transaction tx;
 
             while((tx = queue.poll()) != null) {
-                rolledBack.add(1);
+                rolledBack.increment();
 
                 rollbackClo.apply(tx);
             }

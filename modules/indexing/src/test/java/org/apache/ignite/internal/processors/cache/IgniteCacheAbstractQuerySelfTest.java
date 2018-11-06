@@ -2226,7 +2226,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     /**
      * Empty test object.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class EmptyObject {
         /** */
         private int val;

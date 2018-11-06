@@ -306,7 +306,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * Test job to test possible indefinite recursion in detecting peer deploy aware.
      */
-    @SuppressWarnings({"UnusedDeclaration"})
     private class SelfReferencedJob extends ComputeJobAdapter implements GridPeerDeployAware {
         /** */
         private SelfReferencedJob ref;
@@ -923,7 +922,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
             fail("Should throw timeout exception");
         }
         catch (Exception e) {
-            assertTrue(e.getCause() instanceof TimeoutException);
+            assertTrue(e.toString(), X.hasCause(e, TimeoutException.class));
         }
     }
 

@@ -119,7 +119,6 @@ import org.apache.log4j.Priority;
 import org.apache.log4j.RollingFileAppender;
 import org.jetbrains.annotations.Nullable;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestName;
@@ -2229,7 +2228,7 @@ public abstract class GridAbstractTest2 {
      * @param itfClses Interfaces that should be implemented by proxy (vararg parameter)
      * @return Created proxy.
      */
-    protected <T> T notSerializableProxy(final T obj, Class<? super T> itfCls, Class<? super T> ... itfClses) {
+    protected <T> T notSerializableProxy(final T obj, Class<? super T> itfCls, Class<? super T>... itfClses) {
         Class<?>[] itfs = Arrays.copyOf(itfClses, itfClses.length + 3);
 
         itfs[itfClses.length] = itfCls;

@@ -718,7 +718,6 @@ public class GridCacheConcurrentTxMultiNodeLoadTest extends GridCommonAbstractTe
      *
      */
     @QueryGroupIndex(name = "msg_tx")
-    @SuppressWarnings({"UnusedDeclaration"})
     private static class Request implements Serializable {
         /** */
         @QuerySqlField(index = true)
@@ -759,7 +758,6 @@ public class GridCacheConcurrentTxMultiNodeLoadTest extends GridCommonAbstractTe
     /**
      *
      */
-    @SuppressWarnings({"UnusedDeclaration"})
     private static class Response implements Serializable {
         /** */
         @QuerySqlField
@@ -814,7 +812,6 @@ public class GridCacheConcurrentTxMultiNodeLoadTest extends GridCommonAbstractTe
     /**
      *
      */
-    @SuppressWarnings( {"UnusedDeclaration"})
     private static class ResponseTask extends ComputeTaskSplitAdapter<Message, Void> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int arg0, Message msg) {

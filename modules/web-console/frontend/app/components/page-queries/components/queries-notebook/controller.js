@@ -14,6 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import _ from 'lodash';
 import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
 import id8 from 'app/utils/id8';
 import 'rxjs/add/operator/mergeMap';
@@ -891,37 +893,13 @@ export class NotebookCtrl {
         /**
          * Update caches list.
          */
-        const _refreshFn = () => {
-            return agentMgr.topology(true)
-                .then((nodes) => {
-                    $scope.caches = _.sortBy(_.reduce(nodes, (cachesAcc, node) => {
-                        _.forEach(node.caches, (cache) => {
-                            let item = _.find(cachesAcc, {name: cache.name});
-
-                            if (_.isNil(item)) {
-                                cache.label = maskCacheName(cache.name, true);
-                                cache.value = cache.name;
-
-                                cache.nodes = [];
-
-                                cachesAcc.push(item = cache);
-                            }
-
-                            item.nodes.push({
-                                nid: node.nodeId.toUpperCase(),
-                                ip: _.head(node.attributes['org.apache.ignite.ips'].split(', ')),
-                                version: node.attributes['org.apache.ignite.build.ver'],
-                                gridName: node.attributes['org.apache.ignite.ignite.name'],
-                                os: `${node.attributes['os.name']} ${node.attributes['os.arch']} ${node.attributes['os.version']}`,
-                                client: node.attributes['org.apache.ignite.cache.client']
-                            });
-                        });
-
-                        return cachesAcc;
-                    }, []), (cache) => cache.label.toLowerCase());
-
-                    // Reset to first cache in case of stopped selected.
-                    const cacheNames = _.map($scope.caches, (cache) => cache.value);
+        const _refreshCaches = () => {
+            return agentMgr.publicCacheNames()
+                .then((cacheNames) => {
+                    $scope.caches = _.sortBy(_.map(cacheNames, (name) => ({
+                        label: maskCacheName(name, true),
+                        value: name
+                    })), (cache) => cache.label.toLowerCase());
 
                     _.forEach($scope.notebook.paragraphs, (paragraph) => {
                         if (!_.includes(cacheNames, paragraph.cacheName))
@@ -936,6 +914,8 @@ export class NotebookCtrl {
 
                         _.forEach($scope.notebook.paragraphs, (paragraph) => $scope.execute(paragraph));
                     }
+
+                    $scope.$applyAsync();
                 })
                 .catch((err) => Messages.showError(err));
         };
@@ -950,7 +930,7 @@ export class NotebookCtrl {
             }).take(1);
 
             const refreshCaches = (period) => {
-                return timer(0, period).exhaustMap(() => _refreshFn()).merge(finishLoading$);
+                return timer(0, period).exhaustMap(() => _refreshCaches()).merge(finishLoading$);
             };
 
             this.refresh$ = awaitClusters$
@@ -1390,29 +1370,48 @@ export class NotebookCtrl {
 
         /**
          * @param {String} name Cache name.
-         * @return {Array.<String>} Nids
+         * @param {Array.<String>} nids Cache name.
+         * @return {Promise<Array.<{nid: string, ip: string, version:string, gridName: string, os: string, client: boolean}>>}
          */
-        const cacheNodes = (name) => {
-            return _.find($scope.caches, {name}).nodes;
+        const cacheNodesModel = (name, nids) => {
+            return agentMgr.topology(true)
+                .then((nodes) =>
+                    _.reduce(nodes, (acc, node) => {
+                        if (_.includes(nids, node.nodeId)) {
+                            acc.push({
+                                nid: node.nodeId.toUpperCase(),
+                                ip: _.head(node.attributes['org.apache.ignite.ips'].split(', ')),
+                                version: node.attributes['org.apache.ignite.build.ver'],
+                                gridName: node.attributes['org.apache.ignite.ignite.name'],
+                                os: `${node.attributes['os.name']} ${node.attributes['os.arch']} ${node.attributes['os.version']}`,
+                                client: node.attributes['org.apache.ignite.cache.client']
+                            });
+                        }
+
+                        return acc;
+                    }, [])
+                );
         };
 
         /**
-         * @param {String} name Cache name.
-         * @param {Boolean} local Local query.
-         * @return {String} Nid
+         * @param {string} name Cache name.
+         * @param {boolean} local Local query.
+         * @return {Promise<string>} Nid
          */
         const _chooseNode = (name, local) => {
             if (_.isEmpty(name))
                 return Promise.resolve(null);
 
-            const nodes = _.filter(cacheNodes(name), (node) => !node.client);
+            return agentMgr.cacheNodes(name)
+                .then((nids) => {
+                    if (local) {
+                        return cacheNodesModel(name, nids)
+                            .then((nodes) => Nodes.selectNode(nodes, name).catch(() => {}))
+                            .then((selectedNids) => _.head(selectedNids));
+                    }
 
-            if (local) {
-                return Nodes.selectNode(nodes, name)
-                    .then((selectedNids) => _.head(selectedNids));
-            }
-
-            return Promise.resolve(nodes[_.random(0, nodes.length - 1)].nid);
+                    return nids[_.random(0, nids.length - 1)];
+                });
         };
 
         const _executeRefresh = (paragraph) => {
@@ -1446,53 +1445,28 @@ export class NotebookCtrl {
             ${query} 
             ) LIMIT ${limitSize}`;
 
-        $scope.nonCollocatedJoinsAvailable = (paragraph) => {
-            const cache = _.find($scope.caches, {name: paragraph.cacheName});
-
-            if (cache)
-                return !!_.find(cache.nodes, (node) => Version.since(node.version, NON_COLLOCATED_JOINS_SINCE));
-
-            return false;
+        $scope.nonCollocatedJoinsAvailable = () => {
+            return Version.since(this.agentMgr.clusterVersion, NON_COLLOCATED_JOINS_SINCE);
         };
 
-        $scope.collocatedJoinsAvailable = (paragraph) => {
-            const cache = _.find($scope.caches, {name: paragraph.cacheName});
-
-            if (cache)
-                return !!_.find(cache.nodes, (node) => Version.since(node.version, ...COLLOCATED_QUERY_SINCE));
-
-            return false;
+        $scope.collocatedJoinsAvailable = () => {
+            return Version.since(this.agentMgr.clusterVersion, ...COLLOCATED_QUERY_SINCE);
         };
 
-        $scope.enforceJoinOrderAvailable = (paragraph) => {
-            const cache = _.find($scope.caches, {name: paragraph.cacheName});
-
-            if (cache)
-                return !!_.find(cache.nodes, (node) => Version.since(node.version, ...ENFORCE_JOIN_SINCE));
-
-            return false;
+        $scope.enforceJoinOrderAvailable = () => {
+            return Version.since(this.agentMgr.clusterVersion, ...ENFORCE_JOIN_SINCE);
         };
 
-        $scope.lazyQueryAvailable = (paragraph) => {
-            const cache = _.find($scope.caches, {name: paragraph.cacheName});
-
-            if (cache)
-                return !!_.find(cache.nodes, (node) => Version.since(node.version, ...LAZY_QUERY_SINCE));
-
-            return false;
+        $scope.lazyQueryAvailable = () => {
+            return Version.since(this.agentMgr.clusterVersion, ...LAZY_QUERY_SINCE);
         };
 
-        $scope.ddlAvailable = (paragraph) => {
-            const cache = _.find($scope.caches, {name: paragraph.cacheName});
-
-            if (cache)
-                return !!_.find(cache.nodes, (node) => Version.since(node.version, ...DDL_SINCE));
-
-            return false;
+        $scope.ddlAvailable = () => {
+            return Version.since(this.agentMgr.clusterVersion, ...DDL_SINCE);
         };
 
         $scope.cacheNameForSql = (paragraph) => {
-            return $scope.ddlAvailable(paragraph) && !paragraph.useAsDefaultSchema ? null : paragraph.cacheName;
+            return $scope.ddlAvailable() && !paragraph.useAsDefaultSchema ? null : paragraph.cacheName;
         };
 
         $scope.execute = (paragraph, local = false) => {
@@ -1893,7 +1867,7 @@ export class NotebookCtrl {
             agentMgr.metadata()
                 .then((metadata) => {
                     $scope.metadata = _.sortBy(_.filter(metadata, (meta) => {
-                        const cache = _.find($scope.caches, { name: meta.cacheName });
+                        const cache = _.find($scope.caches, { value: meta.cacheName });
 
                         if (cache) {
                             meta.name = (cache.sqlSchema || '"' + meta.cacheName + '"') + '.' + meta.typeName;
