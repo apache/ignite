@@ -47,7 +47,6 @@ public class GridCommunicationManagerListenersSelfTest extends GridCommonAbstrac
     /**
      * Works fine.
      */
-    @SuppressWarnings({"deprecation"})
     public void testDifferentListeners() {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -76,7 +75,6 @@ public class GridCommunicationManagerListenersSelfTest extends GridCommonAbstrac
      * This is the workaround- as long as we keep a message listener in
      * the stack, our FIFO bug isn't exposed.  Comment above out to see.
      */
-    @SuppressWarnings({"deprecation"})
     public void testOneListener() {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 

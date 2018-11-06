@@ -124,7 +124,6 @@ public class H2PkHashIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("StatementWithEmptyBody")
     @Override public GridH2Row put(GridH2Row row) {
         // Should not be called directly. Rows are inserted into underlying cache data stores.
         assert false;

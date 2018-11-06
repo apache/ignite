@@ -314,7 +314,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * @param ctx Cache context.
      */
-    @SuppressWarnings("OverriddenMethodCallDuringObjectConstruction")
     protected GridCacheAdapter(GridCacheContext<K, V> ctx) {
         this(ctx, null);
     }
@@ -811,7 +810,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     @Nullable @Override public final V localPeek(K key,
         CachePeekMode[] peekModes,
         @Nullable IgniteCacheExpiryPolicy plc)
@@ -4211,7 +4209,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Awaits for previous async operation to be completed.
      */
-    @SuppressWarnings("unchecked")
     public void awaitLastFut() {
         FutureHolder holder = lastFut.get();
 
@@ -4331,7 +4328,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param <T> Return type.
      * @return Future.
      */
-    @SuppressWarnings("unchecked")
     private <T> IgniteInternalFuture<T> asyncOp(final AsyncOp<T> op) {
         try {
             checkJta();
@@ -4579,7 +4575,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         IgniteBiTuple<String, String> t = stash.get();
 
@@ -5947,7 +5942,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
          * @param key Entry key.
          * @param ver Entry version.
          */
-        @SuppressWarnings("unchecked")
         @Override public void ttlUpdated(KeyCacheObject key,
             GridCacheVersion ver,
             @Nullable Collection<UUID> rdrs) {
