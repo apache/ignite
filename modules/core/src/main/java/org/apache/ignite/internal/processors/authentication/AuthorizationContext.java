@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.authentication;
 
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
+
 /**
  * Ignite authentication context.
  */
@@ -25,7 +27,7 @@ public class AuthorizationContext {
     private final User user;
 
     /** Current authorization context. */
-    private static ThreadLocal<AuthorizationContext> actx = new ThreadLocal<>();
+    private static ThreadLocal<AuthorizationContext> actx = new ThreadLocalExtra<>();
 
     /**
      * Creates authentication context.

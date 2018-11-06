@@ -27,6 +27,7 @@ import java.io.InputStreamReader;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.ClassSet;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -43,10 +44,10 @@ public class MarshallerUtils {
     public static final String CLS_NAMES_FILE = "META-INF/classnames.properties";
 
     /** Job sender node version. */
-    private static final ThreadLocal<IgniteProductVersion> JOB_SND_NODE_VER = new ThreadLocal<>();
+    private static final ThreadLocal<IgniteProductVersion> JOB_SND_NODE_VER = new ThreadLocalExtra<>();
 
     /** Job sender node version. */
-    private static final ThreadLocal<IgniteProductVersion> JOB_RCV_NODE_VER = new ThreadLocal<>();
+    private static final ThreadLocal<IgniteProductVersion> JOB_RCV_NODE_VER = new ThreadLocalExtra<>();
 
     /**
      * Set node name to marshaller context if possible.

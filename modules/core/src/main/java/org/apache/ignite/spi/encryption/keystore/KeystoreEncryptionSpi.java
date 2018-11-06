@@ -44,13 +44,14 @@ import javax.crypto.spec.SecretKeySpec;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.spi.encryption.EncryptionSpi;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.jetbrains.annotations.Nullable;
 
 import static javax.crypto.Cipher.DECRYPT_MODE;
@@ -132,7 +133,7 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
     protected Ignite ignite;
 
     /** */
-    private ThreadLocal<Cipher> aesWithPadding = ThreadLocal.withInitial(() -> {
+    private ThreadLocal<Cipher> aesWithPadding = ThreadLocalExtra.withInitial(() -> {
         try {
             return Cipher.getInstance(AES_WITH_PADDING);
         }
@@ -142,7 +143,7 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
     });
 
     /** */
-    private ThreadLocal<Cipher> aesWithoutPadding = ThreadLocal.withInitial(() -> {
+    private ThreadLocal<Cipher> aesWithoutPadding = ThreadLocalExtra.withInitial(() -> {
         try {
             return Cipher.getInstance(AES_WITHOUT_PADDING);
         }

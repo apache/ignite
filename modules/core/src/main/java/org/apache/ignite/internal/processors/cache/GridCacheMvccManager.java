@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishFuture;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -90,7 +91,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     private static final int MAX_NESTED_LSNR_CALLS = getInteger(IGNITE_MAX_NESTED_LISTENER_CALLS, 5);
 
     /** Pending locks per thread. */
-    private final ThreadLocal<Deque<GridCacheMvccCandidate>> pending = new ThreadLocal<>();
+    private final ThreadLocal<Deque<GridCacheMvccCandidate>> pending = new ThreadLocalExtra<>();
 
     /** Pending near local locks and topology version per thread. */
     private ConcurrentMap<Long, GridCacheExplicitLockSpan> pendingExplicit;
@@ -127,7 +128,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     private final FastSizeDeque<FinishLockFuture> finishFuts = new FastSizeDeque<>(new ConcurrentLinkedDeque<>());
 
     /** Nested listener calls. */
-    private final ThreadLocal<Integer> nestedLsnrCalls = new ThreadLocal<Integer>() {
+    private final ThreadLocal<Integer> nestedLsnrCalls = new ThreadLocalExtra<Integer>() {
         @Override protected Integer initialValue() {
             return 0;
         }
@@ -144,7 +145,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     protected final AtomicLong globalAtomicCnt = new AtomicLong();
 
     /** Per thread atomic id counter. */
-    private final ThreadLocal<LongWrapper> threadAtomicCnt = new ThreadLocal<LongWrapper>() {
+    private final ThreadLocal<LongWrapper> threadAtomicCnt = new ThreadLocalExtra<LongWrapper>() {
         @Override protected LongWrapper initialValue() {
             return new LongWrapper(globalAtomicCnt.getAndAdd(THREAD_RESERVE_SIZE));
         }

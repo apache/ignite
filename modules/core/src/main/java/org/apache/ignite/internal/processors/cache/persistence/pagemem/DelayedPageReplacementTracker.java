@@ -26,6 +26,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.util.ThreadResolver;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 
 /**
  * Delayed page writes tracker. Provides delayed write implementations and allows to check if page is actually being
@@ -46,7 +48,7 @@ public class DelayedPageReplacementTracker {
 
     /** Byte buffer thread local. */
     private final ThreadLocal<ByteBuffer> byteBufThreadLoc
-        = new ThreadLocal<ByteBuffer>() {
+        = new ThreadLocalExtra<ByteBuffer>() {
         @Override protected ByteBuffer initialValue() {
             ByteBuffer buf = ByteBuffer.allocateDirect(pageSize);
 
@@ -84,7 +86,7 @@ public class DelayedPageReplacementTracker {
      * @return delayed page write implementation, finish method to be called to actually write page.
      */
     public DelayedDirtyPageWrite delayedPageWrite() {
-        return delayedPageWriteThreadLocMap.computeIfAbsent(Thread.currentThread().getId(),
+        return delayedPageWriteThreadLocMap.computeIfAbsent(ThreadResolver.threadId(),
             id -> new DelayedDirtyPageWrite(flushDirtyPage, byteBufThreadLoc, pageSize, this));
     }
 

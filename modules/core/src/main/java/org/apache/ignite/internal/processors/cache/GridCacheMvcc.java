@@ -29,6 +29,7 @@ import java.util.ListIterator;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.ThreadResolver;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
@@ -1188,7 +1189,7 @@ public final class GridCacheMvcc {
      * @return Removed candidate.
      */
     @Nullable public GridCacheMvccCandidate releaseLocal() {
-        return releaseLocal(Thread.currentThread().getId());
+        return releaseLocal(ThreadResolver.threadId());
     }
 
     /**

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.memory;
 
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,7 +36,7 @@ public class PlatformMemoryManagerImpl implements PlatformMemoryManager {
     private final int dfltCap;
 
     /** Thread-local pool. */
-    private final ThreadLocal<PlatformMemoryPool> threadLocPool = new ThreadLocal<>();
+    private final ThreadLocal<PlatformMemoryPool> threadLocPool = new ThreadLocalExtra<>();
 
     /**
      * Constructor.

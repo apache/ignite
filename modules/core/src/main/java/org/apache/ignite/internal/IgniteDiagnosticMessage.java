@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -63,7 +64,7 @@ public class IgniteDiagnosticMessage implements Message {
     private static final int REQUEST_FLAG_MASK = 0x01;
 
     /** */
-    private static final ThreadLocal<DateFormat> dateFormat = new ThreadLocal<DateFormat>() {
+    private static final ThreadLocal<DateFormat> dateFormat = new ThreadLocalExtra<DateFormat>() {
         @Override protected DateFormat initialValue() {
             return new SimpleDateFormat("HH:mm:ss.SSS");
         }

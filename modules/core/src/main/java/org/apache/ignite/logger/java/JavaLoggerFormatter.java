@@ -23,6 +23,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -33,7 +34,7 @@ public class JavaLoggerFormatter extends Formatter {
     public static final String ANONYMOUS_LOGGER_NAME = "UNKNOWN";
 
     /** */
-    private static final ThreadLocal<SimpleDateFormat> DATE_FORMATTER = new ThreadLocal<SimpleDateFormat>() {
+    private static final ThreadLocal<SimpleDateFormat> DATE_FORMATTER = new ThreadLocalExtra<SimpleDateFormat>() {
         /** {@inheritDoc} */
         @Override protected SimpleDateFormat initialValue() {
             return new SimpleDateFormat("HH:mm:ss,SSS");

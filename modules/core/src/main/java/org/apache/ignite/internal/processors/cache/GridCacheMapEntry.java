@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult.UpdateOutcome;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
+import org.apache.ignite.internal.util.ThreadResolver;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
@@ -3704,7 +3705,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
     /** {@inheritDoc} */
     @Override public boolean lockedByThread() throws GridCacheEntryRemovedException {
-        return lockedByThread(Thread.currentThread().getId());
+        return lockedByThread(ThreadResolver.threadId());
     }
 
     /** {@inheritDoc} */

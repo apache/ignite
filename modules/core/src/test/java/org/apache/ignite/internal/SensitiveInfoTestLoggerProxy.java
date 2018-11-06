@@ -34,6 +34,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -88,14 +89,14 @@ public class SensitiveInfoTestLoggerProxy implements IgniteLogger, LifecycleAwar
     private static final Pattern EXCLUDE_CATEGORY_P = Pattern.compile("Test(Task|Job)?($|\\$)|\\.tests?\\.");
 
     /** */
-    private static ThreadLocal<IgniteBiTuple<String, Object>> stash = new ThreadLocal<IgniteBiTuple<String, Object>>() {
+    private static ThreadLocal<IgniteBiTuple<String, Object>> stash = new ThreadLocalExtra<IgniteBiTuple<String, Object>>() {
         @Override protected IgniteBiTuple<String, Object> initialValue() {
             return new IgniteBiTuple<>();
         }
     };
 
     /** */
-    private static ThreadLocal<StringBuilder> sbLoc = new ThreadLocal<StringBuilder>() {
+    private static ThreadLocal<StringBuilder> sbLoc = new ThreadLocalExtra<StringBuilder>() {
         @Override protected StringBuilder initialValue() {
             return new StringBuilder(SENSITIVE_PREFIX);
         }

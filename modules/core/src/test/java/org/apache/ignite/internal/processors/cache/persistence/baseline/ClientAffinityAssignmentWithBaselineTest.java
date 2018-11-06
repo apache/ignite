@@ -46,6 +46,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.util.ThreadResolver;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -743,7 +744,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
                                     break;
                             }
 
-                            threadProgressTracker.compute(Thread.currentThread().getId(),
+                            threadProgressTracker.compute(ThreadResolver.threadId(),
                                 (tId, ops) -> ops == null ? 1 : ops + 1);
                         }
                         catch (CacheException e) {
@@ -816,7 +817,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
                             else
                                 tx.commit();
 
-                            threadProgressTracker.compute(Thread.currentThread().getId(),
+                            threadProgressTracker.compute(ThreadResolver.threadId(),
                                 (tId, ops) -> ops == null ? 1 : ops + 1);
                         }
                         catch (CacheException e) {
@@ -892,7 +893,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
                             else
                                 tx.commit();
 
-                            threadProgressTracker.compute(Thread.currentThread().getId(),
+                            threadProgressTracker.compute(ThreadResolver.threadId(),
                                 (tId, ops) -> ops == null ? 1 : ops + 1);
                         }
                         catch (CacheException e) {

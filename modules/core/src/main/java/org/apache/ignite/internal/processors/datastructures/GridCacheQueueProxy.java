@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheGateway;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
@@ -46,7 +47,7 @@ public class GridCacheQueueProxy<T> implements IgniteQueue<T>, Externalizable {
 
     /** Deserialization stash. */
     private static final ThreadLocal<T3<GridKernalContext, String, String>> stash =
-        new ThreadLocal<T3<GridKernalContext, String, String>>() {
+        new ThreadLocalExtra<T3<GridKernalContext, String, String>>() {
             @Override protected T3<GridKernalContext, String, String> initialValue() {
                 return new T3<>();
             }

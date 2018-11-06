@@ -18,6 +18,7 @@
 package org.apache.ignite.igfs;
 
 import java.util.concurrent.Callable;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.jetbrains.annotations.Nullable;
@@ -27,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public abstract class IgfsUserContext {
     /** Thread local to hold the current user context. */
-    private static final ThreadLocal<String> userStackThreadLocal = new ThreadLocal<>();
+    private static final ThreadLocal<String> userStackThreadLocal = new ThreadLocalExtra<>();
 
     /**
      * Executes given callable in the given user context.

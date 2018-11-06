@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.binary.streams;
 
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
+
 /**
  * Thread-local memory allocator.
  */
@@ -25,7 +27,7 @@ public final class BinaryMemoryAllocator {
     public static final BinaryMemoryAllocator INSTANCE = new BinaryMemoryAllocator();
 
     /** Holders. */
-    private static final ThreadLocal<BinaryMemoryAllocatorChunk> holders = new ThreadLocal<>();
+    private static final ThreadLocal<BinaryMemoryAllocatorChunk> holders = new ThreadLocalExtra<>();
 
     /**
      * Ensures singleton.

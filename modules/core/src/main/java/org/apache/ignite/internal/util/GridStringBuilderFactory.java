@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.util;
 
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 
 /**
@@ -24,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
  */
 public final class GridStringBuilderFactory {
     /** Cache string builders per thread for better performance. */
-    private static ThreadLocal<CachedBuilder> builders = new ThreadLocal<CachedBuilder>() {
+    private static ThreadLocal<CachedBuilder> builders = new ThreadLocalExtra<CachedBuilder>() {
         @Override protected CachedBuilder initialValue() {
             return new CachedBuilder();
         }

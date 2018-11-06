@@ -65,11 +65,12 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTransactionalCacheAdapter;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTransactionalCache;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrManager;
@@ -129,7 +130,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** Deserialization stash. */
-    private static final ThreadLocal<IgniteBiTuple<String, String>> stash = new ThreadLocal<IgniteBiTuple<String, String>>() {
+    private static final ThreadLocal<IgniteBiTuple<String, String>> stash = new ThreadLocalExtra<IgniteBiTuple<String, String>>() {
         @Override protected IgniteBiTuple<String, String> initialValue() {
             return new IgniteBiTuple<>();
         }
@@ -202,7 +203,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * Thread local operation context. If it's set it means that method call was initiated
      * by child cache of initial cache.
      */
-    private ThreadLocal<CacheOperationContext> opCtxPerCall = new ThreadLocal<>();
+    private ThreadLocal<CacheOperationContext> opCtxPerCall = new ThreadLocalExtra<>();
 
     /** Cache name. */
     private String cacheName;

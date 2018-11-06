@@ -18,14 +18,25 @@
 package org.apache.ignite.cache.affinity.rendezvous;
 
 import java.io.Externalizable;
+import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.io.PrintStream;
 import java.io.Serializable;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -40,6 +51,7 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -51,18 +63,6 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.io.IOException;
-import java.io.PrintStream;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -616,7 +616,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
         private static final Comparator<IgniteBiTuple<Long, ClusterNode>> COMPARATOR = new HashComparator();
 
         /** Thread local message digest. */
-        private ThreadLocal<MessageDigest> digest = new ThreadLocal<MessageDigest>() {
+        private ThreadLocal<MessageDigest> digest = new ThreadLocalExtra<MessageDigest>() {
             @Override protected MessageDigest initialValue() {
                 try {
                     return MessageDigest.getInstance("MD5");

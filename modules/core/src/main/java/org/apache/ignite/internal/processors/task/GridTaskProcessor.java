@@ -64,6 +64,7 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
@@ -81,10 +82,10 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.events.EventType.EVT_MANAGEMENT_TASK_STARTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_TASK_SESSION_ATTR_SET;
-import static org.apache.ignite.events.EventType.EVT_MANAGEMENT_TASK_STARTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_JOB_SIBLINGS;
 import static org.apache.ignite.internal.GridTopic.TOPIC_TASK;
 import static org.apache.ignite.internal.GridTopic.TOPIC_TASK_CANCEL;
@@ -126,7 +127,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
     private final LongAdder execTasks = new LongAdder();
 
     /** */
-    private final ThreadLocal<Map<GridTaskThreadContextKey, Object>> thCtx = new ThreadLocal<>();
+    private final ThreadLocal<Map<GridTaskThreadContextKey, Object>> thCtx = new ThreadLocalExtra<>();
 
     /** */
     private final GridSpinReadWriteLock lock = new GridSpinReadWriteLock();

@@ -47,6 +47,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -76,10 +77,10 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     private static final int CLIENT_GRID_CNT = 5;
 
     /** */
-    private static final ThreadLocal<Boolean> clientFlagPerThread = new ThreadLocal<>();
+    private static final ThreadLocal<Boolean> clientFlagPerThread = new ThreadLocalExtra<>();
 
     /** */
-    private static final ThreadLocal<UUID> nodeId = new ThreadLocal<>();
+    private static final ThreadLocal<UUID> nodeId = new ThreadLocalExtra<>();
 
     /** */
     private static volatile boolean clientFlagGlobal;

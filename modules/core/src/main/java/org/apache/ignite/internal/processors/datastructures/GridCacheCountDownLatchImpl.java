@@ -30,12 +30,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 import static org.apache.ignite.internal.util.typedef.internal.CU.retryTopologySafe;
@@ -61,7 +62,7 @@ public final class GridCacheCountDownLatchImpl extends AtomicDataStructureProxy<
 
     /** Deserialization stash. */
     private static final ThreadLocal<IgniteBiTuple<GridKernalContext, String>> stash =
-        new ThreadLocal<IgniteBiTuple<GridKernalContext, String>>() {
+        new ThreadLocalExtra<IgniteBiTuple<GridKernalContext, String>>() {
             @Override protected IgniteBiTuple<GridKernalContext, String> initialValue() {
                 return new IgniteBiTuple<>();
             }

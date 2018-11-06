@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.GridLeanSet;
+import org.apache.ignite.internal.util.ThreadResolver;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -168,7 +169,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
         this.explicitLock = explicitLock;
 
-        threadId = Thread.currentThread().getId();
+        threadId = ThreadResolver.threadId();
     }
 
     /**

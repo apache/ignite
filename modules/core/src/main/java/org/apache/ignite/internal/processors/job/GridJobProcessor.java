@@ -66,8 +66,9 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsSnapshot;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
@@ -195,21 +196,21 @@ public class GridJobProcessor extends GridProcessorAdapter {
     private final GridJobHoldListener holdLsnr = new JobHoldListener();
 
     /** */
-    private final ThreadLocal<Boolean> handlingCollision = new ThreadLocal<Boolean>() {
+    private final ThreadLocal<Boolean> handlingCollision = new ThreadLocalExtra<Boolean>() {
         @Override protected Boolean initialValue() {
             return false;
         }
     };
 
     /** Internal task flag. */
-    private final ThreadLocal<Boolean> internal = new ThreadLocal<Boolean>() {
+    private final ThreadLocal<Boolean> internal = new ThreadLocalExtra<Boolean>() {
         @Override protected Boolean initialValue() {
             return false;
         }
     };
 
     /** Current session. */
-    private final ThreadLocal<ComputeTaskSession> currSess = new ThreadLocal<>();
+    private final ThreadLocal<ComputeTaskSession> currSess = new ThreadLocalExtra<>();
 
     /**
      * @param ctx Kernal context.

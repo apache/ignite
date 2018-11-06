@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -44,7 +45,7 @@ import static java.nio.file.StandardOpenOption.WRITE;
  */
 public class RecoveryDebug implements AutoCloseable {
     /** */
-    private static final ThreadLocal<SimpleDateFormat> sdf = new ThreadLocal<SimpleDateFormat>() {
+    private static final ThreadLocal<SimpleDateFormat> sdf = new ThreadLocalExtra<SimpleDateFormat>() {
         /** {@inheritDoc} */
         @Override protected SimpleDateFormat initialValue() {
             SimpleDateFormat f = new SimpleDateFormat("dd-MM-yyyy-HH-mm-ss-SSS");

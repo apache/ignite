@@ -79,7 +79,7 @@ public class IgniteExceptionRegistry {
                 errCnt.incrementAndGet(),
                 e,
                 msg,
-                Thread.currentThread().getId(),
+                ThreadResolver.threadId(),
                 Thread.currentThread().getName(),
                 U.currentTimeMillis()));
 

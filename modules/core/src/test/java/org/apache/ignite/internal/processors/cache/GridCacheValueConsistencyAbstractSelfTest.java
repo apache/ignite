@@ -26,6 +26,7 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.util.ThreadResolver;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -314,7 +315,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
                     boolean rmv = rnd.nextBoolean();
 
                     if (!rmv)
-                        cache.put(k, Thread.currentThread().getId());
+                        cache.put(k, ThreadResolver.threadId());
                     else
                         cache.remove(k);
 

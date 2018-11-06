@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCa
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTransactionalCacheAdapter;
+import org.apache.ignite.internal.util.ThreadResolver;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlock;
@@ -225,7 +226,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
 
         ignoreInterrupts();
 
-        threadId = tx == null ? Thread.currentThread().getId() : tx.threadId();
+        threadId = tx == null ? ThreadResolver.threadId() : tx.threadId();
 
         lockVer = tx != null ? tx.xidVersion() : cctx.versions().next();
 
@@ -828,7 +829,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         assert added : this;
 
         // Obtain the topology version to use.
-        long threadId = Thread.currentThread().getId();
+        long threadId = ThreadResolver.threadId();
 
         AffinityTopologyVersion topVer = cctx.mvcc().lastExplicitLockTopologyVersion(threadId);
 

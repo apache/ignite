@@ -69,6 +69,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateAcceptedMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposedMessage;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
@@ -164,7 +165,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
         oomeHnd);
 
     /** Thread local for service name. */
-    private ThreadLocal<String> svcName = new ThreadLocal<>();
+    private ThreadLocal<String> svcName = new ThreadLocalExtra<>();
 
     /** Service cache. */
     private volatile IgniteInternalCache<Object, Object> serviceCache;

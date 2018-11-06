@@ -205,6 +205,7 @@ import org.apache.ignite.internal.processors.cache.CacheClassLoaderMarker;
 import org.apache.ignite.internal.processors.cache.GridCacheAttributes;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
@@ -217,6 +218,7 @@ import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryNativeLoader;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.lang.GridTuple;
+import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -234,7 +236,6 @@ import org.apache.ignite.lang.IgniteFutureTimeoutException;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.marshaller.Marshaller;
@@ -538,7 +539,7 @@ public abstract class IgniteUtils {
     public static final String LOC_IGNITE_NAME_EMPTY = new String();
 
     /** Local Ignite name thread local. */
-    private static final ThreadLocal<String> LOC_IGNITE_NAME = new ThreadLocal<String>() {
+    private static final ThreadLocal<String> LOC_IGNITE_NAME = new ThreadLocalExtra<String>() {
         @Override protected String initialValue() {
             return LOC_IGNITE_NAME_EMPTY;
         }

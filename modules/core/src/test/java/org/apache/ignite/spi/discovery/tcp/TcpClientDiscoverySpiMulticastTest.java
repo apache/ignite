@@ -24,6 +24,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
@@ -43,10 +44,10 @@ public class TcpClientDiscoverySpiMulticastTest extends GridCommonAbstractTest {
     private boolean forceSrv;
 
     /** */
-    private ThreadLocal<Boolean> client = new ThreadLocal<>();
+    private ThreadLocal<Boolean> client = new ThreadLocalExtra<>();
 
     /** */
-    private ThreadLocal<Integer> discoPort = new ThreadLocal<>();
+    private ThreadLocal<Integer> discoPort = new ThreadLocalExtra<>();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

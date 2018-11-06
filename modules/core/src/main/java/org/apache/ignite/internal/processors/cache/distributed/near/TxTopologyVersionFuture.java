@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
+import org.apache.ignite.internal.util.ThreadResolver;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI1;
 
@@ -53,7 +54,7 @@ public class TxTopologyVersionFuture extends GridFutureAdapter<AffinityTopologyV
     /** */
     private void init() {
         // Obtain the topology version to use.
-        long threadId = Thread.currentThread().getId();
+        long threadId = ThreadResolver.threadId();
 
         AffinityTopologyVersion topVer = cctx.mvcc().lastExplicitLockTopologyVersion(threadId);
 

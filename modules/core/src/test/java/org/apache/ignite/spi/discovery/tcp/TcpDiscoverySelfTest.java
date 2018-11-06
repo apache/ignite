@@ -56,6 +56,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.processors.continuous.StartRoutineAckDiscoveryMessage;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -119,7 +120,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     private UUID nodeId;
 
     /** */
-    private static ThreadLocal<TcpDiscoverySpi> nodeSpi = new ThreadLocal<>();
+    private static ThreadLocal<TcpDiscoverySpi> nodeSpi = new ThreadLocalExtra<>();
 
     /** */
     private GridStringLogger strLog;

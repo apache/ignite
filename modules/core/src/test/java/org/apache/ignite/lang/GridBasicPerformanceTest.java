@@ -40,6 +40,8 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.ThreadResolver;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.GridTimer;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -86,7 +88,7 @@ public class GridBasicPerformanceTest {
     private static final int ARR_SIZE = 50000;
 
     /** Thread local variable. */
-    private static ThreadLocal<GridTuple<Integer>> t = new ThreadLocal<GridTuple<Integer>>() {
+    private static ThreadLocal<GridTuple<Integer>> t = new ThreadLocalExtra<GridTuple<Integer>>() {
         @Override protected GridTuple<Integer> initialValue() {
             return new GridTuple<>(0);
         }
@@ -100,7 +102,7 @@ public class GridBasicPerformanceTest {
      * Initialize per-thread map.
      */
     static {
-        map.put(Thread.currentThread().getId(), new GridTuple<>(0));
+        map.put(ThreadResolver.threadId(), new GridTuple<>(0));
     }
 
     /**
@@ -388,7 +390,7 @@ public class GridBasicPerformanceTest {
         long start = System.currentTimeMillis();
 
         for (long i = 0; i < MAX; i++) {
-            GridTuple<Integer> v = map.get(Thread.currentThread().getId());
+            GridTuple<Integer> v = map.get(ThreadResolver.threadId());
 
             v.set(v.get() + 2);
         }

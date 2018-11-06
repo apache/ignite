@@ -35,6 +35,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheAlwaysEvictionPolicy;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -61,7 +62,7 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static ThreadLocal<Boolean> client = new ThreadLocal<>();
+    private static ThreadLocal<Boolean> client = new ThreadLocalExtra<>();
 
     /** */
     private static final int SRVS = 3;

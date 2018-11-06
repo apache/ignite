@@ -22,6 +22,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.util.io.GridUnsafeDataInput;
 import org.apache.ignite.internal.util.io.GridUnsafeDataOutput;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -31,7 +32,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 class OptimizedObjectStreamRegistry {
     /** Holders. */
-    private static final ThreadLocal<StreamHolder> holders = new ThreadLocal<>();
+    private static final ThreadLocalExtra<StreamHolder> holders = new ThreadLocalExtra<>();
 
     /** Output streams pool. */
     private static BlockingQueue<OptimizedObjectOutputStream> outPool;

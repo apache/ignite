@@ -35,6 +35,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.ThreadResolver;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -583,7 +584,7 @@ public final class IgfsLogger {
             Boolean overwrite, Integer replication, Long blockSize, Long pos, Integer readLen, Long skipCnt,
             Long readLimit, Long userTime, Long sysTime, Long total, String destPath, Boolean recursive,
             String[] list) {
-            threadId = Thread.currentThread().getId();
+            threadId = ThreadResolver.threadId();
             ts = U.currentTimeMillis();
 
             this.type = type;

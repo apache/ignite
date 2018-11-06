@@ -58,6 +58,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.eviction.AbstractEvictionPolicyFactory;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -148,7 +149,7 @@ public class VisorTaskUtils {
     };
 
     /** Debug date format. */
-    private static final ThreadLocal<SimpleDateFormat> DEBUG_DATE_FMT = new ThreadLocal<SimpleDateFormat>() {
+    private static final ThreadLocal<SimpleDateFormat> DEBUG_DATE_FMT = new ThreadLocalExtra<SimpleDateFormat>() {
         /** {@inheritDoc} */
         @Override protected SimpleDateFormat initialValue() {
             return new SimpleDateFormat("HH:mm:ss,SSS");

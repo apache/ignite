@@ -63,6 +63,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.ThreadResolver;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
@@ -343,7 +344,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         nodeId = cctx.discovery().localNode().id();
 
-        threadId = Thread.currentThread().getId();
+        threadId = ThreadResolver.threadId();
 
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, this);
@@ -524,7 +525,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         if (res == null || res.equals(AffinityTopologyVersion.NONE)) {
             if (system()) {
-                AffinityTopologyVersion topVer = cctx.tm().lockedTopologyVersion(Thread.currentThread().getId(), this);
+                AffinityTopologyVersion topVer = cctx.tm().lockedTopologyVersion(ThreadResolver.threadId(), this);
 
                 if (topVer != null)
                     return topVer;

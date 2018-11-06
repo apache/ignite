@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.util.nio;
 
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
 
@@ -25,7 +26,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridNioBackPressureControl {
     /** Thread local flag indicating that thread is processing message. */
-    private static ThreadLocal<Holder> threadProcMsg = new ThreadLocal<Holder>() {
+    private static ThreadLocal<Holder> threadProcMsg = new ThreadLocalExtra<Holder>() {
         @Override protected Holder initialValue() {
             return new Holder();
         }

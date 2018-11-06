@@ -18,6 +18,7 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteFuture;
@@ -41,7 +42,7 @@ public class AsyncSupportAdapter<T extends IgniteAsyncSupport> implements Ignite
      */
     public AsyncSupportAdapter(boolean async) {
         if (async)
-            curFut = new ThreadLocal<>();
+            curFut = new ThreadLocalExtra<>();
     }
 
     /** {@inheritDoc} */

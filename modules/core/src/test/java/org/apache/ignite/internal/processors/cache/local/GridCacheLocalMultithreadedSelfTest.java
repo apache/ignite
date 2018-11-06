@@ -30,6 +30,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.ThreadResolver;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestThread;
@@ -348,6 +349,6 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
      * @return Formatted string for current thread.
      */
     private String thread() {
-        return "Thread [id=" + Thread.currentThread().getId() + ", name=" + Thread.currentThread().getName() + ']';
+        return "Thread [id=" + ThreadResolver.threadId() + ", name=" + Thread.currentThread().getName() + ']';
     }
 }

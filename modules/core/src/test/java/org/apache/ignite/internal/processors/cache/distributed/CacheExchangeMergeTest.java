@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsAbstractMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
@@ -96,7 +97,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     private static final long WAIT_SECONDS = 45;
 
     /** */
-    private ThreadLocal<Boolean> client = new ThreadLocal<>();
+    private ThreadLocal<Boolean> client = new ThreadLocalExtra<>();
 
     /** */
     private boolean testSpi;

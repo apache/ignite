@@ -108,6 +108,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
@@ -202,7 +203,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private final boolean skipCheckpointOnNodeStop = IgniteSystemProperties.getBoolean(IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, false);
 
     /** Checkpoint lock hold count. */
-    private static final ThreadLocal<Integer> CHECKPOINT_LOCK_HOLD_COUNT = new ThreadLocal<Integer>() {
+    private static final ThreadLocal<Integer> CHECKPOINT_LOCK_HOLD_COUNT = new ThreadLocalExtra<Integer>() {
         @Override protected Integer initialValue() {
             return 0;
         }
@@ -464,7 +465,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
 
-        threadBuf = new ThreadLocal<ByteBuffer>() {
+        threadBuf = new ThreadLocalExtra<ByteBuffer>() {
             /** {@inheritDoc} */
             @Override protected ByteBuffer initialValue() {
                 ByteBuffer tmpWriteBuf = ByteBuffer.allocateDirect(pageSize());

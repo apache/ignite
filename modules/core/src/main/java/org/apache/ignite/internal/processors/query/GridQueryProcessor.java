@@ -66,6 +66,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
@@ -131,7 +132,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private static final int QRY_DETAIL_METRICS_EVICTION_FREQ = 3_000;
 
     /** */
-    private static final ThreadLocal<AffinityTopologyVersion> requestTopVer = new ThreadLocal<>();
+    private static final ThreadLocal<AffinityTopologyVersion> requestTopVer = new ThreadLocalExtra<>();
 
     /** For tests. */
     public static Class<? extends GridQueryIndexing> idxCls;
@@ -193,7 +194,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private final LinkedList<SchemaOperationStatusMessage> pendingMsgs = new LinkedList<>();
 
     /** Current cache that has a query running on it. */
-    private final ThreadLocal<GridCacheContext> curCache = new ThreadLocal<>();
+    private final ThreadLocal<GridCacheContext> curCache = new ThreadLocalExtra<>();
 
     /** Disconnected flag. */
     private boolean disconnected;

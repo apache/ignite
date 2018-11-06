@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFini
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridInvokeValue;
+import org.apache.ignite.internal.util.ThreadResolver;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
@@ -3423,7 +3424,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (pessimistic())
             throw new UnsupportedOperationException("Suspension is not supported for pessimistic transactions.");
 
-        if (threadId() != Thread.currentThread().getId())
+        if (threadId() != ThreadResolver.threadId())
             throw new IgniteCheckedException("Only thread started transaction can suspend it.");
 
         synchronized (this) {
@@ -3439,7 +3440,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @throws IgniteCheckedException If the transaction is in an incorrect state, or timed out.
      */
     public void resume() throws IgniteCheckedException {
-        resume(true, Thread.currentThread().getId());
+        resume(true, ThreadResolver.threadId());
     }
 
     /**

@@ -32,6 +32,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.lang.GridTuple;
@@ -62,7 +63,7 @@ class GridDeploymentCommunication {
     private final GridMessageListener peerLsnr;
 
     /** */
-    private final ThreadLocal<Collection<UUID>> activeReqNodeIds = new ThreadLocal<>();
+    private final ThreadLocal<Collection<UUID>> activeReqNodeIds = new ThreadLocalExtra<>();
 
     /** */
     private final GridBusyLock busyLock = new GridBusyLock();

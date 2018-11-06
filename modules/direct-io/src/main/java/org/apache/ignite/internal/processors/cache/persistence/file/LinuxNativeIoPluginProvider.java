@@ -31,6 +31,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -194,7 +195,7 @@ public class LinuxNativeIoPluginProvider implements PluginProvider {
 
         GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)cacheCtx.database();
 
-        db.setThreadBuf(new ThreadLocal<ByteBuffer>() {
+        db.setThreadBuf(new ThreadLocalExtra<ByteBuffer>() {
             @Override protected ByteBuffer initialValue() {
                 return factory.createManagedBuffer(pageStore.pageSize());
             }

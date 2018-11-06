@@ -35,6 +35,7 @@ import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 import org.apache.ignite.compute.ComputeTaskTimeoutException;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.TaskEvent;
+import org.apache.ignite.internal.util.ThreadResolver;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PE;
 import org.apache.ignite.lang.IgniteUuid;
@@ -175,7 +176,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
                     }
                 }
 
-                info("Thread " + Thread.currentThread().getId() + " finishing.");
+                info("Thread " + ThreadResolver.threadId() + " finishing.");
 
                 finishLatch.countDown();
             }

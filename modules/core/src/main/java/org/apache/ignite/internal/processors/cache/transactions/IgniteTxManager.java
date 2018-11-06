@@ -62,6 +62,8 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLo
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocal;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxOnePhaseCommitAckRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxRemote;
+import org.apache.ignite.internal.util.ThreadResolver;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
@@ -151,10 +153,10 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         IgniteSystemProperties.getInteger(IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS, 1000);
 
     /** Committing transactions. */
-    private final ThreadLocal<IgniteInternalTx> threadCtx = new ThreadLocal<>();
+    private final ThreadLocal<IgniteInternalTx> threadCtx = new ThreadLocalExtra<>();
 
     /** Topology version should be used when mapping internal tx. */
-    private final ThreadLocal<AffinityTopologyVersion> txTop = new ThreadLocal<>();
+    private final ThreadLocal<AffinityTopologyVersion> txTop = new ThreadLocalExtra<>();
 
     /** Per-thread transaction map. */
     private final ConcurrentMap<Long, IgniteInternalTx> threadMap = newMap();
@@ -508,7 +510,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             lb);
 
         if (tx.system()) {
-            AffinityTopologyVersion topVer = cctx.tm().lockedTopologyVersion(Thread.currentThread().getId(), tx);
+            AffinityTopologyVersion topVer = cctx.tm().lockedTopologyVersion(ThreadResolver.threadId(), tx);
 
             // If there is another system transaction in progress, use it's topology version to prevent deadlock.
             if (topVer != null)
@@ -719,7 +721,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @return Transaction for current thread.
      */
     public GridNearTxLocal threadLocalTx(GridCacheContext cctx) {
-        IgniteInternalTx tx = tx(cctx, Thread.currentThread().getId());
+        IgniteInternalTx tx = tx(cctx, ThreadResolver.threadId());
 
         if (tx != null && tx.local() && (!tx.dht() || tx.colocated()) && !tx.implicit()) {
             assert tx instanceof GridNearTxLocal : tx;
@@ -737,7 +739,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     public <T> T tx() {
         IgniteInternalTx tx = txContext();
 
-        return tx != null ? (T)tx : (T)tx(null, Thread.currentThread().getId());
+        return tx != null ? (T)tx : (T)tx(null, ThreadResolver.threadId());
     }
 
     /**
@@ -801,7 +803,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         if (activeUserTx(tx))
             return (GridNearTxLocal)tx;
 
-        tx = tx(null, Thread.currentThread().getId());
+        tx = tx(null, ThreadResolver.threadId());
 
         if (activeUserTx(tx))
             return (GridNearTxLocal)tx;
@@ -814,7 +816,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @return User transaction for current thread.
      */
     @Nullable GridNearTxLocal userTx(GridCacheContext cctx) {
-        IgniteInternalTx tx = tx(cctx, Thread.currentThread().getId());
+        IgniteInternalTx tx = tx(cctx, ThreadResolver.threadId());
 
         if (activeUserTx(tx))
             return (GridNearTxLocal)tx;
@@ -2381,7 +2383,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         assert !threadMap.containsValue(tx) : tx;
         assert !transactionMap(tx).containsValue(tx) : tx;
-        assert !haveSystemTxForThread(Thread.currentThread().getId());
+        assert !haveSystemTxForThread(ThreadResolver.threadId());
 
         if (threadMap.putIfAbsent(threadId, tx) != null)
             throw new IgniteCheckedException("Thread already has started a transaction.");

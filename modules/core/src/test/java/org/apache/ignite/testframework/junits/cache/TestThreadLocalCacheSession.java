@@ -19,6 +19,7 @@ package org.apache.ignite.testframework.junits.cache;
 
 import java.util.Map;
 import org.apache.ignite.cache.store.CacheStoreSession;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class TestThreadLocalCacheSession implements CacheStoreSession {
     /** */
-    private final ThreadLocal<TestCacheSession> sesHolder = new ThreadLocal<>();
+    private final ThreadLocal<TestCacheSession> sesHolder = new ThreadLocalExtra<>();
 
     /**
      * @param tx Transaction.

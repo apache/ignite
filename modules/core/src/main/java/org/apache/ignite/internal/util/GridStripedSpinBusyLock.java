@@ -19,6 +19,7 @@ package org.apache.ignite.internal.util;
 
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 
 /**
  * Striped spin busy lock. Aimed to provide efficient "read" lock semantics while still maintaining safety when
@@ -32,7 +33,7 @@ public class GridStripedSpinBusyLock {
     private static final int DFLT_STRIPE_CNT = Runtime.getRuntime().availableProcessors() * 4;
 
     /** Thread index. */
-    private static ThreadLocal<Integer> THREAD_IDX = new ThreadLocal<Integer>() {
+    private static ThreadLocal<Integer> THREAD_IDX = new ThreadLocalExtra<Integer>() {
         @Override protected Integer initialValue() {
             return new Random().nextInt(Integer.MAX_VALUE);
         }

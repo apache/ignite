@@ -18,13 +18,14 @@
 package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
-import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,14 +34,14 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridBinaryMarshaller {
     /** */
-    public static final ThreadLocal<Boolean> KEEP_BINARIES = new ThreadLocal<Boolean>() {
+    public static final ThreadLocal<Boolean> KEEP_BINARIES = new ThreadLocalExtra<Boolean>() {
         @Override protected Boolean initialValue() {
             return true;
         }
     };
 
     /** Binary context in TLS store. */
-    private static final ThreadLocal<BinaryContext> BINARY_CTX = new ThreadLocal<>();
+    private static final ThreadLocal<BinaryContext> BINARY_CTX = new ThreadLocalExtra<>();
 
     /** */
     public static final byte OPTM_MARSH = -2;

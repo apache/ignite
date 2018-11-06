@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.security;
 
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -24,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class SecurityContextHolder {
     /** Context. */
-    private static final ThreadLocal<SecurityContext> CTX = new ThreadLocal<>();
+    private static final ThreadLocal<SecurityContext> CTX = new ThreadLocalExtra<>();
 
     /**
      * Get security context.

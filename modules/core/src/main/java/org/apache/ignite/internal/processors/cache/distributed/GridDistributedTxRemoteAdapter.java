@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWra
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.ThreadResolver;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
@@ -166,7 +167,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
             nodeId,
             xidVer,
             ctx.versions().last(),
-            Thread.currentThread().getId(),
+            ThreadResolver.threadId(),
             sys,
             plc,
             concurrency,

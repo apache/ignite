@@ -23,6 +23,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 
@@ -37,7 +38,7 @@ public class StripedCompositeReadWriteLock implements ReadWriteLock {
     private static final AtomicInteger IDX_GEN = new AtomicInteger();
 
     /** Index. */
-    private static final ThreadLocal<Integer> IDX = new ThreadLocal<Integer>() {
+    private static final ThreadLocal<Integer> IDX = new ThreadLocalExtra<Integer>() {
         @Override protected Integer initialValue() {
             return IDX_GEN.incrementAndGet();
         }

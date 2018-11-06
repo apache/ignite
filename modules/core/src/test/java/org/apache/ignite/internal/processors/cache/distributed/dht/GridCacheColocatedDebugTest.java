@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheTestStore;
+import org.apache.ignite.internal.util.ThreadResolver;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -298,7 +299,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
                     // Make thread-local copy to shuffle keys.
                     List<Integer> threadKeys = new ArrayList<>(keys);
 
-                    long threadId = Thread.currentThread().getId();
+                    long threadId = ThreadResolver.threadId();
 
                     long itNum;
 

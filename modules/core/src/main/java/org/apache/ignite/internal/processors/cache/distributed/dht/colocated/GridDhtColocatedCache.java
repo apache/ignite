@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedUn
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtEmbeddedFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFinishedFuture;
+import org.apache.ignite.internal.util.ThreadResolver;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTransactionalCacheAdapter;
@@ -172,7 +173,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     @Override public boolean isLockedByThread(K key) {
         KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
 
-        return ctx.mvcc().isLockedByThread(ctx.txKey(cacheKey), Thread.currentThread().getId());
+        return ctx.mvcc().isLockedByThread(ctx.txKey(cacheKey), ThreadResolver.threadId());
     }
 
     /** {@inheritDoc} */
@@ -725,7 +726,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 GridDistributedCacheEntry entry = peekExx(cacheKey);
 
                 GridCacheMvccCandidate lock =
-                    ctx.mvcc().removeExplicitLock(Thread.currentThread().getId(), txKey, null);
+                    ctx.mvcc().removeExplicitLock(ThreadResolver.threadId(), txKey, null);
 
                 if (lock != null) {
                     final AffinityTopologyVersion topVer = lock.topologyVersion();
@@ -780,7 +781,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                     }
                     else if (log.isDebugEnabled())
                         log.debug("Current thread still owns lock (or there are no other nodes)" +
-                            " [lock=" + lock + ", curThreadId=" + Thread.currentThread().getId() + ']');
+                            " [lock=" + lock + ", curThreadId=" + ThreadResolver.threadId() + ']');
                 }
             }
 

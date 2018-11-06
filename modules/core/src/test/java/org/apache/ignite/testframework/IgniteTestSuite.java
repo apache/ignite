@@ -17,20 +17,20 @@
 
 package org.apache.ignite.testframework;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.testframework.junits.GridAbstractTest;
-import org.apache.ignite.testsuites.IgniteIgnore;
-import org.jetbrains.annotations.Nullable;
-import org.junit.internal.MethodSorter;
-
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.junits.GridAbstractTest;
+import org.apache.ignite.testsuites.IgniteIgnore;
+import org.jetbrains.annotations.Nullable;
+import org.junit.internal.MethodSorter;
 
 /**
  * Base class for run junit tests.
@@ -38,7 +38,7 @@ import java.util.List;
  */
 public class IgniteTestSuite extends TestSuite {
     /** Ignore default flag thread local. */
-    private static final ThreadLocal<Boolean> IGNORE_DFLT = new ThreadLocal<Boolean>() {
+    private static final ThreadLocal<Boolean> IGNORE_DFLT = new ThreadLocalExtra<Boolean>() {
         @Override protected Boolean initialValue() {
             return false;
         }

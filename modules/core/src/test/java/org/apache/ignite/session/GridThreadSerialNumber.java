@@ -17,6 +17,8 @@
 
 package org.apache.ignite.session;
 
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
+
 /**
  * Thread serial number.
  */
@@ -25,7 +27,7 @@ class GridThreadSerialNumber {
     private int nextSerialNum = 0;
 
     /** */
-    private ThreadLocal<Integer> serialNum = new ThreadLocal<Integer>() {
+    private ThreadLocal<Integer> serialNum = new ThreadLocalExtra<Integer>() {
         @Override protected synchronized Integer initialValue() {
             return nextSerialNum++;
         }

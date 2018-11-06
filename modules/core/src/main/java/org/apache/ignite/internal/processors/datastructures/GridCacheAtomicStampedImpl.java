@@ -32,6 +32,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
@@ -53,7 +54,7 @@ public final class GridCacheAtomicStampedImpl<T, S> extends AtomicDataStructureP
 
     /** Deserialization stash. */
     private static final ThreadLocal<IgniteBiTuple<GridKernalContext, String>> stash =
-        new ThreadLocal<IgniteBiTuple<GridKernalContext, String>>() {
+        new ThreadLocalExtra<IgniteBiTuple<GridKernalContext, String>>() {
             @Override protected IgniteBiTuple<GridKernalContext, String> initialValue() {
                 return new IgniteBiTuple<>();
             }

@@ -80,7 +80,7 @@ public class IgniteExceptionRegistrySelfTest extends GridCommonAbstractTest {
         for (IgniteExceptionRegistry.ExceptionInfo e : errors) {
             assertNotNull(e);
             assertEquals(e.message(), "Test " + i);
-            assertEquals(e.threadId(), Thread.currentThread().getId());
+            assertEquals(e.threadId(), ThreadResolver.threadId());
             assertEquals(e.threadName(), Thread.currentThread().getName());
 
             --i;

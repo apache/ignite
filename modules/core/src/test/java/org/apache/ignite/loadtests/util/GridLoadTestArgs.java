@@ -21,6 +21,7 @@ import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.lang.IgniteClosure;
 import org.jetbrains.annotations.Nullable;
 
@@ -43,7 +44,7 @@ public class GridLoadTestArgs {
     public static final String VALUE_SIZE = "IGNITE_VALUE_SIZE";
 
     /** Properties map for dumping. */
-    private static ThreadLocal<Map<String, String>> props = new ThreadLocal<Map<String, String>>() {
+    private static ThreadLocal<Map<String, String>> props = new ThreadLocalExtra<Map<String, String>>() {
         @Override protected Map<String, String> initialValue() {
             return new HashMap<>();
         }

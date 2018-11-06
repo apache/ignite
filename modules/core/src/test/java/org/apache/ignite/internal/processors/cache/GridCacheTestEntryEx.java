@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
+import org.apache.ignite.internal.util.ThreadResolver;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
@@ -734,7 +735,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
 
     /** @inheritDoc */
     @Override public boolean lockedByThread()  {
-        return lockedByThread(Thread.currentThread().getId());
+        return lockedByThread(ThreadResolver.threadId());
     }
 
     /** @inheritDoc */

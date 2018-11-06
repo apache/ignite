@@ -85,6 +85,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableContext;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
@@ -279,7 +280,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
      * Introduced to decrease number of buffers allocation.
      * Used only for record itself is shorter than {@link #tlbSize}.
      */
-    private final ThreadLocal<ByteBuffer> tlb = new ThreadLocal<ByteBuffer>() {
+    private final ThreadLocal<ByteBuffer> tlb = new ThreadLocalExtra<ByteBuffer>() {
         @Override protected ByteBuffer initialValue() {
             ByteBuffer buf = ByteBuffer.allocateDirect(tlbSize);
 
@@ -299,7 +300,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     private volatile FileDecompressor decompressor;
 
     /** */
-    private final ThreadLocal<WALPointer> lastWALPtr = new ThreadLocal<>();
+    private final ThreadLocal<WALPointer> lastWALPtr = new ThreadLocalExtra<>();
 
     /** Current log segment handle */
     private volatile FileWriteHandle currentHnd;

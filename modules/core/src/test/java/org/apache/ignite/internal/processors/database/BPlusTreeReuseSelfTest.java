@@ -22,6 +22,7 @@ import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseListImpl;
@@ -50,14 +51,14 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
      */
     private static class TestReuseList extends ReuseListImpl {
         /** */
-        private static ThreadLocal<Set<Long>> readLocks = new ThreadLocal<Set<Long>>() {
+        private static ThreadLocal<Set<Long>> readLocks = new ThreadLocalExtra<Set<Long>>() {
             @Override protected Set<Long> initialValue() {
                 return new HashSet<>();
             }
         };
 
         /** */
-        private static ThreadLocal<Set<Long>> writeLocks = new ThreadLocal<Set<Long>>() {
+        private static ThreadLocal<Set<Long>> writeLocks = new ThreadLocalExtra<Set<Long>>() {
             @Override protected Set<Long> initialValue() {
                 return new HashSet<>();
             }

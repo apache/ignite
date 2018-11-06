@@ -73,6 +73,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.managers.eventstorage.HighPriorityListener;
+import org.apache.ignite.internal.util.ThreadResolver;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -4804,7 +4805,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     private class RoundRobinConnectionPolicy implements ConnectionPolicy {
         /** {@inheritDoc} */
         @Override public int connectionIndex() {
-            return (int)(U.safeAbs(Thread.currentThread().getId()) % connectionsPerNode);
+            return (int)(U.safeAbs(ThreadResolver.threadId()) % connectionsPerNode);
         }
     }
 

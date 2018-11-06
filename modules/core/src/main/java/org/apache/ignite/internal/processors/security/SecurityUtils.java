@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.security.SecurityPermission;
 
@@ -36,7 +37,7 @@ public class SecurityUtils {
     private static final int DFLT_SERIALIZE_VERSION = isSecurityCompatibilityMode() ? 1 : 2;
 
     /** Current serialization version. */
-    private static final ThreadLocal<Integer> SERIALIZE_VERSION = new ThreadLocal<Integer>(){
+    private static final ThreadLocal<Integer> SERIALIZE_VERSION = new ThreadLocalExtra<Integer>(){
         @Override protected Integer initialValue() {
             return DFLT_SERIALIZE_VERSION;
         }

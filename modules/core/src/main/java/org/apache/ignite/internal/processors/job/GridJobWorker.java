@@ -49,6 +49,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.service.GridServiceNotFoundException;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -83,7 +84,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
  */
 public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     /** Per-thread held flag. */
-    private static final ThreadLocal<Boolean> HOLD = new ThreadLocal<Boolean>() {
+    private static final ThreadLocal<Boolean> HOLD = new ThreadLocalExtra<Boolean>() {
         @Override protected Boolean initialValue() {
             return false;
         }

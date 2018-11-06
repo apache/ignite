@@ -39,6 +39,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.util.ThreadResolver;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -344,7 +345,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                     @Override public void run() {
                         IgniteCache<Integer, Integer> cache = g.cache(DEFAULT_CACHE_NAME);
 
-                        int key = (int)Thread.currentThread().getId();
+                        int key = (int)ThreadResolver.threadId();
 
                         try {
                             try (Transaction tx = g.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
@@ -480,7 +481,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                     @Override public void run() {
                         IgniteCache<Integer, Integer> cache = g.cache(DEFAULT_CACHE_NAME);
 
-                        int key = (int)Thread.currentThread().getId();
+                        int key = (int)ThreadResolver.threadId();
 
                         try {
                             try (Transaction tx = g.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {

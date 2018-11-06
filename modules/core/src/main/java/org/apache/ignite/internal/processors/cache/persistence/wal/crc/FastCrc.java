@@ -19,13 +19,14 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.crc;
 
 import java.nio.ByteBuffer;
 import java.util.zip.CRC32;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 
 /**
  * This CRC calculation implementation workf much faster then {@link PureJavaCrc32}
  */
 public final class FastCrc {
     /** CRC algo. */
-    private static final ThreadLocal<CRC32> CRC = ThreadLocal.withInitial(CRC32::new);
+    private static final ThreadLocal<CRC32> CRC = ThreadLocalExtra.withInitial(CRC32::new);
 
     /** */
     private final CRC32 crc = new CRC32();

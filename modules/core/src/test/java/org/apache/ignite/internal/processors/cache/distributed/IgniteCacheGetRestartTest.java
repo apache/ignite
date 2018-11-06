@@ -33,6 +33,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -66,7 +67,7 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
     private static final int KEYS = 100_000;
 
     /** */
-    private ThreadLocal<Boolean> client = new ThreadLocal<>();
+    private ThreadLocal<Boolean> client = new ThreadLocalExtra<>();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

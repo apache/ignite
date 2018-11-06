@@ -30,6 +30,7 @@ import org.apache.ignite.internal.client.GridClientPredicate;
 import org.apache.ignite.internal.client.balancer.GridClientLoadBalancer;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnection;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,7 +42,7 @@ import static org.apache.ignite.internal.client.util.GridClientUtils.applyFilter
  */
 class GridClientComputeImpl extends GridClientAbstractProjection<GridClientComputeImpl> implements GridClientCompute {
     /** */
-    private static final ThreadLocal<Boolean> KEEP_BINARIES = new ThreadLocal<Boolean>() {
+    private static final ThreadLocal<Boolean> KEEP_BINARIES = new ThreadLocalExtra<Boolean>() {
         @Override protected Boolean initialValue() {
             return false;
         }

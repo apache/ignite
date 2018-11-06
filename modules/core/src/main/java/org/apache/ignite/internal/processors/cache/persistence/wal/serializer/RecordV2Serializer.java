@@ -27,6 +27,7 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.FilteredRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
@@ -73,7 +74,7 @@ public class RecordV2Serializer implements RecordSerializer {
     private final boolean skipPositionCheck;
 
     /** Thread-local heap byte buffer. */
-    private final ThreadLocal<ByteBuffer> heapTlb = new ThreadLocal<ByteBuffer>() {
+    private final ThreadLocal<ByteBuffer> heapTlb = new ThreadLocalExtra<ByteBuffer>() {
         @Override protected ByteBuffer initialValue() {
             ByteBuffer buf = ByteBuffer.allocate(4096);
 

@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.ThreadResolver;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -153,7 +154,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
 
         long curCpWriteSpeed = speedCpWrite.getSpeedOpsPerSec(curNanoTime);
 
-        threadIds.add(Thread.currentThread().getId());
+        threadIds.add(ThreadResolver.threadId());
 
         ThrottleMode level = ThrottleMode.NO; //should apply delay (throttling) for current page modification
 

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.lang;
 
+import org.apache.ignite.internal.util.ThreadResolver;
+
 /**
  *
  */
@@ -92,7 +94,7 @@ public class GridSystemCurrentTimeMillisTest {
                 lastVal = time0;
 
                 if (readsCnt % 500 == 0)
-                    System.out.println("Stats [thread=" + Thread.currentThread().getId() + ", reads=" + readsCnt +
+                    System.out.println("Stats [thread=" + ThreadResolver.threadId() + ", reads=" + readsCnt +
                         ", staleReadsCnt=" + staleReadsCnt + ']');
 
                 try {

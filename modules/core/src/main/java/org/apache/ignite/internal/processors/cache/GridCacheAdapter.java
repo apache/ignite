@@ -87,9 +87,10 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.affinity.GridCacheAffinityImpl;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteExternalizableExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -189,7 +190,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     private static final IgniteProductVersion PRELOAD_PARTITION_SINCE = IgniteProductVersion.fromString("2.7.0");
 
     /** Deserialization stash. */
-    private static final ThreadLocal<IgniteBiTuple<String, String>> stash = new ThreadLocal<IgniteBiTuple<String,
+    private static final ThreadLocal<IgniteBiTuple<String, String>> stash = new ThreadLocalExtra<IgniteBiTuple<String,
         String>>() {
         @Override protected IgniteBiTuple<String, String> initialValue() {
             return new IgniteBiTuple<>();
@@ -240,7 +241,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     protected boolean keyCheck = !Boolean.getBoolean(IGNITE_CACHE_KEY_VALIDATION_DISABLED);
 
     /** Last asynchronous future. */
-    protected ThreadLocal<FutureHolder> lastFut = new ThreadLocal<FutureHolder>() {
+    protected ThreadLocal<FutureHolder> lastFut = new ThreadLocalExtra<FutureHolder>() {
         @Override protected FutureHolder initialValue() {
             return new FutureHolder();
         }

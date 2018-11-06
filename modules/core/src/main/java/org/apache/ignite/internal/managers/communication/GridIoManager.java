@@ -67,6 +67,7 @@ import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccMessage;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
@@ -138,7 +139,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     public static final byte DIRECT_PROTO_VER = 2;
 
     /** Current IO policy. */
-    private static final ThreadLocal<Byte> CUR_PLC = new ThreadLocal<>();
+    private static final ThreadLocal<Byte> CUR_PLC = new ThreadLocalExtra<>();
 
     /** Listeners by topic. */
     private final ConcurrentMap<Object, GridMessageListener> lsnrMap = new ConcurrentHashMap<>();

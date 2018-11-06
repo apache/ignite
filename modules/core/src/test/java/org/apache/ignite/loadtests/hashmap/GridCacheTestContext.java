@@ -18,7 +18,6 @@
 package org.apache.ignite.loadtests.hashmap;
 
 import java.util.IdentityHashMap;
-import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheAffinitySharedManager;
@@ -103,6 +102,6 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
             new GridCacheAffinityManager()
         );
 
-        store().initialize(null, new IdentityHashMap<CacheStore, ThreadLocal>());
+        store().initialize(null, new IdentityHashMap<>());
     }
 }

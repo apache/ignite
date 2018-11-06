@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.cache.affinity;
 
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.AffinityFunction;
@@ -24,11 +25,10 @@ import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
-
-import java.util.List;
 
 /**
  * Platform affinity function target:
@@ -48,7 +48,7 @@ public class PlatformAffinityFunctionTarget extends PlatformAbstractTarget {
     private final AffinityFunction baseFunc;
 
     /** Thread local to hold the current affinity function context. */
-    private static final ThreadLocal<AffinityFunctionContext> currentAffCtx = new ThreadLocal<>();
+    private static final ThreadLocal<AffinityFunctionContext> currentAffCtx = new ThreadLocalExtra<>();
 
     /**
      * Constructor.

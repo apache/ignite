@@ -46,6 +46,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcColumnMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
@@ -59,7 +60,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataResult;
  */
 public class JdbcThinResultSet implements ResultSet {
     /** Decimal format to convert streing to decimal. */
-    private static final ThreadLocal<DecimalFormat> decimalFormat = new ThreadLocal<DecimalFormat>() {
+    private static final ThreadLocal<DecimalFormat> decimalFormat = new ThreadLocalExtra<DecimalFormat>() {
         /** {@inheritDoc} */
         @Override protected DecimalFormat initialValue() {
             DecimalFormatSymbols symbols = new DecimalFormatSymbols();

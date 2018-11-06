@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.CacheStorePartialUpdateExcept
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridEmptyIterator;
@@ -140,7 +141,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             sesHolder0 = ((Map<CacheStore, ThreadLocal>)sesHolders).get(cfgStore);
 
             if (sesHolder0 == null) {
-                sesHolder0 = new ThreadLocal<>();
+                sesHolder0 = new ThreadLocalExtra<>();
 
                 locSes = new ThreadLocalSession(sesHolder0);
 

@@ -25,8 +25,8 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.LongAdder;
-
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.util.nio.GridNioMetricsListener;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -52,7 +52,7 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
     private final Set<ThreadMetrics> allMetrics = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     /** Thread-local metrics. */
-    private final ThreadLocal<ThreadMetrics> threadMetrics = new ThreadLocal<ThreadMetrics>() {
+    private final ThreadLocal<ThreadMetrics> threadMetrics = new ThreadLocalExtra<ThreadMetrics>() {
         @Override protected ThreadMetrics initialValue() {
             ThreadMetrics metrics = new ThreadMetrics();
 

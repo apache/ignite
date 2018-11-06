@@ -31,6 +31,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheGateway;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -50,7 +51,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
 
     /** Deserialization stash. */
     private static final ThreadLocal<T3<GridKernalContext, String, String>> stash =
-        new ThreadLocal<T3<GridKernalContext, String, String>>() {
+        new ThreadLocalExtra<T3<GridKernalContext, String, String>>() {
             @Override protected T3<GridKernalContext, String, String> initialValue() {
                 return new T3<>();
             }

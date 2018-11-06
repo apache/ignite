@@ -39,6 +39,7 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
@@ -83,7 +84,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     private final AtomicReference<GridDeployment> locDep = new AtomicReference<>();
 
     /** */
-    private final ThreadLocal<Boolean> ignoreOwnership = new ThreadLocal<Boolean>() {
+    private final ThreadLocal<Boolean> ignoreOwnership = new ThreadLocalExtra<Boolean>() {
         @Override protected Boolean initialValue() {
             return false;
         }

@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
+import org.apache.ignite.internal.util.ThreadResolver;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockMapping;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
@@ -226,7 +227,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
         ignoreInterrupts();
 
-        threadId = tx == null ? Thread.currentThread().getId() : tx.threadId();
+        threadId = tx == null ? ThreadResolver.threadId() : tx.threadId();
 
         lockVer = tx != null ? tx.xidVersion() : cctx.versions().next();
 
@@ -766,7 +767,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
         // If there is another system transaction in progress, use it's topology version to prevent deadlock.
         if (topVer == null && tx != null && tx.system())
-            topVer = cctx.tm().lockedTopologyVersion(Thread.currentThread().getId(), tx);
+            topVer = cctx.tm().lockedTopologyVersion(ThreadResolver.threadId(), tx);
 
         if (topVer != null && tx != null)
             tx.topologyVersion(topVer);

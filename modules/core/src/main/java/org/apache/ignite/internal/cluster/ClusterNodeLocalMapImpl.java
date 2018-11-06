@@ -23,13 +23,14 @@ import java.io.InvalidObjectException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Implementation for node-local storage.
@@ -49,7 +50,7 @@ public class ClusterNodeLocalMapImpl<K, V> extends ConcurrentHashMap<K, V> imple
     private static final long serialVersionUID = 0L;
 
     /** */
-    private static final ThreadLocal<String> stash = new ThreadLocal<>();
+    private static final ThreadLocal<String> stash = new ThreadLocalExtra<>();
 
     /** */
     private GridKernalContext ctx;

@@ -38,6 +38,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -99,7 +100,7 @@ public class GridToStringBuilder {
         IgniteSystemProperties.getInteger(IGNITE_TO_STRING_COLLECTION_LIMIT, 100);
 
     /** Every thread has its own string builder. */
-    private static ThreadLocal<SBLimitedLength> threadLocSB = new ThreadLocal<SBLimitedLength>() {
+    private static ThreadLocal<SBLimitedLength> threadLocSB = new ThreadLocalExtra<SBLimitedLength>() {
         @Override protected SBLimitedLength initialValue() {
             SBLimitedLength sb = new SBLimitedLength(256);
 
@@ -116,7 +117,7 @@ public class GridToStringBuilder {
      * have to keep a map of this objects pointed to the position of previous occurrence
      * and remove/add them in each {@code toString()} apply.
      */
-    private static ThreadLocal<IdentityHashMap<Object, Integer>> savedObjects = new ThreadLocal<IdentityHashMap<Object, Integer>>() {
+    private static ThreadLocal<IdentityHashMap<Object, Integer>> savedObjects = new ThreadLocalExtra<IdentityHashMap<Object, Integer>>() {
         @Override protected IdentityHashMap<Object, Integer> initialValue() {
             return new IdentityHashMap<>();
         }

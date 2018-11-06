@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedUn
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnlockRequest;
+import org.apache.ignite.internal.util.ThreadResolver;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -522,7 +523,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                         break; // While.
 
                     try {
-                        GridCacheMvccCandidate cand = entry.candidate(ctx.nodeId(), Thread.currentThread().getId());
+                        GridCacheMvccCandidate cand = entry.candidate(ctx.nodeId(), ThreadResolver.threadId());
 
                         AffinityTopologyVersion topVer = AffinityTopologyVersion.NONE;
 
@@ -585,7 +586,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                 }
                                 else if (log.isDebugEnabled())
                                     log.debug("Current thread still owns lock (or there are no other nodes)" +
-                                        " [lock=" + rmv + ", curThreadId=" + Thread.currentThread().getId() + ']');
+                                        " [lock=" + rmv + ", curThreadId=" + ThreadResolver.threadId() + ']');
                             }
                         }
 

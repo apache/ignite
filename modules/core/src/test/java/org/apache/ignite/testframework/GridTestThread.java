@@ -18,6 +18,7 @@
 package org.apache.ignite.testframework;
 
 import java.util.concurrent.Callable;
+import org.apache.ignite.internal.util.ThreadResolver;
 
 /**
  * Test thread that has convenience failure checks.
@@ -140,6 +141,6 @@ public class GridTestThread extends Thread {
      * @return Formatted string for current thread.
      */
     private String name0() {
-        return "Thread [id=" + Thread.currentThread().getId() + ", name=" + Thread.currentThread().getName() + ']';
+        return "Thread [id=" + ThreadResolver.threadId() + ", name=" + Thread.currentThread().getName() + ']';
     }
 }

@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
@@ -60,7 +61,7 @@ import static org.apache.ignite.internal.jdbc2.JdbcUtils.convertToSqlException;
  */
 public class JdbcResultSet implements ResultSet {
     /** Decimal format to convert streing to decimal. */
-    private static final ThreadLocal<DecimalFormat> decimalFormat = new ThreadLocal<DecimalFormat>() {
+    private static final ThreadLocal<DecimalFormat> decimalFormat = new ThreadLocalExtra<DecimalFormat>() {
         /** {@inheritDoc} */
         @Override protected DecimalFormat initialValue() {
             DecimalFormatSymbols symbols = new DecimalFormatSymbols();

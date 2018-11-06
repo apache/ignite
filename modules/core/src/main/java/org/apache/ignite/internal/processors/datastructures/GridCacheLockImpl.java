@@ -47,6 +47,8 @@ import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.util.ThreadResolver;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -70,7 +72,7 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
     private static final long serialVersionUID = 0L;
 
     /** Deserialization stash. */
-    private static final ThreadLocal<String> stash = new ThreadLocal<>();
+    private static final ThreadLocal<String> stash = new ThreadLocalExtra<>();
 
     /** Initialization guard. */
     private final AtomicBoolean initGuard = new AtomicBoolean();
@@ -219,7 +221,7 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
 
                 setCurrentOwnerNode(thisNode);
 
-                currentOwnerThreadId = Thread.currentThread().getId();
+                currentOwnerThreadId = ThreadResolver.threadId();
 
                 for (Condition c : conditionMap.values())
                     c.signalAll();
@@ -440,7 +442,7 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
 
             if (!isHeldExclusively()) {
                 log.error("Lock.unlock() is called in illegal state [callerNodeId=" + thisNode + ", ownerNodeId="
-                    + currentOwnerNode + ", callerThreadId=" + Thread.currentThread().getId() + ", ownerThreadId="
+                    + currentOwnerNode + ", callerThreadId=" + ThreadResolver.threadId() + ", ownerThreadId="
                     + currentOwnerThreadId + ", lockState=" + getState() + "]");
 
                 throw new IllegalMonitorStateException();
@@ -468,7 +470,7 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
             // While we must in general read state before owner,
             // we don't need to do so to check if current thread is owner
 
-            return currentOwnerThreadId == Thread.currentThread().getId() && thisNode.equals(currentOwnerNode);
+            return currentOwnerThreadId == ThreadResolver.threadId() && thisNode.equals(currentOwnerNode);
         }
 
         /**
@@ -829,7 +831,7 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
 
             setExclusiveOwnerThread(Thread.currentThread());
 
-            currentOwnerThreadId = Thread.currentThread().getId();
+            currentOwnerThreadId = ThreadResolver.threadId();
 
             for (String signal: signals)
                 conditionMap.get(signal).signal();

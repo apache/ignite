@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util;
 
 import java.util.concurrent.TimeUnit;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -49,7 +50,7 @@ public class GridSpinReadWriteLock {
     }
 
     /** */
-    private final ThreadLocal<Integer> readLockEntryCnt = new ThreadLocal<Integer>() {
+    private final ThreadLocal<Integer> readLockEntryCnt = new ThreadLocalExtra<Integer>() {
         @Override protected Integer initialValue() {
             return 0;
         }
@@ -75,7 +76,7 @@ public class GridSpinReadWriteLock {
         int cnt = readLockEntryCnt.get();
 
         // Read lock reentry or acquiring read lock while holding write lock.
-        if (cnt > 0 || Thread.currentThread().getId() == writeLockOwner) {
+        if (cnt > 0 || ThreadResolver.threadId() == writeLockOwner) {
             assert state > 0 || state == -1;
 
             readLockEntryCnt.set(cnt + 1);
@@ -121,7 +122,7 @@ public class GridSpinReadWriteLock {
         int cnt = readLockEntryCnt.get();
 
         // Read lock reentry or acquiring read lock while holding write lock.
-        if (cnt > 0 || Thread.currentThread().getId() == writeLockOwner) {
+        if (cnt > 0 || ThreadResolver.threadId() == writeLockOwner) {
             assert state > 0 || state == -1;
 
             readLockEntryCnt.set(cnt + 1);
@@ -153,7 +154,7 @@ public class GridSpinReadWriteLock {
             throw new IllegalMonitorStateException();
 
         // Read unlock when holding write lock is performed here.
-        if (cnt > 1 || Thread.currentThread().getId() == writeLockOwner) {
+        if (cnt > 1 || ThreadResolver.threadId() == writeLockOwner) {
             assert state > 0 || state == -1;
 
             readLockEntryCnt.set(cnt - 1);
@@ -179,7 +180,7 @@ public class GridSpinReadWriteLock {
      */
     @SuppressWarnings("BusyWait")
     public void writeLock() {
-        long threadId = Thread.currentThread().getId();
+        long threadId = ThreadResolver.threadId();
 
         if (threadId == writeLockOwner) {
             assert state == -1;
@@ -231,7 +232,7 @@ public class GridSpinReadWriteLock {
      * Acquires write lock without sleeping between unsuccessful attempts.
      */
     public void writeLock0() {
-        long threadId = Thread.currentThread().getId();
+        long threadId = ThreadResolver.threadId();
 
         if (threadId == writeLockOwner) {
             assert state == -1;
@@ -274,7 +275,7 @@ public class GridSpinReadWriteLock {
      * @return {@code True} if blocked by current thread.
      */
     public boolean writeLockedByCurrentThread() {
-        return writeLockOwner == Thread.currentThread().getId();
+        return writeLockOwner == ThreadResolver.threadId();
     }
 
     /**
@@ -283,7 +284,7 @@ public class GridSpinReadWriteLock {
      * @return {@code True} if write lock has been acquired.
      */
     public boolean tryWriteLock() {
-        long threadId = Thread.currentThread().getId();
+        long threadId = ThreadResolver.threadId();
 
         if (threadId == writeLockOwner) {
             assert state == -1;
@@ -313,7 +314,7 @@ public class GridSpinReadWriteLock {
      */
     @SuppressWarnings("BusyWait")
     public boolean tryWriteLock(long timeout, TimeUnit unit) throws InterruptedException {
-        long threadId = Thread.currentThread().getId();
+        long threadId = ThreadResolver.threadId();
 
         if (threadId == writeLockOwner) {
             assert state == -1;
@@ -367,7 +368,7 @@ public class GridSpinReadWriteLock {
      * Releases write lock.
      */
     public void writeUnlock() {
-        long threadId = Thread.currentThread().getId();
+        long threadId = ThreadResolver.threadId();
 
         if (threadId != writeLockOwner)
             throw new IllegalMonitorStateException();

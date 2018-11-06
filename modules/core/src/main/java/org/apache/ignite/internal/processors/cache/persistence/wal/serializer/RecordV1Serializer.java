@@ -22,7 +22,6 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
@@ -30,17 +29,18 @@ import org.apache.ignite.internal.pagemem.wal.record.FilteredRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentEofException;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentFileInputFactory;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
-import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentEofException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SimpleFileInput;
-import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.io.RecordIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -100,7 +100,7 @@ public class RecordV1Serializer implements RecordSerializer {
     private final boolean marshalledMode;
 
     /** Thread-local heap byte buffer. */
-    private final ThreadLocal<ByteBuffer> heapTlb = new ThreadLocal<ByteBuffer>() {
+    private final ThreadLocal<ByteBuffer> heapTlb = new ThreadLocalExtra<ByteBuffer>() {
         @Override protected ByteBuffer initialValue() {
             ByteBuffer buf = ByteBuffer.allocate(4096);
 

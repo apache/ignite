@@ -55,6 +55,7 @@ import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
+import org.apache.ignite.internal.util.ThreadResolver;
 import org.apache.ignite.internal.processors.cache.persistence.DataStructure;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
@@ -2679,7 +2680,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
          * @return Thread ID.
          */
         private static Object threadId() {
-            return Thread.currentThread().getId(); //.getName();
+            return ThreadResolver.threadId(); //.getName();
         }
 
         /**

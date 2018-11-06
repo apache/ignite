@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheFutureAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.ThreadResolver;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
@@ -145,7 +146,7 @@ public final class GridLocalLockFuture<K, V> extends GridCacheFutureAdapter<Bool
 
         ignoreInterrupts();
 
-        threadId = tx == null ? Thread.currentThread().getId() : tx.threadId();
+        threadId = tx == null ? ThreadResolver.threadId() : tx.threadId();
 
         lockVer = tx != null ? tx.xidVersion() : cctx.versions().next();
 

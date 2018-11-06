@@ -77,6 +77,7 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.igfs.IgfsThreadFactory;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
@@ -191,14 +192,14 @@ public class IgnitionEx {
     private static final Collection<IgnitionListener> lsnrs = new GridConcurrentHashSet<>(4);
 
     /** */
-    private static ThreadLocal<Boolean> daemon = new ThreadLocal<Boolean>() {
+    private static ThreadLocal<Boolean> daemon = new ThreadLocalExtra<Boolean>() {
         @Override protected Boolean initialValue() {
             return false;
         }
     };
 
     /** */
-    private static ThreadLocal<Boolean> clientMode = new ThreadLocal<>();
+    private static ThreadLocal<Boolean> clientMode = new ThreadLocalExtra<>();
 
     /*
      * Checks runtime version to be 1.7.x or 1.8.x.

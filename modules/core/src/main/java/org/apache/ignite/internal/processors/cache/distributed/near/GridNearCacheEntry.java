@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
+import org.apache.ignite.internal.util.ThreadResolver;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -654,7 +655,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
 
                 boolean emptyBefore = mvcc.isEmpty();
 
-                cand = mvcc.localCandidate(locId, Thread.currentThread().getId());
+                cand = mvcc.localCandidate(locId, ThreadResolver.threadId());
 
                 assert cand == null || cand.nearLocal();
 

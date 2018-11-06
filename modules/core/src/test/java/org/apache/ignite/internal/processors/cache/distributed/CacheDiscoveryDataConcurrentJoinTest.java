@@ -29,6 +29,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.util.ThreadResolver.ThreadLocalExtra;
 import org.apache.ignite.internal.util.GridAtomicInteger;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -54,7 +55,7 @@ public class CacheDiscoveryDataConcurrentJoinTest extends GridCommonAbstractTest
     private boolean client;
 
     /** */
-    private ThreadLocal<Integer> staticCaches = new ThreadLocal<>();
+    private ThreadLocal<Integer> staticCaches = new ThreadLocalExtra<>();
 
     /** */
     private boolean withCacheGrp;
