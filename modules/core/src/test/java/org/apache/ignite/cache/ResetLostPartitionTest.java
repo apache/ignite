@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -74,43 +75,20 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setPeerClassLoadingEnabled(true);
-
         cfg.setConsistentId(igniteInstanceName);
 
         DataStorageConfiguration storageCfg = new DataStorageConfiguration();
 
-        storageCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
+        storageCfg.getDefaultDataRegionConfiguration()
+            .setPersistenceEnabled(true)
+            .setMaxSize(300L * 1024 * 1024);
 
         cfg.setDataStorageConfiguration(storageCfg);
 
         CacheConfiguration[] ccfg = new CacheConfiguration[] {
-            new CacheConfiguration<>(CACHE_NAMES[0])
-                .setCacheMode(CacheMode.PARTITIONED)
-                .setAtomicityMode(CacheAtomicityMode.ATOMIC)
-                .setBackups(1)
-                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
-                .setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE)
-                .setAffinity(new RendezvousAffinityFunction(false, 1024))
-
-                .setIndexedTypes(String.class, String.class),
-            new CacheConfiguration<>(CACHE_NAMES[1])
-                .setCacheMode(CacheMode.PARTITIONED)
-                .setAtomicityMode(CacheAtomicityMode.ATOMIC)
-                .setBackups(1)
-                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
-                .setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE)
-                .setAffinity(new RendezvousAffinityFunction(false, 1024))
-                .setIndexedTypes(String.class, String.class),
-
-            new CacheConfiguration<>(CACHE_NAMES[2])
-                .setCacheMode(CacheMode.PARTITIONED)
-                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-                .setBackups(1)
-                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
-                .setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE)
-                .setAffinity(new RendezvousAffinityFunction(false, 1024))
-                .setIndexedTypes(String.class, String.class)
+            cacheConfiguration(CACHE_NAMES[0], CacheAtomicityMode.ATOMIC),
+            cacheConfiguration(CACHE_NAMES[1], CacheAtomicityMode.ATOMIC),
+            cacheConfiguration(CACHE_NAMES[2], CacheAtomicityMode.TRANSACTIONAL)
         };
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
@@ -118,6 +96,22 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @param mode Cache atomicity mode.
+     * @return Configured cache configuration.
+     */
+    private CacheConfiguration<Object, Object> cacheConfiguration(String cacheName, CacheAtomicityMode mode) {
+        return new CacheConfiguration<>(cacheName)
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setAtomicityMode(mode)
+            .setBackups(1)
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+            .setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE)
+            .setAffinity(new RendezvousAffinityFunction(false, 1024))
+            .setIndexedTypes(String.class, String.class);
     }
 
     /** Client configuration */
@@ -240,9 +234,7 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
      * @return Partitions states for given cache name.
      */
     private List<GridDhtPartitionState> getPartitionsStates(int gridNumber, String cacheName) {
-        int hash = grid(gridNumber).cachex(cacheName).name().hashCode();
-
-        CacheGroupContext cgCtx = grid(gridNumber).context().cache().cacheGroup(hash);
+        CacheGroupContext cgCtx = grid(gridNumber).context().cache().cacheGroup(CU.cacheId(cacheName));
 
         GridDhtPartitionTopologyImpl top = (GridDhtPartitionTopologyImpl)cgCtx.topology();
 
