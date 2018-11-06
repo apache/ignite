@@ -30,7 +30,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -1000,7 +999,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
                     tab.getKeyFieldName() :
                     "PK_" + schemaName + "_" + tabName;
 
-                List<String> keyCols = keyColumns(tab);
+                List<String> keyCols = QueryUtils.primaryKeyColumns(tab);
 
                 for (int i = 0; i < keyCols.size(); i++) {
                     String keyColName = keyCols.get(i);
@@ -1020,26 +1019,6 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
                 String.class.getName(), Short.class.getName(), String.class.getName()),
             rows, true
         );
-    }
-
-    //todo : move to QueryUtils
-    static List<String> keyColumns(QueryEntity tab) {
-        Set<String> keyFields = tab.getKeyFields();
-
-        if (F.isEmpty(keyFields))
-            return Collections.singletonList(
-                tab.getKeyFieldName() != null
-                ? tab.getKeyFieldName()
-                : QueryUtils.KEY_FIELD_NAME);
-
-        ArrayList<String> keyCols = new ArrayList<>(keyFields.size());
-
-        for (String name : tab.getFields().keySet()) {
-            if (keyFields.contains(name))
-                keyCols.add(name);
-        }
-
-        return keyCols;
     }
 
 

@@ -24,6 +24,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -198,6 +199,31 @@ public class QueryUtils {
         }
 
         return res;
+    }
+
+    /**
+     * Computes list of columns that belongs to primary key. Columns order is the same as in primary key.
+     *
+     * @param tab query entity that represents this table, which primary key columns to get.
+     * @return list of columns, primary key consist of with correct order.
+     */
+    public static List<String> primaryKeyColumns(QueryEntity tab) {
+        Set<String> keyFields = tab.getKeyFields();
+
+        if (F.isEmpty(keyFields))
+            return Collections.singletonList(
+                tab.getKeyFieldName() != null
+                    ? tab.getKeyFieldName()
+                    : KEY_FIELD_NAME);
+
+        ArrayList<String> keyCols = new ArrayList<>(keyFields.size());
+
+        for (String name : tab.getFields().keySet()) {
+            if (keyFields.contains(name))
+                keyCols.add(name);
+        }
+
+        return keyCols;
     }
 
     /**
