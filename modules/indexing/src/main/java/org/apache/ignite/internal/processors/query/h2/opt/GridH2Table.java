@@ -248,12 +248,8 @@ public class GridH2Table extends TableBase {
         // In accordance with base method semantics, we'll return true if we were already exclusively locked.
         Boolean res = sessions.get(ses);
 
-        if (res != null) {
-            System.out.println(Thread.currentThread().getName() + System.identityHashCode(this) + " +++ LOCK noop" + ses + " " + getName());
+        if (res != null)
             return res;
-        }
-
-        System.out.println(Thread.currentThread().getName() + System.identityHashCode(this) + " +++ LOCK " + ses + " " + getName());
 
         // Acquire the lock.
         lock(exclusive);
@@ -321,10 +317,7 @@ public class GridH2Table extends TableBase {
     private void unlock(boolean exclusive) {
         Lock l = exclusive ? lock.writeLock() : lock.readLock();
 
-        System.out.println(Thread.currentThread().getName() + System.identityHashCode(lock) + " +++ unlock " + exclusive);
-
         l.unlock();
-        System.out.println(Thread.currentThread().getName() + System.identityHashCode(lock) + " +++ unlock OK" + exclusive);
     }
 
     /**
@@ -413,13 +406,8 @@ public class GridH2Table extends TableBase {
     @Override public void unlock(Session ses) {
         Boolean exclusive = sessions.remove(ses);
 
-        if (exclusive == null) {
-            System.out.println(Thread.currentThread().getName() + System.identityHashCode(this) + " +++ UNLOCK noop " + ses + " " + getName());
-
+        if (exclusive == null)
             return;
-        }
-
-        System.out.println(Thread.currentThread().getName() + System.identityHashCode(this) + " +++ UNLOCK " + ses + " " + getName());
 
         unlock(exclusive);
     }

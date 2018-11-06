@@ -801,6 +801,7 @@ public class GridMapQueryExecutor {
                         timeout,
                         params,
                         true,
+                        maxMemory,
                         mvccSnapshot,
                         tx,
                         txDetails,
@@ -879,7 +880,7 @@ public class GridMapQueryExecutor {
                 .reservations(reserved)
                 .mvccSnapshot(mvccSnapshot)
                 .lazyWorker(worker)
-                .queryMemoryManager(new IgniteH2QueryMemoryManager(maxMemory));
+                .queryMemoryManager((maxMemory == Long.MAX_VALUE) ? null : new IgniteH2QueryMemoryManager(maxMemory));
 
             Connection conn = h2.connectionForSchema(schemaName);
 
