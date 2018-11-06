@@ -110,7 +110,6 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
     };
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected CacheConfiguration cacheConfiguration() {
         CacheConfiguration cc = super.cacheConfiguration();
 

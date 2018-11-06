@@ -261,7 +261,6 @@ public class RecordV1Serializer implements RecordSerializer {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("CastConflictsWithInstanceof")
     @Override public void writeRecord(WALRecord rec, ByteBuffer buf) throws IgniteCheckedException {
         writeWithCrc(rec, buf, recordIO);
     }
@@ -272,7 +271,6 @@ public class RecordV1Serializer implements RecordSerializer {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("CastConflictsWithInstanceof")
     @Override public int size(WALRecord record) throws IgniteCheckedException {
         return recordIO.sizeWithHeaders(record);
     }

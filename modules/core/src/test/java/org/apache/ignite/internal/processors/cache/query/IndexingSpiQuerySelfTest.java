@@ -193,7 +193,6 @@ public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testIndexingSpiFailure() throws Exception {
         indexingSpi = new MyBrokenIndexingSpi();
 

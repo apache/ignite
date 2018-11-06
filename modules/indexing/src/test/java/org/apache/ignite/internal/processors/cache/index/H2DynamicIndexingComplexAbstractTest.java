@@ -88,7 +88,6 @@ public abstract class H2DynamicIndexingComplexAbstractTest extends DynamicIndexA
     }
 
     /** Do test. */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testOperations() {
         executeSql("CREATE TABLE person (id int, name varchar, age int, company varchar, city varchar, " +
             "primary key (id, name, city)) WITH \"template=" + cacheMode.name() + ",atomicity=" + atomicityMode.name() +

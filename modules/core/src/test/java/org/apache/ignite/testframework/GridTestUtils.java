@@ -111,7 +111,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Utility class for tests.
  */
-@SuppressWarnings({"UnusedCatchParameter"})
 public final class GridTestUtils {
     /** Default busy wait sleep interval in milliseconds.  */
     public static final long DFLT_BUSYWAIT_SLEEP_INTERVAL = 200;
@@ -826,7 +825,6 @@ public final class GridTestUtils {
      * @param threadName Thread names.
      * @return Future for the run. Future returns execution time in milliseconds.
      */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     public static IgniteInternalFuture<Long> runMultiThreadedAsync(Callable<?> call, int threadNum, final String threadName) {
         final List<Callable<?>> calls = Collections.<Callable<?>>nCopies(threadNum, call);
         final GridTestSafeThreadFactory threadFactory = new GridTestSafeThreadFactory(threadName);
@@ -929,7 +927,6 @@ public final class GridTestUtils {
      * @param task Runnable.
      * @return Future with task result.
      */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     public static IgniteInternalFuture runAsync(final Runnable task) {
         return runAsync(task,"async-runnable-runner");
     }
@@ -940,7 +937,6 @@ public final class GridTestUtils {
      * @param task Runnable.
      * @return Future with task result.
      */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     public static IgniteInternalFuture runAsync(final Runnable task, String threadName) {
         return runAsync(() -> {
             task.run();
@@ -955,7 +951,6 @@ public final class GridTestUtils {
      * @param task Callable.
      * @return Future with task result.
      */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     public static <T> IgniteInternalFuture<T> runAsync(final Callable<T> task) {
         return runAsync(task, "async-callable-runner");
     }
@@ -967,7 +962,6 @@ public final class GridTestUtils {
      * @param threadName Thread name.
      * @return Future with task result.
      */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     public static <T> IgniteInternalFuture<T> runAsync(final Callable<T> task, String threadName) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to start new threads (test is being stopped).");
@@ -1161,7 +1155,6 @@ public final class GridTestUtils {
      * @param ignite Grid to stop.
      * @param log Logger.
      */
-    @SuppressWarnings({"CatchGenericClass"})
     public static void close(Ignite ignite, IgniteLogger log) {
         if (ignite != null)
             try {
@@ -1179,7 +1172,6 @@ public final class GridTestUtils {
      * @param igniteInstanceName Ignite instance name.
      * @param log Logger.
      */
-    @SuppressWarnings({"CatchGenericClass"})
     public static void stopGrid(String igniteInstanceName, IgniteLogger log) {
         try {
             G.stop(igniteInstanceName, false);

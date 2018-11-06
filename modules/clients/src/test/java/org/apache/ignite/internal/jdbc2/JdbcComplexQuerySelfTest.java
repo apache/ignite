@@ -265,7 +265,6 @@ public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
     /**
      * Person.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Person implements Serializable {
         /** ID. */
         @QuerySqlField
@@ -304,7 +303,6 @@ public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
     /**
      * Organization.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Organization implements Serializable {
         /** ID. */
         @QuerySqlField
