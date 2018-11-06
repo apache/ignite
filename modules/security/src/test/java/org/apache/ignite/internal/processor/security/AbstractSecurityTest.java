@@ -14,20 +14,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public class AbstractSecurityTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        System.setProperty(
-            TestSecurityProcessorProvider.TEST_SECURITY_PROCESSOR_CLS,
-            "org.apache.ignite.internal.processor.security.TestSecurityProcessor"
-        );
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
-
-        System.clearProperty(TestSecurityProcessorProvider.TEST_SECURITY_PROCESSOR_CLS);
 
         stopAllGrids();
 
@@ -54,6 +42,7 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
             .setAuthenticationEnabled(true)
             .setPluginConfigurations(
                 new TestSecurityPluginConfiguration()
+                    .setSecurityProcessorClass("org.apache.ignite.internal.processor.security.TestSecurityProcessor")
                     .setLogin(login)
                     .setPwd(pwd)
                     .setUserObj(userObj)

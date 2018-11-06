@@ -23,6 +23,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
@@ -30,6 +31,7 @@ import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.IgnitePlugin;
+import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.PluginValidationException;
@@ -39,9 +41,6 @@ import org.jetbrains.annotations.Nullable;
  * Security processor provider for tests.
  */
 public class TestSecurityProcessorProvider implements PluginProvider {
-    /** System property to get test security processor class name. */
-    public static String TEST_SECURITY_PROCESSOR_CLS = "TEST_SECURITY_PROVIDER_CLASS";
-
     /** Default test security processor class name. */
     public static String DFLT_TEST_SECURITY_PROCESSOR_CLS_NAME =
         "org.apache.ignite.internal.processors.security.os.GridOsSecurityProcessor";
@@ -76,12 +75,10 @@ public class TestSecurityProcessorProvider implements PluginProvider {
     @SuppressWarnings("unchecked")
     @Override public @Nullable Object createComponent(PluginContext ctx, Class cls) {
         if (cls.isAssignableFrom(GridSecurityProcessor.class)) {
-            String secProcClsName = System.getProperty(
-                TEST_SECURITY_PROCESSOR_CLS, DFLT_TEST_SECURITY_PROCESSOR_CLS_NAME
-            );
+            String secProcCls = securityProcessorClass(ctx);
 
             try {
-                Class implCls = Class.forName(secProcClsName);
+                Class implCls = Class.forName(secProcCls);
 
                 if (implCls == null)
                     throw new IgniteException("Failed to find component implementation: " + cls.getName());
@@ -108,11 +105,29 @@ public class TestSecurityProcessorProvider implements PluginProvider {
                 }
             }
             catch (ClassNotFoundException e) {
-                throw new IgniteException("Failed to load class [cls=" + secProcClsName + "]", e);
+                throw new IgniteException("Failed to load class [cls=" + secProcCls + "]", e);
             }
         }
 
         return null;
+    }
+
+    /**
+     * Getting security processor class name.
+     *
+     * @param ctx Context.
+     */
+    private String securityProcessorClass(PluginContext ctx){
+        IgniteConfiguration igniteCfg = ctx.igniteConfiguration();
+
+        if (igniteCfg.getPluginConfigurations() != null) {
+            for (PluginConfiguration pluginCfg : igniteCfg.getPluginConfigurations()) {
+                if (pluginCfg instanceof TestSecurityPluginConfiguration)
+                    return ((TestSecurityPluginConfiguration)pluginCfg).getSecurityProcessorClass();
+            }
+        }
+
+        return DFLT_TEST_SECURITY_PROCESSOR_CLS_NAME;
     }
 
     /** {@inheritDoc} */

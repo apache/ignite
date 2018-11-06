@@ -19,6 +19,9 @@ public class TestSecurityPluginConfiguration implements PluginConfiguration {
     /** User object. */
     private Object userObj;
 
+    /** Security processor class name. */
+    private String secProcCls;
+
     /**
      * Getting security permission set.
      */
@@ -79,6 +82,22 @@ public class TestSecurityPluginConfiguration implements PluginConfiguration {
      */
     public TestSecurityPluginConfiguration setUserObj(Object userObj) {
         this.userObj = userObj;
+
+        return this;
+    }
+
+    /**
+     * Getting security processor class name.
+     */
+    public String getSecurityProcessorClass() {
+        return secProcCls;
+    }
+
+    /**
+     * @param secProcCls Security processor class name.
+     */
+    public TestSecurityPluginConfiguration setSecurityProcessorClass(String secProcCls) {
+        this.secProcCls = secProcCls;
 
         return this;
     }
