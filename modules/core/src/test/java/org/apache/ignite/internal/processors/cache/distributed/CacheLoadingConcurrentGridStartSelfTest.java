@@ -266,9 +266,10 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
         IgniteInternalFuture<Object> fut = runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 startNodesLatch.await();
-
-                for (int i = 2; i < GRIDS_CNT; i++)
+                for (int i = 2; i < GRIDS_CNT; i++) {
                     startGrid(i);
+                    U.sleep(100);
+                }
 
                 return null;
             }
@@ -277,28 +278,27 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
         final HashSet<IgniteFuture> set = new HashSet<>();
 
         boolean stop = false;
-        int insertedKeys = 0;
-
+        int pastedKeys = 0;
         startNodesLatch.countDown();
-
         try (IgniteDataStreamer<Integer, String> dataStreamer = g0.dataStreamer(DEFAULT_CACHE_NAME)) {
+
             dataStreamer.allowOverwrite(allowOverwrite);
             ((DataStreamerImpl)dataStreamer).maxRemapCount(Integer.MAX_VALUE);
 
             long startingEndTs = -1L;
             while (!stop) {
-                set.add(dataStreamer.addData(insertedKeys, "Data"));
-                insertedKeys = insertedKeys + 1;
+                set.add(dataStreamer.addData(pastedKeys, "Data"));
+                pastedKeys = pastedKeys + 1;
 
-                if (insertedKeys % 100000 == 0)
-                    log.info("Streaming " + insertedKeys + "'th entry.");
+                if (pastedKeys % 100000 == 0)
+                    log.info("Streaming " + pastedKeys + "'th entry.");
 
                 if (fut.isDone() && startingEndTs == -1)
                     startingEndTs = System.currentTimeMillis();
                 if (startingEndTs != -1)
                     restarts = (System.currentTimeMillis() - startingEndTs) < 1000;
 
-                stop = insertedKeys >= KEYS_CNT || (fut.isDone() && !restarts);
+                stop = pastedKeys >= KEYS_CNT || (fut.isDone() && !restarts);
             }
         }
 
@@ -315,10 +315,10 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
 
         long size = cache.size(CachePeekMode.PRIMARY);
 
-        if (size != insertedKeys) {
+        if (size != pastedKeys) {
             Set<Integer> failedKeys = new LinkedHashSet<>();
 
-            for (int i = 0; i < insertedKeys; i++)
+            for (int i = 0; i < pastedKeys; i++)
                 if (!cache.containsKey(i)) {
                     log.info("Actual cache size: " + size);
 
@@ -346,7 +346,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
             assert failedKeys.isEmpty() : "Some failed keys: " + failedKeys.toString();
         }
 
-        assertCacheSize(insertedKeys);
+        assertCacheSize(pastedKeys);
     }
 
     /**
@@ -377,14 +377,14 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
-    private void assertCacheSize(int expectedCacheSize) throws Exception {
+    private void assertCacheSize(int pastedKeysCount) throws Exception {
         final IgniteCache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         boolean consistentCache = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 int size = cache.size(CachePeekMode.PRIMARY);
 
-                if (size != expectedCacheSize)
+                if (size != pastedKeysCount)
                     log.info("Cache size: " + size);
 
                 int total = 0;
@@ -392,10 +392,10 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
                 for (int i = 0; i < GRIDS_CNT; i++)
                     total += grid(i).cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.PRIMARY);
 
-                if (total != expectedCacheSize)
+                if (total != pastedKeysCount)
                     log.info("Total size: " + size);
 
-                return size == expectedCacheSize && expectedCacheSize == total;
+                return size == pastedKeysCount && pastedKeysCount == total;
             }
         }, 2 * 60_000);
 
