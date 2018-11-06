@@ -133,6 +133,20 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         personCache.put(new AffinityKey<>("p1", "o1"), new Person("John White", 25, 1));
         personCache.put(new AffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
         personCache.put(new AffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
+
+        IgniteCache<Integer, Department> departmentCache = jcache(grid(0),
+            defaultCacheConfiguration().setIndexedTypes(Integer.class, Department.class), "dep");
+
+        try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+            Statement stmt = conn.createStatement();
+
+            stmt.execute("CREATE TABLE PUBLIC.TEST (ID INT, NAME VARCHAR(50) default 'default name', " +
+                "age int default 21, VAL VARCHAR(50), PRIMARY KEY (ID, NAME))");
+            stmt.execute("CREATE TABLE PUBLIC.\"Quoted\" (\"Id\" INT primary key, \"Name\" VARCHAR(50)) WITH WRAP_KEY");
+            stmt.execute("CREATE INDEX \"MyTestIndex quoted\" on PUBLIC.\"Quoted\" (\"Id\" DESC)");
+            stmt.execute("CREATE INDEX IDX ON PUBLIC.TEST (ID ASC)");
+            stmt.execute("CREATE TABLE PUBLIC.TEST_DECIMAL_COLUMN (ID INT primary key, DEC_COL DECIMAL(8, 3))");
+        }
     }
 
     /**
@@ -409,18 +423,28 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPrimaryKeyMetadata() throws Exception {
-        try (Connection conn = DriverManager.getConnection(BASE_URL);
-             ResultSet rs = conn.getMetaData().getPrimaryKeys(null, "pers", "PERSON")) {
+        try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+            ResultSet rs = conn.getMetaData().getPrimaryKeys(null, null, null);
 
-            int cnt = 0;
+            Set<String> expectedPks = new HashSet<>(Arrays.asList(
+                "org.ORGANIZATION.PK_org_ORGANIZATION._KEY",
+                "pers.PERSON.PK_pers_PERSON._KEY",
+                "dep.DEPARTMENT.PK_dep_DEPARTMENT._KEY",
+                "PUBLIC.TEST.PK_PUBLIC_TEST.ID",
+                "PUBLIC.TEST.PK_PUBLIC_TEST.NAME",
+                "PUBLIC.Quoted.PK_PUBLIC_Quoted.Id",
+                "PUBLIC.TEST_DECIMAL_COLUMN.ID.ID"));
 
-            while (rs.next()) {
-                assertEquals("_KEY", rs.getString("COLUMN_NAME"));
+            Set<String> actualPks = new HashSet<>(expectedPks.size());
 
-                cnt++;
+            while(rs.next()) {
+                actualPks.add(rs.getString("TABLE_SCHEM") +
+                    '.' + rs.getString("TABLE_NAME") +
+                    '.' + rs.getString("PK_NAME") +
+                    '.' + rs.getString("COLUMN_NAME"));
             }
 
-            assertEquals(1, cnt);
+            assertEquals("Metadata contains unexpected primary keys info.", expectedPks, actualPks);
         }
     }
 
@@ -452,10 +476,11 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSchemasMetadata() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10118");
         try (Connection conn = DriverManager.getConnection(BASE_URL)) {
             ResultSet rs = conn.getMetaData().getSchemas();
 
-            Set<String> expectedSchemas = new HashSet<>(Arrays.asList("pers", "org"));
+            Set<String> expectedSchemas = new HashSet<>(Arrays.asList("pers", "org", "dep", "PUBLIC"));
 
             Set<String> schemas = new HashSet<>();
 
@@ -537,6 +562,29 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
          * @param name Name.
          */
         private Organization(int id, String name) {
+            this.id = id;
+            this.name = name;
+        }
+    }
+
+    /**
+     * Department.
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    private static class Department implements Serializable {
+        /** ID. */
+        @QuerySqlField
+        private final int id;
+
+        /** Name. */
+        @QuerySqlField(precision = 43)
+        private final String name;
+
+        /**
+         * @param id ID.
+         * @param name Name.
+         */
+        private Department(int id, String name) {
             this.id = id;
             this.name = name;
         }

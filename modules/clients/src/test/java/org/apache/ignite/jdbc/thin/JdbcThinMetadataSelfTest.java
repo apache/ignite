@@ -577,8 +577,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                     '.' + rs.getString("COLUMN_NAME"));
             }
 
-            assert expectedPks.equals(actualPks) : "expectedPks=" + expectedPks +
-                ", actualPks" + actualPks;
+            assertEquals("Metadata contains unexpected primary keys info.", expectedPks, actualPks);
         }
     }
 
