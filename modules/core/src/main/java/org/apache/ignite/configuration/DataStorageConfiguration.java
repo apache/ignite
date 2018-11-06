@@ -116,7 +116,7 @@ public class DataStorageConfiguration implements Serializable {
     public static final int DFLT_WAL_HISTORY_SIZE = 20;
 
     /** Default max size of WAL archive files, in bytes */
-    public static final long DFLT_WAL_ARCHIVE_MAX_SIZE = 1024 * 1024 * 1024;
+    public static final long DFLT_WAL_ARCHIVE_MAX_SIZE = 10L * 1024 * 1024 * 1024;
 
     /** */
     public static final int DFLT_WAL_SEGMENTS = 10;
