@@ -20,7 +20,7 @@
 const Cursor = require('./Cursor').Cursor;
 const SqlFieldsCursor = require('./Cursor').SqlFieldsCursor;
 const ArgumentChecker = require('./internal/ArgumentChecker');
-const BinaryWriter = require('./internal/BinaryWriter');
+const BinaryCommunicator = require('./internal/BinaryCommunicator');
 const BinaryUtils = require('./internal/BinaryUtils');
 
 const PAGE_SIZE_DEFAULT = 1024;
@@ -220,10 +220,10 @@ class SqlQuery extends Query {
     /**
      * @ignore
      */
-    async _write(buffer) {
-        await BinaryWriter.writeString(buffer, this._type);
-        await BinaryWriter.writeString(buffer, this._sql);
-        await this._writeArgs(buffer);
+    async _write(communicator, buffer) {
+        BinaryCommunicator.writeString(buffer, this._type);
+        BinaryCommunicator.writeString(buffer, this._sql);
+        await this._writeArgs(communicator, buffer);
         buffer.writeBoolean(this._distributedJoins);
         buffer.writeBoolean(this._local);
         buffer.writeBoolean(this._replicatedOnly);
@@ -234,14 +234,14 @@ class SqlQuery extends Query {
     /**
      * @ignore
      */
-    async _writeArgs(buffer) {
+    async _writeArgs(communicator, buffer) {
         const argsLength = this._args ? this._args.length : 0;
         buffer.writeInteger(argsLength);
         if (argsLength > 0) {
             let argType;
             for (let i = 0; i < argsLength; i++) {
                 argType = this._argTypes && i < this._argTypes.length ? this._argTypes[i] : null;
-                await BinaryWriter.writeObject(buffer, this._args[i], argType);
+                await communicator.writeObject(buffer, this._args[i], argType);
             }
         }
     }
@@ -249,8 +249,8 @@ class SqlQuery extends Query {
     /**
      * @ignore
      */
-    async _getCursor(socket, payload, keyType = null, valueType = null) {
-        const cursor = new Cursor(socket, BinaryUtils.OPERATION.QUERY_SQL_CURSOR_GET_PAGE, payload, keyType, valueType);
+    async _getCursor(communicator, payload, keyType = null, valueType = null) {
+        const cursor = new Cursor(communicator, BinaryUtils.OPERATION.QUERY_SQL_CURSOR_GET_PAGE, payload, keyType, valueType);
         cursor._readId(payload);
         return cursor;
     }
@@ -410,12 +410,12 @@ class SqlFieldsQuery extends SqlQuery {
     /**
      * @ignore
      */
-    async _write(buffer) {
-        await BinaryWriter.writeString(buffer, this._schema);
+    async _write(communicator, buffer) {
+        BinaryCommunicator.writeString(buffer, this._schema);
         buffer.writeInteger(this._pageSize);
         buffer.writeInteger(this._maxRows);
-        await BinaryWriter.writeString(buffer, this._sql);
-        await this._writeArgs(buffer)
+        BinaryCommunicator.writeString(buffer, this._sql);
+        await this._writeArgs(communicator, buffer)
         buffer.writeByte(this._statementType);
         buffer.writeBoolean(this._distributedJoins);
         buffer.writeBoolean(this._local);
@@ -430,8 +430,8 @@ class SqlFieldsQuery extends SqlQuery {
     /**
      * @ignore
      */
-    async _getCursor(socket, payload, keyType = null, valueType = null) {
-        const cursor = new SqlFieldsCursor(socket, payload);
+    async _getCursor(communicator, payload, keyType = null, valueType = null) {
+        const cursor = new SqlFieldsCursor(communicator, payload);
         await cursor._readFieldNames(payload, this._includeFieldNames);
         return cursor;
     }
@@ -485,9 +485,9 @@ class ScanQuery extends Query {
     /**
      * @ignore
      */
-    async _write(buffer) {
+    async _write(communicator, buffer) {
         // filter
-        await BinaryWriter.writeObject(buffer, null);
+        await communicator.writeObject(buffer, null);
         buffer.writeInteger(this._pageSize);
         buffer.writeInteger(this._partitionNumber);
         buffer.writeBoolean(this._local);
@@ -496,8 +496,8 @@ class ScanQuery extends Query {
     /**
      * @ignore
      */
-    async _getCursor(socket, payload, keyType = null, valueType = null) {
-        const cursor = new Cursor(socket, BinaryUtils.OPERATION.QUERY_SCAN_CURSOR_GET_PAGE, payload, keyType, valueType);
+    async _getCursor(communicator, payload, keyType = null, valueType = null) {
+        const cursor = new Cursor(communicator, BinaryUtils.OPERATION.QUERY_SCAN_CURSOR_GET_PAGE, payload, keyType, valueType);
         cursor._readId(payload);
         return cursor;
     }

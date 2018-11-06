@@ -71,7 +71,6 @@ import static org.apache.ignite.internal.util.GridUnsafe.wrapPointer;
  * Note that first 8 bytes of page header are used either for page marker or for next relative pointer depending
  * on whether the page is in use or not.
  */
-@SuppressWarnings({"LockAcquiredButNotSafelyReleased", "FieldAccessedSynchronizedAndUnsynchronized"})
 public class PageMemoryNoStoreImpl implements PageMemory {
     /** */
     public static final long PAGE_MARKER = 0xBEEAAFDEADBEEF01L;
@@ -238,12 +237,11 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("OverlyStrongTypeCast")
-    @Override public void stop() throws IgniteException {
+    @Override public void stop(boolean deallocate) throws IgniteException {
         if (log.isDebugEnabled())
             log.debug("Stopping page memory.");
 
-        directMemoryProvider.shutdown();
+        directMemoryProvider.shutdown(deallocate);
 
         if (directMemoryProvider instanceof Closeable) {
             try {
@@ -262,8 +260,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public long allocatePage(int grpId, int partId, byte flags) {
-        memMetrics.incrementTotalAllocatedPages();
-
         long relPtr = borrowFreePage();
         long absPtr = 0;
 
@@ -341,6 +337,11 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     /** {@inheritDoc} */
     @Override public int systemPageSize() {
         return sysPageSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int realPageSize(int grpId) {
+        return pageSize();
     }
 
     /**
@@ -579,6 +580,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
             if (freePageListHead.compareAndSet(freePageRelPtrMasked, relPtr)) {
                 allocatedPages.decrementAndGet();
 
+                memMetrics.updateTotalAllocatedPages(-1L);
+
                 return;
             }
         }
@@ -606,6 +609,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
                     GridUnsafe.putLong(freePageAbsPtr, PAGE_MARKER);
 
                     allocatedPages.incrementAndGet();
+
+                    memMetrics.updateTotalAllocatedPages(1L);
 
                     return freePageRelPtr;
                 }
@@ -807,6 +812,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
                     allocatedPages.incrementAndGet();
 
+                    memMetrics.updateTotalAllocatedPages(1L);
+
                     return pageIdx;
                 }
             }
@@ -837,7 +844,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     }
 
     /** {@inheritDoc} */
-    public int checkpointBufferPagesCount() {
+    @Override public int checkpointBufferPagesCount() {
         return 0;
     }
 }

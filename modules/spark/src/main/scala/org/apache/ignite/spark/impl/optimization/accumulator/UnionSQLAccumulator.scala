@@ -18,7 +18,7 @@
 package org.apache.ignite.spark.impl.optimization.accumulator
 
 import org.apache.ignite.spark.impl.optimization.{IgniteQueryContext, exprToString, toAttributeReference}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, NamedExpression, SortOrder}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, NamedExpression, SortOrder}
 
 /**
   * Accumulator to store info about UNION query.
@@ -27,21 +27,32 @@ private[apache] case class UnionSQLAccumulator(
     igniteQueryContext: IgniteQueryContext,
     children: Seq[QueryAccumulator],
     outputExpressions: Seq[NamedExpression],
+    limit: Option[Expression] = None,
+    localLimit: Option[Expression] = None,
     orderBy: Option[Seq[SortOrder]] = None
 ) extends QueryAccumulator {
     /** @inheritdoc */
-    override def compileQuery(prettyPrint: Boolean = false): String = {
+    override def compileQuery(prettyPrint: Boolean = false, nestedQuery: Boolean = false): String = {
         val delim = if (prettyPrint) "\n" else " "
         val tab = if (prettyPrint) "  " else ""
 
-        val query = children.map(_.compileQuery(prettyPrint)).mkString(s"${delim}UNION$delim")
+        var query = children.map(_.compileQuery(prettyPrint, nestedQuery = true)).mkString(s"${delim}UNION$delim")
 
-        orderBy match {
+        query = orderBy match {
             case Some(sortOrders) ⇒
                 query + s"${delim}ORDER BY ${sortOrders.map(exprToString(_)).mkString(s",$delim$tab")}"
 
             case None ⇒ query
         }
+
+        if (limit.isDefined) {
+            query += s" LIMIT ${exprToString(limit.get)}"
+
+            if (nestedQuery)
+                query = s"SELECT * FROM ($query)"
+        }
+
+        query
     }
 
     /** @inheritdoc */
@@ -60,4 +71,10 @@ private[apache] case class UnionSQLAccumulator(
 
     /** @inheritdoc */
     override lazy val qualifier: String = igniteQueryContext.uniqueTableAlias
+
+    /** @inheritdoc */
+    override def withLimit(limit: Expression): QueryAccumulator = copy(limit = Some(limit))
+
+    /** @inheritdoc */
+    override def withLocalLimit(localLimit: Expression): QueryAccumulator =  copy(localLimit = Some(localLimit))
 }

@@ -19,26 +19,22 @@ package org.apache.ignite.ml.tree.data;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.ignite.ml.dataset.primitive.FeatureMatrixWithLabelsOnHeapData;
 import org.apache.ignite.ml.tree.TreeFilter;
 
 /**
- * A partition {@code data} of the containing matrix of features and vector of labels stored in heap.
+ * A partition {@code data} of the containing matrix of features and vector of labels stored in heap
+ * with index on features.
  */
-public class DecisionTreeData implements AutoCloseable {
-    /** Matrix with features. */
-    private final double[][] features;
-
-    /** Vector with labels. */
-    private final double[] labels;
-
+public class DecisionTreeData extends FeatureMatrixWithLabelsOnHeapData implements AutoCloseable {
     /** Copy of vector with original labels. Auxiliary for Gradient Boosting on Trees.*/
-    private double[] copyOfOriginalLabels;
+    private double[] copiedOriginalLabels;
 
     /** Indexes cache. */
     private final List<TreeDataIndex> indexesCache;
 
     /** Build index. */
-    private final boolean buildIndex;
+    private final boolean buildIdx;
 
     /**
      * Constructs a new instance of decision tree data.
@@ -48,11 +44,8 @@ public class DecisionTreeData implements AutoCloseable {
      * @param buildIdx Build index.
      */
     public DecisionTreeData(double[][] features, double[] labels, boolean buildIdx) {
-        assert features.length == labels.length : "Features and labels have to be the same length";
-
-        this.features = features;
-        this.labels = labels;
-        this.buildIndex = buildIdx;
+        super(features, labels);
+        this.buildIdx = buildIdx;
 
         indexesCache = new ArrayList<>();
         if (buildIdx)
@@ -68,6 +61,8 @@ public class DecisionTreeData implements AutoCloseable {
     public DecisionTreeData filter(TreeFilter filter) {
         int size = 0;
 
+        double[][] features = getFeatures();
+        double[] labels = getLabels();
         for (int i = 0; i < features.length; i++)
             if (filter.test(features[i]))
                 size++;
@@ -86,7 +81,7 @@ public class DecisionTreeData implements AutoCloseable {
             }
         }
 
-        return new DecisionTreeData(newFeatures, newLabels, buildIndex);
+        return new DecisionTreeData(newFeatures, newLabels, buildIdx);
     }
 
     /**
@@ -95,12 +90,15 @@ public class DecisionTreeData implements AutoCloseable {
      * @param col Column.
      */
     public void sort(int col) {
-        sort(col, 0, features.length - 1);
+        sort(col, 0, getFeatures().length - 1);
     }
 
     /** */
     private void sort(int col, int from, int to) {
         if (from < to) {
+            double[][] features = getFeatures();
+            double[] labels = getLabels();
+
             double pivot = features[(from + to) / 2][col];
 
             int i = from, j = to;
@@ -131,21 +129,13 @@ public class DecisionTreeData implements AutoCloseable {
     }
 
     /** */
-    public double[][] getFeatures() {
-        return features;
+    public double[] getCopiedOriginalLabels() {
+        return copiedOriginalLabels;
     }
 
     /** */
-    public double[] getLabels() {
-        return labels;
-    }
-
-    public double[] getCopyOfOriginalLabels() {
-        return copyOfOriginalLabels;
-    }
-
-    public void setCopyOfOriginalLabels(double[] copyOfOriginalLabels) {
-        this.copyOfOriginalLabels = copyOfOriginalLabels;
+    public void setCopiedOriginalLabels(double[] copiedOriginalLabels) {
+        this.copiedOriginalLabels = copiedOriginalLabels;
     }
 
     /** {@inheritDoc} */
@@ -170,7 +160,7 @@ public class DecisionTreeData implements AutoCloseable {
 
         if (depth == indexesCache.size()) {
             if (depth == 0)
-                indexesCache.add(new TreeDataIndex(features, labels));
+                indexesCache.add(new TreeDataIndex(getFeatures(), getLabels()));
             else {
                 TreeDataIndex lastIndex = indexesCache.get(depth - 1);
                 indexesCache.add(lastIndex.filter(filter));

@@ -74,7 +74,6 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("BusyWait")
     @Override public void start(final GridRestProtocolHandler hnd) throws IgniteCheckedException {
         assert hnd != null;
 
@@ -129,14 +128,12 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
                 "[firstPort=" + cfg.getPort() + ", lastPort=" + lastPort + ", host=" + host + ']');
         }
         catch (SSLException e) {
-            U.warn(log, "Failed to start " + name() + " protocol on port " + port + ": " + e.getMessage(),
-                "Failed to start " + name() + " protocol on port " + port + ". Check if SSL context factory is " +
-                    "properly configured.");
+            U.warn(log, "Failed to start " + name() + " protocol on port " + port + ". Check if SSL context factory " +
+                "is properly configured: " + e.getMessage());
         }
         catch (IOException e) {
-            U.warn(log, "Failed to start " + name() + " protocol on port " + port + ": " + e.getMessage(),
-                "Failed to start " + name() + " protocol on port " + port + ". " +
-                    "Check restTcpHost configuration property.");
+            U.warn(log, "Failed to start " + name() + " protocol on port " + port + ". " +
+                "Check restTcpHost configuration property: " + e.getMessage());
         }
     }
 

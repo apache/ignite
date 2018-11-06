@@ -18,70 +18,75 @@
 package org.apache.ignite.examples.ml.genetic.helloworld;
 
 import java.util.List;
+import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.ml.genetic.Chromosome;
 import org.apache.ignite.ml.genetic.Gene;
 import org.apache.ignite.ml.genetic.parameter.ITerminateCriteria;
 import org.apache.ignite.ml.genetic.utils.GAGridUtils;
 
 /**
- * Represents the terminate condition for HelloWorld Genetic algorithm
- *
- * Class terminates Genetic algorithm when fitnessScore > 10
+ * Represents the terminate condition for {@link HelloWorldGAExample}.
+ * <p>
+ * Class terminates Genetic algorithm when fitness score is more than 10.</p>
  */
 public class HelloWorldTerminateCriteria implements ITerminateCriteria {
-    /** Ignite logger */
-    private IgniteLogger igniteLogger = null;
-    /** Ignite instance */
-    private Ignite ignite = null;
+    /** Ignite instance. */
+    private final Ignite ignite;
+
+    /** */
+    private final Consumer<String> logConsumer;
 
     /**
-     * @param ignite Ignite
+     * Create class instance.
+     *
+     * @param ignite Ignite instance.
+     * @param logConsumer Logging consumer.
      */
-    public HelloWorldTerminateCriteria(Ignite ignite) {
+    HelloWorldTerminateCriteria(Ignite ignite, Consumer<String> logConsumer) {
         this.ignite = ignite;
-        this.igniteLogger = ignite.log();
+        this.logConsumer = logConsumer;
     }
 
     /**
-     * @param fittestChromosome Most fit chromosome at for the nth generation
-     * @param averageFitnessScore Average fitness score as of the nth generation
-     * @param currentGeneration Current generation
-     * @return Boolean value
+     * Check whether termination condition is met.
+     *
+     * @param fittestChromosome Most fit chromosome at for the nth generation.
+     * @param averageFitnessScore Average fitness score as of the nth generation.
+     * @param currGeneration Current generation.
+     * @return Status whether condition is met or not.
      */
     public boolean isTerminationConditionMet(Chromosome fittestChromosome, double averageFitnessScore,
-        int currentGeneration) {
+        int currGeneration) {
         boolean isTerminate = true;
 
-        igniteLogger.info("##########################################################################################");
-        igniteLogger.info("Generation: " + currentGeneration);
-        igniteLogger.info("Fittest is Chromosome Key: " + fittestChromosome);
-        igniteLogger.info("Chromosome: " + fittestChromosome);
-        printPhrase(GAGridUtils.getGenesInOrderForChromosome(ignite, fittestChromosome));
-        igniteLogger.info("Avg Chromosome Fitness: " + averageFitnessScore);
-        igniteLogger.info("##########################################################################################");
+        logConsumer.accept(
+            "\n##########################################################################################"
+                + "\n Generation: " + currGeneration
+                + "\n Fittest is Chromosome Key: " + fittestChromosome
+                + "\n Chromosome: " + fittestChromosome
+                + "\n" + printPhrase(GAGridUtils.getGenesInOrderForChromosome(ignite, fittestChromosome))
+                + "\nAvg Chromosome Fitness: " + averageFitnessScore
+                + "\n##########################################################################################");
 
-        if (!(fittestChromosome.getFitnessScore() > 10)) {
+        if (!(fittestChromosome.getFitnessScore() > 10))
             isTerminate = false;
-        }
 
         return isTerminate;
     }
 
     /**
-     * Helper to print Phrase
+     * Helper to print phrase.
      *
-     * @param List of Genes
+     * @param genes List of Genes.
+     * @return Phrase to print.
      */
-    private void printPhrase(List<Gene> genes) {
+    private String printPhrase(List<Gene> genes) {
+        StringBuilder sbPhrase = new StringBuilder();
 
-        StringBuffer sbPhrase = new StringBuffer();
-
-        for (Gene gene : genes) {
+        for (Gene gene : genes)
             sbPhrase.append(((Character)gene.getVal()).toString());
-        }
-        igniteLogger.info(sbPhrase.toString());
-    }
 
+        return sbPhrase.toString();
+    }
 }

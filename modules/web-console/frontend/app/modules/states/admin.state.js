@@ -21,7 +21,7 @@ angular
 .module('ignite-console.states.admin', [
     'ui.router'
 ])
-.config(['$stateProvider', function($stateProvider) {
+.config(['$stateProvider', /** @param {import('@uirouter/angularjs').StateProvider} $stateProvider */ function($stateProvider) {
     // set up the states
     $stateProvider
     .state('base.settings.admin', {

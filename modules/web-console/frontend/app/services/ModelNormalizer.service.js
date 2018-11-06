@@ -15,8 +15,10 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
+
 // Service to normalize objects for dirty checks.
-export default ['IgniteModelNormalizer', () => {
+export default function() {
     /**
      * Normalize object for dirty checks.
      *
@@ -56,4 +58,4 @@ export default ['IgniteModelNormalizer', () => {
             return _.isEqual(prev, normalize(cur));
         }
     };
-}];
+}

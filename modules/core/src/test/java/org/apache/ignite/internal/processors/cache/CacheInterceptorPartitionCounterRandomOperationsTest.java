@@ -583,7 +583,7 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
                 affinity(cache).mapKeyToPrimaryAndBackups(key) :
                 Collections.singletonList(affinity(cache).mapKeyToNode(key));
 
-        assert nodes.size() > 0;
+        assert !nodes.isEmpty();
 
         List<BlockingQueue<Cache.Entry<TestKey, TestValue>>> queues = new ArrayList<>();
 

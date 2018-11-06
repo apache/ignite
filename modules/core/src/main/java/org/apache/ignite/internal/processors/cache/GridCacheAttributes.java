@@ -76,6 +76,11 @@ public class GridCacheAttributes implements Serializable {
     }
 
     /**
+     * @return Query parallelism.
+     */
+    public int qryParallelism() { return ccfg.getQueryParallelism(); }
+
+    /**
      * @return Cache mode.
      */
     public CacheMode cacheMode() {
@@ -356,6 +361,13 @@ public class GridCacheAttributes implements Serializable {
      */
     String topologyValidatorClassName() {
         return className(ccfg.getTopologyValidator());
+    }
+
+    /**
+     * @return Is cache encryption enabled.
+     */
+    public boolean isEncryptionEnabled() {
+        return ccfg.isEncryptionEnabled();
     }
 
     /**

@@ -97,8 +97,6 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
         MemoryEventStorageSpi evtSpi = new MemoryEventStorageSpi();
         evtSpi.setExpireCount(100);
 
-        cfg.setFailureDetectionTimeout(Integer.MAX_VALUE);
-
         cfg.setEventStorageSpi(evtSpi);
 
         cfg.setDiscoverySpi(disco);
@@ -220,7 +218,7 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
     /**
      * @return Cache.
      */
-    protected <K, V> IgniteCache<K, V> jcache() {
+    @Override protected <K, V> IgniteCache<K, V> jcache() {
         return jcache(0);
     }
 
@@ -228,7 +226,7 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
      * @param idx Grid index.
      * @return Cache.
      */
-    protected <K, V> IgniteCache<K, V> jcache(int idx) {
+    @Override protected <K, V> IgniteCache<K, V> jcache(int idx) {
         return grid(idx).cache(DEFAULT_CACHE_NAME);
     }
 

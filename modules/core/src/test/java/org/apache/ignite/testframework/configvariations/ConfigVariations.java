@@ -43,7 +43,6 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.MapCacheStoreStrategy;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 
 import static org.apache.ignite.internal.util.lang.GridFunc.asArray;
 
@@ -93,7 +92,7 @@ public class ConfigVariations {
     @SuppressWarnings("unchecked")
     private static final ConfigParameter<CacheConfiguration>[][] BASIC_CACHE_SET = new ConfigParameter[][] {
         Parameters.objectParameters("setCacheMode", CacheMode.REPLICATED, CacheMode.PARTITIONED),
-        Parameters.enumParameters("setAtomicityMode", CacheAtomicityMode.class),
+        Parameters.objectParameters("setAtomicityMode", CacheAtomicityMode.ATOMIC, CacheAtomicityMode.TRANSACTIONAL),
         // Set default parameters.
         Parameters.objectParameters("setLoadPreviousValue", true),
         asArray(SIMPLE_CACHE_STORE_PARAM),

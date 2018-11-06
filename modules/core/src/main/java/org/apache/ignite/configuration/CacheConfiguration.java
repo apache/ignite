@@ -58,6 +58,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.CachePluginConfiguration;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
+import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -71,7 +73,6 @@ import org.jetbrains.annotations.Nullable;
  * can be configured from Spring XML files (or other DI frameworks). <p> Note that absolutely all configuration
  * properties are optional, so users should only change what they need.
  */
-@SuppressWarnings("RedundantFieldInitialization")
 public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -320,7 +321,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private long rebalanceThrottle = DFLT_REBALANCE_THROTTLE;
 
     /** */
-    private CacheInterceptor<?, ?> interceptor;
+    private CacheInterceptor<K, V> interceptor;
 
     /** */
     private Class<?>[] sqlFuncCls;
@@ -381,6 +382,15 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Events disabled. */
     private boolean evtsDisabled = DFLT_EVENTS_DISABLED;
 
+    /**
+     * Flag indicating whether data must be encrypted.
+     * If {@code true} data on the disk will be encrypted.
+     *
+     * @see EncryptionSpi
+     * @see KeystoreEncryptionSpi
+     */
+    private boolean encryptionEnabled;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
         /* No-op. */
@@ -420,6 +430,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         cpOnRead = cc.isCopyOnRead();
         dfltLockTimeout = cc.getDefaultLockTimeout();
         eagerTtl = cc.isEagerTtl();
+        encryptionEnabled = cc.isEncryptionEnabled();
         evictFilter = cc.getEvictionFilter();
         evictFilterFactory = cc.getEvictionFilterFactory();
         evictPlc = cc.getEvictionPolicy();
@@ -521,9 +532,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Cache name or {@code null} if not provided, then this will be considered a default
-     * cache which can be accessed via {@link Ignite#cache(String)} method. Otherwise, if name
-     * is provided, the cache will be accessed via {@link Ignite#cache(String)} method.
+     * Cache name. The cache will be accessed via {@link Ignite#cache(String)} method.
      *
      * @return Cache name.
      */
@@ -1059,6 +1068,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param atomicityMode Cache atomicity mode.
      * @return {@code this} for chaining.
      */
+    @SuppressWarnings("unchecked")
     public CacheConfiguration<K, V> setAtomicityMode(CacheAtomicityMode atomicityMode) {
         this.atomicityMode = atomicityMode;
 
@@ -1657,9 +1667,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @return Cache interceptor.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public CacheInterceptor<K, V> getInterceptor() {
-        return (CacheInterceptor<K, V>)interceptor;
+        return interceptor;
     }
 
     /**
@@ -2333,6 +2342,27 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     public CacheConfiguration<K, V> setKeyConfiguration(CacheKeyConfiguration... cacheKeyCfg) {
         this.keyCfg = cacheKeyCfg;
 
+        return this;
+    }
+
+    /**
+     * Gets flag indicating whether data must be encrypted.
+     *
+     * @return {@code True} if this cache persistent data is encrypted.
+     */
+    public boolean isEncryptionEnabled() {
+        return encryptionEnabled;
+    }
+
+    /**
+     * Sets encrypted flag.
+     *
+     * @param encryptionEnabled {@code True} if this cache persistent data should be encrypted.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setEncryptionEnabled(boolean encryptionEnabled) {
+        this.encryptionEnabled = encryptionEnabled;
+        
         return this;
     }
 

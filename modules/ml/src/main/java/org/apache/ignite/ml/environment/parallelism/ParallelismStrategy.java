@@ -26,9 +26,13 @@ import org.apache.ignite.ml.math.functions.IgniteSupplier;
  * bagging, learning submodels for One-vs-All model, Cross-Validation etc.
  */
 public interface ParallelismStrategy {
+
+    /**
+     * The type of parallelism.
+     */
     public enum Type {
-        NO_PARALLELISM,
-        ON_DEFAULT_POOL
+        /** No parallelism. */NO_PARALLELISM,
+        /** On default pool. */ON_DEFAULT_POOL
     }
 
     /**
@@ -38,6 +42,13 @@ public interface ParallelismStrategy {
      */
     public <T> Promise<T> submit(IgniteSupplier<T> task);
 
+    /**
+     * Submit the list of tasks.
+     *
+     * @param tasks The task list.
+     * @param <T> The type of return value.
+     * @return The result of submit operation.
+     */
     public default <T> List<Promise<T>> submit(List<IgniteSupplier<T>> tasks) {
         List<Promise<T>> results = new ArrayList<>();
         for(IgniteSupplier<T> task : tasks)

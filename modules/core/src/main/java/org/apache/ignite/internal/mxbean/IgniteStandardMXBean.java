@@ -95,7 +95,7 @@ public class IgniteStandardMXBean extends StandardMBean {
                     str = desc.value();
 
                     assert str != null : "Failed to find method: " + mtd;
-                    assert str.trim().length() > 0 : "Method description cannot be empty: " + mtd;
+                    assert !str.trim().isEmpty() : "Method description cannot be empty: " + mtd;
 
                     // Enforce proper English.
                     assert Character.isUpperCase(str.charAt(0)) == true :
@@ -123,7 +123,7 @@ public class IgniteStandardMXBean extends StandardMBean {
             str = desc.value();
 
             assert str != null;
-            assert str.trim().length() > 0;
+            assert !str.trim().isEmpty();
 
             // Enforce proper English.
             assert Character.isUpperCase(str.charAt(0)) == true : str;
@@ -146,7 +146,7 @@ public class IgniteStandardMXBean extends StandardMBean {
                 str = desc.value();
 
                 assert str != null;
-                assert str.trim().length() > 0;
+                assert !str.trim().isEmpty();
 
                 // Enforce proper English.
                 assert Character.isUpperCase(str.charAt(0)) == true : str;
@@ -176,7 +176,7 @@ public class IgniteStandardMXBean extends StandardMBean {
                 str = decsAnn.value()[seq];
 
                 assert str != null;
-                assert str.trim().length() > 0;
+                assert !str.trim().isEmpty();
 
                 // Enforce proper English.
                 assert Character.isUpperCase(str.charAt(0)) == true : str;
@@ -206,7 +206,7 @@ public class IgniteStandardMXBean extends StandardMBean {
                 str = namesAnn.value()[seq];
 
                 assert str != null;
-                assert str.trim().length() > 0;
+                assert !str.trim().isEmpty();
             }
         }
         catch (SecurityException | ClassNotFoundException ignored) {

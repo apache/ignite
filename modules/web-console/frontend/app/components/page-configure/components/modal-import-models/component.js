@@ -93,7 +93,8 @@ export class ModalImportModels {
     /** @type {ng.ICompiledExpression} */
     onHide;
 
-    static $inject = ['$uiRouter', ConfigSelectors.name, ConfigEffects.name, ConfigureState.name, '$http', 'IgniteConfirm', IgniteConfirmBatch.name, 'IgniteFocus', SqlTypes.name, JavaTypes.name, 'IgniteMessages', '$scope', '$rootScope', 'AgentManager', 'IgniteActivitiesData', 'IgniteLoading', 'IgniteFormUtils', 'IgniteLegacyUtils'];
+    static $inject = ['$uiRouter', 'ConfigSelectors', 'ConfigEffects', 'ConfigureState', '$http', 'IgniteConfirm', 'IgniteConfirmBatch', 'IgniteFocus', 'SqlTypes', 'JavaTypes', 'IgniteMessages', '$scope', '$rootScope', 'AgentManager', 'IgniteActivitiesData', 'IgniteLoading', 'IgniteFormUtils', 'IgniteLegacyUtils'];
+
     /**
      * @param {UIRouter} $uiRouter
      * @param {ConfigSelectors} ConfigSelectors
@@ -154,16 +155,20 @@ export class ModalImportModels {
         })
         .take(1);
     }
+
     saveBatch(batch) {
         if (!batch.length)
             return;
 
+        this.$scope.importDomain.loadingOptions = SAVING_DOMAINS;
         this.Loading.start('importDomainFromDb');
+
         this.ConfigureState.dispatchAction({
             type: 'ADVANCED_SAVE_COMPLETE_CONFIGURATION',
             changedItems: this.batchActionsToRequestBody(batch),
             prevActions: []
         });
+
         this.saveSubscription = Observable.race(
             this.ConfigureState.actions$.filter((a) => a.type === 'ADVANCED_SAVE_COMPLETE_CONFIGURATION_OK')
                 .do(() => this.onHide()),
@@ -175,6 +180,7 @@ export class ModalImportModels {
         })
         .subscribe();
     }
+
     batchActionsToRequestBody(batch) {
         const result = batch.reduce((req, action) => {
             return {
@@ -199,21 +205,25 @@ export class ModalImportModels {
         result.cluster.caches = [...new Set(result.cluster.caches)];
         return result;
     }
+
     onTableSelectionChange(selected) {
         this.$scope.$applyAsync(() => {
             this.$scope.importDomain.tablesToUse = selected;
             this.selectedTablesIDs = selected.map((t) => t.id);
         });
     }
+
     onSchemaSelectionChange(selected) {
         this.$scope.$applyAsync(() => {
             this.$scope.importDomain.schemasToUse = selected;
             this.selectedSchemasIDs = selected.map((i) => i.name);
         });
     }
+
     onVisibleRowsChange(rows) {
         return this.visibleTables = rows.map((r) => r.entity);
     }
+
     onCacheSelect(cacheID) {
         if (cacheID < 0)
             return;
@@ -236,11 +246,13 @@ export class ModalImportModels {
         )
         .subscribe();
     }
+
     $onDestroy() {
         this.subscription.unsubscribe();
         if (this.onCacheSelectSubcription) this.onCacheSelectSubcription.unsubscribe();
         if (this.saveSubscription) this.saveSubscription.unsubscribe();
     }
+
     $onInit() {
         // Restores old behavior
         const {$http, Confirm, ConfirmBatch, Focus, SqlTypes, JavaTypes, Messages, $scope, $root, agentMgr, ActivitiesData, Loading, FormUtils, LegacyUtils} = this;
@@ -1025,13 +1037,9 @@ export class ModalImportModels {
 
                             $scope.ui.selectedJdbcDriverJar = $scope.jdbcDriverJars[0].value;
 
-                            // FormUtils.confirmUnsavedChanges(dirty, () => {
                             $scope.importDomain.action = 'connect';
                             $scope.importDomain.tables = [];
                             this.selectedTables = [];
-
-                            // Focus.move('jdbcUrl');
-                            // });
                         }
                         else {
                             $scope.importDomain.jdbcDriversNotFound = true;
@@ -1140,7 +1148,7 @@ export class ModalImportModels {
                 ></tables-action-cell>
             `,
             visible: true,
-            minWidth: 500
+            minWidth: 450
         }
     ];
 }

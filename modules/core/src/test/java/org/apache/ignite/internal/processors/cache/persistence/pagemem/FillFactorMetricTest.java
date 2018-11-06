@@ -91,6 +91,25 @@ public class FillFactorMetricTest extends GridCommonAbstractTest {
     private final float[] curFillFactor = new float[NODES];
 
     /**
+     * Tests that {@link DataRegionMetrics#getPagesFillFactor()} doesn't return NaN for empty cache.
+     *
+     * @throws Exception if failed.
+     */
+    public void testEmptyCachePagesFillFactor() throws Exception {
+        startGrids(1);
+
+        // Cache is created in default region so MY_DATA_REGION will have "empty" metrics.
+        CacheConfiguration<Object, Object> cacheCfg = new CacheConfiguration<>().setName(MY_CACHE);
+        grid(0).getOrCreateCache(cacheCfg);
+
+        DataRegionMetrics m = grid(0).dataRegionMetrics(MY_DATA_REGION);
+
+        assertEquals(0, m.getTotalAllocatedPages());
+
+        assertEquals(0, m.getPagesFillFactor(), Float.MIN_VALUE);
+    }
+
+    /**
      * throws if failed.
      */
     public void testFillAndEmpty() throws Exception {

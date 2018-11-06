@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.cache.expiry.ExpiryPolicy;
@@ -53,6 +54,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheLazyEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -61,14 +63,19 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheLazyPlainVersionedEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
+import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridSetWrapper;
@@ -85,6 +92,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
@@ -129,6 +137,10 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** Finalizing status updater. */
     private static final AtomicReferenceFieldUpdater<IgniteTxAdapter, FinalizationStatus> FINALIZING_UPD =
         AtomicReferenceFieldUpdater.newUpdater(IgniteTxAdapter.class, FinalizationStatus.class, "finalizing");
+
+    /** */
+    private static final AtomicReferenceFieldUpdater<IgniteTxAdapter, TxCounters> TX_COUNTERS_UPD =
+        AtomicReferenceFieldUpdater.newUpdater(IgniteTxAdapter.class, TxCounters.class, "txCounters");
 
     /** Logger. */
     protected static IgniteLogger log;
@@ -262,6 +274,16 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** UUID to consistent id mapper. */
     protected ConsistentIdMapper consistentIdMapper;
 
+    /** Mvcc tx update snapshot. */
+    protected volatile MvccSnapshot mvccSnapshot;
+
+    /** Rollback finish future. */
+    @GridToStringExclude
+    private volatile IgniteInternalFuture rollbackFut;
+
+    /** */
+    private volatile TxCounters txCounters;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -381,6 +403,18 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /**
+     * @return Mvcc info.
+     */
+    @Override @Nullable public MvccSnapshot mvccSnapshot() {
+        return mvccSnapshot;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void mvccSnapshot(MvccSnapshot mvccSnapshot) {
+        this.mvccSnapshot = mvccSnapshot;
+    }
+
+    /**
      * @return Shared cache context.
      */
     public GridCacheSharedContext<?, ?> context() {
@@ -444,36 +478,26 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
     /**
      * Uncommits transaction by invalidating all of its entries. Courtesy to minimize inconsistency.
-     *
-     * @param nodeStopping {@code True} if tx was cancelled during node stop.
      */
-    @SuppressWarnings({"CatchGenericClass"})
-    protected void uncommit(boolean nodeStopping) {
-        try {
-            if (!nodeStopping) {
-                for (IgniteTxEntry e : writeMap().values()) {
-                    try {
-                        GridCacheEntryEx entry = e.cached();
+    protected void uncommit() {
+        for (IgniteTxEntry e : writeMap().values()) {
+            try {
+                GridCacheEntryEx entry = e.cached();
 
-                        if (e.op() != NOOP)
-                            entry.invalidate(xidVer);
-                    }
-                    catch (Throwable t) {
-                        U.error(log, "Failed to invalidate transaction entries while reverting a commit.", t);
+                if (e.op() != NOOP)
+                    entry.invalidate(xidVer);
+            }
+            catch (Throwable t) {
+                U.error(log, "Failed to invalidate transaction entries while reverting a commit.", t);
 
-                        if (t instanceof Error)
-                            throw (Error)t;
+                if (t instanceof Error)
+                    throw (Error)t;
 
-                        break;
-                    }
-                }
-
-                cctx.tm().uncommitTx(this);
+                break;
             }
         }
-        catch (Exception ex) {
-            U.error(log, "Failed to do uncommit.", ex);
-        }
+
+        cctx.tm().uncommitTx(this);
     }
 
     /** {@inheritDoc} */
@@ -695,6 +719,20 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /**
+     * @return Rollback future.
+     */
+    public IgniteInternalFuture rollbackFuture() {
+        return rollbackFut;
+    }
+
+    /**
+     * @param fut Rollback future.
+     */
+    public void rollbackFuture(IgniteInternalFuture fut) {
+        rollbackFut = fut;
+    }
+
+    /**
      * Gets remaining allowed transaction time.
      *
      * @return Remaining transaction time. {@code 0} if timeout isn't specified. {@code -1} if time is out.
@@ -723,6 +761,36 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     public final IgniteCheckedException rollbackException() {
         return new IgniteTxRollbackCheckedException("Failed to finish transaction because it has been rolled back " +
             "[timeout=" + timeout() + ", tx=" + CU.txString(this) + ']');
+    }
+
+    /**
+     * @param ex Root cause.
+     */
+    public final IgniteCheckedException heuristicException(Throwable ex) {
+        return new IgniteTxHeuristicCheckedException("Committing a transaction has produced runtime exception", ex);
+    }
+
+    /**
+     * @param log Log.
+     * @param commit Commit.
+     * @param e Exception.
+     */
+    public void logTxFinishErrorSafe(@Nullable IgniteLogger log, boolean commit, Throwable e) {
+        assert e != null : "Exception is expected";
+
+        final String fmt = "Failed completing the transaction: [commit=%s, tx=%s, plc=%s]";
+
+        try {
+            // First try printing a full transaction. This is error prone.
+            U.error(log, String.format(fmt, commit, this,
+                cctx.gridConfig().getFailureHandler().getClass().getSimpleName()), e);
+        }
+        catch (Throwable e0) {
+            e.addSuppressed(e0);
+
+            U.error(log, String.format(fmt, commit, CU.txString(this),
+                cctx.gridConfig().getFailureHandler().getClass().getSimpleName()), e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -768,7 +836,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("SimplifiableIfStatement")
     @Override public boolean ownsLock(GridCacheEntryEx entry) throws GridCacheEntryRemovedException {
         GridCacheContext<?, ?> cacheCtx = entry.context();
 
@@ -784,7 +851,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("SimplifiableIfStatement")
     @Override public boolean ownsLockUnsafe(GridCacheEntryEx entry) {
         GridCacheContext cacheCtx = entry.context();
 
@@ -976,7 +1042,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     @Override public IgniteInternalFuture<IgniteInternalTx> finishFuture() {
         GridFutureAdapter<IgniteInternalTx> fut = finFut;
 
@@ -1117,9 +1182,23 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 if (state != ACTIVE && state != SUSPENDED)
                     seal();
 
-                if (cctx.wal() != null && cctx.tm().logTxRecords() && txNodes != null) {
+                if (state == PREPARED || state == COMMITTED || state == ROLLED_BACK) {
+                    if (state == PREPARED) {
+                        try {
+                            cctx.tm().mvccPrepare(this);
+                        }
+                        catch (IgniteCheckedException e) {
+                            String msg = "Failed to update TxState: " + TxState.PREPARED;
+
+                            U.error(log, msg, e);
+
+                            throw new IgniteException(msg, e);
+                        }
+                    }
+
                     // Log tx state change to WAL.
-                    if (state == PREPARED || state == COMMITTED || state == ROLLED_BACK) {
+                    if (cctx.wal() != null && cctx.tm().logTxRecords() && txNodes != null) {
+
                         BaselineTopology baselineTop = cctx.kernalContext().state().clusterState().baselineTopology();
 
                         Map<Short, Collection<Short>> participatingNodes = consistentIdMapper
@@ -1319,7 +1398,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      * @param writeEntries Transaction write set.
      * @throws IgniteCheckedException If batch update failed.
      */
-    @SuppressWarnings({"CatchGenericClass"})
     protected final void batchStoreCommit(Iterable<IgniteTxEntry> writeEntries) throws IgniteCheckedException {
         if (!storeEnabled() || internal() ||
             (!local() && near())) // No need to work with local store at GridNearTxRemote.
@@ -1577,7 +1655,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                     /*closure name */recordEvt ? F.first(txEntry.entryProcessors()).get1() : null,
                     resolveTaskName(),
                     null,
-                    keepBinary);
+                    keepBinary,
+                    null); // TODO IGNITE-7371
             }
 
             boolean modified = false;
@@ -1607,6 +1686,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 Object procRes = null;
                 Exception err = null;
 
+                IgniteThread.onEntryProcessorEntered(true);
+
                 try {
                     EntryProcessor<Object, Object, Object> processor = t.get1();
 
@@ -1618,6 +1699,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 }
                 catch (Exception e) {
                     err = e;
+                }
+                finally {
+                    IgniteThread.onEntryProcessorLeft();
                 }
 
                 if (ret != null) {
@@ -1889,6 +1973,56 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         return xidVer.hashCode();
     }
 
+    /**
+     * Adds cache to the list of active caches in transaction.
+     *
+     * @param cacheCtx Cache context to add.
+     * @param recovery Recovery flag. See {@link CacheOperationContext#setRecovery(boolean)}.
+     * @throws IgniteCheckedException If caches already enlisted in this transaction are not compatible with given
+     *      cache (e.g. they have different stores).
+     */
+    public abstract void addActiveCache(GridCacheContext cacheCtx, boolean recovery) throws IgniteCheckedException;
+
+    /** {@inheritDoc} */
+    @Nullable @Override public TxCounters txCounters(boolean createIfAbsent) {
+        if (createIfAbsent && txCounters == null)
+            TX_COUNTERS_UPD.compareAndSet(this, null, new TxCounters());
+
+        return txCounters;
+    }
+
+    /**
+     * Makes cache sizes changes accumulated during transaction visible outside of transaction.
+     */
+    protected void applyTxSizes() {
+        TxCounters txCntrs = txCounters(false);
+
+        if (txCntrs == null)
+            return;
+
+        Map<Integer, ? extends Map<Integer, AtomicLong>> sizeDeltas = txCntrs.sizeDeltas();
+
+        for (Map.Entry<Integer, ? extends Map<Integer, AtomicLong>> entry : sizeDeltas.entrySet()) {
+            Integer cacheId = entry.getKey();
+            Map<Integer, AtomicLong> partDeltas = entry.getValue();
+
+            assert !F.isEmpty(partDeltas);
+
+            GridDhtPartitionTopology top = cctx.cacheContext(cacheId).topology();
+
+            for (Map.Entry<Integer, AtomicLong> e : partDeltas.entrySet()) {
+                Integer p = e.getKey();
+                long delta = e.getValue().get();
+
+                GridDhtLocalPartition dhtPart = top.localPartition(p);
+
+                assert dhtPart != null;
+
+                dhtPart.dataStore().updateSize(cacheId, delta);
+            }
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return GridToStringBuilder.toString(IgniteTxAdapter.class, this,
@@ -1960,6 +2094,16 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             this.timeout = timeout;
             this.state = state;
             this.rollbackOnly = rollbackOnly;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void mvccSnapshot(MvccSnapshot mvccSnapshot) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public MvccSnapshot mvccSnapshot() {
+            return null;
         }
 
         /** {@inheritDoc} */
@@ -2040,6 +2184,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         /** {@inheritDoc} */
         @Override public boolean activeCachesDeploymentEnabled() {
             return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void activeCachesDeploymentEnabled(boolean depEnabled) {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 
         /** {@inheritDoc} */
@@ -2144,6 +2293,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         /** {@inheritDoc} */
         @Override public UUID originatingNodeId() {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public TxCounters txCounters(boolean createIfAbsent) {
+            return null;
         }
 
         /** {@inheritDoc} */

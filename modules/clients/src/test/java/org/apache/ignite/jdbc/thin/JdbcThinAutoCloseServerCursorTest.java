@@ -95,7 +95,6 @@ public class JdbcThinAutoCloseServerCursorTest extends JdbcThinAbstractSelfTest 
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testQuery() throws Exception {
         IgniteCache<Integer, Person> cache = grid(0).cache(CACHE_NAME);
 
@@ -288,7 +287,6 @@ public class JdbcThinAutoCloseServerCursorTest extends JdbcThinAbstractSelfTest 
     /**
      * Person.
      */
-    @SuppressWarnings("UnusedDeclaration")
     static class Person implements Serializable {
         /** ID. */
         @QuerySqlField

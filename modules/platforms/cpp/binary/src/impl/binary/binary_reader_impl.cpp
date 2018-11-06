@@ -762,62 +762,62 @@ namespace ignite
                 rawMode = true;
             }
 
-            template <>
-            void BinaryReaderImpl::ReadTopObject0<int8_t>(int8_t& res)
+            template<>
+            void BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, int8_t>(int8_t& res)
             {
                 res = ReadTopObject0<int8_t>(IGNITE_TYPE_BYTE, BinaryUtils::ReadInt8);
             }
 
-            template <>
-            void BinaryReaderImpl::ReadTopObject0<bool>(bool& res)
+            template<>
+            void BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, bool>(bool& res)
             {
                 res = ReadTopObject0<bool>(IGNITE_TYPE_BOOL, BinaryUtils::ReadBool);
             }
 
             template <>
-            void BinaryReaderImpl::ReadTopObject0<int16_t>(int16_t& res)
+            void BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, int16_t>(int16_t& res)
             {
                 res = ReadTopObject0<int16_t>(IGNITE_TYPE_SHORT, BinaryUtils::ReadInt16);
             }
 
-            template <>
-            void BinaryReaderImpl::ReadTopObject0<uint16_t>(uint16_t& res)
+            template<>
+            void BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, uint16_t>(uint16_t& res)
             {
                 res = ReadTopObject0<uint16_t>(IGNITE_TYPE_CHAR, BinaryUtils::ReadUInt16);
             }
 
-            template <>
-            void BinaryReaderImpl::ReadTopObject0<int32_t>(int32_t& res)
+            template<>
+            void BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, int32_t>(int32_t& res)
             {
                 res = ReadTopObject0<int32_t>(IGNITE_TYPE_INT, BinaryUtils::ReadInt32);
             }
 
-            template <>
-            void BinaryReaderImpl::ReadTopObject0<int64_t>(int64_t& res)
+            template<>
+            void BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, int64_t>(int64_t& res)
             {
                 res = ReadTopObject0<int64_t>(IGNITE_TYPE_LONG, BinaryUtils::ReadInt64);
             }
 
-            template <>
-            void BinaryReaderImpl::ReadTopObject0<float>(float& res)
+            template<>
+            void BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, float>(float& res)
             {
                 res = ReadTopObject0<float>(IGNITE_TYPE_FLOAT, BinaryUtils::ReadFloat);
             }
 
-            template <>
-            void BinaryReaderImpl::ReadTopObject0<double>(double& res)
+            template<>
+            void BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, double>(double& res)
             {
                 res = ReadTopObject0<double>(IGNITE_TYPE_DOUBLE, BinaryUtils::ReadDouble);
             }
 
-            template <>
-            void BinaryReaderImpl::ReadTopObject0<Guid>(Guid& res)
+            template<>
+            void BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, Guid>(Guid& res)
             {
                 res = ReadTopObject0<Guid>(IGNITE_TYPE_UUID, BinaryUtils::ReadGuid);
             }
 
-            template <>
-            void BinaryReaderImpl::ReadTopObject0<Date>(Date& res)
+            template<>
+            void BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, Date>(Date& res)
             {
                 int8_t typeId = stream->ReadInt8();
 
@@ -835,20 +835,20 @@ namespace ignite
                 }
             }
 
-            template <>
-            void BinaryReaderImpl::ReadTopObject0<Timestamp>(Timestamp& res)
+            template<>
+            void BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, Timestamp>(Timestamp& res)
             {
                 res = ReadTopObject0<Timestamp>(IGNITE_TYPE_TIMESTAMP, BinaryUtils::ReadTimestamp);
             }
 
             template<>
-            void BinaryReaderImpl::ReadTopObject0<Time>(Time& res)
+            void BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, Time>(Time& res)
             {
                 res = ReadTopObject0<Time>(IGNITE_TYPE_TIME, BinaryUtils::ReadTime);
             }
 
             template<>
-            void BinaryReaderImpl::ReadTopObject0<std::string>(std::string& res)
+            void BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, std::string>(std::string& res)
             {
                 int8_t typeId = stream->ReadInt8();
 

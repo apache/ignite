@@ -17,24 +17,26 @@
 
 package org.apache.ignite.ml.svm;
 
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.Random;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
-import org.apache.ignite.ml.structures.LabeledDataset;
+import org.apache.ignite.ml.math.primitives.vector.impl.SparseVector;
 import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Base class for a soft-margin SVM linear classification trainer based on the communication-efficient distributed dual
- * coordinate ascent algorithm (CoCoA) with hinge-loss function. <p> This trainer takes input as Labeled Dataset with -1
- * and +1 labels for two classes and makes binary classification. </p> The paper about this algorithm could be found
+ * coordinate ascent algorithm (CoCoA) with hinge-loss function. <p> This trainer takes input as Labeled Dataset with 0
+ * and 1 labels for two classes and makes binary classification. </p> The paper about this algorithm could be found
  * here https://arxiv.org/abs/1409.1458.
  */
 public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrainer<SVMLinearBinaryClassificationModel> {
@@ -47,36 +49,68 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
     /** Regularization parameter. */
     private double lambda = 0.4;
 
+    /** The seed number. */
+    private long seed = 1234L;
+
     /**
      * Trains model based on the specified data.
      *
-     * @param datasetBuilder   Dataset builder.
+     * @param datasetBuilder Dataset builder.
      * @param featureExtractor Feature extractor.
-     * @param lbExtractor      Label extractor.
+     * @param lbExtractor Label extractor.
      * @return Model.
      */
     @Override public <K, V> SVMLinearBinaryClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
+        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected <K, V> SVMLinearBinaryClassificationModel updateModel(SVMLinearBinaryClassificationModel mdl,
+        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
+        IgniteBiFunction<K, V, Double> lbExtractor) {
+
         assert datasetBuilder != null;
 
-        PartitionDataBuilder<K, V, EmptyContext, LabeledDataset<Double, LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(
+        IgniteBiFunction<K, V, Double> patchedLbExtractor = (k, v) ->  {
+            final Double lb = lbExtractor.apply(k, v);
+            if (lb == 0.0)
+                return -1.0;
+            else
+                return lb;
+        };
+
+        PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(
             featureExtractor,
-            lbExtractor
+            patchedLbExtractor
         );
 
         Vector weights;
 
-        try(Dataset<EmptyContext, LabeledDataset<Double, LabeledVector>> dataset = datasetBuilder.build(
+        try (Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset = datasetBuilder.build(
             (upstream, upstreamSize) -> new EmptyContext(),
             partDataBuilder
         )) {
-            final int cols = dataset.compute(org.apache.ignite.ml.structures.Dataset::colSize, (a, b) -> a == null ? b : a);
-            final int weightVectorSizeWithIntercept = cols + 1;
-            weights = initializeWeightsWithZeros(weightVectorSizeWithIntercept);
+            if (mdl == null) {
+                final int cols = dataset.compute(org.apache.ignite.ml.structures.Dataset::colSize, (a, b) -> {
+                    if (a == null)
+                        return b == null ? 0 : b;
+                    if (b == null)
+                        return a;
+                    return b;
+                });
+
+                final int weightVectorSizeWithIntercept = cols + 1;
+                weights = initializeWeightsWithZeros(weightVectorSizeWithIntercept);
+            } else
+                weights = getStateVector(mdl);
 
             for (int i = 0; i < this.getAmountOfIterations(); i++) {
                 Vector deltaWeights = calculateUpdates(weights, dataset);
+                if (deltaWeights == null)
+                    return getLastTrainedModelOrThrowEmptyDatasetException(mdl);
+
                 weights = weights.plus(deltaWeights); // creates new vector
             }
         } catch (Exception e) {
@@ -85,13 +119,37 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
         return new SVMLinearBinaryClassificationModel(weights.viewPart(1, weights.size() - 1), weights.get(0));
     }
 
-    /** */
-    @NotNull private Vector initializeWeightsWithZeros(int vectorSize) {
-            return new DenseVector(vectorSize);
+    /** {@inheritDoc} */
+    @Override protected boolean checkState(SVMLinearBinaryClassificationModel mdl) {
+        return true;
+    }
+
+    /**
+     * @param mdl Model.
+     * @return vector of model weights with intercept.
+     */
+    private Vector getStateVector(SVMLinearBinaryClassificationModel mdl) {
+        double intercept = mdl.intercept();
+        Vector weights = mdl.weights();
+
+        int stateVectorSize = weights.size() + 1;
+        Vector res = weights.isDense() ?
+            new DenseVector(stateVectorSize) :
+            new SparseVector(stateVectorSize, StorageConstants.RANDOM_ACCESS_MODE);
+
+        res.set(0, intercept);
+        weights.nonZeroes().forEach(ith -> res.set(ith.index(), ith.get()));
+        return res;
     }
 
     /** */
-    private Vector calculateUpdates(Vector weights, Dataset<EmptyContext, LabeledDataset<Double, LabeledVector>> dataset) {
+    @NotNull private Vector initializeWeightsWithZeros(int vectorSize) {
+        return new DenseVector(vectorSize);
+    }
+
+    /** */
+    private Vector calculateUpdates(Vector weights,
+        Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset) {
         return dataset.compute(data -> {
             Vector copiedWeights = weights.copy();
             Vector deltaWeights = initializeWeightsWithZeros(weights.size());
@@ -100,8 +158,10 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
             Vector tmpAlphas = initializeWeightsWithZeros(amountOfObservation);
             Vector deltaAlphas = initializeWeightsWithZeros(amountOfObservation);
 
+            Random random = new Random(seed);
+
             for (int i = 0; i < this.getAmountOfLocIterations(); i++) {
-                int randomIdx = ThreadLocalRandom.current().nextInt(amountOfObservation);
+                int randomIdx = random.nextInt(amountOfObservation);
 
                 Deltas deltas = getDeltas(data, copiedWeights, amountOfObservation, tmpAlphas, randomIdx);
 
@@ -112,11 +172,17 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
                 deltaAlphas.set(randomIdx, deltaAlphas.get(randomIdx) + deltas.deltaAlpha);
             }
             return deltaWeights;
-        }, (a, b) -> a == null ? b : a.plus(b));
+        }, (a, b) -> {
+            if (a == null)
+                return b == null ? new DenseVector() : b;
+            if (b == null)
+                return a;
+            return a.plus(b);
+        });
     }
 
     /** */
-    private Deltas getDeltas(LabeledDataset data, Vector copiedWeights, int amountOfObservation, Vector tmpAlphas,
+    private Deltas getDeltas(LabeledVectorSet data, Vector copiedWeights, int amountOfObservation, Vector tmpAlphas,
         int randomIdx) {
         LabeledVector row = (LabeledVector)data.getRow(randomIdx);
         Double lb = (Double)row.label();
@@ -155,7 +221,7 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
             double qii = v.dot(v);
             double newAlpha = calcNewAlpha(alpha, gradient, qii);
 
-            Vector deltaWeights = v.times(lb * (newAlpha - alpha) / (this.lambda() * amountOfObservation));
+            Vector deltaWeights = v.times(lb * (newAlpha - alpha) / (this.getLambda() * amountOfObservation));
 
             return new Deltas(newAlpha - alpha, deltaWeights);
         }
@@ -174,7 +240,7 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
     /** */
     private double calcGradient(double lb, Vector v, Vector weights, int amountOfObservation) {
         double dotProduct = v.dot(weights);
-        return (lb * dotProduct - 1.0) * (this.lambda() * amountOfObservation);
+        return (lb * dotProduct - 1.0) * (this.getLambda() * amountOfObservation);
     }
 
     /** */
@@ -191,6 +257,7 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
 
     /**
      * Set up the regularization parameter.
+     *
      * @param lambda The regularization parameter. Should be more than 0.0.
      * @return Trainer with new lambda parameter value.
      */
@@ -201,16 +268,18 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
     }
 
     /**
-     * Gets the regularization lambda.
-     * @return The parameter value.
+     * Get the regularization lambda.
+     *
+     * @return The property value.
      */
-    public double lambda() {
+    public double getLambda() {
         return lambda;
     }
 
     /**
-     * Gets the amount of outer iterations of SCDA algorithm.
-     * @return The parameter value.
+     * Get the amount of outer iterations of SCDA algorithm.
+     *
+     * @return The property value.
      */
     public int getAmountOfIterations() {
         return amountOfIterations;
@@ -218,6 +287,7 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
 
     /**
      * Set up the amount of outer iterations of SCDA algorithm.
+     *
      * @param amountOfIterations The parameter value.
      * @return Trainer with new amountOfIterations parameter value.
      */
@@ -227,8 +297,9 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
     }
 
     /**
-     * Gets the amount of local iterations of SCDA algorithm.
-     * @return The parameter value.
+     * Get the amount of local iterations of SCDA algorithm.
+     *
+     * @return The property value.
      */
     public int getAmountOfLocIterations() {
         return amountOfLocIterations;
@@ -236,6 +307,7 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
 
     /**
      * Set up the amount of local iterations of SCDA algorithm.
+     *
      * @param amountOfLocIterations The parameter value.
      * @return Trainer with new amountOfLocIterations parameter value.
      */
@@ -244,6 +316,25 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
         return this;
     }
 
+    /**
+     * Get the seed number.
+     *
+     * @return The property value.
+     */
+    public long getSeed() {
+        return seed;
+    }
+
+    /**
+     * Set up the seed.
+     *
+     * @param seed The parameter value.
+     * @return Model with new seed parameter value.
+     */
+    public SVMLinearBinaryClassificationTrainer withSeed(long seed) {
+        this.seed = seed;
+        return this;
+    }
 }
 
 /** This is a helper class to handle pair results which are returned from the calculation method. */

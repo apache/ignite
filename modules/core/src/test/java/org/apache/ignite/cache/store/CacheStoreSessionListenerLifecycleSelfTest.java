@@ -252,6 +252,9 @@ public class CacheStoreSessionListenerLifecycleSelfTest extends GridCommonAbstra
 
                 tx.commit();
             }
+
+            // Force cache shutdown order
+            ignite.cache("cache-0").destroy();
         }
         finally {
             stopGrid();

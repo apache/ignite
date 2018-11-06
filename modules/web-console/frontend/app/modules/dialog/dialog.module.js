@@ -26,7 +26,7 @@ angular
 .module('ignite-console.dialog', [
 
 ])
-.factory(...IgniteDialog)
-.directive(...igniteDialog)
-.directive(...igniteDialogTitle)
-.directive(...igniteDialogContent);
+.factory('IgniteDialog', IgniteDialog)
+.directive('igniteDialog', igniteDialog)
+.directive('igniteDialogTitle', igniteDialogTitle)
+.directive('igniteDialogContent', igniteDialogContent);

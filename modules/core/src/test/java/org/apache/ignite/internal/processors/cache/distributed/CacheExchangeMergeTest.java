@@ -93,7 +93,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static final long WAIT_SECONDS = 15;
+    private static final long WAIT_SECONDS = 45;
 
     /** */
     private ThreadLocal<Boolean> client = new ThreadLocal<>();
@@ -595,13 +595,13 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     private void checkHistorySize(int histSize) {
         List<Ignite> nodes = G.allGrids();
 
-        assertTrue(nodes.size() > 0);
+        assertTrue(!nodes.isEmpty());
 
         for (Ignite node : nodes) {
             List<GridDhtPartitionsExchangeFuture> exchFuts =
                     ((IgniteEx)node).context().cache().context().exchange().exchangeFutures();
 
-            assertTrue("Unexpected size: " + exchFuts.size(), exchFuts.size() > 0 && exchFuts.size() <= histSize);
+            assertTrue("Unexpected size: " + exchFuts.size(), !exchFuts.isEmpty() && exchFuts.size() <= histSize);
         }
     }
 
@@ -634,8 +634,6 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStartCacheOnJoinAndCoordinatorFailed1() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9227");
-
         cfgCache = false;
 
         final Ignite srv0 = startGrids(2);
@@ -938,8 +936,6 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
 
         Ignite srv0 = startGrids(srvs);
 
-        mergeExchangeWaitVersion(srv0, 6);
-
         CountDownLatch latch = blockExchangeFinish(srvs, mode);
 
         IgniteInternalFuture<?> fut = startGridsAsync(srv0, srvs, 2);
@@ -1222,7 +1218,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     private void checkCaches0() throws Exception {
         List<Ignite> nodes = G.allGrids();
 
-        assertTrue(nodes.size() > 0);
+        assertTrue(!nodes.isEmpty());
 
         for (Ignite node : nodes)
             checkNodeCaches(node);

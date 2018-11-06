@@ -36,6 +36,7 @@ import org.apache.ignite.internal.visor.query.VisorQueryEntity;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
+
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactClass;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactIterable;
 
@@ -508,8 +509,8 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     }
 
     /**
-     * @return {@code true} if data can be read from backup node or {@code false} if data always
-     *      should be read from primary node and never from backup.
+     * @return {@code true} if data can be read from backup node or {@code false} if data always should be read from
+     * primary node and never from backup.
      */
     public boolean isReadFromBackup() {
         return readFromBackup;

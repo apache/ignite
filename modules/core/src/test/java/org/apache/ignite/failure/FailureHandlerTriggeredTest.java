@@ -93,7 +93,7 @@ public class FailureHandlerTriggeredTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        public SchemaAbstractDiscoveryMessage message() {
+        @Override public SchemaAbstractDiscoveryMessage message() {
             throw new Error("Exchange worker termination");
         }
     }

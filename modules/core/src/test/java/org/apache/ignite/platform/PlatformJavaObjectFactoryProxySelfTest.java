@@ -37,7 +37,6 @@ import java.util.concurrent.Callable;
 /**
  * Dedicated tests for {@link PlatformJavaObjectFactoryProxy}.
  */
-@SuppressWarnings("ThrowableResultOfMethodCallIgnored")
 public class PlatformJavaObjectFactoryProxySelfTest extends GridCommonAbstractTest {
     /** Name of the class. */
     private static final String CLS_NAME = TestJavaObject.class.getName();

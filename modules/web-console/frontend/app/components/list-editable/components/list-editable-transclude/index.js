@@ -20,4 +20,4 @@ import {listEditableTransclude} from './directive';
 
 export default angular
     .module('list-editable.transclude', [])
-    .directive(listEditableTransclude.name, listEditableTransclude);
+    .directive('listEditableTransclude', listEditableTransclude);

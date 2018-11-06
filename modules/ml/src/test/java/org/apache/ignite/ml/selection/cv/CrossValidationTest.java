@@ -47,7 +47,7 @@ public class CrossValidationTest {
 
         int folds = 4;
 
-        double[] scores = scoreCalculator.score(
+        verifyScores(folds, scoreCalculator.score(
             trainer,
             new Accuracy<>(),
             data,
@@ -55,12 +55,18 @@ public class CrossValidationTest {
             (k, v) -> VectorUtils.of(k),
             (k, v) -> v,
             folds
-        );
+        ));
 
-        assertEquals(folds, scores.length);
-
-        for (int i = 0; i < folds; i++)
-            assertEquals(1, scores[i], 1e-1);
+        verifyScores(folds, scoreCalculator.score(
+            trainer,
+            new Accuracy<>(),
+            data,
+            (e1, e2) -> true,
+            1,
+            (k, v) -> VectorUtils.of(k),
+            (k, v) -> v,
+            folds
+        ));
     }
 
     /** */
@@ -92,5 +98,13 @@ public class CrossValidationTest {
 
         for (int i = 0; i < folds; i++)
             assertTrue(scores[i] < 0.6);
+    }
+
+    /** */
+    private void verifyScores(int folds, double[] scores) {
+        assertEquals(folds, scores.length);
+
+        for (int i = 0; i < folds; i++)
+            assertEquals(1, scores[i], 1e-1);
     }
 }

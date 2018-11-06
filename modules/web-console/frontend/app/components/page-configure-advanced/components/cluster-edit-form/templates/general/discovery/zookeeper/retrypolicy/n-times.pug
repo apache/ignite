@@ -19,6 +19,20 @@ include /app/helpers/jade/mixins
 -var model = `${modelAt}.discovery.ZooKeeper.retryPolicy.NTimes`
 
 .pc-form-grid-col-30(ng-if-start=`${modelRetryPolicyKind} === 'NTimes'`)
-    +number('Retries:', `${model}.n`, '"n"', 'true', '10', '0', 'Number of times to retry')
+    +form-field__number({
+        label: 'Retries:',
+        model: `${model}.n`,
+        name: '"n"',
+        placeholder: '10',
+        min: '0',
+        tip: 'Number of times to retry'
+    })
 .pc-form-grid-col-30(ng-if-end)
-    +number('Interval:', `${model}.sleepMsBetweenRetries`, '"ntSleepMsBetweenRetries"', 'true', '1000', '0', 'Time in ms between retry attempts')
+    +form-field__number({
+        label: 'Interval:',
+        model: `${model}.sleepMsBetweenRetries`,
+        name: '"ntSleepMsBetweenRetries"',
+        placeholder: '1000',
+        min: '0',
+        tip: 'Time in ms between retry attempts'
+    })

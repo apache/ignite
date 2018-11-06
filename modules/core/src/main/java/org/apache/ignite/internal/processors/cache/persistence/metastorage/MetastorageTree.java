@@ -79,7 +79,7 @@ public class MetastorageTree extends BPlusTree<MetastorageSearchRow, Metastorage
     }
 
     /** {@inheritDoc} */
-    @Override protected MetastorageDataRow getRow(BPlusIO<MetastorageSearchRow> io, long pageAddr, int idx,
+    @Override public MetastorageDataRow getRow(BPlusIO<MetastorageSearchRow> io, long pageAddr, int idx,
         Object x) throws IgniteCheckedException {
         long link = ((DataLinkIO)io).getLink(pageAddr, idx);
         String key = ((DataLinkIO)io).getKey(pageAddr, idx);

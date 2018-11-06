@@ -79,7 +79,6 @@ public class GridAffinityP2PSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
@@ -88,8 +87,6 @@ public class GridAffinityP2PSelfTest extends GridCommonAbstractTest {
         disco.setIpFinder(ipFinder);
 
         c.setDiscoverySpi(disco);
-
-        c.setFailureDetectionTimeout(Integer.MAX_VALUE);
 
         c.setDeploymentMode(depMode);
 

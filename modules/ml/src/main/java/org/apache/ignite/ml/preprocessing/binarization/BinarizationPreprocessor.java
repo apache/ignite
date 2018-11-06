@@ -68,8 +68,8 @@ public class BinarizationPreprocessor<K, V> implements IgniteBiFunction<K, V, Ve
         return res;
     }
 
-    /** Gets the threshold parameter. */
-    public double threshold() {
+    /** Get the threshold parameter. */
+    public double getThreshold() {
         return threshold;
     }
 }

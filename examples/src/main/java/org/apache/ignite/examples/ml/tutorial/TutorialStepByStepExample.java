@@ -19,11 +19,11 @@ package org.apache.ignite.examples.ml.tutorial;
 
 /**
  * Run all the tutorial examples step by step with primary purpose to provide
- * automatic execution from IgniteExamplesMLTestSuite.
+ * automatic execution from {@code IgniteExamplesMLTestSuite}.
  */
 public class TutorialStepByStepExample {
-    /** Run example. */
-    public static void main(String[] args) throws InterruptedException {
+    /** Run examples with default settings. */
+    public static void main(String[] args) {
         Step_1_Read_and_Learn.main(args);
         Step_2_Imputing.main(args);
         Step_3_Categorial.main(args);

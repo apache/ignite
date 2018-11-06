@@ -18,6 +18,7 @@ header
     div
         h5 {{ $ctrl.chartTitle }}
         ignite-chart-series-selector(chart-api='$ctrl.chart')
+        .chart-text(ng-if='$ctrl.chartHeaderText') {{$ctrl.chartHeaderText}}
 
     div
         span Range:

@@ -37,6 +37,7 @@ import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -47,7 +48,6 @@ import org.junit.Assert;
 import static java.nio.file.FileVisitResult.CONTINUE;
 import static java.nio.file.Files.walkFileTree;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.CP_FILE_NAME_PATTERN;
-import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.FILE_TMP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.META_STORAGE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
@@ -91,6 +91,8 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
     }
 
     /**
+     * Test checks that after WAL is globally disabled and node is stopped, persistent store is cleaned properly after node restart.
+     *
      * @throws Exception If failed.
      */
     public void test() throws Exception {
@@ -189,6 +191,8 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
 
         String msg = nodeStopPoint.toString();
 
+        int pageSize = ig1.configuration().getDataStorageConfiguration().getPageSize();
+
         if (nodeStopPoint.needCleanUp) {
             PdsFoldersResolver foldersResolver = ((IgniteEx)ig1).context().pdsFolderResolver();
 
@@ -208,20 +212,20 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
 
                     boolean failed = false;
 
-                    if (name.endsWith(FILE_TMP_SUFFIX))
+                    if (name.endsWith(FilePageStoreManager.TMP_SUFFIX))
                         failed = true;
 
                     if (CP_FILE_NAME_PATTERN.matcher(name).matches())
                         failed = true;
 
-                    if (name.startsWith(PART_FILE_PREFIX))
+                    if (name.startsWith(PART_FILE_PREFIX) && path.toFile().length() > pageSize)
                         failed = true;
 
-                    if (name.startsWith(INDEX_FILE_NAME))
+                    if (name.startsWith(INDEX_FILE_NAME) && path.toFile().length() > pageSize)
                         failed = true;
 
                     if (failed)
-                        fail(msg + " " + filePath);
+                        fail(msg + " " + filePath + " " + path.toFile().length());
 
                     return CONTINUE;
                 }

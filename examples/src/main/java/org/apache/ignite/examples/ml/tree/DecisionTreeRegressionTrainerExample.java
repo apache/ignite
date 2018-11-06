@@ -25,10 +25,19 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.ml.tree.DecisionTreeRegressionTrainer;
-import org.apache.ignite.thread.IgniteThread;
 
 /**
  * Example of using distributed {@link DecisionTreeRegressionTrainer}.
+ * <p>
+ * Code in this example launches Ignite grid and fills the cache with generated test data points ({@code sin(x)}
+ * on interval {@code [0, 10)}).</p>
+ * <p>
+ * After that it creates classification trainer and uses it to train the model on the training set.</p>
+ * <p>
+ * Finally, this example loops over the test data points, applies the trained model, and compares prediction
+ * to expected outcome (ground truth).</p>
+ * <p>
+ * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
 public class DecisionTreeRegressionTrainerExample {
     /**
@@ -36,63 +45,55 @@ public class DecisionTreeRegressionTrainerExample {
      *
      * @param args Command line arguments, none required.
      */
-    public static void main(String... args) throws InterruptedException {
+    public static void main(String... args) {
         System.out.println(">>> Decision tree regression trainer example started.");
 
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                DecisionTreeRegressionTrainerExample.class.getSimpleName(), () -> {
+            // Create cache with training data.
+            CacheConfiguration<Integer, Point> trainingSetCfg = new CacheConfiguration<>();
+            trainingSetCfg.setName("TRAINING_SET");
+            trainingSetCfg.setAffinity(new RendezvousAffinityFunction(false, 10));
 
-                // Create cache with training data.
-                CacheConfiguration<Integer, Point> trainingSetCfg = new CacheConfiguration<>();
-                trainingSetCfg.setName("TRAINING_SET");
-                trainingSetCfg.setAffinity(new RendezvousAffinityFunction(false, 10));
+            IgniteCache<Integer, Point> trainingSet = ignite.createCache(trainingSetCfg);
 
-                IgniteCache<Integer, Point> trainingSet = ignite.createCache(trainingSetCfg);
+            // Fill training data.
+            generatePoints(trainingSet);
 
-                // Fill training data.
-                generatePoints(trainingSet);
+            // Create regression trainer.
+            DecisionTreeRegressionTrainer trainer = new DecisionTreeRegressionTrainer(10, 0);
 
-                // Create regression trainer.
-                DecisionTreeRegressionTrainer trainer = new DecisionTreeRegressionTrainer(10, 0);
+            // Train decision tree model.
+            DecisionTreeNode mdl = trainer.fit(
+                ignite,
+                trainingSet,
+                (k, v) -> VectorUtils.of(v.x),
+                (k, v) -> v.y
+            );
 
-                // Train decision tree model.
-                DecisionTreeNode mdl = trainer.fit(
-                    ignite,
-                    trainingSet,
-                    (k, v) -> VectorUtils.of(v.x),
-                    (k, v) -> v.y
-                );
+            System.out.println(">>> Decision tree regression model: " + mdl);
 
-                System.out.println(">>> Decision tree regression model: " + mdl);
+            System.out.println(">>> ---------------------------------");
+            System.out.println(">>> | Prediction\t| Ground Truth\t|");
+            System.out.println(">>> ---------------------------------");
 
-                System.out.println(">>> ---------------------------------");
-                System.out.println(">>> | Prediction\t| Ground Truth\t|");
-                System.out.println(">>> ---------------------------------");
+            // Calculate score.
+            for (int x = 0; x < 10; x++) {
+                double predicted = mdl.apply(VectorUtils.of(x));
 
-                // Calculate score.
-                for (int x = 0; x < 10; x++) {
-                    double predicted = mdl.apply(VectorUtils.of(x));
+                System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", predicted, Math.sin(x));
+            }
 
-                    System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", predicted, Math.sin(x));
-                }
+            System.out.println(">>> ---------------------------------");
 
-                System.out.println(">>> ---------------------------------");
-
-                System.out.println(">>> Decision tree regression trainer example completed.");
-            });
-
-            igniteThread.start();
-
-            igniteThread.join();
+            System.out.println(">>> Decision tree regression trainer example completed.");
         }
     }
 
     /**
-     * Generates {@code sin(x)} on interval [0, 10) and loads into the specified cache.
+     * Generates {@code sin(x)} on interval {@code [0, 10)} and loads into the specified cache.
      */
     private static void generatePoints(IgniteCache<Integer, Point> trainingSet) {
         for (int i = 0; i < 1000; i++) {

@@ -766,7 +766,7 @@ namespace ignite
 #ifdef SQL_MULTIPLE_ACTIVE_TXN
                 // A character string: "Y" if the driver supports more than one active transaction at the same time,
                 // "N" if only one transaction can be active at any time.
-                strParams[SQL_MULTIPLE_ACTIVE_TXN] = "N";
+                strParams[SQL_MULTIPLE_ACTIVE_TXN] = "Y";
 #endif // SQL_MULTIPLE_ACTIVE_TXN
 
 #ifdef SQL_ORDER_BY_COLUMNS_IN_SELECT
@@ -1596,7 +1596,7 @@ namespace ignite
                 // SQL_TXN_REPEATABLE_READ = Dirty reads and nonrepeatable reads are not possible. Phantoms are possible
                 // SQL_TXN_SERIALIZABLE = Transactions are serializable. Serializable transactions do not allow dirty
                 //     reads, nonrepeatable reads, or phantoms.
-                intParams[SQL_DEFAULT_TXN_ISOLATION] = 0;
+                intParams[SQL_DEFAULT_TXN_ISOLATION] = SQL_TXN_REPEATABLE_READ;
 #endif // SQL_DEFAULT_TXN_ISOLATION
 
 #ifdef SQL_DROP_ASSERTION
@@ -2170,7 +2170,7 @@ namespace ignite
                 // SQL_ATTR_TXN_ISOLATION attribute. For more information, see SQLSetConnectAttr Function.
                 // An SQL-92 Entry level-conformant driver will always return SQL_TXN_SERIALIZABLE as supported.
                 // A FIPS Transitional level-conformant driver will always return all of these options as supported.
-                intParams[SQL_TXN_ISOLATION_OPTION] = 0;
+                intParams[SQL_TXN_ISOLATION_OPTION] = SQL_TXN_REPEATABLE_READ;
 #endif // SQL_TXN_ISOLATION_OPTION
 
 #ifdef SQL_UNION
@@ -2312,7 +2312,7 @@ namespace ignite
 
 #ifdef SQL_TXN_CAPABLE
                 // Describs the transaction support in the driver or data source.
-                shortParams[SQL_TXN_CAPABLE] = SQL_TC_NONE;
+                shortParams[SQL_TXN_CAPABLE] = SQL_TC_DDL_COMMIT;
 #endif // SQL_TXN_CAPABLE
 
 #ifdef SQL_QUOTED_IDENTIFIER_CASE

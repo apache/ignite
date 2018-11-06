@@ -18,7 +18,7 @@
 import template from './ui-ace-java.pug';
 import IgniteUiAceJava from './ui-ace-java.controller';
 
-export default () => {
+export default function() {
     return {
         priority: 1,
         restrict: 'E',
@@ -41,4 +41,4 @@ export default () => {
             ngModelCtrl: '?ngModel'
         }
     };
-};
+}

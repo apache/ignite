@@ -437,11 +437,22 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
         Ignite serverNode = startGrid(gridCount() + 1);
 
         if (persistenceEnabled()) {
+            // Start a new client node to perform baseline change.
+            // TODO: This change is workaround:
+            // Sometimes problem with caches configuration deserialization from test thread arises.
+            final String clientName1 = "baseline-changer";
+
+            IgniteConfiguration clientCfg = getConfiguration(clientName1);
+
+            clientCfg.setClientMode(true);
+
+            Ignite clientNode = startGrid(clientName1, clientCfg);
+
             List<BaselineNode> baseline = new ArrayList<>(grid(0).cluster().currentBaselineTopology());
 
             baseline.add(serverNode.cluster().localNode());
 
-            grid(0).cluster().setBaselineTopology(baseline);
+            clientNode.cluster().setBaselineTopology(baseline);
         }
 
         awaitPartitionMapExchange();

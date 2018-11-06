@@ -53,7 +53,7 @@ public class VisorFileBlock extends VisorDataTransferObject {
      * Default constructor.
      */
     public VisorFileBlock() {
-
+        // No-op.
     }
 
     /**
