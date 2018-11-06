@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.platform.client;
 
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
-import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 
@@ -82,9 +81,9 @@ public class ClientRequest implements ClientListenerRequest {
      * Authorize for specified permission.
      */
     protected void authorize(ClientConnectionContext ctx, SecurityPermission perm) {
-        SecurityContext secCtx = ctx.securityContext();
-
-        if (secCtx != null)
-            runWithSecurityExceptionHandler(() -> ctx.kernalContext().security().authorize(null, perm, secCtx));
+//        SecurityContext secCtx = ctx.securityContext();
+//
+//        if (secCtx != null)
+//            runWithSecurityExceptionHandler(() -> ctx.kernalContext().security().authorize(null, perm, secCtx));
     }
 }

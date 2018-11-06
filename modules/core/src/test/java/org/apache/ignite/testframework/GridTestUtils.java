@@ -111,7 +111,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Utility class for tests.
  */
-@SuppressWarnings({"UnusedCatchParameter"})
 public final class GridTestUtils {
     /** Default busy wait sleep interval in milliseconds.  */
     public static final long DFLT_BUSYWAIT_SLEEP_INTERVAL = 200;
@@ -179,6 +178,11 @@ public final class GridTestUtils {
         public static DiscoverySpiListener wrap(DiscoverySpiListener delegate, DiscoveryHook discoveryHook) {
             return new DiscoverySpiListenerWrapper(delegate, discoveryHook);
         }
+    }
+
+    /** Test parameters scale factor util. */
+    public static final class SF extends ScaleFactorUtil {
+
     }
 
     /** */
@@ -826,7 +830,6 @@ public final class GridTestUtils {
      * @param threadName Thread names.
      * @return Future for the run. Future returns execution time in milliseconds.
      */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     public static IgniteInternalFuture<Long> runMultiThreadedAsync(Callable<?> call, int threadNum, final String threadName) {
         final List<Callable<?>> calls = Collections.<Callable<?>>nCopies(threadNum, call);
         final GridTestSafeThreadFactory threadFactory = new GridTestSafeThreadFactory(threadName);
@@ -929,7 +932,6 @@ public final class GridTestUtils {
      * @param task Runnable.
      * @return Future with task result.
      */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     public static IgniteInternalFuture runAsync(final Runnable task) {
         return runAsync(task,"async-runnable-runner");
     }
@@ -940,7 +942,6 @@ public final class GridTestUtils {
      * @param task Runnable.
      * @return Future with task result.
      */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     public static IgniteInternalFuture runAsync(final Runnable task, String threadName) {
         return runAsync(() -> {
             task.run();
@@ -955,7 +956,6 @@ public final class GridTestUtils {
      * @param task Callable.
      * @return Future with task result.
      */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     public static <T> IgniteInternalFuture<T> runAsync(final Callable<T> task) {
         return runAsync(task, "async-callable-runner");
     }
@@ -967,7 +967,6 @@ public final class GridTestUtils {
      * @param threadName Thread name.
      * @return Future with task result.
      */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     public static <T> IgniteInternalFuture<T> runAsync(final Callable<T> task, String threadName) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to start new threads (test is being stopped).");
@@ -1161,7 +1160,6 @@ public final class GridTestUtils {
      * @param ignite Grid to stop.
      * @param log Logger.
      */
-    @SuppressWarnings({"CatchGenericClass"})
     public static void close(Ignite ignite, IgniteLogger log) {
         if (ignite != null)
             try {
@@ -1179,7 +1177,6 @@ public final class GridTestUtils {
      * @param igniteInstanceName Ignite instance name.
      * @param log Logger.
      */
-    @SuppressWarnings({"CatchGenericClass"})
     public static void stopGrid(String igniteInstanceName, IgniteLogger log) {
         try {
             G.stop(igniteInstanceName, false);
@@ -1563,7 +1560,7 @@ public final class GridTestUtils {
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     @Nullable public static <T> T invoke(Object obj, String mtd, Object... params) throws Exception {
         Class<?> cls = obj.getClass();
-        
+
         do {
             // We cannot resolve method by parameter classes due to some of parameters can be null.
             // Search correct method among all methods collection.
@@ -2053,5 +2050,50 @@ public final class GridTestUtils {
     public static void mergeExchangeWaitVersion(Ignite node, long topVer, List mergedEvts) {
         ((IgniteEx)node).context().cache().context().exchange().mergeExchangesTestWaitVersion(
             new AffinityTopologyVersion(topVer, 0), mergedEvts);
+    }
+
+    /** Test parameters scale factor util. */
+    private static class ScaleFactorUtil {
+        /** Test speed scale factor property name. */
+        private static final String TEST_SCALE_FACTOR_PROPERTY = "TEST_SCALE_FACTOR";
+
+        /** Min test scale factor value. */
+        private static final double MIN_TEST_SCALE_FACTOR_VALUE = 0.1;
+
+        /** Max test scale factor value. */
+        private static final double MAX_TEST_SCALE_FACTOR_VALUE = 1.0;
+
+        /** Test speed scale factor. */
+        private static final double TEST_SCALE_FACTOR_VALUE = readScaleFactor();
+
+        /** */
+        private static double readScaleFactor() {
+            double scaleFactor = Double.parseDouble(System.getProperty(TEST_SCALE_FACTOR_PROPERTY, "1.0"));
+
+            scaleFactor = Math.max(scaleFactor, MIN_TEST_SCALE_FACTOR_VALUE);
+            scaleFactor = Math.min(scaleFactor, MAX_TEST_SCALE_FACTOR_VALUE);
+
+            return scaleFactor;
+        }
+
+        /** */
+        public static int apply(int val) {
+            return (int) (TEST_SCALE_FACTOR_VALUE * val);
+        }
+
+        /** */
+        public static int apply(int val, int lowerBound, int upperBound) {
+            return applyUB(applyLB(val, lowerBound), upperBound);
+        }
+
+        /** Apply scale factor with lower bound */
+        public static int applyLB(int val, int lowerBound) {
+            return Math.max((int) (TEST_SCALE_FACTOR_VALUE * val), lowerBound);
+        }
+
+        /** Apply scale factor with upper bound */
+        public static int applyUB(int val, int upperBound) {
+            return Math.min((int) (TEST_SCALE_FACTOR_VALUE * val), upperBound);
+        }
     }
 }

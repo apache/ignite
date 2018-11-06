@@ -33,7 +33,7 @@ import static org.apache.ignite.internal.sql.SqlKeyword.PARALLEL;
 /**
  * Tests for SQL parser: CREATE INDEX.
  */
-@SuppressWarnings({"UnusedReturnValue", "ThrowableNotThrown"})
+@SuppressWarnings({"UnusedReturnValue"})
 public class SqlParserCreateIndexSelfTest extends SqlParserAbstractSelfTest {
     /** Default properties */
     private static final Map<String, Object> DEFAULT_PROPS = getProps(null, null);

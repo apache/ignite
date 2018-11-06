@@ -60,7 +60,6 @@ public class KerberosHadoopFileSystemFactorySelfTest extends GridCommonAbstractT
      * @param keyTabPrincipal Key tab principal.
      * @param reloginInterval Re-login interval.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void checkParameters(String keyTab, String keyTabPrincipal, long reloginInterval) {
         final KerberosHadoopFileSystemFactory fac = new KerberosHadoopFileSystemFactory();
 
