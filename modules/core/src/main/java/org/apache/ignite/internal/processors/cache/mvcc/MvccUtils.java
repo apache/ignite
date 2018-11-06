@@ -109,9 +109,8 @@ public class MvccUtils {
         mvccVersion(MVCC_CRD_COUNTER_NA, MVCC_COUNTER_NA, MVCC_OP_COUNTER_NA);
 
     /** */
-    // t0d0 check that all version parts are chosen right
-    public static final MvccSnapshot MVCC_MAX_SNAPSHOT = new MvccSnapshotWithoutTxs(
-        Long.MAX_VALUE, MVCC_INITIAL_CNTR, MVCC_START_OP_CNTR, 0);
+    public static final MvccSnapshot MVCC_MAX_SNAPSHOT =
+        new MvccSnapshotWithoutTxs(Long.MAX_VALUE, Long.MAX_VALUE, MVCC_READ_OP_CNTR, MVCC_COUNTER_NA);
 
     /** */
     private static final MvccClosure<Integer> getVisibleState = new GetVisibleState();
@@ -244,6 +243,7 @@ public class MvccUtils {
             // Don't check the row with TxLog if the row is expected to be committed.
             return !useTxLog || isCommitted(cctx, mvccCrd, mvccCntr, opCntr);
 
+        // same crd
         if (mvccCntr > snapshotCntr) // we don't see future updates
             return false;
 
