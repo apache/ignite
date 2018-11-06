@@ -30,14 +30,19 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
@@ -965,17 +970,44 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getPrimaryKeys(String catalog, String schemaPtrn, String tblNamePtrn)
         throws SQLException {
-        updateMetaData();
 
-        List<List<?>> rows = new LinkedList<>();
+        GridKernalContext ctx = conn.ignite().context();
 
-        if (validCatalogPattern(catalog)) {
-            for (Map.Entry<String, Map<String, Map<String, ColumnInfo>>> schema : meta.entrySet()) {
-                if (matches(schema.getKey(), schemaPtrn)) {
-                    for (Map.Entry<String, Map<String, ColumnInfo>> tbl : schema.getValue().entrySet()) {
-                        if (matches(tbl.getKey(), tblNamePtrn))
-                            rows.add(Arrays.<Object>asList(null, schema.getKey(), tbl.getKey(), "_KEY", 1, "_KEY"));
-                    }
+        List<List<?>> rows = new ArrayList<>();
+
+        System.out.println("+++ public cache names = " + ctx.cache().publicCacheNames());
+
+        for (String cacheName : ctx.cache().publicCacheNames()) {
+            CacheConfiguration<?,?> ccfg = ctx.cache().cacheDescriptor(cacheName).cacheConfiguration();
+
+            Collection<QueryEntity> entities = ccfg.getQueryEntities();
+
+            for (QueryEntity tab : entities) {
+                // todo: do we need to normalize table name?
+                String tabName = tab.getTableName();
+                // todo: remove assert
+                assert tabName != null : "Table Name of the query entity is null; Entity " + tab;
+
+                if (!matches(tabName, tblNamePtrn))
+                    continue;
+
+                String schemaName = QueryUtils.normalizeSchemaName(cacheName, ccfg.getSqlSchema());
+
+                if (!matches(schemaName, schemaPtrn))
+                    continue;
+
+                final String keyName = tab.getKeyFieldName() != null ?
+                    tab.getKeyFieldName() :
+                    "PK_" + schemaName + "_" + tabName;
+
+                List<String> keyCols = keyColumns(tab);
+
+                for (int i = 0; i < keyCols.size(); i++) {
+                    String keyColName = keyCols.get(i);
+
+                    int keySeq = i + 1;
+
+                    rows.add(Arrays.asList(/*catalog:*/ null, schemaName, tabName, keyColName, keySeq, keyName));
                 }
             }
         }
@@ -989,6 +1021,27 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
             rows, true
         );
     }
+
+    //todo : move to QueryUtils
+    static List<String> keyColumns(QueryEntity tab) {
+        Set<String> keyFields = tab.getKeyFields();
+
+        if (F.isEmpty(keyFields))
+            return Collections.singletonList(
+                tab.getKeyFieldName() != null
+                ? tab.getKeyFieldName()
+                : QueryUtils.KEY_FIELD_NAME);
+
+        ArrayList<String> keyCols = new ArrayList<>(keyFields.size());
+
+        for (String name : tab.getFields().keySet()) {
+            if (keyFields.contains(name))
+                keyCols.add(name);
+        }
+
+        return keyCols;
+    }
+
 
     /** {@inheritDoc} */
     @Override public ResultSet getImportedKeys(String catalog, String schema, String tbl) throws SQLException {
