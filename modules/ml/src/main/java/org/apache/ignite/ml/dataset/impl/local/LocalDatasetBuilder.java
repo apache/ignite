@@ -87,7 +87,6 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
         List<C> ctxList = new ArrayList<>();
         List<D> dataList = new ArrayList<>();
 
-        // TODO: Do we have any constraint telling us that in upstream data key is unique?
         List<UpstreamEntry<K, V>> entriesList = new LinkedList<>();
 
         upstreamMap

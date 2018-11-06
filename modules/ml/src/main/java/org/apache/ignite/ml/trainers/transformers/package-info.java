@@ -15,13 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.dataset;
-
-import org.apache.ignite.ml.math.functions.IgniteFunction;
-
-import java.io.Serializable;
-import java.util.stream.Stream;
-
-public interface PartitionContext<K, V> extends Serializable {
-    public IgniteFunction<Stream<UpstreamEntry<K, V>>, Stream<UpstreamEntry<K, V>>> getUpstreamTransformer();
-}
+/**
+ * <!-- Package description. -->
+ * Various upstream transformers.
+ */
+package org.apache.ignite.ml.trainers.transformers;

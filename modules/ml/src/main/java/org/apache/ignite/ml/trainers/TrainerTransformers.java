@@ -30,7 +30,6 @@ import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.trainers.transformers.BaggingUpstreamTransformer;
 import org.apache.ignite.ml.util.Utils;
 
@@ -108,7 +107,7 @@ public class TrainerTransformers {
                 IgniteBiFunction<K, V, Vector> featureExtractor,
                 IgniteBiFunction<K, V, L> lbExtractor) {
                 return runOnEnsemble(
-                    (db, i, fe) -> (() -> trainer.updateModel(((ModelWithEndomorphism<Vector, Double, M>) mdl.getModels().get(i)).model(), db, fe, lbExtractor)),
+                    (db, i, fe) -> (() -> trainer.updateModel(((ModelWithMapping<Vector, Double, M>) mdl.getModels().get(i)).model(), db, fe, lbExtractor)),
                     datasetBuilder,
                     ensembleSize,
                     subsampleRatio,
@@ -149,7 +148,7 @@ public class TrainerTransformers {
         MLLogger log = environment.logger(datasetBuilder.getClass());
         log.log(MLLogger.VerboseLevel.LOW, "Start learning.");
 
-        List<Map<Integer, Integer>> mappings = null;
+        List<int[]> mappings = null;
         if (featuresVectorSize > 0) {
             mappings = IntStream.range(0, ensembleSize).mapToObj(modelIdx -> getMapping(featuresVectorSize, maximumFeaturesCntPerMdl))
                 .collect(Collectors.toList());
@@ -173,16 +172,16 @@ public class TrainerTransformers {
             tasks.add(trainingTaskGenerator.apply(bootstrappedBuilder, i, mappings != null ? extractors.get(i) : extractor));
         }
 
-        List<ModelWithEndomorphism<Vector, Double, M>> models = environment.parallelismStrategy().submit(tasks)
+        List<ModelWithMapping<Vector, Double, M>> models = environment.parallelismStrategy().submit(tasks)
             .stream()
             .map(Promise::unsafeGet)
-            .map(ModelWithEndomorphism<Vector, Double, M>::new)
+            .map(ModelWithMapping<Vector, Double, M>::new)
             .collect(Collectors.toList());
 
         // If we need to do projection, do it.
         if (mappings != null) {
             for (int i = 0; i < models.size(); i++) {
-                models.get(i).setEndo(getProjector(mappings.get(i)));
+                models.get(i).setMapping(getProjector(mappings.get(i)));
             }
         }
 
@@ -193,66 +192,119 @@ public class TrainerTransformers {
         return new ModelsComposition(models, aggregator);
     }
 
-    public static Map<Integer, Integer> getMapping(int featuresVectorSize, int maximumFeaturesCntPerMdl) {
-        int[] featureIdxs = Utils.selectKDistinct(featuresVectorSize, maximumFeaturesCntPerMdl, new Random());
-        Map<Integer, Integer> featureMapping = new HashMap<>();
-        IntStream.range(0, maximumFeaturesCntPerMdl)
-            .forEach(localId -> featureMapping.put(localId, featureIdxs[localId]));
-        return featureMapping;
+    /**
+     * Get mapping R^featuresVectorSize -> R^maximumFeaturesCntPerMdl.
+     *
+     * @param featuresVectorSize Features vector size (Dimension of initial space).
+     * @param maximumFeaturesCntPerMdl Dimension of target space.
+     * @return Mapping R^featuresVectorSize -> R^maximumFeaturesCntPerMdl.
+     */
+    public static int[] getMapping(int featuresVectorSize, int maximumFeaturesCntPerMdl) {
+        return Utils.selectKDistinct(featuresVectorSize, maximumFeaturesCntPerMdl, new Random());
     }
 
-    public static IgniteFunction<Vector, Vector> getProjector(Map<Integer, Integer> mapping) {
+    /**
+     * Get projector from index mapping.
+     *
+     * @param mapping Index mapping.
+     * @return Projector.
+     */
+    public static IgniteFunction<Vector, Vector> getProjector(int[] mapping) {
         return v -> {
-            Vector res = VectorUtils.zeroes(mapping.size());
-            mapping.keySet().stream().forEach(locId -> res.set(locId, v.get(mapping.get(locId))));
-
+            Vector res = VectorUtils.zeroes(mapping.length);
+            for (int i = 0; i < mapping.length; i++) {
+                res.set(i, v.get(mapping[i]));
+            }
             return res;
         };
     }
 
-    private static <K, V> IgniteBiFunction<K, V, Vector> wrapExtractor(IgniteBiFunction<K, V, Vector> featureExtractor, Map<Integer, Integer> featureMapping) {
+    /**
+     * Creates feature extractor which is a composition of given feature extractor and projection given by
+     * coordinate indexes mapping.
+     *
+     * @param featureExtractor Initial feature extractor.
+     * @param featureMapping Coordinate indexes mapping.
+     * @param <K> Type of keys.
+     * @param <V> Type of values.
+     * @return Composition of given feature extractor and projection given by coordinate indexes mapping.
+     */
+    private static <K, V> IgniteBiFunction<K, V, Vector> wrapExtractor(IgniteBiFunction<K, V, Vector> featureExtractor,
+        int[] featureMapping) {
         return featureExtractor.andThen((IgniteFunction<Vector, Vector>) featureValues -> {
-            double[] newFeaturesValues = new double[featureMapping.size()];
-            featureMapping.forEach((localId, featureValueId) -> newFeaturesValues[localId] = featureValues.get(featureValueId));
+            double[] newFeaturesValues = new double[featureMapping.length];
+            for (int i = 0; i < featureMapping.length; i++) {
+                newFeaturesValues[i] = featureValues.get(featureMapping[i]);
+            }
             return VectorUtils.of(newFeaturesValues);
         });
     }
 
     /**
-     * Model with endomorphism (Function from X to X).
+     * Model with mapping from X to X.
      *
      * @param <X> Input space.
      * @param <Y> Output space.
      * @param <M> Model.
      */
-    private static class ModelWithEndomorphism<X, Y, M extends Model<X, Y>> implements Model<X, Y> {
-        M model;
-        IgniteFunction<X, X> endo;
+    private static class ModelWithMapping<X, Y, M extends Model<X, Y>> implements Model<X, Y> {
+        /** Model. */
+        private M model;
 
-        public ModelWithEndomorphism(M model) {
+        /** Mapping. */
+        private IgniteFunction<X, X> mapping;
+
+        /**
+         * Create instance of this class from a given model.
+         * Identity mapping will be used as a mapping.
+         *
+         * @param model Model.
+         */
+        public ModelWithMapping(M model) {
             this(model, x -> x);
         }
 
-        public ModelWithEndomorphism(M model, IgniteFunction<X, X> endo) {
+        /**
+         * Create instance of this class from given model and mapping.
+         *
+         * @param model Model.
+         * @param mapping Mapping.
+         */
+        public ModelWithMapping(M model, IgniteFunction<X, X> mapping) {
             this.model = model;
-            this.endo = endo;
+            this.mapping = mapping;
         }
 
-        public void setEndo(IgniteFunction<X, X> endo) {
-            this.endo = endo;
+        /**
+         * Sets mapping.
+         *
+         * @param mapping Mapping.
+         */
+        public void setMapping(IgniteFunction<X, X> mapping) {
+            this.mapping = mapping;
         }
 
-        @Override
-        public Y apply(X x) {
-            return model.apply(endo.apply(x));
+        /** {@inheritDoc} */
+        @Override public Y apply(X x) {
+            return model.apply(mapping.apply(x));
         }
 
+        /**
+         * Gets model.
+         *
+         * @return Model.
+         */
         public M model() {
             return model;
         }
 
-        public IgniteFunction<X, X> endo() {
-            return endo;
+        /**
+         * Gets mapping.
+         *
+         * @return Mapping.
+         */
+        public IgniteFunction<X, X> mapping() {
+            return mapping;
         }
     }
 }

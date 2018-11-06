@@ -51,6 +51,17 @@ public interface PartitionContextBuilder<K, V, C extends Serializable> extends S
     public C build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize);
 
 
+    /**
+     * Builds a new partition {@code context} from an {@code upstream} data.
+     * Important: there is no guarantee that there will be no more than one UpstreamEntry with given key,
+     * UpstreamEntry should be thought rather as a container saving all data from upstream, but omitting uniqueness
+     * constraint. This constraint is omitted to allow upstream data transformers in {@link DatasetBuilder} replicating
+     * entries. For example it can be useful for bootstrapping.
+     *
+     * @param upstreamData Partition {@code upstream} data.
+     * @param upstreamDataSize Partition {@code upstream} data size.
+     * @return Partition {@code context}.
+     */
     default public C build(Stream<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize) {
         return build(upstreamData.iterator(), upstreamDataSize);
     }

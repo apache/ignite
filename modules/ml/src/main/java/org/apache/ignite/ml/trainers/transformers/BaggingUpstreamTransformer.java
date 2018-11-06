@@ -57,10 +57,7 @@ public class BaggingUpstreamTransformer<K, V> extends UpstreamTransformer<K, V, 
 
     /** {@inheritDoc} */
     @Override protected Stream<UpstreamEntry<K, V>> transform(PoissonDistribution poisson, Stream<UpstreamEntry<K, V>> upstream) {
-        // Sequentiality of stream here is needed because we use instance of
-        // RNG as data, to make it deterministic we should fix order.
-        // TODO: Maybe more efficient way to make stream transformation deterministic would be to
-        // use mapping of the form (entryIdx, en) -> Stream.generate(() -> en).limit(new PoissonDistribution(Well19937c(entryIdx + seed), ...).sample())
+        // TODO: Investigate optimization described in IGNITE-10144.
         return upstream.sequential().flatMap(en -> Stream.generate(() -> en).limit(poisson.sample()));
     }
 }
