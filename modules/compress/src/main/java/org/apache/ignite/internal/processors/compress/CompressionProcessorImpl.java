@@ -18,17 +18,20 @@
 package org.apache.ignite.internal.processors.compress;
 
 import com.github.luben.zstd.Zstd;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import net.jpountz.lz4.LZ4Compressor;
 import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4FastDecompressor;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.PageCompression;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CompactablePageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.xerial.snappy.Snappy;
 
 import static org.apache.ignite.configuration.PageCompression.SKIP_GARBAGE;
 import static org.apache.ignite.internal.util.GridUnsafe.NATIVE_BYTE_ORDER;
@@ -117,8 +120,9 @@ public class CompressionProcessorImpl extends CompressionProcessor {
         if (compactSize < blockSize || compression == SKIP_GARBAGE)
             return setCompactionInfo(compactPage, compactSize);
 
-        ByteBuffer compressedPage = compressPage(compression, compactPage, compactSize, compressLevel);
+        ByteBuffer compressedPage = doCompressPage(compression, compactPage, compactSize, compressLevel);
 
+        assert compressedPage.position() == 0;
         int compressedSize = compressedPage.limit();
 
         int freeCompactBlocks = (pageSize - compactSize) / blockSize;
@@ -128,7 +132,6 @@ public class CompressionProcessorImpl extends CompressionProcessor {
             if (freeCompactBlocks == 0)
                 return (ByteBuffer)page.clear(); // No blocks will be released.
 
-            compactPage.flip();
             return setCompactionInfo(compactPage, compactSize);
         }
 
@@ -169,13 +172,16 @@ public class CompressionProcessorImpl extends CompressionProcessor {
      * @param compressLevel Compression level.
      * @return Compressed page.
      */
-    private ByteBuffer compressPage(PageCompression compression, ByteBuffer compactPage, int compactSize, int compressLevel) {
+    private ByteBuffer doCompressPage(PageCompression compression, ByteBuffer compactPage, int compactSize, int compressLevel) {
         switch (compression) {
             case ZSTD:
                 return compressPageZstd(compactPage, compactSize, compressLevel);
 
             case LZ4:
                 return compressPageLz4(compactPage, compactSize, compressLevel);
+
+            case SNAPPY:
+                return compressPageSnappy(compactPage, compactSize);
         }
         throw new IllegalStateException("Unsupported compression: " + compression);
     }
@@ -195,7 +201,9 @@ public class CompressionProcessorImpl extends CompressionProcessor {
         copyPageHeader(compactPage, compressedPage, compactSize);
         compressor.compress(compactPage, compressedPage);
 
+        compactPage.flip();
         compressedPage.flip();
+
         return compressedPage;
     }
 
@@ -212,7 +220,34 @@ public class CompressionProcessorImpl extends CompressionProcessor {
         copyPageHeader(compactPage, compressedPage, compactSize);
         Zstd.compress(compressedPage, compactPage, compressLevel);
 
+        compactPage.flip();
         compressedPage.flip();
+
+        return compressedPage;
+    }
+
+    /**
+     * @param compactPage Compacted page.
+     * @param compactSize Compacted page size.
+     * @return Compressed page.
+     */
+    private ByteBuffer compressPageSnappy(ByteBuffer compactPage, int compactSize) {
+        ByteBuffer compressedPage = allocateDirectBuffer(PageIO.COMMON_HEADER_END +
+            Snappy.maxCompressedLength(compactSize - PageIO.COMMON_HEADER_END));
+
+        copyPageHeader(compactPage, compressedPage, compactSize);
+
+        try {
+            int compressedSize = Snappy.compress(compactPage, compressedPage);
+            assert compressedPage.limit() == PageIO.COMMON_HEADER_END + compressedSize;
+        }
+        catch (IOException e) {
+            throw new IgniteException("Failed to compress page with Snappy.", e);
+        }
+
+        compactPage.position(0);
+        compressedPage.position(0);
+
         return compressedPage;
     }
 
@@ -241,6 +276,9 @@ public class CompressionProcessorImpl extends CompressionProcessor {
 
             case LZ4:
                 return LZ4_COMPRESSED_PAGE;
+
+            case SNAPPY:
+                return SNAPPY_COMPRESSED_PAGE;
 
             case SKIP_GARBAGE:
                 return COMPACTED_PAGE;
@@ -272,14 +310,23 @@ public class CompressionProcessorImpl extends CompressionProcessor {
             // LZ4 needs this limit to be exact.
             dst.limit(compactSize - PageIO.COMMON_HEADER_END);
 
-            if (compressType == ZSTD_COMPRESSED_PAGE)
+            if (compressType == ZSTD_COMPRESSED_PAGE) {
                 Zstd.decompress(dst, page);
-            else if (compressType == LZ4_COMPRESSED_PAGE)
-                Lz4.decompress(dst, page);
-            else
+                dst.flip();
+            }
+            else if (compressType == LZ4_COMPRESSED_PAGE) {
+                Lz4.decompress(page, dst);
+                dst.flip();
+            }
+            else if (compressType == SNAPPY_COMPRESSED_PAGE) {
+                try {
+                    Snappy.uncompress(page, dst);
+                }
+                catch (IOException e) {
+                    throw new IgniteException(e);
+                }
+            } else
                 throw new IllegalStateException("Unknown compression: " + compressType);
-
-            dst.flip();
 
             page.position(PageIO.COMMON_HEADER_END).limit(compactSize);
             page.put(dst).flip();
@@ -316,10 +363,10 @@ public class CompressionProcessorImpl extends CompressionProcessor {
         }
 
         /**
-         * @param dst Destination buffer.
          * @param page Page.
+         * @param dst Destination buffer.
          */
-        static void decompress(ByteBuffer dst, ByteBuffer page) {
+        static void decompress(ByteBuffer page, ByteBuffer dst) {
             decompressor.decompress(page, dst);
         }
     }

@@ -62,6 +62,9 @@ public class CompressionProcessor extends GridProcessorAdapter {
     /** */
     protected static final byte LZ4_COMPRESSED_PAGE = 3;
 
+    /** */
+    protected static final byte SNAPPY_COMPRESSED_PAGE = 4;
+
     /**
      * @param ctx Kernal context.
      */
@@ -81,6 +84,7 @@ public class CompressionProcessor extends GridProcessorAdapter {
             case LZ4:
                 return LZ4_DEFAULT_LEVEL;
 
+            case SNAPPY:
             case SKIP_GARBAGE:
                 return 0;
         }
@@ -103,12 +107,10 @@ public class CompressionProcessor extends GridProcessorAdapter {
                 checkCompressionLevelBounds(compressLevel, LZ4_MIN_LEVEL, LZ4_MAX_LEVEL);
                 break;
 
-            case SKIP_GARBAGE:
-                break;
-
             default:
-                throw new IllegalArgumentException("Compression: " + compression);
+                throw new IllegalArgumentException("Compression level for " + compression + " is not supported.");
         }
+
         return compressLevel;
     }
 

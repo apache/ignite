@@ -31,5 +31,8 @@ public enum PageCompression {
     ZSTD,
 
     /** LZ4 compression. */
-    LZ4
+    LZ4,
+
+    /** Snappy compression. */
+    SNAPPY
 }

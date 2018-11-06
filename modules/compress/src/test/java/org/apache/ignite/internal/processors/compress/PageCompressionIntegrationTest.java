@@ -48,6 +48,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.configuration.PageCompression.LZ4;
 import static org.apache.ignite.configuration.PageCompression.SKIP_GARBAGE;
+import static org.apache.ignite.configuration.PageCompression.SNAPPY;
 import static org.apache.ignite.configuration.PageCompression.ZSTD;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.LZ4_DEFAULT_LEVEL;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.LZ4_MAX_LEVEL;
@@ -179,6 +180,15 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
      */
     public void testPageCompression_SkipGarbage() throws Exception {
         compression = SKIP_GARBAGE;
+
+        doTestPageCompression();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPageCompression_Snappy() throws Exception {
+        compression = SNAPPY;
 
         doTestPageCompression();
     }

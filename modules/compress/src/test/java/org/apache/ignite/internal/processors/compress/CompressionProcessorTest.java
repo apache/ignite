@@ -43,6 +43,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.configuration.PageCompression.LZ4;
 import static org.apache.ignite.configuration.PageCompression.SKIP_GARBAGE;
+import static org.apache.ignite.configuration.PageCompression.SNAPPY;
 import static org.apache.ignite.configuration.PageCompression.ZSTD;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.LZ4_MAX_LEVEL;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.LZ4_MIN_LEVEL;
@@ -169,6 +170,47 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
 
         doTestDataPage();
     }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testDataPageSnappy16() throws IgniteCheckedException {
+        blockSize = 16;
+        compression = SNAPPY;
+
+        doTestDataPage();
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testDataPageSnappy128() throws IgniteCheckedException {
+        blockSize = 128;
+        compression = SNAPPY;
+
+        doTestDataPage();
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testDataPageSnappy1k() throws IgniteCheckedException {
+        blockSize = 1024;
+        compression = SNAPPY;
+
+        doTestDataPage();
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testDataPageSnappy2k() throws IgniteCheckedException {
+        blockSize = 2 * 1024;
+        compression = SNAPPY;
+
+        doTestDataPage();
+    }
+
 
     /**
      * @throws IgniteCheckedException If failed.
@@ -348,6 +390,26 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    public void testInnerPageSnappy16() throws IgniteCheckedException {
+        blockSize = 16;
+        compression = SNAPPY;
+
+        doTestBTreePage(INNER_IO);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testLeafPageSnappy16() throws IgniteCheckedException {
+        blockSize = 16;
+        compression = SNAPPY;
+
+        doTestBTreePage(LEAF_IO);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
     public void testInnerPageCompact128() throws IgniteCheckedException {
         blockSize = 128;
         compression = SKIP_GARBAGE;
@@ -427,6 +489,26 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
         blockSize = 128;
         compression = LZ4;
         compressLevel = LZ4_MAX_LEVEL;
+
+        doTestBTreePage(LEAF_IO);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testInnerPageSnappy128() throws IgniteCheckedException {
+        blockSize = 128;
+        compression = SNAPPY;
+
+        doTestBTreePage(INNER_IO);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testLeafPageSnappy128() throws IgniteCheckedException {
+        blockSize = 128;
+        compression = SNAPPY;
 
         doTestBTreePage(LEAF_IO);
     }
@@ -520,6 +602,26 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    public void testInnerPageSnappy1k() throws IgniteCheckedException {
+        blockSize = 1024;
+        compression = SNAPPY;
+
+        doTestBTreePage(INNER_IO);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testLeafPageSnappy1k() throws IgniteCheckedException {
+        blockSize = 1024;
+        compression = SNAPPY;
+
+        doTestBTreePage(LEAF_IO);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
     public void testInnerPageCompact2k() throws IgniteCheckedException {
         blockSize = 2 * 1024;
         compression = SKIP_GARBAGE;
@@ -599,6 +701,26 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
         blockSize = 2 * 1024;
         compression = LZ4;
         compressLevel = LZ4_MAX_LEVEL;
+
+        doTestBTreePage(LEAF_IO);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testInnerPageSnappy2k() throws IgniteCheckedException {
+        blockSize = 2 * 1024;
+        compression = SNAPPY;
+
+        doTestBTreePage(INNER_IO);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testLeafPageSnappy2k() throws IgniteCheckedException {
+        blockSize = 2 * 1024;
+        compression = SNAPPY;
 
         doTestBTreePage(LEAF_IO);
     }
@@ -839,7 +961,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void storeByOffset(long pageAddr, int off, byte[] row) throws IgniteCheckedException {
+        @Override public void storeByOffset(long pageAddr, int off, byte[] row) {
             PageUtils.putBytes(pageAddr, off, row);
         }
 
@@ -850,7 +972,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public byte[] getLookupRow(BPlusTree<byte[],?> tree, long pageAddr, int idx) throws IgniteCheckedException {
+        @Override public byte[] getLookupRow(BPlusTree<byte[],?> tree, long pageAddr, int idx) {
             return PageUtils.getBytes(pageAddr, offset(idx), itemSize);
         }
     }
@@ -868,7 +990,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void storeByOffset(long pageAddr, int off, byte[] row) throws IgniteCheckedException {
+        @Override public void storeByOffset(long pageAddr, int off, byte[] row) {
             PageUtils.putBytes(pageAddr, off, row);
         }
 
@@ -879,7 +1001,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public byte[] getLookupRow(BPlusTree<byte[],?> tree, long pageAddr, int idx) throws IgniteCheckedException {
+        @Override public byte[] getLookupRow(BPlusTree<byte[],?> tree, long pageAddr, int idx) {
             return PageUtils.getBytes(pageAddr, offset(idx), itemSize);
         }
     }
