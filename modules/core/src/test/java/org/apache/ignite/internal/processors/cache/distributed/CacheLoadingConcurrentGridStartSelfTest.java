@@ -286,6 +286,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
             ((DataStreamerImpl)dataStreamer).maxRemapCount(Integer.MAX_VALUE);
 
             long startingEndTs = -1L;
+
             while (!stop) {
                 set.add(dataStreamer.addData(insertedKeys, "Data"));
                 insertedKeys = insertedKeys + 1;
@@ -296,6 +297,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
                 //When all nodes started we continue restart nodes during 1 second and stop it after this timeout.
                 if (fut.isDone() && startingEndTs == -1)
                     startingEndTs = System.currentTimeMillis();
+
                 if (startingEndTs != -1) //Nodes starting was ended and we check restarts duration after it.
                     restarts = (System.currentTimeMillis() - startingEndTs) < 1000;
 
@@ -313,6 +315,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
 
         for (IgniteFuture res : set)
             assertNull(res.get());
+
         IgniteCache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         long size = cache.size(CachePeekMode.PRIMARY);

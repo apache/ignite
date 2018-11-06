@@ -24,7 +24,7 @@ import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 /**
  * Tests for SQL parser: CREATE INDEX.
  */
-@SuppressWarnings({"UnusedReturnValue", "ThrowableNotThrown"})
+@SuppressWarnings({"UnusedReturnValue"})
 public class SqlParserUserSelfTest extends SqlParserAbstractSelfTest {
     /**
      * Tests for CREATE USER command.

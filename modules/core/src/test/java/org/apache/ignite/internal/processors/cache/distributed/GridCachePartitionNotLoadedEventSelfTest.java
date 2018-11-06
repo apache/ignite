@@ -142,6 +142,7 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
         assert !cache.containsKey(key);
 
         final long awaitingTimeoutMs = SF.apply(5 * 60 * 1000);
+
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 return !lsnr1.lostParts.isEmpty();

@@ -1070,7 +1070,6 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
     /**
      * Person key.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class PersonKey implements Serializable {
         /** ID. */
         @QuerySqlField
@@ -1106,7 +1105,6 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
     /**
      * Person.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Person implements Serializable {
         /** Name. */
         @QuerySqlField(index = false)
@@ -1163,7 +1161,6 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
     /**
      * Organization.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Organization implements Serializable {
         /** ID. */
         @QuerySqlField

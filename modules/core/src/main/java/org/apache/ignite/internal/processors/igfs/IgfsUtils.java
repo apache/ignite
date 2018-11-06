@@ -226,7 +226,6 @@ public class IgfsUtils {
      * @param err Initial exception.
      * @return Converted IGFS exception.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public static IgfsException toIgfsException(Throwable err) {
         IgfsException err0 = err instanceof IgfsException ? (IgfsException)err : null;
 
@@ -303,7 +302,6 @@ public class IgfsUtils {
      * @return Result of closure execution.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public static <T> T doInTransactionWithRetries(IgniteInternalCache cache, IgniteOutClosureX<T> clo)
         throws IgniteCheckedException {
         assert cache != null;
