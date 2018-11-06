@@ -353,7 +353,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override protected WALRecord postProcessRecord(@NotNull final WALRecord rec) {
+    @Override protected @NotNull WALRecord postProcessRecord(@NotNull final WALRecord rec) {
         GridKernalContext kernalCtx = sharedCtx.kernalContext();
         IgniteCacheObjectProcessor processor = kernalCtx.cacheObjects();
 

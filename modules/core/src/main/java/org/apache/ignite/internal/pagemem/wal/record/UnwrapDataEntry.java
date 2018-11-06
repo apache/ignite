@@ -63,6 +63,7 @@ public class UnwrapDataEntry extends MvccDataEntry {
         final CacheObjectValueContext cacheObjValCtx,
         final boolean keepBinary) {
         super(cacheId, key, val, op, nearXidVer, writeVer, expireTime, partId, partCnt, mvccVer);
+
         this.cacheObjValCtx = cacheObjValCtx;
         this.keepBinary = keepBinary;
     }

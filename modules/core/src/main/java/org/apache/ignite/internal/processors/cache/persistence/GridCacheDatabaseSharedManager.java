@@ -96,8 +96,8 @@ import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MvccDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.MvccTxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
-import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WalRecordCacheGroupAware;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
@@ -710,7 +710,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 metaStorage = createMetastorage(true);
 
-                applyLogicalUpdates(status, g -> MetaStorage.METASTORAGE_CACHE_ID == g, false);
+                applyLogicalUpdates(status, g -> MetaStorage.METASTORAGE_CACHE_ID == g, false, true);
 
                 fillWalDisabledGroups();
 
@@ -2009,7 +2009,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             RestoreLogicalState logicalState = applyLogicalUpdates(
                     status,
                     g -> !initiallyGlobalWalDisabledGrps.contains(g) && !initiallyLocalWalDisabledGrps.contains(g),
-                    true
+                    true,
+                    false
             );
 
             // Restore state for all groups.
@@ -2365,31 +2366,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                             break;
 
-                        case TX_RECORD:
+                        case MVCC_TX_RECORD:
                             try {
-                                TxRecord txRecord = (TxRecord)rec;
+                                MvccTxRecord txRecord = (MvccTxRecord)rec;
 
                                 MvccVersion mvccVer = txRecord.mvccVersion();
 
-                                TransactionState state = txRecord.state();
-                                byte txState;
-
-                                switch (state) {
-                                    case PREPARED:
-                                        txState = TxState.PREPARED;
-
-                                        break;
-                                    case COMMITTED:
-                                        txState = TxState.COMMITTED;
-
-                                        break;
-                                    case ROLLED_BACK:
-                                        txState = TxState.ABORTED;
-
-                                        break;
-                                    default:
-                                        throw new IllegalStateException("Unsupported TxState.");
-                                }
+                                byte txState = convertToTxState(txRecord.state());
 
                                 cctx.coordinators().updateState(mvccVer, txState, false);
                             }
@@ -2427,7 +2410,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private RestoreLogicalState applyLogicalUpdates(
         CheckpointStatus status,
         Predicate<Integer> cacheGroupsPredicate,
-        boolean skipFieldLookup
+        boolean skipFieldLookup,
+        boolean metaStoreOnly
     ) throws IgniteCheckedException {
         if (log.isInfoEnabled())
             log.info("Applying lost cache updates since last checkpoint record [lastMarked="
@@ -2524,36 +2508,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                         break;
 
-                    case TX_RECORD:
-                        try {
-                            TxRecord txRecord = (TxRecord)rec;
+                    case MVCC_TX_RECORD:
+                        if (metaStoreOnly)
+                            continue;
 
-                            MvccVersion mvccVer = txRecord.mvccVersion();
+                        MvccTxRecord txRecord = (MvccTxRecord)rec;
 
-                            byte txState;
+                        MvccVersion mvccVer = txRecord.mvccVersion();
 
-                            switch (txRecord.state()) {
-                                case PREPARED:
-                                    txState = TxState.PREPARED;
+                        byte txState = convertToTxState(txRecord.state());
 
-                                    break;
-                                case COMMITTED:
-                                    txState = TxState.COMMITTED;
-
-                                    break;
-                                case ROLLED_BACK:
-                                    txState = TxState.ABORTED;
-
-                                    break;
-                                default:
-                                    throw new IllegalStateException("Unsupported TxState.");
-                            }
-
-                            cctx.coordinators().updateState(mvccVer, txState);
-                        }
-                        catch (IgniteCheckedException e) {
-                            throw new IgniteException(e);
-                        }
+                        cctx.coordinators().updateState(mvccVer, txState, false);
 
                         break;
 
@@ -2572,6 +2537,28 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 ", time=" + (U.currentTimeMillis() - start) + " ms]");
 
         return restoreLogicalState;
+    }
+
+    /**
+     * Convert {@link TransactionState} to Mvcc {@link TxState}.
+     *
+     * @param state TransactionState.
+     * @return TxState.
+     */
+    private byte convertToTxState(TransactionState state) {
+        switch (state) {
+            case PREPARED:
+                return TxState.PREPARED;
+
+            case COMMITTED:
+                return TxState.COMMITTED;
+
+            case ROLLED_BACK:
+                return TxState.ABORTED;
+
+            default:
+                throw new IllegalStateException("Unsupported TxState.");
+        }
     }
 
     /**

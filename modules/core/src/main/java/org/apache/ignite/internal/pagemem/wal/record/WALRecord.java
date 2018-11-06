@@ -202,7 +202,10 @@ public abstract class WALRecord {
         ENCRYPTED_DATA_RECORD,
 
         /** Mvcc data record. */
-        MVCC_DATA_RECORD;
+        MVCC_DATA_RECORD,
+
+        /** Mvcc Tx state change record. */
+        MVCC_TX_RECORD;
 
         /** */
         private static final RecordType[] VALS = RecordType.values();

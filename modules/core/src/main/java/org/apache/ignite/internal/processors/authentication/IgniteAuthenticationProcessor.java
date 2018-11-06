@@ -145,6 +145,8 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      */
     public IgniteAuthenticationProcessor(GridKernalContext ctx) {
         super(ctx);
+
+        ctx.internalSubscriptionProcessor().registerSubscriber(this);
     }
 
     /** {@inheritDoc} */
@@ -159,8 +161,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             throw new IgniteCheckedException("Authentication can be enabled only for cluster with enabled persistence."
                 + " Check the DataRegionConfiguration");
         }
-
-        ctx.internalSubscriptionProcessor().registerSubscriber(this);
 
         ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_AUTHENTICATION_ENABLED, isEnabled);
 
