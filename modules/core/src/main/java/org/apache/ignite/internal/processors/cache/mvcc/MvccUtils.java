@@ -109,6 +109,11 @@ public class MvccUtils {
         mvccVersion(MVCC_CRD_COUNTER_NA, MVCC_COUNTER_NA, MVCC_OP_COUNTER_NA);
 
     /** */
+    // t0d0 check that all version parts are chosen right
+    public static final MvccSnapshot MVCC_MAX_SNAPSHOT = new MvccSnapshotWithoutTxs(
+        Long.MAX_VALUE, MVCC_INITIAL_CNTR, MVCC_START_OP_CNTR, 0);
+
+    /** */
     private static final MvccClosure<Integer> getVisibleState = new GetVisibleState();
 
     /** */
