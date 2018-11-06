@@ -188,7 +188,7 @@ public class MvccUtils {
 
         if ((state == TxState.NA || state == TxState.PREPARED)
             && (proc.currentCoordinator() == null // Recovery from WAL.
-            || mvccCrd < proc.currentCoordinator().coordinatorVersion() /* Single node restart case. */))
+            || mvccCrd < proc.currentCoordinator().coordinatorVersion()))
             state = TxState.ABORTED;
 
         return state;

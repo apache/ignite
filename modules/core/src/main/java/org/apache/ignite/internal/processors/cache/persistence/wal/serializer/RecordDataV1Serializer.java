@@ -122,7 +122,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     /** Length of HEADER record data. */
     static final int HEADER_RECORD_DATA_SIZE = /*Magic*/8 + /*Version*/4;
 
-    /** Cache shared context */
+    /** Cache shared context. */
     protected final GridCacheSharedContext cctx;
 
     /** Size of page used for PageMemory regions. */
@@ -131,7 +131,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     /** Size of page without encryption overhead. */
     private final int realPageSize;
 
-    /** Cache object processor to reading {@link DataEntry DataEntries} */
+    /** Cache object processor to reading {@link DataEntry DataEntries}. */
     protected final IgniteCacheObjectProcessor co;
 
     /** Serializer of {@link TxRecord} records. */

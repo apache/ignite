@@ -74,9 +74,8 @@ public class TxRecordSerializer {
      *
      * @param rec TxRecord.
      * @param buf Byte buffer.
-     * @throws IgniteCheckedException In case of fail.
      */
-    public void writeTx(TxRecord rec, ByteBuffer buf) throws IgniteCheckedException {
+    public void writeTx(TxRecord rec, ByteBuffer buf) {
         buf.put((byte)rec.state().ordinal());
         RecordV1Serializer.putVersion(buf, rec.nearXidVersion(), true);
         RecordV1Serializer.putVersion(buf, rec.writeVersion(), true);
@@ -109,9 +108,8 @@ public class TxRecordSerializer {
      * @param in Input
      * @return TxRecord.
      * @throws IOException In case of fail.
-     * @throws IgniteCheckedException In case of fail.
      */
-    public TxRecord readTx(ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
+    public TxRecord readTx(ByteBufferBackedDataInput in) throws IOException {
         byte txState = in.readByte();
         TransactionState state = TransactionState.fromOrdinal(txState);
 
@@ -148,9 +146,8 @@ public class TxRecordSerializer {
      *
      * @param rec TxRecord.
      * @return Size of TxRecord in bytes.
-     * @throws IgniteCheckedException In case of fail.
      */
-    public int sizeTx(TxRecord rec) throws IgniteCheckedException {
+    public int sizeTx(TxRecord rec) {
         int size = 0;
 
         size += /* transaction state. */ 1;
@@ -182,9 +179,8 @@ public class TxRecordSerializer {
      * @param in Input
      * @return MvccTxRecord.
      * @throws IOException In case of fail.
-     * @throws IgniteCheckedException In case of fail.
      */
-    public MvccTxRecord readMvccTx(ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
+    public MvccTxRecord readMvccTx(ByteBufferBackedDataInput in) throws IOException {
         byte txState = in.readByte();
         TransactionState state = TransactionState.fromOrdinal(txState);
 

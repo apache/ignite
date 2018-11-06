@@ -62,7 +62,6 @@ public class MvccDataEntry extends DataEntry {
     }
 
     /**
-     *
      * @return Mvcc version.
      */
     public MvccVersion mvccVer() {

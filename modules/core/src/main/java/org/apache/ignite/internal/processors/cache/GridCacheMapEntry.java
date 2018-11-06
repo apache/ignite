@@ -1230,7 +1230,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     key.partition(),
                     0L,
                     mvccVer)
-                    ));
+                ));
             }
 
             update(val, expireTime, ttl, newVer, true);
