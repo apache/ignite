@@ -110,9 +110,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     private volatile long timeout;
 
     /** */
-    private volatile boolean keepAll = true;
-
-    /** */
     private volatile boolean incBackups;
 
     /** */
@@ -205,7 +202,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param log Logger.
      * @param pageSize Page size.
      * @param timeout Timeout.
-     * @param keepAll Keep all flag.
      * @param incBackups Include backups flag.
      * @param dedup Enable dedup flag.
      * @param prj Grid projection.
@@ -223,7 +219,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         IgniteLogger log,
         int pageSize,
         long timeout,
-        boolean keepAll,
         boolean incBackups,
         boolean dedup,
         ClusterGroup prj,
@@ -240,7 +235,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.log = log;
         this.pageSize = pageSize;
         this.timeout = timeout;
-        this.keepAll = keepAll;
         this.incBackups = incBackups;
         this.dedup = dedup;
         this.prj = prj;
@@ -349,20 +343,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      */
     public long timeout() {
         return timeout;
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheQuery<T> keepAll(boolean keepAll) {
-        this.keepAll = keepAll;
-
-        return this;
-    }
-
-    /**
-     * @return Keep all flag.
-     */
-    public boolean keepAll() {
-        return keepAll;
     }
 
     /** {@inheritDoc} */

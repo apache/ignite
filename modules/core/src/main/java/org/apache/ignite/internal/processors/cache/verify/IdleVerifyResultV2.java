@@ -1,19 +1,19 @@
 /*
-* Licensed to the Apache Software Foundation (ASF) under one or more
-* contributor license agreements.  See the NOTICE file distributed with
-* this work for additional information regarding copyright ownership.
-* The ASF licenses this file to You under the Apache License, Version 2.0
-* (the "License"); you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.ignite.internal.processors.cache.verify;
 
 import java.io.IOException;
@@ -21,6 +21,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -104,6 +105,60 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
      */
     public boolean hasConflicts() {
         return !F.isEmpty(hashConflicts()) || !F.isEmpty(counterConflicts());
+    }
+
+    /**
+     * Print formatted result to given printer.
+     *
+     * @param printer Consumer for handle formatted result.
+     */
+    public void print(Consumer<String> printer) {
+        if (!hasConflicts())
+            printer.accept("idle_verify check has finished, no conflicts have been found.\n");
+        else {
+            int cntrConflictsSize = counterConflicts().size();
+            int hashConflictsSize = hashConflicts().size();
+
+            printer.accept("idle_verify check has finished, found " + (cntrConflictsSize + hashConflictsSize) +
+                " conflict partitions: [counterConflicts=" + cntrConflictsSize + ", hashConflicts=" +
+                hashConflictsSize + "]\n");
+
+            if (!F.isEmpty(counterConflicts())) {
+                printer.accept("Update counter conflicts:\n");
+
+                for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : counterConflicts().entrySet()) {
+                    printer.accept("Conflict partition: " + entry.getKey() + "\n");
+
+                    printer.accept("Partition instances: " + entry.getValue() + "\n");
+                }
+
+                printer.accept("\n");
+            }
+
+            if (!F.isEmpty(hashConflicts())) {
+                printer.accept("Hash conflicts:\n");
+
+                for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : hashConflicts().entrySet()) {
+                    printer.accept("Conflict partition: " + entry.getKey() + "\n");
+
+                    printer.accept("Partition instances: " + entry.getValue() + "\n");
+                }
+
+                printer.accept("\n");
+            }
+        }
+
+        if (!F.isEmpty(movingPartitions())) {
+            printer.accept("Verification was skipped for " + movingPartitions().size() + " MOVING partitions:\n");
+
+            for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : movingPartitions().entrySet()) {
+                printer.accept("Rebalancing partition: " + entry.getKey() + "\n");
+
+                printer.accept("Partition instances: " + entry.getValue() + "\n");
+            }
+
+            printer.accept("\n");
+        }
     }
 
     /** {@inheritDoc} */

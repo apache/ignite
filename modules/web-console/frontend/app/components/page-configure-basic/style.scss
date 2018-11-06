@@ -130,6 +130,9 @@ page-configure-basic {
             &>.pc-form-grid-col-120 {
                 flex: 0 0 100%;
             }
+            &>.pc-form-grid-col-free {
+                flex: 1;
+            }
         }
         @media(max-width: 992px) {
             &>.pc-form-grid-col-10 {
@@ -151,6 +154,9 @@ page-configure-basic {
             &>.pc-form-grid-col-60,
             &>.pc-form-grid-col-120 {
                 flex: 0 0 100%;
+            }
+            &>.pc-form-grid-col-free {
+                flex: 1;
             }
         }
     }

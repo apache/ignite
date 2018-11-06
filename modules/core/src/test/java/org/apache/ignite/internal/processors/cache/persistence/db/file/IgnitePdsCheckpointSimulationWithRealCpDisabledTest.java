@@ -113,7 +113,11 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                 .setCheckpointFrequency(500)
                 .setWalMode(WALMode.LOG_ONLY)
                 .setAlwaysWriteFullPages(true)
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true))
+                .setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration()
+                        .setPersistenceEnabled(true)
+                        .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
+                )
         );
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
@@ -897,7 +901,16 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                 for (FullPageId fullId : pageIds) {
                     long cpStart = System.nanoTime();
 
-                    Integer tag = mem.getForCheckpoint(fullId, tmpBuf, null);
+                    Integer tag;
+
+                    while (true) {
+                        tag = mem.getForCheckpoint(fullId, tmpBuf, null);
+
+                        if (tag != null && tag == PageMemoryImpl.TRY_AGAIN_TAG)
+                            continue;
+
+                        break;
+                    }
 
                     if (tag == null)
                         continue;

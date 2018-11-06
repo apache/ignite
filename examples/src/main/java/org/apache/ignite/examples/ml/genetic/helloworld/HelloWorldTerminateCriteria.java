@@ -18,10 +18,8 @@
 package org.apache.ignite.examples.ml.genetic.helloworld;
 
 import java.util.List;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
-
 import org.apache.ignite.ml.genetic.Chromosome;
 import org.apache.ignite.ml.genetic.Gene;
 import org.apache.ignite.ml.genetic.parameter.ITerminateCriteria;
@@ -81,7 +79,7 @@ public class HelloWorldTerminateCriteria implements ITerminateCriteria {
         StringBuffer sbPhrase = new StringBuffer();
 
         for (Gene gene : genes) {
-            sbPhrase.append(((Character)gene.getValue()).toString());
+            sbPhrase.append(((Character)gene.getVal()).toString());
         }
         igniteLogger.info(sbPhrase.toString());
     }

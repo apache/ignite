@@ -23,7 +23,8 @@ export default function uiGridFilters(uiGridConstants) {
         require: 'uiGrid',
         link: {
             pre(scope, el, attr, gridApi) {
-                if (!gridApi.grid.options.enableFiltering) return;
+                if (!gridApi.grid.options.enableFiltering)
+                    return;
 
                 const applyMultiselectFilter = (cd) => {
                     cd.headerCellTemplate = template;

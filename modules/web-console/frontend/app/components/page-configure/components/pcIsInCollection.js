@@ -18,7 +18,9 @@
 class Controller {
     $onInit() {
         this.ngModel.$validators.isInCollection = (item) => {
-            if (!item || !this.items) return true;
+            if (!item || !this.items)
+                return true;
+
             return this.items.includes(item);
         };
     }

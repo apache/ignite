@@ -467,10 +467,10 @@ export default class AgentManager {
                     case SuccessStatus.AUTH_FAILED:
                         this.clustersSecrets.get(cluster.id).resetCredentials();
 
-                        throw new Error('Failed to authenticate in cluster with provided credentials');
+                        throw new Error('Cluster authentication failed. Incorrect user and/or password.');
 
                     case SuccessStatus.SECURITY_CHECK_FAILED:
-                        throw new Error('Access denied. You are not authorized to access this functionality. Contact your cluster administrator.');
+                        throw new Error('Access denied. You are not authorized to access this functionality.');
 
                     default:
                         throw new Error('Illegal status in node response');
@@ -816,11 +816,11 @@ export default class AgentManager {
      * @returns {Promise}
      */
     toggleClusterState() {
-        const state = this.connectionSbj.getValue();
-        const active = !state.cluster.active;
+        const { cluster } = this.connectionSbj.getValue();
+        const active = !cluster.active;
 
         return this.visorTask('toggleClusterState', null, active)
-            .then(() => state.updateCluster(Object.assign(state.cluster, { active })));
+            .then(() => this.updateCluster({ ...cluster, active }));
     }
 
     hasCredentials(clusterId) {

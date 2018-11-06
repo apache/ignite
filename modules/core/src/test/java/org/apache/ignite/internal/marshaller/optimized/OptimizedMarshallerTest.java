@@ -414,12 +414,6 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
         });
 
         allocationOverflowCheck(() -> {
-            marshaller().marshal(new int[1<<30]);
-            marshaller().marshal(new int[1<<30]);
-            return null;
-        });
-
-        allocationOverflowCheck(() -> {
             marshaller().marshal(new float[1<<29]);
             marshaller().marshal(new float[1<<29]);
             return null;

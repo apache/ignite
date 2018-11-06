@@ -24,17 +24,18 @@ include /app/helpers/jade/mixins
             .modal-header
                 h4.modal-title
                     i.icon-confirm
-                    span Enter cluster credentials
+                    span Cluster Authentication
                 button.close(type='button' aria-label='Close' ng-click='$ctrl.onHide()')
                     svg(ignite-icon="cross")
             .modal-body
+                p Enter your credentials to access the cluster.
                 .row
                     .col-50
                         +form-field__text({
                             label: 'User:',
                             model: '$ctrl.secrets.user',
                             name: '"user"',
-                            placeholder: 'Input user',
+                            placeholder: 'Enter user',
                             required: true
                         })(
                             ng-model-options='{allowInvalid: true}'
@@ -46,7 +47,7 @@ include /app/helpers/jade/mixins
                             label: 'Password:',
                             model: '$ctrl.secrets.password',
                             name: '"password"',
-                            placeholder: 'Input password',
+                            placeholder: 'Enter password',
                             required: true
                         })(
                             autocomplete='node-password'

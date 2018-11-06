@@ -20,6 +20,7 @@ package org.apache.ignite.tensorflow.core.nativerunning;
 import java.io.Serializable;
 import java.util.UUID;
 import java.util.function.Supplier;
+import org.apache.ignite.tensorflow.util.SerializableSupplier;
 
 /**
  * Native process specification.
@@ -29,7 +30,7 @@ public class NativeProcess implements Serializable {
     private static final long serialVersionUID = -7056800139746134956L;
 
     /** Process builder supplier. */
-    private final Supplier<ProcessBuilder> procBuilderSupplier;
+    private final SerializableSupplier<ProcessBuilder> procBuilderSupplier;
 
     /** Stdin of the process. */
     private final String stdin;
@@ -44,8 +45,7 @@ public class NativeProcess implements Serializable {
      * @param stdin Stdin of the process.
      * @param nodeId Node identifier.
      */
-    public <T extends Supplier<ProcessBuilder> & Serializable> NativeProcess(T procBuilderSupplier, String stdin,
-        UUID nodeId) {
+    public NativeProcess(SerializableSupplier<ProcessBuilder> procBuilderSupplier, String stdin, UUID nodeId) {
         assert procBuilderSupplier != null : "Process builder supplier should not be null";
         assert nodeId != null : "Node identifier should not be null";
 

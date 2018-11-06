@@ -301,8 +301,12 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
         return super.getConfiguration(name)
             .setDiscoverySpi(
                 new TcpDiscoverySpi()
-                    .setIpFinder(ipFinder)
-            );
+                    .setIpFinder(ipFinder))
+            .setDataStorageConfiguration(
+                new DataStorageConfiguration()
+                    .setDefaultDataRegionConfiguration(
+                        new DataRegionConfiguration()
+                            .setMaxSize(100 * 1024 * 1024)));
     }
 
     /** {@inheritDoc} */

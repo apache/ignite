@@ -55,9 +55,35 @@ public class WeightedPredictionsAggregator implements PredictionsAggregator {
         A.ensure(answers.length == weights.length,
             "Composition vector must have same size as weights vector");
 
-        double result = bias;
+        double res = bias;
+
         for(int i = 0; i< answers.length; i++)
-            result += weights[i] * answers[i];
-        return result;
+            res += weights[i] * answers[i];
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return toString(false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString(boolean pretty) {
+        String clsName = getClass().getSimpleName();
+        if(!pretty)
+            return clsName;
+
+        StringBuilder builder = new StringBuilder(clsName).append(" [");
+        for(int i = 0; i < weights.length; i++) {
+            final String SIGN = weights[i] > 0 ? " + " : " - ";
+            builder
+                .append(i > 0 || weights[i] < 0 ? SIGN : "")
+                .append(String.format("%.4f", Math.abs(weights[i])))
+                .append("*x").append(i);
+        }
+
+        return builder.append(bias > 0 ? " + " : " - ").append(String.format("%.4f", bias))
+            .append("]").toString();
     }
 }

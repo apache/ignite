@@ -36,7 +36,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
@@ -55,7 +57,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 
 import static java.lang.Thread.sleep;
@@ -394,8 +395,6 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
      * Test timeouts with random values and different tx configurations.
      */
     public void testRandomMixedTxConfigurations() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8509");
-
         final Ignite client = startClient();
 
         final AtomicBoolean stop = new AtomicBoolean();
@@ -471,7 +470,19 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
         stop.set(true);
 
-        fut.get(10_000);
+        try {
+            fut.get(30_000);
+        }
+        catch (IgniteFutureTimeoutCheckedException e) {
+            error("Transactions hang", e);
+
+            for (Ignite node : G.allGrids())
+                ((IgniteKernal)node).dumpDebugInfo();
+
+            fut.cancel(); // Try to interrupt hanging threads.
+
+            throw  e;
+        }
 
         log.info("Tx test stats: started=" + cntr0.sum() +
             ", completed=" + cntr1.sum() +

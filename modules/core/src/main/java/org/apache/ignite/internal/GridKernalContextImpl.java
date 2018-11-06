@@ -37,6 +37,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -1125,7 +1126,18 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     @Override public boolean invalid() {
         FailureProcessor failureProc = failure();
 
-        return failureProc != null && failureProc.failureContext() != null;
+        return failureProc != null
+            && failureProc.failureContext() != null
+            && failureProc.failureContext().type() != FailureType.SEGMENTATION;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean segmented() {
+        FailureProcessor failureProc = failure();
+
+        return failureProc != null
+            && failureProc.failureContext() != null
+            && failureProc.failureContext().type() == FailureType.SEGMENTATION;
     }
 
     /** {@inheritDoc} */

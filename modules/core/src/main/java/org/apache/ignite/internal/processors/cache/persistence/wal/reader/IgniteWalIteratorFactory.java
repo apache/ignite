@@ -133,10 +133,7 @@ public class IgniteWalIteratorFactory {
         return new StandaloneWalRecordsIterator(log,
             prepareSharedCtx(iteratorParametersBuilder),
             iteratorParametersBuilder.ioFactory,
-            resolveWalFiles(
-                iteratorParametersBuilder.filesOrDirs,
-                iteratorParametersBuilder
-            ),
+            resolveWalFiles(iteratorParametersBuilder),
             iteratorParametersBuilder.filter,
             iteratorParametersBuilder.keepBinary,
             iteratorParametersBuilder.bufferSize
@@ -182,10 +179,7 @@ public class IgniteWalIteratorFactory {
 
         List<T2<Long, Long>> gaps = new ArrayList<>();
 
-        List<FileDescriptor> descriptors = resolveWalFiles(
-            iteratorParametersBuilder.filesOrDirs,
-            iteratorParametersBuilder
-        );
+        List<FileDescriptor> descriptors = resolveWalFiles(iteratorParametersBuilder);
 
         Iterator<FileDescriptor> it = descriptors.iterator();
 
@@ -217,10 +211,11 @@ public class IgniteWalIteratorFactory {
      * @param iteratorParametersBuilder IteratorParametersBuilder.
      * @return list of file descriptors with checked header records, having correct file index is set
      */
-    private List<FileDescriptor> resolveWalFiles(
-        File[] filesOrDirs,
+    public List<FileDescriptor> resolveWalFiles(
         IteratorParametersBuilder iteratorParametersBuilder
     ) {
+        File[] filesOrDirs = iteratorParametersBuilder.filesOrDirs;
+
         if (filesOrDirs == null || filesOrDirs.length == 0)
             return Collections.emptyList();
 
@@ -327,7 +322,7 @@ public class IgniteWalIteratorFactory {
             kernalCtx, null, null, null,
             null, null, null, dbMgr, null,
             null, null, null, null,
-            null, null, null
+            null, null,null, null
         );
     }
 

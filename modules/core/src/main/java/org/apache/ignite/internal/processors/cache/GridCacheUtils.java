@@ -80,6 +80,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
+import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -1352,35 +1353,11 @@ public class GridCacheUtils {
 
     /**
      * @param node Node.
-     * @return {@code True} if given node is client node (has flag {@link IgniteConfiguration#isClientMode()} set).
-     */
-    public static boolean clientNode(ClusterNode node) {
-        if (node instanceof IgniteClusterNode)
-            return ((IgniteClusterNode)node).isCacheClient();
-        else
-            return clientNodeDirect(node);
-    }
-
-    /**
-     * @param node Node.
-     * @return {@code True} if given node is client node (has flag {@link IgniteConfiguration#isClientMode()} set).
-     */
-    @SuppressWarnings("ConstantConditions")
-    public static boolean clientNodeDirect(ClusterNode node) {
-        Boolean clientModeAttr = node.attribute(IgniteNodeAttributes.ATTR_CLIENT_MODE);
-
-        assert clientModeAttr != null : node;
-
-        return clientModeAttr != null && clientModeAttr;
-    }
-
-    /**
-     * @param node Node.
      * @param filter Node filter.
      * @return {@code True} if node is not client node and pass given filter.
      */
     public static boolean affinityNode(ClusterNode node, IgnitePredicate<ClusterNode> filter) {
-        return !node.isDaemon() && !clientNode(node) && filter.apply(node);
+        return !node.isDaemon() && !node.isClient() && filter.apply(node);
     }
 
     /**
@@ -1753,6 +1730,8 @@ public class GridCacheUtils {
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Error saving backup value: " + entry, e);
+
+                        throw new GridClosureException(e);
                     }
                     catch (GridDhtInvalidPartitionException ignored) {
                         break;

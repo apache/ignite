@@ -130,7 +130,7 @@
     }
    .ignite-form-field__errors {
         color: $ignite-brand-primary;
-        padding: 5px 10px 0px;
+        padding: 5px 10px 0;
         line-height: 14px;
         font-size: 12px;
         clear: both;
@@ -215,6 +215,7 @@
             box-sizing: border-box;
             width: 100%;
             max-width: initial;
+            min-width: 0;
             height: 36px;
             padding: 9px 10px;
             margin-right: 0;
@@ -241,6 +242,13 @@
             }
         }
 
+        &--postfix::after {
+            content: attr(data-postfix);
+            display: inline-flex;
+            place-self: center;
+            margin-left: 10px;
+        }
+
         // Added right offset to appearance of input for invalid password
         & > input[type='email'].ng-invalid.ng-touched,
         & > input[type='text'].ng-invalid.ng-touched,
@@ -261,11 +269,19 @@
         right: 0;
         bottom: 0;
 
+        display: flex;
+
         [ng-message] {
             // TODO: remove after replace all fields to new
             overflow: visible !important;
             animation: none !important;
         }
+    }
+
+    &__control--postfix + &__errors::after {
+        content: attr(data-postfix);
+        margin-left: 10px;
+        visibility: hidden;
     }
 
     &__error {
@@ -328,6 +344,7 @@
                 width: auto;
                 height: auto;
                 margin: 0;
+                border-radius: 0;
             }
         }
 
@@ -380,5 +397,32 @@
         position: absolute;
         right: 0;
         height: 36px;
+    }
+}
+
+.form-fieldset {
+    padding: 10px;
+
+    border: 1px solid hsla(0,0%,77%,.5);
+    border-radius: 4px;
+
+    legend {
+        width: auto;
+        margin: 0 -5px;
+        padding: 0 5px;
+
+        border: 0;
+
+        color: #393939;
+        font-size: 14px;
+        line-height: 1.42857;
+    }
+
+    legend + * {
+        margin-top: 0 !important;
+    }
+
+    & > *:last-child {
+        margin-bottom: 0 !important;
     }
 }

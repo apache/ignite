@@ -45,6 +45,7 @@ import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -504,6 +505,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         checkData(map, null, cache, 4);
     }
+
     /**
      * @throws Exception If failed.
      */
@@ -925,6 +927,87 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         }
 
         checkData(map, null, cache, 5);
+    }
+
+    /**
+     * @return Cache configuration.
+     */
+    private CacheConfiguration testPessimisticTx3Cfg() {
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+
+        ccfg.setCacheMode(PARTITIONED);
+        ccfg.setBackups(0);
+        ccfg.setAtomicityMode(TRANSACTIONAL);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setRebalanceMode(SYNC);
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, 16));
+
+        return ccfg;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPessimisticTx3() throws Exception {
+        for (int iter = 0; iter < 5; iter++) {
+            info("Iteration: " + iter);
+
+            ccfg = testPessimisticTx3Cfg();
+
+            IgniteEx ignite0 = startGrid(0);
+
+            Map<Integer, Integer> map = new HashMap<>();
+
+            final IgniteCache<Integer, Integer> cache0 = ignite0.cache(DEFAULT_CACHE_NAME);
+
+            for (int i = 0; i < 10000; i++) {
+                cache0.put(i, i);
+                map.put(i, i + 1);
+            }
+
+            client = true;
+
+            ccfg = testPessimisticTx3Cfg();
+
+            final Ignite ignite3 = startGrid(3);
+
+            final IgniteCache<Integer, Integer> cache = ignite3.cache(DEFAULT_CACHE_NAME);
+
+            TestCommunicationSpi spi = (TestCommunicationSpi)ignite3.configuration().getCommunicationSpi();
+            spi.blockMessages(GridNearLockRequest.class, ignite0.localNode().id());
+
+            IgniteInternalFuture putFut = GridTestUtils.runAsync(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    Thread.currentThread().setName("put-thread");
+
+                    try (Transaction tx = ignite3.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        cache.putAll(map);
+
+                        tx.commit();
+                    }
+
+                    return null;
+                }
+            });
+
+            spi.waitForBlocked();
+
+            client = false;
+
+            ccfg = testPessimisticTx3Cfg();
+
+            startGrid(1);
+
+            // Want provoke case when client req is processed when target partition is RENTING,
+            // there is no easy way to do it, so just try sleep.
+            U.sleep(ThreadLocalRandom.current().nextInt(1000) + 100);
+
+            spi.stopBlock();
+
+            putFut.get();
+
+            stopAllGrids();
+        }
     }
 
     /**
@@ -2004,6 +2087,8 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
                         blockedMsgs.add(new T2<>(node, (GridIoMessage)msg));
 
+                        notifyAll();
+
                         return;
                     }
                 }
@@ -2070,6 +2155,16 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                 }
 
                 blockedMsgs.clear();
+            }
+        }
+
+        /**
+         * @throws InterruptedException If interrupted.
+         */
+        public void waitForBlocked() throws InterruptedException {
+            synchronized (this) {
+                while (blockedMsgs.isEmpty())
+                    wait();
             }
         }
     }

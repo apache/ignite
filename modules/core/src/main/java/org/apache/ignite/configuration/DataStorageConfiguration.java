@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -168,6 +169,7 @@ public class DataStorageConfiguration implements Serializable {
     private DataRegionConfiguration dfltDataRegConf = new DataRegionConfiguration();
 
     /** Data regions. */
+    @GridToStringInclude
     private DataRegionConfiguration[] dataRegions;
 
     /** Directory where index and partition files are stored. */

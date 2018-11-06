@@ -168,7 +168,7 @@ package object impl {
                         nodeToParts + (primary → ArrayBuffer[Int](ignitePartIdx))
             }
 
-            val partitions = nodesToParts.zipWithIndex.map { case ((node, nodesParts), i) ⇒
+            val partitions = nodesToParts.toIndexedSeq.zipWithIndex.map { case ((node, nodesParts), i) ⇒
                 IgniteDataFramePartition(i, node, nodesParts.toList)
             }
 

@@ -75,9 +75,11 @@ const config = {
             // Exclude tpl.pug files to import in bundle.
             {
                 test: /^(?:(?!tpl\.pug$).)*\.pug$/, // TODO: check this regexp for correct.
-                loader: 'pug-html',
-                query: {
-                    basedir
+                use: {
+                    loader: 'pug-html',
+                    options: {
+                        basedir
+                    }
                 }
             },
 
@@ -123,22 +125,27 @@ const config = {
             },
             {
                 test: /\.(ttf|eot|svg|woff(2)?)(\?v=[\d.]+)?(\?[a-z0-9#-]+)?$/,
-                exclude: [contentBase],
-                loader: 'file?name=assets/fonts/[name].[ext]'
+                exclude: [contentBase, /\.icon\.svg$/],
+                use: 'file?name=assets/fonts/[name].[ext]'
             },
             {
-                test: /^(?:(?!url\.svg$).)*\.svg$/,
-                include: [contentBase],
-                use: ['svg-sprite-loader']
+                test: /\.icon\.svg$/,
+                use: {
+                    loader: 'svg-sprite-loader',
+                    options: {
+                        symbolRegExp: /\w+(?=\.icon\.\w+$)/,
+                        symbolId: '[0]'
+                    }
+                }
             },
             {
                 test: /.*\.url\.svg$/,
                 include: [contentBase],
-                loader: 'file?name=assets/fonts/[name].[ext]'
+                use: 'file?name=assets/fonts/[name].[ext]'
             },
             {
                 test: /\.(jpe?g|png|gif)$/i,
-                loader: 'file?name=assets/images/[name].[hash].[ext]'
+                use: 'file?name=assets/images/[name].[hash].[ext]'
             },
             {
                 test: require.resolve('jquery'),
@@ -149,7 +156,7 @@ const config = {
             },
             {
                 test: require.resolve('nvd3'),
-                use: ['expose-loader?nv']
+                use: 'expose-loader?nv'
             }
         ]
     },

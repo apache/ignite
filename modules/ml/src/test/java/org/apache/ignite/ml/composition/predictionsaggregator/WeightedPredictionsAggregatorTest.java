@@ -20,17 +20,24 @@ package org.apache.ignite.ml.composition.predictionsaggregator;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /** */
 public class WeightedPredictionsAggregatorTest {
     /** */
-    @Test public void testApply1() {
+    @Test
+    public void testApply1() {
         WeightedPredictionsAggregator aggregator = new WeightedPredictionsAggregator(new double[] {});
         assertEquals(0.0, aggregator.apply(new double[] {}), 0.001);
+
+        assertTrue(aggregator.toString().length() > 0);
+        assertTrue(aggregator.toString(true).length() > 0);
+        assertTrue(aggregator.toString(false).length() > 0);
     }
 
     /** */
-    @Test public void testApply2() {
+    @Test
+    public void testApply2() {
         WeightedPredictionsAggregator aggregator = new WeightedPredictionsAggregator(new double[] {1.0, 0.5, 0.25});
         assertEquals(3.0, aggregator.apply(new double[] {1.0, 2.0, 4.0}), 0.001);
     }

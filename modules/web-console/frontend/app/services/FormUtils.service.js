@@ -329,12 +329,19 @@ export default ['IgniteFormUtils', ['$window', 'IgniteFocus', '$rootScope', ($wi
     function triggerValidation(form) {
         const fe = (m) => Object.keys(m.$error)[0];
         const em = (e) => (m) => {
-            if (!e) return;
+            if (!e)
+                return;
+
             const walk = (m) => {
-                if (!m.$error[e]) return;
-                if (m.$error[e] === true) return m;
+                if (!m.$error[e])
+                    return;
+
+                if (m.$error[e] === true)
+                    return m;
+
                 return walk(m.$error[e][0]);
             };
+
             return walk(m);
         };
 

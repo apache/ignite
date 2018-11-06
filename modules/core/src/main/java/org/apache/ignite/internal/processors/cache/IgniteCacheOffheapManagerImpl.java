@@ -1386,6 +1386,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 assert oldRow == null || oldRow.cacheId() == cacheId : oldRow;
 
+                if (key.partition() == -1)
+                    key.partition(partId);
+
                 DataRow dataRow = new DataRow(key, val, ver, partId, expireTime, cacheId);
 
                 CacheObjectContext coCtx = cctx.cacheObjectContext();

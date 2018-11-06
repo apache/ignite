@@ -755,6 +755,9 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             (qry instanceof SqlQuery || qry instanceof SqlFieldsQuery || qry instanceof TextQuery))
             throw new CacheException("Failed to execute query. Add module 'ignite-indexing' to the classpath " +
                     "of all Ignite nodes.");
+
+        if (qry.isLocal() && (qry instanceof SqlQuery) && ctx.kernalContext().clientNode())
+            throw new CacheException("Execution of local sql query on client node disallowed.");
     }
 
     /** {@inheritDoc} */
@@ -1787,6 +1790,16 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     @Override public void enableStatistics(boolean enabled) {
         try {
             ctx.kernalContext().cache().enableStatistics(Collections.singleton(getName()), enabled);
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clearStatistics() {
+        try {
+            ctx.kernalContext().cache().clearStatistics(Collections.singleton(getName()));
         }
         catch (IgniteCheckedException e) {
             throw cacheException(e);

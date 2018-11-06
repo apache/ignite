@@ -31,7 +31,7 @@ public class RecallTest {
     /** */
     @Test
     public void testScore() {
-        Metric<Integer> scoreCalculator = new Recall<>(1);
+        Recall<Integer> scoreCalculator = new Recall<>(1);
 
         LabelPairCursor<Integer> cursor = new TestLabelPairCursor<>(
             Arrays.asList(1, 0, 1, 0, 1, 0),

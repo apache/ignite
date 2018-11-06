@@ -63,7 +63,7 @@ public class CacheBasedDatasetTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    @Override protected void beforeTest() {
         /* Grid instance. */
         ignite = grid(NODE_COUNT);
         ignite.configuration().setPeerClassLoadingEnabled(true);
@@ -86,6 +86,9 @@ public class CacheBasedDatasetTest extends GridCommonAbstractTest {
             (upstream, upstreamSize) -> upstreamSize,
             (upstream, upstreamSize, ctx) -> new SimpleDatasetData(new double[0], 0)
         );
+
+        assertEquals("Upstream cache name from dataset",
+            upstreamCache.getName(), dataset.getUpstreamCache().getName());
 
         assertTrue("Before computation all partitions should not be reserved",
             areAllPartitionsNotReserved(upstreamCache.getName(), dataset.getDatasetCache().getName()));

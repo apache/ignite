@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSy
 import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSystemLoopbackExternalToClientDualSyncSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSystemLoopbackExternalToClientPrimarySelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSystemLoopbackExternalToClientProxySelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.taskexecutor.HadoopExecutorServiceTest;
 import org.apache.ignite.internal.processors.hadoop.impl.util.BasicUserNameMapperSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.util.ChainedUserNameMapperSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.util.KerberosUserNameMapperSelfTest;
@@ -174,6 +175,8 @@ public class IgniteHadoopTestSuite extends TestSuite {
         suite.addTest(IgfsEventsTestSuite.suiteNoarchOnly());
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopFileSystemsTest.class.getName())));
+
+        //suite.addTest(new TestSuite(ldr.loadClass(HadoopExecutorServiceTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopValidationSelfTest.class.getName())));
 

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.Closeable;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.InvalidObjectException;
@@ -2010,6 +2011,9 @@ public class GridCacheContext<K, V> implements Externalizable {
         qryMgr = null;
         dataStructuresMgr = null;
         cacheObjCtx = null;
+
+        if (expiryPlc instanceof Closeable)
+            U.closeQuiet((Closeable)expiryPlc);
 
         mgrs.clear();
     }

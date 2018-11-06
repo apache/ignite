@@ -33,7 +33,7 @@ public class CustomMessageWrapper implements DiscoverySpiCustomMessage {
     /**
      * @param delegate Delegate.
      */
-    CustomMessageWrapper(DiscoveryCustomMessage delegate) {
+    public CustomMessageWrapper(DiscoveryCustomMessage delegate) {
         this.delegate = delegate;
     }
 

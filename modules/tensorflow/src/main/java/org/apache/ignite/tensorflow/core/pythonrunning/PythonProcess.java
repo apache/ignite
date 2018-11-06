@@ -33,17 +33,22 @@ public class PythonProcess implements Serializable {
     /** Node identifier. */
     private final UUID nodeId;
 
+    /** Meta information that adds to script as arguments.  */
+    private final String[] meta;
+
     /**
      * Constructs a new instance of python process.
      *
      * @param stdin  Stdin of the process.
      * @param nodeId Node identifier.
+     * @param meta Meta information that adds to script as arguments.
      */
-    public PythonProcess(String stdin, UUID nodeId) {
+    public PythonProcess(String stdin, UUID nodeId, String... meta) {
         assert nodeId != null : "Node identifier should not be null";
 
         this.stdin = stdin;
         this.nodeId = nodeId;
+        this.meta = meta;
     }
 
     /** */
@@ -54,5 +59,10 @@ public class PythonProcess implements Serializable {
     /** */
     public UUID getNodeId() {
         return nodeId;
+    }
+
+    /** */
+    public String[] getMeta() {
+        return meta;
     }
 }

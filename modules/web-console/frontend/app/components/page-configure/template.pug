@@ -14,11 +14,13 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-h1.pc-page-header
-    span.pc-page-header-title
-        | {{ $ctrl.clusterName$|async:this }}
+header.header-with-selector
+    div
+        h1 {{ $ctrl.clusterName$|async:this }}
         version-picker
-    button-import-models(cluster-id='$ctrl.clusterID$|async:this')
+    div
+        button-import-models(cluster-id='$ctrl.clusterID$|async:this')
+
 div.pc-content-container
     ul.tabs.tabs--blue
         li(role='presentation' ui-sref-active='active')

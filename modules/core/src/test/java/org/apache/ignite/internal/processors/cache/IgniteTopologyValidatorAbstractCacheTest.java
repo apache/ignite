@@ -98,7 +98,7 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
         int c = 0;
 
         for (ClusterNode node : nodes) {
-            if (!CU.clientNode(node))
+            if (!node.isClient())
                 c++;
         }
 

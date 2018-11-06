@@ -20,10 +20,10 @@
     | You are currently viewing user #[strong {{$root.user.firstName}} {{$root.user.lastName}}] as administrator. #[a(ng-click='$root.revertIdentity()') Revert to your identity?]
 
 .wch-notification.wch-notification--demo(ng-if='$root.IgniteDemoMode')
-    .container(ng-controller='demoController')
+    div(ng-controller='demoController')
         | You are now in #[b Demo Mode]. #[a(ng-click='closeDemo();') Close Demo?]
 
-.wch-content.container
+.wch-content
     connected-clusters(ng-if='$ctrl.$rootScope.user && !$ctrl.$rootScope.IgniteDemoMode && $ctrl.isConnectedClustersVisible && !$root.user.becomeUsed')
 
     a(ui-sref='landing')

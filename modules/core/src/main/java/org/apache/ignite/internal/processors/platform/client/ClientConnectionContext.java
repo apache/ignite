@@ -41,8 +41,11 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     /** Version 1.1.0. */
     public static final ClientListenerProtocolVersion VER_1_1_0 = ClientListenerProtocolVersion.create(1, 1, 0);
 
+    /** Version 1.2.0. */
+    public static final ClientListenerProtocolVersion VER_1_2_0 = ClientListenerProtocolVersion.create(1, 2, 0);
+
     /** Supported versions. */
-    private static final Collection<ClientListenerProtocolVersion> SUPPORTED_VERS = Arrays.asList(VER_1_1_0, VER_1_0_0);
+    private static final Collection<ClientListenerProtocolVersion> SUPPORTED_VERS = Arrays.asList(VER_1_2_0, VER_1_1_0, VER_1_0_0);
 
     /** Message parser. */
     private final ClientMessageParser parser;

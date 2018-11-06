@@ -31,7 +31,8 @@ import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
 import org.apache.ignite.ml.clustering.kmeans.KMeansTrainer;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
 import org.apache.ignite.ml.math.Tracer;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
@@ -58,7 +59,7 @@ public class KMeansClusterizationExample {
                 KMeansModel mdl = trainer.fit(
                     ignite,
                     dataCache,
-                    (k, v) -> Arrays.copyOfRange(v, 1, v.length),
+                    (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
                     (k, v) -> v[0]
                 );
 
@@ -80,7 +81,7 @@ public class KMeansClusterizationExample {
                         double[] inputs = Arrays.copyOfRange(val, 1, val.length);
                         double groundTruth = val[0];
 
-                        double prediction = mdl.apply(new DenseLocalOnHeapVector(inputs));
+                        double prediction = mdl.apply(new DenseVector(inputs));
 
                         totalAmount++;
                         if (groundTruth != prediction)

@@ -51,6 +51,30 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** Number of reads. */
     private AtomicLong reads = new AtomicLong();
 
+    /** Number of invocations caused update. */
+    private AtomicLong entryProcessorPuts = new AtomicLong();
+
+    /** Number of invocations caused removal. */
+    private AtomicLong entryProcessorRemovals = new AtomicLong();
+
+    /** Number of invocations caused update. */
+    private AtomicLong entryProcessorReadOnlyInvocations = new AtomicLong();
+
+    /** Entry processor invoke time taken nanos. */
+    private AtomicLong entryProcessorInvokeTimeNanos = new AtomicLong();
+
+    /** So far, the minimum time to execute cache invokes. */
+    private AtomicLong entryProcessorMinInvocationTime = new AtomicLong();
+
+    /** So far, the maximum time to execute cache invokes. */
+    private AtomicLong entryProcessorMaxInvocationTime = new AtomicLong();
+
+    /** Number of entry processor invokes on keys, which exist in cache. */
+    private AtomicLong entryProcessorHits = new AtomicLong();
+
+    /** Number of entry processor invokes on keys, which don't exist in cache. */
+    private AtomicLong entryProcessorMisses = new AtomicLong();
+
     /** Number of writes. */
     private AtomicLong writes = new AtomicLong();
 
@@ -439,6 +463,15 @@ public class CacheMetricsImpl implements CacheMetrics {
         commitTimeNanos.set(0);
         rollbackTimeNanos.set(0);
 
+        entryProcessorPuts.set(0);
+        entryProcessorRemovals.set(0);
+        entryProcessorReadOnlyInvocations.set(0);
+        entryProcessorMisses.set(0);
+        entryProcessorHits.set(0);
+        entryProcessorInvokeTimeNanos.set(0);
+        entryProcessorMaxInvocationTime.set(0);
+        entryProcessorMinInvocationTime.set(0);
+
         offHeapGets.set(0);
         offHeapPuts.set(0);
         offHeapRemoves.set(0);
@@ -492,6 +525,79 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** {@inheritDoc} */
     @Override public long getCachePuts() {
         return writes.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEntryProcessorPuts() {
+        return entryProcessorPuts.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEntryProcessorRemovals() {
+        return entryProcessorRemovals.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEntryProcessorReadOnlyInvocations() {
+        return entryProcessorReadOnlyInvocations.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEntryProcessorInvocations() {
+        return entryProcessorReadOnlyInvocations.get() + entryProcessorPuts.get() + entryProcessorRemovals.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEntryProcessorHits() {
+        return entryProcessorHits.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getEntryProcessorHitPercentage() {
+        long hits = entryProcessorHits.get();
+        long totalInvocations = getEntryProcessorInvocations();
+
+        if (hits == 0)
+            return 0;
+
+        return (float) hits / totalInvocations * 100.0f;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEntryProcessorMisses() {
+        return entryProcessorMisses.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getEntryProcessorMissPercentage() {
+        long misses = entryProcessorMisses.get();
+        long totalInvocations = getEntryProcessorInvocations();
+
+        if (misses == 0)
+            return 0;
+
+        return (float) misses / totalInvocations * 100.0f;
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getEntryProcessorAverageInvocationTime() {
+        long totalInvokes = getEntryProcessorInvocations();
+        long timeNanos = entryProcessorInvokeTimeNanos.get();
+
+        if (timeNanos == 0 || totalInvokes == 0)
+            return 0;
+
+        return (1f * timeNanos) / totalInvokes / NANOS_IN_MICROSECOND;
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getEntryProcessorMinInvocationTime() {
+        return (1f * entryProcessorMinInvocationTime.get()) / NANOS_IN_MICROSECOND;
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getEntryProcessorMaxInvocationTime() {
+        return (1f * entryProcessorMaxInvocationTime.get()) / NANOS_IN_MICROSECOND;
     }
 
     /** {@inheritDoc} */
@@ -551,6 +657,106 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         if (delegate != null)
             delegate.onRead(isHit);
+    }
+
+    /**
+     * Cache invocations caused update callback.
+     *
+     * @param isHit Hit or miss flag.
+     */
+    public void onInvokeUpdate(boolean isHit) {
+        entryProcessorPuts.incrementAndGet();
+
+        if (isHit)
+            entryProcessorHits.incrementAndGet();
+        else
+            entryProcessorMisses.incrementAndGet();
+
+        if (delegate != null)
+            delegate.onInvokeUpdate(isHit);
+    }
+
+    /**
+     * Cache invocations caused removal callback.
+     *
+     * @param isHit Hit or miss flag.
+     */
+    public void onInvokeRemove(boolean isHit) {
+        entryProcessorRemovals.incrementAndGet();
+
+        if (isHit)
+            entryProcessorHits.incrementAndGet();
+        else
+            entryProcessorMisses.incrementAndGet();
+
+        if (delegate != null)
+            delegate.onInvokeRemove(isHit);
+    }
+
+    /**
+     * Read-only cache invocations.
+     *
+     * @param isHit Hit or miss flag.
+     */
+    public void onReadOnlyInvoke(boolean isHit) {
+        entryProcessorReadOnlyInvocations.incrementAndGet();
+
+        if (isHit)
+            entryProcessorHits.incrementAndGet();
+        else
+            entryProcessorMisses.incrementAndGet();
+
+        if (delegate != null)
+            delegate.onReadOnlyInvoke(isHit);
+    }
+
+    /**
+     * Increments invoke operation time nanos.
+     *
+     * @param duration Duration.
+     */
+    public void addInvokeTimeNanos(long duration) {
+        entryProcessorInvokeTimeNanos.addAndGet(duration);
+
+        recalculateInvokeMinTimeNanos(duration);
+
+        recalculateInvokeMaxTimeNanos(duration);
+
+        if (delegate != null)
+            delegate.addInvokeTimeNanos(duration);
+
+    }
+
+    /**
+     * Recalculates invoke operation minimum time nanos.
+     *
+     * @param duration Duration.
+     */
+    private void recalculateInvokeMinTimeNanos(long duration){
+        long minTime = entryProcessorMinInvocationTime.longValue();
+
+        while (minTime > duration || minTime == 0) {
+            if (entryProcessorMinInvocationTime.compareAndSet(minTime, duration))
+                break;
+            else
+                minTime = entryProcessorMinInvocationTime.longValue();
+        }
+    }
+
+    /**
+     * Recalculates invoke operation maximum time nanos.
+     *
+     * @param duration Duration.
+     */
+    private void recalculateInvokeMaxTimeNanos(long duration){
+        long maxTime = entryProcessorMaxInvocationTime.longValue();
+
+        while (maxTime < duration) {
+            if (entryProcessorMaxInvocationTime.compareAndSet(maxTime, duration))
+                break;
+            else
+                maxTime = entryProcessorMaxInvocationTime.longValue();
+        }
     }
 
     /**

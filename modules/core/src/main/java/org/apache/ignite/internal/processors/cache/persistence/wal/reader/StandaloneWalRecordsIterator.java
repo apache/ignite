@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.ReadFileHandle;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
@@ -126,6 +127,25 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
         if (log.isDebugEnabled())
             log.debug("Initialized WAL cursor [curWalSegmIdx=" + curWalSegmIdx + ']');
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteCheckedException validateTailReachedException(
+        WalSegmentTailReachedException tailReachedException,
+        AbstractReadFileHandle currWalSegment
+    ) {
+        FileDescriptor lastWALSegmentDesc = walFileDescriptors.get(walFileDescriptors.size() - 1);
+
+        // Iterator can not be empty.
+        assert lastWALSegmentDesc != null;
+
+        return lastWALSegmentDesc.idx() != currWalSegment.idx() ?
+            new IgniteCheckedException(
+                "WAL tail reached not in the last available segment, " +
+                    "potentially corrupted segment, last available segment idx=" + lastWALSegmentDesc.idx() +
+                    ", path=" + lastWALSegmentDesc.file().getPath() +
+                    ", last read segment idx=" + currWalSegment.idx(), tailReachedException
+            ) : null;
     }
 
     /** {@inheritDoc} */

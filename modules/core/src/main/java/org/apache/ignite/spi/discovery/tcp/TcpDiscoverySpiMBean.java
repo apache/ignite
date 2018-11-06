@@ -58,7 +58,7 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean, Discover
     /**
      * Gets connection check interval in ms.
      *
-     * @return Number of connection attempts.
+     * @return Connection check interval.
      */
     @MXBeanDescription("Connection check interval.")
     public long getConnectionCheckInterval();
@@ -289,4 +289,18 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean, Discover
         }
     )
     public void checkRingLatency(int maxHops);
+
+    /**
+     * Current topology version.
+     *
+     * @return current topVer.
+     */
+    @MXBeanDescription("Get current topology version.")
+    public long getCurrentTopologyVersion();
+
+    /**
+     * Dumps ring structure to log.
+     */
+    @MXBeanDescription("Dumps ring structure to log.")
+    public void dumpRingStructure();
 }

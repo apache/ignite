@@ -412,7 +412,9 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
      * @throws Exception If failed.
      */
     private void testBatchApply(boolean writeCoalescing) throws Exception {
-        delegate = new GridCacheTestStore(new ConcurrentLinkedHashMap<Integer, String>());
+        delegate = new GridCacheTestStore(new ConcurrentLinkedHashMap<Integer, String>() {
+            @Override public void clear() { }
+        });
 
         initStore(1, writeCoalescing);
 

@@ -18,10 +18,8 @@
 package org.apache.ignite.examples.ml.genetic.movie;
 
 import java.util.List;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
-
 import org.apache.ignite.ml.genetic.Chromosome;
 import org.apache.ignite.ml.genetic.Gene;
 import org.apache.ignite.ml.genetic.parameter.ITerminateCriteria;
@@ -78,9 +76,9 @@ public class MovieTerminateCriteria implements ITerminateCriteria {
      */
     private void printMovies(List<Gene> genes) {
         for (Gene gene : genes) {
-            igniteLogger.info("Name: " + ((Movie)gene.getValue()).getName().toString());
-            igniteLogger.info("Genres: " + ((Movie)gene.getValue()).getGenre().toString());
-            igniteLogger.info("IMDB Rating: " + ((Movie)gene.getValue()).getImdbRating());
+            igniteLogger.info("Name: " + ((Movie)gene.getVal()).getName().toString());
+            igniteLogger.info("Genres: " + ((Movie)gene.getVal()).getGenre().toString());
+            igniteLogger.info("IMDB Rating: " + ((Movie)gene.getVal()).getImdbRating());
         }
 
     }

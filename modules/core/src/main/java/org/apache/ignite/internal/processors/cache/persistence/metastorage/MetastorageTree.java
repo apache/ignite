@@ -28,6 +28,8 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInne
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -40,12 +42,15 @@ public class MetastorageTree extends BPlusTree<MetastorageSearchRow, Metastorage
     private MetastorageRowStore rowStore;
 
     /**
-     * @param pageMem
-     * @param wal
-     * @param globalRmvId
-     * @param metaPageId
-     * @param reuseList
-     * @throws IgniteCheckedException
+     * @param pageMem Page memory instance.
+     * @param wal WAL manager.
+     * @param globalRmvId Global remove ID.
+     * @param metaPageId Meta page ID.
+     * @param reuseList Reuse list.
+     * @param rowStore Row store.
+     * @param initNew Init new flag, if {@code true}, then new tree will be allocated.
+     * @param failureProcessor To call if the tree is corrupted.
+     * @throws IgniteCheckedException If failed to initialize.
      */
     public MetastorageTree(int cacheId,
         PageMemory pageMem,
@@ -54,9 +59,10 @@ public class MetastorageTree extends BPlusTree<MetastorageSearchRow, Metastorage
         ReuseList reuseList,
         MetastorageRowStore rowStore,
         long metaPageId,
-        boolean initNew) throws IgniteCheckedException {
+        boolean initNew,
+        @Nullable FailureProcessor failureProcessor) throws IgniteCheckedException {
         super("Metastorage", cacheId, pageMem, wal,
-            globalRmvId, metaPageId, reuseList, MetastorageInnerIO.VERSIONS, MetastoreLeafIO.VERSIONS);
+            globalRmvId, metaPageId, reuseList, MetastorageInnerIO.VERSIONS, MetastoreLeafIO.VERSIONS, failureProcessor);
 
         this.rowStore = rowStore;
 
@@ -65,7 +71,7 @@ public class MetastorageTree extends BPlusTree<MetastorageSearchRow, Metastorage
 
     /** {@inheritDoc} */
     @Override protected int compare(BPlusIO<MetastorageSearchRow> io, long pageAddr, int idx,
-        MetastorageSearchRow row) throws IgniteCheckedException {
+        MetastorageSearchRow row) {
 
         String key = ((DataLinkIO)io).getKey(pageAddr, idx);
 
@@ -132,7 +138,7 @@ public class MetastorageTree extends BPlusTree<MetastorageSearchRow, Metastorage
 
         /** {@inheritDoc} */
         @Override public void storeByOffset(long pageAddr, int off,
-            MetastorageSearchRow row) throws IgniteCheckedException {
+            MetastorageSearchRow row) {
             assert row.link() != 0;
 
             PageUtils.putLong(pageAddr, off, row.link());
@@ -146,7 +152,7 @@ public class MetastorageTree extends BPlusTree<MetastorageSearchRow, Metastorage
 
         /** {@inheritDoc} */
         @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<MetastorageSearchRow> srcIo, long srcPageAddr,
-            int srcIdx) throws IgniteCheckedException {
+            int srcIdx) {
             int srcOff = srcIo.offset(srcIdx);
             int dstOff = offset(dstIdx);
 
@@ -162,7 +168,7 @@ public class MetastorageTree extends BPlusTree<MetastorageSearchRow, Metastorage
 
         /** {@inheritDoc} */
         @Override public MetastorageSearchRow getLookupRow(BPlusTree<MetastorageSearchRow, ?> tree, long pageAddr,
-            int idx) throws IgniteCheckedException {
+            int idx) {
             long link = getLink(pageAddr, idx);
             String key = getKey(pageAddr, idx);
 
@@ -207,7 +213,7 @@ public class MetastorageTree extends BPlusTree<MetastorageSearchRow, Metastorage
 
         /** {@inheritDoc} */
         @Override public void storeByOffset(long pageAddr, int off,
-            MetastorageSearchRow row) throws IgniteCheckedException {
+            MetastorageSearchRow row) {
             assert row.link() != 0;
 
             PageUtils.putLong(pageAddr, off, row.link());
@@ -221,7 +227,7 @@ public class MetastorageTree extends BPlusTree<MetastorageSearchRow, Metastorage
 
         /** {@inheritDoc} */
         @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<MetastorageSearchRow> srcIo, long srcPageAddr,
-            int srcIdx) throws IgniteCheckedException {
+            int srcIdx) {
             int srcOff = srcIo.offset(srcIdx);
             int dstOff = offset(dstIdx);
 
@@ -237,7 +243,7 @@ public class MetastorageTree extends BPlusTree<MetastorageSearchRow, Metastorage
 
         /** {@inheritDoc} */
         @Override public MetastorageSearchRow getLookupRow(BPlusTree<MetastorageSearchRow, ?> tree, long pageAddr,
-            int idx) throws IgniteCheckedException {
+            int idx) {
             long link = getLink(pageAddr, idx);
             String key = getKey(pageAddr, idx);
 

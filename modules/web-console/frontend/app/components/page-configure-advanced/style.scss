@@ -43,6 +43,7 @@ page-configure-advanced {
         background-color: #f9f9f9;
         list-style: none;
         border-bottom: 1px solid #dddddd !important;
+        position: -webkit-sticky;
         position: sticky;
 
         .pca-menu-link {

@@ -78,10 +78,6 @@ import static org.apache.ignite.transactions.TransactionState.PREPARING;
 public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepareFutureAdapter implements
     IgniteDiagnosticAware {
     /** */
-    @GridToStringExclude
-    private KeyLockFuture keyLockFut;
-
-    /** */
     private int miniId;
 
     /** */
@@ -144,7 +140,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
      * @param e Error.
      * @param discoThread {@code True} if executed from discovery thread.
      */
-    void onError(Throwable e, boolean discoThread) {
+    private void onError(Throwable e, boolean discoThread) {
         if (e instanceof IgniteTxTimeoutCheckedException) {
             onTimeout();
 
@@ -434,7 +430,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
             GridDistributedTxMapping updated = map(write, topVer, cur, topLocked, remap);
 
-            if(updated == null)
+            if (updated == null)
                 // an exception occurred while transaction mapping, stop further processing
                 break;
 
@@ -769,6 +765,10 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                         e = new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout for " +
                             "transaction [timeout=" + tx.timeout() + ", tx=" + CU.txString(tx) + ']',
                             deadlock != null ? new TransactionDeadlockException(deadlock.toString(cctx)) : null);
+
+                        if (!ERR_UPD.compareAndSet(GridNearOptimisticTxPrepareFuture.this, null, e) && err instanceof IgniteTxTimeoutCheckedException) {
+                            err = e;
+                        }
                     }
 
                     onDone(null, e);

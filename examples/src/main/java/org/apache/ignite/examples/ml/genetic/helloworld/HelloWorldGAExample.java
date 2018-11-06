@@ -19,10 +19,8 @@ package org.apache.ignite.examples.ml.genetic.helloworld;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
-
 import org.apache.ignite.ml.genetic.Chromosome;
 import org.apache.ignite.ml.genetic.GAGrid;
 import org.apache.ignite.ml.genetic.Gene;
@@ -73,7 +71,7 @@ public class HelloWorldGAExample {
             List<Gene> genes = getGenePool();
 
             // set the Chromosome Length to '11' since 'HELLO WORLD' contains 11 characters.
-            gaConfig.setChromosomeLength(11);
+            gaConfig.setChromosomeLen(11);
 
             // initialize gene pool
             gaConfig.setGenePool(genes);

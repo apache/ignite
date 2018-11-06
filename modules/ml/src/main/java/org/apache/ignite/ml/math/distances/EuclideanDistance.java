@@ -19,8 +19,8 @@ package org.apache.ignite.ml.math.distances;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.util.MatrixUtil;
 
 /**
@@ -41,7 +41,7 @@ public class EuclideanDistance implements DistanceMeasure {
         double res = 0.0;
 
         for (int i = 0; i < b.length; i++)
-            res+= Math.abs(b[i] - a.get(i));
+            res += Math.pow(Math.abs(b[i] - a.get(i)), 2.0);
 
         return Math.sqrt(res);
     }
@@ -61,9 +61,11 @@ public class EuclideanDistance implements DistanceMeasure {
         if (this == obj)
             return true;
 
-        if (obj == null || getClass() != obj.getClass())
-            return false;
+        return obj != null && getClass() == obj.getClass();
+    }
 
-        return true;
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return getClass().hashCode();
     }
 }

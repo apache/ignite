@@ -67,6 +67,11 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
     }
 
     /** {@inheritDoc} */
+    @Override public void onNearTxLocalTimeout() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override protected boolean ignoreFailure(Throwable err) {
         return IgniteCheckedException.class.isAssignableFrom(err.getClass());
     }

@@ -21,6 +21,7 @@ import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.selection.scoring.LabelPair;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -63,7 +64,7 @@ public class CacheBasedLabelPairCursorTest extends GridCommonAbstractTest {
         LabelPairCursor<Integer> cursor = new CacheBasedLabelPairCursor<>(
             data,
             (k, v) -> v % 2 == 0,
-            (k, v) -> new double[]{v},
+            (k, v) -> VectorUtils.of(v),
             (k, v) -> v,
             vec -> (int)vec.get(0)
         );

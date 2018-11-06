@@ -201,7 +201,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             assertEquals(0, acquiredPages());
         }
         finally {
-            pageMem.stop();
+            if (pageMem != null)
+                pageMem.stop();
 
             MAX_PER_PAGE = 0;
             PUT_INC = 1;
@@ -2384,7 +2385,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         public TestTree(ReuseList reuseList, boolean canGetRow, int cacheId, PageMemory pageMem, long metaPageId)
             throws IgniteCheckedException {
             super("test", cacheId, pageMem, null, new AtomicLong(), metaPageId, reuseList,
-                new IOVersions<>(new LongInnerIO(canGetRow)), new IOVersions<>(new LongLeafIO()));
+                new IOVersions<>(new LongInnerIO(canGetRow)), new IOVersions<>(new LongLeafIO()), null);
 
             PageIO.registerTest(latestInnerIO(), latestLeafIO());
 

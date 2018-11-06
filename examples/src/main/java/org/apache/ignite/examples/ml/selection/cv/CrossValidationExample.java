@@ -25,6 +25,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ml.tree.DecisionTreeClassificationTrainerExample;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.selection.cv.CrossValidation;
 import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
@@ -76,7 +77,7 @@ public class CrossValidationExample {
                     new Accuracy<>(),
                     ignite,
                     trainingSet,
-                    (k, v) -> new double[]{v.x, v.y},
+                    (k, v) -> VectorUtils.of(v.x, v.y),
                     (k, v) -> v.lb,
                     4
                 );

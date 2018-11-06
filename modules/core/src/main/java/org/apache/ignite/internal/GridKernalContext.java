@@ -445,6 +445,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public boolean invalid();
 
     /**
+     * Checks whether this node detected its segmentation from the rest of the grid.
+     *
+     * @return {@code True} if this node has segmented, {@code false} otherwise.
+     */
+    public boolean segmented();
+
+    /**
      * Gets failure processor.
      */
     public FailureProcessor failure();

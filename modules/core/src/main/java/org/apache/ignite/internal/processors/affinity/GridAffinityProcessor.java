@@ -60,6 +60,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
@@ -67,7 +68,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
-import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
 import static org.apache.ignite.internal.processors.affinity.GridAffinityUtils.affinityJob;
@@ -97,7 +97,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         @Override public void onEvent(Event evt) {
             int evtType = evt.type();
 
-            assert evtType == EVT_NODE_FAILED || evtType == EVT_NODE_LEFT || evtType == EVT_NODE_JOINED;
+            assert evtType == EVT_NODE_FAILED || evtType == EVT_NODE_LEFT;
 
             if (affMap.isEmpty())
                 return; // Skip empty affinity map.
@@ -105,26 +105,24 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             final DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
             // Clean up affinity functions if such cache no more exists.
-            if (evtType == EVT_NODE_FAILED || evtType == EVT_NODE_LEFT) {
-                final Collection<String> caches = ctx.cache().cacheNames();
+            final Collection<String> caches = ctx.cache().cacheNames();
 
-                final Collection<AffinityAssignmentKey> rmv = new HashSet<>();
+            final Collection<AffinityAssignmentKey> rmv = new HashSet<>();
 
-                for (AffinityAssignmentKey key : affMap.keySet()) {
-                    if (!caches.contains(key.cacheName) || key.topVer.topologyVersion() < discoEvt.topologyVersion() - 10)
-                        rmv.add(key);
-                }
+            for (AffinityAssignmentKey key : affMap.keySet()) {
+                if (!caches.contains(key.cacheName) || key.topVer.topologyVersion() < discoEvt.topologyVersion() - 10)
+                    rmv.add(key);
+            }
 
-                if (!rmv.isEmpty()) {
-                    ctx.timeout().addTimeoutObject(
-                        new GridTimeoutObjectAdapter(
-                            IgniteUuid.fromUuid(ctx.localNodeId()),
-                            AFFINITY_MAP_CLEAN_UP_DELAY) {
-                                @Override public void onTimeout() {
-                                    affMap.keySet().removeAll(rmv);
-                                }
-                            });
-                }
+            if (!rmv.isEmpty()) {
+                ctx.timeout().addTimeoutObject(
+                    new GridTimeoutObjectAdapter(
+                        IgniteUuid.fromUuid(ctx.localNodeId()),
+                        AFFINITY_MAP_CLEAN_UP_DELAY) {
+                            @Override public void onTimeout() {
+                                affMap.keySet().removeAll(rmv);
+                            }
+                        });
             }
         }
     };
@@ -140,12 +138,17 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        ctx.event().addLocalEventListener(lsnr, EVT_NODE_FAILED, EVT_NODE_LEFT, EVT_NODE_JOINED);
+        ctx.event().addLocalEventListener(lsnr, EVT_NODE_FAILED, EVT_NODE_LEFT);
     }
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
         ctx.event().removeLocalEventListener(lsnr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
+        affMap.clear();
     }
 
     /**

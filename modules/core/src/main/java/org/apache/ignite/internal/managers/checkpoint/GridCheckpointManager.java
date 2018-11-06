@@ -188,8 +188,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
                         U.warn(log, S.toString("Checkpoint will not be saved due to session invalidation",
                             "key", key, true,
                             "val", state, true,
-                            "ses", ses, false),
-                            "Checkpoint will not be saved due to session invalidation.");
+                            "ses", ses, false));
 
                         break;
                     }
@@ -198,8 +197,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
                         U.warn(log, S.toString("Checkpoint will not be saved due to session timeout",
                             "key", key, true,
                             "val", state, true,
-                            "ses", ses, false),
-                            "Checkpoint will not be saved due to session timeout.");
+                            "ses", ses, false));
 
                         break;
                     }
@@ -224,8 +222,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
                             U.warn(log, S.toString("Checkpoint will not be saved due to session invalidation",
                                 "key", key, true,
                                 "val", state, true,
-                                "ses", ses, false),
-                                "Checkpoint will not be saved due to session invalidation.");
+                                "ses", ses, false));
 
                             keyMap.remove(ses.getId(), keys);
 

@@ -1292,9 +1292,10 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                 // Remove failed operation from active operations.
                 activeOps.remove(op.id());
             }
-
-            if (sharedCtx != null)
-                sharedCtx.database().checkpointReadUnlock();
+            finally {
+                if (sharedCtx != null)
+                    sharedCtx.database().checkpointReadUnlock();
+            }
 
             curOpFinishMsg = msg0;
 

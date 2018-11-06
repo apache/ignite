@@ -39,6 +39,7 @@
 #include "ignite/impl/binary/binary_utils.h"
 #include "ignite/binary/binary_object.h"
 
+#include "teamcity/teamcity_messages.h"
 #include "test_type.h"
 #include "complex_type.h"
 #include "test_utils.h"
@@ -803,6 +804,9 @@ BOOST_AUTO_TEST_CASE(TestNullFields)
 
 BOOST_AUTO_TEST_CASE(TestDistributedJoins)
 {
+    if (JetBrains::underTeamcity())
+        return;
+
     // Starting additional node.
     Ignite node1 = StartAdditionalNode("Node1");
     Ignite node2 = StartAdditionalNode("Node2");

@@ -814,17 +814,8 @@ public class ZookeeperDiscoveryImpl {
                     dirs.add(dir);
             }
 
-            try {
-                if (!dirs.isEmpty())
-                    client.createAll(dirs, PERSISTENT);
-            }
-            catch (KeeperException.NodeExistsException e) {
-                if (log.isDebugEnabled())
-                    log.debug("Failed to create nodes using bulk operation: " + e);
-
-                for (String dir : dirs)
-                    client.createIfNeeded(dir, null, PERSISTENT);
-            }
+            if (!dirs.isEmpty())
+                client.createAll(dirs, PERSISTENT);
         }
         catch (ZookeeperClientFailedException e) {
             throw new IgniteSpiException("Failed to initialize Zookeeper nodes", e);
@@ -2024,9 +2015,7 @@ public class ZookeeperDiscoveryImpl {
 
         if (subj == null) {
             U.warn(log, "Authentication failed [nodeId=" + node.id() +
-                    ", addrs=" + U.addressesAsString(node) + ']',
-                "Authentication failed [nodeId=" + U.id8(node.id()) + ", addrs=" +
-                    U.addressesAsString(node) + ']');
+                ", addrs=" + U.addressesAsString(node) + ']');
 
             // Note: exception message test is checked in tests.
             return new ZkNodeValidateResult("Authentication failed");
@@ -2034,10 +2023,7 @@ public class ZookeeperDiscoveryImpl {
 
         if (!(subj instanceof Serializable)) {
             U.warn(log, "Authentication subject is not Serializable [nodeId=" + node.id() +
-                    ", addrs=" + U.addressesAsString(node) + ']',
-                "Authentication subject is not Serializable [nodeId=" + U.id8(node.id()) +
-                    ", addrs=" +
-                    U.addressesAsString(node) + ']');
+                ", addrs=" + U.addressesAsString(node) + ']');
 
             return new ZkNodeValidateResult("Authentication subject is not serializable");
         }
@@ -2611,9 +2597,6 @@ public class ZookeeperDiscoveryImpl {
 
         processNewEvents(newEvts);
 
-        if (rtState.joined)
-            rtState.evtsData = newEvts;
-
         return newEvts;
     }
 
@@ -2743,6 +2726,9 @@ public class ZookeeperDiscoveryImpl {
 
             throw e;
         }
+
+        if (rtState.joined)
+            rtState.evtsData = evtsData;
 
         if (rtState.crd)
             handleProcessedEvents("procEvt");

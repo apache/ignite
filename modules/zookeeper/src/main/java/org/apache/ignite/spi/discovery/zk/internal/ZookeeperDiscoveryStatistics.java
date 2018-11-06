@@ -16,6 +16,8 @@
  */
 package org.apache.ignite.spi.discovery.zk.internal;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 /**
  * Zookeeper discovery statistics.
  */
@@ -44,5 +46,10 @@ public class ZookeeperDiscoveryStatistics {
     /** */
     public void onNodeFailed() {
         failedNodesCnt++;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(ZookeeperDiscoveryStatistics.class, this);
     }
 }

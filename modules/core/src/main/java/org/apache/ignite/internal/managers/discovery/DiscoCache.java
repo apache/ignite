@@ -164,10 +164,8 @@ public class DiscoCache {
         this.consIdxToNodeId = consIdxToNodeId;
 
         aliveBaselineNodePred = new P1<BaselineNode>() {
-            @Override
-            public boolean apply(BaselineNode node) {
+            @Override public boolean apply(BaselineNode node) {
                 return node instanceof ClusterNode && alives.contains(((ClusterNode)node).id());
-
             }
         };
 
@@ -312,6 +310,16 @@ public class DiscoCache {
     }
 
     /**
+     * @return Oldest server node.
+     */
+    @Nullable public ClusterNode oldestServerNode(){
+        if (srvNodes.size() > 0)
+            return srvNodes.get(0);
+
+        return null;
+    }
+
+    /**
      * @param nodeId Node ID.
      * @return {@code True} if node is in alives list.
      */
@@ -413,6 +421,26 @@ public class DiscoCache {
         }
 
         return -(low + 1);
+    }
+
+    /**
+     *
+     * Returns {@code True} if all nodes has the given attribute and its value equals to {@code expVal}.
+     *
+     * @param <T> Attribute Type.
+     * @param name Attribute name.
+     * @param expVal Expected value.
+     * @return {@code True} if all the given nodes has the given attribute and its value equals to {@code expVal}.
+     */
+    public <T> boolean checkAttribute(String name, T expVal) {
+        for (ClusterNode node : allNodes) {
+            T attr = node.attribute(name);
+
+            if (attr == null || !expVal.equals(attr))
+                return false;
+        }
+
+        return true;
     }
 
     /**

@@ -256,6 +256,27 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Check that daemon node does not move cluster to compatibility mode.
+     */
+    public void testJoinDaemonToBaseline() throws Exception {
+        Ignite ignite0 = startGrid(0);
+
+        startGrid(1);
+
+        ignite0.cluster().active(true);
+
+        startGrid(
+            getConfiguration("daemon")
+                .setDaemon(true)
+                .setClientMode(true)
+        );
+
+        stopGrid(1);
+
+        startGrid(1);
+    }
+
+    /**
      * @throws Exception if fail.
      */
     public void testCheckStatusFromDaemon() throws Exception {

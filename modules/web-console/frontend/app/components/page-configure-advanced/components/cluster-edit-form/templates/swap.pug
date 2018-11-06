@@ -59,7 +59,7 @@ panel-collapsible(
                     )
                         +form-field-feedback('"readStripesNumber"', 'powerOfTwo', 'Read stripe size must be positive and power of two')
                 .pc-form-grid-col-30
-                    +number-min-max-step('Maximum sparsity:', `${fileSwapModel}.maximumSparsity`, '"maximumSparsity"', 'true', '0.5', '0', '0.999', '0.05',
+                    +number-min-max-step('Maximum sparsity:', `${fileSwapModel}.maximumSparsity`, '"maximumSparsity"', 'true', '0.5', '0', '0.999', '0.001',
                         'This property defines maximum acceptable wasted file space to whole file size ratio<br/>\
                         When this ratio becomes higher than specified number compacting thread starts working')
                 .pc-form-grid-col-30

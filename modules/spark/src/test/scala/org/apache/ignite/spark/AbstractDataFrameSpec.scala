@@ -42,8 +42,10 @@ abstract class AbstractDataFrameSpec extends FunSpec with Matchers with BeforeAn
 
     var client: Ignite = _
 
+    private val NUM_SERVERS = 5
+
     override protected def beforeAll(): Unit = {
-        for (i ← 0 to 3)
+        for (i ← 0 to NUM_SERVERS)
             Ignition.start(configuration("grid-" + i, client = false))
 
         client = Ignition.getOrStart(configuration("client", client = true))
@@ -54,7 +56,7 @@ abstract class AbstractDataFrameSpec extends FunSpec with Matchers with BeforeAn
     override protected def afterAll(): Unit = {
         Ignition.stop("client", false)
 
-        for (i ← 0 to 3)
+        for (i ← 0 to NUM_SERVERS)
             Ignition.stop("grid-" + i, false)
 
         spark.close()

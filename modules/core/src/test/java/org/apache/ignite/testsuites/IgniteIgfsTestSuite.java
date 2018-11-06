@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.igfs.IgfsFragmentizerSelfTest;
 import org.apache.ignite.igfs.IgfsFragmentizerTopologySelfTest;
+import org.apache.ignite.igfs.IgfsPathSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsAtomicPrimaryMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsAtomicPrimarySelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsAttributesSelfTest;
@@ -122,6 +123,7 @@ public class IgniteIgfsTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(IgfsModeResolverSelfTest.class));
 
+        //suite.addTestSuite(IgfsPathSelfTest.class);
         suite.addTestSuite(IgfsFragmentizerSelfTest.class);
         suite.addTestSuite(IgfsFragmentizerTopologySelfTest.class);
         suite.addTestSuite(IgfsFileMapSelfTest.class);

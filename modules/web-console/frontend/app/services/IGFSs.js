@@ -64,11 +64,15 @@ export default class IGFSs {
 
     secondaryFileSystemEnabled = {
         requiredWhenIGFSProxyMode: (igfs) => {
-            if (get(igfs, 'defaultMode') === 'PROXY') return get(igfs, 'secondaryFileSystemEnabled') === true;
+            if (get(igfs, 'defaultMode') === 'PROXY')
+                return get(igfs, 'secondaryFileSystemEnabled') === true;
+
             return true;
         },
         requiredWhenPathModeProxyMode: (igfs) => {
-            if (get(igfs, 'pathModes', []).some((pm) => pm.mode === 'PROXY')) return get(igfs, 'secondaryFileSystemEnabled') === true;
+            if (get(igfs, 'pathModes', []).some((pm) => pm.mode === 'PROXY'))
+                return get(igfs, 'secondaryFileSystemEnabled') === true;
+
             return true;
         }
     };

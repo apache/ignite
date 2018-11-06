@@ -81,6 +81,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static javax.cache.event.EventType.CREATED;
 import static javax.cache.event.EventType.REMOVED;
+import static javax.cache.event.EventType.UPDATED;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -554,12 +555,12 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                     }, 5_000);
 
                     checkSingleEvent(evts.get(0), CREATED, new QueryTestValue(1), null);
-                    checkSingleEvent(evts.get(1), REMOVED, null, new QueryTestValue(1));
+                    checkSingleEvent(evts.get(1), REMOVED, new QueryTestValue(1), new QueryTestValue(1));
                     checkSingleEvent(evts.get(2), CREATED, new QueryTestValue(2), null);
-                    checkSingleEvent(evts.get(3), REMOVED, null, new QueryTestValue(2));
+                    checkSingleEvent(evts.get(3), REMOVED, new QueryTestValue(2), new QueryTestValue(2));
                     checkSingleEvent(evts.get(4), CREATED, new QueryTestValue(3), null);
                     checkSingleEvent(evts.get(5), EventType.UPDATED, new QueryTestValue(4), new QueryTestValue(3));
-                    checkSingleEvent(evts.get(6), REMOVED, null, new QueryTestValue(4));
+                    checkSingleEvent(evts.get(6), REMOVED, new QueryTestValue(4), new QueryTestValue(4));
                     checkSingleEvent(evts.get(7), CREATED, new QueryTestValue(5), null);
                     checkSingleEvent(evts.get(8), EventType.UPDATED, new QueryTestValue(6), new QueryTestValue(5));
 
@@ -699,7 +700,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                 if (e.getKey().equals(keyVal)) {
                     checkSingleEvent(e,
                         evtType,
-                        evtType == CREATED ? new QueryTestValue(key) : null,
+                        evtType != UPDATED ? new QueryTestValue(key) : null,
                         evtType == REMOVED ? new QueryTestValue(key) : null);
 
                     keyVal = null;
@@ -1032,7 +1033,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
 
                     updatePartitionCounter(cache, key, partCntr, expEvtCntrs);
 
-                    waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), key, null, oldVal);
+                    waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), key, oldVal, oldVal);
 
                     expData.remove(key);
 
@@ -1047,7 +1048,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
 
                     updatePartitionCounter(cache, key, partCntr, expEvtCntrs);
 
-                    waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), key, null, oldVal);
+                    waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), key, oldVal, oldVal);
 
                     expData.remove(key);
 
@@ -1077,7 +1078,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
 
                     updatePartitionCounter(cache, key, partCntr, expEvtCntrs);
 
-                    waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), key, null, oldVal);
+                    waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), key, oldVal, oldVal);
 
                     expData.remove(key);
 

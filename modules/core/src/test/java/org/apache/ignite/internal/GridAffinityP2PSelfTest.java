@@ -89,8 +89,6 @@ public class GridAffinityP2PSelfTest extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(disco);
 
-        c.setFailureDetectionTimeout(Integer.MAX_VALUE);
-
         c.setDeploymentMode(depMode);
 
         if (igniteInstanceName.endsWith("1"))

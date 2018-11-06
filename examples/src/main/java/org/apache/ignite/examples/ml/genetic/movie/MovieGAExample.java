@@ -20,10 +20,8 @@ package org.apache.ignite.examples.ml.genetic.movie;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
-
 import org.apache.ignite.ml.genetic.Chromosome;
 import org.apache.ignite.ml.genetic.GAGrid;
 import org.apache.ignite.ml.genetic.Gene;
@@ -96,13 +94,13 @@ public class MovieGAExample {
         List<Gene> genes = getGenePool();
 
         // Define Chromosome
-        gaConfig.setChromosomeLength(3);
+        gaConfig.setChromosomeLen(3);
         gaConfig.setPopulationSize(100);
         gaConfig.setGenePool(genes);
         gaConfig.setTruncateRate(.10);
         gaConfig.setCrossOverRate(.50);
         gaConfig.setMutationRate(.50);
-        gaConfig.setSelectionMethod(GAGridConstants.SELECTION_METHOD.SELECTION_METHOD_TRUNCATION);
+        gaConfig.setSelectionMtd(GAGridConstants.SELECTION_METHOD.SELECTION_METHOD_TRUNCATION);
 
         //Create fitness function
         MovieFitnessFunction function = new MovieFitnessFunction(genres);

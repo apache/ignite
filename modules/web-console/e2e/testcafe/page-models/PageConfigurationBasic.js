@@ -54,7 +54,7 @@ export class PageConfigurationBasic {
             atomicityMode: {id: 'atomicityModeInput'},
             backups: {id: 'backupsInput'}
         });
-        this.pageHeader = Selector('.pc-page-header');
+        this.pageHeader = Selector('.header-with-selector h1');
     }
 
     async save() {

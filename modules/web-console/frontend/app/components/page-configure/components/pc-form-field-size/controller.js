@@ -115,12 +115,16 @@ export default class PCFormFieldSizeController {
     }
 
     _defaultLabel() {
-        if (!this.sizesMenu) return;
+        if (!this.sizesMenu)
+            return;
+
         return this.sizesMenu[1].label;
     }
 
     chooseSizeScale(label = this._defaultLabel()) {
-        if (!label) return;
+        if (!label)
+            return;
+
         return this.sizesMenu.find((option) => option.label.toLowerCase() === label.toLowerCase());
     }
 

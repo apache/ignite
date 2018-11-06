@@ -69,7 +69,11 @@ public class IgniteCheckpointDirtyPagesForLowLoadTest extends GridCommonAbstract
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
         dsCfg.setPageSize(1024); //smaller page to reduce overhead to short values
-        dsCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true));
+        dsCfg.setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration()
+                .setPersistenceEnabled(true)
+                .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
+        );
         dsCfg.setCheckpointFrequency(500);
         dsCfg.setWalMode(WALMode.LOG_ONLY);
         dsCfg.setWalHistorySize(1);

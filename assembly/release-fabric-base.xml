@@ -156,6 +156,12 @@
             <outputDirectory>/platforms/cpp/binary</outputDirectory>
         </fileSet>
 
+        <!-- Move CPP "thin-client" module. -->
+        <fileSet>
+            <directory>modules/platforms/cpp/thin-client</directory>
+            <outputDirectory>/platforms/cpp/thin-client</outputDirectory>
+        </fileSet>
+
         <!-- Move CPP licenses. -->
         <fileSet>
             <directory>modules/platforms/licenses</directory>
@@ -167,7 +173,7 @@
             <directory>modules/clients/target/cppdoc/html</directory>
             <outputDirectory>/platforms/cpp/docs</outputDirectory>
         </fileSet>
-		
+
         <!-- Move CPP binaries. -->
         <fileSet>
             <directory>modules/platforms/cpp/bin</directory>

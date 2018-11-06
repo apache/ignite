@@ -21,7 +21,8 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.logger.java.JavaLogger;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JVM_PAUSE_DETECTOR_DISABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT;
@@ -62,9 +63,11 @@ class LongJVMPauseDetector {
     private long longPausesTotalDuration;
 
     /** Long pauses timestamps. */
+    @GridToStringInclude
     private final long[] longPausesTimestamps = new long[EVT_CNT];
 
     /** Long pauses durations. */
+    @GridToStringInclude
     private final long[] longPausesDurations = new long[EVT_CNT];
 
     /**
@@ -118,7 +121,10 @@ class LongJVMPauseDetector {
                         }
                     }
                     catch (InterruptedException e) {
-                        log.error(getName() + " has been interrupted", e);
+                        if (workerRef.compareAndSet(this, null))
+                            log.error(getName() + " has been interrupted.", e);
+                        else if (log.isDebugEnabled())
+                            log.debug(getName() + " has been stopped.");
 
                         break;
                     }
@@ -173,5 +179,10 @@ class LongJVMPauseDetector {
             evts.put(longPausesTimestamps[i], longPausesDurations[i]);
 
         return evts;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(LongJVMPauseDetector.class, this);
     }
 }

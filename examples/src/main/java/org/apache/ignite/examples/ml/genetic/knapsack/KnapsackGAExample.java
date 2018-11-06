@@ -19,10 +19,8 @@ package org.apache.ignite.examples.ml.genetic.knapsack;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
-
 import org.apache.ignite.ml.genetic.GAGrid;
 import org.apache.ignite.ml.genetic.Gene;
 import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
@@ -68,7 +66,7 @@ public class KnapsackGAExample {
             List<Gene> genes = getGenePool();
 
             // set the Chromosome Length to '10' since our knapsack may contain a total of 10 items.
-            gaConfig.setChromosomeLength(10);
+            gaConfig.setChromosomeLen(10);
 
             // initialize gene pool
             gaConfig.setGenePool(genes);

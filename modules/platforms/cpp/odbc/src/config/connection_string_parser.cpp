@@ -93,8 +93,8 @@ namespace ignite
                         const char* value_begin = connect_str.data() + attr_eq_pos + 1;
                         const char* value_end = connect_str.data() + connect_str.size();
 
-                        std::string key = utility::RemoveSurroundingSpaces(key_begin, key_end);
-                        std::string value = utility::RemoveSurroundingSpaces(value_begin, value_end);
+                        std::string key = common::StripSurroundingWhitespaces(key_begin, key_end);
+                        std::string value = common::StripSurroundingWhitespaces(value_begin, value_end);
 
                         if (value[0] == '{' && value[value.size() - 1] == '}')
                             value = value.substr(1, value.size() - 2);

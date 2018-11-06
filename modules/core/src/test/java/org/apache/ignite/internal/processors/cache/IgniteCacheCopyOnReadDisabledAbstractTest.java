@@ -43,6 +43,11 @@ public abstract class IgniteCacheCopyOnReadDisabledAbstractTest extends GridCach
         return ccfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected boolean onheapCacheEnabled() {
+        return true;
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -64,6 +69,7 @@ public abstract class IgniteCacheCopyOnReadDisabledAbstractTest extends GridCach
             assertSame(val0, cache.localPeek(key));
         }
 
+        /* Does not seem to work anymore since main storage mechanism is always off-heap.
         TestKey key = new TestKey(0);
 
         TestValue val0 = cache.get(key);
@@ -74,7 +80,7 @@ public abstract class IgniteCacheCopyOnReadDisabledAbstractTest extends GridCach
             }
         });
 
-        assertSame(val0, invokeVal);
+        assertSame(val0, invokeVal);*/
     }
 
     /**

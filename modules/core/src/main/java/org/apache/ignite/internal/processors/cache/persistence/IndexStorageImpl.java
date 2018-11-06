@@ -32,7 +32,9 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusLeaf
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
+import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Metadata storage.
@@ -78,7 +80,8 @@ public class IndexStorageImpl implements IndexStorage {
         final byte allocSpace,
         final ReuseList reuseList,
         final long rootPageId,
-        final boolean initNew
+        final boolean initNew,
+        final FailureProcessor failureProcessor
     ) {
         try {
             this.pageMem = pageMem;
@@ -88,7 +91,7 @@ public class IndexStorageImpl implements IndexStorage {
             this.reuseList = reuseList;
 
             metaTree = new MetaTree(grpId, allocPartId, allocSpace, pageMem, wal, globalRmvId, rootPageId,
-                reuseList, MetaStoreInnerIO.VERSIONS, MetaStoreLeafIO.VERSIONS, initNew);
+                reuseList, MetaStoreInnerIO.VERSIONS, MetaStoreLeafIO.VERSIONS, initNew, failureProcessor);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -164,6 +167,7 @@ public class IndexStorageImpl implements IndexStorage {
          * @param reuseList Reuse list.
          * @param innerIos Inner IOs.
          * @param leafIos Leaf IOs.
+         * @param failureProcessor if the tree is corrupted.
          * @throws IgniteCheckedException If failed.
          */
         private MetaTree(
@@ -177,9 +181,10 @@ public class IndexStorageImpl implements IndexStorage {
             final ReuseList reuseList,
             final IOVersions<? extends BPlusInnerIO<IndexItem>> innerIos,
             final IOVersions<? extends BPlusLeafIO<IndexItem>> leafIos,
-            final boolean initNew
+            final boolean initNew,
+            @Nullable FailureProcessor failureProcessor
         ) throws IgniteCheckedException {
-            super(treeName("meta", "Meta"), cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList, innerIos, leafIos);
+            super(treeName("meta", "Meta"), cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList, innerIos, leafIos, failureProcessor);
 
             this.allocPartId = allocPartId;
             this.allocSpace = allocSpace;
