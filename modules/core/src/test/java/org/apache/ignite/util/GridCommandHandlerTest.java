@@ -1309,8 +1309,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
     /** */
     private void testCacheConfig(OutputFormat outputFormat, int nodesCnt, int cachesCnt) throws Exception {
-        assert nodesCnt > 0;
-        assert cachesCnt > 0;
+        assertTrue("Invalid number of nodes count or caches count.", nodesCnt > 0 && cachesCnt > 0);
+
         Ignite ignite = startGrid(nodesCnt);
 
         ignite.cluster().active(true);
