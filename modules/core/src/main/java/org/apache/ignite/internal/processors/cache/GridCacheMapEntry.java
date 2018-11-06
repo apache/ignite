@@ -3094,6 +3094,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         lockEntry();
 
         try {
+            // t0d0 do we need this check?
 //            checkObsolete();
 
             MvccQueryTracker mvccTracker = MvccUtils.mvccTracker(cctx, false);
