@@ -80,8 +80,6 @@ public class AbstractContextResolverSecurityProcessorTest extends AbstractSecuri
 
         stopAllGrids();
 
-        SecurityPermissionProvider.clear();
-
         cleanPersistenceDir();
     }
 

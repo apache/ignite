@@ -39,7 +39,6 @@ import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecuritySubject;
-import org.apache.ignite.plugin.security.TestSecurityPluginConfiguration;
 
 import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_NODE;
 

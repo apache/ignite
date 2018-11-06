@@ -1,6 +1,7 @@
-package org.apache.ignite.plugin.security;
+package org.apache.ignite.internal.processor.security;
 
 import org.apache.ignite.plugin.PluginConfiguration;
+import org.apache.ignite.plugin.security.SecurityPermissionSet;
 
 /**
  * Security configuration for test.
