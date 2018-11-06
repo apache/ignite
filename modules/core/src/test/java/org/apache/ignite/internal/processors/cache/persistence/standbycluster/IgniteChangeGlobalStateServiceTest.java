@@ -49,6 +49,8 @@ public class IgniteChangeGlobalStateServiceTest extends IgniteChangeGlobalStateA
      *
      */
     public void testDeployService() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-6629");
+
         Ignite ig1P = primary(0);
 
         Ignite ig1B = backUp(0);

@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -106,5 +107,10 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Serializable {
      */
     public synchronized void putAll(IgniteDhtPartitionHistorySuppliersMap that) {
         map = that.map;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IgniteDhtPartitionHistorySuppliersMap.class, this);
     }
 }

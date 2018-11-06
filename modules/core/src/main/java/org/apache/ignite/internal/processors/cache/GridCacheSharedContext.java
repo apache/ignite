@@ -23,6 +23,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import org.apache.ignite.IgniteCheckedException;
@@ -68,7 +69,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY;
 
@@ -104,8 +104,11 @@ public class GridCacheSharedContext<K, V> {
     /** Deployment manager. */
     private GridCacheDeploymentManager<K, V> depMgr;
 
-    /** Write ahead log manager. */
-    private IgniteWriteAheadLogManager walMgr;
+    /** Write ahead log manager. {@code Null} if persistence is not enabled. */
+    @Nullable private IgniteWriteAheadLogManager walMgr;
+
+    /** Write ahead log state manager. */
+    private WalStateManager walStateMgr;
 
     /** Database manager. */
     private IgniteCacheDatabaseSharedManager dbMgr;
@@ -113,8 +116,8 @@ public class GridCacheSharedContext<K, V> {
     /** Snp manager. */
     private IgniteCacheSnapshotManager snpMgr;
 
-    /** Page store manager. */
-    private IgnitePageStoreManager pageStoreMgr;
+    /** Page store manager. {@code Null} if persistence is not enabled. */
+    @Nullable private IgnitePageStoreManager pageStoreMgr;
 
     /** Affinity manager. */
     private CacheAffinitySharedManager affMgr;
@@ -123,7 +126,7 @@ public class GridCacheSharedContext<K, V> {
     private GridCacheSharedTtlCleanupManager ttlMgr;
 
     /** Cache contexts map. */
-    private ConcurrentHashMap8<Integer, GridCacheContext<K, V>> ctxMap;
+    private ConcurrentHashMap<Integer, GridCacheContext<K, V>> ctxMap;
 
     /** Tx metrics. */
     private volatile TransactionMetricsAdapter txMetrics;
@@ -169,6 +172,9 @@ public class GridCacheSharedContext<K, V> {
      * @param txMgr Transaction manager.
      * @param verMgr Version manager.
      * @param mvccMgr MVCC manager.
+     * @param pageStoreMgr Page store manager. {@code Null} if persistence is not enabled.
+     * @param walMgr WAL manager. {@code Null} if persistence is not enabled.
+     * @param walStateMgr WAL state manager.
      * @param depMgr Deployment manager.
      * @param exchMgr Exchange manager.
      * @param affMgr Affinity manager.
@@ -182,8 +188,9 @@ public class GridCacheSharedContext<K, V> {
         IgniteTxManager txMgr,
         GridCacheVersionManager verMgr,
         GridCacheMvccManager mvccMgr,
-        IgnitePageStoreManager pageStoreMgr,
-        IgniteWriteAheadLogManager walMgr,
+        @Nullable IgnitePageStoreManager pageStoreMgr,
+        @Nullable IgniteWriteAheadLogManager walMgr,
+        WalStateManager walStateMgr,
         IgniteCacheDatabaseSharedManager dbMgr,
         IgniteCacheSnapshotManager snpMgr,
         GridCacheDeploymentManager<K, V> depMgr,
@@ -196,17 +203,18 @@ public class GridCacheSharedContext<K, V> {
     ) {
         this.kernalCtx = kernalCtx;
 
-        setManagers(mgrs, txMgr, jtaMgr, verMgr, mvccMgr, pageStoreMgr, walMgr, dbMgr, snpMgr, depMgr, exchMgr, affMgr, ioMgr, ttlMgr);
+        setManagers(mgrs, txMgr, jtaMgr, verMgr, mvccMgr, pageStoreMgr, walMgr, walStateMgr, dbMgr, snpMgr, depMgr,
+            exchMgr, affMgr, ioMgr, ttlMgr);
 
         this.storeSesLsnrs = storeSesLsnrs;
 
         txMetrics = new TransactionMetricsAdapter();
 
-        ctxMap = new ConcurrentHashMap8<>();
+        ctxMap = new ConcurrentHashMap<>();
 
         locStoreCnt = new AtomicInteger();
 
-        if (dbMgr != null && dbMgr.persistenceEnabled())
+        if (dbMgr != null && CU.isPersistenceEnabled(kernalCtx.config()))
             dhtAtomicUpdCnt = new AtomicIntegerArray(kernalCtx.config().getSystemThreadPoolSize());
 
         msgLog = kernalCtx.log(CU.CACHE_MSG_LOG_CATEGORY);
@@ -361,6 +369,7 @@ public class GridCacheSharedContext<K, V> {
             mvccMgr,
             pageStoreMgr,
             walMgr,
+            walStateMgr,
             dbMgr,
             snpMgr,
             new GridCacheDeploymentManager<K, V>(),
@@ -374,6 +383,8 @@ public class GridCacheSharedContext<K, V> {
         for (GridCacheSharedManager<K, V> mgr : mgrs) {
             if (restartOnDisconnect(mgr))
                 mgr.start(this);
+
+            mgr.onReconnected(active);
         }
 
         kernalCtx.query().onCacheReconnect();
@@ -398,19 +409,23 @@ public class GridCacheSharedContext<K, V> {
      * @param jtaMgr JTA manager.
      * @param verMgr Version manager.
      * @param mvccMgr MVCC manager.
+     * @param pageStoreMgr Page store manager. {@code Null} if persistence is not enabled.
+     * @param walStateMgr WAL state manager.
      * @param depMgr Deployment manager.
      * @param exchMgr Exchange manager.
      * @param affMgr Affinity manager.
      * @param ioMgr IO manager.
      * @param ttlMgr Ttl cleanup manager.
      */
+    @SuppressWarnings("unchecked")
     private void setManagers(List<GridCacheSharedManager<K, V>> mgrs,
         IgniteTxManager txMgr,
         CacheJtaManagerAdapter jtaMgr,
         GridCacheVersionManager verMgr,
         GridCacheMvccManager mvccMgr,
-        IgnitePageStoreManager pageStoreMgr,
+        @Nullable IgnitePageStoreManager pageStoreMgr,
         IgniteWriteAheadLogManager walMgr,
+        WalStateManager walStateMgr,
         IgniteCacheDatabaseSharedManager dbMgr,
         IgniteCacheSnapshotManager snpMgr,
         GridCacheDeploymentManager<K, V> depMgr,
@@ -423,6 +438,7 @@ public class GridCacheSharedContext<K, V> {
         this.txMgr = add(mgrs, txMgr);
         this.pageStoreMgr = add(mgrs, pageStoreMgr);
         this.walMgr = add(mgrs, walMgr);
+        this.walStateMgr = add(mgrs, walStateMgr);
         this.dbMgr = add(mgrs, dbMgr);
         this.snpMgr = add(mgrs, snpMgr);
         this.jtaMgr = add(mgrs, jtaMgr);
@@ -448,12 +464,10 @@ public class GridCacheSharedContext<K, V> {
     void forAllCaches(final IgniteInClosure<GridCacheContext> c) {
         for (Integer cacheId : ctxMap.keySet()) {
             ctxMap.computeIfPresent(cacheId,
-                new ConcurrentHashMap8.BiFun<Integer, GridCacheContext<K, V>, GridCacheContext<K, V>>() {
-                    @Override public GridCacheContext<K, V> apply(Integer cacheId, GridCacheContext<K, V> ctx) {
-                        c.apply(ctx);
+                (cacheId1, ctx) -> {
+                    c.apply(ctx);
 
-                        return ctx;
-                    }
+                    return ctx;
                 }
             );
         }
@@ -667,9 +681,9 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
-     * @return Page store manager.
+     * @return Page store manager. {@code Null} if persistence is not enabled.
      */
-    public IgnitePageStoreManager pageStore() {
+    @Nullable public IgnitePageStoreManager pageStore() {
         return pageStoreMgr;
     }
 
@@ -681,6 +695,13 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
+     * @return WAL state manager.
+     */
+    public WalStateManager walState() {
+       return walStateMgr;
+    }
+
+    /**
      * @return IO manager.
      */
     public GridCacheIoManager io() {
@@ -689,7 +710,7 @@ public class GridCacheSharedContext<K, V> {
 
     /**
      * @return Ttl cleanup manager.
-     * */
+     */
     public GridCacheSharedTtlCleanupManager ttl() {
         return ttlMgr;
     }
@@ -832,9 +853,13 @@ public class GridCacheSharedContext<K, V> {
         GridCompoundFuture f = new CacheObjectsReleaseFuture("Partition", topVer);
 
         f.add(mvcc().finishExplicitLocks(topVer));
-        f.add(tm().finishTxs(topVer));
         f.add(mvcc().finishAtomicUpdates(topVer));
         f.add(mvcc().finishDataStreamerUpdates(topVer));
+
+        IgniteInternalFuture<?> finishLocalTxsFuture = tm().finishLocalTxs(topVer);
+        // To properly track progress of finishing local tx updates we explicitly add this future to compound set.
+        f.add(finishLocalTxsFuture);
+        f.add(tm().finishAllTxs(finishLocalTxsFuture, topVer));
 
         f.markInitialized();
 

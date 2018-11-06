@@ -21,12 +21,15 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using System.ComponentModel;
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
     /// Defines page memory policy configuration. See <see cref="MemoryConfiguration.MemoryPolicies"/>.
+    /// Obsolete, use <see cref="DataRegionConfiguration"/>.
     /// </summary>
+    [Obsolete("Use DataRegionConfiguration.")]
     public class MemoryPolicyConfiguration
     {
         /// <summary>
@@ -47,7 +50,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// The default maximum size, equals to 20% of total RAM.
         /// </summary>
-        public static readonly long DefaultMaxSize = (long) ((long) NativeMethods.GetTotalPhysicalMemory() * 0.2);
+        public static readonly long DefaultMaxSize =
+            (long) ((long) MemoryInfo.GetTotalPhysicalMemory(2048L * 1024 * 1024) * 0.2);
 
         /// <summary>
         /// The default sub intervals.

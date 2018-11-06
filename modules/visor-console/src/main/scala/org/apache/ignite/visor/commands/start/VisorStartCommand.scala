@@ -151,9 +151,7 @@ class VisorStartCommand extends VisorConsoleCommand {
     def start(args: String) = breakable {
         assert(args != null)
 
-        if (!isConnected)
-            adviseToConnect()
-        else {
+        if (checkConnected()) {
             val argLst = parseArgs(args)
 
             val fileOpt = argValue("f", argLst)

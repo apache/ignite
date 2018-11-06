@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Reflection;
 
     /// <summary>
@@ -44,6 +45,32 @@ namespace Apache.Ignite.Core.Impl.Binary
                 }
 
                 curType = curType.BaseType;
+            }
+        }
+
+        /// <summary>
+        /// Gets all fields and properties, including base classes.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        public static IEnumerable<KeyValuePair<MemberInfo, Type>> GetFieldsAndProperties(Type type)
+        {
+            Debug.Assert(type != null);
+
+            if (type.IsPrimitive)
+                yield break;
+
+            const BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance |
+                                              BindingFlags.DeclaredOnly;
+
+            while (type != typeof(object) && type != null)
+            {
+                foreach (var fieldInfo in type.GetFields(bindingFlags))
+                    yield return new KeyValuePair<MemberInfo, Type>(fieldInfo, fieldInfo.FieldType);
+
+                foreach (var propertyInfo in type.GetProperties(bindingFlags))
+                    yield return new KeyValuePair<MemberInfo, Type>(propertyInfo, propertyInfo.PropertyType);
+
+                type = type.BaseType;
             }
         }
     }

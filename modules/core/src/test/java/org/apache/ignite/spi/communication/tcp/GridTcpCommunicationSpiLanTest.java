@@ -18,8 +18,10 @@
 package org.apache.ignite.spi.communication.tcp;
 
 import java.util.Collections;
+import java.util.Deque;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.management.MBeanServer;
@@ -39,7 +41,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
-import org.jsr166.ConcurrentLinkedDeque8;
 
 /**
  * Class for multithreaded {@link TcpCommunicationSpi} test.
@@ -91,8 +92,7 @@ public class GridTcpCommunicationSpiLanTest extends GridSpiAbstractTest<TcpCommu
         private final UUID locNodeId;
 
         /** Received messages by node. */
-        private ConcurrentLinkedDeque8<GridTestMessage> rcvdMsgs =
-            new ConcurrentLinkedDeque8<>();
+        private Deque<GridTestMessage> rcvdMsgs = new ConcurrentLinkedDeque<>();
 
         /** Count of messages received from remote nodes */
         private AtomicInteger rmtMsgCnt = new AtomicInteger();
@@ -127,13 +127,6 @@ public class GridTcpCommunicationSpiLanTest extends GridSpiAbstractTest<TcpCommu
         /** {@inheritDoc} */
         @Override public void onDisconnected(UUID nodeId) {
             // No-op.
-        }
-
-        /**
-         * @return Queue containing received messages in receive order.
-         */
-        public ConcurrentLinkedDeque8<GridTestMessage> receivedMessages() {
-            return rcvdMsgs;
         }
 
         /**

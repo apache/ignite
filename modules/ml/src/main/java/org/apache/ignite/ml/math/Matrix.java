@@ -557,6 +557,7 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
 
     /**
      * Replace matrix entry with value oldVal at (row, col) with result of computing f(row, col, oldVal).
+     *
      * @param row Row.
      * @param col Column.
      * @param f Function used for replacing.

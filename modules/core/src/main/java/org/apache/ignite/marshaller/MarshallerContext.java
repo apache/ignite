@@ -18,6 +18,8 @@
 package org.apache.ignite.marshaller;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 
 /**
  * Marshaller context.
@@ -83,4 +85,16 @@ public interface MarshallerContext {
      * @return {@code true} if the type is a system one, {@code false} otherwise.
      */
     public boolean isSystemType(String typeName);
+
+    /**
+     * Returns class name filter.
+     *
+     * @return Class name filter.
+     */
+    public IgnitePredicate<String> classNameFilter();
+
+    /**
+     * Returns JDK marshaller instance.
+     */
+    public JdkMarshaller jdkMarshaller();
 }

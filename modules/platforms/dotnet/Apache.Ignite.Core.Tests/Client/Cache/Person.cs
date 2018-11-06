@@ -17,20 +17,49 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
+    using System;
+    using Apache.Ignite.Core.Cache.Configuration;
+
     /// <summary>
     /// Test person.
     /// </summary>
     public class Person
     {
         /// <summary>
+        /// Initializes a new instance of the <see cref="Person"/> class.
+        /// </summary>
+        public Person()
+        {
+            DateTime = DateTime.UtcNow;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Person"/> class.
+        /// </summary>
+        public Person(int id)
+        {
+            Id = id;
+            Name = "Person " + id;
+            DateTime = DateTime.UtcNow.AddDays(id);
+        }
+
+        /// <summary>
         /// Gets or sets the identifier.
         /// </summary>
+        [QuerySqlField(IsIndexed = true)]
         public int Id { get; set; }
 
         /// <summary>
         /// Gets or sets the name.
         /// </summary>
+        [QuerySqlField]
         public string Name { get; set; }
+
+        /// <summary>
+        /// Gets or sets the date time.
+        /// </summary>
+        [QuerySqlField]
+        public DateTime DateTime { get; set; }
 
         /// <summary>
         /// Gets or sets the parent.

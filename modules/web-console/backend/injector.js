@@ -21,10 +21,10 @@ module.exports = fireUp.newInjector({
     basePath: __dirname,
     modules: [
         './app/**/*.js',
-        './config/**/*.js',
         './errors/**/*.js',
         './middlewares/**/*.js',
         './routes/**/*.js',
-        './services/**/*.js'
+        './services/**/*.js',
+        './ignite_modules/**/*.js'
     ]
 });

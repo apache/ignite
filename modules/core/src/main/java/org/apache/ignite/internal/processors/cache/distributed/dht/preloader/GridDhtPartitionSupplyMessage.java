@@ -49,8 +49,8 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Update sequence. */
-    private long updateSeq;
+    /** An unique (per demander) rebalance id. */
+    private long rebalanceId;
 
     /** Topology version. */
     private AffinityTopologyVersion topVer;
@@ -84,17 +84,17 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
     private Map<Integer, Long> keysPerCache;
 
     /**
-     * @param updateSeq Update sequence for this node.
+     * @param rebalanceId Rebalance id.
      * @param grpId Cache group ID.
      * @param topVer Topology version.
      * @param addDepInfo Deployment info flag.
      */
-    GridDhtPartitionSupplyMessage(long updateSeq,
+    GridDhtPartitionSupplyMessage(long rebalanceId,
         int grpId,
         AffinityTopologyVersion topVer,
         boolean addDepInfo) {
         this.grpId = grpId;
-        this.updateSeq = updateSeq;
+        this.rebalanceId = rebalanceId;
         this.topVer = topVer;
         this.addDepInfo = addDepInfo;
     }
@@ -112,10 +112,10 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
     }
 
     /**
-     * @return Update sequence.
+     * @return Rebalance id.
      */
-    long updateSequence() {
-        return updateSeq;
+    long rebalanceId() {
+        return rebalanceId;
     }
 
     /**
@@ -328,7 +328,8 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeLong("updateSeq", updateSeq))
+                // Keep 'updateSeq' name for compatibility.
+                if (!writer.writeLong("updateSeq", rebalanceId))
                     return false;
 
                 writer.incrementState();
@@ -414,7 +415,8 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
                 reader.incrementState();
 
             case 11:
-                updateSeq = reader.readLong("updateSeq");
+                // Keep 'updateSeq' name for compatibility.
+                rebalanceId = reader.readLong("updateSeq");
 
                 if (!reader.isLastRead())
                     return false;

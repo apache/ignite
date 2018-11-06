@@ -112,6 +112,12 @@ public class GridH2ValueMessageFactory implements MessageFactory {
 
             case -54:
                 return new QueryTable();
+
+            case -55:
+                return new GridH2DmlRequest();
+
+            case -56:
+                return new GridH2DmlResponse();
         }
 
         return null;

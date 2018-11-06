@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-FROM node:6
+FROM node:8
 
 RUN mkdir -p /opt/web-console-backend
 

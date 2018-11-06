@@ -71,10 +71,14 @@
 
     <feature name="ignite-aws" version="${project.version}" description="Apache Ignite :: AWS">
         <details><![CDATA[The Apache Ignite AWS module + dependencies.]]></details>
+        <feature prerequisite="true">wrap</feature>
         <bundle start="true" dependency="true">mvn:org.apache.httpcomponents/httpcore-osgi/${httpcore.version}</bundle>
         <bundle start="true" dependency="true">mvn:org.apache.httpcomponents/httpclient-osgi/${httpclient.version}</bundle>
         <bundle start="true" dependency="true">mvn:commons-codec/commons-codec/${commons.codec.version}</bundle>
-        <bundle start="true" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.aws-java-sdk/${aws.sdk.bundle.version}</bundle>
+        <bundle start="true" dependency="true">wrap:mvn:com.amazonaws/aws-java-sdk-s3/${aws.sdk.version}$Bundle-SymbolicName=aws-java-sdk-s3&amp;Bundle-Version=${aws.sdk.version}&amp;Export-Package=!com.amazonaws.auth,*</bundle>
+        <bundle start="true" dependency="true">wrap:mvn:com.amazonaws/aws-java-sdk-elasticloadbalancing/${aws.sdk.version}$Bundle-SymbolicName=aws-java-sdk-elasticloadbalancing&amp;Bundle-Version=${aws.sdk.version}</bundle>
+        <bundle start="true" dependency="true">wrap:mvn:com.amazonaws/aws-java-sdk-ec2/${aws.sdk.version}$Bundle-SymbolicName=aws-java-sdk-ec2&amp;Bundle-Version=${aws.sdk.version}</bundle>
+        <bundle start="true" dependency="true">wrap:mvn:com.amazonaws/aws-java-sdk-core/${aws.sdk.version}$Bundle-SymbolicName=aws-java-sdk-core&amp;Bundle-Version=${aws.sdk.version}</bundle>
         <bundle start="true">mvn:org.apache.ignite/ignite-aws/${project.version}</bundle>
     </feature>
 
@@ -119,9 +123,12 @@
             
             Be sure to refresh ignite-core manually in case it is not refreshed automatically.]]>
         </details>
+        <feature prerequisite="true">wrap</feature>
         <bundle start="true" dependency="true">mvn:org.osgi/org.osgi.enterprise/${osgi.enterprise.version}</bundle>
         <bundle start="true" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.lucene/${lucene.bundle.version}</bundle>
-        <bundle start="true" dependency="true">mvn:com.h2database/h2/${h2.version}</bundle>
+        <bundle start="true" dependency="true">wrap:mvn:com.h2database/h2/${h2.version}$overwrite=merge&amp;Export-Package=*;version=&quot;${h2.version}&quot;</bundle>
+        <bundle start="true" dependency="true">wrap:mvn:org.apache.lucene/lucene-analyzers-common/${lucene.version}$Bundle-SymbolicName=lucene-analyzers-common&amp;Bundle-Version=${lucene.version}</bundle>
+        <bundle start="true" dependency="true">wrap:mvn:org.apache.lucene/lucene-queryparser/${lucene.version}$Bundle-SymbolicName=lucene-queryparser&amp;Bundle-Version=${lucene.version}</bundle>
         <bundle start="false">mvn:org.apache.ignite/ignite-indexing/${project.version}</bundle>
     </feature>
 

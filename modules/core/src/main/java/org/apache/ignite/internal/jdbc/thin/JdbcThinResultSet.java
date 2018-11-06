@@ -241,9 +241,19 @@ public class JdbcThinResultSet implements ResultSet {
         if (isClosed())
             return;
 
-        if (!finished || (isQuery && !autoClose))
-            stmt.conn.sendRequest(new JdbcQueryCloseRequest(qryId));
+        try {
+            if (!finished || (isQuery && !autoClose))
+                stmt.conn.sendRequest(new JdbcQueryCloseRequest(qryId));
+        }
+        finally {
+            closed = true;
+        }
+    }
 
+    /**
+     * Force close result set on IO disconnect.
+     */
+    void closeOnDisconnect() {
         closed = true;
     }
 

@@ -150,7 +150,26 @@ public abstract class BinaryFieldAccessor {
      * @param writer Writer.
      * @throws BinaryObjectException If failed.
      */
-    public abstract void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException;
+    public void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
+        try {
+            write0(obj, writer);
+        }
+        catch (Exception ex) {
+            if (S.INCLUDE_SENSITIVE && !F.isEmpty(name))
+                throw new BinaryObjectException("Failed to write field [name=" + name + ']', ex);
+            else
+                throw new BinaryObjectException("Failed to write field [id=" + id + ']', ex);
+        }
+    }
+
+    /**
+     * Write field.
+     *
+     * @param obj Object.
+     * @param writer Writer.
+     * @throws BinaryObjectException If failed.
+     */
+    protected abstract void write0(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException;
 
     /**
      * Read field.
@@ -215,7 +234,7 @@ public abstract class BinaryFieldAccessor {
         }
 
         /** {@inheritDoc} */
-        @Override public void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
+        @Override protected void write0(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
             writer.writeFieldIdNoSchemaUpdate(id);
 
             byte val = GridUnsafe.getByteField(obj, offset);
@@ -224,7 +243,7 @@ public abstract class BinaryFieldAccessor {
         }
 
         /** {@inheritDoc} */
-        @Override public void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
+        @Override protected void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
             byte val = reader.readByte(id);
 
             GridUnsafe.putByteField(obj, offset, val);
@@ -245,7 +264,7 @@ public abstract class BinaryFieldAccessor {
         }
 
         /** {@inheritDoc} */
-        @Override public void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
+        @Override protected void write0(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
             writer.writeFieldIdNoSchemaUpdate(id);
 
             boolean val = GridUnsafe.getBooleanField(obj, offset);
@@ -254,7 +273,7 @@ public abstract class BinaryFieldAccessor {
         }
 
         /** {@inheritDoc} */
-        @Override public void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
+        @Override protected void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
             boolean val = reader.readBoolean(id);
 
             GridUnsafe.putBooleanField(obj, offset, val);
@@ -275,7 +294,7 @@ public abstract class BinaryFieldAccessor {
         }
 
         /** {@inheritDoc} */
-        @Override public void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
+        @Override protected void write0(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
             writer.writeFieldIdNoSchemaUpdate(id);
 
             short val = GridUnsafe.getShortField(obj, offset);
@@ -284,7 +303,7 @@ public abstract class BinaryFieldAccessor {
         }
 
         /** {@inheritDoc} */
-        @Override public void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
+        @Override protected void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
             short val = reader.readShort(id);
 
             GridUnsafe.putShortField(obj, offset, val);
@@ -305,7 +324,7 @@ public abstract class BinaryFieldAccessor {
         }
 
         /** {@inheritDoc} */
-        @Override public void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
+        @Override protected void write0(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
             writer.writeFieldIdNoSchemaUpdate(id);
 
             char val = GridUnsafe.getCharField(obj, offset);
@@ -314,7 +333,7 @@ public abstract class BinaryFieldAccessor {
         }
 
         /** {@inheritDoc} */
-        @Override public void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
+        @Override protected void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
             char val = reader.readChar(id);
 
             GridUnsafe.putCharField(obj, offset, val);
@@ -335,7 +354,7 @@ public abstract class BinaryFieldAccessor {
         }
 
         /** {@inheritDoc} */
-        @Override public void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
+        @Override protected void write0(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
             writer.writeFieldIdNoSchemaUpdate(id);
 
             int val = GridUnsafe.getIntField(obj, offset);
@@ -344,7 +363,7 @@ public abstract class BinaryFieldAccessor {
         }
 
         /** {@inheritDoc} */
-        @Override public void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
+        @Override protected void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
             int val = reader.readInt(id);
 
             GridUnsafe.putIntField(obj, offset, val);
@@ -365,7 +384,7 @@ public abstract class BinaryFieldAccessor {
         }
 
         /** {@inheritDoc} */
-        @Override public void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
+        @Override protected void write0(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
             writer.writeFieldIdNoSchemaUpdate(id);
 
             long val = GridUnsafe.getLongField(obj, offset);
@@ -374,7 +393,7 @@ public abstract class BinaryFieldAccessor {
         }
 
         /** {@inheritDoc} */
-        @Override public void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
+        @Override protected void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
             long val = reader.readLong(id);
 
             GridUnsafe.putLongField(obj, offset, val);
@@ -395,7 +414,7 @@ public abstract class BinaryFieldAccessor {
         }
 
         /** {@inheritDoc} */
-        @Override public void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
+        @Override protected void write0(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
             writer.writeFieldIdNoSchemaUpdate(id);
 
             float val = GridUnsafe.getFloatField(obj, offset);
@@ -404,7 +423,7 @@ public abstract class BinaryFieldAccessor {
         }
 
         /** {@inheritDoc} */
-        @Override public void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
+        @Override protected void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
             float val = reader.readFloat(id);
 
             GridUnsafe.putFloatField(obj, offset, val);
@@ -425,7 +444,7 @@ public abstract class BinaryFieldAccessor {
         }
 
         /** {@inheritDoc} */
-        @Override public void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
+        @Override protected void write0(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
             writer.writeFieldIdNoSchemaUpdate(id);
 
             double val = GridUnsafe.getDoubleField(obj, offset);
@@ -434,7 +453,7 @@ public abstract class BinaryFieldAccessor {
         }
 
         /** {@inheritDoc} */
-        @Override public void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
+        @Override protected void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
             double val = reader.readDouble(id);
 
             GridUnsafe.putDoubleField(obj, offset, val);
@@ -466,7 +485,7 @@ public abstract class BinaryFieldAccessor {
         }
 
         /** {@inheritDoc} */
-        @Override public void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
+        @Override protected void write0(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
             assert obj != null;
             assert writer != null;
 
@@ -483,17 +502,17 @@ public abstract class BinaryFieldAccessor {
 
             switch (mode(val)) {
                 case BYTE:
-                    writer.writeByteField((Byte) val);
+                    writer.writeByteField((Byte)val);
 
                     break;
 
                 case SHORT:
-                    writer.writeShortField((Short) val);
+                    writer.writeShortField((Short)val);
 
                     break;
 
                 case INT:
-                    writer.writeIntField((Integer) val);
+                    writer.writeIntField((Integer)val);
 
                     break;
 

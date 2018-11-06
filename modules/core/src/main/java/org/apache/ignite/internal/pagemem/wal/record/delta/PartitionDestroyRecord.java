@@ -18,12 +18,13 @@
 package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.pagemem.wal.record.WalRecordCacheGroupAware;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
  */
-public class PartitionDestroyRecord extends WALRecord {
+public class PartitionDestroyRecord extends WALRecord implements WalRecordCacheGroupAware {
     /** */
     private int grpId;
 
@@ -44,10 +45,8 @@ public class PartitionDestroyRecord extends WALRecord {
         return RecordType.PARTITION_DESTROY;
     }
 
-    /**
-     * @return Cache group ID.
-     */
-    public int groupId() {
+    /** {@inheritDoc} */
+    @Override public int groupId() {
         return grpId;
     }
 

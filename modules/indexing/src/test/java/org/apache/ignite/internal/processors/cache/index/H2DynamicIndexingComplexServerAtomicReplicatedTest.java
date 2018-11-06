@@ -28,6 +28,6 @@ public class H2DynamicIndexingComplexServerAtomicReplicatedTest extends H2Dynami
      * Constructor.
      */
     public H2DynamicIndexingComplexServerAtomicReplicatedTest() {
-        super(CacheMode.REPLICATED, CacheAtomicityMode.ATOMIC, SRV_IDX);
+        super(CacheMode.REPLICATED, CacheAtomicityMode.ATOMIC, 1, SRV_IDX);
     }
 }

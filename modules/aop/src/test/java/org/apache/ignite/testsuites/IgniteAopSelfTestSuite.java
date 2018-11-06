@@ -40,13 +40,13 @@ public class IgniteAopSelfTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Ignite AOP Test Suite");
 
         // Test configuration.
-        suite.addTest(new TestSuite(BasicAopSelfTest.class));
+        suite.addTestSuite(BasicAopSelfTest.class);
 
-        suite.addTest(new TestSuite(SpringAopSelfTest.class));
-        suite.addTest(new TestSuite(NonSpringAopSelfTest.class));
-        suite.addTest(new TestSuite(GridifySetToXXXSpringAopSelfTest.class));
-        suite.addTest(new TestSuite(GridifySetToXXXNonSpringAopSelfTest.class));
-        suite.addTest(new TestSuite(ExternalNonSpringAopSelfTest.class));
+        suite.addTestSuite(SpringAopSelfTest.class);
+        suite.addTestSuite(NonSpringAopSelfTest.class);
+        suite.addTestSuite(GridifySetToXXXSpringAopSelfTest.class);
+        suite.addTestSuite(GridifySetToXXXNonSpringAopSelfTest.class);
+        suite.addTestSuite(ExternalNonSpringAopSelfTest.class);
 
         // Examples
         System.setProperty(IGNITE_OVERRIDE_MCAST_GRP, GridTestUtils.getNextMulticastGroup(IgniteAopSelfTestSuite.class));

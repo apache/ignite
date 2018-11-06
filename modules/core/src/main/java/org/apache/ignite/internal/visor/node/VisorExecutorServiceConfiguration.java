@@ -21,9 +21,9 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.List;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
@@ -74,8 +74,8 @@ public class VisorExecutorServiceConfiguration extends VisorDataTransferObject {
     /** Utility cache pool size. */
     private int utilityCachePoolSize;
 
-    /** SQL connector configuration pool size. */
-    private int sqlConnCfgPoolSize;
+    /** Client connector configuration pool size. */
+    private int cliConnCfgPoolSize;
 
     /** List of executor configurations. */
     private List<VisorExecutorConfiguration> executors;
@@ -112,10 +112,10 @@ public class VisorExecutorServiceConfiguration extends VisorDataTransferObject {
         svcPoolSize = c.getServiceThreadPoolSize();
         utilityCachePoolSize = c.getUtilityCacheThreadPoolSize();
 
-        SqlConnectorConfiguration scc = c.getSqlConnectorConfiguration();
+        ClientConnectorConfiguration scc = c.getClientConnectorConfiguration();
 
         if (scc != null)
-            sqlConnCfgPoolSize = scc.getThreadPoolSize();
+            cliConnCfgPoolSize = scc.getThreadPoolSize();
 
         executors = VisorExecutorConfiguration.list(c.getExecutorConfiguration());
     }
@@ -216,8 +216,8 @@ public class VisorExecutorServiceConfiguration extends VisorDataTransferObject {
     /**
      * @return Thread pool that is in charge of processing ODBC tasks.
      */
-    public int getSqlConnectorConfigurationThreadPoolSize() {
-        return sqlConnCfgPoolSize;
+    public int getClientConnectorConfigurationThreadPoolSize() {
+        return cliConnCfgPoolSize;
     }
 
     /**
@@ -242,7 +242,7 @@ public class VisorExecutorServiceConfiguration extends VisorDataTransferObject {
         out.writeInt(stripedPoolSize);
         out.writeInt(svcPoolSize);
         out.writeInt(utilityCachePoolSize);
-        out.writeInt(sqlConnCfgPoolSize);
+        out.writeInt(cliConnCfgPoolSize);
         U.writeCollection(out, executors);
     }
 
@@ -261,7 +261,7 @@ public class VisorExecutorServiceConfiguration extends VisorDataTransferObject {
         stripedPoolSize = in.readInt();
         svcPoolSize = in.readInt();
         utilityCachePoolSize = in.readInt();
-        sqlConnCfgPoolSize = in.readInt();
+        cliConnCfgPoolSize = in.readInt();
         executors = U.readList(in);
     }
 

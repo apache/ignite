@@ -159,14 +159,6 @@ namespace ignite
         IGNITE_IMPORT_EXPORT std::string CreateIgniteHomeClasspath(const std::string& home, bool forceTest);
 
         /**
-         * Create Ignite classpath based on user input directory.
-         *
-         * @param usrCp User's classpath.
-         * @return Classpath.
-         */
-        IGNITE_IMPORT_EXPORT std::string CreateIgniteClasspath(const std::string& usrCp);
-
-        /**
          * Create Ignite classpath based on user input and home directory.
          *
          * @param usrCp User's classpath.
@@ -181,15 +173,14 @@ namespace ignite
          * 1) Check for path provided as argument.
          * 2) Check for environment variable.
          * 3) Check for current working directory.
-         * Result of these 3 checks are evaluated based on existence of certain
-         * predefined folders inside possible GG home. If they are found, 
+         * Result of these checks are evaluated based on existence of certain
+         * predefined folders inside possible Ignite home. If they are found,
          * IGNITE_HOME is considered resolved.
          *
          * @param path Optional path to evaluate.
-         * @param home Resolved GG home.
-         * @return True if IGNITE_HOME home was found.
+         * @return Resolved Ignite home.
          */
-        IGNITE_IMPORT_EXPORT bool ResolveIgniteHome(const std::string& path, std::string& home);
+        IGNITE_IMPORT_EXPORT std::string ResolveIgniteHome(const std::string& path = "");
     }
 }
 

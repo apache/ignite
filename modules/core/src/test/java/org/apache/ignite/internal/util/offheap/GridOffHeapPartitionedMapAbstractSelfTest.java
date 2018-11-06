@@ -33,7 +33,6 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Tests off-heap map.
@@ -509,7 +508,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
 
         final int max = 1024;
 
-        final ConcurrentMap<String, String> m = new ConcurrentHashMap8<>(max * parts);
+        final ConcurrentMap<String, String> m = new ConcurrentHashMap<>(max * parts);
 
         final AtomicInteger part = new AtomicInteger();
 
@@ -739,7 +738,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
 
         int threads = 5;
 
-        final Map<String, String> m = new ConcurrentHashMap8<>(max);
+        final Map<String, String> m = new ConcurrentHashMap<>(max);
 
         multithreaded(new Callable() {
             @Override public Object call() throws Exception {

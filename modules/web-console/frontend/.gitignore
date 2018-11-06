@@ -5,5 +5,4 @@
 build/*
 node_modules
 public/stylesheets/*.css
-yarn.lock
-package-lock.json
+

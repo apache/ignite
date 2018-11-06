@@ -35,6 +35,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -72,17 +73,23 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     }
 
     /** {@inheritDoc} */
+    @Override
+    protected boolean isSafeTopology() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         assert testsCfg != null;
-
-        FileUtils.deleteDirectory(workDir);
-
-        info("Ignite's 'work' directory has been cleaned.");
 
         if (Ignition.allGrids().size() != testsCfg.gridCount()) {
             info("All nodes will be stopped, new " + testsCfg.gridCount() + " nodes will be started.");
 
             Ignition.stopAll(true);
+
+            FileUtils.deleteDirectory(workDir);
+
+            info("Ignite's 'work' directory has been cleaned.");
 
             startGrids(testsCfg.gridCount());
 
@@ -126,6 +133,9 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
 
             memoryUsage();
         }
+        else {
+            info("Will NOT stop nodes: " + this);
+        }
     }
 
     /**
@@ -165,6 +175,8 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
 
         if (testsCfg.withClients())
             resCfg.setClientMode(expectedClient(igniteInstanceName));
+
+        info("Creating configuration [instanceName=" + igniteInstanceName + ", cfg=" + cfg + ']');
 
         return resCfg;
     }
@@ -239,7 +251,9 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
                 continue;
             }
 
-            info("Running test in data mode: " + dataMode);
+            info("Running test in data mode [dataMode=" + dataMode +
+                ", igniteInstance=" + getTestIgniteInstanceName() +
+                ", marshaller=" + getConfiguration().getMarshaller() + ']');
 
             if (i != 0)
                 beforeTest();
@@ -652,8 +666,15 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     protected boolean isCompatible() throws Exception {
         switch (dataMode) {
             case BINARILIZABLE:
-            case PLANE_OBJECT:
-                return !(getConfiguration().getMarshaller() instanceof JdkMarshaller);
+            case PLANE_OBJECT: {
+                IgniteConfiguration cfg = getConfiguration();
+                Marshaller marsh = cfg.getMarshaller();
+
+                U.debug(log, "Running check [instance=" + getTestIgniteInstanceName() + ", cfg=" + cfg +
+                    ", marsh=" + marsh + ", dataMode=" + dataMode + "]");
+
+                return !(marsh instanceof JdkMarshaller);
+            }
         }
         return false;
     }

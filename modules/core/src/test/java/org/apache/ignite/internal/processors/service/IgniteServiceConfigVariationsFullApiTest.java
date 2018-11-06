@@ -211,46 +211,50 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
      * @throws Exception If failed.
      */
     protected void testService(TestService svc, boolean sticky, DeployClosure deployC) throws Exception {
+        IgniteServices services;
         IgniteEx ignite = testedGrid();
 
-        IgniteServices services = ignite.services();
+        services = ignite.services();
 
-        Object expected = value(++cntr);
+        try {
+            Object expected = value(++cntr);
 
-        // Put value for testing Service instance serialization.
-        svc.setValue(expected);
+            // Put value for testing Service instance serialization.
+            svc.setValue(expected);
 
-        deployC.run(services, SERVICE_NAME, svc);
+            deployC.run(services, SERVICE_NAME, svc);
 
-        // Expect correct value from local instance.
-        assertEquals(expected, svc.getValue());
+            // Expect correct value from local instance.
+            assertEquals(expected, svc.getValue());
 
-        // Use stickiness to make sure data will be fetched from the same instance.
-        TestService proxy = services.serviceProxy(SERVICE_NAME, TestService.class, sticky);
+            // Use stickiness to make sure data will be fetched from the same instance.
+            TestService proxy = services.serviceProxy(SERVICE_NAME, TestService.class, sticky);
 
-        // Expect that correct value is returned from deployed instance.
-        assertEquals(expected, proxy.getValue());
-
-        expected = value(++cntr);
-
-        // Change value.
-        proxy.setValue(expected);
-
-        // Expect correct value after being read back.
-        int r = 1000;
-
-        while(r-- > 0)
+            // Expect that correct value is returned from deployed instance.
             assertEquals(expected, proxy.getValue());
 
-        assertEquals("Expected 1 deployed service", 1, services.serviceDescriptors().size());
+            expected = value(++cntr);
 
-        // Randomize stop method invocation
-        boolean tmp = ThreadLocalRandom.current().nextBoolean();
+            // Change value.
+            proxy.setValue(expected);
 
-        if (tmp)
-            services.cancelAll();
-        else
-            services.cancel(SERVICE_NAME);
+            // Expect correct value after being read back.
+            int r = 1000;
+
+            while(r-- > 0)
+                assertEquals(expected, proxy.getValue());
+
+            assertEquals("Expected 1 deployed service", 1, services.serviceDescriptors().size());
+        }
+        finally {
+            // Randomize stop method invocation
+            boolean tmp = ThreadLocalRandom.current().nextBoolean();
+
+            if (tmp)
+                services.cancelAll();
+            else
+                services.cancel(SERVICE_NAME);
+        }
     }
 
     /**

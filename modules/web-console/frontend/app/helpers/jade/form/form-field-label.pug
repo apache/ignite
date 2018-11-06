@@ -14,10 +14,12 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-mixin ignite-form-field__label(label, name, required)
+mixin ignite-form-field__label(label, name, required, disabled)
     label.ignite-form-field__label(
         id=`{{ ${name} }}Label`
         for=`{{ ${name} }}Input`
-        class=`{{ ${required} ? 'required' : '' }}`
+        ng-class=disabled && `{'ignite-form-field__label-disabled': ${disabled}}`
     )
-        span !{label}
+        span(class=`{{ ${required} ? 'required' : '' }}`) !{label}
+        if block
+            block

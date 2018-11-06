@@ -49,13 +49,15 @@ libignite_odbc_la_DEPENDENCIES = \
     @top_srcdir@/binary/libignite-binary.la
 
 libignite_odbc_la_SOURCES = \
-    os/linux/src/system/socket_client.cpp \
+    os/linux/src/system/tcp_socket_client.cpp \
     src/app/application_data_buffer.cpp \
     src/app/parameter.cpp \
     src/app/parameter_set.cpp \
     src/common_types.cpp \
+    src/config/config_tools.cpp \
     src/config/configuration.cpp \
     src/config/connection_info.cpp \
+	src/config/connection_string_parser.cpp \
     src/connection.cpp \
     src/cursor.cpp \
     src/diagnostic/diagnosable_adapter.cpp \
@@ -75,6 +77,9 @@ libignite_odbc_la_SOURCES = \
     src/query/table_metadata_query.cpp \
     src/query/type_info_query.cpp \
     src/query/special_columns_query.cpp \
+    src/ssl/ssl_gateway.cpp \
+    src/ssl/secure_socket_client.cpp \
+    src/ssl/ssl_mode.cpp \
     src/protocol_version.cpp \
     src/result_page.cpp \
     src/row.cpp \

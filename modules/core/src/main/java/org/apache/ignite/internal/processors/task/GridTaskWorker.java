@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -85,7 +86,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.resources.TaskContinuousMapperResource;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.compute.ComputeJobResultPolicy.FAILOVER;
 import static org.apache.ignite.compute.ComputeJobResultPolicy.WAIT;
@@ -177,7 +177,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     private ComputeTask<T, R> task;
 
     /** */
-    private final Queue<GridJobExecuteResponse> delayedRess = new ConcurrentLinkedDeque8<>();
+    private final Queue<GridJobExecuteResponse> delayedRess = new ConcurrentLinkedDeque<>();
 
     /** */
     private boolean continuous;
@@ -1381,6 +1381,8 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                         ses.getStartTime(),
                         timeout,
                         ses.getTopology(),
+                        loc ? ses.getTopologyPredicate() : null,
+                        loc ? null : U.marshal(marsh, ses.getTopologyPredicate()),
                         loc ? null : U.marshal(marsh, ses.getJobSiblings()),
                         loc ? ses.getJobSiblings() : null,
                         loc ? null : U.marshal(marsh, sesAttrs),

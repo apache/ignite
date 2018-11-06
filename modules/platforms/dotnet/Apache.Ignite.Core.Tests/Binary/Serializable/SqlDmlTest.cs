@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             {
                 BinaryConfiguration = new BinaryConfiguration(typeof(SimpleSerializable))
                 {
-                    NameMapper = BinaryBasicNameMapper.SimpleNameInstance
+                    NameMapper = new BinaryBasicNameMapper { IsSimpleName = true }
                 }
             };
 
@@ -107,7 +107,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
 
             // Test DML.
             var guid = Guid.NewGuid();
-            var insertRes = cache.QueryFields(new SqlFieldsQuery(
+            var insertRes = cache.Query(new SqlFieldsQuery(
                 "insert into SimpleSerializable(_key, Byte, Bool, Short, Int, Long, Float, Double, " +
                 "Decimal, Guid, String) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", 
                 3, 45, true, 43, 33, 99, 4.5f, 6.7, 9.04m, guid, "bar33")).GetAll();
@@ -141,7 +141,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             Assert.AreEqual(uint.MaxValue, cache[1].Uint);
 
             // Test SQL.
-            var sqlRes = cache.QueryFields(new SqlFieldsQuery(
+            var sqlRes = cache.Query(new SqlFieldsQuery(
                 "select uint from DotNetSpecificSerializable where uint <> 0")).GetAll();
 
             Assert.AreEqual(1, sqlRes.Count);
@@ -152,7 +152,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             Assert.AreEqual(uint.MaxValue, linqRes);
 
             // Test DML.
-            var dmlRes = cache.QueryFields(new SqlFieldsQuery(
+            var dmlRes = cache.Query(new SqlFieldsQuery(
                 "insert into DotNetSpecificSerializable(_key, uint) values (?, ?), (?, ?)",
                 2, uint.MaxValue, 3, 88)).GetAll();
             Assert.AreEqual(1, dmlRes.Count);
@@ -163,6 +163,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             Assert.AreEqual("Value was either too large or too small for a UInt32.", ex.Message);
         }
 
+#if !NETCOREAPP2_0  // Console redirect issues on .NET Core
         /// <summary>
         /// Tests the log warning.
         /// </summary>
@@ -180,6 +181,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
 
             Assert.IsTrue(_outSb.ToString().Contains(expected));
         }
+#endif
 
         /// <summary>
         /// Serializable with Java-compatible fields.

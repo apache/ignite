@@ -18,7 +18,10 @@
 package org.apache.ignite.internal.processors.cluster;
 
 import java.util.UUID;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -31,23 +34,27 @@ public class ChangeGlobalStateFinishMessage implements DiscoveryCustomMessage {
     private static final long serialVersionUID = 0L;
 
     /** Custom message ID. */
-    private IgniteUuid id = IgniteUuid.randomUuid();
+    private final IgniteUuid id = IgniteUuid.randomUuid();
 
     /** State change request ID. */
-    private UUID reqId;
+    private final UUID reqId;
 
     /** New cluster state. */
-    private boolean clusterActive;
+    private final boolean clusterActive;
+
+    /** State change error. */
+    private Boolean transitionRes;
 
     /**
      * @param reqId State change request ID.
      * @param clusterActive New cluster state.
      */
-    public ChangeGlobalStateFinishMessage(UUID reqId, boolean clusterActive) {
+    public ChangeGlobalStateFinishMessage(UUID reqId, boolean clusterActive, Boolean transitionRes) {
         assert reqId != null;
 
         this.reqId = reqId;
         this.clusterActive = clusterActive;
+        this.transitionRes = transitionRes;
     }
 
     /**
@@ -64,6 +71,13 @@ public class ChangeGlobalStateFinishMessage implements DiscoveryCustomMessage {
         return clusterActive;
     }
 
+    /**
+     * @return Transition success status.
+     */
+    public boolean success() {
+        return transitionRes == null ? clusterActive : transitionRes;
+    }
+
     /** {@inheritDoc} */
     @Override public IgniteUuid id() {
         return id;
@@ -77,6 +91,17 @@ public class ChangeGlobalStateFinishMessage implements DiscoveryCustomMessage {
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean stopProcess() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr,
+        AffinityTopologyVersion topVer, DiscoCache discoCache) {
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */

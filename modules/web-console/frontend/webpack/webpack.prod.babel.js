@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-import webpack from 'webpack';
 import merge from 'webpack-merge';
 
 import ExtractTextPlugin from 'extract-text-webpack-plugin';
+import UglifyJSPlugin from 'uglifyjs-webpack-plugin';
 
 import commonCfg from './webpack.common';
 
 export default merge(commonCfg, {
     bail: true, // Cancel build on error.
-    devtool: 'cheap-source-map',
+    mode: 'production',
     module: {
         rules: [
             {
@@ -43,22 +43,14 @@ export default merge(commonCfg, {
             }
         ]
     },
-    plugins: [
-        new webpack.optimize.CommonsChunkPlugin({name: 'vendor'}),
-        new webpack.LoaderOptionsPlugin({
-            minimize: true,
-            debug: false
-        }),
-        new webpack.optimize.UglifyJsPlugin({
-            beautify: false,
-            mangle: {
-                screw_ie8: true,
-                keep_fnames: true
-            },
-            compress: {
-                screw_ie8: true
-            },
-            comments: false
-        })
-    ]
+    optimization: {
+        minimizer: [
+            new UglifyJSPlugin({
+                uglifyOptions: {
+                    keep_fnames: true,
+                    keep_classnames: true
+                }
+            })
+        ]
+    }
 });

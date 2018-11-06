@@ -18,7 +18,7 @@
 FROM ubuntu:14.04
 
 ENV NPM_CONFIG_LOGLEVEL info
-ENV NODE_VERSION 6.6.0
+ENV NODE_VERSION 8.11.1
 
 # Before package list update.
 RUN set -ex  && \

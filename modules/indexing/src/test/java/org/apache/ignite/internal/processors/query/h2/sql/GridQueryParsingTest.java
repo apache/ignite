@@ -508,28 +508,34 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      */
     public void testParseCreateIndex() throws Exception {
         assertCreateIndexEquals(
-            buildCreateIndex(null, "Person", "sch1", false, QueryIndexType.SORTED, "name", true),
+            buildCreateIndex(null, "Person", "sch1", false, QueryIndexType.SORTED,
+            QueryIndex.DFLT_INLINE_SIZE,"name", true),
             "create index on Person (name)");
 
         assertCreateIndexEquals(
-            buildCreateIndex("idx", "Person", "sch1", false, QueryIndexType.SORTED, "name", true),
+            buildCreateIndex("idx", "Person", "sch1", false, QueryIndexType.SORTED,
+            QueryIndex.DFLT_INLINE_SIZE, "name", true),
             "create index idx on Person (name ASC)");
 
         assertCreateIndexEquals(
-            buildCreateIndex("idx", "Person", "sch1", false, QueryIndexType.GEOSPATIAL, "name", true),
+            buildCreateIndex("idx", "Person", "sch1", false, QueryIndexType.GEOSPATIAL,
+            QueryIndex.DFLT_INLINE_SIZE, "name", true),
             "create spatial index sch1.idx on sch1.Person (name ASC)");
 
         assertCreateIndexEquals(
-            buildCreateIndex("idx", "Person", "sch1", true, QueryIndexType.SORTED, "name", true),
+            buildCreateIndex("idx", "Person", "sch1", true, QueryIndexType.SORTED,
+            QueryIndex.DFLT_INLINE_SIZE, "name", true),
             "create index if not exists sch1.idx on sch1.Person (name)");
 
         // When we specify schema for the table and don't specify it for the index, resulting schema is table's
         assertCreateIndexEquals(
-            buildCreateIndex("idx", "Person", "sch1", true, QueryIndexType.SORTED, "name", false),
+            buildCreateIndex("idx", "Person", "sch1", true, QueryIndexType.SORTED,
+            QueryIndex.DFLT_INLINE_SIZE,"name", false),
             "create index if not exists idx on sch1.Person (name dEsC)");
 
         assertCreateIndexEquals(
-            buildCreateIndex("idx", "Person", "sch1", true, QueryIndexType.GEOSPATIAL, "old", true, "name", false),
+            buildCreateIndex("idx", "Person", "sch1", true, QueryIndexType.GEOSPATIAL,
+            QueryIndex.DFLT_INLINE_SIZE, "old", true, "name", false),
             "create spatial index if not exists idx on Person (old, name desc)");
 
         // Schemas for index and table must match
@@ -628,11 +634,25 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         assertParseThrows("create table Person (id int as age * 2 primary key, age int) WITH \"template=cache\"",
             IgniteSQLException.class, "Computed columns are not supported [colName=ID]");
 
-        assertParseThrows("create table Person (id int primary key, age int default 5) WITH \"template=cache\"",
-            IgniteSQLException.class, "DEFAULT expressions are not supported [colName=AGE]");
-
         assertParseThrows("create table Int (_key int primary key, _val int) WITH \"template=cache\"",
             IgniteSQLException.class, "Direct specification of _KEY and _VAL columns is forbidden");
+    }
+
+    /** */
+    public void testParseCreateTableWithDefaults() {
+        assertParseThrows("create table Person (id int primary key, age int, " +
+                "ts TIMESTAMP default CURRENT_TIMESTAMP()) WITH \"template=cache\"",
+            IgniteSQLException.class, "Non-constant DEFAULT expressions are not supported [colName=TS]");
+
+        assertParseThrows("create table Person (id int primary key, age int default 'test') " +
+                "WITH \"template=cache\"",
+            IgniteSQLException.class, "Invalid default value for column. " +
+                "[colName=AGE, colType=INTEGER, dfltValueType=VARCHAR]");
+
+        assertParseThrows("create table Person (id int primary key, name varchar default 1) " +
+                "WITH \"template=cache\"",
+            IgniteSQLException.class, "Invalid default value for column. " +
+                "[colName=NAME, colType=VARCHAR, dfltValueType=INTEGER]");
     }
 
     /** */
@@ -955,7 +975,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      *
      */
     private static GridSqlCreateIndex buildCreateIndex(String name, String tblName, String schemaName,
-        boolean ifNotExists, QueryIndexType type, Object... flds) {
+        boolean ifNotExists, QueryIndexType type, int inlineSize, Object... flds) {
         QueryIndex idx = new QueryIndex();
 
         idx.setName(name);
@@ -969,6 +989,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         idx.setFields(trueFlds);
         idx.setIndexType(type);
+        idx.setInlineSize(inlineSize);
 
         GridSqlCreateIndex res = new GridSqlCreateIndex();
 

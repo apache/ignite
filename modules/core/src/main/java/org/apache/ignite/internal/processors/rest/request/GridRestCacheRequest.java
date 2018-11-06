@@ -18,14 +18,18 @@
 package org.apache.ignite.internal.processors.rest.request;
 
 import java.util.Map;
+import org.apache.ignite.internal.processors.cache.CacheConfigurationOverride;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- *
+ * Cache command request descriptor.
  */
 public class GridRestCacheRequest extends GridRestRequest {
     /** Cache name. */
     private String cacheName;
+
+    /** Template name. */
+    private String templateName;
 
     /** Key. */
     private Object key;
@@ -38,6 +42,9 @@ public class GridRestCacheRequest extends GridRestRequest {
 
     /** Keys and values for put all, get all, remove all operations. */
     private Map<Object, Object> vals;
+
+    /** Cache configuration parameters. */
+    private CacheConfigurationOverride cfg;
 
     /** Bit map of cache flags to be enabled on cache projection. */
     private int cacheFlags;
@@ -57,6 +64,20 @@ public class GridRestCacheRequest extends GridRestRequest {
      */
     public void cacheName(String cacheName) {
         this.cacheName = cacheName;
+    }
+
+    /**
+     * @return Template name, or {@code null} if not set.
+     */
+    public String templateName() {
+        return templateName;
+    }
+
+    /**
+     * @param templateName Template name.
+     */
+    public void templateName(String templateName) {
+        this.templateName = templateName;
     }
 
     /**
@@ -113,6 +134,21 @@ public class GridRestCacheRequest extends GridRestRequest {
      */
     public void values(Map<Object, Object> vals) {
         this.vals = vals;
+    }
+
+
+    /**
+     * @return Cache configuration.
+     */
+    public CacheConfigurationOverride configuration() {
+        return cfg;
+    }
+
+    /**
+     * @param cfg Cache configuration.
+     */
+    public void configuration(CacheConfigurationOverride cfg) {
+        this.cfg = cfg;
     }
 
     /**

@@ -127,6 +127,9 @@ public final class IgniteNodeAttributes {
     public static final String ATTR_OFFHEAP_SIZE = ATTR_PREFIX + ".offheap.size";
 
     /** Internal attribute name constant. */
+    public static final String ATTR_DATA_REGIONS_OFFHEAP_SIZE = ATTR_PREFIX + ".data.regions.offheap.size";
+
+    /** Internal attribute name constant. */
     public static final String ATTR_JVM_PID = ATTR_PREFIX + ".jvm.pid";
 
     /** Internal attribute name constant. */
@@ -184,7 +187,14 @@ public final class IgniteNodeAttributes {
     public static final String ATTR_DATA_STREAMER_POOL_SIZE = ATTR_PREFIX + ".data.streamer.pool.size";
 
     /** Memory configuration. */
+    @Deprecated
     public static final String ATTR_MEMORY_CONFIG = ATTR_PREFIX + ".memory";
+
+    /** Data storage configuration. */
+    public static final String ATTR_DATA_STORAGE_CONFIG = ATTR_PREFIX + ".data.storage.config";
+
+    /** User authentication enabled flag. */
+    public static final String ATTR_AUTHENTICATION_ENABLED = ATTR_PREFIX + ".authentication.enabled";
 
     /**
      * Enforces singleton.

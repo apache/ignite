@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 
             // Multiple values
             Assert.AreEqual(new[] { 0, 1, 2 },
-                cache.Where(x => x.Key < 3).Select(x => x.Value.Address.Zip).ToArray());
+                cache.Where(x => x.Key < 3).OrderBy(x => x.Key).Select(x => x.Value.Address.Zip).ToArray());
 
             // Single value
             Assert.AreEqual(0, cache.Where(x => x.Key < 0).Select(x => x.Value.Age).FirstOrDefault());
@@ -237,8 +237,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
         public void TestLocalQuery()
         {
             // Create partitioned cache
-            var cache =
-                Ignition.GetIgnite().GetOrCreateCache<int, int>(new CacheConfiguration("partCache", typeof(int))
+            var cache = Ignition.GetIgnite().GetOrCreateCache<int, int>(new CacheConfiguration("partCache", 
+                    new QueryEntity(typeof(int), typeof(int)))
                 {
                     SqlEscapeAll = GetSqlEscapeAll()
                 });
@@ -313,19 +313,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             var persons = personCache.AsCacheQueryable();
             var roles = roleCache.AsCacheQueryable();
 
-            var res = persons.Join(roles, person => person.Key - PersonCount, role => role.Key, (person, role) => role)
+            // we have role.Keys = [1, 2, 3] and persons.Key = [0, .. PersonCount)
+            var res = persons.Join(roles, person => person.Key % 2, role => role.Key, (person, role) => role)
                 .ToArray();
 
-            Assert.AreEqual(res.Length, RoleCount);
+            Assert.IsTrue(PersonCount / 2 > res.Length);
 
             // Test distributed join: returns complete results
             persons = personCache.AsCacheQueryable(new QueryOptions { EnableDistributedJoins = true });
             roles = roleCache.AsCacheQueryable(new QueryOptions { EnableDistributedJoins = true });
 
-            res = persons.Join(roles, person => person.Key - PersonCount, role => role.Key, (person, role) => role)
+            res = persons.Join(roles, person => person.Key % 2, role => role.Key, (person, role) => role)
                 .ToArray();
 
-            Assert.AreEqual(RoleCount, res.Length);
+            Assert.AreEqual(PersonCount / 2, res.Length);
         }
 
         /// <summary>

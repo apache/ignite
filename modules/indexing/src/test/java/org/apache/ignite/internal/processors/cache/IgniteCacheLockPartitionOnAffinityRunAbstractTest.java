@@ -25,6 +25,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
@@ -71,7 +72,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCache
     protected static final int ORGS_COUNT_PER_NODE = 2;
 
     /** Test duration. */
-    protected static final long TEST_DURATION = 5 * 60_000;
+    protected static final long TEST_DURATION = 2 * 60_000;
 
     /** Test timeout. */
     protected static final long TEST_TIMEOUT = TEST_DURATION + 2 * 60_000;
@@ -109,6 +110,9 @@ public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCache
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         cfg.setMarshaller(new BinaryMarshaller());
+
+        // TODO remove key configuration when https://issues.apache.org/jira/browse/IGNITE-5795 is fixed.
+        cfg.setCacheKeyConfiguration(new CacheKeyConfiguration(Person.Key.class.getName(), "orgId"));
 
         AlwaysFailoverSpi failSpi = new AlwaysFailoverSpi();
         failSpi.setMaximumFailoverAttempts(MAX_FAILOVER_ATTEMPTS);
@@ -198,7 +202,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCache
     /**
      * @throws Exception If failed.
      */
-    private void fillCaches() throws Exception {
+    protected void fillCaches() throws Exception {
         grid(0).createCache(Organization.class.getSimpleName());
         grid(0).createCache(Person.class.getSimpleName());
 

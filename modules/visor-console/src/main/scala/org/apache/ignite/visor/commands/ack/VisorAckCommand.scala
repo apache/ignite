@@ -88,9 +88,7 @@ class VisorAckCommand extends VisorConsoleCommand {
      * @param msg Optional command argument. If `null` this function is no-op.
      */
     def ack(msg: String) {
-        if (!isConnected)
-            adviseToConnect()
-        else
+        if (checkConnected()) {
             try {
                 executeMulti(classOf[VisorAckTask], new VisorAckTaskArg(msg))
             }
@@ -98,6 +96,7 @@ class VisorAckCommand extends VisorConsoleCommand {
                 case _: ClusterGroupEmptyException => scold("Topology is empty.")
                 case e: Exception => scold("System error: " + e.getMessage)
             }
+        }
     }
 }
 

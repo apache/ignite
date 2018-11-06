@@ -469,14 +469,12 @@ public final class X {
         if (t == null || cls == null)
             return false;
 
-        if (t.getSuppressed() != null) {
-            for (Throwable th : t.getSuppressed()) {
-                if (cls.isAssignableFrom(th.getClass()))
-                    return true;
+        for (Throwable th : t.getSuppressed()) {
+            if (cls.isAssignableFrom(th.getClass()))
+                return true;
 
-                if (hasSuppressed(th, cls))
-                    return true;
-            }
+            if (hasSuppressed(th, cls))
+                return true;
         }
 
         return false;
@@ -746,6 +744,29 @@ public final class X {
         List<Throwable> list = getThrowableList(throwable);
 
         return list.toArray(new Throwable[list.size()]);
+    }
+
+    /**
+     * Collects suppressed exceptions from throwable and all it causes.
+     *
+     * @param t Throwable.
+     * @return List of suppressed throwables.
+     */
+    public static List<Throwable> getSuppressedList(@Nullable Throwable t) {
+        List<Throwable> result = new ArrayList<>();
+
+        if (t == null)
+            return result;
+
+        do {
+            for (Throwable suppressed : t.getSuppressed()) {
+                result.add(suppressed);
+
+                result.addAll(getSuppressedList(suppressed));
+            }
+        } while ((t = t.getCause()) != null);
+
+        return result;
     }
 
     /**

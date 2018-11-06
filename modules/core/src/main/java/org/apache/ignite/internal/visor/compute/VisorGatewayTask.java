@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.visor.VisorCoordinatorNodeTask;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -301,6 +302,9 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
                 return res;
             }
 
+            if (cls.isEnum())
+                return Enum.valueOf(cls, val);
+
             return val;
         }
 
@@ -360,10 +364,11 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
                             // Length of arguments that required to constructor by influence of nested complex objects.
                             int needArgs = args;
 
-                            for (Class type: types)
+                            for (Class type: types) {
                                 // When constructor required specified types increase length of required arguments.
                                 if (TYPE_ARG_LENGTH.containsKey(type))
                                     needArgs += TYPE_ARG_LENGTH.get(type);
+                            }
 
                             if (needArgs == beanArgsCnt) {
                                 Object[] initArgs = new Object[args];
@@ -412,7 +417,14 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
 
             if (F.isEmpty(nidsArg) || "null".equals(nidsArg)) {
                 try {
-                    if (VisorOneNodeTask.class.isAssignableFrom(Class.forName(taskName)))
+                    Class<?> taskCls = Class.forName(taskName);
+
+                    if (VisorCoordinatorNodeTask.class.isAssignableFrom(taskCls)) {
+                        ClusterNode crd = ignite.context().discovery().discoCache().oldestAliveServerNode();
+
+                        nids = Collections.singletonList(crd.id());
+                    }
+                    else if (VisorOneNodeTask.class.isAssignableFrom(taskCls))
                         nids = Collections.singletonList(ignite.localNode().id());
                     else {
                         Collection<ClusterNode> nodes = ignite.cluster().nodes();

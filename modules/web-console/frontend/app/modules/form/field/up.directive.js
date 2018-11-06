@@ -17,13 +17,17 @@
 
 export default ['igniteFormFieldUp', ['$tooltip', ($tooltip) => {
     const controller = ['$element', function($element) {
-        $tooltip($element, { title: 'Move item up' });
+        const ctrl = this;
 
-        this.up = () => {
-            const idx = this.models.indexOf(this.model);
+        this.$onInit = () => {
+            $tooltip($element, { title: 'Move item up' });
 
-            this.models.splice(idx, 1);
-            this.models.splice(idx - 1, 0, this.model);
+            this.up = () => {
+                const idx = ctrl.models.indexOf(ctrl.model);
+
+                ctrl.models.splice(idx, 1);
+                ctrl.models.splice(idx - 1, 0, ctrl.model);
+            };
         };
     }];
 

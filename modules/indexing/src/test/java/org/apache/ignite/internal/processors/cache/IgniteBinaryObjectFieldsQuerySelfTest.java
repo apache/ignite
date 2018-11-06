@@ -103,9 +103,14 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        extClassLoader = getExternalClassLoader();
+        initExtClassLoader();
 
         startGrids(GRID_CNT);
+    }
+
+    /** */
+    protected void initExtClassLoader() {
+        extClassLoader = getExternalClassLoader();
     }
 
     /** {@inheritDoc} */

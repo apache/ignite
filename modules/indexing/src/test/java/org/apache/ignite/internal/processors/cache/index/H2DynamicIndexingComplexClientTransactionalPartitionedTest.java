@@ -28,6 +28,6 @@ public class H2DynamicIndexingComplexClientTransactionalPartitionedTest extends 
      * Constructor.
      */
     public H2DynamicIndexingComplexClientTransactionalPartitionedTest() {
-        super(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL, CLIENT_IDX);
+        super(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL, 1, CLIENT_IDX);
     }
 }

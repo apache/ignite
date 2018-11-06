@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.stream.socket.SocketStreamerSelfTest;
+import org.apache.ignite.stream.socket.SocketStreamerUnmarshalVulnerabilityTest;
 
 /**
  * Stream test suite.
@@ -32,6 +33,7 @@ public class IgniteStreamSelfTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Ignite Stream Test Suite");
 
         suite.addTest(new TestSuite(SocketStreamerSelfTest.class));
+        suite.addTest(new TestSuite(SocketStreamerUnmarshalVulnerabilityTest.class));
 
         return suite;
     }

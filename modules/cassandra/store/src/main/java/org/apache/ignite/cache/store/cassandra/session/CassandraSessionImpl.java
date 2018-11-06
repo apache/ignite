@@ -250,6 +250,8 @@ public class CassandraSessionImpl implements CassandraSession {
                             else if (CassandraHelper.isPreparedStatementClusterError(e)) {
                                 prepStatEx = e;
                                 handlePreparedStatementClusterError(e);
+                                preparedSt = prepareStatement(assistant.getTable(), assistant.getStatement(),
+                                        assistant.getPersistenceSettings(), assistant.tableExistenceRequired());
                             }
                             else
                                 unknownEx = e;
@@ -272,7 +274,7 @@ public class CassandraSessionImpl implements CassandraSession {
                     error = hostsAvailEx;
                 else if (prepStatEx != null)
                     error = prepStatEx;
-
+                
                 // Clean errors info before next communication with Cassandra.
                 unknownEx = null;
                 tblAbsenceEx = null;
@@ -284,8 +286,7 @@ public class CassandraSessionImpl implements CassandraSession {
                         ResultSet resSet = futureResult.getValue().getUninterruptibly();
                         Row row = resSet != null && resSet.iterator().hasNext() ? resSet.iterator().next() : null;
 
-                        if (row != null)
-                            assistant.process(row, futureResult.getKey());
+                        assistant.process(row, futureResult.getKey());
                     }
                     catch (Throwable e) {
                         if (CassandraHelper.isTableAbsenceError(e))
@@ -304,7 +305,7 @@ public class CassandraSessionImpl implements CassandraSession {
                     throw new IgniteException(errorMsg, unknownEx);
 
                 // If there are no errors occurred it means that operation successfully completed and we can return.
-                if (tblAbsenceEx == null && hostsAvailEx == null && prepStatEx == null)
+                if (tblAbsenceEx == null && hostsAvailEx == null && prepStatEx == null && assistant.processedCount() == dataSize)
                     return assistant.processedData();
 
                 if (tblAbsenceEx != null) {

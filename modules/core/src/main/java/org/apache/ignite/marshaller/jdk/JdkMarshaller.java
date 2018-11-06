@@ -27,6 +27,7 @@ import org.apache.ignite.internal.util.io.GridByteArrayInputStream;
 import org.apache.ignite.internal.util.io.GridByteArrayOutputStream;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.AbstractNodeNameAwareMarshaller;
 import org.jetbrains.annotations.Nullable;
 
@@ -67,6 +68,23 @@ import org.jetbrains.annotations.Nullable;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
 public class JdkMarshaller extends AbstractNodeNameAwareMarshaller {
+    /** Class name filter. */
+    private final IgnitePredicate<String> clsFilter;
+
+    /**
+     * Default constructor.
+     */
+    public JdkMarshaller() {
+        this(null);
+    }
+
+    /**
+     * @param clsFilter Class name filter.
+     */
+    public JdkMarshaller(IgnitePredicate<String> clsFilter) {
+        this.clsFilter = clsFilter;
+    }
+
     /** {@inheritDoc} */
     @Override protected void marshal0(@Nullable Object obj, OutputStream out) throws IgniteCheckedException {
         assert out != null;
@@ -116,7 +134,7 @@ public class JdkMarshaller extends AbstractNodeNameAwareMarshaller {
         ObjectInputStream objIn = null;
 
         try {
-            objIn = new JdkMarshallerObjectInputStream(new JdkMarshallerInputStreamWrapper(in), clsLdr);
+            objIn = new JdkMarshallerObjectInputStream(new JdkMarshallerInputStreamWrapper(in), clsLdr, clsFilter);
 
             return (T)objIn.readObject();
         }

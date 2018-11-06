@@ -180,5 +180,14 @@ namespace ignite
 
             return CTimeToTimestamp(localTime, ns);
         }
+
+        std::string GetDynamicLibraryName(const char* name)
+        {
+            std::stringstream libNameBuffer;
+
+            libNameBuffer << name << Dle;
+
+            return libNameBuffer.str();
+        }
     }
 }

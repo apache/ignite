@@ -181,7 +181,7 @@ public class VisorQueryTaskArg extends VisorDataTransferObject {
         loc = in.readBoolean();
         pageSize = in.readInt();
 
-        if (protoVer == V2)
+        if (protoVer > V1)
             lazy = in.readBoolean();
     }
 

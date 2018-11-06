@@ -28,6 +28,8 @@ git-patch-prop-local.sh
 /modules/platforms/**/*.VC.db
 **/dotnet/libs/
 *.classname*
+*.exe
+.mvn/
 
 #Visual Studio files
 *.[Oo]bj
@@ -56,6 +58,10 @@ git-patch-prop-local.sh
 ipch/
 [Oo]bj/
 [Bb]in
+!/bin
+!/modules/core/src/test/bin
+!/modules/sqlline/bin
+!/modules/web-console/web-agent/bin
 [Dd]ebug*/
 [Rr]elease*/
 packages
@@ -89,3 +95,5 @@ packages
 /modules/platforms/cpp/odbc-test/ignite-odbc-tests
 /modules/platforms/cpp/stamp-h1
 
+#Files related to ML manual-runnable tests
+/modules/ml/src/test/resources/manualrun/trees/columntrees.manualrun.properties

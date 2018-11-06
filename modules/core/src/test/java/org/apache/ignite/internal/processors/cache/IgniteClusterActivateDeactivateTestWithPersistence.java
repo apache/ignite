@@ -20,9 +20,17 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -38,14 +46,19 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setAutoActivationEnabled(false);
     }
 
     /**
@@ -73,15 +86,11 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
      * @throws Exception If failed.
      */
     public void testActivateCachesRestore_5_Servers_WithNewCaches() throws Exception {
-        activateCachesRestore(5, false);
+        activateCachesRestore(5, true);
     }
 
-    /**
-     * @param srvs Number of server nodes.
-     * @param withNewCaches If {@code true} then after restart has new caches in configuration.
-     * @throws Exception If failed.
-     */
-    private void activateCachesRestore(int srvs, boolean withNewCaches) throws Exception {
+    /** */
+    private Map<Integer, Integer> startGridsAndLoadData(int srvs) throws Exception {
         Ignite srv = startGrids(srvs);
 
         srv.active(true);
@@ -98,6 +107,17 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
             }
         }
 
+        return cacheData;
+    }
+
+    /**
+     * @param srvs Number of server nodes.
+     * @param withNewCaches If {@code true} then after restart has new caches in configuration.
+     * @throws Exception If failed.
+     */
+    private void activateCachesRestore(int srvs, boolean withNewCaches) throws Exception {
+        Map<Integer, Integer> cacheData = startGridsAndLoadData(srvs);
+
         stopAllGrids();
 
         for (int i = 0; i < srvs; i++) {
@@ -107,7 +127,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
             startGrid(i);
         }
 
-        srv = ignite(0);
+        Ignite srv = ignite(0);
 
         checkNoCaches(srvs);
 
@@ -120,8 +140,9 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
                 checkCache(ignite(i), CACHE_NAME_PREFIX + c, true);
         }
 
-        for (CacheConfiguration ccfg : cacheConfigurations1())
-            checkCacheData(cacheData, ccfg.getName());
+        DataStorageConfiguration dsCfg = srv.configuration().getDataStorageConfiguration();
+
+        checkCachesData(cacheData, dsCfg);
 
         checkCaches(srvs, CACHES);
 
@@ -152,8 +173,65 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
                 checkCache(ignite(i), CACHE_NAME_PREFIX + c, true);
         }
 
-        for (CacheConfiguration ccfg : cacheConfigurations1())
-            checkCacheData(cacheData, ccfg.getName());
+        checkCachesData(cacheData, dsCfg);
+    }
+
+    /**
+     * @see <a href="https://issues.apache.org/jira/browse/IGNITE-7330">IGNITE-7330</a> for more information about context of the test
+     */
+    public void testClientJoinsWhenActivationIsInProgress() throws Exception {
+        startGridsAndLoadData(5);
+
+        stopAllGrids();
+
+        Ignite srv = startGrids(5);
+
+        final CountDownLatch clientStartLatch = new CountDownLatch(1);
+
+        IgniteInternalFuture clStartFut = GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                try {
+                    clientStartLatch.await();
+
+                    Thread.sleep(10);
+
+                    client = true;
+
+                    Ignite cl = startGrid("client0");
+
+                    IgniteCache<Object, Object> atomicCache = cl.cache(CACHE_NAME_PREFIX + '0');
+                    IgniteCache<Object, Object> txCache = cl.cache(CACHE_NAME_PREFIX + '1');
+
+                    assertEquals(100, atomicCache.size());
+                    assertEquals(100, txCache.size());
+                }
+                catch (Exception e) {
+                    log.error("Error occurred", e);
+                }
+            }
+        }, "client-starter-thread");
+
+        clientStartLatch.countDown();
+        srv.active(true);
+
+        clStartFut.get();
+    }
+
+    /**
+     * Checks that persistent caches are present with actual data and volatile caches are missing.
+     *
+     * @param cacheData Cache data.
+     * @param dsCfg DataStorageConfiguration.
+     */
+    private void checkCachesData(Map<Integer, Integer> cacheData, DataStorageConfiguration dsCfg) {
+        for (CacheConfiguration ccfg : cacheConfigurations1()) {
+            if (CU.isPersistentCache(ccfg, dsCfg))
+                checkCacheData(cacheData, ccfg.getName());
+            else {
+                for (Ignite node : G.allGrids())
+                    assertTrue(node.cache(ccfg.getName()) == null || node.cache(ccfg.getName()).size() == 0);
+            }
+        }
     }
 
     /**
@@ -176,22 +254,15 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
         ccfg.setGroupName(DEFAULT_CACHE_NAME);
 
-        ccfgs = new CacheConfiguration[]{ccfg};
-
-        startGrids(SRVS);
+        ccfgs = new CacheConfiguration[] {ccfg};
 
         try {
-            ignite(0).active(true);
+            startGrids(SRVS);
 
             fail();
         }
-        catch (IgniteException e) {
-            // Expected error.
+        catch (IgniteCheckedException e) {
+            assertTrue(X.getCause(e).getMessage().contains("Failed to start configured cache."));
         }
-
-        for (int i = 0; i < SRVS; i++)
-            assertFalse(ignite(i).active());
-
-        checkNoCaches(SRVS);
     }
 }

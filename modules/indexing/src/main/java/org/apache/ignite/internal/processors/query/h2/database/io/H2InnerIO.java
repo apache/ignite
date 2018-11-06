@@ -47,9 +47,9 @@ public class H2InnerIO extends BPlusInnerIO<SearchRow> implements H2RowLinkIO {
     @Override public void storeByOffset(long pageAddr, int off, SearchRow row) {
         GridH2Row row0 = (GridH2Row)row;
 
-        assert row0.link != 0;
+        assert row0.link() != 0;
 
-        PageUtils.putLong(pageAddr, off, row0.link);
+        PageUtils.putLong(pageAddr, off, row0.link());
     }
 
     /** {@inheritDoc} */
@@ -57,7 +57,7 @@ public class H2InnerIO extends BPlusInnerIO<SearchRow> implements H2RowLinkIO {
         throws IgniteCheckedException {
         long link = getLink(pageAddr, idx);
 
-        return ((H2Tree)tree).getRowFactory().getRow(link);
+        return ((H2Tree)tree).createRowFromLink(link);
     }
 
     /** {@inheritDoc} */

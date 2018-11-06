@@ -85,6 +85,23 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
         }
 
         /// <summary>
+        /// Tests the multi key join inline
+        /// </summary>
+        [Test]
+        public void TestMultiKeyJoinInline()
+        {
+            var organizations = GetOrgCache().AsCacheQueryable();
+            var persons = GetPersonCache().AsCacheQueryable();
+
+            var multiKey = persons.Where(p => p.Key == 1).Join(organizations,
+                p => new { OrgId = p.Value.OrganizationId, p.Key },
+                o => new { OrgId = o.Value.Id, Key = o.Key - 1000 },
+                (p, o) => new { PersonName = p.Value.Name, OrgName = o.Value.Name });
+
+            Assert.AreEqual(" Person_1  ", multiKey.Single().PersonName);
+        }
+
+        /// <summary>
         /// Tests the cross cache join.
         /// </summary>
         [Test]
@@ -243,17 +260,23 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
         [Test]
         public void TestMultipleFrom()
         {
-            var persons = GetPersonCache().AsCacheQueryable().Where(x => x.Key < PersonCount);
-            var roles = GetRoleCache().AsCacheQueryable().Where(x => x.Value.Name != "1");
-
-            var all = persons.SelectMany(person => roles.Select(role => new { role, person }));
-            Assert.AreEqual(RoleCount * PersonCount, all.Count());
+            var persons = GetPersonCache().AsCacheQueryable();
+            var roles = GetRoleCache().AsCacheQueryable();
+            var organizations = GetOrgCache().AsCacheQueryable();
 
             var filtered =
                 from person in persons
                 from role in roles
-                where person.Key == role.Key.Foo
-                select new { Person = person.Value.Name, Role = role.Value.Name };
+                from org in organizations
+                where person.Key == role.Key.Foo && person.Value.OrganizationId == org.Value.Id
+                select new
+                {
+                    PersonKey = person.Key,
+                    Person = person.Value.Name,
+                    RoleFoo = role.Key.Foo,
+                    Role = role.Value.Name,
+                    Org = org.Value.Name
+                };
 
             var res = filtered.ToArray();
 
@@ -261,20 +284,83 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
         }
 
         /// <summary>
-        /// Tests query with multiple from clause with inline query sources.
+        /// Tests query with two from clause.
         /// </summary>
         [Test]
-        public void TestMultipleFromInline()
+        public void TestTwoFromSubquery()
         {
+            var persons = GetPersonCache().AsCacheQueryable();
+            var roles = GetRoleCache().AsCacheQueryable();
+            var personsSubquery = persons.Where(x => x.Key < PersonCount);
+            var rolesSubquery = roles.Where(x => x.Value.Name == "Role_2");
+
             var filtered =
-                from person in GetPersonCache().AsCacheQueryable()
-                from role in GetRoleCache().AsCacheQueryable()
+                from person in persons
+                from role in rolesSubquery
                 where person.Key == role.Key.Foo
-                select new { Person = person.Value.Name, Role = role.Value.Name };
+                select new
+                {
+                    PersonKey = person.Key, Person = person.Value.Name,
+                    RoleFoo = role.Key.Foo, Role = role.Value.Name
+                };
 
             var res = filtered.ToArray();
+            Assert.AreEqual(1, res.Length);
 
+            filtered =
+                from person in personsSubquery
+                from role in rolesSubquery
+                where person.Key == role.Key.Foo
+                select new
+                {
+                    PersonKey = person.Key, Person = person.Value.Name,
+                    RoleFoo = role.Key.Foo, Role = role.Value.Name
+                };
+
+            res = filtered.ToArray();
+            Assert.AreEqual(1, res.Length);
+
+            filtered =
+                from person in personsSubquery
+                from role in roles
+                where person.Key == role.Key.Foo
+                select new
+                {
+                    PersonKey = person.Key, Person = person.Value.Name,
+                    RoleFoo = role.Key.Foo, Role = role.Value.Name
+                };
+
+            res = filtered.ToArray();
             Assert.AreEqual(RoleCount, res.Length);
+        }
+
+
+        /// <summary>
+        /// Tests query with two from clause.
+        /// </summary>
+        [Test]
+        public void TestMultipleFromSubquery()
+        {
+            var organizations = GetOrgCache().AsCacheQueryable().Where(x => x.Key == 1001);
+            var persons = GetPersonCache().AsCacheQueryable().Where(x => x.Key < 20);
+            var roles = GetRoleCache().AsCacheQueryable().Where(x => x.Key.Foo >= 0);
+
+            var filtered =
+                from person in persons
+                from role in roles
+                from org in organizations
+                where person.Key == role.Key.Foo && person.Value.OrganizationId == org.Value.Id
+                select new
+                {
+                    PersonKey = person.Key,
+                    Person = person.Value.Name,
+                    RoleFoo = role.Key.Foo,
+                    Role = role.Value.Name,
+                    Org = org.Value.Name
+                };
+
+            var res = filtered.ToArray();
+            Assert.AreEqual(2, res.Length);
         }
 
         /// <summary>

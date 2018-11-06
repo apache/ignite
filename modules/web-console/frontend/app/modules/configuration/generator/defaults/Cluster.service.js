@@ -241,7 +241,8 @@ const DFLT_CLUSTER = {
                     },
                     maxErrorRetry: {
                         clsName: 'com.amazonaws.retry.PredefinedRetryPolicies'
-                    }
+                    },
+                    honorMaxErrorRetryInClientConfig: false
                 },
                 maxErrorRetry: -1,
                 socketTimeout: 50000,
@@ -254,7 +255,13 @@ const DFLT_CLUSTER = {
                 useReaper: true,
                 useGzip: false,
                 preemptiveBasicProxyAuth: false,
-                useTcpKeepAlive: false
+                useTcpKeepAlive: false,
+                cacheResponseMetadata: true,
+                clientExecutionTimeout: 0,
+                socketSendBufferSizeHint: 0,
+                socketReceiveBufferSizeHint: 0,
+                useExpectContinue: true,
+                useThrottleRetries: true
             }
         },
         JDBC: {
@@ -311,6 +318,51 @@ const DFLT_CLUSTER = {
             rateTimeInterval: 60000
         }
     },
+    dataStorageConfiguration: {
+        systemCacheInitialSize: 41943040,
+        systemCacheMaxSize: 104857600,
+        pageSize: 4096,
+        storagePath: 'db',
+        dataRegionConfigurations: {
+            name: 'default',
+            initialSize: 268435456,
+            pageEvictionMode: {
+                clsName: 'org.apache.ignite.configuration.DataPageEvictionMode',
+                value: 'DISABLED'
+            },
+            evictionThreshold: 0.9,
+            emptyPagesPoolSize: 100,
+            metricsEnabled: false,
+            metricsSubIntervalCount: 5,
+            metricsRateTimeInterval: 60000,
+            checkpointPageBufferSize: 0
+        },
+        metricsEnabled: false,
+        alwaysWriteFullPages: false,
+        checkpointFrequency: 180000,
+        checkpointPageBufferSize: 268435456,
+        checkpointThreads: 4,
+        checkpointWriteOrder: {
+            clsName: 'org.apache.ignite.configuration.CheckpointWriteOrder',
+            value: 'SEQUENTIAL'
+        },
+        walMode: {
+            clsName: 'org.apache.ignite.configuration.WALMode',
+            value: 'DEFAULT'
+        },
+        walPath: 'db/wal',
+        walArchivePath: 'db/wal/archive',
+        walSegments: 10,
+        walSegmentSize: 67108864,
+        walHistorySize: 20,
+        walFlushFrequency: 2000,
+        walFsyncDelayNanos: 1000,
+        walRecordIteratorBufferSize: 67108864,
+        lockWaitTime: 10000,
+        walThreadLocalBufferSize: 131072,
+        metricsSubIntervalCount: 5,
+        metricsRateTimeInterval: 60000
+    },
     utilityCacheKeepAliveTime: 60000,
     hadoopConfiguration: {
         mapReducePlanner: {
@@ -354,6 +406,21 @@ const DFLT_CLUSTER = {
         socketReceiveBufferSize: 0,
         tcpNoDelay: true,
         maxOpenCursorsPerConnection: 128
+    },
+    clientConnectorConfiguration: {
+        port: 10800,
+        portRange: 100,
+        socketSendBufferSize: 0,
+        socketReceiveBufferSize: 0,
+        tcpNoDelay: true,
+        maxOpenCursorsPerConnection: 128,
+        idleTimeout: 0,
+        jdbcEnabled: true,
+        odbcEnabled: true,
+        thinClientEnabled: true,
+        sslEnabled: false,
+        useIgniteSslContextFactory: true,
+        sslClientAuth: false
     }
 };
 

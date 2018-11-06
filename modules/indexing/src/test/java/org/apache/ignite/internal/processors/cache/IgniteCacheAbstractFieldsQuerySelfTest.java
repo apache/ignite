@@ -36,6 +36,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.AffinityKey;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -43,8 +44,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicLongValue;
 import org.apache.ignite.internal.processors.datastructures.GridCacheInternalKeyImpl;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -663,8 +667,43 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
 
         Collection<List<?>> res = qry.getAll();
 
-        assert res != null;
-        assert res.isEmpty();
+        assertNotNull(res);
+        assertTrue(res.isEmpty());
+    }
+
+    /**
+     * Verifies that exactly one record is found when we have equality comparison in where clause (which is supposed
+     * to use {@link BPlusTree#findOne(Object, Object)} instead of {@link BPlusTree#find(Object, Object, Object)}.
+     *
+     * @throws Exception If failed.
+     */
+    public void testSingleResultUsesFindOne() throws Exception {
+        QueryCursor<List<?>> qry =
+            intCache.query(sqlFieldsQuery("select _val from Integer where _key = 25"));
+
+        List<List<?>> res = qry.getAll();
+
+        assertNotNull(res);
+        assertEquals(1, res.size());
+        assertEquals(1, res.get(0).size());
+        assertEquals(25, res.get(0).get(0));
+    }
+
+    /**
+     * Verifies that zero records are found when we have equality comparison in where clause (which is supposed
+     * to use {@link BPlusTree#findOne(Object, Object)} instead of {@link BPlusTree#find(Object, Object, Object)}
+     * and the key is not in the cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testEmptyResultUsesFindOne() throws Exception {
+        QueryCursor<List<?>> qry =
+            intCache.query(sqlFieldsQuery("select _val from Integer where _key = -10"));
+
+        List<List<?>> res = qry.getAll();
+
+        assertNotNull(res);
+        assertEquals(0, res.size());
     }
 
     /** @throws Exception If failed. */

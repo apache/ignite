@@ -81,7 +81,8 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * @throws SQLException if failed.
      */
     public void testParsingErrors() throws SQLException {
-        checkErrorState("gibberish", "42000");
+        checkErrorState("gibberish", "42000",
+            "Failed to parse query. Syntax error in SQL statement \"GIBBERISH[*] \"");
     }
 
     /**
@@ -89,7 +90,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * @throws SQLException if failed.
      */
     public void testTableErrors() throws SQLException {
-        checkErrorState("DROP TABLE \"PUBLIC\".missing", "42000");
+        checkErrorState("DROP TABLE \"PUBLIC\".missing", "42000", "Table doesn't exist: MISSING");
     }
 
     /**
@@ -97,7 +98,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * @throws SQLException if failed.
      */
     public void testIndexErrors() throws SQLException {
-        checkErrorState("DROP INDEX \"PUBLIC\".missing", "42000");
+        checkErrorState("DROP INDEX \"PUBLIC\".missing", "42000", "Index doesn't exist: MISSING");
     }
 
     /**
@@ -105,9 +106,11 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * @throws SQLException if failed.
      */
     public void testDmlErrors() throws SQLException {
-        checkErrorState("INSERT INTO \"test\".INTEGER(_key, _val) values(1, null)", "22004");
+        checkErrorState("INSERT INTO \"test\".INTEGER(_key, _val) values(1, null)", "22004",
+            "Value for INSERT, COPY, MERGE, or UPDATE must not be null");
 
-        checkErrorState("INSERT INTO \"test\".INTEGER(_key, _val) values(1, 'zzz')", "50000");
+        checkErrorState("INSERT INTO \"test\".INTEGER(_key, _val) values(1, 'zzz')", "0700B",
+            "Value conversion failed [from=java.lang.String, to=java.lang.Integer]");
     }
 
     /**
@@ -115,7 +118,8 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * @throws SQLException if failed.
      */
     public void testUnsupportedSql() throws SQLException {
-        checkErrorState("ALTER TABLE \"test\".Integer DROP COLUMN _key", "0A000");
+        checkErrorState("ALTER TABLE \"test\".Integer MODIFY COLUMN _key CHAR", "0A000",
+            "ALTER COLUMN is not supported");
     }
 
     /**
@@ -133,7 +137,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
 
                 return null;
             }
-        }, "08003");
+        }, "08003", "Connection is closed.");
 
         checkErrorState(new IgniteCallable<Void>() {
             @Override public Void call() throws Exception {
@@ -145,7 +149,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
 
                 return null;
             }
-        }, "08003");
+        }, "08003", "Connection is closed.");
 
         checkErrorState(new IgniteCallable<Void>() {
             @Override public Void call() throws Exception {
@@ -157,7 +161,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
 
                 return null;
             }
-        }, "08003");
+        }, "08003", "Connection is closed.");
 
         checkErrorState(new IgniteCallable<Void>() {
             @Override public Void call() throws Exception {
@@ -171,7 +175,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
 
                 return null;
             }
-        }, "08003");
+        }, "08003", "Connection is closed.");
 
         checkErrorState(new IgniteCallable<Void>() {
             @Override public Void call() throws Exception {
@@ -185,7 +189,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
 
                 return null;
             }
-        }, "08003");
+        }, "08003", "Connection is closed.");
 
         checkErrorState(new IgniteCallable<Void>() {
             @Override public Void call() throws Exception {
@@ -199,7 +203,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
 
                 return null;
             }
-        }, "08003");
+        }, "08003", "Connection is closed.");
 
         checkErrorState(new IgniteCallable<Void>() {
             @Override public Void call() throws Exception {
@@ -213,7 +217,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
 
                 return null;
             }
-        }, "08003");
+        }, "08003", "Connection is closed.");
 
         checkErrorState(new IgniteCallable<Void>() {
             @Override public Void call() throws Exception {
@@ -227,7 +231,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
 
                 return null;
             }
-        }, "08003");
+        }, "08003", "Connection is closed.");
     }
 
     /**
@@ -247,7 +251,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                     rs.getInt(1);
                 }
             }
-        }, "24000");
+        }, "24000", "Result set is closed");
     }
 
     /**
@@ -266,7 +270,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                     rs.getLong(1);
                 }
             }
-        }, "0700B");
+        }, "0700B", "Cannot convert to long");
     }
 
     /**
@@ -285,7 +289,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                     rs.getLong(1);
                 }
             }
-        }, "0700B");
+        }, "0700B", "Cannot convert to long");
     }
 
     /**
@@ -304,7 +308,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                     rs.getFloat(1);
                 }
             }
-        }, "0700B");
+        }, "0700B", "Cannot convert to float");
     }
 
     /**
@@ -323,7 +327,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                     rs.getDouble(1);
                 }
             }
-        }, "0700B");
+        }, "0700B", "Cannot convert to double");
     }
 
     /**
@@ -342,7 +346,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                     rs.getByte(1);
                 }
             }
-        }, "0700B");
+        }, "0700B", "Cannot convert to byte");
     }
 
     /**
@@ -361,7 +365,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                     rs.getShort(1);
                 }
             }
-        }, "0700B");
+        }, "0700B", "Cannot convert to short");
     }
 
     /**
@@ -380,7 +384,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                     rs.getBigDecimal(1);
                 }
             }
-        }, "0700B");
+        }, "0700B", "Cannot convert to");
     }
 
     /**
@@ -399,7 +403,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                     rs.getBoolean(1);
                 }
             }
-        }, "0700B");
+        }, "0700B", "Cannot convert to boolean");
     }
 
     /**
@@ -418,7 +422,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                     rs.getObject(1, List.class);
                 }
             }
-        }, "0700B");
+        }, "0700B", "Cannot convert to");
     }
 
     /**
@@ -437,7 +441,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                     rs.getDate(1);
                 }
             }
-        }, "0700B");
+        }, "0700B", "Cannot convert to date");
     }
 
     /**
@@ -456,7 +460,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                     rs.getTime(1);
                 }
             }
-        }, "0700B");
+        }, "0700B", "Cannot convert to time");
     }
 
     /**
@@ -475,7 +479,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                     rs.getTimestamp(1);
                 }
             }
-        }, "0700B");
+        }, "0700B", "Cannot convert to timestamp");
     }
 
     /**
@@ -494,7 +498,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                     rs.getURL(1);
                 }
             }
-        }, "0700B");
+        }, "0700B", "Cannot convert to");
     }
 
     /**
@@ -516,7 +520,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
 
                             return null;
                         }
-                    }, "22004");
+                    }, "22004", "Null value is not allowed for column 'NAME'");
                 }
                 finally {
                     stmt.execute("DROP TABLE nulltest");
@@ -541,7 +545,8 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                         "WITH \"template=" + CACHE_STORE_TEMPLATE + "\"");
                 }
             }
-        }, "0A000");
+        }, "0A000",
+            "NOT NULL constraint is not supported when CacheConfiguration.readThrough is enabled.");
     }
 
     /**
@@ -560,7 +565,151 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                         "WITH \"template=" + CACHE_INTERCEPTOR_TEMPLATE + "\"");
                 }
             }
-        }, "0A000");
+        }, "0A000", "NOT NULL constraint is not supported when CacheConfiguration.interceptor is set.");
+    }
+
+    /**
+     * Checks wrong table name select error message.
+     *
+     * @throws SQLException If failed.
+     */
+    public void testSelectWrongTable() throws SQLException {
+        checkSqlErrorMessage("select from wrong", "42000",
+            "Failed to parse query. Table \"WRONG\" not found");
+    }
+
+    /**
+     * Checks wrong column name select error message.
+     *
+     * @throws SQLException If failed.
+     */
+    public void testSelectWrongColumnName() throws SQLException {
+        checkSqlErrorMessage("select wrong from test", "42000",
+            "Failed to parse query. Column \"WRONG\" not found");
+    }
+
+    /**
+     * Checks wrong syntax select error message.
+     *
+     * @throws SQLException If failed.
+     */
+    public void testSelectWrongSyntax() throws SQLException {
+        checkSqlErrorMessage("select from test where", "42000",
+            "Failed to parse query. Syntax error in SQL statement \"SELECT FROM TEST WHERE[*]");
+    }
+
+    /**
+     * Checks wrong table name DML error message.
+     *
+     * @throws SQLException If failed.
+     */
+    public void testDmlWrongTable() throws SQLException {
+        checkSqlErrorMessage("insert into wrong (id, val) values (3, 'val3')", "42000",
+            "Failed to parse query. Table \"WRONG\" not found");
+
+        checkSqlErrorMessage("merge into wrong (id, val) values (3, 'val3')", "42000",
+            "Failed to parse query. Table \"WRONG\" not found");
+
+        checkSqlErrorMessage("update wrong set val = 'val3' where id = 2", "42000",
+            "Failed to parse query. Table \"WRONG\" not found");
+
+        checkSqlErrorMessage("delete from wrong where id = 2", "42000",
+            "Failed to parse query. Table \"WRONG\" not found");
+    }
+
+    /**
+     * Checks wrong column name DML error message.
+     *
+     * @throws SQLException If failed.
+     */
+    public void testDmlWrongColumnName() throws SQLException {
+        checkSqlErrorMessage("insert into test (id, wrong) values (3, 'val3')", "42000",
+            "Failed to parse query. Column \"WRONG\" not found");
+
+        checkSqlErrorMessage("merge into test (id, wrong) values (3, 'val3')", "42000",
+            "Failed to parse query. Column \"WRONG\" not found");
+
+        checkSqlErrorMessage("update test set wrong = 'val3' where id = 2", "42000",
+            "Failed to parse query. Column \"WRONG\" not found");
+
+        checkSqlErrorMessage("delete from test where wrong = 2", "42000",
+            "Failed to parse query. Column \"WRONG\" not found");
+    }
+
+    /**
+     * Checks wrong syntax DML error message.
+     *
+     * @throws SQLException If failed.
+     */
+    public void testDmlWrongSyntax() throws SQLException {
+        checkSqlErrorMessage("insert test (id, val) values (3, 'val3')", "42000",
+            "Failed to parse query. Syntax error in SQL statement \"INSERT TEST[*] (ID, VAL)");
+
+        checkSqlErrorMessage("merge test (id, val) values (3, 'val3')", "42000",
+            "Failed to parse query. Syntax error in SQL statement \"MERGE TEST[*] (ID, VAL)");
+
+        checkSqlErrorMessage("update test val = 'val3' where id = 2", "42000",
+            "Failed to parse query. Syntax error in SQL statement \"UPDATE TEST VAL =[*] 'val3' WHERE ID = 2");
+
+        checkSqlErrorMessage("delete from test 1where id = 2", "42000",
+            "Failed to parse query. Syntax error in SQL statement \"DELETE FROM TEST 1[*]WHERE ID = 2 ");
+    }
+
+    /**
+     * Checks wrong table name DDL error message.
+     *
+     * @throws SQLException If failed.
+     */
+    public void testDdlWrongTable() throws SQLException {
+        checkSqlErrorMessage("create table test (id int primary key, val varchar)", "42000",
+            "Table already exists: TEST");
+
+        checkSqlErrorMessage("drop table wrong", "42000",
+            "Table doesn't exist: WRONG");
+
+        checkSqlErrorMessage("create index idx1 on wrong (val)", "42000",
+            "Table doesn't exist: WRONG");
+
+        checkSqlErrorMessage("drop index wrong", "42000",
+            "Index doesn't exist: WRONG");
+
+        checkSqlErrorMessage("alter table wrong drop column val", "42000",
+            "Failed to parse query. Table \"WRONG\" not found");
+    }
+
+    /**
+     * Checks wrong column name DDL error message.
+     *
+     * @throws SQLException If failed.
+     */
+    public void testDdlWrongColumnName() throws SQLException {
+        checkSqlErrorMessage("create index idx1 on test (wrong)", "42000",
+            "Column doesn't exist: WRONG");
+
+        checkSqlErrorMessage("alter table test drop column wrong", "42000",
+            "Failed to parse query. Column \"WRONG\" not found");
+    }
+
+    /**
+     * Checks wrong syntax DDL error message.
+     *
+     * @throws SQLException If failed.
+     */
+    public void testDdlWrongSyntax() throws SQLException {
+        checkSqlErrorMessage("create table test2 (id int wrong key, val varchar)", "42000",
+            "Failed to parse query. Syntax error in SQL statement \"CREATE TABLE TEST2 (ID INT WRONG[*]");
+
+        checkSqlErrorMessage("drop table test on", "42000",
+            "Failed to parse query. Syntax error in SQL statement \"DROP TABLE TEST ON[*]");
+
+        checkSqlErrorMessage("create index idx1 test (val)", "42000",
+            "Failed to parse query. Syntax error in SQL statement \"CREATE INDEX IDX1 TEST[*]");
+
+        checkSqlErrorMessage("drop index", "42000",
+            "Failed to parse query. Syntax error in SQL statement \"DROP INDEX [*]");
+
+        checkSqlErrorMessage("alter table test drop column", "42000",
+            "Failed to parse query. Syntax error in SQL statement \"ALTER TABLE TEST DROP COLUMN [*]");
     }
 
     /**
@@ -576,14 +725,14 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * @throws SQLException if failed.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    private void checkErrorState(final String sql, String expState) throws SQLException {
+    private void checkErrorState(final String sql, String expState, String expMsg) throws SQLException {
         checkErrorState(new ConnClosure() {
             @Override public void run(Connection conn) throws Exception {
                 try (final PreparedStatement stmt = conn.prepareStatement(sql)) {
                     stmt.execute();
                 }
             }
-        }, expState);
+        }, expState, expMsg);
     }
 
     /**
@@ -593,7 +742,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * @throws SQLException if failed.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    protected void checkErrorState(final ConnClosure clo, String expState) throws SQLException {
+    protected void checkErrorState(final ConnClosure clo, String expState, String expMsg) throws SQLException {
         checkErrorState(new IgniteCallable<Void>() {
             @Override public Void call() throws Exception {
                 try (final Connection conn = getConnection()) {
@@ -604,7 +753,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                     return null;
                 }
             }
-        }, expState);
+        }, expState, expMsg);
     }
 
     /**
@@ -614,10 +763,44 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * @throws SQLException if failed.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    protected void checkErrorState(final IgniteCallable<Void> clo, String expState) throws SQLException {
-        SQLException ex = (SQLException)GridTestUtils.assertThrows(null, clo, SQLException.class, null);
+    protected void checkErrorState(final IgniteCallable<Void> clo, String expState, String expMsg) throws SQLException {
+        SQLException ex = (SQLException)GridTestUtils.assertThrows(null, clo, SQLException.class, expMsg);
 
         assertEquals(expState, ex.getSQLState());
+    }
+
+    /**
+     * Check SQL exception message and error code.
+     *
+     * @param sql Query string.
+     * @param expState Error code.
+     * @param expMsg Error message.
+     * @throws SQLException if failed.
+     */
+    private void checkSqlErrorMessage(final String sql, String expState, String expMsg) throws SQLException {
+        checkErrorState(new IgniteCallable<Void>() {
+            @Override public Void call() throws Exception {
+                try (final Connection conn = getConnection()) {
+                    conn.setSchema("PUBLIC");
+
+                    try (Statement stmt = conn.createStatement()) {
+                        stmt.executeUpdate("DROP TABLE IF EXISTS wrong");
+                        stmt.executeUpdate("DROP TABLE IF EXISTS test");
+
+                        stmt.executeUpdate("CREATE TABLE test (id INT PRIMARY KEY, val VARCHAR)");
+
+                        stmt.executeUpdate("INSERT INTO test (id, val) VALUES (1, 'val1')");
+                        stmt.executeUpdate("INSERT INTO test (id, val) VALUES (2, 'val2')");
+
+                        stmt.execute(sql);
+
+                        fail("Exception is expected");
+                    }
+
+                    return null;
+                }
+            }
+        }, expState, expMsg);
     }
 
     /**

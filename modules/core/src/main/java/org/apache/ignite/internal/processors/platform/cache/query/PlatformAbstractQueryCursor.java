@@ -176,6 +176,15 @@ public abstract class PlatformAbstractQueryCursor<T> extends PlatformAbstractTar
     protected abstract void write(BinaryRawWriterEx writer, T val);
 
     /**
+     * Gets the cursor.
+     *
+     * @return Cursor.
+     */
+    public QueryCursorEx<T> cursor() {
+        return cursor;
+    }
+
+    /**
      * Query cursor consumer.
      */
     private static class Consumer<T> implements QueryCursorEx.Consumer<T> {

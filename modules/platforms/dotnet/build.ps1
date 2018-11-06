@@ -27,7 +27,7 @@ Builds all parts of Apache Ignite.NET: Java, .NET, NuGet. Copies results to 'bin
 
 Requirements:
 * PowerShell 3
-* JDK 7+
+* JDK 8+
 * MAVEN_HOME environment variable or mvn.bat in PATH
 
 .PARAMETER skipJava
@@ -63,6 +63,9 @@ Java jar files source folders, default is "modules\indexing\target,modules\core\
 .PARAMETER nugetPath
 Path to nuget.exe.
 
+.PARAMETER version
+NuGet version override (normally inferred from assembly version).
+
 .EXAMPLE
 .\build.ps1 -clean  
 # Full rebuild of Java, .NET and NuGet packages.
@@ -86,7 +89,8 @@ param (
     [string]$mavenOpts="-U -P-lgpl,-scala,-examples,-test,-benchmarks -Dmaven.javadoc.skip=true",
 	[string]$jarDirs="modules\indexing\target,modules\core\target,modules\spring\target",
     [string]$asmDirs="",
-    [string]$nugetPath=""
+    [string]$nugetPath="",
+	[string]$version=""
  )
 
 # 1) Build Java (Maven)
@@ -117,6 +121,10 @@ if (!$skipJava) {
         echo "Maven detected at $mv."
     }
 
+    # Install Maven Wrapper
+    cmd /c "$mv -N io.takari:maven:wrapper -Dmaven=3.5.2"
+    $mv = "mvnw.cmd"
+
     # Run Maven
     echo "Starting Java (Maven) build..."
     
@@ -133,7 +141,7 @@ else {
 }
 
 # Copy (relevant) jars
-$libsDir = "$PSScriptRoot\bin\Libs"
+$libsDir = "$PSScriptRoot\bin\libs"
 mkdir -Force $libsDir; del -Force $libsDir\*.*
 
 ls $jarDirs.Split(',') *.jar -recurse `
@@ -178,7 +186,7 @@ if (!$skipDotNet) {
 
 	# Restore NuGet packages
 	echo "Restoring NuGet..."
-	& $ng restore
+	& $ng restore Apache.Ignite.sln
 
 	# Build
 	$targets = if ($clean) {"Clean;Rebuild"} else {"Build"}
@@ -237,15 +245,11 @@ if (!$skipNuGet) {
     mkdir -Force $nupkgDir; del -Force $nupkgDir\*.*
 
     # Detect version
-    $ver = (gi Apache.Ignite.Core\bin\Release\Apache.Ignite.Core.dll).VersionInfo.ProductVersion
+    $ver = if ($version) { $version } else { (gi Apache.Ignite.Core\bin\Release\Apache.Ignite.Core.dll).VersionInfo.ProductVersion }
 
     # Find all nuspec files and run 'nuget pack' either directly, or on corresponding csproj files (if present)
     ls *.nuspec -Recurse  `
         | % { 
-            If (Test-Path ([io.path]::ChangeExtension($_.FullName, ".csproj"))){
-                [io.path]::ChangeExtension($_.FullName, ".csproj")
-            } Else { $_.FullName }
-        } | % { 
             & $ng pack $_ -Prop Configuration=Release -Prop Platform=AnyCPU -Version $ver -OutputDirectory $nupkgDir
 
             # check result

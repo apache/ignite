@@ -400,7 +400,14 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
 
             out.synchronize();
 
-            ptr = platformCtx.gateway().cacheStoreCreate(mem.pointer());
+            try {
+                ptr = platformCtx.gateway().cacheStoreCreate(mem.pointer());
+            }
+            catch (IgniteException e) {
+                // throw a IgniteCheckedException to correctly finish
+                // CacheAffinitySharedManager.processClientCacheStartRequests()
+                throw new IgniteCheckedException("Could not create .NET CacheStore", e);
+            }
         }
     }
 

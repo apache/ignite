@@ -27,6 +27,9 @@ import IgniteIGFSDefaults from './defaults/IGFS.service';
 import JavaTypes from '../../../services/JavaTypes.service';
 import VersionService from 'app/services/Version.service';
 
+import isNil from 'lodash/isNil';
+import {nonNil, nonEmpty} from 'app/utils/lodashMixins';
+
 const clusterDflts = new IgniteClusterDefaults();
 const cacheDflts = new IgniteCacheDefaults();
 const igfsDflts = new IgniteIGFSDefaults();
@@ -77,10 +80,19 @@ export default class IgniteConfigurationGenerator {
         this.clusterAtomics(cluster.atomicConfiguration, available, cfg);
         this.clusterBinary(cluster.binaryConfiguration, cfg);
         this.clusterCacheKeyConfiguration(cluster.cacheKeyConfiguration, cfg);
-        this.clusterCheckpoint(cluster, cluster.caches, cfg);
+        this.clusterCheckpoint(cluster, available, cluster.caches, cfg);
+
+        if (available('2.3.0'))
+            this.clusterClientConnector(cluster, available, cfg);
+
         this.clusterCollision(cluster.collision, cfg);
-        this.clusterCommunication(cluster, cfg);
+        this.clusterCommunication(cluster, available, cfg);
         this.clusterConnector(cluster.connector, cfg);
+
+        // Since ignite 2.3
+        if (available('2.3.0'))
+            this.clusterDataStorageConfiguration(cluster.dataStorageConfiguration, available, cfg);
+
         this.clusterDeployment(cluster, available, cfg);
         this.clusterEvents(cluster, available, cfg);
         this.clusterFailover(cluster, available, cfg);
@@ -89,19 +101,25 @@ export default class IgniteConfigurationGenerator {
         this.clusterLogger(cluster.logger, cfg);
         this.clusterMarshaller(cluster, available, cfg);
 
-        // Since ignite 2.0
-        if (available('2.0.0'))
+        // Since ignite 2.0 and deprecated in ignite 2.3
+        if (available(['2.0.0', '2.3.0']))
             this.clusterMemory(cluster.memoryConfiguration, available, cfg);
 
         this.clusterMisc(cluster, available, cfg);
         this.clusterMetrics(cluster, available, cfg);
         this.clusterODBC(cluster.odbc, available, cfg);
-        this.clusterPersistence(cluster.persistenceStoreConfiguration, available, cfg);
-        this.clusterQuery(cluster, available, cfg);
+
+        // Since ignite 2.1 deprecated in ignite 2.3
+        if (available(['2.1.0', '2.3.0']))
+            this.clusterPersistence(cluster.persistenceStoreConfiguration, available, cfg);
+
+        if (available(['2.1.0', '2.3.0']))
+            this.clusterQuery(cluster, available, cfg);
+
         this.clusterServiceConfiguration(cluster.serviceConfigurations, cluster.caches, cfg);
         this.clusterSsl(cluster, cfg);
 
-        // Removed in ignite 2.0
+        // Deprecated in ignite 2.0
         if (available(['1.0.0', '2.0.0']))
             this.clusterSwap(cluster, cfg);
 
@@ -187,7 +205,7 @@ export default class IgniteConfigurationGenerator {
 
         cfg.stringProperty('localHost');
 
-        if (_.isNil(cluster.discovery))
+        if (isNil(cluster.discovery))
             return cfg;
 
         const discovery = new Bean('org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi', 'discovery',
@@ -220,6 +238,11 @@ export default class IgniteConfigurationGenerator {
                     'ipFinder', cluster.discovery.S3, clusterDflts.discovery.S3);
 
                 ipFinder.stringProperty('bucketName');
+
+                if (available('2.4.0')) {
+                    ipFinder.stringProperty('bucketEndpoint')
+                        .stringProperty('SSEAlgorithm');
+                }
 
                 break;
             case 'Cloud':
@@ -328,7 +351,7 @@ export default class IgniteConfigurationGenerator {
                         case 'Custom':
                             const className = _.get(policy, 'Custom.className');
 
-                            if (_.nonEmpty(className))
+                            if (nonEmpty(className))
                                 retryPolicyBean = new EmptyBean(className);
 
                             break;
@@ -340,7 +363,7 @@ export default class IgniteConfigurationGenerator {
                         ipFinder.beanProperty('retryPolicy', retryPolicyBean);
                 }
 
-                ipFinder.pathProperty('basePath', '/services')
+                ipFinder.pathProperty('basePath')
                     .stringProperty('serviceName')
                     .boolProperty('allowDuplicateRegistrations');
 
@@ -415,7 +438,7 @@ export default class IgniteConfigurationGenerator {
         if (acfg.valueOf('cacheMode') === 'PARTITIONED')
             acfg.intProperty('backups');
 
-        if (available('2.1.0') && _.nonNil(atomics))
+        if (available('2.1.0') && nonNil(atomics))
             this.affinity(atomics.affinity, acfg);
 
         if (acfg.isEmpty())
@@ -484,7 +507,7 @@ export default class IgniteConfigurationGenerator {
     }
 
     // Generate checkpoint configurations.
-    static clusterCheckpoint(cluster, caches, cfg = this.igniteConfigurationBean()) {
+    static clusterCheckpoint(cluster, available, caches, cfg = this.igniteConfigurationBean()) {
         const cfgs = _.filter(_.map(cluster.checkpointSpi, (spi) => {
             switch (_.get(spi, 'kind')) {
                 case 'FS':
@@ -570,12 +593,18 @@ export default class IgniteConfigurationGenerator {
 
                     s3Bean.stringProperty('bucketNameSuffix');
 
+                    if (available('2.4.0')) {
+                        s3Bean.stringProperty('bucketEndpoint')
+                            .stringProperty('SSEAlgorithm');
+                    }
+
                     const clientBean = new Bean('com.amazonaws.ClientConfiguration', 'clientCfg', spi.S3.clientConfiguration,
                         clusterDflts.checkpointSpi.S3.clientConfiguration);
 
                     clientBean.enumProperty('protocol')
                         .intProperty('maxConnections')
-                        .stringProperty('userAgent');
+                        .stringProperty('userAgentPrefix')
+                        .stringProperty('userAgentSuffix');
 
                     const locAddr = new Bean('java.net.InetAddress', '', spi.S3.clientConfiguration)
                         .factoryMethod('getByName')
@@ -594,7 +623,8 @@ export default class IgniteConfigurationGenerator {
                         clientBean.property('proxyPassword', `checkpoint.s3.proxy.${userName}.password`);
 
                     clientBean.stringProperty('proxyDomain')
-                        .stringProperty('proxyWorkstation');
+                        .stringProperty('proxyWorkstation')
+                        .stringProperty('nonProxyHosts');
 
                     const retryPolicy = spi.S3.clientConfiguration.retryPolicy;
 
@@ -667,7 +697,8 @@ export default class IgniteConfigurationGenerator {
                                 break;
 
                             case 'Custom':
-                                retryBean = new Bean('com.amazonaws.retry.RetryPolicy', 'retryPolicy', policy);
+                                retryBean = new Bean('com.amazonaws.retry.RetryPolicy', 'retryPolicy', policy,
+                                    clusterDflts.checkpointSpi.S3.clientConfiguration.retryPolicy);
 
                                 retryBean.beanConstructorArgument('retryCondition', retryBean.valueOf('retryCondition') ? new EmptyBean(retryBean.valueOf('retryCondition')) : null)
                                     .beanConstructorArgument('backoffStrategy', retryBean.valueOf('backoffStrategy') ? new EmptyBean(retryBean.valueOf('backoffStrategy')) : null)
@@ -688,14 +719,17 @@ export default class IgniteConfigurationGenerator {
                         .intProperty('socketTimeout')
                         .intProperty('connectionTimeout')
                         .intProperty('requestTimeout')
-                        .intProperty('socketSendBufferSizeHints')
                         .stringProperty('signerOverride')
-                        .intProperty('connectionTTL')
-                        .intProperty('connectionMaxIdleMillis')
+                        .longProperty('connectionTTL')
+                        .longProperty('connectionMaxIdleMillis')
                         .emptyBeanProperty('dnsResolver')
                         .intProperty('responseMetadataCacheSize')
                         .emptyBeanProperty('secureRandom')
+                        .intProperty('clientExecutionTimeout')
                         .boolProperty('useReaper')
+                        .boolProperty('cacheResponseMetadata')
+                        .boolProperty('useExpectContinue')
+                        .boolProperty('useThrottleRetries')
                         .boolProperty('useGzip')
                         .boolProperty('preemptiveBasicProxyAuth')
                         .boolProperty('useTcpKeepAlive');
@@ -744,9 +778,50 @@ export default class IgniteConfigurationGenerator {
                 default:
                     return null;
             }
-        }), (checkpointBean) => _.nonNil(checkpointBean));
+        }), (checkpointBean) => nonNil(checkpointBean));
 
         cfg.arrayProperty('checkpointSpi', 'checkpointSpi', cfgs, 'org.apache.ignite.spi.checkpoint.CheckpointSpi');
+
+        return cfg;
+    }
+
+    // Generate cluster query group.
+    static clusterClientConnector(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
+        if (!available('2.3.0'))
+            return cfg;
+
+        cfg.longProperty('longQueryWarningTimeout');
+
+        if (_.get(cluster, 'clientConnectorConfiguration.enabled') !== true)
+            return cfg;
+
+        const bean = new Bean('org.apache.ignite.configuration.ClientConnectorConfiguration', 'cliConnCfg',
+            cluster.clientConnectorConfiguration, clusterDflts.clientConnectorConfiguration);
+
+        bean.stringProperty('host')
+            .intProperty('port')
+            .intProperty('portRange')
+            .intProperty('socketSendBufferSize')
+            .intProperty('socketReceiveBufferSize')
+            .intProperty('maxOpenCursorsPerConnection')
+            .intProperty('threadPoolSize')
+            .boolProperty('tcpNoDelay');
+
+        if (available('2.4.0')) {
+            bean.longProperty('idleTimeout')
+                .boolProperty('jdbcEnabled')
+                .boolProperty('odbcEnabled')
+                .boolProperty('thinClientEnabled');
+        }
+
+        if (available('2.5.0')) {
+            bean.boolProperty('sslEnabled')
+                .boolProperty('sslClientAuth')
+                .boolProperty('useIgniteSslContextFactory')
+                .emptyBeanProperty('sslContextFactory');
+        }
+
+        cfg.beanProperty('clientConnectorConfiguration', bean);
 
         return cfg;
     }
@@ -762,7 +837,7 @@ export default class IgniteConfigurationGenerator {
 
                 colSpi.intProperty('activeJobsThreshold')
                     .intProperty('waitJobsThreshold')
-                    .intProperty('messageExpireTime')
+                    .longProperty('messageExpireTime')
                     .intProperty('maximumStealingAttempts')
                     .boolProperty('stealingEnabled')
                     .emptyBeanProperty('externalCollisionListener')
@@ -783,15 +858,15 @@ export default class IgniteConfigurationGenerator {
 
                 colSpi.intProperty('parallelJobsNumber')
                     .intProperty('waitingJobsNumber')
-                    .intProperty('priorityAttributeKey')
-                    .intProperty('jobPriorityAttributeKey')
+                    .stringProperty('priorityAttributeKey')
+                    .stringProperty('jobPriorityAttributeKey')
                     .intProperty('defaultPriority')
                     .intProperty('starvationIncrement')
                     .boolProperty('starvationPreventionEnabled');
 
                 break;
             case 'Custom':
-                if (_.nonNil(_.get(collision, 'Custom.class')))
+                if (nonNil(_.get(collision, 'Custom.class')))
                     colSpi = new EmptyBean(collision.Custom.class);
 
                 break;
@@ -799,14 +874,14 @@ export default class IgniteConfigurationGenerator {
                 return cfg;
         }
 
-        if (_.nonNil(colSpi))
+        if (nonNil(colSpi))
             cfg.beanProperty('collisionSpi', colSpi);
 
         return cfg;
     }
 
     // Generate communication group.
-    static clusterCommunication(cluster, cfg = this.igniteConfigurationBean(cluster)) {
+    static clusterCommunication(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
         const commSpi = new Bean('org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi', 'communicationSpi',
             cluster.communication, clusterDflts.communication);
 
@@ -817,9 +892,9 @@ export default class IgniteConfigurationGenerator {
             .intProperty('sharedMemoryPort')
             .intProperty('directBuffer')
             .intProperty('directSendBuffer')
-            .intProperty('idleConnectionTimeout')
-            .intProperty('connectTimeout')
-            .intProperty('maxConnectTimeout')
+            .longProperty('idleConnectionTimeout')
+            .longProperty('connectTimeout')
+            .longProperty('maxConnectTimeout')
             .intProperty('reconnectCount')
             .intProperty('socketSendBuffer')
             .intProperty('socketReceiveBuffer')
@@ -828,17 +903,19 @@ export default class IgniteConfigurationGenerator {
             .intProperty('tcpNoDelay')
             .intProperty('ackSendThreshold')
             .intProperty('unacknowledgedMessagesBufferSize')
-            .intProperty('socketWriteTimeout')
+            .longProperty('socketWriteTimeout')
             .intProperty('selectorsCount')
             .emptyBeanProperty('addressResolver');
 
         if (commSpi.nonEmpty())
             cfg.beanProperty('communicationSpi', commSpi);
 
-        cfg.intProperty('networkTimeout')
-            .intProperty('networkSendRetryDelay')
-            .intProperty('networkSendRetryCount')
-            .intProperty('discoveryStartupDelay');
+        cfg.longProperty('networkTimeout')
+            .longProperty('networkSendRetryDelay')
+            .intProperty('networkSendRetryCount');
+
+        if (available(['1.0.0', '2.3.0']))
+            cfg.longProperty('discoveryStartupDelay');
 
         return cfg;
     }
@@ -853,9 +930,9 @@ export default class IgniteConfigurationGenerator {
                 .stringProperty('host')
                 .intProperty('port')
                 .intProperty('portRange')
-                .intProperty('idleTimeout')
-                .intProperty('idleQueryCursorTimeout')
-                .intProperty('idleQueryCursorCheckFrequency')
+                .longProperty('idleTimeout')
+                .longProperty('idleQueryCursorTimeout')
+                .longProperty('idleQueryCursorCheckFrequency')
                 .intProperty('receiveBufferSize')
                 .intProperty('sendBufferSize')
                 .intProperty('sendQueueLimit')
@@ -943,11 +1020,11 @@ export default class IgniteConfigurationGenerator {
             .intProperty('localPort')
             .intProperty('localPortRange')
             .emptyBeanProperty('addressResolver')
-            .intProperty('socketTimeout')
-            .intProperty('ackTimeout')
-            .intProperty('maxAckTimeout')
-            .intProperty('networkTimeout')
-            .intProperty('joinTimeout')
+            .longProperty('socketTimeout')
+            .longProperty('ackTimeout')
+            .longProperty('maxAckTimeout')
+            .longProperty('networkTimeout')
+            .longProperty('joinTimeout')
             .intProperty('threadPriority');
 
         // Removed in ignite 2.0
@@ -957,13 +1034,13 @@ export default class IgniteConfigurationGenerator {
                 .intProperty('maxMissedClientHeartbeats');
         }
 
-        discoSpi.intProperty('topHistorySize')
+        discoSpi.longProperty('topHistorySize')
             .emptyBeanProperty('listener')
             .emptyBeanProperty('dataExchange')
             .emptyBeanProperty('metricsProvider')
             .intProperty('reconnectCount')
-            .intProperty('statisticsPrintFrequency')
-            .intProperty('ipFinderCleanFrequency')
+            .longProperty('statisticsPrintFrequency')
+            .longProperty('ipFinderCleanFrequency')
             .emptyBeanProperty('authenticator')
             .intProperty('forceServerMode')
             .intProperty('clientReconnectDisabled');
@@ -1013,8 +1090,8 @@ export default class IgniteConfigurationGenerator {
             case 'Memory':
                 eventStorageBean = new Bean('org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi', 'eventStorage', eventStorage.Memory, clusterDflts.eventStorage.Memory);
 
-                eventStorageBean.intProperty('expireAgeMs')
-                    .intProperty('expireCount')
+                eventStorageBean.longProperty('expireAgeMs')
+                    .longProperty('expireCount')
                     .emptyBeanProperty('filter');
 
                 break;
@@ -1035,7 +1112,7 @@ export default class IgniteConfigurationGenerator {
             if (!eventStorageBean.isEmpty() || !available(['1.0.0', '2.0.0']))
                 cfg.beanProperty('eventStorageSpi', eventStorageBean);
 
-            if (_.nonEmpty(cluster.includeEventTypes)) {
+            if (nonEmpty(cluster.includeEventTypes)) {
                 const eventGrps = _.filter(this.eventGrps, ({value}) => _.includes(cluster.includeEventTypes, value));
 
                 cfg.eventTypes('evts', 'includeEventTypes', this.filterEvents(eventGrps, available));
@@ -1051,8 +1128,8 @@ export default class IgniteConfigurationGenerator {
 
         // Since ignite 2.0
         if (available('2.0.0')) {
-            cfg.intProperty('failureDetectionTimeout')
-                .intProperty('clientFailureDetectionTimeout');
+            cfg.longProperty('failureDetectionTimeout')
+                .longProperty('clientFailureDetectionTimeout');
         }
 
         _.forEach(cluster.failoverSpi, (spi) => {
@@ -1133,7 +1210,7 @@ export default class IgniteConfigurationGenerator {
         if (plannerBean)
             hadoopBean.beanProperty('mapReducePlanner', plannerBean);
 
-        hadoopBean.intProperty('finishedJobInfoTtl')
+        hadoopBean.longProperty('finishedJobInfoTtl')
             .intProperty('maxParallelTasks')
             .intProperty('maxTaskQueueSize')
             .arrayProperty('nativeLibraryNames', 'nativeLibraryNames', _.get(hadoop, 'nativeLibraryNames'));
@@ -1233,7 +1310,7 @@ export default class IgniteConfigurationGenerator {
 
         switch (_.get(logger, 'kind')) {
             case 'Log4j':
-                if (logger.Log4j && (logger.Log4j.mode === 'Default' || logger.Log4j.mode === 'Path' && _.nonEmpty(logger.Log4j.path))) {
+                if (logger.Log4j && (logger.Log4j.mode === 'Default' || logger.Log4j.mode === 'Path' && nonEmpty(logger.Log4j.path))) {
                     loggerBean = new Bean('org.apache.ignite.logger.log4j.Log4JLogger',
                         'logger', logger.Log4j, clusterDflts.logger.Log4j);
 
@@ -1245,7 +1322,7 @@ export default class IgniteConfigurationGenerator {
 
                 break;
             case 'Log4j2':
-                if (logger.Log4j2 && _.nonEmpty(logger.Log4j2.path)) {
+                if (logger.Log4j2 && nonEmpty(logger.Log4j2.path)) {
                     loggerBean = new Bean('org.apache.ignite.logger.log4j2.Log4J2Logger',
                         'logger', logger.Log4j2, clusterDflts.logger.Log4j2);
 
@@ -1271,7 +1348,7 @@ export default class IgniteConfigurationGenerator {
 
                 break;
             case 'Custom':
-                if (logger.Custom && _.nonEmpty(logger.Custom.class))
+                if (logger.Custom && nonEmpty(logger.Custom.class))
                     loggerBean = new EmptyBean(logger.Custom.class);
 
                 break;
@@ -1291,12 +1368,12 @@ export default class IgniteConfigurationGenerator {
 
         memoryBean.intProperty('pageSize')
             .intProperty('concurrencyLevel')
-            .intProperty('systemCacheInitialSize')
-            .intProperty('systemCacheMaxSize')
+            .longProperty('systemCacheInitialSize')
+            .longProperty('systemCacheMaxSize')
             .stringProperty('defaultMemoryPolicyName');
 
         if (memoryBean.valueOf('defaultMemoryPolicyName') === 'default')
-            memoryBean.intProperty('defaultMemoryPolicySize');
+            memoryBean.longProperty('defaultMemoryPolicySize');
 
         const policies = [];
 
@@ -1333,6 +1410,105 @@ export default class IgniteConfigurationGenerator {
         return cfg;
     }
 
+    static dataRegionConfiguration(dataRegionCfg) {
+        const plcBean = new Bean('org.apache.ignite.configuration.DataRegionConfiguration', 'dataRegionCfg', dataRegionCfg, clusterDflts.dataStorageConfiguration.dataRegionConfigurations);
+
+        plcBean.stringProperty('name')
+            .longProperty('initialSize')
+            .longProperty('maxSize')
+            .stringProperty('swapPath')
+            .enumProperty('pageEvictionMode')
+            .doubleProperty('evictionThreshold')
+            .intProperty('emptyPagesPoolSize')
+            .intProperty('metricsSubIntervalCount')
+            .longProperty('metricsRateTimeInterval')
+            .longProperty('checkpointPageBufferSize')
+            .boolProperty('metricsEnabled')
+            .boolProperty('persistenceEnabled');
+
+        return plcBean;
+    }
+
+    // Generate data storage configuration.
+    static clusterDataStorageConfiguration(dataStorageCfg, available, cfg = this.igniteConfigurationBean()) {
+        if (!available('2.3.0'))
+            return cfg;
+
+        const storageBean = new Bean('org.apache.ignite.configuration.DataStorageConfiguration', 'dataStorageCfg', dataStorageCfg, clusterDflts.dataStorageConfiguration);
+
+        storageBean.intProperty('pageSize')
+            .intProperty('concurrencyLevel')
+            .longProperty('systemRegionInitialSize')
+            .longProperty('systemRegionMaxSize');
+
+        const dfltDataRegionCfg = this.dataRegionConfiguration(_.get(dataStorageCfg, 'defaultDataRegionConfiguration'));
+
+        if (!dfltDataRegionCfg.isEmpty())
+            storageBean.beanProperty('defaultDataRegionConfiguration', dfltDataRegionCfg);
+
+        const dataRegionCfgs = [];
+
+        _.forEach(_.get(dataStorageCfg, 'dataRegionConfigurations'), (dataRegionCfg) => {
+            const plcBean = this.dataRegionConfiguration(dataRegionCfg);
+
+            if (plcBean.isEmpty())
+                return;
+
+            dataRegionCfgs.push(plcBean);
+        });
+
+        if (!_.isEmpty(dataRegionCfgs))
+            storageBean.varArgProperty('dataRegionConfigurations', 'dataRegionConfigurations', dataRegionCfgs, 'org.apache.ignite.configuration.DataRegionConfiguration');
+
+        storageBean.stringProperty('storagePath')
+            .longProperty('checkpointFrequency')
+            .intProperty('checkpointThreads')
+            .enumProperty('checkpointWriteOrder')
+            .enumProperty('walMode')
+            .stringProperty('walPath')
+            .stringProperty('walArchivePath')
+            .intProperty('walSegments')
+            .intProperty('walSegmentSize')
+            .intProperty('walHistorySize');
+
+        if (available('2.4.0'))
+            storageBean.intProperty('walBufferSize');
+
+        storageBean.longProperty('walFlushFrequency')
+            .longProperty('walFsyncDelayNanos')
+            .intProperty('walRecordIteratorBufferSize')
+            .longProperty('lockWaitTime')
+            .intProperty('walThreadLocalBufferSize')
+            .intProperty('metricsSubIntervalCount')
+            .longProperty('metricsRateTimeInterval')
+            .longProperty('walAutoArchiveAfterInactivity')
+            .boolProperty('metricsEnabled')
+            .boolProperty('alwaysWriteFullPages')
+            .boolProperty('writeThrottlingEnabled');
+
+        if (available('2.4.0'))
+            storageBean.boolProperty('walCompactionEnabled');
+
+        const fileIOFactory = _.get(dataStorageCfg, 'fileIOFactory');
+
+        let factoryBean;
+
+        if (fileIOFactory === 'RANDOM')
+            factoryBean = new Bean('org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory', 'rndFileIoFactory', {});
+        else if (fileIOFactory === 'ASYNC')
+            factoryBean = new Bean('org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOFactory', 'asyncFileIoFactory', {});
+
+        if (factoryBean)
+            storageBean.beanProperty('fileIOFactory', factoryBean);
+
+        if (storageBean.isEmpty())
+            return cfg;
+
+        cfg.beanProperty('dataStorageConfiguration', storageBean);
+
+        return cfg;
+    }
+
     // Generate miscellaneous configuration.
     static clusterMisc(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
         cfg.stringProperty('workDirectory');
@@ -1345,7 +1521,8 @@ export default class IgniteConfigurationGenerator {
                 .boolProperty('cacheSanityCheckEnabled');
         }
 
-        cfg.boolProperty('lateAffinityAssignment');
+        if (available(['1.0.0', '2.1.0']))
+            cfg.boolProperty('lateAffinityAssignment');
 
         return cfg;
     }
@@ -1375,30 +1552,34 @@ export default class IgniteConfigurationGenerator {
 
     // Generate marshaller group.
     static clusterMarshaller(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
-        const kind = _.get(cluster.marshaller, 'kind');
-        const settings = _.get(cluster.marshaller, kind);
+        if (available(['1.0.0', '2.1.0'])) {
+            const kind = _.get(cluster.marshaller, 'kind');
+            const settings = _.get(cluster.marshaller, kind);
 
-        let bean;
+            let bean;
 
-        switch (kind) {
-            case 'OptimizedMarshaller':
-                bean = new Bean('org.apache.ignite.marshaller.optimized.OptimizedMarshaller', 'marshaller', settings)
-                    .intProperty('poolSize')
-                    .intProperty('requireSerializable');
+            switch (kind) {
+                case 'OptimizedMarshaller':
+                    if (available(['1.0.0', '2.0.0'])) {
+                        bean = new Bean('org.apache.ignite.marshaller.optimized.OptimizedMarshaller', 'marshaller', settings)
+                            .intProperty('poolSize')
+                            .intProperty('requireSerializable');
+                    }
 
-                break;
+                    break;
 
-            case 'JdkMarshaller':
-                bean = new Bean('org.apache.ignite.marshaller.jdk.JdkMarshaller', 'marshaller', settings);
+                case 'JdkMarshaller':
+                    bean = new Bean('org.apache.ignite.marshaller.jdk.JdkMarshaller', 'marshaller', settings);
 
-                break;
+                    break;
 
-            default:
+                default:
                 // No-op.
-        }
+            }
 
-        if (bean)
-            cfg.beanProperty('marshaller', bean);
+            if (bean)
+                cfg.beanProperty('marshaller', bean);
+        }
 
         cfg.intProperty('marshalLocalJobs');
 
@@ -1413,13 +1594,13 @@ export default class IgniteConfigurationGenerator {
 
     // Generate metrics group.
     static clusterMetrics(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
-        cfg.intProperty('metricsExpireTime')
+        cfg.longProperty('metricsExpireTime')
             .intProperty('metricsHistorySize')
-            .intProperty('metricsLogFrequency');
+            .longProperty('metricsLogFrequency');
 
         // Since ignite 2.0
         if (available('2.0.0'))
-            cfg.intProperty('metricsUpdateFrequency');
+            cfg.longProperty('metricsUpdateFrequency');
 
         return cfg;
     }
@@ -1449,7 +1630,7 @@ export default class IgniteConfigurationGenerator {
         if (!available('2.1.0'))
             return cfg;
 
-        cfg.intProperty('longQueryWarningTimeout');
+        cfg.longProperty('longQueryWarningTimeout');
 
         if (_.get(cluster, 'sqlConnectorConfiguration.enabled') !== true)
             return cfg;
@@ -1473,7 +1654,7 @@ export default class IgniteConfigurationGenerator {
 
     // Generate cluster query group.
     static clusterPersistence(persistence, available, cfg = this.igniteConfigurationBean()) {
-        if (!available('2.1.0') || _.get(persistence, 'enabled') !== true)
+        if (!available(['2.1.0', '2.3.0']) || _.get(persistence, 'enabled') !== true)
             return cfg;
 
         const bean = new Bean('org.apache.ignite.configuration.PersistentStoreConfiguration', 'PersistenceCfg',
@@ -1482,7 +1663,7 @@ export default class IgniteConfigurationGenerator {
         bean.stringProperty('persistentStorePath')
             .boolProperty('metricsEnabled')
             .boolProperty('alwaysWriteFullPages')
-            .intProperty('checkpointingFrequency')
+            .longProperty('checkpointingFrequency')
             .longProperty('checkpointingPageBufferSize')
             .intProperty('checkpointingThreads')
             .stringProperty('walStorePath')
@@ -1494,7 +1675,7 @@ export default class IgniteConfigurationGenerator {
             .longProperty('walFsyncDelayNanos')
             .intProperty('walRecordIteratorBufferSize')
             .longProperty('lockWaitTime')
-            .intProperty('rateTimeInterval')
+            .longProperty('rateTimeInterval')
             .intProperty('tlbSize')
             .intProperty('subIntervals');
 
@@ -1528,20 +1709,20 @@ export default class IgniteConfigurationGenerator {
 
     // Java code generator for cluster's SSL configuration.
     static clusterSsl(cluster, cfg = this.igniteConfigurationBean(cluster)) {
-        if (cluster.sslEnabled && _.nonNil(cluster.sslContextFactory)) {
+        if (cluster.sslEnabled && nonNil(cluster.sslContextFactory)) {
             const bean = new Bean('org.apache.ignite.ssl.SslContextFactory', 'sslCtxFactory',
                 cluster.sslContextFactory);
 
             bean.intProperty('keyAlgorithm')
                 .pathProperty('keyStoreFilePath');
 
-            if (_.nonEmpty(bean.valueOf('keyStoreFilePath')))
+            if (nonEmpty(bean.valueOf('keyStoreFilePath')))
                 bean.propertyChar('keyStorePassword', 'ssl.key.storage.password', 'YOUR_SSL_KEY_STORAGE_PASSWORD');
 
             bean.intProperty('keyStoreType')
                 .intProperty('protocol');
 
-            if (_.nonEmpty(cluster.sslContextFactory.trustManagers)) {
+            if (nonEmpty(cluster.sslContextFactory.trustManagers)) {
                 bean.arrayProperty('trustManagers', 'trustManagers',
                     _.map(cluster.sslContextFactory.trustManagers, (clsName) => new EmptyBean(clsName)),
                     'javax.net.ssl.TrustManager');
@@ -1549,7 +1730,7 @@ export default class IgniteConfigurationGenerator {
             else {
                 bean.pathProperty('trustStoreFilePath');
 
-                if (_.nonEmpty(bean.valueOf('trustStoreFilePath')))
+                if (nonEmpty(bean.valueOf('trustStoreFilePath')))
                     bean.propertyChar('trustStorePassword', 'ssl.trust.storage.password', 'YOUR_SSL_TRUST_STORAGE_PASSWORD');
 
                 bean.intProperty('trustStoreType');
@@ -1601,7 +1782,7 @@ export default class IgniteConfigurationGenerator {
             .intProperty('igfsThreadPoolSize')
             .intProperty('rebalanceThreadPoolSize')
             .intProperty('utilityCacheThreadPoolSize', 'utilityCachePoolSize')
-            .intProperty('utilityCacheKeepAliveTime')
+            .longProperty('utilityCacheKeepAliveTime')
             .intProperty('asyncCallbackPoolSize')
             .intProperty('stripedPoolSize');
 
@@ -1636,7 +1817,7 @@ export default class IgniteConfigurationGenerator {
 
         bean.enumProperty('defaultTxConcurrency')
             .enumProperty('defaultTxIsolation')
-            .intProperty('defaultTxTimeout')
+            .longProperty('defaultTxTimeout')
             .intProperty('pessimisticTxLogLinger')
             .intProperty('pessimisticTxLogSize')
             .boolProperty('txSerializableEnabled')
@@ -1659,7 +1840,7 @@ export default class IgniteConfigurationGenerator {
     static domainModelGeneral(domain, cfg = this.domainConfigurationBean(domain)) {
         switch (cfg.valueOf('queryMetadata')) {
             case 'Annotations':
-                if (_.nonNil(domain.keyType) && _.nonNil(domain.valueType)) {
+                if (nonNil(domain.keyType) && nonNil(domain.valueType)) {
                     cfg.varArgProperty('indexedTypes', 'indexedTypes',
                         [javaTypes.fullClassName(domain.keyType), javaTypes.fullClassName(domain.valueType)],
                         'java.lang.Class');
@@ -1747,40 +1928,59 @@ export default class IgniteConfigurationGenerator {
     /**
      * Generate eviction policy object.
      * @param {Object} ccfg Parent configuration.
-     * @param {String} name Property name.
+     * @param {Function} available Function to check feature is supported in Ignite current version.
+     * @param {Boolean} near Near cache flag.
      * @param {Object} src Source.
      * @param {Object} dflt Default.
      * @returns {Object} Parent configuration.
      * @private
      */
-    static _evictionPolicy(ccfg, name, src, dflt) {
-        let bean;
+    static _evictionPolicy(ccfg, available, near, src, dflt) {
+        let propName;
+        let beanProps;
 
-        switch (_.get(src, 'kind')) {
-            case 'LRU':
-                bean = new Bean('org.apache.ignite.cache.eviction.lru.LruEvictionPolicy', 'evictionPlc',
-                    src.LRU, dflt.LRU);
+        if (available('2.4.0')) {
+            switch (_.get(src, 'kind')) {
+                case 'LRU': beanProps = {cls: 'org.apache.ignite.cache.eviction.lru.LruEvictionPolicyFactory', src: src.LRU };
+                    break;
 
-                break;
-            case 'FIFO':
-                bean = new Bean('org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy', 'evictionPlc',
-                    src.FIFO, dflt.FIFO);
+                case 'FIFO': beanProps = {cls: 'org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicyFactory', src: src.FIFO };
+                    break;
 
-                break;
-            case 'SORTED':
-                bean = new Bean('org.apache.ignite.cache.eviction.sorted.SortedEvictionPolicy', 'evictionPlc',
-                    src.SORTED, dflt.SORTED);
+                case 'SORTED': beanProps = {cls: 'org.apache.ignite.cache.eviction.sorted.SortedEvictionPolicyFactory', src: src.SORTED };
+                    break;
 
-                break;
-            default:
-                return ccfg;
+                default:
+                    return ccfg;
+            }
+
+            propName = (near ? 'nearEviction' : 'eviction') + 'PolicyFactory';
         }
+        else {
+            switch (_.get(src, 'kind')) {
+                case 'LRU': beanProps = {cls: 'org.apache.ignite.cache.eviction.lru.LruEvictionPolicy', src: src.LRU };
+                    break;
+
+                case 'FIFO': beanProps = {cls: 'org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy', src: src.FIFO };
+                    break;
+
+                case 'SORTED': beanProps = {cls: 'org.apache.ignite.cache.eviction.sorted.SortedEvictionPolicy', src: src.SORTED };
+                    break;
+
+                default:
+                    return ccfg;
+            }
+
+            propName = (near ? 'nearEviction' : 'eviction') + 'Policy';
+        }
+
+        const bean = new Bean(beanProps.cls, propName, beanProps.src, dflt);
 
         bean.intProperty('batchSize')
             .intProperty('maxMemorySize')
             .intProperty('maxSize');
 
-        ccfg.beanProperty(name, bean);
+        ccfg.beanProperty(propName, bean);
 
         return ccfg;
     }
@@ -1807,7 +2007,7 @@ export default class IgniteConfigurationGenerator {
         ccfg.intProperty('copyOnRead');
 
         if (ccfg.valueOf('cacheMode') === 'PARTITIONED' && ccfg.valueOf('atomicityMode') === 'TRANSACTIONAL')
-            ccfg.intProperty('invalidate');
+            ccfg.intProperty('isInvalidate', 'invalidate');
 
         return ccfg;
     }
@@ -1859,15 +2059,18 @@ export default class IgniteConfigurationGenerator {
     // Generate cache memory group.
     static cacheMemory(cache, available, ccfg = this.cacheConfigurationBean(cache)) {
         // Since ignite 2.0
-        if (available('2.0.0'))
+        if (available(['2.0.0', '2.3.0']))
             ccfg.stringProperty('memoryPolicyName');
+
+        if (available('2.3.0'))
+            ccfg.stringProperty('dataRegionName');
 
         // Removed in ignite 2.0
         if (available(['1.0.0', '2.0.0'])) {
             ccfg.enumProperty('memoryMode');
 
             if (ccfg.valueOf('memoryMode') !== 'OFFHEAP_VALUES')
-                ccfg.intProperty('offHeapMaxMemory');
+                ccfg.longProperty('offHeapMaxMemory');
         }
 
         // Since ignite 2.0
@@ -1876,7 +2079,7 @@ export default class IgniteConfigurationGenerator {
                 .emptyBeanProperty('evictionFilter');
         }
 
-        this._evictionPolicy(ccfg, 'evictionPolicy', cache.evictionPolicy, cacheDflts.evictionPolicy);
+        this._evictionPolicy(ccfg, available, false, cache.evictionPolicy, cacheDflts.evictionPolicy);
 
         // Removed in ignite 2.0
         if (available(['1.0.0', '2.0.0'])) {
@@ -1902,7 +2105,7 @@ export default class IgniteConfigurationGenerator {
         if (available(['1.0.0', '2.0.0']))
             ccfg.intProperty('sqlOnheapRowCacheSize');
 
-        ccfg.intProperty('longQueryWarningTimeout')
+        ccfg.longProperty('longQueryWarningTimeout')
             .arrayProperty('indexedTypes', 'indexedTypes', indexedTypes, 'java.lang.Class')
             .intProperty('queryDetailMetricsSize')
             .arrayProperty('sqlFunctionClasses', 'sqlFunctionClasses', cache.sqlFunctionClasses, 'java.lang.Class');
@@ -1957,7 +2160,7 @@ export default class IgniteConfigurationGenerator {
                     };
 
                     const types = _.reduce(domains, (acc, domain) => {
-                        if (_.isNil(domain.databaseTable))
+                        if (isNil(domain.databaseTable))
                             return acc;
 
                         const typeBean = this.domainJdbcTypeBean(_.merge({}, domain, {cacheName: cache.name}))
@@ -2022,7 +2225,7 @@ export default class IgniteConfigurationGenerator {
             ccfg.boolProperty('writeBehindEnabled')
                 .intProperty('writeBehindBatchSize')
                 .intProperty('writeBehindFlushSize')
-                .intProperty('writeBehindFlushFrequency')
+                .longProperty('writeBehindFlushFrequency')
                 .intProperty('writeBehindFlushThreadCount');
 
             // Since ignite 2.0
@@ -2036,7 +2239,7 @@ export default class IgniteConfigurationGenerator {
     // Generate cache concurrency control group.
     static cacheConcurrency(cache, available, ccfg = this.cacheConfigurationBean(cache)) {
         ccfg.intProperty('maxConcurrentAsyncOperations')
-            .intProperty('defaultLockTimeout');
+            .longProperty('defaultLockTimeout');
 
         // Removed in ignite 2.0
         if (available(['1.0.0', '2.0.0']))
@@ -2052,7 +2255,7 @@ export default class IgniteConfigurationGenerator {
 
         const settings = _.get(filter, kind);
 
-        if (!_.isNil(settings)) {
+        if (!isNil(settings)) {
             switch (kind) {
                 case 'IGFS':
                     const foundIgfs = _.find(igfss, {_id: settings.igfs});
@@ -2064,7 +2267,7 @@ export default class IgniteConfigurationGenerator {
 
                     break;
                 case 'Custom':
-                    if (_.nonEmpty(settings.className))
+                    if (nonEmpty(settings.className))
                         return new EmptyBean(settings.className);
 
                     break;
@@ -2094,11 +2297,11 @@ export default class IgniteConfigurationGenerator {
             ccfg.enumProperty('rebalanceMode')
                 .intProperty('rebalanceThreadPoolSize')
                 .intProperty('rebalanceBatchSize')
-                .intProperty('rebalanceBatchesPrefetchCount')
+                .longProperty('rebalanceBatchesPrefetchCount')
                 .intProperty('rebalanceOrder')
-                .intProperty('rebalanceDelay')
-                .intProperty('rebalanceTimeout')
-                .intProperty('rebalanceThrottle');
+                .longProperty('rebalanceDelay')
+                .longProperty('rebalanceTimeout')
+                .longProperty('rebalanceThrottle');
         }
 
         if (ccfg.includes('igfsAffinnityGroupSize')) {
@@ -2112,15 +2315,14 @@ export default class IgniteConfigurationGenerator {
     }
 
     // Generate server near cache group.
-    static cacheNearServer(cache, ccfg = this.cacheConfigurationBean(cache)) {
+    static cacheNearServer(cache, available, ccfg = this.cacheConfigurationBean(cache)) {
         if (ccfg.valueOf('cacheMode') === 'PARTITIONED' && _.get(cache, 'nearConfiguration.enabled')) {
             const bean = new Bean('org.apache.ignite.configuration.NearCacheConfiguration', 'nearConfiguration',
                 cache.nearConfiguration, cacheDflts.nearConfiguration);
 
             bean.intProperty('nearStartSize');
 
-            this._evictionPolicy(bean, 'nearEvictionPolicy',
-                bean.valueOf('nearEvictionPolicy'), cacheDflts.evictionPolicy);
+            this._evictionPolicy(bean, available, true, bean.valueOf('nearEvictionPolicy'), cacheDflts.evictionPolicy);
 
             ccfg.beanProperty('nearConfiguration', bean);
         }
@@ -2129,7 +2331,7 @@ export default class IgniteConfigurationGenerator {
     }
 
     // Generate client near cache group.
-    static cacheNearClient(cache, ccfg = this.cacheConfigurationBean(cache)) {
+    static cacheNearClient(cache, available, ccfg = this.cacheConfigurationBean(cache)) {
         if (ccfg.valueOf('cacheMode') === 'PARTITIONED' && _.get(cache, 'clientNearConfiguration.enabled')) {
             const bean = new Bean('org.apache.ignite.configuration.NearCacheConfiguration',
                 javaTypes.toJavaName('nearConfiguration', ccfg.valueOf('name')),
@@ -2137,8 +2339,7 @@ export default class IgniteConfigurationGenerator {
 
             bean.intProperty('nearStartSize');
 
-            this._evictionPolicy(bean, 'nearEvictionPolicy',
-                bean.valueOf('nearEvictionPolicy'), cacheDflts.evictionPolicy);
+            this._evictionPolicy(bean, available, true, bean.valueOf('nearEvictionPolicy'), cacheDflts.evictionPolicy);
 
             return bean;
         }
@@ -2157,7 +2358,7 @@ export default class IgniteConfigurationGenerator {
     // Generate domain models configs.
     static cacheDomains(domains, available, ccfg) {
         const qryEntities = _.reduce(domains, (acc, domain) => {
-            if (_.isNil(domain.queryMetadata) || domain.queryMetadata === 'Configuration') {
+            if (isNil(domain.queryMetadata) || domain.queryMetadata === 'Configuration') {
                 const qryEntity = this.domainModelGeneral(domain);
 
                 this.domainModelQuery(domain, available, qryEntity);
@@ -2182,7 +2383,7 @@ export default class IgniteConfigurationGenerator {
         this.cacheNodeFilter(cache, igfs ? [igfs] : [], ccfg);
         this.cacheConcurrency(cache, available, ccfg);
         this.cacheRebalance(cache, ccfg);
-        this.cacheNearServer(cache, ccfg);
+        this.cacheNearServer(cache, available, ccfg);
         this.cacheStatistics(cache, ccfg);
         this.cacheDomains(cache.domains, available, ccfg);
 
@@ -2255,8 +2456,8 @@ export default class IgniteConfigurationGenerator {
     static igfsFragmentizer(igfs, cfg = this.igfsConfigurationBean(igfs)) {
         if (igfs.fragmentizerEnabled) {
             cfg.intProperty('fragmentizerConcurrentFiles')
-                .intProperty('fragmentizerThrottlingBlockLength')
-                .intProperty('fragmentizerThrottlingDelay');
+                .longProperty('fragmentizerThrottlingBlockLength')
+                .longProperty('fragmentizerThrottlingDelay');
         }
         else
             cfg.boolProperty('fragmentizerEnabled');
@@ -2289,7 +2490,7 @@ export default class IgniteConfigurationGenerator {
         if (available(['1.0.0', '2.0.0']))
             cfg.intProperty('maxSpaceSize');
 
-        cfg.intProperty('maximumTaskRangeLength')
+        cfg.longProperty('maximumTaskRangeLength')
             .intProperty('managementPort')
             .intProperty('perNodeBatchSize')
             .intProperty('perNodeParallelBatchCount')

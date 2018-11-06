@@ -17,6 +17,7 @@
 
 package org.apache.ignite.thread;
 
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -53,7 +54,8 @@ public class IgniteThreadPoolExecutor extends ThreadPoolExecutor {
             maxPoolSize,
             keepAliveTime,
             workQ,
-            GridIoPolicy.UNDEFINED);
+            GridIoPolicy.UNDEFINED,
+            null);
     }
 
     /**
@@ -68,6 +70,7 @@ public class IgniteThreadPoolExecutor extends ThreadPoolExecutor {
      * @param workQ The queue to use for holding tasks before they are executed. This queue will hold only
      *      runnable tasks submitted by the {@link #execute(Runnable)} method.
      * @param plc {@link GridIoPolicy} for thread pool.
+     * @param eHnd Uncaught exception handler for thread pool.
      */
     public IgniteThreadPoolExecutor(
         String threadNamePrefix,
@@ -76,14 +79,15 @@ public class IgniteThreadPoolExecutor extends ThreadPoolExecutor {
         int maxPoolSize,
         long keepAliveTime,
         BlockingQueue<Runnable> workQ,
-        byte plc) {
+        byte plc,
+        UncaughtExceptionHandler eHnd) {
         super(
             corePoolSize,
             maxPoolSize,
             keepAliveTime,
             TimeUnit.MILLISECONDS,
             workQ,
-            new IgniteThreadFactory(igniteInstanceName, threadNamePrefix, plc)
+            new IgniteThreadFactory(igniteInstanceName, threadNamePrefix, plc, eHnd)
         );
     }
 

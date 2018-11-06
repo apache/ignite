@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.v2;
 
+import java.security.PrivilegedExceptionAction;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -29,6 +31,7 @@ import org.apache.hadoop.mapreduce.JobSubmissionFiles;
 import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.mapreduce.split.JobSplit;
 import org.apache.hadoop.mapreduce.split.SplitMetaInfoReader;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -46,6 +49,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopJobProperty;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskType;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils;
 import org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopFileSystemsUtils;
 import org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopLazyConcurrentMap;
 import org.apache.ignite.internal.processors.hadoop.impl.v1.HadoopV1Splitter;
@@ -54,7 +58,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -113,7 +116,7 @@ public class HadoopV2Job extends HadoopJobEx {
 
     /** */
     private final ConcurrentMap<T2<HadoopTaskType, Integer>, GridFutureAdapter<HadoopTaskContext>> ctxs =
-        new ConcurrentHashMap8<>();
+        new ConcurrentHashMap<>();
 
     /** Pooling task context class and thus class loading environment. */
     private final Queue<Class<? extends HadoopTaskContext>> taskCtxClsPool = new ConcurrentLinkedQueue<>();
@@ -317,7 +320,7 @@ public class HadoopV2Job extends HadoopJobEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void initialize(boolean external, UUID locNodeId) throws IgniteCheckedException {
+    @Override public void initialize(final boolean external, final UUID locNodeId) throws IgniteCheckedException {
         assert locNodeId != null;
 
         this.locNodeId = locNodeId;
@@ -325,14 +328,35 @@ public class HadoopV2Job extends HadoopJobEx {
         ClassLoader oldLdr = HadoopCommonUtils.setContextClassLoader(getClass().getClassLoader());
 
         try {
-            rsrcMgr.prepareJobEnvironment(!external, jobLocalDir(igniteWorkDirectory(), locNodeId, jobId));
+            if (jobInfo.credentials() == null)
+                rsrcMgr.prepareJobEnvironment(!external, jobLocalDir(igniteWorkDirectory(), locNodeId, jobId));
+            else {
+                UserGroupInformation ugi = HadoopUtils.createUGI(jobInfo.user(), jobInfo.credentials());
+
+                try {
+                    ugi.doAs(new PrivilegedExceptionAction<Void>() {
+                        @Override public Void run() throws Exception {
+                            rsrcMgr.prepareJobEnvironment(!external, jobLocalDir(igniteWorkDirectory(), locNodeId,
+                                jobId));
+
+                            return null;
+                        }
+                    });
+                }
+                catch (IOException | InterruptedException e) {
+                    throw new IgniteCheckedException(e);
+                }
+            }
 
             if (HadoopJobProperty.get(jobInfo, JOB_SHARED_CLASSLOADER, true)) {
-                U.warn(log, JOB_SHARED_CLASSLOADER.propertyName() + " job property is set to true; please disable " +
-                    "it if job tasks rely on mutable static state.");
+                U.warn(log, JOB_SHARED_CLASSLOADER.propertyName() +
+                    " job property is set to true; please disable " + "it if job tasks rely on mutable static state.");
 
                 sharedClsLdr = createClassLoader(HadoopClassLoader.nameForJob(jobId));
             }
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException(e);
         }
         finally {
             HadoopCommonUtils.restoreContextClassLoader(oldLdr);

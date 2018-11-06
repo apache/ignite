@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
 
 import java.io.File;
-import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.util.Iterator;
 import java.util.List;
@@ -27,8 +26,9 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridKernalGateway;
@@ -46,10 +46,11 @@ import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
+import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
@@ -57,6 +58,7 @@ import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
+import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
 import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
 import org.apache.ignite.internal.processors.igfs.IgfsHelper;
@@ -77,12 +79,14 @@ import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
+import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
@@ -94,6 +98,9 @@ import org.jetbrains.annotations.Nullable;
  * Dummy grid kernal context
  */
 public class StandaloneGridKernalContext implements GridKernalContext {
+    /** Binary metadata file store folder. */
+    public static final String BINARY_META_FOLDER = "binary_meta";
+
     /** Config for fake Ignite instance. */
     private final IgniteConfiguration cfg;
 
@@ -122,21 +129,25 @@ public class StandaloneGridKernalContext implements GridKernalContext {
      * Providing {@code null} will disable unmarshall for non primitive objects, BinaryObjects will be provided <br>
      */
     StandaloneGridKernalContext(IgniteLogger log,
-        @Nullable final File binaryMetadataFileStoreDir,
-        @Nullable final File marshallerMappingFileStoreDir) throws IgniteCheckedException {
+        @Nullable File binaryMetadataFileStoreDir,
+        @Nullable File marshallerMappingFileStoreDir) throws IgniteCheckedException {
         this.log = log;
 
         try {
-            pluginProc = new StandaloneIgnitePluginProcessor(
-                this, config());
+            pluginProc = new StandaloneIgnitePluginProcessor(this, config());
         }
         catch (IgniteCheckedException e) {
             throw new IllegalStateException("Must not fail on empty providers list.", e);
         }
 
-        this.marshallerCtx = new MarshallerContextImpl(null);
+        this.marshallerCtx = new MarshallerContextImpl(null, null);
         this.cfg = prepareIgniteConfiguration();
-        this.cacheObjProcessor = binaryMetadataFileStoreDir != null ? binaryProcessor(this, binaryMetadataFileStoreDir) : null;
+
+        // Fake folder provided to perform processor startup on empty folder.
+        if (binaryMetadataFileStoreDir == null)
+            binaryMetadataFileStoreDir = new File(BINARY_META_FOLDER).getAbsoluteFile();
+
+        this.cacheObjProcessor = binaryProcessor(this, binaryMetadataFileStoreDir);
 
         if (marshallerMappingFileStoreDir != null) {
             marshallerCtx.setMarshallerMappingFileStoreDir(marshallerMappingFileStoreDir);
@@ -177,8 +188,12 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         final Marshaller marshaller = new BinaryMarshaller();
         cfg.setMarshaller(marshaller);
 
-        PersistentStoreConfiguration pstCfg = new PersistentStoreConfiguration();
-        cfg.setPersistentStoreConfiguration(pstCfg);
+        final DataStorageConfiguration pstCfg = new DataStorageConfiguration();
+        final DataRegionConfiguration regCfg = new DataRegionConfiguration();
+        regCfg.setPersistenceEnabled(true);
+        pstCfg.setDefaultDataRegionConfiguration(regCfg);
+
+        cfg.setDataStorageConfiguration(pstCfg);
 
         marshaller.setContext(marshallerCtx);
 
@@ -320,6 +335,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteAuthenticationProcessor authentication() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public IgfsProcessorAdapter igfs() {
         return null;
     }
@@ -435,17 +455,23 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
+    @Override public WorkersRegistry workersRegistry() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public DataStructuresProcessor dataStructures() {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public void markSegmented() {
+    @Override public boolean invalid() {
+        return false;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean segmented() {
-        return false;
+    @Override public FailureProcessor failure() {
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -594,6 +620,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public PlatformProcessor platform() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridInternalSubscriptionProcessor internalSubscriptionProcessor() {
         return null;
     }
 

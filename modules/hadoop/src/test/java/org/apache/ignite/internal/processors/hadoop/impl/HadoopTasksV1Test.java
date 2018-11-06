@@ -46,7 +46,7 @@ public class HadoopTasksV1Test extends HadoopTasksAllVersionsTest {
 
         setupFileSystems(jobConf);
 
-        HadoopDefaultJobInfo jobInfo = createJobInfo(jobConf);
+        HadoopDefaultJobInfo jobInfo = createJobInfo(jobConf, null);
 
         UUID uuid = new UUID(0, 0);
 

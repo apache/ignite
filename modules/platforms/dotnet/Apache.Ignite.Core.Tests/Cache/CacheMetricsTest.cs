@@ -40,7 +40,10 @@ namespace Apache.Ignite.Core.Tests.Cache
         public void FixtureSetUp()
         {
             Ignition.Start(TestUtils.GetTestConfiguration());
-            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration()) {IgniteInstanceName = SecondGridName });
+            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                IgniteInstanceName = SecondGridName
+            });
         }
 
         /// <summary>
@@ -192,6 +195,14 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Assert.AreEqual(51, metrics.WriteBehindCriticalOverflowCount);
                 Assert.AreEqual(52, metrics.WriteBehindErrorRetryCount);
                 Assert.AreEqual(53, metrics.WriteBehindBufferSize);
+                Assert.AreEqual(54, metrics.TotalPartitionsCount);
+                Assert.AreEqual(55, metrics.RebalancingPartitionsCount);
+                Assert.AreEqual(56, metrics.KeysToRebalanceLeft);
+                Assert.AreEqual(57, metrics.RebalancingKeysRate);
+                Assert.AreEqual(58, metrics.RebalancingBytesRate);
+                Assert.AreEqual(59, metrics.HeapEntriesCount);
+                Assert.AreEqual(62, metrics.EstimatedRebalancingFinishTime);
+                Assert.AreEqual(63, metrics.RebalancingStartTime);
                 Assert.AreEqual("foo", metrics.KeyType);
                 Assert.AreEqual("bar", metrics.ValueType);
                 Assert.AreEqual(true, metrics.IsStoreByValue);
@@ -199,6 +210,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Assert.AreEqual(true, metrics.IsManagementEnabled);
                 Assert.AreEqual(true, metrics.IsReadThrough);
                 Assert.AreEqual(true, metrics.IsWriteThrough);
+                Assert.AreEqual(true, metrics.IsValidForReading);
+                Assert.AreEqual(true, metrics.IsValidForWriting);
             }
         }
 

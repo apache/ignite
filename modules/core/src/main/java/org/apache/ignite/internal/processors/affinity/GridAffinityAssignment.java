@@ -32,6 +32,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Cached affinity calculations.
  */
+@SuppressWarnings("ForLoopReplaceableByForEach")
 public class GridAffinityAssignment implements AffinityAssignment, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -50,6 +51,9 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
 
     /** Assignment node IDs */
     private transient volatile List<HashSet<UUID>> assignmentIds;
+
+    /** Nodes having primary or backup partition assignments. */
+    private transient volatile Set<ClusterNode> nodes;
 
     /** Nodes having primary partitions assignments. */
     private transient volatile Set<ClusterNode> primaryPartsNodes;
@@ -182,29 +186,44 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         return assignmentIds0.get(part);
     }
 
-    /**
-     * @return Nodes having primary partitions assignments.
-     */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
-    public Set<ClusterNode> primaryPartitionNodes() {
-        Set<ClusterNode> primaryPartsNodes0 = primaryPartsNodes;
+    /** {@inheritDoc} */
+    @Override public Set<ClusterNode> nodes() {
+        Set<ClusterNode> res = nodes;
 
-        if (primaryPartsNodes0 == null) {
-            int parts = assignment.size();
+        if (res == null) {
+            res = new HashSet<>();
 
-            primaryPartsNodes0 = new HashSet<>();
-
-            for (int p = 0; p < parts; p++) {
+            for (int p = 0; p < assignment.size(); p++) {
                 List<ClusterNode> nodes = assignment.get(p);
 
                 if (nodes.size() > 0)
-                    primaryPartsNodes0.add(nodes.get(0));
+                    res.addAll(nodes);
             }
 
-            primaryPartsNodes = primaryPartsNodes0;
+            nodes = res;
         }
 
-        return primaryPartsNodes0;
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<ClusterNode> primaryPartitionNodes() {
+        Set<ClusterNode> res = primaryPartsNodes;
+
+        if (res == null) {
+            res = new HashSet<>();
+
+            for (int p = 0; p < assignment.size(); p++) {
+                List<ClusterNode> nodes = assignment.get(p);
+
+                if (nodes.size() > 0)
+                    res.add(nodes.get(0));
+            }
+
+            primaryPartsNodes = res;
+        }
+
+        return res;
     }
 
     /**

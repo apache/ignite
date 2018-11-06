@@ -44,16 +44,11 @@ import org.apache.ignite.internal.util.nio.GridNioFilter;
 import org.apache.ignite.internal.util.nio.GridNioParser;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioServerListener;
-import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.IgnitePortProtocol;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MARSHALLER;
 
 /**
  * TCP binary protocol implementation.
@@ -62,36 +57,12 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     /** Server. */
     private GridNioServer<GridClientMessage> srv;
 
-    /** JDK marshaller. */
-    private final Marshaller jdkMarshaller = new JdkMarshaller();
-
     /** NIO server listener. */
     private GridTcpRestNioListener lsnr;
 
     /** @param ctx Context. */
     public GridTcpRestProtocol(GridKernalContext ctx) {
         super(ctx);
-    }
-
-    /**
-     * @return JDK marshaller.
-     */
-    Marshaller jdkMarshaller() {
-        return jdkMarshaller;
-    }
-
-    /**
-     * Returns marshaller.
-     *
-     * @param ses Session.
-     * @return Marshaller.
-     */
-    GridClientMarshaller marshaller(GridNioSession ses) {
-        GridClientMarshaller marsh = ses.meta(MARSHALLER.ordinal());
-
-        assert marsh != null;
-
-        return marsh;
     }
 
     /** {@inheritDoc} */
@@ -110,7 +81,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
         lsnr = new GridTcpRestNioListener(log, this, hnd, ctx);
 
-        GridNioParser parser = new GridTcpRestParser(false);
+        GridNioParser parser = new GridTcpRestParser(false, ctx.marshallerContext().jdkMarshaller());
 
         try {
             host = resolveRestTcpHost(ctx.config());

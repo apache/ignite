@@ -45,6 +45,8 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExp
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -59,11 +61,11 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
  * Operates over one directory, does not provide start and end boundaries
  */
 class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
+    /** Record buffer size */
+    public static final int DFLT_BUF_SIZE = 2 * 1024 * 1024;
+
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Record buffer size */
-    private static final int BUF_SIZE = 2 * 1024 * 1024;
 
     /**
      * WAL files directory. Should already contain 'consistent ID' as subfolder.
@@ -79,38 +81,31 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     @Nullable
     private List<FileWriteAheadLogManager.FileDescriptor> walFileDescriptors;
 
-    /**
-     * True if this iterator used for work dir, false for archive.
-     * In work dir mode exceptions come from record reading are ignored (file may be not completed).
-     * Index of file is taken from file itself, not from file name
-     */
-    private boolean workDir;
-
     /** Keep binary. This flag disables converting of non primitive types (BinaryObjects) */
     private boolean keepBinary;
 
     /**
      * Creates iterator in directory scan mode
-     *  @param walFilesDir Wal files directory. Should already contain node consistent ID as subfolder
+     * @param walFilesDir Wal files directory. Should already contain node consistent ID as subfolder
      * @param log Logger.
-     * @param sharedCtx Shared context. Cache processor is to be configured if Cache Object Key & Data Entry is
- * required.
+     * @param sharedCtx Shared context. Cache processor is to be configured if Cache Object Key & Data Entry is required.
      * @param ioFactory File I/O factory.
      * @param keepBinary  Keep binary. This flag disables converting of non primitive types
-     * (BinaryObjects will be used instead)
+     * @param bufSize Buffer size.
      */
     StandaloneWalRecordsIterator(
         @NotNull File walFilesDir,
         @NotNull IgniteLogger log,
         @NotNull GridCacheSharedContext sharedCtx,
         @NotNull FileIOFactory ioFactory,
-        boolean keepBinary
+        boolean keepBinary,
+        int bufSize
     ) throws IgniteCheckedException {
         super(log,
             sharedCtx,
-            FileWriteAheadLogManager.forVersion(sharedCtx, FileWriteAheadLogManager.LATEST_SERIALIZER_VERSION),
+            new RecordSerializerFactoryImpl(sharedCtx),
             ioFactory,
-            BUF_SIZE);
+            bufSize);
         this.keepBinary = keepBinary;
         init(walFilesDir, false, null);
         advance();
@@ -118,7 +113,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
     /**
      * Creates iterator in file-by-file iteration mode. Directory
-     *  @param log Logger.
+     * @param log Logger.
      * @param sharedCtx Shared context. Cache processor is to be configured if Cache Object Key & Data Entry is
      * required.
      * @param ioFactory File I/O factory.
@@ -133,14 +128,14 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             @NotNull FileIOFactory ioFactory,
             boolean workDir,
             boolean keepBinary,
+            int bufSize,
             @NotNull File... walFiles) throws IgniteCheckedException {
         super(log,
             sharedCtx,
-            FileWriteAheadLogManager.forVersion(sharedCtx, FileWriteAheadLogManager.LATEST_SERIALIZER_VERSION),
+            new RecordSerializerFactoryImpl(sharedCtx),
             ioFactory,
-            BUF_SIZE);
+            bufSize);
 
-        this.workDir = workDir;
         this.keepBinary = keepBinary;
         init(null, workDir, walFiles);
         advance();
@@ -159,13 +154,11 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         final boolean workDir,
         @Nullable final File[] walFiles) throws IgniteCheckedException {
         if (walFilesDir != null) {
-            FileWriteAheadLogManager.FileDescriptor[] descs = loadFileDescriptors(walFilesDir);
+            FileWriteAheadLogManager.FileDescriptor[] descs = FileWriteAheadLogManager.loadFileDescriptors(walFilesDir);
             curWalSegmIdx = !F.isEmpty(descs) ? descs[0].getIdx() : 0;
             this.walFilesDir = walFilesDir;
-            this.workDir = false;
         }
         else {
-            this.workDir = workDir;
 
             if (workDir)
                 walFileDescriptors = scanIndexesFromFileHeaders(walFiles);
@@ -232,8 +225,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     }
 
     /** {@inheritDoc} */
-    @Override protected FileWriteAheadLogManager.ReadFileHandle advanceSegment(
-        @Nullable final FileWriteAheadLogManager.ReadFileHandle curWalSegment) throws IgniteCheckedException {
+    @Override protected AbstractReadFileHandle advanceSegment(
+        @Nullable final AbstractReadFileHandle curWalSegment) throws IgniteCheckedException {
 
         if (curWalSegment != null)
             curWalSegment.close();
@@ -243,9 +236,14 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         final FileWriteAheadLogManager.FileDescriptor fd;
 
         if (walFilesDir != null) {
-            fd = new FileWriteAheadLogManager.FileDescriptor(
-                new File(walFilesDir,
-                    FileWriteAheadLogManager.FileDescriptor.fileName(curWalSegmIdx)));
+            File segmentFile = new File(walFilesDir,
+                FileWriteAheadLogManager.FileDescriptor.fileName(curWalSegmIdx));
+
+            if (!segmentFile.exists())
+                segmentFile = new File(walFilesDir,
+                    FileWriteAheadLogManager.FileDescriptor.fileName(curWalSegmIdx) + ".zip");
+
+            fd = new FileWriteAheadLogManager.FileDescriptor(segmentFile);
         }
         else {
             if (walFileDescriptors.isEmpty())
@@ -284,6 +282,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
                 log.error("Failed to perform post processing for data record ", e);
             }
         }
+
         return super.postProcessRecord(rec);
     }
 
@@ -311,7 +310,13 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
             postProcessedEntries.add(postProcessedEntry);
         }
-        return new DataRecord(postProcessedEntries, dataRec.timestamp());
+
+        DataRecord res = new DataRecord(postProcessedEntries, dataRec.timestamp());
+
+        res.size(dataRec.size());
+        res.position(dataRec.position());
+
+        return res;
     }
 
     /**
@@ -367,18 +372,6 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     }
 
     /** {@inheritDoc} */
-    @Override protected void handleRecordException(
-        @NotNull final Exception e,
-        @Nullable final FileWALPointer ptr) {
-        super.handleRecordException(e, ptr);
-        final RuntimeException ex = new RuntimeException("Record reading problem occurred at file pointer [" + ptr + "]:" + e.getMessage(), e);
-
-        ex.printStackTrace();
-        if (!workDir)
-            throw ex;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void onClose() throws IgniteCheckedException {
         super.onClose();
 
@@ -387,5 +380,11 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         closeCurrentWalSegment();
 
         curWalSegmIdx = Integer.MAX_VALUE;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected AbstractReadFileHandle createReadFileHandle(FileIO fileIO, long idx,
+        RecordSerializer ser, FileInput in) {
+        return new FileWriteAheadLogManager.ReadFileHandle(fileIO, idx, ser, in);
     }
 }

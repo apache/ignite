@@ -1024,6 +1024,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         public static void WriteArray(Array val, BinaryWriter ctx, int? elemTypeId = null)
         {
             Debug.Assert(val != null && ctx != null);
+            Debug.Assert(val.Rank == 1);
 
             IBinaryStream stream = ctx.Stream;
 
@@ -1034,22 +1035,52 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 var elemType = val.GetType().GetElementType();
+                Debug.Assert(elemType != null);
 
-                var typeId = ObjTypeId;
-
-                if (elemType != typeof(object))
-                    typeId = ctx.Marshaller.GetDescriptor(elemType).TypeId;
-
+                var typeId = GetArrayElementTypeId(val, ctx.Marshaller);
                 stream.WriteInt(typeId);
 
                 if (typeId == BinaryTypeId.Unregistered)
+                {
                     ctx.WriteString(elemType.FullName);
+                }
             }
 
             stream.WriteInt(val.Length);
 
             for (int i = 0; i < val.Length; i++)
                 ctx.Write(val.GetValue(i));
+        }
+
+        /// <summary>
+        /// Gets the array element type identifier.
+        /// </summary>
+        public static int GetArrayElementTypeId(Array val, Marshaller marsh)
+        {
+            var elemType = val.GetType().GetElementType();
+            Debug.Assert(elemType != null);
+
+            return GetArrayElementTypeId(elemType, marsh);
+        }
+
+        /// <summary>
+        /// Gets the array element type identifier.
+        /// </summary>
+        public static int GetArrayElementTypeId(Type elemType, Marshaller marsh)
+        {
+            return elemType == typeof(object) 
+                ? ObjTypeId 
+                : marsh.GetDescriptor(elemType).TypeId;
+        }
+
+        /// <summary>
+        /// Gets the type of the array element.
+        /// </summary>
+        public static Type GetArrayElementType(int typeId, Marshaller marsh)
+        {
+            return typeId == ObjTypeId
+                ? typeof(object)
+                : marsh.GetDescriptor(true, typeId, true).Type;
         }
 
         /// <summary>
@@ -1331,9 +1362,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Gets the string hash code using Java algorithm.
+        /// Gets the string hash code using Java algorithm, converting English letters to lower case.
         /// </summary>
-        public static int GetStringHashCode(string val)
+        public static int GetStringHashCodeLowerCase(string val)
         {
             if (val == null)
                 return 0;
@@ -1345,6 +1376,26 @@ namespace Apache.Ignite.Core.Impl.Binary
                 // ReSharper disable once LoopCanBeConvertedToQuery (performance)
                 foreach (var c in val)
                     hash = 31 * hash + ('A' <= c && c <= 'Z' ? c | 0x20 : c);
+            }
+
+            return hash;
+        }
+
+        /// <summary>
+        /// Gets the string hash code using Java algorithm.
+        /// </summary>
+        private static int GetStringHashCode(string val)
+        {
+            if (val == null)
+                return 0;
+
+            int hash = 0;
+
+            unchecked
+            {
+                // ReSharper disable once LoopCanBeConvertedToQuery (performance)
+                foreach (var c in val)
+                    hash = 31 * hash + c;
             }
 
             return hash;
@@ -1445,7 +1496,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             if (id == 0)
-                id = GetStringHashCode(fieldName);
+                id = GetStringHashCodeLowerCase(fieldName);
 
             if (id == 0)
                 throw new BinaryObjectException("Field ID is zero (please provide ID mapper or change field name) " +
@@ -1508,10 +1559,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             err = null;
 
-            if (reader.ReadBoolean())
-                return reader.ReadObject<object>();
+            if (reader.ReadBoolean()) // success indication
+                return reader.ReadObject<object>(); 
 
-            err = reader.ReadBoolean()
+            err = reader.ReadBoolean() // native error indication
                 ? reader.ReadObject<object>()
                 : ExceptionUtils.GetException(reader.Marshaller.Ignite, reader.ReadString(), reader.ReadString(),
                                               reader.ReadString());

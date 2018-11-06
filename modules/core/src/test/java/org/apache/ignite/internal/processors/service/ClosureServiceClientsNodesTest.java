@@ -49,6 +49,9 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
     /** Number of grids started for tests. */
     private static final int NODES_CNT = 4;
 
+    /** */
+    private static final int CLIENT_IDX = 1;
+
     /** Test singleton service name. */
     private static final String SINGLETON_NAME = "testSingleton";
 
@@ -61,11 +64,11 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
 
         cfg.setMarshaller(new BinaryMarshaller());
 
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(ipFinder).setForceServerMode(true));
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         cfg.setCacheConfiguration();
 
-        if (igniteInstanceName.equals(getTestIgniteInstanceName(0)))
+        if (igniteInstanceName.equals(getTestIgniteInstanceName(CLIENT_IDX)))
             cfg.setClientMode(true);
 
         return cfg;
@@ -88,8 +91,10 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
     public void testDefaultClosure() throws Exception {
         Set<String> srvNames = new HashSet<>(NODES_CNT - 1);
 
-        for (int i = 1; i < NODES_CNT; ++i)
-            srvNames.add(getTestIgniteInstanceName(i));
+        for (int i = 0; i < NODES_CNT; ++i) {
+            if (i != CLIENT_IDX)
+                srvNames.add(getTestIgniteInstanceName(i));
+        }
 
         for (int i = 0 ; i < NODES_CNT; i++) {
             log.info("Iteration: " + i);
@@ -137,7 +142,7 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
 
             assertEquals(1, res.size());
 
-            assertEquals(getTestIgniteInstanceName(0), F.first(res));
+            assertEquals(getTestIgniteInstanceName(CLIENT_IDX), F.first(res));
         }
     }
 
@@ -168,7 +173,7 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDefaultService() throws Exception {
-        UUID clientNodeId = grid(0).cluster().localNode().id();
+        UUID clientNodeId = grid(CLIENT_IDX).cluster().localNode().id();
 
         for (int i = 0 ; i < NODES_CNT; i++) {
             log.info("Iteration: " + i);
@@ -209,7 +214,7 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClientService() throws Exception {
-        UUID clientNodeId = grid(0).cluster().localNode().id();
+        UUID clientNodeId = grid(CLIENT_IDX).cluster().localNode().id();
 
         for (int i = 0 ; i < NODES_CNT; i++) {
             log.info("Iteration: " + i);

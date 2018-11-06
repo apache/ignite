@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+#include <cstdlib>
+
 #include "ignite/odbc/system/odbc_constants.h"
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/environment.h"
@@ -24,9 +26,10 @@ namespace ignite
     namespace odbc
     {
         Environment::Environment() : 
-            odbcVersion(SQL_OV_ODBC3), odbcNts(SQL_TRUE)
+            odbcVersion(SQL_OV_ODBC3),
+            odbcNts(SQL_TRUE)
         {
-            // No-op.
+            srand(common::GetRandSeed());
         }
 
         Environment::~Environment()

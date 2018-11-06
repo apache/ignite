@@ -60,7 +60,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.resource.GridResourceIoc;
 import org.apache.ignite.internal.util.F0;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -421,7 +420,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                             0,
                             needVer);
 
-                        if (configuration().isStatisticsEnabled() && !skipVals)
+                        if (ctx.statisticsEnabled() && !skipVals)
                             metrics0().onRead(true);
 
                         if (evt) {
@@ -522,7 +521,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                 }
             }
             if (!success) {
-                if (!storeEnabled && configuration().isStatisticsEnabled() && !skipVals)
+                if (!storeEnabled && ctx.statisticsEnabled() && !skipVals)
                     metrics0().onRead(false);
             }
         }
@@ -830,112 +829,119 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
         CacheEntryPredicate[] filters = CU.filterArray(filter);
 
-        ctx.shared().database().ensureFreeSpace(ctx.memoryPolicy());
-
-        if (writeThrough && keys.size() > 1) {
-            return updateWithBatch(op,
-                keys,
-                vals,
-                invokeArgs,
-                expiryPlc,
-                ver,
-                filters,
-                keepBinary,
-                subjId,
-                taskName);
-        }
-
-        Iterator<?> valsIter = vals != null ? vals.iterator() : null;
-
         IgniteBiTuple<Boolean, ?> res = null;
 
         CachePartialUpdateCheckedException err = null;
 
-        boolean intercept = ctx.config().getInterceptor() != null;
+        ctx.shared().database().checkpointReadLock();
 
-        for (K key : keys) {
-            if (key == null)
-                throw new NullPointerException("Null key.");
+        try {
+            ctx.shared().database().ensureFreeSpace(ctx.dataRegion());
 
-            Object val = valsIter != null ? valsIter.next() : null;
-
-            if (val == null && op != DELETE)
-                throw new NullPointerException("Null value.");
-
-            KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
-
-            if (op == UPDATE) {
-                val = ctx.toCacheObject(val);
-
-                ctx.validateKeyAndValue(cacheKey, (CacheObject)val);
+            if (writeThrough && keys.size() > 1) {
+                return updateWithBatch(op,
+                    keys,
+                    vals,
+                    invokeArgs,
+                    expiryPlc,
+                    ver,
+                    filters,
+                    keepBinary,
+                    subjId,
+                    taskName);
             }
-            else if (op == TRANSFORM)
-                ctx.kernalContext().resource().inject(val, GridResourceIoc.AnnotationSet.ENTRY_PROCESSOR, ctx.name());
 
-            while (true) {
-                GridCacheEntryEx entry = null;
+            Iterator<?> valsIter = vals != null ? vals.iterator() : null;
 
-                try {
-                    entry = entryEx(cacheKey);
+            boolean intercept = ctx.config().getInterceptor() != null;
 
-                    GridTuple3<Boolean, Object, EntryProcessorResult<Object>> t = entry.innerUpdateLocal(
-                        ver,
-                        val == null ? DELETE : op,
-                        val,
-                        invokeArgs,
-                        writeThrough,
-                        readThrough,
-                        retval,
-                        keepBinary,
-                        expiryPlc,
-                        true,
-                        true,
-                        filters,
-                        intercept,
-                        subjId,
-                        taskName);
+            for (K key : keys) {
+                if (key == null)
+                    throw new NullPointerException("Null key.");
 
-                    if (op == TRANSFORM) {
-                        if (t.get3() != null) {
-                            Map<K, EntryProcessorResult> computedMap;
+                Object val = valsIter != null ? valsIter.next() : null;
 
-                            if (res == null) {
-                                computedMap = U.newHashMap(keys.size());
+                if (val == null && op != DELETE)
+                    throw new NullPointerException("Null value.");
 
-                                res = new IgniteBiTuple<>(true, computedMap);
+                KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
+
+                if (op == UPDATE) {
+                    val = ctx.toCacheObject(val);
+
+                    ctx.validateKeyAndValue(cacheKey, (CacheObject)val);
+                }
+                else if (op == TRANSFORM)
+                    ctx.kernalContext().resource().inject(val, GridResourceIoc.AnnotationSet.ENTRY_PROCESSOR, ctx.name());
+
+                while (true) {
+                    GridCacheEntryEx entry = null;
+
+                    try {
+                        entry = entryEx(cacheKey);
+
+                        GridTuple3<Boolean, Object, EntryProcessorResult<Object>> t = entry.innerUpdateLocal(
+                            ver,
+                            val == null ? DELETE : op,
+                            val,
+                            invokeArgs,
+                            writeThrough,
+                            readThrough,
+                            retval,
+                            keepBinary,
+                            expiryPlc,
+                            true,
+                            true,
+                            filters,
+                            intercept,
+                            subjId,
+                            taskName);
+
+                        if (op == TRANSFORM) {
+                            if (t.get3() != null) {
+                                Map<K, EntryProcessorResult> computedMap;
+
+                                if (res == null) {
+                                    computedMap = U.newHashMap(keys.size());
+
+                                    res = new IgniteBiTuple<>(true, computedMap);
+                                }
+                                else
+                                    computedMap = (Map<K, EntryProcessorResult>)res.get2();
+
+                                computedMap.put(key, t.get3());
                             }
-                            else
-                                computedMap = (Map<K, EntryProcessorResult>)res.get2();
-
-                            computedMap.put(key, t.get3());
                         }
+                        else if (res == null)
+                            res = new T2(t.get1(), t.get2());
+
+                        break; // While.
                     }
-                    else if (res == null)
-                        res = new T2(t.get1(), t.get2());
+                    catch (GridCacheEntryRemovedException ignored) {
+                        if (log.isDebugEnabled())
+                            log.debug("Got removed entry while updating (will retry): " + key);
 
-                    break; // While.
-                }
-                catch (GridCacheEntryRemovedException ignored) {
-                    if (log.isDebugEnabled())
-                        log.debug("Got removed entry while updating (will retry): " + key);
+                        entry = null;
+                    }
+                    catch (IgniteCheckedException e) {
+                        if (err == null)
+                            err = partialUpdateException();
 
-                    entry = null;
-                }
-                catch (IgniteCheckedException e) {
-                    if (err == null)
-                        err = partialUpdateException();
+                        err.add(F.asList(key), e);
 
-                    err.add(F.asList(key), e);
+                        U.error(log, "Failed to update key : " + key, e);
 
-                    U.error(log, "Failed to update key : " + key, e);
-
-                    break;
-                }
-                finally {
-                    if (entry != null)
-                        ctx.evicts().touch(entry, ctx.affinity().affinityTopologyVersion());
+                        break;
+                    }
+                    finally {
+                        if (entry != null)
+                            ctx.evicts().touch(entry, ctx.affinity().affinityTopologyVersion());
+                    }
                 }
             }
+        }
+        finally {
+            ctx.shared().database().checkpointReadUnlock();
         }
 
         if (err != null)
@@ -1342,7 +1348,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         for (int i = 0; i < entries.size(); i++) {
             GridCacheEntryEx entry = entries.get(i);
 
-            assert Thread.holdsLock(entry);
+            assert entry.lockedByCurrentThread();
 
             if (entry.obsolete() ||
                 (storeErr != null && storeErr.failedKeys().contains(entry.key().value(ctx.cacheObjectContext(), false))))
@@ -1422,12 +1428,12 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
             for (int i = 0; i < locked.size(); i++) {
                 GridCacheEntryEx entry = locked.get(i);
 
-                GridUnsafe.monitorEnter(entry);
+                entry.lockEntry();
 
                 if (entry.obsolete()) {
                     // Unlock all locked.
                     for (int j = 0; j <= i; j++)
-                        GridUnsafe.monitorExit(locked.get(j));
+                        locked.get(j).unlockEntry();
 
                     // Clear entries.
                     locked.clear();
@@ -1458,7 +1464,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
      */
     private void unlockEntries(Iterable<GridCacheEntryEx> locked) {
         for (GridCacheEntryEx entry : locked)
-            GridUnsafe.monitorExit(entry);
+            entry.unlockEntry();
 
         AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 

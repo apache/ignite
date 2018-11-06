@@ -42,7 +42,7 @@ struct TestMessage
         // No-op.
     }
 
-    void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
+    void Write(ignite::impl::binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
     {
         writer.WriteInt32(a);
         writer.WriteString(b.data(), static_cast<int32_t>(b.size()));

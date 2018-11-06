@@ -19,6 +19,7 @@
 #include "ignite/odbc/meta/column_meta.h"
 #include "ignite/odbc/type_traits.h"
 #include "ignite/odbc/common_types.h"
+#include "ignite/odbc/log.h"
 
 namespace ignite
 {
@@ -152,7 +153,7 @@ namespace ignite
                     {
                         value = SQL_FALSE;
 
-                        return true;
+                        break;
                     }
 
                     case SQL_DESC_CASE_SENSITIVE:
@@ -162,7 +163,7 @@ namespace ignite
                         else
                             value = SQL_FALSE;
 
-                        return true;
+                        break;
                     }
 
                     case SQL_DESC_CONCISE_TYPE:
@@ -170,14 +171,14 @@ namespace ignite
                     {
                         value = type_traits::BinaryToSqlType(dataType);
 
-                        return true;
+                        break;
                     }
 
                     case SQL_DESC_DISPLAY_SIZE:
                     {
                         value = type_traits::BinaryTypeDisplaySize(dataType);
 
-                        return true;
+                        break;
                     }
 
                     case SQL_DESC_LENGTH:
@@ -186,21 +187,21 @@ namespace ignite
                     {
                         value = type_traits::BinaryTypeTransferLength(dataType);
 
-                        return true;
+                        break;
                     }
 
                     case SQL_DESC_NULLABLE:
                     {
                         value = type_traits::BinaryTypeNullability(dataType);
 
-                        return true;
+                        break;
                     }
 
                     case SQL_DESC_NUM_PREC_RADIX:
                     {
                         value = type_traits::BinaryTypeNumPrecRadix(dataType);
 
-                        return true;
+                        break;
                     }
 
                     case SQL_DESC_PRECISION:
@@ -208,7 +209,7 @@ namespace ignite
                     {
                         value = type_traits::BinaryTypeColumnSize(dataType);
 
-                        return true;
+                        break;
                     }
 
                     case SQL_DESC_SCALE:
@@ -219,42 +220,44 @@ namespace ignite
                         if (value < 0)
                             value = 0;
 
-                        return true;
+                        break;
                     }
 
                     case SQL_DESC_SEARCHABLE:
                     {
                         value = SQL_PRED_BASIC;
 
-                        return true;
+                        break;
                     }
 
                     case SQL_DESC_UNNAMED:
                     {
                         value = columnName.empty() ? SQL_UNNAMED : SQL_NAMED;
 
-                        return true;
+                        break;
                     }
 
                     case SQL_DESC_UNSIGNED:
                     {
                         value = type_traits::BinaryTypeUnsigned(dataType) ? SQL_TRUE : SQL_FALSE;
 
-                        return true;
+                        break;
                     }
 
                     case SQL_DESC_UPDATABLE:
                     {
-                        // We do not support update for now so just set all
-                        // columns to readonly.
-                        value = SQL_ATTR_READONLY;
+                        value = SQL_ATTR_READWRITE_UNKNOWN;
 
-                        return true;
+                        break;
                     }
 
                     default:
                         return false;
                 }
+
+                LOG_MSG("value: " << value);
+
+                return true;
             }
 
             void ReadColumnMetaVector(ignite::impl::binary::BinaryReaderImpl& reader, ColumnMetaVector& meta)

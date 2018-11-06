@@ -145,6 +145,15 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** */
         private const int OpGetServices = 34;
 
+        /** */
+        private const int OpDataRegionMetrics = 35;
+
+        /** */
+        private const int OpDataRegionMetricsByName = 36;
+
+        /** */
+        private const int OpDataStorageMetrics = 37;
+
         /** Initial Ignite instance. */
         private readonly IIgniteInternal _ignite;
         
@@ -597,6 +606,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <summary>
         /// Gets the memory metrics.
         /// </summary>
+#pragma warning disable 618
         public ICollection<IMemoryMetrics> GetMemoryMetrics()
         {
             return DoInOp(OpMemoryMetrics, stream =>
@@ -624,6 +634,47 @@ namespace Apache.Ignite.Core.Impl.Cluster
             return DoOutInOp(OpMemoryMetricsByName, w => w.WriteString(memoryPolicyName),
                 stream => stream.ReadBool() ? new MemoryMetrics(Marshaller.StartUnmarshal(stream, false)) : null);
         }
+#pragma warning restore 618
+
+        /// <summary>
+        /// Gets the data region metrics.
+        /// </summary>
+        public ICollection<IDataRegionMetrics> GetDataRegionMetrics()
+        {
+            return DoInOp(OpDataRegionMetrics, stream =>
+            {
+                IBinaryRawReader reader = Marshaller.StartUnmarshal(stream, false);
+
+                var cnt = reader.ReadInt();
+
+                var res = new List<IDataRegionMetrics>(cnt);
+
+                for (int i = 0; i < cnt; i++)
+                {
+                    res.Add(new DataRegionMetrics(reader));
+                }
+
+                return res;
+            });
+        }
+
+        /// <summary>
+        /// Gets the data region metrics.
+        /// </summary>
+        public IDataRegionMetrics GetDataRegionMetrics(string memoryPolicyName)
+        {
+            return DoOutInOp(OpDataRegionMetricsByName, w => w.WriteString(memoryPolicyName),
+                stream => stream.ReadBool() ? new DataRegionMetrics(Marshaller.StartUnmarshal(stream, false)) : null);
+        }
+
+        /// <summary>
+        /// Gets the data storage metrics.
+        /// </summary>
+        public IDataStorageMetrics GetDataStorageMetrics()
+        {
+            return DoInOp(OpDataStorageMetrics, stream =>
+                new DataStorageMetrics(Marshaller.StartUnmarshal(stream, false)));
+        }
 
         /// <summary>
         /// Changes Ignite grid state to active or inactive.
@@ -647,11 +698,13 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <summary>
         /// Gets the persistent store metrics.
         /// </summary>
+#pragma warning disable 618
         public IPersistentStoreMetrics GetPersistentStoreMetrics()
         {
             return DoInOp(OpGetPersistentStoreMetrics, stream =>
                 new PersistentStoreMetrics(Marshaller.StartUnmarshal(stream, false)));
         }
+#pragma warning restore 618
 
         /// <summary>
         /// Creates new Cluster Group from given native projection.

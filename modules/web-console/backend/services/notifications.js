@@ -21,29 +21,29 @@
 
 module.exports = {
     implements: 'services/notifications',
-    inject: ['require(lodash)', 'mongo', 'browsers-handler']
+    inject: ['mongo', 'browsers-handler']
 };
 
 /**
- * @param _
  * @param mongo
  * @param browsersHnd
  * @returns {NotificationsService}
  */
-module.exports.factory = (_, mongo, browsersHnd) => {
+module.exports.factory = (mongo, browsersHnd) => {
     class NotificationsService {
         /**
          * Update notifications.
          *
          * @param {String} owner - User ID
          * @param {String} message - Message to users.
+         * @param {Boolean} isShown - Whether to show message.
          * @param {Date} [date] - Optional date to save in notifications.
          * @returns {Promise.<mongo.ObjectId>} that resolve activity
          */
-        static merge(owner, message, date = new Date()) {
-            return mongo.Notifications.create({owner, message, date})
-                .then(({message, date}) => {
-                    browsersHnd.updateNotification({message, date});
+        static merge(owner, message, isShown = false, date = new Date()) {
+            return mongo.Notifications.create({owner, message, date, isShown})
+                .then(({message, date, isShown}) => {
+                    browsersHnd.updateNotification({message, date, isShown});
                 });
         }
     }

@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import 'babel-polyfill';
 import 'jquery';
 import 'angular';
 import 'angular-acl';
@@ -25,6 +26,7 @@ import 'angular-strap/dist/angular-strap.tpl';
 import 'angular-socket-io';
 import 'angular-retina';
 
+import 'angular-messages';
 import '@uirouter/angularjs';
 import '@uirouter/angularjs/lib/legacy/stateEvents';
 
@@ -36,8 +38,6 @@ import 'angular-drag-and-drop-lists';
 import 'angular-nvd3';
 import 'angular-tree-control';
 import 'angular-gridster';
-import 'bootstrap-sass/assets/javascripts/bootstrap/transition';
-import 'bootstrap-sass/assets/javascripts/bootstrap/carousel';
 import 'brace';
 import 'brace/mode/xml';
 import 'brace/mode/sql';
@@ -52,6 +52,7 @@ import 'file-saver';
 import 'jszip';
 import 'nvd3';
 import 'lodash';
+import 'angular-ui-carousel';
 
 import 'angular-gridster/dist/angular-gridster.min.css';
 import 'angular-tree-control/css/tree-control-attribute.css';
@@ -59,3 +60,4 @@ import 'angular-tree-control/css/tree-control.css';
 import 'angular-ui-grid/ui-grid.css';
 import 'angular-motion/dist/angular-motion.css';
 import 'nvd3/build/nv.d3.css';
+import 'angular-ui-carousel/dist/ui-carousel.css';

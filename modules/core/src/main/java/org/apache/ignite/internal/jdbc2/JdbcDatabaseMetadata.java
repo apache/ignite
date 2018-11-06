@@ -815,16 +815,56 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
-            Arrays.asList("TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "COLUMN_NAME", "DATA_TYPE",
-                "TYPE_NAME", "COLUMN_SIZE", "DECIMAL_DIGITS", "NUM_PREC_RADIX", "NULLABLE",
-                "REMARKS", "COLUMN_DEF", "CHAR_OCTET_LENGTH", "ORDINAL_POSITION", "IS_NULLABLE",
-                "SCOPE_CATLOG", "SCOPE_SCHEMA", "SCOPE_TABLE", "SOURCE_DATA_TYPE", "IS_AUTOINCREMENT"),
-            Arrays.asList(String.class.getName(), String.class.getName(), String.class.getName(),
-                String.class.getName(), Integer.class.getName(), String.class.getName(), Integer.class.getName(),
-                Integer.class.getName(), Integer.class.getName(), Integer.class.getName(), String.class.getName(),
-                String.class.getName(), Integer.class.getName(), Integer.class.getName(), String.class.getName(),
-                String.class.getName(), String.class.getName(), String.class.getName(), Short.class.getName(),
-                String.class.getName()),
+            Arrays.asList(
+                "TABLE_CAT",        // 1
+                "TABLE_SCHEM",      // 2
+                "TABLE_NAME",       // 3
+                "COLUMN_NAME",      // 4
+                "DATA_TYPE",        // 5
+                "TYPE_NAME",        // 6
+                "COLUMN_SIZE",      // 7
+                "BUFFER_LENGTH",    // 8
+                "DECIMAL_DIGITS",   // 9
+                "NUM_PREC_RADIX",   // 10
+                "NULLABLE",         // 11
+                "REMARKS",          // 12
+                "COLUMN_DEF",       // 13
+                "SQL_DATA_TYPE",    // 14
+                "SQL_DATETIME_SUB", // 15
+                "CHAR_OCTET_LENGTH", // 16
+                "ORDINAL_POSITION",  // 17
+                "IS_NULLABLE",      // 18
+                "SCOPE_CATLOG",     // 19
+                "SCOPE_SCHEMA",     // 20
+                "SCOPE_TABLE",      // 21
+                "SOURCE_DATA_TYPE", // 22
+                "IS_AUTOINCREMENT", // 23
+                "IS_GENERATEDCOLUMN"), // 23
+            Arrays.asList(
+                String.class.getName(),     // 1
+                String.class.getName(),     // 2
+                String.class.getName(),     // 3
+                String.class.getName(),     // 4
+                Integer.class.getName(),    // 5
+                String.class.getName(),     // 6
+                Integer.class.getName(),    // 7
+                Integer.class.getName(),    // 8
+                Integer.class.getName(),    // 9
+                Integer.class.getName(),    // 10
+                Integer.class.getName(),    // 11
+                String.class.getName(),     // 12
+                String.class.getName(),     // 13
+                Integer.class.getName(),    // 14
+                Integer.class.getName(),    // 15
+                Integer.class.getName(),    // 16
+                Integer.class.getName(),    // 17
+                String.class.getName(),     // 18
+                String.class.getName(),     // 19
+                String.class.getName(),     // 20
+                String.class.getName(),     // 21
+                Short.class.getName(),      // 22
+                String.class.getName(),     // 23
+                String.class.getName()),    // 24
             rows, true
         );
     }
@@ -843,26 +883,30 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         boolean nullable, int pos) {
         List<Object> row = new ArrayList<>(20);
 
-        row.add(null);
-        row.add(schema);
-        row.add(tbl);
-        row.add(col);
-        row.add(type);
-        row.add(typeName);
-        row.add(null);
-        row.add(null);
-        row.add(10);
-        row.add(nullable ? columnNullable : columnNoNulls);
-        row.add(null);
-        row.add(null);
-        row.add(Integer.MAX_VALUE);
-        row.add(pos);
-        row.add("YES");
-        row.add(null);
-        row.add(null);
-        row.add(null);
-        row.add(null);
-        row.add("NO");
+        row.add(null);                  // 1. TABLE_CAT
+        row.add(schema);                // 2. TABLE_SCHEM
+        row.add(tbl);                   // 3. TABLE_NAME
+        row.add(col);                   // 4. COLUMN_NAME
+        row.add(type);                  // 5. DATA_TYPE
+        row.add(typeName);              // 6. TYPE_NAME
+        row.add(null);                  // 7. COLUMN_SIZE
+        row.add(null);                  // 8. BUFFER_LENGTH
+        row.add(null);                  // 9. DECIMAL_DIGITS
+        row.add(10);                    // 10. NUM_PREC_RADIX
+        row.add(nullable ? columnNullable : columnNoNulls); // 11. NULLABLE
+        row.add(null);                  // 12. REMARKS
+        row.add(null);                  // 13. COLUMN_DEF
+        row.add(type);                  // 14. SQL_DATA_TYPE
+        row.add(null);                  // 15. SQL_DATETIME_SUB
+        row.add(Integer.MAX_VALUE);     // 16. CHAR_OCTET_LENGTH
+        row.add(pos);                   // 17. ORDINAL_POSITION
+        row.add(nullable ? "YES" : "NO"); // 18. IS_NULLABLE
+        row.add(null);                  // 19. SCOPE_CATALOG
+        row.add(null);                  // 20. SCOPE_SCHEMA
+        row.add(null);                  // 21. SCOPE_TABLE
+        row.add(null);                  // 22. SOURCE_DATA_TYPE
+        row.add("NO");                  // 23. IS_AUTOINCREMENT
+        row.add("NO");                  // 24. IS_GENERATEDCOLUMN
 
         return row;
     }

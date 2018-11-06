@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.net.ssl.SSLContext;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.client.GridClientAuthenticationException;
@@ -83,6 +84,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.client.GridClientCacheFlag.KEEP_BINARIES;
+import static org.apache.ignite.internal.client.GridClientCacheFlag.encodeCacheFlags;
 import static org.apache.ignite.internal.client.impl.connection.GridClientConnectionCloseReason.CONN_IDLE;
 import static org.apache.ignite.internal.client.impl.connection.GridClientConnectionCloseReason.FAILED;
 import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.APPEND;
@@ -97,8 +99,8 @@ import static org.apache.ignite.internal.processors.rest.client.message.GridClie
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MARSHALLER;
 
 /**
- * This class performs request to grid over tcp protocol. Serialization is performed with marshaller
- * provided.
+ * This class performs request to grid over TCP protocol.
+ * Serialization is performed with marshaller provided.
  */
 public class GridClientNioTcpConnection extends GridClientConnection {
     /** */
@@ -158,9 +160,6 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     /** Marshaller. */
     private final GridClientMarshaller marsh;
 
-    /** */
-    private final ThreadLocal<Boolean> keepBinariesMode;
-
     /**
      * Creates a client facade, tries to connect to remote server, in case of success starts reader thread.
      *
@@ -192,8 +191,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         GridClientMarshaller marsh,
         Byte marshId,
         GridClientTopology top,
-        Object cred,
-        ThreadLocal<Boolean> keepBinariesMode
+        Object cred
     ) throws IOException, GridClientException {
         super(clientId, srvAddr, sslCtx, top, cred);
 
@@ -202,7 +200,6 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         this.marsh = marsh;
         this.pingInterval = pingInterval;
         this.pingTimeout = pingTimeout;
-        this.keepBinariesMode = keepBinariesMode;
 
         SocketChannel ch = null;
         Socket sock = null;
@@ -1062,7 +1059,6 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         private GridClientMessage pendingMsg;
 
         /** Flag indicating whether authentication retry was attempted for this request. */
-        @SuppressWarnings("RedundantFieldInitialization")
         private int authRetry = STATE_INITIAL;
 
         /**

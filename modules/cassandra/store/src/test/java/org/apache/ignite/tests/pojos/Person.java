@@ -41,7 +41,7 @@ public class Person implements Externalizable {
     private String fullName;
 
     /** */
-    private int age;
+    private short age;
 
     /** */
     private boolean married;
@@ -64,7 +64,7 @@ public class Person implements Externalizable {
     }
 
     /** */
-    public Person(long personNum, String firstName, String lastName, int age, boolean married,
+    public Person(long personNum, String firstName, String lastName, short age, boolean married,
         long height, float weight, Date birthDate, List<String> phones) {
         this.personNum = personNum;
         this.firstName = firstName;
@@ -83,7 +83,7 @@ public class Person implements Externalizable {
         out.writeLong(personNum);
         out.writeObject(firstName);
         out.writeObject(lastName);
-        out.writeInt(age);
+        out.writeShort(age);
         out.writeBoolean(married);
         out.writeLong(height);
         out.writeFloat(weight);
@@ -97,7 +97,7 @@ public class Person implements Externalizable {
         personNum = in.readLong();
         firstName = (String)in.readObject();
         lastName = (String)in.readObject();
-        age = in.readInt();
+        age = in.readShort();
         married = in.readBoolean();
         height = in.readLong();
         weight = in.readFloat();
@@ -209,13 +209,13 @@ public class Person implements Externalizable {
 
     /** */
     @SuppressWarnings("UnusedDeclaration")
-    public void setAge(int age) {
+    public void setAge(short age) {
         this.age = age;
     }
 
     /** */
     @SuppressWarnings("UnusedDeclaration")
-    public int getAge() {
+    public short getAge() {
         return age;
     }
 

@@ -17,11 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.PartitionLossPolicy;
@@ -34,13 +29,21 @@ import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import javax.cache.CacheException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -158,6 +161,22 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
         int part = prepareTopology();
 
+        // Wait for all grids (servers and client) have same topology version
+        // to make sure that all nodes received map with lost partition.
+        GridTestUtils.waitForCondition(() -> {
+            AffinityTopologyVersion last = null;
+            for (Ignite ig : G.allGrids()) {
+                AffinityTopologyVersion ver = ((IgniteEx) ig).context().cache().context().exchange().readyAffinityVersion();
+
+                if (last != null && !last.equals(ver))
+                    return false;
+
+                last = ver;
+            }
+
+            return true;
+        }, 10000);
+
         for (Ignite ig : G.allGrids()) {
             info("Checking node: " + ig.cluster().localNode().id());
 
@@ -228,7 +247,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
                 if (cache.lostPartitions().contains(i)) {
                     if (safe)
-                        fail("Reading from a lost partition should have failed: " + i);
+                        fail("Reading from a lost partition should have failed: " + i + " " + ig.name());
                     // else we could have read anything.
                 }
                 else

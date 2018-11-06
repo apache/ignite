@@ -20,8 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
 import java.io.File;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -46,9 +45,9 @@ public class IgniteWalIteratorFactory {
     @Nullable private File binaryMetadataFileStoreDir;
 
     /**
-     * Folder specifying location of marshaller mapping file store. {@code null} means no specific folder is configured. <br>
-     * This folder should be specified for converting data entries into BinaryObjects.
-     * Providing {@code null} will disable unmarshall for non primitive objects, BinaryObjects will be provided
+     * Folder specifying location of marshaller mapping file store. {@code null} means no specific folder is configured.
+     * <br> This folder should be specified for converting data entries into BinaryObjects. Providing {@code null} will
+     * disable unmarshall for non primitive objects, BinaryObjects will be provided
      */
     @Nullable private File marshallerMappingFileStoreDir;
 
@@ -56,7 +55,10 @@ public class IgniteWalIteratorFactory {
     private boolean keepBinary;
 
     /** Factory to provide I/O interfaces for read/write operations with files */
-    private final FileIOFactory ioFactory;
+    private FileIOFactory ioFactory;
+
+    /** Wal records iterator buffer size */
+    private int bufSize = StandaloneWalRecordsIterator.DFLT_BUF_SIZE;
 
     /**
      * Creates WAL files iterator factory.
@@ -69,8 +71,8 @@ public class IgniteWalIteratorFactory {
      * subfolder and consistent ID subfolder. Note Consistent ID should be already masked and should not contain special
      * symbols. Providing {@code null} means no specific folder is configured. <br>
      * @param marshallerMappingFileStoreDir Folder specifying location of marshaller mapping file store. Should include
-     * "marshaller" subfolder. Providing {@code null} will disable unmarshall for non primitive objects,
-     * BinaryObjects will be provided
+     * "marshaller" subfolder. Providing {@code null} will disable unmarshall for non primitive objects, BinaryObjects
+     * will be provided
      * @param keepBinary {@code true} disables complex object unmarshall into source classes
      */
     public IgniteWalIteratorFactory(
@@ -84,8 +86,8 @@ public class IgniteWalIteratorFactory {
         this.binaryMetadataFileStoreDir = binaryMetadataFileStoreDir;
         this.marshallerMappingFileStoreDir = marshallerMappingFileStoreDir;
         this.keepBinary = keepBinary;
-        this.ioFactory = new PersistentStoreConfiguration().getFileIOFactory();
-        new MemoryConfiguration().setPageSize(pageSize); // just for validate
+        this.ioFactory = new DataStorageConfiguration().getFileIOFactory();
+        new DataStorageConfiguration().setPageSize(pageSize); // just for validate
     }
 
     /**
@@ -122,7 +124,7 @@ public class IgniteWalIteratorFactory {
         this.log = log;
         this.pageSize = pageSize;
         this.ioFactory = ioFactory;
-        new MemoryConfiguration().setPageSize(pageSize); // just for validate
+        new DataStorageConfiguration().setPageSize(pageSize); // just for validate
     }
 
     /**
@@ -134,7 +136,7 @@ public class IgniteWalIteratorFactory {
      * according its boundaries.
      */
     public IgniteWalIteratorFactory(@NotNull final IgniteLogger log, int pageSize) {
-        this(log, new PersistentStoreConfiguration().getFileIOFactory(), pageSize);
+        this(log, new DataStorageConfiguration().getFileIOFactory(), pageSize);
     }
 
     /**
@@ -148,8 +150,10 @@ public class IgniteWalIteratorFactory {
      * @return closable WAL records iterator, should be closed when non needed
      * @throws IgniteCheckedException if failed to read folder
      */
-    public WALIterator iteratorArchiveDirectory(@NotNull final File walDirWithConsistentId) throws IgniteCheckedException {
-        return new StandaloneWalRecordsIterator(walDirWithConsistentId, log, prepareSharedCtx(), ioFactory, keepBinary);
+    public WALIterator iteratorArchiveDirectory(
+        @NotNull final File walDirWithConsistentId) throws IgniteCheckedException {
+        return new StandaloneWalRecordsIterator(
+            walDirWithConsistentId, log, prepareSharedCtx(), ioFactory, keepBinary, bufSize);
     }
 
     /**
@@ -166,7 +170,7 @@ public class IgniteWalIteratorFactory {
      * @throws IgniteCheckedException if failed to read files
      */
     public WALIterator iteratorArchiveFiles(@NotNull final File... files) throws IgniteCheckedException {
-        return new StandaloneWalRecordsIterator(log, prepareSharedCtx(), ioFactory, false, keepBinary, files);
+        return new StandaloneWalRecordsIterator(log, prepareSharedCtx(), ioFactory, false, keepBinary, bufSize, files);
     }
 
     /**
@@ -183,7 +187,7 @@ public class IgniteWalIteratorFactory {
      * @throws IgniteCheckedException if failed to read files
      */
     public WALIterator iteratorWorkFiles(@NotNull final File... files) throws IgniteCheckedException {
-        return new StandaloneWalRecordsIterator(log, prepareSharedCtx(), ioFactory, true, keepBinary, files);
+        return new StandaloneWalRecordsIterator(log, prepareSharedCtx(), ioFactory, true, keepBinary, bufSize, files);
     }
 
     /**
@@ -198,8 +202,22 @@ public class IgniteWalIteratorFactory {
 
         return new GridCacheSharedContext<>(
             kernalCtx, null, null, null,
-            null, null, dbMgr, null,
+            null, null, null, dbMgr, null,
             null, null, null, null,
             null, null, null);
+    }
+
+    /**
+     * @param ioFactory New factory to provide I/O interfaces for read/write operations with files
+     */
+    public void ioFactory(FileIOFactory ioFactory) {
+        this.ioFactory = ioFactory;
+    }
+
+    /**
+     * @param bufSize New wal records iterator buffer size
+     */
+    public void bufferSize(int bufSize) {
+        this.bufSize = bufSize;
     }
 }

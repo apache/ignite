@@ -207,6 +207,11 @@ namespace ignite
             {
                 return 0;
             }
+
+            SqlResult::Type PrimaryKeysQuery::NextResultSet()
+            {
+                return SqlResult::AI_NO_DATA;
+            }
         }
     }
 }

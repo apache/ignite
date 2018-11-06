@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.freelist.io;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -210,7 +211,7 @@ public class PagesListNodeIO extends PageIO {
         int cnt = getCount(pageAddr);
 
         for (int i = 0; i < cnt; i++) {
-            if (getAt(pageAddr, i) == dataPageId) {
+            if (PageIdUtils.maskPartitionId(getAt(pageAddr, i)) == PageIdUtils.maskPartitionId(dataPageId)) {
                 if (i != cnt - 1)
                     copyMemory(pageAddr, offset(i + 1), pageAddr, offset(i), 8 * (cnt - i - 1));
 

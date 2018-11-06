@@ -195,6 +195,15 @@ public class VisorQueryUtils {
             }
 
             if (meta != null) {
+                if (meta.isEnum()) {
+                    try {
+                        return obj.deserialize().toString();
+                    }
+                    catch (BinaryObjectException ignore) {
+                        // NO-op.
+                    }
+                }
+
                 SB buf = new SB(meta.typeName());
 
                 if (meta.fieldNames() != null) {
@@ -218,6 +227,17 @@ public class VisorQueryUtils {
             "typeId", obj.type().typeId(), true);
     }
 
+    public static Object convertValue(Object original) {
+        if (original == null)
+            return null;
+        else if (isKnownType(original))
+            return original;
+        else if (original instanceof BinaryObject)
+            return binaryToString((BinaryObject)original);
+        else
+            return original.getClass().isArray() ? "binary" : original.toString();
+    }
+
     /**
      * Collects rows from sql query future, first time creates meta and column names arrays.
      *
@@ -237,18 +257,8 @@ public class VisorQueryUtils {
 
             Object[] row = new Object[sz];
 
-            for (int i = 0; i < sz; i++) {
-                Object o = next.get(i);
-
-                if (o == null)
-                    row[i] = null;
-                else if (isKnownType(o))
-                    row[i] = o;
-                else if (o instanceof BinaryObject)
-                    row[i] = binaryToString((BinaryObject)o);
-                else
-                    row[i] = o.getClass().isArray() ? "binary" : o.toString();
-            }
+            for (int i = 0; i < sz; i++)
+                row[i] = convertValue(next.get(i));
 
             rows.add(row);
 

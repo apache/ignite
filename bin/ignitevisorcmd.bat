@@ -28,7 +28,7 @@ if "%OS%" == "Windows_NT"  setlocal
 if defined JAVA_HOME  goto checkJdk
     echo %0, ERROR:
     echo JAVA_HOME environment variable is not found.
-    echo Please point JAVA_HOME variable to location of JDK 1.7 or JDK 1.8.
+    echo Please point JAVA_HOME variable to location of JDK 1.8 or JDK 9.
     echo You can also download latest JDK at http://java.com/download.
 goto error_finish
 
@@ -37,16 +37,16 @@ goto error_finish
 if exist "%JAVA_HOME%\bin\java.exe" goto checkJdkVersion
     echo %0, ERROR:
     echo JAVA is not found in JAVA_HOME=%JAVA_HOME%.
-    echo Please point JAVA_HOME variable to installation of JDK 1.7 or JDK 1.8.
+    echo Please point JAVA_HOME variable to installation of JDK 1.8 or JDK 9.
     echo You can also download latest JDK at http://java.com/download.
 goto error_finish
 
 :checkJdkVersion
-"%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr "1\.[78]\." > nul
+"%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr /R /c:"version .9\..*" /c:"version .1\.8\..*" > nul
 if %ERRORLEVEL% equ 0 goto checkIgniteHome1
     echo %0, ERROR:
     echo The version of JAVA installed in %JAVA_HOME% is incorrect.
-    echo Please point JAVA_HOME variable to installation of JDK 1.7 or JDK 1.8.
+    echo Please point JAVA_HOME variable to installation of JDK 1.8 or JDK 9.
     echo You can also download latest JDK at http://java.com/download.
 goto error_finish
 
@@ -140,6 +140,11 @@ if %ENABLE_ASSERTIONS% == 1 set JVM_OPTS_VISOR=%JVM_OPTS_VISOR% -ea
 :: Program args.
 ::
 if "%ARGS%" == "" set ARGS=%*
+
+::
+:: Final JVM_OPTS for Java 9 compatibility
+::
+"%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr /R /c:"version .9\..*" > nul && set JVM_OPTS_VISOR=--add-exports java.base/jdk.internal.misc=ALL-UNNAMED --add-exports java.base/sun.nio.ch=ALL-UNNAMED --add-exports java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-modules java.xml.bind %JVM_OPTS%
 
 ::
 :: Starts Visor console.

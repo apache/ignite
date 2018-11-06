@@ -17,15 +17,21 @@
 
 package org.apache.ignite.internal.processors.platform.cache.query;
 
-import java.util.List;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+
+import java.util.List;
 
 /**
  * Interop cursor for fields query.
  */
 public class PlatformFieldsQueryCursor extends PlatformAbstractQueryCursor<List<?>> {
+    /** Gets field names. */
+    private static final int OP_GET_FIELD_NAMES = 7;
+
     /**
      * Constructor.
      *
@@ -51,5 +57,21 @@ public class PlatformFieldsQueryCursor extends PlatformAbstractQueryCursor<List<
         int rowEndPos = writer.out().position();
         
         writer.writeInt(rowSizePos, rowEndPos - rowSizePos);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void processOutStream(int type, final BinaryRawWriterEx writer) throws IgniteCheckedException {
+        if (type == OP_GET_FIELD_NAMES) {
+            FieldsQueryCursor fq = (FieldsQueryCursor) cursor();
+
+            int cnt = fq.getColumnsCount();
+            writer.writeInt(cnt);
+
+            for (int i = 0; i < cnt; i++) {
+                writer.writeString(fq.getFieldName(i));
+            }
+        } else {
+            super.processOutStream(type, writer);
+        }
     }
 }

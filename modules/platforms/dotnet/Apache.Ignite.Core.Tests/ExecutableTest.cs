@@ -103,6 +103,7 @@ namespace Apache.Ignite.Core.Tests
                 "-jvmClasspath=" + TestUtils.CreateTestClasspath()
                 );
 
+            Assert.IsTrue(proc.Alive);
             Assert.IsTrue(_grid.WaitTopology(2));
 
             var cfg = RemoteConfig();
@@ -110,7 +111,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(SpringCfgPath, cfg.SpringConfigUrl);
             Assert.IsTrue(cfg.JvmOptions.Contains("-DOPT1") && cfg.JvmOptions.Contains("-DOPT2"));
             Assert.IsTrue(cfg.Assemblies.Contains("test-1.dll") && cfg.Assemblies.Contains("test-2.dll"));
-            Assert.AreEqual(601, cfg.JvmInitialMemoryMb);
+            Assert.AreEqual(602, cfg.JvmInitialMemoryMb);
             Assert.AreEqual(702, cfg.JvmMaxMemoryMb);
         }
 
@@ -130,6 +131,7 @@ namespace Apache.Ignite.Core.Tests
                 "-assembly=test-2.dll"
                 );
 
+            Assert.IsTrue(proc.Alive);
             Assert.IsTrue(_grid.WaitTopology(2));
 
             var cfg = RemoteConfig();
@@ -150,6 +152,7 @@ namespace Apache.Ignite.Core.Tests
                 "-J-DOPT2"
                 );
 
+            Assert.IsTrue(proc.Alive);
             Assert.IsTrue(_grid.WaitTopology(2));
 
             var cfg = RemoteConfig();
@@ -170,6 +173,7 @@ namespace Apache.Ignite.Core.Tests
                 "-J-Xmx607m"
                 );
 
+            Assert.IsTrue(proc.Alive);
             Assert.IsTrue(_grid.WaitTopology(2));
 
             var minMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MinMemTask, null);
@@ -188,17 +192,18 @@ namespace Apache.Ignite.Core.Tests
             var proc = new IgniteProcess(
                 "-jvmClasspath=" + TestUtils.CreateTestClasspath(),
                 "-springConfigUrl=" + SpringCfgPath,
-                "-JvmInitialMemoryMB=615",
-                "-JvmMaxMemoryMB=863"
+                "-JvmInitialMemoryMB=616",
+                "-JvmMaxMemoryMB=866"
                 );
 
+            Assert.IsTrue(proc.Alive);
             Assert.IsTrue(_grid.WaitTopology(2));
 
             var minMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MinMemTask, null);
-            Assert.AreEqual((long) 615*1024*1024, minMem);
+            Assert.AreEqual((long) 616*1024*1024, minMem);
 
             var maxMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MaxMemTask, null);
-            AssertJvmMaxMemory((long) 863*1024*1024, maxMem);
+            AssertJvmMaxMemory((long) 866*1024*1024, maxMem);
         }
 
         /// <summary>
@@ -215,10 +220,11 @@ namespace Apache.Ignite.Core.Tests
 
             var proc = new IgniteProcess("-jvmClasspath=" + TestUtils.CreateTestClasspath());
 
+            Assert.IsTrue(proc.Alive);
             Assert.IsTrue(_grid.WaitTopology(2));
 
             var minMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MinMemTask, null);
-            Assert.AreEqual((long) 601*1024*1024, minMem);
+            Assert.AreEqual((long) 602*1024*1024, minMem);
 
             var maxMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MaxMemTask, null);
             AssertJvmMaxMemory((long) 702*1024*1024, maxMem);
@@ -230,12 +236,13 @@ namespace Apache.Ignite.Core.Tests
             // Command line options overwrite config file options
             // ReSharper disable once RedundantAssignment
             proc = new IgniteProcess("-jvmClasspath=" + TestUtils.CreateTestClasspath(),
-                "-J-Xms605m", "-J-Xmx706m");
+                "-J-Xms606m", "-J-Xmx706m");
 
+            Assert.IsTrue(proc.Alive);
             Assert.IsTrue(_grid.WaitTopology(2));
 
             minMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MinMemTask, null);
-            Assert.AreEqual((long) 605*1024*1024, minMem);
+            Assert.AreEqual((long) 606*1024*1024, minMem);
 
             maxMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MaxMemTask, null);
             AssertJvmMaxMemory((long) 706*1024*1024, maxMem);
@@ -250,17 +257,18 @@ namespace Apache.Ignite.Core.Tests
             var proc = new IgniteProcess(
                 "-jvmClasspath=" + TestUtils.CreateTestClasspath(),
                 "-springConfigUrl=" + SpringCfgPath,
-                "-J-Xms555m",
+                "-J-Xms556m",
                 "-J-Xmx666m",
                 "-JvmInitialMemoryMB=128",
                 "-JvmMaxMemoryMB=256"
                 );
 
+            Assert.IsTrue(proc.Alive);
             Assert.IsTrue(_grid.WaitTopology(2));
 
             // Raw JVM options (Xms/Xmx) should override custom options
             var minMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MinMemTask, null);
-            Assert.AreEqual((long) 555*1024*1024, minMem);
+            Assert.AreEqual((long) 556*1024*1024, minMem);
 
             var maxMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MaxMemTask, null);
             AssertJvmMaxMemory((long) 666*1024*1024, maxMem);
@@ -276,6 +284,7 @@ namespace Apache.Ignite.Core.Tests
 
             var proc = new IgniteProcess("-jvmClasspath=" + TestUtils.CreateTestClasspath());
 
+            Assert.IsTrue(proc.Alive);
             Assert.IsTrue(_grid.WaitTopology(2));
 
             var remoteCfg = RemoteConfig();
@@ -295,6 +304,7 @@ namespace Apache.Ignite.Core.Tests
             var proc = new IgniteProcess("-jvmClasspath=" + TestUtils.CreateTestClasspath(),
                 "-configFileName=config\\ignite-dotnet-cfg.xml");
 
+            Assert.IsTrue(proc.Alive);
             Assert.IsTrue(_grid.WaitTopology(2));
 
             var remoteCfg = RemoteConfig();
@@ -311,6 +321,17 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestInvalidCmdArgs()
         {
+            var ignoredWarns = new[]
+            {
+                "WARNING: An illegal reflective access operation has occurred",
+                "WARNING: Illegal reflective access by org.apache.ignite.internal.util.GridUnsafe$2 " +
+                "(file:/C:/w/incubator-ignite/modules/core/target/classes/) to field java.nio.Buffer.address",
+                "WARNING: Please consider reporting this to the maintainers of org.apache.ignite.internal.util." +
+                "GridUnsafe$2",
+                "WARNING: Use --illegal-access=warn to enable warnings of further illegal reflective access operations",
+                "WARNING: All illegal access operations will be denied in a future release"
+            };
+
             Action<string, string> checkError = (args, err) =>
             {
                 var reader = new ListDataReader();
@@ -320,10 +341,9 @@ namespace Apache.Ignite.Core.Tests
                 Assert.IsTrue(proc.Join(30000, out exitCode));
                 Assert.AreEqual(-1, exitCode);
 
-                lock (reader.List)
-                {
-                    Assert.AreEqual(err, reader.List.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)));
-                }
+                Assert.AreEqual(err, reader.GetOutput()
+                    .Except(ignoredWarns)
+                    .FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)));
             };
 
             checkError("blabla", "ERROR: Apache.Ignite.Core.Common.IgniteException: Missing argument value: " +
@@ -389,8 +409,8 @@ namespace Apache.Ignite.Core.Tests
         private static void AssertJvmMaxMemory(long expected, long actual)
         {
             // allow 20% tolerance because max memory in Java is not exactly equal to Xmx parameter value
-            Assert.LessOrEqual(actual, expected);
-            Assert.Greater(actual, expected/5*4);
+            Assert.LessOrEqual(actual, expected / 4 * 5);
+            Assert.Greater(actual, expected / 5 * 4);
         }
 
         /// <summary>
@@ -476,19 +496,6 @@ namespace Apache.Ignite.Core.Tests
             /// Maximum JVM memory (Xms).
             /// </summary>
             public int JvmMaxMemoryMb { get; set; }
-        }
-
-        private class ListDataReader : IIgniteProcessOutputReader
-        {
-            public readonly List<string> List = new List<string>();
-
-            public void OnOutput(System.Diagnostics.Process proc, string data, bool err)
-            {
-                lock (List)
-                {
-                    List.Add(data);
-                }
-            }
         }
     }
 }

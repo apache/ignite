@@ -101,9 +101,7 @@ class VisorVvmCommand extends VisorConsoleCommand {
      * @param args Command parameters.
      */
     def vvm(@Nullable args: String) = breakable {
-        if (!isConnected)
-            adviseToConnect()
-        else {
+        if (checkConnected()) {
             val argLst = parseArgs(args)
 
             val vvmHome = argValue("home", argLst) getOrElse IgniteSystemProperties.getString("VVM_HOME")

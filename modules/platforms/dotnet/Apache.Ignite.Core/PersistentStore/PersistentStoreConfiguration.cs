@@ -22,11 +22,15 @@ namespace Apache.Ignite.Core.PersistentStore
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
     /// Configures Apache Ignite persistent store.
+    /// <para />
+    /// Obsolete, use <see cref="DataStorageConfiguration"/>.
     /// </summary>
+    [Obsolete("Use DataStorageConfiguration.")]
     public class PersistentStoreConfiguration
     {
         /// <summary>

@@ -256,6 +256,13 @@ public class GridCacheGateway<K, V> {
     /**
      *
      */
+    public boolean isStopped() {
+        return !checkState(false, false);
+    }
+
+    /**
+     *
+     */
     public void stopped() {
         state.set(State.STOPPED);
     }

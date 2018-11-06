@@ -67,13 +67,15 @@ import org.jetbrains.annotations.Nullable;
  * <h2 class="header">Mandatory</h2>
  * This SPI has one mandatory configuration parameter:
  * <ul>
- * <li>{@link #setAwsCredentials(AWSCredentials)}</li>
+ *      <li>AWS credentials (see {@link #setAwsCredentials(AWSCredentials)}
  * </ul>
  * <h2 class="header">Optional</h2>
  * This SPI has following optional configuration parameters:
  * <ul>
- * <li>{@link #setBucketNameSuffix(String)}</li>
- * <li>{@link #setClientConfiguration(ClientConfiguration)}</li>
+ *      <li>Bucket name suffix (see {@link #setBucketNameSuffix(String)})</li>
+ *      <li>Client configuration (see {@link #setClientConfiguration(ClientConfiguration)})</li>
+ *      <li>Bucket endpoint (see {@link #setBucketEndpoint(String)})</li>
+ *      <li>Server side encryption algorithm (see {@link #setSSEAlgorithm(String)})</li>
  * </ul>
  * <h2 class="header">Java Example</h2>
  * {@link S3CheckpointSpi} can be configured as follows:
@@ -155,6 +157,12 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
     /** Bucket name (generated). */
     private String bucketName;
 
+    /** Bucket endpoint (set by user). */
+    private @Nullable String bucketEndpoint;
+
+    /** Server side encryption algorithm */
+    private @Nullable String sseAlg;
+
     /** Amazon client configuration. */
     private ClientConfiguration cfg;
 
@@ -172,6 +180,24 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
      */
     public String getBucketName() {
         return bucketName;
+    }
+
+    /**
+     * Gets S3 bucket endpoint to use.
+     *
+     * @return S3 bucket endpoint to use.
+     */
+    public @Nullable String getBucketEndpoint() {
+        return bucketEndpoint;
+    }
+
+    /**
+     * Gets S3 server-side encryption algorithm.
+     *
+     * @return S3 server-side encryption algorithm to use.
+     */
+    public @Nullable String getSSEAlgorithm() {
+        return sseAlg;
     }
 
     /**
@@ -242,6 +268,37 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
     }
 
     /**
+     * Sets bucket endpoint.
+     * If the endpoint is not set then S3CheckpointSpi will go to each region to find a corresponding bucket.
+     * For information about possible endpoint names visit
+     * <a href="http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region">docs.aws.amazon.com</a>
+     *
+     * @param bucketEndpoint Bucket endpoint, for example, {@code }s3.us-east-2.amazonaws.com.
+     * @return {@code this} for chaining.
+     */
+    @IgniteSpiConfiguration(optional = true)
+    public S3CheckpointSpi setBucketEndpoint(String bucketEndpoint) {
+        this.bucketEndpoint = bucketEndpoint;
+
+        return this;
+    }
+
+    /**
+     * Sets server-side encryption algorithm for Amazon S3-managed encryption keys.
+     * For information about possible S3-managed encryption keys visit
+     * <a href="http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingServerSideEncryption.html">docs.aws.amazon.com</a>.
+     *
+     * @param sseAlg Server-side encryption algorithm, for example, AES256 or SSES3.
+     * @return {@code this} for chaining.
+     */
+    @IgniteSpiConfiguration(optional = true)
+    public S3CheckpointSpi setSSEAlgorithm(String sseAlg) {
+        this.sseAlg = sseAlg;
+
+        return this;
+    }
+
+    /**
      * Sets Amazon client configuration.
      * <p>
      * For details refer to Amazon S3 API reference.
@@ -283,6 +340,8 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
             log.debug(configInfo("awsCredentials", cred));
             log.debug(configInfo("clientConfiguration", cfg));
             log.debug(configInfo("bucketNameSuffix", bucketNameSuffix));
+            log.debug(configInfo("bucketEndpoint", bucketEndpoint));
+            log.debug(configInfo("SSEAlgorithm", sseAlg));
         }
 
         if (cfg == null)
@@ -297,6 +356,9 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
             bucketName = BUCKET_NAME_PREFIX + bucketNameSuffix;
 
         s3 = cfg != null ? new AmazonS3Client(cred, cfg) : new AmazonS3Client(cred);
+
+        if (!F.isEmpty(bucketEndpoint))
+            s3.setEndpoint(bucketEndpoint);
 
         if (!s3.doesBucketExist(bucketName)) {
             try {
@@ -528,6 +590,9 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
 
         meta.setContentLength(buf.length);
 
+        if (!F.isEmpty(sseAlg))
+            meta.setSSEAlgorithm(sseAlg);
+
         s3.putObject(bucketName, data.getKey(), new ByteArrayInputStream(buf), meta);
     }
 
@@ -732,6 +797,16 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
         /** {@inheritDoc} */
         @Override public String getBucketName() {
             return S3CheckpointSpi.this.getBucketName();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getBucketEndpoint() {
+            return S3CheckpointSpi.this.getBucketName();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getSSEAlgorithm() {
+            return S3CheckpointSpi.this.getSSEAlgorithm();
         }
 
         /** {@inheritDoc} */

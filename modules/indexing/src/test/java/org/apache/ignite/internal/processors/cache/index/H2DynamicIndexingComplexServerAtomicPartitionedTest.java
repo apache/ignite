@@ -28,6 +28,6 @@ public class H2DynamicIndexingComplexServerAtomicPartitionedTest extends H2Dynam
      * Constructor.
      */
     public H2DynamicIndexingComplexServerAtomicPartitionedTest() {
-        super(CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC, SRV_IDX);
+        super(CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC, 1, SRV_IDX);
     }
 }

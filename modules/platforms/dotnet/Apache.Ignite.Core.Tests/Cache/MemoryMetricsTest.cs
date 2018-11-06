@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable 618
 namespace Apache.Ignite.Core.Tests.Cache
 {
     using System.Linq;
@@ -101,6 +102,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
+                DataStorageConfiguration = null,
                 MemoryConfiguration = new MemoryConfiguration
                 {
                     DefaultMemoryPolicyName = MemoryPolicyWithMetrics,

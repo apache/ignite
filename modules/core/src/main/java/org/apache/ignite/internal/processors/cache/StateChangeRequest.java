@@ -19,8 +19,12 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cluster.BaselineTopology;
+import org.apache.ignite.internal.processors.cluster.BaselineTopologyHistoryItem;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -30,6 +34,12 @@ public class StateChangeRequest {
     private final ChangeGlobalStateMessage msg;
 
     /** */
+    private final BaselineTopologyHistoryItem prevBltHistItem;
+
+    /** */
+    private final boolean activeChanged;
+
+    /** */
     private final AffinityTopologyVersion topVer;
 
     /**
@@ -37,8 +47,12 @@ public class StateChangeRequest {
      * @param topVer State change topology versoin.
      */
     public StateChangeRequest(ChangeGlobalStateMessage msg,
+        BaselineTopologyHistoryItem bltHistItem,
+        boolean activeChanged,
         AffinityTopologyVersion topVer) {
         this.msg = msg;
+        prevBltHistItem = bltHistItem;
+        this.activeChanged = activeChanged;
         this.topVer = topVer;
     }
 
@@ -47,6 +61,13 @@ public class StateChangeRequest {
      */
     public AffinityTopologyVersion topologyVersion() {
         return topVer;
+    }
+
+    /**
+     * @return State change message ID.
+     */
+    public IgniteUuid id() {
+        return msg.id();
     }
 
     /**
@@ -61,6 +82,27 @@ public class StateChangeRequest {
      */
     public boolean activate() {
         return msg.activate();
+    }
+
+    /**
+     * @return {@code True} if active state was changed.
+     */
+    public boolean activeChanged() {
+        return activeChanged;
+    }
+
+    /**
+     * @return Previous baseline topology.
+     */
+    @Nullable public BaselineTopologyHistoryItem prevBaselineTopologyHistoryItem() {
+        return prevBltHistItem;
+    }
+
+    /**
+     * @return Baseline topology.
+     */
+    @Nullable public BaselineTopology baselineTopology() {
+        return msg.baselineTopology();
     }
 
     /**

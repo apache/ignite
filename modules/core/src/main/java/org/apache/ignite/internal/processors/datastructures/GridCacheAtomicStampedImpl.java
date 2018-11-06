@@ -47,7 +47,8 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Cache atomic stamped implementation.
  */
-public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicStampedEx<T, S>, IgniteChangeGlobalStateSupport, Externalizable {
+public final class GridCacheAtomicStampedImpl<T, S> extends AtomicDataStructureProxy<GridCacheAtomicStampedValue<T, S>>
+    implements GridCacheAtomicStampedEx<T, S>, IgniteChangeGlobalStateSupport, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -58,24 +59,6 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
                 return new IgniteBiTuple<>();
             }
         };
-
-    /** Atomic stamped name. */
-    private String name;
-
-    /** Removed flag.*/
-    private volatile boolean rmvd;
-
-    /** Check removed flag. */
-    private boolean rmvCheck;
-
-    /** Atomic stamped key. */
-    private GridCacheInternalKey key;
-
-    /** Atomic stamped projection. */
-    private IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicStampedValue<T, S>> atomicView;
-
-    /** Cache context. */
-    private GridCacheContext<GridCacheInternalKey, GridCacheAtomicStampedValue<T, S>> ctx;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -94,19 +77,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
     public GridCacheAtomicStampedImpl(String name,
         GridCacheInternalKey key,
         IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicStampedValue<T, S>> atomicView) {
-        assert key != null;
-        assert atomicView != null;
-        assert name != null;
-
-        this.ctx = atomicView.context();
-        this.key = key;
-        this.atomicView = atomicView;
-        this.name = name;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String name() {
-        return name;
+        super(name, key, atomicView);
     }
 
     /** {@inheritDoc} */
@@ -114,7 +85,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
         checkRemoved();
 
         try {
-            GridCacheAtomicStampedValue<T, S> stmp = atomicView.get(key);
+            GridCacheAtomicStampedValue<T, S> stmp = cacheView.get(key);
 
             if (stmp == null)
                 throw new IgniteCheckedException("Failed to find atomic stamped with given name: " + name);
@@ -132,17 +103,17 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
 
         try {
             if (ctx.dataStructures().knownType(val) && ctx.dataStructures().knownType(stamp))
-                atomicView.invoke(key, new StampedSetEntryProcessor<>(val, stamp));
+                cacheView.invoke(key, new StampedSetEntryProcessor<>(val, stamp));
             else {
                 CU.retryTopologySafe(new Callable<Void>() {
                     @Override public Void call() throws Exception {
-                        try (GridNearTxLocal tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ)) {
-                            GridCacheAtomicStampedValue<T, S> ref = atomicView.get(key);
+                        try (GridNearTxLocal tx = CU.txStartInternal(ctx, cacheView, PESSIMISTIC, REPEATABLE_READ)) {
+                            GridCacheAtomicStampedValue<T, S> ref = cacheView.get(key);
 
                             if (ref == null)
                                 throw new IgniteException("Failed to find atomic stamped with given name: " + name);
 
-                            atomicView.put(key, new GridCacheAtomicStampedValue<>(val, stamp));
+                            cacheView.put(key, new GridCacheAtomicStampedValue<>(val, stamp));
 
                             tx.commit();
                         }
@@ -170,7 +141,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
                 ctx.dataStructures().knownType(expStamp) &&
                 ctx.dataStructures().knownType(newStamp)) {
                 EntryProcessorResult<Boolean> res =
-                    atomicView.invoke(key, new StampedCompareAndSetEntryProcessor<>(expVal, expStamp, newVal, newStamp));
+                    cacheView.invoke(key, new StampedCompareAndSetEntryProcessor<>(expVal, expStamp, newVal, newStamp));
 
                 assert res != null && res.get() != null : res;
 
@@ -179,14 +150,14 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
             else {
                 return CU.retryTopologySafe(new Callable<Boolean>() {
                     @Override public Boolean call() throws Exception {
-                        try (GridNearTxLocal tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ)) {
-                            GridCacheAtomicStampedValue<T, S> val = atomicView.get(key);
+                        try (GridNearTxLocal tx = CU.txStartInternal(ctx, cacheView, PESSIMISTIC, REPEATABLE_READ)) {
+                            GridCacheAtomicStampedValue<T, S> val = cacheView.get(key);
 
                             if (val == null)
                                 throw new IgniteException("Failed to find atomic stamped with given name: " + name);
 
                             if (F.eq(expVal, val.value()) && F.eq(expStamp, val.stamp())) {
-                                atomicView.put(key, new GridCacheAtomicStampedValue<>(newVal, newStamp));
+                                cacheView.put(key, new GridCacheAtomicStampedValue<>(newVal, newStamp));
 
                                 tx.commit();
 
@@ -212,7 +183,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
         checkRemoved();
 
         try {
-            GridCacheAtomicStampedValue<T, S> stmp = atomicView.get(key);
+            GridCacheAtomicStampedValue<T, S> stmp = cacheView.get(key);
 
             if (stmp == null)
                 throw new IgniteCheckedException("Failed to find atomic stamped with given name: " + name);
@@ -229,7 +200,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
         checkRemoved();
 
         try {
-            GridCacheAtomicStampedValue<T, S> stmp = atomicView.get(key);
+            GridCacheAtomicStampedValue<T, S> stmp = cacheView.get(key);
 
             if (stmp == null)
                 throw new IgniteCheckedException("Failed to find atomic stamped with given name: " + name);
@@ -239,26 +210,6 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean onRemoved() {
-        return rmvd = true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void needCheckNotRemoved() {
-        rmvCheck = true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheInternalKey key() {
-        return key;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean removed() {
-        return rmvd;
     }
 
     /** {@inheritDoc} */
@@ -307,44 +258,6 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
         finally {
             stash.remove();
         }
-    }
-
-    /**
-     * Check removed status.
-     *
-     * @throws IllegalStateException If removed.
-     */
-    private void checkRemoved() throws IllegalStateException {
-        if (rmvd)
-            throw removedError();
-
-        if (rmvCheck) {
-            try {
-                rmvd = atomicView.get(key) == null;
-            }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
-
-            rmvCheck = false;
-
-            if (rmvd) {
-                ctx.kernalContext().dataStructures().onRemoved(key, this);
-
-                throw removedError();
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        this.ctx = kctx.cache().<GridCacheInternalKey, GridCacheAtomicStampedValue<T, S>>context().cacheContext(ctx.cacheId());
-        this.atomicView = ctx.cache();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onDeActivate(GridKernalContext kctx) {
-        // No-op.
     }
 
     /**

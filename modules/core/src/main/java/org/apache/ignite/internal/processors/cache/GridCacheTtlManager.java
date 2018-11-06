@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.typedef.X;
@@ -31,7 +31,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.LongAdder8;
 
 /**
  * Eagerly removes expired entries from cache when
@@ -41,8 +40,8 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     /** Entries pending removal. */
     private GridConcurrentSkipListSetEx pendingEntries;
 
-    /** */
-    private boolean eagerTtlEnabled;
+    /** See {@link CacheConfiguration#isEagerTtl()}. */
+    private volatile boolean eagerTtlEnabled;
 
     /** */
     private GridCacheContext dhtCtx;
@@ -116,7 +115,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
      * @param entry Entry to add.
      */
     void addTrackedEntry(GridNearCacheEntry entry) {
-        assert Thread.holdsLock(entry);
+        assert entry.lockedByCurrentThread();
 
         EntryWrapper e = new EntryWrapper(entry);
 
@@ -127,7 +126,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
      * @param entry Entry to remove.
      */
     void removeTrackedEntry(GridNearCacheEntry entry) {
-        assert Thread.holdsLock(entry);
+        assert entry.lockedByCurrentThread();
 
         pendingEntries.remove(new EntryWrapper(entry));
     }
@@ -145,7 +144,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         try {
             X.println(">>>");
             X.println(">>> TTL processor memory stats [igniteInstanceName=" + cctx.igniteInstanceName() +
-            ", cache=" + cctx.name() + ']');
+                ", cache=" + cctx.name() + ']');
             X.println(">>>   pendingEntriesSize: " + pendingSize());
         }
         catch (IgniteCheckedException e) {
@@ -167,6 +166,12 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
      * @return {@code True} if unprocessed expired entries remains.
      */
     public boolean expire(int amount) {
+        // TTL manager is not initialized or eagerTtl disabled for cache.
+        if (!eagerTtlEnabled)
+            return false;
+
+        assert cctx != null;
+
         long now = U.currentTimeMillis();
 
         try {
@@ -334,7 +339,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         private static final long serialVersionUID = 0L;
 
         /** Size. */
-        private final LongAdder8 size = new LongAdder8();
+        private final LongAdder size = new LongAdder();
 
         /**
          * @return Size based on performed operations.

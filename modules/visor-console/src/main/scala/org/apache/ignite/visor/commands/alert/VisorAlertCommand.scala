@@ -260,9 +260,7 @@ class VisorAlertCommand extends VisorConsoleCommand {
         breakable {
             assert(args != null)
 
-            if (!isConnected)
-                adviseToConnect()
-            else {
+            if (checkConnected()) {
                 var name: Option[String] = None
                 var script: Option[String] = None
                 val conditions = mutable.ArrayBuffer.empty[VisorAlertCondition]

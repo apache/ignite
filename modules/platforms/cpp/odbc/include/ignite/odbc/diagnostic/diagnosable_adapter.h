@@ -45,6 +45,18 @@ namespace ignite
             {
             public:
                 /**
+                 * Constructor.
+                 *
+                 * @param connection Pointer to connection. Used to create
+                 *     diagnostic records with connection info.
+                 */
+                DiagnosableAdapter(const Connection* connection = 0) :
+                    connection(connection)
+                {
+                    // No-op.
+                }
+
+                /**
                  * Destructor.
                  */
                 virtual ~DiagnosableAdapter()
@@ -99,20 +111,8 @@ namespace ignite
                 virtual void AddStatusRecord(const OdbcError& err);
 
             protected:
-                /**
-                 * Constructor.
-                 *
-                 * @param connection Pointer to connection. Used to create
-                 *                   diagnostic records with connection info.
-                 */
-                DiagnosableAdapter(const Connection* connection = 0) :
-                    connection(connection)
-                {
-                    // No-op.
-                }
-
                 /** Diagnostic records. */
-                diagnostic::DiagnosticRecordStorage diagnosticRecords;
+                DiagnosticRecordStorage diagnosticRecords;
 
             private:
                 /** Connection. */

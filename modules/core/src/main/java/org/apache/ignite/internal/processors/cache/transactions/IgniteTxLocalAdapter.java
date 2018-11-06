@@ -39,6 +39,7 @@ import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.EntryProcessorResourceInjectorProxy;
@@ -487,7 +488,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
         checkValid();
 
-        Collection<IgniteTxEntry> commitEntries = near() ? allEntries() : writeEntries();
+        Collection<IgniteTxEntry> commitEntries = (near() || cctx.snapshot().needTxReadLogging()) ? allEntries() : writeEntries();
 
         boolean empty = F.isEmpty(commitEntries);
 
@@ -537,13 +538,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     if (cached.detached())
                                         break;
 
-                                    GridCacheEntryEx nearCached = null;
+                                    boolean updateNearCache = updateNearCache(cacheCtx, txEntry.key(), topVer);
 
                                     boolean metrics = true;
 
-                                    if (updateNearCache(cacheCtx, txEntry.key(), topVer))
-                                        nearCached = cacheCtx.dht().near().peekEx(txEntry.key());
-                                    else if (cacheCtx.isNear() && txEntry.locallyMapped())
+                                    if (!updateNearCache && cacheCtx.isNear() && txEntry.locallyMapped())
                                         metrics = false;
 
                                     boolean evt = !isNearLocallyMapped(txEntry, false);
@@ -648,19 +647,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     if (dhtVer == null)
                                         dhtVer = explicitVer != null ? explicitVer : writeVersion();
 
-                                    if (cctx.wal() != null && !writeEntries().isEmpty()
-                                        && op != NOOP && op != RELOAD && op != READ)
-                                        ptr = cctx.wal().log(new DataRecord(new DataEntry(
-                                            cacheCtx.cacheId(),
-                                            txEntry.key(),
-                                            val,
-                                            op,
-                                            nearXidVersion(),
-                                            writeVersion(),
-                                            0,
-                                            txEntry.key().partition(),
-                                            txEntry.updateCounter())));
-
                                     if (op == CREATE || op == UPDATE) {
                                         assert val != null : txEntry;
 
@@ -690,29 +676,37 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         if (updRes.success())
                                             txEntry.updateCounter(updRes.updatePartitionCounter());
 
-                                        if (nearCached != null && updRes.success()) {
-                                            nearCached.innerSet(
-                                                null,
-                                                eventNodeId(),
-                                                nodeId,
-                                                val,
-                                                false,
-                                                false,
-                                                txEntry.ttl(),
-                                                false,
-                                                metrics,
-                                                txEntry.keepBinary(),
-                                                txEntry.hasOldValue(),
-                                                txEntry.oldValue(),
-                                                topVer,
-                                                CU.empty0(),
-                                                DR_NONE,
-                                                txEntry.conflictExpireTime(),
-                                                null,
-                                                CU.subjectId(this, cctx),
-                                                resolveTaskName(),
-                                                dhtVer,
-                                                null);
+                                        if (updRes.loggedPointer() != null)
+                                            ptr = updRes.loggedPointer();
+
+                                        if (updRes.success() && updateNearCache) {
+                                            final CacheObject val0 = val;
+                                            final boolean metrics0 = metrics;
+                                            final GridCacheVersion dhtVer0 = dhtVer;
+
+                                            updateNearEntrySafely(cacheCtx, txEntry.key(), entry -> entry.innerSet(
+                                                    null,
+                                                    eventNodeId(),
+                                                    nodeId,
+                                                    val0,
+                                                    false,
+                                                    false,
+                                                    txEntry.ttl(),
+                                                    false,
+                                                    metrics0,
+                                                    txEntry.keepBinary(),
+                                                    txEntry.hasOldValue(),
+                                                    txEntry.oldValue(),
+                                                    topVer,
+                                                    CU.empty0(),
+                                                    DR_NONE,
+                                                    txEntry.conflictExpireTime(),
+                                                    null,
+                                                    CU.subjectId(this, cctx),
+                                                    resolveTaskName(),
+                                                    dhtVer0,
+                                                    null)
+                                            );
                                         }
                                     }
                                     else if (op == DELETE) {
@@ -738,34 +732,57 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         if (updRes.success())
                                             txEntry.updateCounter(updRes.updatePartitionCounter());
 
-                                        if (nearCached != null && updRes.success()) {
-                                            nearCached.innerRemove(
-                                                null,
-                                                eventNodeId(),
-                                                nodeId,
-                                                false,
-                                                false,
-                                                metrics,
-                                                txEntry.keepBinary(),
-                                                txEntry.hasOldValue(),
-                                                txEntry.oldValue(),
-                                                topVer,
-                                                CU.empty0(),
-                                                DR_NONE,
-                                                null,
-                                                CU.subjectId(this, cctx),
-                                                resolveTaskName(),
-                                                dhtVer,
-                                                null);
+                                        if (updRes.loggedPointer() != null)
+                                            ptr = updRes.loggedPointer();
+
+                                        if (updRes.success() && updateNearCache) {
+                                            final boolean metrics0 = metrics;
+                                            final GridCacheVersion dhtVer0 = dhtVer;
+
+                                            updateNearEntrySafely(cacheCtx, txEntry.key(), entry -> entry.innerRemove(
+                                                    null,
+                                                    eventNodeId(),
+                                                    nodeId,
+                                                    false,
+                                                    false,
+                                                    metrics0,
+                                                    txEntry.keepBinary(),
+                                                    txEntry.hasOldValue(),
+                                                    txEntry.oldValue(),
+                                                    topVer,
+                                                    CU.empty0(),
+                                                    DR_NONE,
+                                                    null,
+                                                    CU.subjectId(this, cctx),
+                                                    resolveTaskName(),
+                                                    dhtVer0,
+                                                    null)
+                                            );
                                         }
                                     }
                                     else if (op == RELOAD) {
                                         cached.innerReload();
 
-                                        if (nearCached != null)
-                                            nearCached.innerReload();
+                                        if (updateNearCache)
+                                            updateNearEntrySafely(cacheCtx, txEntry.key(), entry -> entry.innerReload());
                                     }
                                     else if (op == READ) {
+                                        CacheGroupContext grp = cacheCtx.group();
+
+                                        if (grp.persistenceEnabled() && grp.walEnabled() &&
+                                            cctx.snapshot().needTxReadLogging()) {
+                                            ptr = cctx.wal().log(new DataRecord(new DataEntry(
+                                                cacheCtx.cacheId(),
+                                                txEntry.key(),
+                                                val,
+                                                op,
+                                                nearXidVersion(),
+                                                writeVersion(),
+                                                0,
+                                                txEntry.key().partition(),
+                                                txEntry.updateCounter())));
+                                        }
+
                                         ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);
 
                                         if (expiry != null) {
@@ -866,8 +883,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     }
                 }
 
-                if (ptr != null)
-                    cctx.wal().fsync(ptr);
+                if (ptr != null && !cctx.tm().logTxRecords())
+                    cctx.wal().flush(ptr, false);
             }
             catch (StorageException e) {
                 throw new IgniteCheckedException("Failed to log transaction record " +
@@ -891,6 +908,40 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 assert !needsCompletedVersions || completedBase != null;
                 assert !needsCompletedVersions || committedVers != null;
                 assert !needsCompletedVersions || rolledbackVers != null;
+            }
+        }
+    }
+
+    /**
+     * Safely performs {@code updateClojure} operation on near cache entry with given {@code entryKey}.
+     * In case of {@link GridCacheEntryRemovedException} operation will be retried.
+     *
+     * @param cacheCtx Cache context.
+     * @param entryKey Entry key.
+     * @param updateClojure Near entry update clojure.
+     * @throws IgniteCheckedException If update is failed.
+     */
+    private void updateNearEntrySafely(
+        GridCacheContext cacheCtx,
+        KeyCacheObject entryKey,
+        NearEntryUpdateClojure<GridCacheEntryEx> updateClojure
+    ) throws IgniteCheckedException {
+        while (true) {
+            GridCacheEntryEx nearCached = cacheCtx.dht().near().peekEx(entryKey);
+
+            if (nearCached == null)
+                break;
+
+            try {
+                updateClojure.apply(nearCached);
+
+                break;
+            }
+            catch (GridCacheEntryRemovedException ignored) {
+                if (log.isDebugEnabled())
+                    log.debug("Got removed entry during transaction commit (will retry): " + nearCached);
+
+                cacheCtx.dht().near().removeEntry(nearCached);
             }
         }
     }
@@ -1241,7 +1292,17 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @throws IgniteCheckedException If transaction check failed.
      */
     protected void checkValid() throws IgniteCheckedException {
-        if (local() && !dht() && remainingTime() == -1)
+        checkValid(true);
+    }
+
+    /**
+     * Checks transaction expiration.
+     *
+     * @param checkTimeout Whether timeout should be checked.
+     * @throws IgniteCheckedException If transaction check failed.
+     */
+    protected void checkValid(boolean checkTimeout) throws IgniteCheckedException {
+        if (local() && !dht() && remainingTime() == -1 && checkTimeout)
             state(MARKED_ROLLBACK, true);
 
         if (isRollbackOnly()) {
@@ -1775,5 +1836,20 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
          * @throws IgniteCheckedException If operation failed.
          */
         protected abstract IgniteInternalFuture<T> postMiss(T t) throws IgniteCheckedException;
+    }
+
+    /**
+     * Clojure to perform operations with near cache entries.
+     */
+    @FunctionalInterface
+    private interface NearEntryUpdateClojure<E extends GridCacheEntryEx> {
+        /**
+         * Apply clojure to given {@code entry}.
+         *
+         * @param entry Entry.
+         * @throws IgniteCheckedException If operation is failed.
+         * @throws GridCacheEntryRemovedException If entry is removed.
+         */
+        public void apply(E entry) throws IgniteCheckedException, GridCacheEntryRemovedException;
     }
 }

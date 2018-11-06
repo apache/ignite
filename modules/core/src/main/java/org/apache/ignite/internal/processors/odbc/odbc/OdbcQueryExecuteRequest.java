@@ -37,12 +37,17 @@ public class OdbcQueryExecuteRequest extends OdbcRequest {
     @GridToStringExclude
     private final Object[] args;
 
+    /** Query timeout in seconds. */
+    @GridToStringInclude
+    private final int timeout;
+
     /**
      * @param schema Schema.
      * @param sqlQry SQL query.
      * @param args Arguments list.
+     * @param timeout Timeout in seconds.
      */
-    public OdbcQueryExecuteRequest(@Nullable String schema, String sqlQry, Object[] args) {
+    public OdbcQueryExecuteRequest(@Nullable String schema, String sqlQry, Object[] args, int timeout) {
         super(QRY_EXEC);
 
         assert sqlQry != null : "SQL query should not be null";
@@ -50,6 +55,7 @@ public class OdbcQueryExecuteRequest extends OdbcRequest {
         this.schema = schema;
         this.sqlQry = sqlQry;
         this.args = args;
+        this.timeout = timeout;
     }
 
     /**
@@ -73,8 +79,16 @@ public class OdbcQueryExecuteRequest extends OdbcRequest {
         return schema;
     }
 
+    /**
+     * @return Timeout in seconds.
+     */
+    public int timeout() {
+        return timeout;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(OdbcQueryExecuteRequest.class, this, "args", args, true);
     }
+
 }

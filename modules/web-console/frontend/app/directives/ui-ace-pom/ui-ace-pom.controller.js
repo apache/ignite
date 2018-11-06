@@ -18,20 +18,22 @@
 export default ['$scope', 'IgniteVersion', 'IgniteMavenGenerator', function($scope, Version, maven) {
     const ctrl = this;
 
-    // Watchers definition.
-    const clusterWatcher = (value) => {
-        delete ctrl.data;
+    this.$onInit = () => {
+        // Watchers definition.
+        const clusterWatcher = (value) => {
+            delete ctrl.data;
 
-        if (!value)
-            return;
+            if (!value)
+                return;
 
-        ctrl.data = maven.generate($scope.cluster, Version.currentSbj.getValue());
+            ctrl.data = maven.generate($scope.cluster, Version.currentSbj.getValue());
+        };
+
+        // Setup watchers.
+        Version.currentSbj.subscribe({
+            next: clusterWatcher
+        });
+
+        $scope.$watch('cluster', clusterWatcher);
     };
-
-    // Setup watchers.
-    Version.currentSbj.subscribe({
-        next: clusterWatcher
-    });
-
-    $scope.$watch('cluster', clusterWatcher);
 }];

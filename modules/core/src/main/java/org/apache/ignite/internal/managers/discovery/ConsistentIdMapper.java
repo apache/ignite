@@ -19,10 +19,11 @@ package org.apache.ignite.internal.managers.discovery;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,71 +32,104 @@ import org.jetbrains.annotations.Nullable;
  */
 public class ConsistentIdMapper {
     /** Discovery manager. */
-    private final GridDiscoveryManager discoveryManager;
+    private final GridDiscoveryManager discoveryMgr;
 
     /**
      * Create an instance of mapper.
      *
-     * @param discoveryManager Discovery manager.
+     * @param discoveryMgr Discovery manager.
      */
-    public ConsistentIdMapper(GridDiscoveryManager discoveryManager) {
-        this.discoveryManager = discoveryManager;
+    public ConsistentIdMapper(GridDiscoveryManager discoveryMgr) {
+        this.discoveryMgr = discoveryMgr;
     }
 
     /**
-     * Map UUID to consistent id.
+     * Maps UUID to compact ID for given baseline topology.
      *
      * @param topVer Topology version.
      * @param nodeId UUID of node.
-     * @return Consistent id of node.
+     * @return Compact ID of node for given baseline topology.
      */
-    public Object mapToConsistentId(AffinityTopologyVersion topVer, UUID nodeId) {
-        ClusterNode node = discoveryManager.node(topVer, nodeId);
+    public short mapToCompactId(AffinityTopologyVersion topVer, UUID nodeId) {
+        Map<UUID, Short> m = discoveryMgr.consistentId(topVer);
 
-        if (node == null)
-            throw new IllegalStateException("Unable to find node by UUID [nodeId=" + nodeId + ", topVer=" + topVer + ']');
+        if (m == null)
+            throw new IllegalStateException("Unable to find consistent id map [topVer" + topVer + ']');
 
-        return node.consistentId();
+        Short constId = m.get(nodeId);
+
+        if (constId == null)
+            throw new IllegalStateException("Unable to find consistentId by UUID [nodeId=" + nodeId + ", topVer=" + topVer + ']');
+
+        return constId;
     }
 
     /**
-     * Map consistent id to UUID.
+     * Maps UUID to compact ID for given baseline topology.
      *
-     * @param consistentId Consistent id of node.
-     * @return UUID of node.
+     * @param topVer Topology version.
+     * @param nodeConstId UUID of node.
+     * @return Compact ID of node for given baseline topology.
      */
-    @Nullable public UUID mapToUUID(Object consistentId) {
-        for (ClusterNode node : discoveryManager.allNodes())
-            if (node.consistentId().equals(consistentId))
-                return node.id();
+    public UUID mapToUuid(AffinityTopologyVersion topVer, short nodeConstId) {
+        Map<Short, UUID> map = discoveryMgr.nodeIdMap(topVer);
 
-        return null;
+        if (map == null)
+            return null;
+
+        UUID constId = map.get(nodeConstId);
+
+        if (constId == null)
+            throw new IllegalStateException("Unable to find UUID by constId [nodeId=" + nodeConstId + ", topVer=" + topVer + ']');
+
+        return constId;
     }
 
     /**
-     * Map primary -> backup node UUIDs to consistent ids.
+     * Map primary -> backup node compact ID accordingly to baseline topology..
      *
      * @param txNodes Primary -> backup UUID nodes.
-     * @return Primary -> backup consistent id nodes.
+     * @return Primary -> backup compact ID nodes.
      */
-    public Map<Object, Collection<Object>> mapToConsistentIds(AffinityTopologyVersion topVer, @Nullable Map<UUID, Collection<UUID>> txNodes) {
+    public Map<Short, Collection<Short>> mapToCompactIds(
+        AffinityTopologyVersion topVer,
+        @Nullable Map<UUID, Collection<UUID>> txNodes,
+        BaselineTopology baselineTop
+    ) {
         if (txNodes == null)
             return null;
 
-        Map<Object, Collection<Object>> consistentMap = U.newHashMap(txNodes.keySet().size());
+        Map<Object, Short> constIdMap = baselineTop.consistentIdMapping();
 
-        for (UUID node : txNodes.keySet()) {
-            Collection<UUID> backupNodes = txNodes.get(node);
+        Map<UUID, Short> m = discoveryMgr.consistentId(topVer);
 
-            Collection<Object> consistentIdsBackups = new ArrayList<>(backupNodes.size());
+        int bltNodes = m.size();
 
-            for (UUID backup : backupNodes)
-                consistentIdsBackups.add(mapToConsistentId(topVer, backup));
+        Map<Short, Collection<Short>> consistentMap = U.newHashMap(txNodes.size());
 
-            consistentMap.put(mapToConsistentId(topVer, node), consistentIdsBackups);
+        int nodeCnt = 0;
+
+        for (Map.Entry<UUID, Collection<UUID>> e : txNodes.entrySet()) {
+            UUID node = e.getKey();
+
+            Collection<UUID> backupNodes = e.getValue();
+
+            Collection<Short> backups = new ArrayList<>(backupNodes.size());
+
+            for (UUID backup : backupNodes) {
+                if (m.containsKey(backup))
+                    nodeCnt++;
+
+                backups.add(mapToCompactId(topVer, backup));
+            }
+
+            // Optimization for short store full nodes set.
+            if (backups.size() == nodeCnt && nodeCnt == (bltNodes - 1))
+                backups = Collections.singletonList(Short.MAX_VALUE);
+
+            consistentMap.put(mapToCompactId(topVer, node), backups);
         }
 
         return consistentMap;
     }
-
 }

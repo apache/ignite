@@ -19,6 +19,7 @@ import {Observable} from 'rxjs/Observable';
 import {Subject} from 'rxjs/Subject';
 import 'rxjs/add/observable/race';
 import 'rxjs/add/operator/filter';
+import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/pluck';
 import 'rxjs/add/operator/take';
 import 'rxjs/add/operator/toPromise';
@@ -64,7 +65,7 @@ export default class SimpleWorkerPool {
     }
 
     _getNextWorker() {
-        return this._workers.find((w) => !w.tid);
+        return this._workers.find((w) => _.isNil(w.tid));
     }
 
     _getNextTask() {
@@ -105,7 +106,7 @@ export default class SimpleWorkerPool {
         this._tasks.push({tid, data});
 
         if (this.__dbg)
-            console.log(`Pool: [name=${this._name}, queue=${this._tasks.length}]`);
+            console.log(`Pool: [name=${this._name}, tid=${tid}, queue=${this._tasks.length}]`);
 
         this._run();
 

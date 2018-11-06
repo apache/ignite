@@ -46,8 +46,6 @@ public class QRDecomposition implements Destroyable {
     private final int rows;
     /** */
     private final int cols;
-    /** */
-    private double threshold;
 
     /**
      * @param v Value to be checked for being an ordinary double.
@@ -89,7 +87,6 @@ public class QRDecomposition implements Destroyable {
         boolean fullRank = true;
 
         r = like(mtx, min, cols);
-        this.threshold = threshold;
 
         for (int i = 0; i < min; i++) {
             Vector qi = qTmp.viewColumn(i);
@@ -128,6 +125,8 @@ public class QRDecomposition implements Destroyable {
             q = qTmp.viewPart(0, rows, 0, min).copy();
         else
             q = qTmp;
+
+        verifyNonSingularR(threshold);
 
         this.fullRank = fullRank;
     }
@@ -170,32 +169,7 @@ public class QRDecomposition implements Destroyable {
      * @throws IllegalArgumentException if {@code B.rows() != A.rows()}.
      */
     public Matrix solve(Matrix mtx) {
-        if (mtx.rowSize() != rows)
-            throw new IllegalArgumentException("Matrix row dimensions must agree.");
-
-        int cols = mtx.columnSize();
-        Matrix r = getR();
-        checkSingular(r, threshold, true);
-        Matrix x = like(mType, this.cols, cols);
-
-        Matrix qt = getQ().transpose();
-        Matrix y = qt.times(mtx);
-
-        for (int k = Math.min(this.cols, rows) - 1; k >= 0; k--) {
-            // X[k,] = Y[k,] / R[k,k], note that X[k,] starts with 0 so += is same as =
-            x.viewRow(k).map(y.viewRow(k), Functions.plusMult(1 / r.get(k, k)));
-
-            if (k == 0)
-                continue;
-
-            // Y[0:(k-1),] -= R[0:(k-1),k] * X[k,]
-            Vector rCol = r.viewColumn(k).viewPart(0, k);
-
-            for (int c = 0; c < cols; c++)
-                y.viewColumn(c).viewPart(0, k).map(rCol, Functions.plusMult(-x.get(k, c)));
-        }
-
-        return x;
+        return new QRDSolver(q, r).solve(mtx);
     }
 
     /**
@@ -206,8 +180,7 @@ public class QRDecomposition implements Destroyable {
      * @throws IllegalArgumentException if {@code B.rows() != A.rows()}.
      */
     public Vector solve(Vector vec) {
-        Matrix res = solve(vec.likeMatrix(vec.size(), 1).assignColumn(0, vec));
-        return vec.like(res.rowSize()).assign(res.viewColumn(0));
+        return new QRDSolver(q, r).solve(vec);
     }
 
     /**
@@ -220,27 +193,20 @@ public class QRDecomposition implements Destroyable {
     /**
      * Check singularity.
      *
-     * @param r R matrix.
      * @param min Singularity threshold.
-     * @param raise Whether to raise a {@link SingularMatrixException} if any element of the diagonal fails the check.
-     * @return {@code true} if any element of the diagonal is smaller or equal to {@code min}.
      * @throws SingularMatrixException if the matrix is singular and {@code raise} is {@code true}.
      */
-    private static boolean checkSingular(Matrix r, double min, boolean raise) {
-        // TODO: IGNITE-5828, Not a very fast approach for distributed matrices. would be nice if we could independently check
-        // parts on different nodes for singularity and do fold with 'or'.
+    private void verifyNonSingularR(double min) {
+        // TODO: IGNITE-5828, Not a very fast approach for distributed matrices. would be nice if we could independently
+        // check parts on different nodes for singularity and do fold with 'or'.
 
-        final int len = r.columnSize();
+        final int len = r.columnSize() > r.rowSize() ? r.rowSize() : r.columnSize();
         for (int i = 0; i < len; i++) {
             final double d = r.getX(i, i);
             if (Math.abs(d) <= min)
-                if (raise)
-                    throw new SingularMatrixException("Number is too small (%f, while " +
-                        "threshold is %f). Index of diagonal element is (%d, %d)", d, min, i, i);
-                else
-                    return true;
+                throw new SingularMatrixException("Number is too small (%f, while " +
+                    "threshold is %f). Index of diagonal element is (%d, %d)", d, min, i, i);
 
         }
-        return false;
     }
 }

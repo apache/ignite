@@ -29,7 +29,7 @@ export default ['$scope', '$animate', 'uiGridConstants', 'nodes', 'options', fun
     const $ctrl = this;
 
     const updateSelected = () => {
-        const nids = $ctrl.gridApi.selection.getSelectedRows().map((node) => node.nid).sort();
+        const nids = $ctrl.gridApi.selection.legacyGetSelectedRows().map((node) => node.nid).sort();
 
         if (!_.isEqual(nids, $ctrl.selected))
             $ctrl.selected = nids;

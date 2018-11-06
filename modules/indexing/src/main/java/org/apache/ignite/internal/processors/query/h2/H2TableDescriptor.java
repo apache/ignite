@@ -141,7 +141,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
     /**
      * @return Cache context.
      */
-    GridCacheContext cache() {
+    public GridCacheContext cache() {
         return cctx;
     }
 

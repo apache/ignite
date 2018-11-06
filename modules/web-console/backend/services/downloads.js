@@ -17,24 +17,25 @@
 
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
+const _ = require('lodash');
+const JSZip = require('jszip');
+
 // Fire me up!
 
 module.exports = {
     implements: 'services/agents',
-    inject: ['require(lodash)', 'require(fs)', 'require(path)', 'require(jszip)', 'settings', 'agents-handler', 'errors']
+    inject: ['settings', 'agents-handler', 'errors']
 };
 
 /**
- * @param _
- * @param fs
- * @param path
- * @param JSZip
  * @param settings
  * @param agentsHnd
  * @param errors
  * @returns {DownloadsService}
  */
-module.exports.factory = (_, fs, path, JSZip, settings, agentsHnd, errors) => {
+module.exports.factory = (settings, agentsHnd, errors) => {
     class DownloadsService {
         /**
          * Get agent archive with user agent configuration.

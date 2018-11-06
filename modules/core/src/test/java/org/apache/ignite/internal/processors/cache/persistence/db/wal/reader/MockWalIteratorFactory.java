@@ -21,8 +21,8 @@ import java.io.File;
 import java.io.Serializable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -30,8 +30,8 @@ import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.jetbrains.annotations.Nullable;
 import org.mockito.Mockito;
@@ -64,7 +64,7 @@ public class MockWalIteratorFactory {
      * @param log Logger.
      * @param pageSize Page size.
      * @param consistentId Consistent id.
-     * @param subfolderName
+     * @param subfolderName Subfolder name.
      * @param segments Segments.
      */
     public MockWalIteratorFactory(@Nullable IgniteLogger log,
@@ -85,21 +85,22 @@ public class MockWalIteratorFactory {
      * @return iterator
      * @throws IgniteCheckedException if IO failed
      */
+    @SuppressWarnings("unchecked")
     public WALIterator iterator(File wal, File walArchive) throws IgniteCheckedException {
-        final PersistentStoreConfiguration persistentCfg1 = Mockito.mock(PersistentStoreConfiguration.class);
+        final DataStorageConfiguration persistentCfg1 = Mockito.mock(DataStorageConfiguration.class);
 
-        when(persistentCfg1.getWalStorePath()).thenReturn(wal.getAbsolutePath());
+        when(persistentCfg1.getWalPath()).thenReturn(wal.getAbsolutePath());
         when(persistentCfg1.getWalArchivePath()).thenReturn(walArchive.getAbsolutePath());
         when(persistentCfg1.getWalSegments()).thenReturn(segments);
-        when(persistentCfg1.getTlbSize()).thenReturn(PersistentStoreConfiguration.DFLT_TLB_SIZE);
-        when(persistentCfg1.getWalRecordIteratorBufferSize()).thenReturn(PersistentStoreConfiguration.DFLT_WAL_RECORD_ITERATOR_BUFFER_SIZE);
+        when(persistentCfg1.getWalBufferSize()).thenReturn(DataStorageConfiguration.DFLT_WAL_BUFF_SIZE);
+        when(persistentCfg1.getWalRecordIteratorBufferSize()).thenReturn(DataStorageConfiguration.DFLT_WAL_RECORD_ITERATOR_BUFFER_SIZE);
 
-        final FileIOFactory fileIOFactory = new PersistentStoreConfiguration().getFileIOFactory();
+        final FileIOFactory fileIOFactory = new DataStorageConfiguration().getFileIOFactory();
         when(persistentCfg1.getFileIOFactory()).thenReturn(fileIOFactory);
 
         final IgniteConfiguration cfg = Mockito.mock(IgniteConfiguration.class);
 
-        when(cfg.getPersistentStoreConfiguration()).thenReturn(persistentCfg1);
+        when(cfg.getDataStorageConfiguration()).thenReturn(persistentCfg1);
 
         final GridKernalContext ctx = Mockito.mock(GridKernalContext.class);
 
@@ -121,10 +122,10 @@ public class MockWalIteratorFactory {
         when(sctx.discovery()).thenReturn(disco);
         when(sctx.gridConfig()).thenReturn(cfg);
 
-        final GridCacheDatabaseSharedManager database = Mockito.mock(GridCacheDatabaseSharedManager.class);
+        final GridCacheDatabaseSharedManager db = Mockito.mock(GridCacheDatabaseSharedManager.class);
 
-        when(database.pageSize()).thenReturn(pageSize);
-        when(sctx.database()).thenReturn(database);
+        when(db.pageSize()).thenReturn(pageSize);
+        when(sctx.database()).thenReturn(db);
         when(sctx.logger(any(Class.class))).thenReturn(log);
 
         mgr.start(sctx);

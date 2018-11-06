@@ -22,11 +22,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Configuration;
-    using Apache.Ignite.Core.Impl.Client;
     using NUnit.Framework;
 
     /// <summary>
@@ -121,9 +121,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 var clientCache = client.GetCache<int, Person>(CacheName);
 
                 // One result.
-                var single = clientCache.Query(new ScanQuery<int, Person>(new PersonFilter(x => x.Id == 3))).Single();
+                var single = clientCache.Query(new ScanQuery<int, Person>(new PersonKeyFilter(3))).Single();
                 Assert.AreEqual(3, single.Key);
 
+#if !NETCOREAPP2_0   // Serializing delegates is not supported on this platform.
                 // Multiple results.
                 var res = clientCache.Query(new ScanQuery<int, Person>(new PersonFilter(x => x.Name.Length == 1)))
                     .ToList();
@@ -132,9 +133,31 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 // No results.
                 res = clientCache.Query(new ScanQuery<int, Person>(new PersonFilter(x => x == null))).ToList();
                 Assert.AreEqual(0, res.Count);
+#endif
             }
         }
 
+        /// <summary>
+        /// Tests scan query with .NET filter in binary mode.
+        /// </summary>
+        [Test]
+        public void TestWithFilterBinary()
+        {
+            GetPersonCache();
+
+            using (var client = GetClient())
+            {
+                var clientCache = client.GetCache<int, Person>(CacheName);
+                var binCache = clientCache.WithKeepBinary<int, IBinaryObject>();
+
+                // One result.
+                var single = binCache.Query(new ScanQuery<int, IBinaryObject>(new PersonIdFilterBinary(8))).Single();
+                Assert.AreEqual(8, single.Key);
+            }
+        }
+
+
+#if !NETCOREAPP2_0   // Serializing delegates and exceptions is not supported on this platform.
         /// <summary>
         /// Tests the exception in filter.
         /// </summary>
@@ -156,6 +179,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 Assert.AreEqual("foo", ex.Message);
             }
         }
+#endif
 
         /// <summary>
         /// Tests multiple cursors with the same client.
@@ -179,7 +203,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 // MaxCursors = 3
                 var ex = Assert.Throws<IgniteClientException>(() => clientCache.Query(qry));
                 Assert.AreEqual("Too many open cursors", ex.Message.Substring(0, 21));
-                Assert.AreEqual((int) ClientStatus.TooManyCursors, ex.ErrorCode);
+                Assert.AreEqual(ClientStatusCode.TooManyCursors, ex.StatusCode);
 
                 var count = 0;
 
@@ -189,6 +213,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
                     Assert.IsTrue(cur2.MoveNext());
                     Assert.IsTrue(cur3.MoveNext());
+
+                    Assert.IsNotNull(cur1.Current);
+                    Assert.IsNotNull(cur2.Current);
+                    Assert.IsNotNull(cur3.Current);
 
                     Assert.AreEqual(cur1.Current.Key, cur2.Current.Key);
                     Assert.AreEqual(cur1.Current.Key, cur3.Current.Key);
@@ -259,6 +287,52 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             public bool Invoke(ICacheEntry<int, Person> entry)
             {
                 return _filter(entry.Value);
+            }
+        }
+
+        /// <summary>
+        /// Person filter.
+        /// </summary>
+        private class PersonKeyFilter : ICacheEntryFilter<int, Person>
+        {
+            /** Key. */
+            private readonly int _key;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="PersonFilter"/> class.
+            /// </summary>
+            public PersonKeyFilter(int key)
+            {
+                _key = key;
+            }
+
+            /** <inheritdoc /> */
+            public bool Invoke(ICacheEntry<int, Person> entry)
+            {
+                return entry.Key == _key;
+            }
+        }
+
+        /// <summary>
+        /// Person filter.
+        /// </summary>
+        private class PersonIdFilterBinary : ICacheEntryFilter<int, IBinaryObject>
+        {
+            /** Key. */
+            private readonly int _id;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="PersonFilter"/> class.
+            /// </summary>
+            public PersonIdFilterBinary(int id)
+            {
+                _id = id;
+            }
+
+            /** <inheritdoc /> */
+            public bool Invoke(ICacheEntry<int, IBinaryObject> entry)
+            {
+                return entry.Value.GetField<int>("Id") == _id;
             }
         }
     }

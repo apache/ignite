@@ -17,7 +17,6 @@
 
 import angular from 'angular';
 
-import templateUrl from 'views/settings/admin.tpl.pug';
 import template from 'views/base2.pug';
 
 angular
@@ -34,19 +33,7 @@ angular
                 template
             },
             '@base.settings.admin': {
-                templateUrl,
-                controller: class {
-                    static $inject = ['UserNotifications'];
-
-                    constructor(UserNotifications) {
-                        this.UserNotifications = UserNotifications;
-                    }
-
-                    changeUserNotifications() {
-                        this.UserNotifications.editor();
-                    }
-                },
-                controllerAs: 'ctrl'
+                template: '<page-admin></page-admin>'
             }
         },
         // templateUrl,

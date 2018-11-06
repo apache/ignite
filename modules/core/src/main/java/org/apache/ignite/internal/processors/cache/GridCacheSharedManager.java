@@ -50,6 +50,11 @@ public interface GridCacheSharedManager<K, V> {
     public void onDisconnected(IgniteFuture<?> reconnectFut);
 
     /**
+     * @param active Active flag.
+     */
+    public void onReconnected(boolean active);
+
+    /**
      * Prints memory statistics (sizes of internal data structures, etc.).
      *
      * NOTE: this method is for testing and profiling purposes only.

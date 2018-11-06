@@ -41,6 +41,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -104,8 +105,13 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * JUnit.
-     *
+     * @throws Exception In case of error.
+     */
+    public void testTextQueryWithField() throws Exception {
+        checkTextQuery("name:1*", false, false);
+    }
+
+    /**
      * @throws Exception In case of error.
      */
     public void testLocalTextQueryWithKeepBinary() throws Exception {
@@ -113,8 +119,6 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * JUnit.
-     *
      * @throws Exception In case of error.
      */
     public void testLocalTextQuery() throws Exception {
@@ -122,8 +126,6 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * JUnit.
-     *
      * @throws Exception In case of error.
      */
     public void testTextQueryWithKeepBinary() throws Exception {
@@ -131,8 +133,6 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * JUnit.
-     *
      * @throws Exception In case of error.
      */
     public void testTextQuery() throws Exception {
@@ -144,7 +144,19 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
      * @param keepBinary keep binary flag.
      */
     private void checkTextQuery(boolean loc, boolean keepBinary) throws Exception {
+        checkTextQuery(null, loc, keepBinary);
+    }
+
+    /**
+     * @param clause Query clause.
+     * @param loc local query flag.
+     * @param keepBinary keep binary flag.
+     */
+    private void checkTextQuery(String clause, boolean loc, boolean keepBinary) throws Exception {
         final IgniteEx ignite = grid(0);
+
+        if (F.isEmpty(clause))
+            clause = "1*";
 
         // 1. Populate cache with data, calculating expected count in parallel.
         Set<Integer> exp = populateCache(ignite, loc, MAX_ITEM_COUNT, new IgnitePredicate<Integer>() {
@@ -155,7 +167,7 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
         });
 
         // 2. Validate results.
-        TextQuery qry = new TextQuery<>(Person.class, "1*").setLocal(loc);
+        TextQuery qry = new TextQuery<>(Person.class, clause).setLocal(loc);
 
         validateQueryResults(ignite, qry, exp, keepBinary);
 

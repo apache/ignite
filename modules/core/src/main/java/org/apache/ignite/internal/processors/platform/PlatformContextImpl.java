@@ -72,10 +72,7 @@ import org.jetbrains.annotations.Nullable;
 import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -205,27 +202,14 @@ public class PlatformContextImpl implements PlatformContext {
             BinaryRawWriterEx w = writer(out);
 
             w.writeUuid(node.id());
-
-            Map<String, Object> attrs = new HashMap<>(node.attributes());
-
-            Iterator<Map.Entry<String, Object>> attrIter = attrs.entrySet().iterator();
-
-            while (attrIter.hasNext()) {
-                Map.Entry<String, Object> entry = attrIter.next();
-
-                Object val = entry.getValue();
-
-                if (val != null && !val.getClass().getName().startsWith("java.lang"))
-                    attrIter.remove();
-            }
-
-            w.writeMap(attrs);
+            PlatformUtils.writeNodeAttributes(w, node.attributes());
             w.writeCollection(node.addresses());
             w.writeCollection(node.hostNames());
             w.writeLong(node.order());
             w.writeBoolean(node.isLocal());
             w.writeBoolean(node.isDaemon());
             w.writeBoolean(node.isClient());
+            w.writeObjectDetached(node.consistentId());
             writeClusterMetrics(w, node.metrics());
 
             out.synchronize();

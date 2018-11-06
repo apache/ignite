@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,9 +17,14 @@
 
 namespace Apache.Ignite.Core.Tests.Client
 {
+    using System;
+    using System.Linq;
     using System.Net;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Client.Cache;
+    using Apache.Ignite.Core.Tests.Client.Cache;
     using NUnit.Framework;
 
     /// <summary>
@@ -64,6 +69,8 @@ namespace Apache.Ignite.Core.Tests.Client
             {
                 Ignition.Start(cfg);
             }
+
+            Client = GetClient();
         }
 
         /// <summary>
@@ -76,11 +83,46 @@ namespace Apache.Ignite.Core.Tests.Client
         }
 
         /// <summary>
+        /// Sets up the test.
+        /// </summary>
+        [SetUp]
+        public virtual void TestSetUp()
+        {
+            var cache = GetCache<int>();
+            cache.RemoveAll();
+            cache.Clear();
+            
+            Assert.AreEqual(0, cache.GetSize(CachePeekMode.All));
+            Assert.AreEqual(0, GetClientCache<int>().GetSize(CachePeekMode.All));
+        }
+
+        /// <summary>
+        /// Gets the client.
+        /// </summary>
+        public IIgniteClient Client { get; set; }
+
+        /// <summary>
         /// Gets the cache.
         /// </summary>
         protected static ICache<int, T> GetCache<T>()
         {
             return Ignition.GetIgnite().GetOrCreateCache<int, T>(CacheName);
+        }
+
+        /// <summary>
+        /// Gets the client cache.
+        /// </summary>
+        protected ICacheClient<int, T> GetClientCache<T>()
+        {
+            return GetClientCache<int, T>();
+        }
+
+        /// <summary>
+        /// Gets the client cache.
+        /// </summary>
+        protected virtual ICacheClient<TK, TV> GetClientCache<TK, TV>(string cacheName = CacheName)
+        {
+            return Client.GetCache<TK, TV>(cacheName ?? CacheName);
         }
 
         /// <summary>
@@ -94,7 +136,7 @@ namespace Apache.Ignite.Core.Tests.Client
         /// <summary>
         /// Gets the client configuration.
         /// </summary>
-        protected IgniteClientConfiguration GetClientConfiguration()
+        protected virtual IgniteClientConfiguration GetClientConfiguration()
         {
             return new IgniteClientConfiguration
             {
@@ -108,6 +150,63 @@ namespace Apache.Ignite.Core.Tests.Client
         protected virtual IgniteConfiguration GetIgniteConfiguration()
         {
             return TestUtils.GetTestConfiguration();
+        }
+
+        /// <summary>
+        /// Converts object to binary form.
+        /// </summary>
+        protected IBinaryObject ToBinary(object o)
+        {
+            return Client.GetBinary().ToBinary<IBinaryObject>(o);
+        }
+
+        /// <summary>
+        /// Gets the binary cache.
+        /// </summary>
+        protected ICacheClient<int, IBinaryObject> GetBinaryCache()
+        {
+            return Client.GetCache<int, Person>(CacheName).WithKeepBinary<int, IBinaryObject>();
+        }
+
+        /// <summary>
+        /// Gets the binary key cache.
+        /// </summary>
+        protected ICacheClient<IBinaryObject, int> GetBinaryKeyCache()
+        {
+            return Client.GetCache<Person, int>(CacheName).WithKeepBinary<IBinaryObject, int>();
+        }
+
+        /// <summary>
+        /// Gets the binary key-val cache.
+        /// </summary>
+        protected ICacheClient<IBinaryObject, IBinaryObject> GetBinaryKeyValCache()
+        {
+            return Client.GetCache<Person, Person>(CacheName).WithKeepBinary<IBinaryObject, IBinaryObject>();
+        }
+
+        /// <summary>
+        /// Gets the binary person.
+        /// </summary>
+        protected IBinaryObject GetBinaryPerson(int id)
+        {
+            return ToBinary(new Person(id) { DateTime = DateTime.MinValue.ToUniversalTime() });
+        }
+
+        /// <summary>
+        /// Asserts the client configs are equal.
+        /// </summary>
+        public static void AssertClientConfigsAreEqual(CacheClientConfiguration cfg, CacheClientConfiguration cfg2)
+        {
+            if (cfg2.QueryEntities != null)
+            {
+                // Remove identical aliases which are added during config roundtrip.
+                foreach (var e in cfg2.QueryEntities)
+                {
+                    e.Aliases = e.Aliases.Where(x => x.Alias != x.FullName).ToArray();
+                }
+            }
+
+            AssertExtensions.ReflectionEqual(cfg, cfg2);
         }
     }
 }

@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.util.GridStringBuilder;
 
 /**
- *
+ * IO for partition metadata pages.
  */
 public class PagePartitionMetaIO extends PageMetaIO {
     /** */
@@ -136,7 +136,7 @@ public class PagePartitionMetaIO extends PageMetaIO {
     }
 
     /**
-     * @param pageAddr Page address
+     * @param pageAddr Partition metadata page address.
      * @param state State.
      */
     public boolean setPartitionState(long pageAddr, byte state) {
@@ -149,7 +149,8 @@ public class PagePartitionMetaIO extends PageMetaIO {
     }
 
     /**
-     * @param pageAddr Page address.
+     * Returns partition counters page identifier, page with caches in cache group sizes.
+     * @param pageAddr Partition metadata page address.
      * @return Next meta partial page ID or {@code 0} if it does not exist.
      */
     public long getCountersPageId(long pageAddr) {
@@ -157,11 +158,13 @@ public class PagePartitionMetaIO extends PageMetaIO {
     }
 
     /**
-     * @param pageAddr Page address.
-     * @param metaPageId Next partial meta page ID.
+     * Sets new reference to partition counters page (logical cache sizes).
+     *
+     * @param pageAddr Partition metadata page address.
+     * @param cntrsPageId New cache sizes page ID.
      */
-    public void setCountersPageId(long pageAddr, long metaPageId) {
-        PageUtils.putLong(pageAddr, NEXT_PART_META_PAGE_OFF, metaPageId);
+    public void setCountersPageId(long pageAddr, long cntrsPageId) {
+        PageUtils.putLong(pageAddr, NEXT_PART_META_PAGE_OFF, cntrsPageId);
     }
 
     /** {@inheritDoc} */

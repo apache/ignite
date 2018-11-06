@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
@@ -39,6 +38,9 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
 
         /** Marshaller. */
         private readonly Marshaller _marsh;
+
+        /** Read func. */
+        private readonly Func<BinaryReader, T> _readFunc;
 
         /** Wherther "GetAll" was called. */
         private bool _getAllCalled;
@@ -63,14 +65,15 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// </summary>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="keepBinary">Keep binary flag.</param>
+        /// <param name="readFunc">The read function.</param>
         /// <param name="initialBatchStream">Optional stream with initial batch.</param>
-        [SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors",
-            Justification = "ConvertGetBatch calls Read, which does not rely on constructor being run.")]
-        protected QueryCursorBase(Marshaller marsh, bool keepBinary, IBinaryStream initialBatchStream = null)
+        protected QueryCursorBase(Marshaller marsh, bool keepBinary, Func<BinaryReader, T> readFunc, 
+            IBinaryStream initialBatchStream = null)
         {
             Debug.Assert(marsh != null);
 
             _keepBinary = keepBinary;
+            _readFunc = readFunc;
             _marsh = marsh;
 
             if (initialBatchStream != null)
@@ -198,13 +201,6 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         protected abstract IList<T> GetAllInternal();
 
         /// <summary>
-        /// Reads entry from the reader.
-        /// </summary> 
-        /// <param name="reader">Reader.</param>
-        /// <returns>Entry.</returns>
-        protected abstract T Read(BinaryReader reader);
-
-        /// <summary>
         /// Requests next batch.
         /// </summary>
         private void RequestBatch()
@@ -233,7 +229,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
             var res = new List<T>(size);
 
             for (var i = 0; i < size; i++)
-                res.Add(Read(reader));
+                res.Add(_readFunc(reader));
 
             return res;
         }
@@ -259,7 +255,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
 
             for (var i = 0; i < size; i++)
             {
-                res[i] = Read(reader);
+                res[i] = _readFunc(reader);
             }
 
             _hasNext = stream.ReadBool();

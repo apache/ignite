@@ -43,8 +43,10 @@ public class QueryEntityIndexDescriptor implements GridQueryIndexDescriptor {
         });
     /** */
     private final QueryIndexType type;
+
     /** */
     private final int inlineSize;
+
     /** Fields which should be indexed in descending order. */
     private Collection<String> descendings;
 

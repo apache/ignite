@@ -29,6 +29,8 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Services;
     using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
 
@@ -93,6 +95,7 @@ namespace Apache.Ignite.Core.Tests
             CheckException<TransactionHeuristicException>(comp, "TransactionHeuristicException");
             CheckException<TransactionDeadlockException>(comp, "TransactionDeadlockException");
             CheckException<IgniteFutureCancelledException>(comp, "IgniteFutureCancelledException");
+            CheckException<ServiceDeploymentException>(comp, "ServiceDeploymentException");
 
             // Check stopped grid.
             grid.Dispose();
@@ -346,7 +349,7 @@ namespace Apache.Ignite.Core.Tests
                     cache = cache.WithKeepBinary<TK, int>();
 
                 // Do cache puts in parallel
-                var putTask = Task.Factory.StartNew(() =>
+                var putTask = TaskRunner.Run(() =>
                 {
                     try
                     {

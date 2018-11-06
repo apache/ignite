@@ -33,4 +33,5 @@ import './switcher/index.scss';
 import './form-field/index.scss';
 import './typography/index.scss';
 import './grid/index.scss';
+import './checkbox/index.scss';
 import './tooltip/index.scss';

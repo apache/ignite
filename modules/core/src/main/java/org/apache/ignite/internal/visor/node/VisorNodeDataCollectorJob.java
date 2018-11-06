@@ -21,7 +21,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteFileSystem;
-import org.apache.ignite.MemoryMetrics;
+import org.apache.ignite.DataRegionMetrics;
+import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -157,8 +158,11 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
         try {
             List<VisorMemoryMetrics> memoryMetrics = res.getMemoryMetrics();
 
-            for (MemoryMetrics m : ignite.memoryMetrics())
-                memoryMetrics.add(new VisorMemoryMetrics(m));
+            // TODO: Should be really fixed in IGNITE-7111.
+            if (ignite.active()) {
+                for (DataRegionMetrics m : ignite.dataRegionMetrics())
+                    memoryMetrics.add(new VisorMemoryMetrics(m));
+            }
         }
         catch (Exception e) {
             res.setMemoryMetricsEx(new VisorExceptionWrapper(e));
@@ -179,6 +183,9 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
 
             List<VisorCache> resCaches = res.getCaches();
 
+            double total = 0;
+            double moving = 0;
+
             for (String cacheName : cacheProc.cacheNames()) {
                 if (proxyCache(cacheName))
                     continue;
@@ -192,7 +199,12 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
                         if (ca == null || !ca.context().started())
                             continue;
 
-                        resCaches.add(new VisorCache(ignite, ca));
+                        CacheMetrics cm = ca.localMetrics();
+
+                        total += cm.getTotalPartitionsCount();
+                        moving += cm.getRebalancingPartitionsCount();
+
+                        resCaches.add(new VisorCache(ignite, ca, arg.isCollectCacheMetrics()));
                     }
                     catch(IllegalStateException | IllegalArgumentException e) {
                         if (debug && ignite.log() != null)
@@ -204,6 +216,8 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
                     }
                 }
             }
+
+            res.setRebalance(total > 0 ? (total - moving) / total : -1);
         }
         catch (Exception e) {
             res.setCachesEx(new VisorExceptionWrapper(e));
@@ -257,7 +271,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
      */
     protected void persistenceMetrics(VisorNodeDataCollectorJobResult res) {
         try {
-            res.setPersistenceMetrics(new VisorPersistenceMetrics(ignite.persistentStoreMetrics()));
+            res.setPersistenceMetrics(new VisorPersistenceMetrics(ignite.dataStorageMetrics()));
         }
         catch (Exception e) {
             res.setPersistenceMetricsEx(new VisorExceptionWrapper(e));

@@ -184,6 +184,7 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
      * Starts new ignite node and submits computation job to it.
      * @param idx Index.
      * @param stopFlag Stop flag.
+     * @throws Exception If failed.
      */
     private void startComputation(int idx, AtomicBoolean stopFlag) throws Exception {
         clientMode = false;
@@ -199,6 +200,7 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
      * @param idx Index.
      * @param deafClient Deaf client.
      * @param observedIds Observed ids.
+     * @throws Exception If failed.
      */
     private void startListening(int idx, boolean deafClient, Set<Integer> observedIds) throws Exception {
         clientMode = true;
@@ -269,7 +271,7 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testFlowNoConflicts() throws Exception {
         startComputation(0, stopFlag0);
@@ -311,10 +313,13 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testFlowNoConflictsWithClients() throws Exception {
         startComputation(0, stopFlag0);
+
+        if (!tcpDiscovery())
+            return;
 
         startComputation(1, stopFlag1);
 
@@ -616,6 +621,9 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
 
             while (!updatesQueue.isEmpty()) {
                 BinaryUpdateDescription desc = updatesQueue.poll();
+
+                if (desc == null)
+                    break;
 
                 BinaryObjectBuilder builder = ignite.binary().builder(BINARY_TYPE_NAME);
 

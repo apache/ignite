@@ -143,19 +143,13 @@ public class CacheVectorTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testSumNegative() {
+    public void testSumEmptyVector() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         IdentityValueMapper valMapper = new IdentityValueMapper();
         CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valMapper);
 
-        try {
-            double d = cacheVector.sum();
-            fail();
-        }
-        catch (NullPointerException e) {
-            // No-op.
-        }
+        cacheVector.sum();
     }
 
     /** */

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.regressions;
 
+import org.apache.ignite.ml.regressions.linear.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -25,7 +26,9 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    OLSMultipleLinearRegressionTest.class
+    LinearRegressionModelTest.class,
+    LinearRegressionLSQRTrainerTest.class,
+    LinearRegressionSGDTrainerTest.class
 })
 public class RegressionsTestSuite {
     // No-op.

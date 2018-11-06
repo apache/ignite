@@ -17,11 +17,26 @@
 
 package org.apache.ignite.jdbc.thin;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.Callable;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
+import org.apache.ignite.internal.processors.port.GridPortRecord;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Connection test.
@@ -92,5 +107,69 @@ public class JdbcThinAbstractSelfTest extends GridCommonAbstractTest {
          * @throws Exception On error.
          */
         void run() throws Exception;
+    }
+
+    /**
+     * @param node Node to connect to.
+     * @param params Connection parameters.
+     * @return Thin JDBC connection to specified node.
+     */
+    static Connection connect(IgniteEx node, String params) throws SQLException {
+        Collection<GridPortRecord> recs = node.context().ports().records();
+
+        GridPortRecord cliLsnrRec = null;
+
+        for (GridPortRecord rec : recs) {
+            if (rec.clazz() == ClientListenerProcessor.class) {
+                cliLsnrRec = rec;
+
+                break;
+            }
+        }
+
+        assertNotNull(cliLsnrRec);
+
+        String connStr = "jdbc:ignite:thin://127.0.0.1:" + cliLsnrRec.port();
+
+        if (!F.isEmpty(params))
+            connStr += "/?" + params;
+
+        return DriverManager.getConnection(connStr);
+    }
+
+    /**
+     * @param sql Statement.
+     * @param args Arguments.
+     * @return Result set.
+     * @throws RuntimeException if failed.
+     */
+    static List<List<?>> execute(Connection conn, String sql, Object... args) throws SQLException {
+        try (PreparedStatement s = conn.prepareStatement(sql)) {
+            for (int i = 0; i < args.length; i++)
+                s.setObject(i + 1, args[i]);
+
+            if (s.execute()) {
+                List<List<?>> res = new ArrayList<>();
+
+                try (ResultSet rs = s.getResultSet()) {
+                    ResultSetMetaData meta = rs.getMetaData();
+
+                    int cnt = meta.getColumnCount();
+
+                    while (rs.next()) {
+                        List<Object> row = new ArrayList<>(cnt);
+
+                        for (int i = 1; i <= cnt; i++)
+                            row.add(rs.getObject(i));
+
+                        res.add(row);
+                    }
+                }
+
+                return res;
+            }
+            else
+                return Collections.emptyList();
+        }
     }
 }

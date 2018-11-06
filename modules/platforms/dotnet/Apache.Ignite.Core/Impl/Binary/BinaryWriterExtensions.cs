@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using Apache.Ignite.Core.Binary;
 
@@ -181,6 +182,34 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             writer.Stream.WriteInt(pos, cnt);
+        }
+
+        /// <summary>
+        /// Writes the collection of write-aware items.
+        /// </summary>
+        public static void WriteCollectionRaw<T, TWriter>(this TWriter writer, ICollection<T> collection)
+            where T : IBinaryRawWriteAware<TWriter> where TWriter: IBinaryRawWriter
+        {
+            Debug.Assert(writer != null);
+
+            if (collection != null)
+            {
+                writer.WriteInt(collection.Count);
+
+                foreach (var x in collection)
+                {
+                    if (x == null)
+                    {
+                        throw new ArgumentNullException(string.Format("{0} can not be null", typeof(T).Name));
+                    }
+
+                    x.Write(writer);
+                }
+            }
+            else
+            {
+                writer.WriteInt(0);
+            }
         }
     }
 }

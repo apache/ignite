@@ -46,8 +46,8 @@ public class PropertyMappingHelper {
         put(String.class, DataType.Name.TEXT);
         put(Integer.class, DataType.Name.INT);
         put(int.class, DataType.Name.INT);
-        put(Short.class, DataType.Name.INT);
-        put(short.class, DataType.Name.INT);
+        put(Short.class, DataType.Name.SMALLINT);
+        put(short.class, DataType.Name.SMALLINT);
         put(Long.class, DataType.Name.BIGINT);
         put(long.class, DataType.Name.BIGINT);
         put(Double.class, DataType.Name.DOUBLE);
@@ -129,7 +129,7 @@ public class PropertyMappingHelper {
             return row.getInt(col);
 
         if (Short.class.equals(clazz) || short.class.equals(clazz))
-            return (short)row.getInt(col);
+            return row.getShort(col);
 
         if (Long.class.equals(clazz) || long.class.equals(clazz))
             return row.getLong(col);
@@ -148,7 +148,6 @@ public class PropertyMappingHelper {
 
         if (PropertyMappingHelper.BYTES_ARRAY_CLASS.equals(clazz)) {
             ByteBuffer buf = row.getBytes(col);
-
             return buf == null ? null : buf.array();
         }
 

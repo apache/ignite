@@ -705,6 +705,14 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <param name="qry">SQL fields query.</param>
         /// <returns>Cursor.</returns>
+        IFieldsQueryCursor Query(SqlFieldsQuery qry);
+
+        /// <summary>
+        /// Queries separate entry fields.
+        /// </summary>
+        /// <param name="qry">SQL fields query.</param>
+        /// <returns>Cursor.</returns>
+        [Obsolete("Use Query(SqlFieldsQuery qry) instead.")]
         IQueryCursor<IList> QueryFields(SqlFieldsQuery qry);
 
         /// <summary>

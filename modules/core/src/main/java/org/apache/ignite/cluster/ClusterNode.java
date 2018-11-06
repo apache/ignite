@@ -101,7 +101,7 @@ import org.jetbrains.annotations.Nullable;
  * that comes with JDK as it also provides ability to view any node parameter
  * as a graph.
  */
-public interface ClusterNode {
+public interface ClusterNode extends BaselineNode {
     /**
      * Gets globally unique node ID. A new ID is generated every time a node restarts.
      *
@@ -115,7 +115,7 @@ public interface ClusterNode {
      *
      * @return Consistent globally unique node ID.
      */
-    public Object consistentId();
+    @Override public Object consistentId();
 
     /**
      * Gets a node attribute. Attributes are assigned to nodes at startup
@@ -135,7 +135,7 @@ public interface ClusterNode {
      *      {@code org.apache.ignite} are reserved for internal use.
      * @return Attribute value or {@code null}.
      */
-    @Nullable public <T> T attribute(String name);
+    @Override @Nullable public <T> T attribute(String name);
 
     /**
      * Gets metrics snapshot for this node. Note that node metrics are constantly updated
@@ -167,7 +167,7 @@ public interface ClusterNode {
      *
      * @return All node attributes.
      */
-    public Map<String, Object> attributes();
+    @Override public Map<String, Object> attributes();
 
     /**
      * Gets collection of addresses this node is known by.

@@ -27,8 +27,8 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
@@ -72,7 +72,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
     private static String CACHE_NAME_LOC = "cache_local";
 
     /** Memory configuration to be used on client nodes with local caches. */
-    private static MemoryConfiguration memCfg;
+    private static DataStorageConfiguration memCfg;
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -97,7 +97,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
         if (getTestIgniteInstanceName(2).equals(igniteInstanceName)) {
             iCfg.setClientMode(true);
 
-            iCfg.setMemoryConfiguration(memCfg);
+            iCfg.setDataStorageConfiguration(memCfg);
         }
 
         ((TcpDiscoverySpi)iCfg.getDiscoverySpi()).setIpFinder(ipFinder);
@@ -670,7 +670,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLocalClose() throws Exception {
-        memCfg = new MemoryConfiguration();
+        memCfg = new DataStorageConfiguration();
 
         startGridsMultiThreaded(gridCount());
 
@@ -721,7 +721,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLocalCloseWithTry() throws Exception {
-        memCfg = new MemoryConfiguration();
+        memCfg = new DataStorageConfiguration();
 
         startGridsMultiThreaded(gridCount());
 

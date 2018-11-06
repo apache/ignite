@@ -23,7 +23,7 @@ class MissingResourceException extends AppErrorException {
     constructor(message) {
         super(message);
 
-        this.httpCode = 404;
+        this.code = 404;
     }
 }
 

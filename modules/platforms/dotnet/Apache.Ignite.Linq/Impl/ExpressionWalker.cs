@@ -119,6 +119,7 @@ namespace Apache.Ignite.Linq.Impl
         /// Tries to find QuerySourceReferenceExpression
         /// </summary>
         public static QuerySourceReferenceExpression GetQuerySourceReference(Expression expression,
+            // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Global
             bool throwWhenNotFound = true)
         {
             var reference = expression as QuerySourceReferenceExpression;

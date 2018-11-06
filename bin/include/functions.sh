@@ -57,22 +57,19 @@ checkJava() {
     if [ ! -e "$JAVA" ]; then
         echo $0", ERROR:"
         echo "JAVA is not found in JAVA_HOME=$JAVA_HOME."
-        echo "Please point JAVA_HOME variable to installation of JDK 1.7 or JDK 1.8."
+        echo "Please point JAVA_HOME variable to installation of JDK 1.8 or JDK 9"
         echo "You can also download latest JDK at http://java.com/download"
 
         exit 1
     fi
 
-    JAVA_VER=`"$JAVA" -version 2>&1 | egrep "1\.[78]\."`
-
-    if [ "$JAVA_VER" == "" ]; then
-        echo $0", ERROR:"
+    "$JAVA" -version 2>&1 | grep -qE 'version "(1.8.*|9.*)"' || {
+        echo "$0, ERROR:"
         echo "The version of JAVA installed in JAVA_HOME=$JAVA_HOME is incorrect."
-        echo "Please point JAVA_HOME variable to installation of JDK 1.7 or JDK 1.8."
+        echo "Please point JAVA_HOME variable to installation of JDK 1.8 or JDK 9."
         echo "You can also download latest JDK at http://java.com/download"
-
         exit 1
-    fi
+    }
 }
 
 #
