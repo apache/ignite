@@ -1467,6 +1467,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         boolean intercept = cctx.config().getInterceptor() != null;
 
+        boolean interceptDisabled = false;
+
         Object key0 = null;
         Object val0 = null;
         WALPointer logPtr = null;
@@ -1518,15 +1520,16 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 CacheLazyEntry e = new CacheLazyEntry(cctx, key, old, keepBinary);
 
-                Object interceptorVal = old;
+                Object interceptorVal = val0;
 
-                System.err.println("IGNITE-10130 innerSet() explicit: " + (explicitVer == null ? "null" : explicitVer.dataCenterId()) + " dht: " + (dhtVer == null ? "null" : dhtVer.dataCenterId()) + " tx: " + (tx == null ? "null" : tx));
-                //if(cctx.dr().cacheInterceptorDisabled() && conflictVer != null) {
-                    interceptorVal = cctx.config().getInterceptor().onBeforePut(
+                if(cctx.dr().cacheInterceptorDisabled() && explicitVer != null && explicitVer.dataCenterId() != cctx.dr().dataCenterId())
+                   interceptDisabled = true;
+                else {
+                     interceptorVal = cctx.config().getInterceptor().onBeforePut(
                         new CacheLazyEntry(cctx, key, old, keepBinary),
                         val0
                     );
-
+                }
 
                 key0 = e.key();
 
@@ -1649,7 +1652,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         if (writeThrough)
             cctx.store().put(tx, key, val, newVer);
 
-        if (intercept)
+        if (intercept && !interceptDisabled)
             cctx.config().getInterceptor().onAfterPut(new CacheLazyEntry(cctx, key, key0, val, val0, keepBinary, updateCntr0));
 
         return valid ? new GridCacheUpdateTxResult(true, updateCntr0, logPtr, mvccWaitTxs) :
@@ -1701,6 +1704,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         boolean intercept = cctx.config().getInterceptor() != null;
 
+        boolean interceptDisabled = false;
+
         IgniteBiTuple<Boolean, Object> interceptRes = null;
 
         CacheLazyEntry entry0 = null;
@@ -1750,7 +1755,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (intercept) {
                 entry0 = new CacheLazyEntry(cctx, key, old, keepBinary);
 
-                interceptRes = cctx.config().getInterceptor().onBeforeRemove(entry0);
+                if(cctx.dr().cacheInterceptorDisabled() && explicitVer != null && explicitVer.dataCenterId() != cctx.dr().dataCenterId()) {
+                    interceptDisabled = true;
+
+                    interceptRes = new IgniteBiTuple<>(false, entry0.getValue());
+                } else
+                    interceptRes = cctx.config().getInterceptor().onBeforeRemove(entry0);
+
 
                 if (cctx.cancelRemove(interceptRes)) {
                     CacheObject ret = cctx.toCacheObject(cctx.unwrapTemporary(interceptRes.get2()));
@@ -1880,7 +1891,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         onUpdateFinished(updateCntr0);
 
-        if (intercept)
+        if (intercept && !interceptDisabled)
             cctx.config().getInterceptor().onAfterRemove(entry0);
 
         if (valid)
