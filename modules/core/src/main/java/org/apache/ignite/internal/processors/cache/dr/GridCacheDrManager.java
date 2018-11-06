@@ -102,4 +102,11 @@ public interface GridCacheDrManager extends GridCacheManager {
      * Resets metrics for current cache.
      */
     public void resetMetrics();
+
+    /**
+     * Flag for disabling interceptor on updates/deletes by DR events.
+     *
+     * @return {@code True} if cache interceptor mustn't be invoked and {@code False} otherwise.
+     */
+    public boolean cacheInterceptorDisabled();
 }

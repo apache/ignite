@@ -111,4 +111,9 @@ public class GridOsCacheDrManager implements GridCacheDrManager {
     @Override public void onDisconnected(IgniteFuture reconnectFut) {
         // No-op.
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean cacheInterceptorDisabled() {
+        return false;
+    }
 }

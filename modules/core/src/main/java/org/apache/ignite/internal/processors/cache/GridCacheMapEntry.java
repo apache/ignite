@@ -125,9 +125,6 @@ import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
  */
 @SuppressWarnings({"TooBroadScope"})
 public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter implements GridCacheEntryEx {
-    /** Name of property for disabling cache triggering of interceptor by DR events. */
-    public static final String DISABLE_INTERCEPTOR_INVOCATION_ON_DR_EVENTS = "disableInvocationOnDrEvents";
-
     /** */
     private static final byte IS_DELETED_MASK = 0x01;
 
@@ -1521,9 +1518,15 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 CacheLazyEntry e = new CacheLazyEntry(cctx, key, old, keepBinary);
 
-                Object interceptorVal = cctx.config().getInterceptor().onBeforePut(
-                    new CacheLazyEntry(cctx, key, old, keepBinary),
-                    val0);
+                Object interceptorVal = old;
+
+                System.err.println("IGNITE-10130 innerSet() explicit: " + (explicitVer == null ? "null" : explicitVer.dataCenterId()) + " dht: " + (dhtVer == null ? "null" : dhtVer.dataCenterId()) + " tx: " + (tx == null ? "null" : tx));
+                //if(cctx.dr().cacheInterceptorDisabled() && conflictVer != null) {
+                    interceptorVal = cctx.config().getInterceptor().onBeforePut(
+                        new CacheLazyEntry(cctx, key, old, keepBinary),
+                        val0
+                    );
+
 
                 key0 = e.key();
 
@@ -2513,7 +2516,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     topVer);
             }
 
-            if (intercept && !c.disableInterceptAfter) {
+            if (intercept && !c.disableInterceptAfterFlag) {
                 if (c.op == GridCacheOperation.UPDATE) {
                     cctx.config().getInterceptor().onAfterPut(new CacheLazyEntry(
                         cctx,
@@ -5766,11 +5769,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      *
      */
     private static class AtomicCacheUpdateClosure implements IgniteCacheOffheapManager.OffheapInvokeClosure {
-
-        /** Flag for disabling interceptor on updates/deletes by DR events. */
-        private final boolean disableInterceptorOnDrEvts =
-            Boolean.parseBoolean(System.getProperty(DISABLE_INTERCEPTOR_INVOCATION_ON_DR_EVENTS, "false"));
-
         /** */
         private final GridCacheMapEntry entry;
 
@@ -5843,7 +5841,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         /** OldRow expiration flag. */
         private boolean oldRowExpiredFlag = false;
 
-        private boolean disableInterceptAfter = false;
+        /** Disable interceptor invocation onAfter* methods flag. */
+        private boolean disableInterceptAfterFlag = false;
 
         AtomicCacheUpdateClosure(
             GridCacheMapEntry entry,
@@ -6275,8 +6274,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 Object interceptorVal = updated0;
 
-                if(disableInterceptorOnDrEvts && changesFromAnotherDataCenter(conflictCtx))
-                    disableInterceptAfter = true;
+                if(cctx.dr().cacheInterceptorDisabled() && conflictVer != null)
+                    disableInterceptAfterFlag = true;
                 else
                     interceptorVal = cctx.config().getInterceptor().onBeforePut(interceptEntry, updated0);
 
@@ -6360,25 +6359,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         }
 
         /**
-         * Checks, that change was made on another cluster.
-         *
-         * @param conflictCtx Conflict context associated with change.
-         * @return {@code True} If change was made on another cluster (i.e. change was got by DR) and {@code False}
-         * otherwise.
-         */
-        private boolean changesFromAnotherDataCenter(@Nullable GridCacheVersionConflictContext<?, ?> conflictCtx){
-            if(conflictCtx == null)
-                return false;
-
-            assert conflictCtx.newEntry() instanceof GridCacheLazyPlainVersionedEntry : conflictCtx;
-
-            byte srcDcId = conflictCtx.newEntry().dataCenterId();
-            byte locDcId = ((GridCacheLazyPlainVersionedEntry) conflictCtx.newEntry()).cacheContext().dataCenterId();
-
-            return srcDcId != locDcId;
-        }
-
-        /**
          * @param conflictCtx Conflict context.
          * @param invokeRes Entry processor result (for invoke operation).
          * @param readFromStore {@code True} if initial entry value was {@code null} and it was read from store.
@@ -6405,8 +6385,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     null,
                     keepBinary);
 
-                if (disableInterceptorOnDrEvts && changesFromAnotherDataCenter(conflictCtx)) {
-                    disableInterceptAfter = true;
+                if (cctx.dr().cacheInterceptorDisabled() && conflictVer != null) {
+                    disableInterceptAfterFlag = true;
 
                     interceptRes = new IgniteBiTuple<>(false, intercepEntry.getValue());
                 }

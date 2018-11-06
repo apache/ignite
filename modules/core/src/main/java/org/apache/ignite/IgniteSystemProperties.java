@@ -1032,6 +1032,13 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_ALLOW_START_CACHES_IN_PARALLEL = "IGNITE_ALLOW_START_CACHES_IN_PARALLEL";
 
     /**
+     * Name of property for disabling cache triggering of interceptor by DR events.
+     *
+     * Default is {@code false}.
+     */
+    public static final String DISABLE_INTERCEPTOR_INVOCATION_ON_DR_EVENTS = "IGNITE_DISABLE_CACHE_INTERCEPTOR_INVOCATION_ON_DR_EVENTS";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
