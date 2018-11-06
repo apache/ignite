@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -30,7 +32,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * Test of creating and using PK indexes for tables created through SQL.
  */
 @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
-public class ComplexPrmiaryKeyUnwrapSelfTest extends GridCommonAbstractTest {
+public class ComplexPrimaryKeyUnwrapSelfTest extends GridCommonAbstractTest {
 
     /** Counter to generate unique table names. */
     private static int tblCnt = 0;
@@ -53,55 +55,123 @@ public class ComplexPrmiaryKeyUnwrapSelfTest extends GridCommonAbstractTest {
      * Test using PK indexes for complex primary key.
      */
     public void testComplexPk() {
-        String tableName = createTableName();
+        String tblName = createTableName();
 
-        executeSql("CREATE TABLE " + tableName + " (id int, name varchar, age int, company varchar, city varchar, " +
+        executeSql("CREATE TABLE " + tblName + " (id int, name varchar, age int, company varchar, city varchar, " +
             "primary key (id, name, city))");
 
-        checkUsingIndexes(tableName);
+        checkUsingIndexes(tblName, "1");
     }
 
     /**
      * Test using PK indexes for simple primary key.
      */
     public void testSimplePk() {
-        String tableName = createTableName();
+        //ToDo: IGNITE-8386: need to add DATE type into the test.
+        HashMap<String, String> types = new HashMap() {
+            {
+                put("boolean", "1");
+                put("char", "'1'");
+                put("varchar", "'1'");
+                put("real", "1");
+                put("number", "1");
+                put("int", "1");
+                put("long", "1");
+                put("float", "1");
+                put("double", "1");
+                put("tinyint", "1");
+                put("smallint", "1");
+                put("bigint", "1");
+                put("varchar_ignorecase", "'1'");
+                put("time", "'11:11:11'");
+                put("timestamp", "'20018-11-02 11:11:11'");
+                put("uuid", "'1'");
+            }
+        };
+        for (Map.Entry<String, String> entry : types.entrySet()) {
 
-        executeSql("CREATE TABLE " + tableName + " (id int, name varchar, age int, company varchar, city varchar, " +
-            "primary key (id))");
+            String tblName = createTableName();
 
-        checkUsingIndexes(tableName);
+            String type = entry.getKey();
+            String value = entry.getValue();
+
+            executeSql("CREATE TABLE " + tblName +
+                " (id " + type + " , name varchar, age int, company varchar, city varchar," +
+                " primary key (id))");
+
+            checkUsingIndexes(tblName, value);
+        }
+    }
+
+    /**
+     * Test using PK indexes for simple primary key and affinity key.
+     */
+    public void testSimplePkWithAffinityKey() {
+        //ToDo: IGNITE-8386: need to add DATE type into the test.
+        HashMap<String, String> types = new HashMap() {
+            {
+                put("boolean", "1");
+                put("char", "'1'");
+                put("varchar", "'1'");
+                put("real", "1");
+                put("number", "1");
+                put("int", "1");
+                put("long", "1");
+                put("float", "1");
+                put("double", "1");
+                put("tinyint", "1");
+                put("smallint", "1");
+                put("bigint", "1");
+                put("varchar_ignorecase", "'1'");
+                put("time", "'11:11:11'");
+                put("timestamp", "'20018-11-02 11:11:11'");
+                put("uuid", "'1'");
+            }
+        };
+        for (Map.Entry<String, String> entry : types.entrySet()) {
+
+            String tblName = createTableName();
+
+            String type = entry.getKey();
+            String value = entry.getValue();
+
+            executeSql("CREATE TABLE " + tblName +
+                " (id " + type + " , name varchar, age int, company varchar, city varchar," +
+                " primary key (id)) WITH \"affinity_key=id\"");
+
+            checkUsingIndexes(tblName, value);
+        }
     }
 
     /**
      * Test using PK indexes for wrapped primary key.
      */
     public void testWrappedPk() {
-        String tableName = createTableName();
+        String tblName = createTableName();
 
-        executeSql("CREATE TABLE " + tableName + " (id int, name varchar, age int, company varchar, city varchar, " +
+        executeSql("CREATE TABLE " + tblName + " (id int, name varchar, age int, company varchar, city varchar, " +
             "primary key (id)) WITH \"wrap_key=true\"");
 
-        checkUsingIndexes(tableName);
+        checkUsingIndexes(tblName, "1");
     }
 
     /**
      * Check using PK indexes for few cases.
      *
-     * @param tableName name of table which should be checked to using PK indexes.
+     * @param tblName name of table which should be checked to using PK indexes.
      */
-    private void checkUsingIndexes(String tableName) {
-        String explainSQL = "explain SELECT * FROM " + tableName + " WHERE ";
+    private void checkUsingIndexes(String tblName, String idValue) {
+        String explainSQL = "explain SELECT * FROM " + tblName + " WHERE ";
 
-        List<List<?>> results = executeSql(explainSQL + "id=1");
-
-        assertUsingPkIndex(results);
-
-        results = executeSql(explainSQL + "id=1 and name=''");
+        List<List<?>> results = executeSql(explainSQL + "id=" + idValue);
 
         assertUsingPkIndex(results);
 
-        results = executeSql(explainSQL + "id=1 and name='' and city='' and age=0");
+        results = executeSql(explainSQL + "id=" + idValue + " and name=''");
+
+        assertUsingPkIndex(results);
+
+        results = executeSql(explainSQL + "id=" + idValue + " and name='' and city='' and age=0");
 
         assertUsingPkIndex(results);
     }
@@ -110,12 +180,12 @@ public class ComplexPrmiaryKeyUnwrapSelfTest extends GridCommonAbstractTest {
      * Test don't using PK indexes for table created through cache API.
      */
     public void testIndexesForCachesCreatedThroughCashApi() {
-        String tableName = TestValue.class.getSimpleName();
+        String tblName = TestValue.class.getSimpleName();
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setSqlSchema("PUBLIC");
-        ccfg.setName(tableName);
+        ccfg.setName(tblName);
 
         QueryEntity qryEntity = new QueryEntity(TestKey.class, TestValue.class);
 
@@ -123,7 +193,7 @@ public class ComplexPrmiaryKeyUnwrapSelfTest extends GridCommonAbstractTest {
 
         node().createCache(ccfg);
 
-        List<List<?>> results = executeSql("explain SELECT * FROM " + tableName + " WHERE id=1");
+        List<List<?>> results = executeSql("explain SELECT * FROM " + tblName + " WHERE id=1");
 
         assertDontUsingPkIndex(results);
     }
@@ -199,6 +269,9 @@ public class ComplexPrmiaryKeyUnwrapSelfTest extends GridCommonAbstractTest {
         return grid(0);
     }
 
+    /**
+     *
+     */
     static class TestKey {
         /** */
         @QuerySqlField
@@ -230,14 +303,20 @@ public class ComplexPrmiaryKeyUnwrapSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     *
+     */
     static class TestValue {
         /** */
         @QuerySqlField()
         private String name;
+        /** */
         @QuerySqlField()
         private String company;
+        /** */
         @QuerySqlField()
         private String city;
+        /** */
         @QuerySqlField()
         private int age;
 
@@ -254,6 +333,5 @@ public class ComplexPrmiaryKeyUnwrapSelfTest extends GridCommonAbstractTest {
             this.city = city;
         }
     }
-
 
 }

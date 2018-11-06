@@ -992,13 +992,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param tbl Table.
      * @param pk Primary key flag.
      * @param affinityKey Affinity key flag.
-     * @param cols Columns.
+     * @param unwrappedCols Unwrapped index columns for complex types.
+     * @param wrappedCols Index columns as is complex types.
      * @param inlineSize Index inline size.
      * @return Index.
      */
     GridH2IndexBase createSortedIndex(String name, GridH2Table tbl, boolean pk, boolean affinityKey,
-        List<IndexColumn> cols,
-        int inlineSize) {
+        List<IndexColumn> unwrappedCols, List<IndexColumn> wrappedCols, int inlineSize) {
         try {
             GridCacheContext cctx = tbl.cache();
 
@@ -1009,7 +1009,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             H2RowCache cache = rowCache.forGroup(cctx.groupId());
 
-            return new H2TreeIndex(cctx, cache, tbl, name, pk, affinityKey, cols, inlineSize, segments);
+            return new H2TreeIndex(cctx, cache, tbl, name, pk, affinityKey, unwrappedCols, wrappedCols, inlineSize, segments);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);

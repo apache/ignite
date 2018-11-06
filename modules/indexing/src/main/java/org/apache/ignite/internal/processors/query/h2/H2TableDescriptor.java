@@ -204,12 +204,15 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
         if (affCol != null && H2Utils.equals(affCol, keyCol))
             affCol = null;
 
-        List<IndexColumn> keyCols = extractKeyColumns(tbl, keyCol, affCol);
+        List<IndexColumn> unwrappedKeyCols = extractKeyColumns(tbl, keyCol, affCol);
+
+        List<IndexColumn> wrappedKeyCols = H2Utils.treeIndexColumns(tbl.rowDescriptor(),
+            new ArrayList<>(2), keyCol, affCol);
 
         Index hashIdx = createHashIndex(
             tbl,
             PK_HASH_IDX_NAME,
-            keyCols
+            wrappedKeyCols
         );
 
         if (hashIdx != null)
@@ -221,7 +224,8 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
             tbl,
             true,
             false,
-            keyCols,
+            unwrappedKeyCols,
+            wrappedKeyCols,
             -1
         );
 
@@ -267,12 +271,15 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
 
             // Add explicit affinity key index if nothing alike was found.
             if (!affIdxFound) {
+                List<IndexColumn> columns = H2Utils.treeIndexColumns(tbl.rowDescriptor(), new ArrayList<>(2), affCol, keyCol);
                 idxs.add(idx.createSortedIndex(
                     AFFINITY_KEY_IDX_NAME,
                     tbl,
                     false,
                     true,
-                    H2Utils.treeIndexColumns(tbl.rowDescriptor(), new ArrayList<>(2), affCol, keyCol), -1)
+                    columns,
+                    columns,
+                    -1)
                 );
             }
         }
@@ -378,6 +385,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
                 tbl,
                 false,
                 false,
+                cols,
                 cols,
                 idxDesc.inlineSize()
             );
