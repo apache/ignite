@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.extras.GridCacheEntryExtras;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheMvccEntryExtras;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheTtlEntryExtras;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
@@ -3095,24 +3096,16 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         try {
 //            checkObsolete();
 
-//            CacheDataRow row = cctx.offheap().mvccRead(cctx, key, new MvccSnapshotWithoutTxs(Long.MAX_VALUE, Long.MAX_VALUE, 0, 0));
+            MvccQueryTracker mvccTracker = MvccUtils.mvccTracker(cctx, false);
 
-            IgniteCacheOffheapManager.CacheDataStore dataStore = cctx.offheap().dataStore(localPartition());
+            try {
+                CacheDataRow row = cctx.offheap().mvccRead(cctx, key, mvccTracker.snapshot());
 
-            if (dataStore == null)
-                return null;
-
-            CacheDataTree dataTree = IgniteUtils.field(dataStore, "dataTree");
-
-            int cacheId = cctx.group().sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
-
-            MvccLastCommittedSearchClosure searchClosure = new MvccLastCommittedSearchClosure(cctx, key);
-
-            dataTree.iterate(new MvccMaxSearchRow(cacheId, key), new MvccMinSearchRow(cacheId, key), searchClosure);
-
-            CacheDataRow row = searchClosure.row();
-
-            return row != null ? row.value() : null;
+                return row != null ? row.value() : null;
+            }
+            finally {
+                mvccTracker.onDone();
+            }
         }
         finally {
             unlockEntry();
