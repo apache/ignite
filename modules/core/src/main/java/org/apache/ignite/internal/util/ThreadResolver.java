@@ -26,7 +26,7 @@ import java.util.function.Supplier;
  */
 public class ThreadResolver {
     /** */
-    private static final ThreadLocalExtra<Long> THREAD_ID = ThreadLocalExtra.withInitial(() -> -1L);
+    private static final ThreadLocal<Long> THREAD_ID = ThreadLocal.withInitial(() -> -1L);
 
     /**
      * @param threadId Thread ID.

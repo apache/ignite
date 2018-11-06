@@ -60,49 +60,35 @@ public class MultiTxInOneThreadTest extends GridCommonAbstractTest {
 
         Transaction tx1 = client.transactions().txStart();
 
-        ThreadResolver.reset();
-
         ThreadResolver.setThreadId(threadId2);
 
         Transaction tx2 = client.transactions().txStart();
-
-        ThreadResolver.reset();
 
         ThreadResolver.setThreadId(threadId1);
 
         Long val1 = cache.get(1L);
         Long val2 = cache.get(2L);
 
-        ThreadResolver.reset();
-
         ThreadResolver.setThreadId(threadId2);
 
         Long val3 = cache.get(3L);
         Long val4 = cache.get(4L);
-
-        ThreadResolver.reset();
 
         ThreadResolver.setThreadId(threadId1);
 
         cache.put(1L, val1 + 1);
         cache.put(2L, val2 + 1);
 
-        ThreadResolver.reset();
-
         ThreadResolver.setThreadId(threadId2);
 
         cache.put(3L, val3 + 1);
         cache.put(4L, val4 + 1);
-
-        ThreadResolver.reset();
 
         ThreadResolver.setThreadId(threadId1);
 
         tx1.commit();
 
         tx1.close();
-
-        ThreadResolver.reset();
 
         ThreadResolver.setThreadId(threadId2);
 
