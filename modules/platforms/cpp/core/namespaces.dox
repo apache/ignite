@@ -26,29 +26,29 @@
  /**
   * Apache %Ignite API.
   */
- namespace ignite
- {
-     /**
-      * %Ignite Binary Objects API.
-      */
-     namespace binary
-     {
-         // Empty.
-     }
+namespace ignite
+{
+    /**
+     * %Ignite Binary Objects API.
+     */
+    namespace binary
+    {
+        // Empty.
+    }
 
-     /**
-      * %Ignite %Transaction API.
-      */
-     namespace transactions
-     {
-         // Empty.
-     }
+    /**
+     * %Ignite %Transaction API.
+     */
+    namespace transactions
+    {
+        // Empty.
+    }
 
-     /**
-      * %Ignite %Cache API.
-      */
-     namespace cache
-     {
+    /**
+     * %Ignite %Cache API.
+     */
+    namespace cache
+    {
         /**
          * Contains APIs for cache events.
          */
@@ -57,11 +57,11 @@
             // Empty.
         }
 
-         /**
-          * Contains APIs for creating and executing cache queries.
-          */
-         namespace query
-         {
+        /**
+         * Contains APIs for creating and executing cache queries.
+         */
+        namespace query
+        {
             /**
              * Contains APIs for continuous queries.
              */
@@ -69,7 +69,21 @@
             {
                 // Empty.
             }
-         }
-     }
- }
+        }
+    }
+
+    /**
+     * %Ignite Thin Client API.
+     */
+    namespace thin
+    {
+        /**
+         * %Ignite Thin Client Cache API.
+         */
+        namespace cache
+        {
+            // Empty.
+        }
+    }
+}
 

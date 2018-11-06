@@ -30,15 +30,16 @@ export default class PageSignup {
     /** @type {string} */
     serverError = null;
 
-    static $inject = ['IgniteCountries', 'Auth', 'IgniteMessages'];
+    static $inject = ['IgniteCountries', 'Auth', 'IgniteMessages', 'IgniteFormUtils'];
 
     /**
      * @param {import('app/modules/user/Auth.service').default} Auth
      */
-    constructor(Countries, Auth, IgniteMessages) {
+    constructor(Countries, Auth, IgniteMessages, IgniteFormUtils) {
         this.Auth = Auth;
         this.IgniteMessages = IgniteMessages;
         this.countries = Countries.getAll();
+        this.IgniteFormUtils = IgniteFormUtils;
     }
 
     /** @param {import('./types').ISignupFormController} form */
@@ -50,11 +51,23 @@ export default class PageSignup {
         this.form.email.$validators.server = () => !this.serverError;
     }
 
+    /** @param {string} error */
+    setServerError(error) {
+        this.serverError = error;
+        this.form.email.$validate();
+    }
+
     signup() {
+        this.IgniteFormUtils.triggerValidation(this.form);
+
+        this.setServerError(null);
+
+        if (!this.canSubmitForm(this.form))
+            return;
+
         return this.Auth.signnup(this.data).catch((res) => {
             this.IgniteMessages.showError(null, res.data);
-            this.serverError = res.data;
-            this.form.email.$validate();
+            this.setServerError(res.data);
         });
     }
 }

@@ -106,8 +106,6 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         System.setProperty(IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD,
             origCacheCleanupPeriod != null ? origCacheCleanupPeriod : "");
 

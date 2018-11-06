@@ -46,11 +46,6 @@ public class IgniteSinkTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "testCache";
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception {@link Exception}.
      */

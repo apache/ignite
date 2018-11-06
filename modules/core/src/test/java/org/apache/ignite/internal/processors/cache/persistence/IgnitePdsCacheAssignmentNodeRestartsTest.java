@@ -69,8 +69,8 @@ public class IgnitePdsCacheAssignmentNodeRestartsTest extends GridCommonAbstract
             .setPageSize(1024)
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setPersistenceEnabled(true)
-                .setInitialSize(50 * 1024 * 1024L)
-                .setMaxSize(50 * 1024 * 1024L)
+                .setInitialSize(50L * 1024 * 1024)
+                .setMaxSize(50L * 1024 * 1024)
             )
             .setWalMode(WALMode.LOG_ONLY)
         );

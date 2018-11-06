@@ -24,7 +24,7 @@ import {default as ListEditable} from '../../controller';
  * User can provide an alias for $item by setting item-name attribute on transclusion slot element.
  */
 export class ListEditableTransclude {
-    /** 
+    /**
      * Transcluded slot name.
      *
      * @type {string}

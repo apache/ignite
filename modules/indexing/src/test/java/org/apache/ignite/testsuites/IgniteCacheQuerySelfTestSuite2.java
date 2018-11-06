@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.QueryJoinWithDifferentNodeFiltersTest;
 import org.apache.ignite.internal.processors.cache.CacheScanPartitionQueryFallbackSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheCrossCacheJoinRandomTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheObjectKeyIndexingSelfTest;
@@ -103,6 +104,8 @@ public class IgniteCacheQuerySelfTestSuite2 extends TestSuite {
         suite.addTestSuite(IgniteCacheGroupsSqlSegmentedIndexSelfTest.class);
         suite.addTestSuite(IgniteCacheGroupsSqlSegmentedIndexMultiNodeSelfTest.class);
         suite.addTestSuite(IgniteCacheGroupsSqlDistributedJoinSelfTest.class);
+
+        suite.addTestSuite(QueryJoinWithDifferentNodeFiltersTest.class);
 
         return suite;
     }

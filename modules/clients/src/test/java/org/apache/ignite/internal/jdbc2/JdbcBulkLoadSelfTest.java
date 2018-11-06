@@ -98,11 +98,6 @@ public class JdbcBulkLoadSelfTest extends GridCommonAbstractTest {
         startGrids(2);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * Establishes the JDBC connection.
      *

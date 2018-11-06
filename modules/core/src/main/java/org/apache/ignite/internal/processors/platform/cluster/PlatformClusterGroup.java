@@ -560,8 +560,8 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
         writer.writeFloat(metrics.getPagesReplaceAge());
         writer.writeLong(metrics.getPhysicalMemoryPages());
         writer.writeLong(metrics.getPhysicalMemorySize());
-        writer.writeLong(metrics.getCheckpointBufferPages());
-        writer.writeLong(metrics.getCheckpointBufferSize());
+        writer.writeLong(metrics.getUsedCheckpointBufferPages());
+        writer.writeLong(metrics.getUsedCheckpointBufferSize());
         writer.writeInt(metrics.getPageSize());
     }
 

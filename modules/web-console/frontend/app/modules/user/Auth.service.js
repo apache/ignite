@@ -48,14 +48,14 @@ export default class AuthService {
         return this._auth('signup', userInfo);
     }
     /**
-     * @param {string} email    
-     * @param {string} password 
+     * @param {string} email
+     * @param {string} password
      */
     signin(email, password) {
         return this._auth('signin', {email, password});
     }
     /**
-     * @param {string} email    
+     * @param {string} email
      */
     remindPassword(email) {
         return this._auth('password/forgot', {email}).then(() => this.$state.go('password.send'));
@@ -65,8 +65,8 @@ export default class AuthService {
     /**
      * Performs the REST API call.
      * @private
-     * @param {('signin'|'signup'|'password/forgot')} action   
-     * @param {{email:string,password:string}|SignupUserInfo|{email:string}} userInfo 
+     * @param {('signin'|'signup'|'password/forgot')} action
+     * @param {{email:string,password:string}|SignupUserInfo|{email:string}} userInfo
      */
     _auth(action, userInfo) {
         return this.$http.post('/api/v1/' + action, userInfo)

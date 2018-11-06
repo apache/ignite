@@ -148,11 +148,6 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */

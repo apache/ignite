@@ -136,7 +136,7 @@ final class GridDiagnostic {
                 }
             });
 
-            final long HALF_GB = 512/*MB*/ * 1024 * 1024;
+            final long HALF_GB = 512L/*MB*/ * 1024 * 1024;
 
             exec.execute(new GridWorker(igniteInstanceName, "grid-diagnostic-7", log) {
                 @Override public void body() {

@@ -94,13 +94,12 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>false</SDLCheck>
       <AdditionalIncludeDirectories>$(OPENSSL_HOME_X86)\include;$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win\include;$(ProjectDir)\..\..\src</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;IGNITE_IMPL;IGNITE_FRIEND;TARGET_MODULE_FULL_NAME="$(TargetFileName)";_DEBUG;ODBC_DEBUG;ODBC_LOG_PATH="D:\\odbc.log";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;IGNITE_IMPL;IGNITE_FRIEND;TARGET_MODULE_FULL_NAME="$(TargetFileName)";_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ModuleDefinitionFile>module.def</ModuleDefinitionFile>
       <AdditionalDependencies>Ws2_32.lib;Mswsock.lib;Advapi32.lib;Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OPENSSL_HOME)\lib\VC</AdditionalLibraryDirectories>
       <DelayLoadDLLs>
       </DelayLoadDLLs>
     </Link>
@@ -117,7 +116,6 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ModuleDefinitionFile>module.def</ModuleDefinitionFile>
       <AdditionalDependencies>Ws2_32.lib;Mswsock.lib;Advapi32.lib;Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OPENSSL_HOME)\lib\VC</AdditionalLibraryDirectories>
       <DelayLoadDLLs>
       </DelayLoadDLLs>
     </Link>
@@ -138,7 +136,6 @@
       <OptimizeReferences>true</OptimizeReferences>
       <ModuleDefinitionFile>module.def</ModuleDefinitionFile>
       <AdditionalDependencies>Ws2_32.lib;Mswsock.lib;Advapi32.lib;Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OPENSSL_HOME)\lib\VC</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -157,7 +154,6 @@
       <OptimizeReferences>true</OptimizeReferences>
       <ModuleDefinitionFile>module.def</ModuleDefinitionFile>
       <AdditionalDependencies>Ws2_32.lib;Mswsock.lib;Advapi32.lib;Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OPENSSL_HOME)\lib\VC</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

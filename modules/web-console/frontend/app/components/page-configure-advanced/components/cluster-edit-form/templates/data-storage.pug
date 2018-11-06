@@ -188,7 +188,10 @@ panel-collapsible(ng-show='$ctrl.available("2.3.0")' ng-form=form on-open=`ui.lo
                 .ignite-form-field
                     .ignite-form-field__label Data region configurations
                     .ignite-form-field__control
-                        list-editable(name='dataRegionConfigurations' ng-model=dataRegionConfigurations)
+                        list-editable.pc-list-editable-with-form-grid(
+                            name='dataRegionConfigurations'
+                            ng-model=dataRegionConfigurations
+                        )
                             list-editable-item-edit.pc-form-grid-row
                                 - form = '$parent.form'
                                 +data-region-form({

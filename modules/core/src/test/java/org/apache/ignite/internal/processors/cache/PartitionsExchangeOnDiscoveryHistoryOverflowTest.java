@@ -46,7 +46,7 @@ import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVE
  */
 public class PartitionsExchangeOnDiscoveryHistoryOverflowTest extends IgniteCacheAbstractTest {
     /** */
-    private static final int CACHES_COUNT = 50;
+    private static final int CACHES_COUNT = 30;
 
     /** */
     private static final int DISCOVERY_HISTORY_SIZE = 10;
@@ -122,6 +122,8 @@ public class PartitionsExchangeOnDiscoveryHistoryOverflowTest extends IgniteCach
      * @throws Exception In case of error.
      */
     public void testDynamicCacheCreation() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8869 should fail if ignite-8869 reverts");
+
         for (int iter = 0; iter < 5; iter++) {
             log.info("Iteration: " + iter);
 

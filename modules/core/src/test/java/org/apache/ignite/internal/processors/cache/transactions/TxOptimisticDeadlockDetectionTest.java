@@ -128,13 +128,6 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
             startGrid(i + NODES_CNT);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
@@ -303,7 +296,7 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
 
                 Ignite ignite = ignite(clientTx ? threadNum - 1 + txCnt : threadNum - 1);
 
-                IgniteCache<Object, Integer> cache = ignite.cache(CACHE_NAME);
+                IgniteCache<Object, Integer> cache = ignite.cache(CACHE_NAME).withAllowAtomicOpsInTx();
 
                 List<Object> keys = keySets.get(threadNum - 1);
 

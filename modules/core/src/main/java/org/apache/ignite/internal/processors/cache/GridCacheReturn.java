@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -241,6 +242,10 @@ public class GridCacheReturn implements Externalizable, Message {
 
                 v = resMap;
             }
+
+            // This exception means that we should register class and call EntryProcessor again.
+            if (err != null && err instanceof UnregisteredClassException)
+                throw (UnregisteredClassException) err;
 
             CacheInvokeResult res0 = err == null ? CacheInvokeResult.fromResult(res) : CacheInvokeResult.fromError(err);
 

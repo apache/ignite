@@ -99,6 +99,7 @@ public class ViewCacheClosure implements IgniteCallable<List<CacheInfo>> {
                     ci.setBackupsCnt(context.config().getBackups());
                     ci.setAffinityClsName(context.config().getAffinity().getClass().getSimpleName());
                     ci.setMode(context.config().getCacheMode());
+                    ci.setAtomicityMode(context.config().getAtomicityMode());
                     ci.setMapped(mapped(context.caches().iterator().next().name()));
 
                     cacheInfo.add(ci);
@@ -126,6 +127,7 @@ public class ViewCacheClosure implements IgniteCallable<List<CacheInfo>> {
                     ci.setBackupsCnt(desc.cacheConfiguration().getBackups());
                     ci.setAffinityClsName(desc.cacheConfiguration().getAffinity().getClass().getSimpleName());
                     ci.setMode(desc.cacheConfiguration().getCacheMode());
+                    ci.setAtomicityMode(desc.cacheConfiguration().getAtomicityMode());
                     ci.setMapped(mapped(desc.cacheName()));
 
                     cacheInfo.add(ci);

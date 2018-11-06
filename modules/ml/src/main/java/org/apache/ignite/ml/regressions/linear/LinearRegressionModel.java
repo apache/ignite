@@ -22,7 +22,7 @@ import java.util.Objects;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Simple linear regression model which predicts result value Y as a linear combination of input variables:

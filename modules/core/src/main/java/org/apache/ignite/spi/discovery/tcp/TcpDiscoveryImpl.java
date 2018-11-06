@@ -232,6 +232,20 @@ abstract class TcpDiscoveryImpl {
     public abstract void failNode(UUID nodeId, @Nullable String warning);
 
     /**
+     * Dumps ring structure to logger.
+     *
+     * @param log Logger.
+     */
+    public abstract void dumpRingStructure(IgniteLogger log);
+
+    /**
+     * Get current topology version.
+     *
+     * @return Current topology version.
+     */
+    public abstract long getCurrentTopologyVersion();
+
+    /**
      * @param igniteInstanceName Ignite instance name.
      * @throws IgniteSpiException If failed.
      */
@@ -244,6 +258,13 @@ abstract class TcpDiscoveryImpl {
      * @throws IgniteSpiException If failed.
      */
     public int boundPort() throws IgniteSpiException {
+        return 0;
+    }
+
+    /**
+     * @return connection check interval.
+     */
+    public long connectionCheckInterval() {
         return 0;
     }
 

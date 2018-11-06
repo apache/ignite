@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateRequest;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -223,6 +224,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
                 // If partition was destroyed recreate it.
                 if (part.state() == EVICTED) {
+                    part.awaitDestroy();
+
                     part = top.localPartition(p, topVer, true);
                 }
 
@@ -231,7 +234,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 ClusterNode histSupplier = null;
 
                 if (grp.persistenceEnabled() && exchFut != null) {
-                    UUID nodeId = exchFut.partitionHistorySupplier(grp.groupId(), p);
+                    UUID nodeId = exchFut.partitionHistorySupplier(grp.groupId(), p, part.initialUpdateCounter());
 
                     if (nodeId != null)
                         histSupplier = ctx.discovery().node(nodeId);
@@ -287,6 +290,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 }
             }
         }
+
+        if (!assignments.isEmpty())
+            ctx.database().lastCheckpointInapplicableForWalRebalance(grp.groupId());
 
         return assignments;
     }

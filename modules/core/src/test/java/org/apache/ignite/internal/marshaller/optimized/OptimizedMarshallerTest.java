@@ -28,6 +28,7 @@ import java.lang.reflect.Proxy;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -41,6 +42,7 @@ import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -384,6 +386,78 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
         }
 
         info(">>> Finished performance check <<<");
+    }
+
+    /**
+     * Tests checks for arithmetic overflow when trying to serialize huge object.
+     * WARNING! Requires a lot of heap space. Should not be run on CI.
+     */
+    public void _testAllocationOverflow() {
+        allocationOverflowCheck(() -> marshaller().marshal(new HugeObject()));
+
+        allocationOverflowCheck(() -> {
+            marshaller().marshal(new short[1<<30]);
+            marshaller().marshal(new short[1<<30]);
+            return null;
+        });
+
+        allocationOverflowCheck(() -> {
+            marshaller().marshal(new char[1<<30]);
+            marshaller().marshal(new char[1<<30]);
+            return null;
+        });
+
+        allocationOverflowCheck(() -> {
+            marshaller().marshal(new int[1<<30]);
+            marshaller().marshal(new int[1<<30]);
+            return null;
+        });
+
+        allocationOverflowCheck(() -> {
+            marshaller().marshal(new float[1<<29]);
+            marshaller().marshal(new float[1<<29]);
+            return null;
+        });
+
+        allocationOverflowCheck(() -> {
+            marshaller().marshal(new long[1<<29]);
+            marshaller().marshal(new long[1<<29]);
+            return null;
+        });
+
+        allocationOverflowCheck(() -> {
+            marshaller().marshal(new double[1<<29]);
+            marshaller().marshal(new double[1<<29]);
+            return null;
+        });
+    }
+
+    /**
+     * Asserts that {@link IOException} will be thrown.
+     *
+     * @param call Callable that cause allocation overflow.
+     */
+    private void allocationOverflowCheck(Callable<?> call) {
+        GridTestUtils.assertThrowsAnyCause(log, call, IOException.class, "Impossible to allocate required memory");
+    }
+
+    /**
+     *
+     */
+    public static class HugeObject implements Externalizable {
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.write(new byte[1 << 31 - 2]);
+            out.write(new byte[1 << 31 - 2]);
+            out.write(new byte[1 << 31 - 2]);
+            out.write(new byte[1 << 31 - 2]);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+
+        }
     }
 
     /**

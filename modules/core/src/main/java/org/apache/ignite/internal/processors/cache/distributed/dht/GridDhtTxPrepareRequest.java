@@ -381,11 +381,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridDhtTxPrepareRequest.class, this, "super", super.toString());
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -611,5 +606,15 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 33;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return U.safeAbs(version().hashCode());
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridDhtTxPrepareRequest.class, this, "super", super.toString());
     }
 }

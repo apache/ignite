@@ -101,7 +101,6 @@ The following modules are available:
 - ignite-schedule (for Cron-based task scheduling)
 - ignite-sl4j (for SL4J logging)
 - ignite-spark (for shared in-memory RDDs and faster SQL for Apache Spark)
-- ignite-spark_2.10 (for shared in-memory RDDs and faster SQL for Apache Spark with Scala 2.10)
 - ignite-spring (for Spring-based configuration support)
 - ignite-ssh (for starting grid nodes on remote machines)
 - ignite-storm (for streaming events from Apache Storm into Ignite)

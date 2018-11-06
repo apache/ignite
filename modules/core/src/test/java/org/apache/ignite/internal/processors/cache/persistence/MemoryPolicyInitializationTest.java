@@ -38,10 +38,10 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
     private static final String CUSTOM_NON_DEFAULT_MEM_PLC_NAME = "custom_mem_plc";
 
     /** */
-    private static final long USER_CUSTOM_MEM_PLC_SIZE = 89 * 1024 * 1024;
+    private static final long USER_CUSTOM_MEM_PLC_SIZE = 89L * 1024 * 1024;
 
     /** */
-    private static final long USER_DEFAULT_MEM_PLC_SIZE = 99 * 1024 * 1024;
+    private static final long USER_DEFAULT_MEM_PLC_SIZE = 99L * 1024 * 1024;
 
     /** */
     private MemoryConfiguration memCfg;

@@ -128,8 +128,8 @@ export default class PageConfigureAdvancedIGFS {
     edit(igfsID) {
         this.$state.go('base.configuration.edit.advanced.igfs.igfs', {igfsID});
     }
-    save(igfs) {
-        this.ConfigureState.dispatchAction(advancedSaveIGFS(igfs));
+    save({igfs, download}) {
+        this.ConfigureState.dispatchAction(advancedSaveIGFS(igfs, download));
     }
     remove(itemIDs) {
         this.ConfigureState.dispatchAction(

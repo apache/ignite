@@ -65,13 +65,6 @@ public class GridCacheDhtMappingSelfTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /** @throws Exception If failed. */
     public void testMapping() throws Exception {
         int nodeCnt = 5;

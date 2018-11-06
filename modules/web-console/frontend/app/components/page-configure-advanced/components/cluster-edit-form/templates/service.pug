@@ -32,15 +32,9 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     .ignite-form-field__control
                         -let items = model
 
-                        list-editable(ng-model=items name='serviceConfigurations')
-                            list-editable-item-edit
-                                - form = '$parent.form'
-                    
-                                -var nodeFilter = '$item.nodeFilter';
-                                -var nodeFilterKind = nodeFilter + '.kind';
-                                -var customFilter = nodeFilterKind + ' === "Custom"'
-
-                                .settings-row
+                        list-editable.pc-list-editable-with-form-grid(ng-model=items name='serviceConfigurations')
+                            list-editable-item-edit.pc-form-grid-row
+                                .pc-form-grid-col-60
                                     +sane-ignite-form-field-text({
                                         label: 'Name:',
                                         model: '$item.name',
@@ -56,23 +50,23 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                                         ng-model-options='{allowInvalid: true}'
                                     )
                                         +form-field-feedback('"serviceName', 'uniqueName', 'Service with that name is already configured')
-                                .settings-row
+                                .pc-form-grid-col-60
                                     +java-class('Service class', '$item.service', '"serviceService"', 'true', 'true', 'Service implementation class name')
-                                .settings-row
+                                .pc-form-grid-col-60
                                     +number('Max per node count:', '$item.maxPerNodeCount', '"ServiceMaxPerNodeCount"', 'true', 'Unlimited', '0',
                                         'Maximum number of deployed service instances on each node.<br/>' +
                                         'Zero for unlimited')
-                                .settings-row
+                                .pc-form-grid-col-60
                                     +number('Total count:', '$item.totalCount', '"serviceTotalCount"', 'true', 'Unlimited', '0',
                                         'Total number of deployed service instances in the cluster.<br/>' +
                                         'Zero for unlimited')
-                                .settings-row
+                                .pc-form-grid-col-60
                                     +dropdown-required-empty('Cache:', '$item.cache', '"serviceCache"', 'true', 'false',
                                         'Choose cache', 'No caches configured for current cluster', '$ctrl.cachesMenu', 'Cache name used for key-to-node affinity calculation')(
                                         pc-is-in-collection='$ctrl.clonedCluster.caches'
-                                    ).settings-row
-                                        +form-field-feedback(form, 'isInCollection', `Cluster doesn't have such a cache`)
-                                .settings-row
+                                    )
+                                        +form-field-feedback(_, 'isInCollection', `Cluster doesn't have such a cache`)
+                                .pc-form-grid-col-60
                                     +text('Affinity key:', '$item.affinityKey', '"serviceAffinityKey"', 'false', 'Input affinity key',
                                         'Affinity key used for key-to-node affinity calculation')
 

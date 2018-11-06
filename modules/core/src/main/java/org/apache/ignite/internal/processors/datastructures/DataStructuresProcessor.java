@@ -212,7 +212,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                             new DataStructuresEntryFilter(),
                             cctx.isReplicated() && cctx.affinityNode(),
                             false,
-                            false
+                            false,
+                            true
                         ));
                 }
             }
@@ -676,7 +677,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                                 break;
                             }
                             catch (IgniteCheckedException e) {
-                                if (X.hasCause(e, InterruptedException.class))
+                                if (X.hasCause(e, IgniteInterruptedCheckedException.class, InterruptedException.class))
                                     isInterrupted = Thread.interrupted();
                                 else
                                     throw e;

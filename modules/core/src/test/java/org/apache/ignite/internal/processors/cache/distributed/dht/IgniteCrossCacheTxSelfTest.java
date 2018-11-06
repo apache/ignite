@@ -104,11 +104,6 @@ public class IgniteCrossCacheTxSelfTest extends GridCommonAbstractTest {
         grid(0).createCache(secondCfg);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */

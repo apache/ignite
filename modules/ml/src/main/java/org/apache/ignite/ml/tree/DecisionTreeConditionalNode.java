@@ -17,6 +17,8 @@
 
 package org.apache.ignite.ml.tree;
 
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+
 /**
  * Decision tree conditional (non-leaf) node.
  */
@@ -52,8 +54,8 @@ public class DecisionTreeConditionalNode implements DecisionTreeNode {
     }
 
     /** {@inheritDoc} */
-    @Override public Double apply(double[] features) {
-        return features[col] > threshold ? thenNode.apply(features) : elseNode.apply(features);
+    @Override public Double apply(Vector features) {
+        return features.get(col) > threshold ? thenNode.apply(features) : elseNode.apply(features);
     }
 
     /** */

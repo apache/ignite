@@ -47,9 +47,6 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
     /** Segment initialized flag. */
     private boolean segmentInitialized;
 
-    /** Archived segment index. */
-    private long archivedSegIdx;
-
     /** Archive directory. */
     private File archiveDir;
 
@@ -76,7 +73,7 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
     ) throws IgniteCheckedException {
         super(log, sharedCtx, initLogicalRecordsSerializerFactory(sharedCtx), ioFactory, bufSize);
 
-        this.archivedSegIdx = archivedSegIdx;
+        curWalSegmIdx = archivedSegIdx;
         this.archiveDir = archiveDir;
         this.advanceC = advanceC;
 
@@ -89,9 +86,7 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
     private static RecordSerializerFactory initLogicalRecordsSerializerFactory(GridCacheSharedContext sharedCtx)
         throws IgniteCheckedException {
 
-        return new RecordSerializerFactoryImpl(sharedCtx)
-            .recordDeserializeFilter(new LogicalRecordsFilter())
-            .marshalledMode(true);
+        return new RecordSerializerFactoryImpl(sharedCtx, new LogicalRecordsFilter()).marshalledMode(true);
     }
 
     /** {@inheritDoc} */
@@ -106,7 +101,7 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
             segmentInitialized = true;
 
             FileWriteAheadLogManager.FileDescriptor fd = new FileWriteAheadLogManager.FileDescriptor(
-                new File(archiveDir, FileWriteAheadLogManager.FileDescriptor.fileName(archivedSegIdx)));
+                new File(archiveDir, FileWriteAheadLogManager.FileDescriptor.fileName(curWalSegmIdx)));
 
             try {
                 return initReadHandle(fd, null);

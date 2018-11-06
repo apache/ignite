@@ -17,6 +17,9 @@
 
 package org.apache.ignite.examples.ml.knn;
 
+import java.util.Arrays;
+import java.util.UUID;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -27,13 +30,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
 import org.apache.ignite.ml.knn.classification.KNNStrategy;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.thread.IgniteThread;
-
-import javax.cache.Cache;
-import java.util.Arrays;
-import java.util.UUID;
 
 /**
  * Run kNN multi-class classification trainer over distributed dataset.
@@ -58,7 +58,7 @@ public class KNNClassificationExample {
                 KNNClassificationModel knnMdl = trainer.fit(
                     ignite,
                     dataCache,
-                    (k, v) -> Arrays.copyOfRange(v, 1, v.length),
+                    (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
                     (k, v) -> v[0]
                 ).withK(3)
                     .withDistanceMeasure(new EuclideanDistance())
@@ -77,7 +77,7 @@ public class KNNClassificationExample {
                         double[] inputs = Arrays.copyOfRange(val, 1, val.length);
                         double groundTruth = val[0];
 
-                        double prediction = knnMdl.apply(new DenseLocalOnHeapVector(inputs));
+                        double prediction = knnMdl.apply(new DenseVector(inputs));
 
                         totalAmount++;
                         if (groundTruth != prediction)

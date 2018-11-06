@@ -24,6 +24,7 @@
 #include <ignite/impl/binary/binary_writer_impl.h>
 
 #include <ignite/odbc/utility.h>
+#include <ignite/common/utils.h>
 
 using namespace ignite::utility;
 
@@ -34,7 +35,7 @@ BOOST_AUTO_TEST_CASE(TestUtilityRemoveSurroundingSpaces)
     std::string inStr("   \r \n    \t  some meaningfull data   \n\n   \t  \r  ");
     std::string expectedOutStr("some meaningfull data");
 
-    std::string realOutStr(RemoveSurroundingSpaces(inStr.begin(), inStr.end()));
+    std::string realOutStr(ignite::common::StripSurroundingWhitespaces(inStr.begin(), inStr.end()));
 
     BOOST_REQUIRE(expectedOutStr == realOutStr);
 }

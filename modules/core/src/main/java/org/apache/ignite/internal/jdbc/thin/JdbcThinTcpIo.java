@@ -106,8 +106,8 @@ public class JdbcThinTcpIo {
     /** Input stream. */
     private BufferedInputStream in;
 
-    /** Closed flag. */
-    private boolean closed;
+    /** Connected flag. */
+    private boolean connected;
 
     /** Ignite server version. */
     private IgniteProductVersion igniteVer;
@@ -120,6 +120,9 @@ public class JdbcThinTcpIo {
 
     /** Mutex. */
     private final Object mux = new Object();
+
+    /** Current protocol version used to connection to Ignite. */
+    private ClientListenerProtocolVersion srvProtocolVer;
 
     /**
      * Constructor.
@@ -157,14 +160,14 @@ public class JdbcThinTcpIo {
             ownThread = Thread.currentThread();
         }
 
+        assert !connected;
+
         try {
             List<String> inaccessibleAddrs = null;
 
             List<Exception> exceptions = null;
 
             HostAndPortRange[] srvs = connProps.getAddresses();
-
-            boolean connected = false;
 
             for (int i = 0; i < srvs.length; i++, srvIdx = (srvIdx + 1) % srvs.length) {
                 HostAndPortRange srv = srvs[srvIdx];
@@ -175,8 +178,6 @@ public class JdbcThinTcpIo {
                     for (int port = srv.portFrom(); port <= srv.portTo(); ++port) {
                         try {
                             connect(new InetSocketAddress(addr, port), timeout);
-
-                            connected = true;
 
                             break;
                         }
@@ -235,43 +236,53 @@ public class JdbcThinTcpIo {
      * @throws SQLException On connection reject.
      */
     private void connect(InetSocketAddress addr, int timeout) throws IOException, SQLException {
-        Socket sock;
-
-        if (ConnectionProperties.SSL_MODE_REQUIRE.equalsIgnoreCase(connProps.getSslMode()))
-            sock = JdbcThinSSLUtil.createSSLSocket(addr, connProps);
-        else if (ConnectionProperties.SSL_MODE_DISABLE.equalsIgnoreCase(connProps.getSslMode())) {
-            sock = new Socket();
-
-            try {
-                sock.connect(addr, timeout);
-            }
-            catch (IOException e) {
-                throw new SQLException("Failed to connect to server [host=" + addr.getHostName() +
-                    ", port=" + addr.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
-            }
-        }
-        else {
-            throw new SQLException("Unknown sslMode. [sslMode=" + connProps.getSslMode() + ']',
-                SqlStateCode.CLIENT_CONNECTION_FAILED);
-        }
-
-        if (connProps.getSocketSendBuffer() != 0)
-            sock.setSendBufferSize(connProps.getSocketSendBuffer());
-
-        if (connProps.getSocketReceiveBuffer() != 0)
-            sock.setReceiveBufferSize(connProps.getSocketReceiveBuffer());
-
-        sock.setTcpNoDelay(connProps.isTcpNoDelay());
+        Socket sock = null;
 
         try {
-            endpoint = new IpcClientTcpEndpoint(sock);
+            if (ConnectionProperties.SSL_MODE_REQUIRE.equalsIgnoreCase(connProps.getSslMode()))
+                sock = JdbcThinSSLUtil.createSSLSocket(addr, connProps);
+            else if (ConnectionProperties.SSL_MODE_DISABLE.equalsIgnoreCase(connProps.getSslMode())) {
+                sock = new Socket();
 
-            out = new BufferedOutputStream(endpoint.outputStream());
-            in = new BufferedInputStream(endpoint.inputStream());
+                try {
+                    sock.connect(addr, timeout);
+                }
+                catch (IOException e) {
+                    throw new SQLException("Failed to connect to server [host=" + addr.getHostName() +
+                        ", port=" + addr.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+                }
+            }
+            else {
+                throw new SQLException("Unknown sslMode. [sslMode=" + connProps.getSslMode() + ']',
+                    SqlStateCode.CLIENT_CONNECTION_FAILED);
+            }
+
+            if (connProps.getSocketSendBuffer() != 0)
+                sock.setSendBufferSize(connProps.getSocketSendBuffer());
+
+            if (connProps.getSocketReceiveBuffer() != 0)
+                sock.setReceiveBufferSize(connProps.getSocketReceiveBuffer());
+
+            sock.setTcpNoDelay(connProps.isTcpNoDelay());
+
+            try {
+                endpoint = new IpcClientTcpEndpoint(sock);
+
+                out = new BufferedOutputStream(endpoint.outputStream());
+                in = new BufferedInputStream(endpoint.inputStream());
+
+                connected = true;
+            }
+            catch (IgniteCheckedException e) {
+                throw new SQLException("Failed to connect to server [url=" + connProps.getUrl() + ']',
+                    SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+            }
         }
-        catch (IgniteCheckedException e) {
-            throw new SQLException("Failed to connect to server [url=" + connProps.getUrl() + ']',
-                SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+        catch (Exception e) {
+            if (sock != null && !sock.isClosed())
+                U.closeQuiet(sock);
+
+            throw e;
         }
     }
 
@@ -342,6 +353,8 @@ public class JdbcThinTcpIo {
             }
             else
                 igniteVer = new IgniteProductVersion((byte)2, (byte)0, (byte)0, "Unknown", 0L, null);
+
+            srvProtocolVer = ver;
         }
         else {
             short maj = reader.readShort();
@@ -350,12 +363,12 @@ public class JdbcThinTcpIo {
 
             String err = reader.readString();
 
-            ClientListenerProtocolVersion srvProtocolVer = ClientListenerProtocolVersion.create(maj, min, maintenance);
+            ClientListenerProtocolVersion srvProtoVer0 = ClientListenerProtocolVersion.create(maj, min, maintenance);
 
-            if (srvProtocolVer.compareTo(VER_2_5_0) < 0 && !F.isEmpty(connProps.getUsername())) {
-                throw new SQLException("Authentication doesn't support by remote server[driverProtocolVer=" + CURRENT_VER +
-                    ", remoteNodeProtocolVer=" + srvProtocolVer + ", err=" + err + ", url=" + connProps.getUrl() + ']',
-                    SqlStateCode.CONNECTION_REJECTED);
+            if (srvProtoVer0.compareTo(VER_2_5_0) < 0 && !F.isEmpty(connProps.getUsername())) {
+                throw new SQLException("Authentication doesn't support by remote server[driverProtocolVer="
+                    + CURRENT_VER + ", remoteNodeProtocolVer=" + srvProtoVer0 + ", err=" + err
+                    + ", url=" + connProps.getUrl() + ']', SqlStateCode.CONNECTION_REJECTED);
             }
 
             if (VER_2_4_0.equals(srvProtocolVer) || VER_2_3_0.equals(srvProtocolVer) ||
@@ -402,8 +415,11 @@ public class JdbcThinTcpIo {
 
         boolean accepted = reader.readBoolean();
 
-        if (accepted)
+        if (accepted) {
             igniteVer = new IgniteProductVersion((byte)2, (byte)1, (byte)0, "Unknown", 0L, null);
+
+            srvProtocolVer = VER_2_1_0;
+        }
         else {
             short maj = reader.readShort();
             short min = reader.readShort();
@@ -435,7 +451,7 @@ public class JdbcThinTcpIo {
         }
 
         try {
-            if (!igniteVer.greaterThanEqual(2, 5, 0)) {
+            if (!isUnorderedStreamSupported()) {
                 throw new SQLException("Streaming without response doesn't supported by server [driverProtocolVer="
                     + CURRENT_VER + ", remoteNodeVer=" + igniteVer + ']', SqlStateCode.INTERNAL_ERROR);
             }
@@ -593,7 +609,7 @@ public class JdbcThinTcpIo {
      * Close the client IO.
      */
     public void close() {
-        if (closed)
+        if (!connected)
             return;
 
         // Clean up resources.
@@ -603,7 +619,7 @@ public class JdbcThinTcpIo {
         if (endpoint != null)
             endpoint.close();
 
-        closed = true;
+        connected = false;
     }
 
     /**
@@ -618,5 +634,14 @@ public class JdbcThinTcpIo {
      */
     IgniteProductVersion igniteVersion() {
         return igniteVer;
+    }
+
+    /**
+     * @return {@code true} If the unordered streaming supported.
+     */
+    boolean isUnorderedStreamSupported() {
+        assert srvProtocolVer != null;
+
+        return srvProtocolVer.compareTo(VER_2_5_0) >= 0;
     }
 }

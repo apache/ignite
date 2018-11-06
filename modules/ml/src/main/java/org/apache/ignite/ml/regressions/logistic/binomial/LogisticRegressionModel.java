@@ -17,13 +17,12 @@
 
 package org.apache.ignite.ml.regressions.logistic.binomial;
 
+import java.io.Serializable;
+import java.util.Objects;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.Vector;
-
-import java.io.Serializable;
-import java.util.Objects;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Logistic regression (logit model) is a generalized linear model used for binomial regression.
@@ -132,6 +131,7 @@ public class LogisticRegressionModel implements Model<Vector, Double>, Exportabl
 
     /** {@inheritDoc} */
     @Override public Double apply(Vector input) {
+
         final double res = sigmoid(input.dot(weights) + intercept);
 
         if (isKeepingRawLabels)

@@ -44,15 +44,17 @@ import org.apache.ignite.internal.processors.cache.distributed.IgnitePessimistic
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheAssignmentNodeRestartsTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxLabelTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxMultiCacheAsyncOpsTest;
-import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticPrepareOnUnstableTopologyTest;
-import org.apache.ignite.internal.processors.cache.transactions.TxRollbackAsyncWithPersistenceTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxOnCachesStartTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticOnPartitionExchangeTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticPrepareOnUnstableTopologyTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxRollbackAsyncNearCacheTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxRollbackAsyncTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxRollbackAsyncWithPersistenceTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutNearCacheTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutNoDeadlockDetectionTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutTest;
-import org.apache.ignite.internal.processors.cache.transactions.TxRollbackAsyncNearCacheTest;
-import org.apache.ignite.internal.processors.cache.transactions.TxRollbackAsyncTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTopologyChangeTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxWithSmallTimeoutAndContentionOneKeyTest;
 
 /**
  * Test suite.
@@ -77,6 +79,7 @@ public class IgniteCacheTestSuite6 extends TestSuite {
         suite.addTestSuite(TxRollbackOnTimeoutTest.class);
         suite.addTestSuite(TxRollbackOnTimeoutNoDeadlockDetectionTest.class);
         suite.addTestSuite(TxRollbackOnTimeoutNearCacheTest.class);
+        suite.addTestSuite(TxWithSmallTimeoutAndContentionOneKeyTest.class);
         suite.addTestSuite(IgniteCacheThreadLocalTxTest.class);
         suite.addTestSuite(TxRollbackAsyncTest.class);
         suite.addTestSuite(TxRollbackAsyncNearCacheTest.class);
@@ -88,6 +91,8 @@ public class IgniteCacheTestSuite6 extends TestSuite {
         suite.addTestSuite(TxLabelTest.class);
 
         suite.addTestSuite(TxMultiCacheAsyncOpsTest.class);
+
+        suite.addTestSuite(TxOnCachesStartTest.class);
 
         suite.addTestSuite(IgnitePdsCacheAssignmentNodeRestartsTest.class);
 

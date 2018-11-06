@@ -41,19 +41,19 @@ import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_D
  *                 <list>
  *                      <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
  *                          <property name="name" value="Default_Region"/>
- *                          <property name="initialSize" value="#{100 * 1024 * 1024}"/>
+ *                          <property name="initialSize" value="#{100L * 1024 * 1024}"/>
  *                      </bean>
  *
  *                      <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
  *                          <property name="name" value="20MB_Region_Eviction"/>
- *                          <property name="initialSize" value="#{20 * 1024 * 1024}"/>
+ *                          <property name="initialSize" value="#{20L * 1024 * 1024}"/>
  *                          <property name="pageEvictionMode" value="RANDOM_2_LRU"/>
  *                      </bean>
  *
  *                      <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
  *                          <property name="name" value="25MB_Region_Swapping"/>
- *                          <property name="initialSize" value="#{25 * 1024 * 1024}"/>
- *                          <property name="initialSize" value="#{100 * 1024 * 1024}"/>
+ *                          <property name="initialSize" value="#{25L * 1024 * 1024}"/>
+ *                          <property name="maxSize" value="#{100L * 1024 * 1024}"/>
  *                          <property name="swapFilePath" value="memoryPolicyExampleSwap"/>
  *                      </bean>
  *                  </list>

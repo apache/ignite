@@ -29,7 +29,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Abstract class for REST protocols tests.
  */
-abstract class AbstractRestProcessorSelfTest extends GridCommonAbstractTest {
+public abstract class AbstractRestProcessorSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -47,11 +47,6 @@ abstract class AbstractRestProcessorSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         assert grid(0).cluster().nodes().size() == gridCount();
     }
@@ -60,7 +55,7 @@ abstract class AbstractRestProcessorSelfTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         jcache().clear();
 
-        assertTrue(jcache().localSize() == 0);
+        assertEquals(0, jcache().localSize());
     }
 
     /** {@inheritDoc} */

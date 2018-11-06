@@ -124,15 +124,15 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
             new DataStorageConfiguration().setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
                     .setPersistenceEnabled(true)
-                    .setMaxSize(100 * 1024 * 1024)
-                    .setInitialSize(100 * 1024 * 1024)
+                    .setMaxSize(100L * 1024 * 1024)
+                    .setInitialSize(100L * 1024 * 1024)
             )
             .setDataRegionConfigurations(
                 new DataRegionConfiguration()
                 .setName("memory")
                 .setPersistenceEnabled(false)
-                .setMaxSize(100 * 1024 * 1024)
-                .setInitialSize(100 * 1024 * 1024)
+                .setMaxSize(100L * 1024 * 1024)
+                .setInitialSize(100L * 1024 * 1024)
             )
             .setWalMode(WALMode.LOG_ONLY)
         );

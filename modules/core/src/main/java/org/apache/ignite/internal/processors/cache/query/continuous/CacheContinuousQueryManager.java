@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
@@ -124,6 +125,28 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
     /** Ordered topic prefix. */
     private String topicPrefix;
 
+    /** Cancelable future task for backup cleaner */
+    private GridTimeoutProcessor.CancelableTask cancelableTask;
+
+    /** {@inheritDoc} */
+    @Override protected void stop0(boolean cancel, boolean destroy) {
+        if (cancelableTask != null) {
+            cancelableTask.close();
+
+            cancelableTask = null;
+        }
+    }
+
+    /**
+     * USED ONLY FOR TESTING.
+     *
+     * @return Internal cancelable future task for backup cleaner.
+     */
+    /*@java.test.only*/
+    protected GridTimeoutProcessor.CancelableTask getCancelableTask() {
+        return cancelableTask;
+    }
+
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
         // Append cache name to the topic.
@@ -140,7 +163,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                     }
                 });
 
-            cctx.time().schedule(new BackupCleaner(lsnrs, cctx.kernalContext()), BACKUP_ACK_FREQ, BACKUP_ACK_FREQ);
+            cancelableTask = cctx.time().schedule(new BackupCleaner(lsnrs, cctx.kernalContext()), BACKUP_ACK_FREQ, BACKUP_ACK_FREQ);
         }
     }
 
@@ -532,6 +555,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
      * @param rmtFilter Remote filter.
      * @param loc Local flag.
      * @param notifyExisting Notify existing flag.
+     * @param sync Synchronous flag.
      * @return Continuous routine ID.
      * @throws IgniteCheckedException In case of error.
      */
@@ -539,7 +563,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         final CacheEntryEventSerializableFilter rmtFilter,
         final boolean loc,
         final boolean notifyExisting,
-        final boolean ignoreClassNotFound)
+        final boolean ignoreClassNotFound,
+        final boolean sync)
         throws IgniteCheckedException
     {
         return executeQuery0(
@@ -552,7 +577,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                         locLsnr,
                         rmtFilter,
                         true,
-                        false,
+                        sync,
                         true,
                         ignoreClassNotFound);
                 }
@@ -703,7 +728,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         catch (IgniteCheckedException e) {
             log.warning("Failed to start continuous query.", e);
 
-            cctx.kernalContext().continuous().stopRoutine(id);
+            if (id != null)
+                cctx.kernalContext().continuous().stopRoutine(id);
 
             throw new IgniteCheckedException("Failed to start continuous query.", e);
         }

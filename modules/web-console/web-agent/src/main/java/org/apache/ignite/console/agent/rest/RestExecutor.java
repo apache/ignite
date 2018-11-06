@@ -20,14 +20,11 @@ package org.apache.ignite.console.agent.rest;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.net.ConnectException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -39,24 +36,20 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import okhttp3.Dispatcher;
 import okhttp3.FormBody;
 import okhttp3.HttpUrl;
-import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
-import okhttp3.RequestBody;
 import okhttp3.Response;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.console.demo.AgentClusterDemo;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.slf4j.LoggerFactory;
 
 import static com.fasterxml.jackson.core.JsonToken.END_ARRAY;
 import static com.fasterxml.jackson.core.JsonToken.END_OBJECT;
 import static com.fasterxml.jackson.core.JsonToken.START_ARRAY;
+import static org.apache.ignite.console.agent.AgentUtils.trustManager;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_AUTH_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
@@ -64,19 +57,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS
 /**
  * API to translate REST requests to Ignite cluster.
  */
-public class RestExecutor {
-    /** */
-    private static final IgniteProductVersion IGNITE_2_1 = IgniteProductVersion.fromString("2.1.0");
-
-    /** */
-    private static final IgniteProductVersion IGNITE_2_3 = IgniteProductVersion.fromString("2.3.0");
-
-    /** Unique Visor key to get events last order. */
-    private static final String EVT_LAST_ORDER_KEY = "WEB_AGENT_" + UUID.randomUUID().toString();
-
-    /** Unique Visor key to get events throttle counter. */
-    private static final String EVT_THROTTLE_CNTR_KEY = "WEB_AGENT_" + UUID.randomUUID().toString();
-
+public class RestExecutor implements AutoCloseable {
     /** */
     private static final IgniteLogger log = new Slf4jLogger(LoggerFactory.getLogger(RestExecutor.class));
 
@@ -86,33 +67,45 @@ public class RestExecutor {
     /** */
     private final OkHttpClient httpClient;
 
-    /** Node URLs. */
-    private Set<String> nodeUrls = new LinkedHashSet<>();
-
-    /** Latest alive node URL. */
-    private volatile String latestNodeUrl;
+    /** Index of alive node URI. */
+    private Map<List<String>, Integer> startIdxs = U.newHashMap(2);
 
     /**
      * Default constructor.
      */
-    public RestExecutor(String nodeUrl) {
-        Collections.addAll(nodeUrls, nodeUrl.split(","));
-
+    public RestExecutor() {
         Dispatcher dispatcher = new Dispatcher();
         
         dispatcher.setMaxRequests(Integer.MAX_VALUE);
         dispatcher.setMaxRequestsPerHost(Integer.MAX_VALUE);
 
-        httpClient = new OkHttpClient.Builder()
+        OkHttpClient.Builder builder = new OkHttpClient.Builder()
             .readTimeout(0, TimeUnit.MILLISECONDS)
-            .dispatcher(dispatcher)
-            .build();
+            .dispatcher(dispatcher);
+
+        // Workaround for use self-signed certificate
+        if (Boolean.getBoolean("trust.all")) {
+            try {
+                SSLContext ctx = SSLContext.getInstance("TLS");
+
+                // Create an SSLContext that uses our TrustManager
+                ctx.init(null, new TrustManager[] {trustManager()}, null);
+
+                builder.sslSocketFactory(ctx.getSocketFactory(), trustManager());
+
+                builder.hostnameVerifier((hostname, session) -> true);
+            } catch (Exception ignored) {
+                LT.warn(log, "Failed to initialize the Trust Manager for \"-Dtrust.all\" option to skip certificate validation.");
+            }
+        }
+
+        httpClient = builder.build();
     }
 
     /**
      * Stop HTTP client.
      */
-    public void stop() {
+    @Override public void close() {
         if (httpClient != null) {
             httpClient.dispatcher().executorService().shutdown();
 
@@ -121,28 +114,37 @@ public class RestExecutor {
     }
 
     /** */
-    private RestResult sendRequest0(String nodeUrl, boolean demo, String path, Map<String, Object> params,
-        Map<String, Object> headers, String body) throws IOException {
-        if (demo && AgentClusterDemo.getDemoUrl() == null) {
-            try {
-                AgentClusterDemo.tryStart().await();
-            }
-            catch (InterruptedException ignore) {
-                throw new IllegalStateException("Failed to send request because of embedded node for demo mode is not started yet.");
+    private RestResult parseResponse(Response res) throws IOException {
+        if (res.isSuccessful()) {
+            RestResponseHolder holder = MAPPER.readValue(res.body().byteStream(), RestResponseHolder.class);
+
+            int status = holder.getSuccessStatus();
+
+            switch (status) {
+                case STATUS_SUCCESS:
+                    return RestResult.success(holder.getResponse(), holder.getSessionToken());
+
+                default:
+                    return RestResult.fail(status, holder.getError());
             }
         }
 
-        String url = demo ? AgentClusterDemo.getDemoUrl() : nodeUrl;
+        if (res.code() == 401)
+            return RestResult.fail(STATUS_AUTH_FAILED, "Failed to authenticate in cluster. " +
+                "Please check agent\'s login and password or node port.");
 
+        if (res.code() == 404)
+            return RestResult.fail(STATUS_FAILED, "Failed connect to cluster.");
+
+        return RestResult.fail(STATUS_FAILED, "Failed to execute REST command: " + res.message());
+    }
+
+    /** */
+    private RestResult sendRequest(String url, Map<String, Object> params, Map<String, Object> headers) throws IOException {
         HttpUrl httpUrl = HttpUrl.parse(url);
 
-        if (httpUrl == null)
-            throw new IllegalStateException("Failed to send request because of node URL is invalid: " + url);
-
-        HttpUrl.Builder urlBuilder = httpUrl.newBuilder();
-
-        if (path != null)
-            urlBuilder.addPathSegment(path);
+        HttpUrl.Builder urlBuilder = httpUrl.newBuilder()
+            .addPathSegment("ignite");
 
         final Request.Builder reqBuilder = new Request.Builder();
 
@@ -152,199 +154,51 @@ public class RestExecutor {
                     reqBuilder.addHeader(entry.getKey(), entry.getValue().toString());
         }
 
-        if (body != null) {
-            MediaType contentType = MediaType.parse("text/plain");
+        FormBody.Builder bodyParams = new FormBody.Builder();
 
-            reqBuilder.post(RequestBody.create(contentType, body));
-        }
-        else {
-            FormBody.Builder formBody = new FormBody.Builder();
-
-            if (params != null) {
-                for (Map.Entry<String, Object> entry : params.entrySet()) {
-                    if (entry.getValue() != null)
-                        formBody.add(entry.getKey(), entry.getValue().toString());
-                }
+        if (params != null) {
+            for (Map.Entry<String, Object> entry : params.entrySet()) {
+                if (entry.getValue() != null)
+                    bodyParams.add(entry.getKey(), entry.getValue().toString());
             }
-
-            reqBuilder.post(formBody.build());
         }
 
-        reqBuilder.url(urlBuilder.build());
+        reqBuilder.url(urlBuilder.build())
+            .post(bodyParams.build());
 
         try (Response resp = httpClient.newCall(reqBuilder.build()).execute()) {
-            if (resp.isSuccessful()) {
-                RestResponseHolder res = MAPPER.readValue(resp.body().byteStream(), RestResponseHolder.class);
+            return parseResponse(resp);
+        }
+    }
 
-                int status = res.getSuccessStatus();
+    /** */
+    public RestResult sendRequest(List<String> nodeURIs, Map<String, Object> params, Map<String, Object> headers) throws IOException {
+        Integer startIdx = startIdxs.getOrDefault(nodeURIs, 0);
 
-                switch (status) {
-                    case STATUS_SUCCESS:
-                        return RestResult.success(res.getResponse());
+        for (int i = 0;  i < nodeURIs.size(); i++) {
+            Integer currIdx = (startIdx + i) % nodeURIs.size();
 
-                    default:
-                        return RestResult.fail(status, res.getError());
-                }
+            String nodeUrl = nodeURIs.get(currIdx);
+
+            try {
+                RestResult res = sendRequest(nodeUrl, params, headers);
+
+                LT.info(log, "Connected to cluster [url=" + nodeUrl + "]");
+
+                startIdxs.put(nodeURIs, currIdx);
+
+                return res;
             }
-
-            if (resp.code() == 401)
-                return RestResult.fail(STATUS_AUTH_FAILED, "Failed to authenticate in cluster. " +
-                    "Please check agent\'s login and password or node port.");
-
-            if (resp.code() == 404)
-                return RestResult.fail(STATUS_FAILED, "Failed connect to cluster.");
-
-            return RestResult.fail(STATUS_FAILED, "Failed to execute REST command: " + resp.message());
-        }
-    }
-
-    /**
-     * Send request to cluster.
-     *
-     * @param demo {@code true} If demo mode.
-     * @param path Request path.
-     * @param params Request params.
-     * @param headers Request headers.
-     * @param body Request body.
-     * @return Request result.
-     * @throws IOException If failed to process request.
-     */
-    private RestResult sendRequest(boolean demo, String path, Map<String, Object> params,
-        Map<String, Object> headers, String body) throws IOException {
-        String url = latestNodeUrl;
-
-        try {
-            if (F.isEmpty(url)) {
-                Iterator<String> it = nodeUrls.iterator();
-
-                while (it.hasNext()) {
-                    String nodeUrl = it.next();
-
-                    try {
-                        RestResult res = sendRequest0(nodeUrl, demo, path, params, headers, body);
-
-                        log.info("Connected to cluster [url=" + nodeUrl + "]");
-
-                        latestNodeUrl = nodeUrl;
-
-                        return res;
-                    }
-                    catch (ConnectException ignored) {
-                        String msg = "Failed connect to cluster [url=" + nodeUrl + ", parameters=" + params + "]";
-
-                        LT.warn(log, msg);
-
-                        if (!it.hasNext())
-                            throw new ConnectException(msg);
-                    }
-                }
-
-                throw new ConnectException("Failed connect to cluster [urls=" + nodeUrls + ", parameters=" + params + "]");
-            }
-            else {
-                try {
-                    return sendRequest0(url, demo, path, params, headers, body);
-                }
-                catch (ConnectException e) {
-                    latestNodeUrl = null;
-
-                    if (nodeUrls.size() > 1)
-                        return sendRequest(demo, path, params, headers, body);
-
-                    throw e;
-                }
-            }        }
-        catch (ConnectException ce) {
-            LT.warn(log, "Failed connect to cluster. " +
-                "Please ensure that nodes have [ignite-rest-http] module in classpath " +
-                "(was copied from libs/optional to libs folder).");
-
-            throw ce;
-        }
-    }
-
-    /**
-     * @param demo Is demo node request.
-     * @param path Path segment.
-     * @param params Params.
-     * @param headers Headers.
-     * @param body Body.
-     */
-    public RestResult execute(boolean demo, String path, Map<String, Object> params,
-        Map<String, Object> headers, String body) {
-        if (log.isDebugEnabled())
-            log.debug("Start execute REST command [uri=/" + (path == null ? "" : path) +
-                ", parameters=" + params + "]");
-
-        try {
-            return sendRequest(demo, path, params, headers, body);
-        }
-        catch (Exception e) {
-            U.error(log, "Failed to execute REST command [uri=/" + (path == null ? "" : path) +
-                ", parameters=" + params + "]", e);
-
-            return RestResult.fail(404, e.getMessage());
-        }
-    }
-
-    /**
-     * @param demo {@code true} in case of demo mode.
-     * @param full Flag indicating whether to collect metrics or not.
-     * @throws IOException If failed to collect topology.
-     */
-    public RestResult topology(boolean demo, boolean full) throws IOException {
-        Map<String, Object> params = new HashMap<>(3);
-
-        params.put("cmd", "top");
-        params.put("attr", true);
-        params.put("mtr", full);
-
-        return sendRequest(demo, "ignite", params, null, null);
-    }
-
-    /**
-     * @param ver Cluster version.
-     * @param nid Node ID.
-     * @return Cluster active state.
-     * @throws IOException If failed to collect cluster active state.
-     */
-    public boolean active(IgniteProductVersion ver, UUID nid) throws IOException {
-        Map<String, Object> params = new HashMap<>();
-
-        boolean v23 = ver.compareTo(IGNITE_2_3) >= 0;
-
-        if (v23)
-            params.put("cmd", "currentState");
-        else {
-            params.put("cmd", "exe");
-            params.put("name", "org.apache.ignite.internal.visor.compute.VisorGatewayTask");
-            params.put("p1", nid);
-            params.put("p2", "org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTask");
-            params.put("p3", "org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTaskArg");
-            params.put("p4", false);
-            params.put("p5", EVT_LAST_ORDER_KEY);
-            params.put("p6", EVT_THROTTLE_CNTR_KEY);
-
-            if (ver.compareTo(IGNITE_2_1) >= 0)
-                params.put("p7", false);
-            else {
-                params.put("p7", 10);
-                params.put("p8", false);
+            catch (ConnectException ignored) {
+                // No-op.
             }
         }
 
-        RestResult res = sendRequest(false, "ignite", params, null, null);
+        LT.warn(log, "Failed connect to cluster. " +
+            "Please ensure that nodes have [ignite-rest-http] module in classpath " +
+            "(was copied from libs/optional to libs folder).");
 
-        switch (res.getStatus()) {
-            case STATUS_SUCCESS:
-                if (v23)
-                    return Boolean.valueOf(res.getData());
-
-                return res.getData().contains("\"active\":true");
-
-            default:
-                throw new IOException(res.getError());
-        }
+        throw new ConnectException("Failed connect to cluster [urls=" + nodeURIs + ", parameters=" + params + "]");
     }
 
     /**
@@ -361,7 +215,7 @@ public class RestExecutor {
         private String res;
 
         /** Session token string representation. */
-        private String sesTokStr;
+        private String sesTok;
 
         /**
          * @return {@code True} if this request was successful.
@@ -410,14 +264,14 @@ public class RestExecutor {
          * @return String representation of session token.
          */
         public String getSessionToken() {
-            return sesTokStr;
+            return sesTok;
         }
 
         /**
          * @param sesTokStr String representation of session token.
          */
         public void setSessionToken(String sesTokStr) {
-            this.sesTokStr = sesTokStr;
+            this.sesTok = sesTokStr;
         }
     }
 

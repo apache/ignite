@@ -17,18 +17,6 @@
 
 package org.apache.ignite.spi.discovery.tcp.internal;
 
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.P1;
-import org.apache.ignite.internal.util.typedef.PN;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteProductVersion;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -40,6 +28,17 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.internal.util.typedef.PN;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteProductVersion;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Convenient way to represent topology for {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}
@@ -499,6 +498,42 @@ public class TcpDiscoveryNodesRing {
             }
 
             return iter.hasNext() ? iter.next() : F.first(filtered);
+        }
+        finally {
+            rwLock.readLock().unlock();
+        }
+    }
+
+    /**
+     * Finds previous node in the topology filtering excluded nodes from search.
+     * <p>
+     * This may be used when detecting and handling nodes failure.
+     *
+     * @param excluded Nodes to exclude from the search (optional). If provided,
+     * cannot contain local node.
+     * @return Previous node or {@code null} if all nodes were filtered out or
+     * topology contains less than two nodes.
+     */
+    @Nullable public TcpDiscoveryNode previousNode(@Nullable Collection<TcpDiscoveryNode> excluded) {
+        rwLock.readLock().lock();
+
+        try {
+            Collection<TcpDiscoveryNode> filtered = serverNodes(excluded);
+
+            if (filtered.size() < 2)
+                return null;
+
+            TcpDiscoveryNode previous = null;
+
+            // Get last node that is previous in a ring
+            for (TcpDiscoveryNode node : filtered) {
+                if (locNode.equals(node) && previous != null)
+                    break;
+
+                previous = node;
+            }
+
+            return previous;
         }
         finally {
             rwLock.readLock().unlock();

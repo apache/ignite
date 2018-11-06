@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalP
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
@@ -115,7 +116,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
         dbCfg.setWalHistorySize(WAL_HIST_SIZE);
 
         dbCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-            .setMaxSize(100 * 1024 * 1024)
+            .setMaxSize(100L * 1024 * 1024)
             .setPersistenceEnabled(true));
 
         if (checkpointFreq != null)
@@ -500,7 +501,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
                 dbMgr.waitForCheckpoint("test");
             }
 
-            GridCacheDatabaseSharedManager.CheckpointHistory hist = dbMgr.checkpointHistory();
+            CheckpointHistory hist = dbMgr.checkpointHistory();
 
             assertTrue(hist.checkpoints().size() <= WAL_HIST_SIZE);
 

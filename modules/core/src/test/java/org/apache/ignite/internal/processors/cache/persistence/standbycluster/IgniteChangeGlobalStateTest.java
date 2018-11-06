@@ -40,6 +40,13 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
  *
  */
 public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9004");
+
+        super.beforeTest();
+    }
+
     /**
      * @throws Exception if fail.
      */
@@ -543,6 +550,8 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
      * @throws Exception If failed.
      */
     public void testActivateAfterFailGetLock() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1094");
+
         Ignite ig1P = primary(0);
         Ignite ig2P = primary(1);
         Ignite ig3P = primary(2);

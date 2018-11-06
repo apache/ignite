@@ -104,10 +104,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
-
-        super.afterTestsStopped();
     }
-
 
     /**
      * @throws Exception If failed.
@@ -304,6 +301,8 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
             startGrid(0);
 
             GridStringLogger strLog = this.strLog = new GridStringLogger();
+
+            strLog.logLength(65536);
 
             startGrid(1);
 

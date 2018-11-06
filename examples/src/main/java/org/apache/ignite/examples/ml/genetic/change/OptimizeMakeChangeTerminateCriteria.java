@@ -76,8 +76,8 @@ public class OptimizeMakeChangeTerminateCriteria implements ITerminateCriteria {
      */
     private void printCoins(List<Gene> genes) {
         for (Gene gene : genes) {
-            igniteLogger.info("Coin Type: " + ((Coin)gene.getValue()).getCoinType().toString());
-            igniteLogger.info("Number of Coins: " + ((Coin)gene.getValue()).getNumberOfCoins());
+            igniteLogger.info("Coin Type: " + ((Coin)gene.getVal()).getCoinType().toString());
+            igniteLogger.info("Number of Coins: " + ((Coin)gene.getVal()).getNumberOfCoins());
         }
 
     }

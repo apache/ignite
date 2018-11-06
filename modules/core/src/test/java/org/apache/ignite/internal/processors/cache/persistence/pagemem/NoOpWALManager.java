@@ -102,6 +102,11 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
+    @Override public void cleanupWalDirectories() throws IgniteCheckedException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public void start(GridCacheSharedContext cctx) throws IgniteCheckedException {
         // No-op.
     }
@@ -144,5 +149,10 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     /** {@inheritDoc} */
     @Override public int walArchiveSegments() {
         return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long lastArchivedSegment() {
+        return -1L;
     }
 }

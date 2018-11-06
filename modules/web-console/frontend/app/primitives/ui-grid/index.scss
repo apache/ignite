@@ -17,6 +17,14 @@
 
 @import '../../../public/stylesheets/variables';
 
+// Use this class to control grid header height
+.ui-grid-ignite__panel {
+    $panel-height: 64px;
+    $title-height: 36px;
+    padding-top: ($panel-height - $title-height) / 2 !important;
+    padding-bottom: ($panel-height - $title-height) / 2 !important;
+}
+
 .ui-grid.ui-grid--ignite {
     $height: 46px;
 
@@ -147,6 +155,10 @@
     }
 
     .ui-grid-header--subcategories {
+        .ui-grid-header-canvas {
+            background-color: white;
+        }
+
         .ui-grid-header-span.ui-grid-header-cell {
             background: initial;
 

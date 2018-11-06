@@ -157,7 +157,7 @@ public class IndexStorageSelfTest extends GridCommonAbstractTest {
         DirectMemoryProvider provider = new MappedFileMemoryProvider(log(), allocationPath);
 
         DataRegionConfiguration plcCfg = new DataRegionConfiguration()
-            .setMaxSize(30 * 1024 * 1024).setInitialSize(30 * 1024 * 1024);
+            .setMaxSize(30L * 1024 * 1024).setInitialSize(30L * 1024 * 1024);
 
         return new PageMemoryNoStoreImpl(
             log,

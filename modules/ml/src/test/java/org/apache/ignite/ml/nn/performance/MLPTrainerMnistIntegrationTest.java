@@ -17,26 +17,25 @@
 
 package org.apache.ignite.ml.nn.performance;
 
+import java.io.IOException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.VectorUtils;
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
 import org.apache.ignite.ml.nn.Activators;
 import org.apache.ignite.ml.nn.MLPTrainer;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
+import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.optimization.LossFunctions;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
-import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.util.MnistUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.io.IOException;
 
 /**
  * Tests {@link MLPTrainer} on the MNIST dataset that require to start the whole Ignite infrastructure.
@@ -106,7 +105,7 @@ public class MLPTrainerMnistIntegrationTest extends GridCommonAbstractTest {
         MultilayerPerceptron mdl = trainer.fit(
             ignite,
             trainingSet,
-            (k, v) -> v.getPixels(),
+            (k, v) -> VectorUtils.of(v.getPixels()),
             (k, v) -> VectorUtils.num2Vec(v.getLabel(), 10).getStorage().data()
         );
         System.out.println("Training completed in " + (System.currentTimeMillis() - start) + "ms");
@@ -115,7 +114,7 @@ public class MLPTrainerMnistIntegrationTest extends GridCommonAbstractTest {
         int incorrectAnswers = 0;
 
         for (MnistUtils.MnistLabeledImage e : MnistMLPTestUtil.loadTestSet(1_000)) {
-            Matrix input = new DenseLocalOnHeapMatrix(new double[][]{e.getPixels()});
+            Matrix input = new DenseMatrix(new double[][]{e.getPixels()});
             Matrix outputMatrix = mdl.apply(input);
 
             int predicted = (int) VectorUtils.vec2Num(outputMatrix.getRow(0));

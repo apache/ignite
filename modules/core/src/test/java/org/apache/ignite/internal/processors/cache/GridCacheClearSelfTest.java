@@ -71,11 +71,6 @@ public class GridCacheClearSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */

@@ -107,13 +107,6 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 10 * 60_000;
     }

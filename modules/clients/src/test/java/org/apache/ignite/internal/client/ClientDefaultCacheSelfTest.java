@@ -84,8 +84,6 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopGrid();
-
         System.clearProperty(IGNITE_JETTY_PORT);
     }
 

@@ -31,6 +31,7 @@ import org.apache.ignite.ml.dataset.DatasetFactory;
 import org.apache.ignite.ml.dataset.primitive.DatasetWrapper;
 import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 
 /**
  * Example that shows how to implement your own algorithm (gradient descent trainer for linear regression) which uses
@@ -65,7 +66,7 @@ public class AlgorithmSpecificDatasetExample {
                 persons,
                 (upstream, upstreamSize) -> new AlgorithmSpecificPartitionContext(),
                 new SimpleLabeledDatasetDataBuilder<Integer, Person, AlgorithmSpecificPartitionContext>(
-                    (k, v) -> new double[] {v.getAge()},
+                    (k, v) -> VectorUtils.of(v.getAge()),
                     (k, v) -> new double[] {v.getSalary()}
                 ).andThen((data, ctx) -> {
                     double[] features = data.getFeatures();

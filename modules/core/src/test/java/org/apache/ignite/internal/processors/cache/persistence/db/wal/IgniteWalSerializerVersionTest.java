@@ -68,7 +68,7 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setPersistenceEnabled(true)
-                .setMaxSize(100 * 1024 * 1024)));
+                .setMaxSize(100L * 1024 * 1024)));
 
         return cfg;
     }

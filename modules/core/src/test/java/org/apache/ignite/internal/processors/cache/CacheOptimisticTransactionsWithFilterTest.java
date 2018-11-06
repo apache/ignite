@@ -82,13 +82,6 @@ public class CacheOptimisticTransactionsWithFilterTest extends GridCommonAbstrac
         client = false;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @return Number of server nodes. In addition 2 clients are started.
      */

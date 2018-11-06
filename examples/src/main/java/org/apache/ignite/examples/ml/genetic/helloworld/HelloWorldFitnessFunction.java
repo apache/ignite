@@ -54,7 +54,7 @@ public class HelloWorldFitnessFunction implements IFitnessFunction {
         double matches = 0;
 
         for (int i = 0; i < genes.size(); i++) {
-            if (((Character)(genes.get(i).getValue())).equals(targetString.charAt(i))) {
+            if (((Character)(genes.get(i).getVal())).equals(targetString.charAt(i))) {
                 matches = matches + 1;
             }
         }

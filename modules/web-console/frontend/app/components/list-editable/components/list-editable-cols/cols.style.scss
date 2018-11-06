@@ -21,6 +21,7 @@
 
     margin-left: 10px;
     margin-right: $remove-column-width;
+    transition: 0.2s opacity;
 
     &__multiple-cols {
         margin-left: $index-column-width;
@@ -33,7 +34,7 @@
     }
 
     [ignite-icon='info'] {
-        @import 'public/stylesheets/variables';
+        @import '../../../../../public/stylesheets/variables';
 
         margin-left: 5px;
         color: $ignite-brand-success;
@@ -43,9 +44,14 @@
         .ignite-form-field__label {
             display: none;
         }
-        
+
         .le-row-item-view:nth-last-child(2) {
             display: none;
         }
+    }
+
+    &[disabled] {
+        opacity: 0.5;
+        cursor: default;
     }
 }

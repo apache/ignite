@@ -31,7 +31,7 @@ public class RecordSerializerFactoryImpl implements RecordSerializerFactory {
     private GridCacheSharedContext cctx;
 
     /** Write pointer. */
-    private boolean writePointer;
+    private boolean needWritePointer;
 
     /** Read record filter. */
     private IgniteBiPredicate<WALRecord.RecordType, WALPointer> recordDeserializeFilter;
@@ -49,7 +49,17 @@ public class RecordSerializerFactoryImpl implements RecordSerializerFactory {
      * @param cctx Cctx.
      */
     public RecordSerializerFactoryImpl(GridCacheSharedContext cctx) {
+        this(cctx, null);
+    }
+    /**
+     * @param cctx Cctx.
+     */
+    public RecordSerializerFactoryImpl(
+        GridCacheSharedContext cctx,
+        IgniteBiPredicate<WALRecord.RecordType, WALPointer> readTypeFilter
+    ) {
         this.cctx = cctx;
+        this.recordDeserializeFilter = readTypeFilter;
     }
 
     /** {@inheritDoc} */
@@ -59,14 +69,24 @@ public class RecordSerializerFactoryImpl implements RecordSerializerFactory {
 
         switch (ver) {
             case 1:
-                return new RecordV1Serializer(new RecordDataV1Serializer(cctx),
-                    writePointer, marshalledMode, skipPositionCheck, recordDeserializeFilter);
+                return new RecordV1Serializer(
+                    new RecordDataV1Serializer(cctx),
+                    needWritePointer,
+                    marshalledMode,
+                    skipPositionCheck,
+                    recordDeserializeFilter);
 
             case 2:
-                RecordDataV2Serializer dataV2Serializer = new RecordDataV2Serializer(new RecordDataV1Serializer(cctx));
+                RecordDataV2Serializer dataV2Serializer = new RecordDataV2Serializer(
+                    new RecordDataV1Serializer(cctx));
 
-                return new RecordV2Serializer(dataV2Serializer,
-                    writePointer, marshalledMode, skipPositionCheck, recordDeserializeFilter);
+                return new RecordV2Serializer(
+                    dataV2Serializer,
+                    needWritePointer,
+                    marshalledMode,
+                    skipPositionCheck,
+                    recordDeserializeFilter
+                );
 
             default:
                 throw new IgniteCheckedException("Failed to create a serializer with the given version " +
@@ -78,12 +98,12 @@ public class RecordSerializerFactoryImpl implements RecordSerializerFactory {
      * @return Write pointer.
      */
     public boolean writePointer() {
-        return writePointer;
+        return needWritePointer;
     }
 
     /** {@inheritDoc} */
     @Override public RecordSerializerFactoryImpl writePointer(boolean writePointer) {
-        this.writePointer = writePointer;
+        this.needWritePointer = writePointer;
 
         return this;
     }
@@ -97,7 +117,8 @@ public class RecordSerializerFactoryImpl implements RecordSerializerFactory {
 
     /** {@inheritDoc} */
     @Override public RecordSerializerFactoryImpl recordDeserializeFilter(
-        IgniteBiPredicate<WALRecord.RecordType, WALPointer> readTypeFilter) {
+        IgniteBiPredicate<WALRecord.RecordType, WALPointer> readTypeFilter
+    ) {
         this.recordDeserializeFilter = readTypeFilter;
 
         return this;

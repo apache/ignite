@@ -98,7 +98,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(
-                        new DataRegionConfiguration().setMaxSize(100 * 1024 * 1024).setPersistenceEnabled(true))
+                        new DataRegionConfiguration().setMaxSize(100L * 1024 * 1024).setPersistenceEnabled(true))
                 .setWalMode(WALMode.LOG_ONLY)
                 .setWalCompactionEnabled(false)
                 .setWalSegmentSize(WAL_SEGMENT_SIZE)
@@ -429,11 +429,12 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void write(byte[] buf, int off, int len) throws IOException {
-            super.write(buf, off, len);
+        @Override public int write(byte[] buf, int off, int len) throws IOException {
+            final int num = super.write(buf, off, len);
             availableSpaceBytes.addAndGet(-len);
             if (availableSpaceBytes.get() < 0)
                 throw new IOException("Not enough space!");
+            return num;
         }
 
         /** {@inheritDoc} */

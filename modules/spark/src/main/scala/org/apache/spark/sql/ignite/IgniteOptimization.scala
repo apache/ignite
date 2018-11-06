@@ -63,7 +63,7 @@ object IgniteOptimization extends Rule[LogicalPlan] with Logging {
         plan.transformUp {
             //We found basic node to transform.
             //We create new accumulator and going to the upper layers.
-            case LogicalRelation(igniteSqlRelation: IgniteSQLRelation[_, _], output, _catalogTable) ⇒
+            case LogicalRelation(igniteSqlRelation: IgniteSQLRelation[_, _], output, _catalogTable, _) ⇒
                 //Clear flag to optimize each statement separately
                 stepSkipped = false
 
@@ -352,7 +352,8 @@ object IgniteOptimization extends Rule[LogicalPlan] with Logging {
                 new LogicalRelation (
                     relation = IgniteSQLAccumulatorRelation(acc),
                     output = acc.outputExpressions.map(toAttributeReference(_, Seq.empty)),
-                    catalogTable = acc.igniteQueryContext.catalogTable)
+                    catalogTable = acc.igniteQueryContext.catalogTable,
+                    false)
         }
 
     /**
@@ -407,19 +408,16 @@ object IgniteOptimization extends Rule[LogicalPlan] with Logging {
                                     nullable = found.nullable,
                                     metadata = found.metadata)(
                                     exprId = found.exprId,
-                                    qualifier = found.qualifier,
-                                    isGenerated = found.isGenerated),
+                                    qualifier = found.qualifier),
                                 alias.name) (
                                 exprId = alias.exprId,
                                 qualifier = alias.qualifier,
-                                explicitMetadata = alias.explicitMetadata,
-                                isGenerated = alias.isGenerated).asInstanceOf[T]
+                                explicitMetadata = alias.explicitMetadata).asInstanceOf[T]
 
                         case attr: AttributeReference ⇒
                             attr.copy(name = found.name)(
                                 exprId = found.exprId,
-                                qualifier = found.qualifier,
-                                isGenerated = found.isGenerated).asInstanceOf[T]
+                                qualifier = found.qualifier).asInstanceOf[T]
 
                         case _ ⇒ ne.asInstanceOf[T]
                     }

@@ -54,13 +54,6 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
         assertEquals(2, grid(1).cluster().nodes().size());
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @throws Exception If failed.
      */

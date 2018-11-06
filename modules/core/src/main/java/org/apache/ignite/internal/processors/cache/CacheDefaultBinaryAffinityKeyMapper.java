@@ -63,7 +63,7 @@ public class CacheDefaultBinaryAffinityKeyMapper extends GridCacheDefaultAffinit
     /** {@inheritDoc} */
     @Override public Object affinityKey(Object key) {
         try {
-            key = proc.toBinary(key);
+            key = proc.toBinary(key, false);
         }
         catch (IgniteException e) {
             U.error(log, "Failed to marshal key to binary: " + key, e);

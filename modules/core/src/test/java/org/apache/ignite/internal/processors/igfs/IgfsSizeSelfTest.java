@@ -389,7 +389,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkOversize() throws Exception {
-        final long maxSize = 32 * 1024 * 1024;
+        final long maxSize = 32L * 1024 * 1024;
 
         memIgfsdDataPlcSetter = new IgniteInClosure<IgniteConfiguration>() {
             @Override public void apply(IgniteConfiguration cfg) {

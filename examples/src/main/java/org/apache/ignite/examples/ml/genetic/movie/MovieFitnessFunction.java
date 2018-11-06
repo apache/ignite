@@ -18,10 +18,8 @@
 package org.apache.ignite.examples.ml.genetic.movie;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
-import org.apache.ignite.ml.genetic.Chromosome;
 import org.apache.ignite.ml.genetic.Gene;
 import org.apache.ignite.ml.genetic.IFitnessFunction;
 
@@ -69,7 +67,7 @@ public class MovieFitnessFunction implements IFitnessFunction {
         int badSolution = 1;
 
         for (int i = 0; i < genes.size(); i++) {
-            Movie movie = (Movie)genes.get(i).getValue();
+            Movie movie = (Movie)genes.get(i).getVal();
             if (dups.contains(movie.getName())) {
                 badSolution = 0;
             }

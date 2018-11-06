@@ -133,11 +133,6 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
     protected abstract boolean nearEnabled();
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         backups = DFLT_BACKUPS;
         partitions = DFLT_PARTITIONS;

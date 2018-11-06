@@ -52,11 +52,7 @@ namespace ignite
             SqlResult::Type DataQuery::Execute()
             {
                 if (cursor.get())
-                {
-                    diag.AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query cursor is in open state already.");
-
-                    return SqlResult::AI_ERROR;
-                }
+                    InternalClose();
 
                 return MakeRequestExecute();
             }

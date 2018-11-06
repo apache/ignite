@@ -60,7 +60,7 @@ public class DefaultPageSizeBackwardsCompatibilityTest extends GridCommonAbstrac
             memCfg.setPageSize(2048);
 
         DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
-        memPlcCfg.setMaxSize(100 * 1000 * 1000);
+        memPlcCfg.setMaxSize(100L * 1000 * 1000);
         memPlcCfg.setName("dfltDataRegion");
         memPlcCfg.setPersistenceEnabled(true);
 

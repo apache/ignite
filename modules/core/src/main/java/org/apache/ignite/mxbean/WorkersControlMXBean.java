@@ -46,4 +46,34 @@ public interface WorkersControlMXBean {
         "Name of worker to terminate."
     )
     public boolean terminateWorker(String name);
+
+    /**
+     * Stops thread by {@code name}, if exists and unique.
+     *
+     * @param name Thread name.
+     * @return {@code True} if thread has been stopped successfully, {@code false} otherwise.
+     */
+    @MXBeanDescription("Stops thread by unique name.")
+    @MXBeanParametersNames(
+        "name"
+    )
+    @MXBeanParametersDescriptions(
+        "Name of thread to stop."
+    )
+    public boolean stopThreadByUniqueName(String name);
+
+    /**
+     * Stops thread by {@code id}, if exists.
+     *
+     * @param id Thread id.
+     * @return {@code True} if thread has been stopped successfully, {@code false} otherwise.
+     */
+    @MXBeanDescription("Stops thread by id.")
+    @MXBeanParametersNames(
+        "id"
+    )
+    @MXBeanParametersDescriptions(
+        "Id of thread to stop."
+    )
+    public boolean stopThreadById(long id);
 }

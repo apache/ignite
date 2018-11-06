@@ -1896,7 +1896,7 @@ object visor extends VisorTag {
 
         val t = VisorTextTable()
 
-        t #= ("#", "Node ID8(@), IP","Node Type", "Up Time", "CPUs", "CPU Load", "Free Heap")
+        t #= ("#", "Node ID8(@), IP", "Consistent ID", "Node Type", "Up Time", "CPUs", "CPU Load", "Free Heap")
 
         val nodes = ignite.cluster.nodes().toList
 
@@ -1922,6 +1922,7 @@ object visor extends VisorTag {
                 t += (
                     i,
                     nodeId8Addr(n.id),
+                    n.consistentId(),
                     if (n.isClient) "Client" else "Server",
                     X.timeSpan2HMS(m.getUpTime),
                     n.metrics.getTotalCpus,
@@ -2723,7 +2724,7 @@ object visor extends VisorTag {
             val n = try
                 s.substring(0, s.length - 1).toLong
             catch {
-                case _: NumberFormatException =>
+                case (_:  NumberFormatException | _: StringIndexOutOfBoundsException)  =>
                     throw new IllegalArgumentException("Time frame size is not numeric in: " + s)
             }
 

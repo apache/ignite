@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -54,11 +55,6 @@ public class H2ConnectionLeaksSelfTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < KEY_CNT; i++)
             cache.put((long)i, String.valueOf(i));
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -98,20 +94,7 @@ public class H2ConnectionLeaksSelfTest extends GridCommonAbstractTest {
 
         latch.await();
 
-        boolean res = GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                for (int i = 0; i < NODE_CNT; i++) {
-                    Map<Thread, Connection> conns = perThreadConnections(i);
-
-                    if (conns.isEmpty())
-                        return false;
-                }
-
-                return true;
-            }
-        }, 5000);
-
-        assert res;
+        checkConnectionLeaks();
     }
 
     /**
@@ -148,14 +131,41 @@ public class H2ConnectionLeaksSelfTest extends GridCommonAbstractTest {
         try {
             latch.await();
 
-            for (int i = 0; i < NODE_CNT; i++) {
-                Map<Thread, Connection> conns = perThreadConnections(i);
-
-                assertTrue(conns.isEmpty());
-            }
+            checkConnectionLeaks();
         }
         finally {
             latch2.countDown();
+        }
+    }
+
+    /**
+     * @throws Exception On error.
+     */
+    private void checkConnectionLeaks() throws Exception {
+        boolean notLeak = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                for (int i = 0; i < NODE_CNT; i++) {
+                    Map<Thread, Connection> conns = perThreadConnections(i);
+
+                    for(Thread t : conns.keySet()) {
+                        if (!t.isAlive())
+                            return false;
+                    }
+                }
+
+                return true;
+            }
+        }, 5000);
+
+        if (!notLeak) {
+            for (int i = 0; i < NODE_CNT; i++) {
+                Map<Thread, Connection> conns = perThreadConnections(i);
+
+                for(Thread t : conns.keySet())
+                    log.error("+++ Connection is not closed for thread: " + t.getName());
+            }
+
+            fail("H2 JDBC connections leak detected. See the log above.");
         }
     }
 

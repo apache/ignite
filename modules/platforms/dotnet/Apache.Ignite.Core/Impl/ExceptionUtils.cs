@@ -91,7 +91,6 @@ namespace Apache.Ignite.Core.Impl
             Exs["javax.cache.integration.CacheLoaderException"] = (c, m, e, i) => new CacheStoreException(m, e);
             Exs["javax.cache.integration.CacheWriterException"] = (c, m, e, i) => new CacheStoreException(m, e);
             Exs["javax.cache.processor.EntryProcessorException"] = (c, m, e, i) => new CacheEntryProcessorException(m, e);
-            Exs["org.apache.ignite.cache.CacheAtomicUpdateTimeoutException"] = (c, m, e, i) => new CacheAtomicUpdateTimeoutException(m, e);
 
             // Transaction exceptions.
             Exs["org.apache.ignite.transactions.TransactionOptimisticException"] = (c, m, e, i) => new TransactionOptimisticException(m, e);

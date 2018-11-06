@@ -323,6 +323,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
                     new QueueHeaderPredicate(),
                     cctx.isLocal() || (cctx.isReplicated() && cctx.affinityNode()),
                     true,
+                    false,
                     false);
             }
 

@@ -34,8 +34,8 @@ public class IgniteBaselineLockPartitionOnAffinityRunTxCacheTest extends IgniteC
             new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
-                        .setInitialSize(200 * 1024 * 1024)
-                        .setMaxSize(200 * 1024 * 1024)
+                        .setInitialSize(200L * 1024 * 1024)
+                        .setMaxSize(200L * 1024 * 1024)
                         .setPersistenceEnabled(true)
                 )
         );
@@ -80,8 +80,6 @@ public class IgniteBaselineLockPartitionOnAffinityRunTxCacheTest extends IgniteC
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         cleanPersistenceDir();
     }
 }

@@ -58,11 +58,6 @@ public class IgniteCachePutStackOverflowSelfTest extends GridCommonAbstractTest 
         startGrid(0);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception if failed.
      */

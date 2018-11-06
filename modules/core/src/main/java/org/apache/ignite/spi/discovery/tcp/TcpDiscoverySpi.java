@@ -55,9 +55,9 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AddressResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -277,6 +277,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /** Maximum ack timeout value for receiving message acknowledgement in milliseconds (value is <tt>600,000ms</tt>). */
     public static final long DFLT_MAX_ACK_TIMEOUT = 10 * 60 * 1000;
 
+    /** Default connection recovery timeout in ms. */
+    public static final long DFLT_CONNECTION_RECOVERY_TIMEOUT = IgniteConfiguration.DFLT_FAILURE_DETECTION_TIMEOUT;
+
     /** Ssl message pattern for StreamCorruptedException. */
     private static Pattern sslMsgPattern = Pattern.compile("invalid stream header: 150\\d0\\d00");
 
@@ -310,6 +313,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** Size of topology snapshots history. */
     protected int topHistSize = DFLT_TOP_HISTORY_SIZE;
+
+    /** Default connection recovery timeout in ms. */
+    protected long connRecoveryTimeout = DFLT_CONNECTION_RECOVERY_TIMEOUT;
 
     /** Grid discovery listener. */
     protected volatile DiscoverySpiListener lsnr;
@@ -992,6 +998,54 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         this.topHistSize = topHistSize;
 
         return this;
+    }
+
+    /**
+     * Gets timeout that defines how long server node would try to recovery connection.<br>
+     * See {@link #setConnectionRecoveryTimeout(long)} for details.
+     *
+     * @return Timeout that defines how long server node would try to recovery connection.
+     */
+    public long getConnectionRecoveryTimeout() {
+        return connRecoveryTimeout;
+    }
+
+    /**
+     * @return Connection recovery timeout that is not greater than failureDetectionTimeout if enabled.
+     */
+    long getEffectiveConnectionRecoveryTimeout() {
+        if (failureDetectionTimeoutEnabled() && failureDetectionTimeout() < connRecoveryTimeout)
+            return failureDetectionTimeout();
+
+        return connRecoveryTimeout;
+    }
+
+    /**
+     * Sets timeout that defines how long server node would try to recovery connection.
+     * <p>In case local node has temporary connectivity issues with part of the cluster,
+     * it may sequentially fail nodes one-by-one till successfully connect to one that
+     * has a fine connection with.
+     * This leads to fail of big number of nodes.
+     * </p>
+     * <p>
+     *     To overcome that issue, local node will do a sequential connection tries to next
+     *     nodes. But if new next node has connection to previous it forces local node to
+     *     retry connect to previous. These tries will last till timeout will not
+     *     finished. When timeout is over, but no success in connecting to nodes it will
+     *     segment itself.
+     * </p>
+     * <p>
+     *     Cannot be greater than {@link #failureDetectionTimeout()}.
+     * </p>
+     * <p>
+     *     Default is {@link #DFLT_CONNECTION_RECOVERY_TIMEOUT}.
+     * </p>
+     *
+     * @param connRecoveryTimeout Timeout that defines how long server node would try to recovery connection.
+     * {@code 0} means node will not recheck failed nodes.
+     */
+    public void setConnectionRecoveryTimeout(long connRecoveryTimeout) {
+        this.connRecoveryTimeout = connRecoveryTimeout;
     }
 
     /** {@inheritDoc} */
@@ -2438,6 +2492,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         }
 
         /** {@inheritDoc} */
+        @Override public long getConnectionCheckInterval() {
+            return impl.connectionCheckInterval();
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean isClientMode() {
             return TcpDiscoverySpi.this.isClientMode();
         }
@@ -2503,8 +2562,19 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             return TcpDiscoverySpi.this.getCoordinatorSinceTimestamp();
         }
 
+        /** {@inheritDoc} */
         @Override public void checkRingLatency(int maxHops) {
             TcpDiscoverySpi.this.impl.checkRingLatency(maxHops);
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getCurrentTopologyVersion() {
+            return impl.getCurrentTopologyVersion();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void dumpRingStructure() {
+            impl.dumpRingStructure(log);
         }
     }
 }

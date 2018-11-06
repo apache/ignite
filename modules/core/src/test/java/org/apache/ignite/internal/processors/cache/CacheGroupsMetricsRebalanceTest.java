@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -159,12 +160,12 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         assertTrue(rate1 > 0);
         assertTrue(rate2 > 0);
 
-        // rate1 has to be roughly twice more than rate2.
-        double ratio = ((double)rate2 / rate1) * 100;
+        // rate1 has to be roughly the same as rate2
+        double ratio = ((double)rate2 / rate1);
 
         log.info("Ratio: " + ratio);
 
-        assertTrue(ratio > 40 && ratio < 60);
+        assertTrue(ratio > 0.9 && ratio < 1.1);
     }
 
     /**
@@ -225,29 +226,27 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
                 log.info("Wait until keys left will be less than: " + keysLine);
 
-                try {
-                    while (finishRebalanceLatch.getCount() != 0) {
-                        CacheMetrics m = ig2.cache(CACHE1).localMetrics();
+                while (true) {
+                    CacheMetrics m = ig2.cache(CACHE1).localMetrics();
 
-                        long keyLeft = m.getKeysToRebalanceLeft();
+                    long keyLeft = m.getKeysToRebalanceLeft();
 
-                        if (keyLeft > 0 && keyLeft < keysLine)
-                            latch.countDown();
+                    if (keyLeft > 0 && keyLeft < keysLine) {
+                        latch.countDown();
 
-                        log.info("Keys left: " + m.getKeysToRebalanceLeft());
-
-                        try {
-                            Thread.sleep(1_000);
-                        }
-                        catch (InterruptedException e) {
-                            log.warning("Interrupt thread", e);
-
-                            Thread.currentThread().interrupt();
-                        }
+                        break;
                     }
-                }
-                finally {
-                    latch.countDown();
+
+                    log.info("Keys left: " + m.getKeysToRebalanceLeft());
+
+                    try {
+                        Thread.sleep(1_000);
+                    }
+                    catch (InterruptedException e) {
+                        log.warning("Interrupt thread", e);
+
+                        Thread.currentThread().interrupt();
+                    }
                 }
             }
         });
@@ -270,8 +269,15 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         long timePassed = currTime - startTime;
         long timeLeft = finishTime - currTime;
 
-        assertTrue("Got timeout while waiting for rebalancing. Estimated left time: " + timeLeft,
-            finishRebalanceLatch.await(timeLeft + 2_000L, TimeUnit.MILLISECONDS));
+        // TODO: finishRebalanceLatch gets countdown much earlier because of ForceRebalanceExchangeTask triggered by cache with delay
+//        assertTrue("Got timeout while waiting for rebalancing. Estimated left time: " + timeLeft,
+//            finishRebalanceLatch.await(timeLeft + 10_000L, TimeUnit.MILLISECONDS));
+
+        waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return ig2.cache(CACHE1).localMetrics().getKeysToRebalanceLeft() == 0;
+            }
+        }, timeLeft + 10_000L);
 
         log.info("[timePassed=" + timePassed + ", timeLeft=" + timeLeft +
                 ", Time to rebalance=" + (finishTime - startTime) +

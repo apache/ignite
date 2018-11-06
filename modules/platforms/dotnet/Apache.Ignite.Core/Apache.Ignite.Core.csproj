@@ -179,7 +179,6 @@
     <Compile Include="Cache\Affinity\Package-Info.cs" />
     <Compile Include="Cache\Affinity\Rendezvous\Package-Info.cs" />
     <Compile Include="Cache\Affinity\Rendezvous\RendezvousAffinityFunction.cs" />
-    <Compile Include="Cache\CacheAtomicUpdateTimeoutException.cs" />
     <Compile Include="Cache\CacheEntryProcessorException.cs" />
     <Compile Include="Cache\CacheException.cs" />
     <Compile Include="Cache\CachePartialUpdateException.cs" />

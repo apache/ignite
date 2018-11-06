@@ -18,12 +18,12 @@
 package org.apache.ignite.ml.nn;
 
 import org.apache.ignite.ml.TestUtils;
-import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.Tracer;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.optimization.LossFunctions;
 import org.junit.Assert;
@@ -44,9 +44,9 @@ public class MLPTest {
 
         int input = 2;
 
-        Matrix predict = mlp.apply(new DenseLocalOnHeapMatrix(new double[][] {{input}}));
+        Matrix predict = mlp.apply(new DenseMatrix(new double[][] {{input}}));
 
-        Assert.assertEquals(predict, new DenseLocalOnHeapMatrix(new double[][] {{Activators.SIGMOID.apply(input)}}));
+        Assert.assertEquals(predict, new DenseMatrix(new double[][] {{Activators.SIGMOID.apply(input)}}));
     }
 
     /**
@@ -60,16 +60,16 @@ public class MLPTest {
 
         MultilayerPerceptron mlp = new MultilayerPerceptron(conf, new MLPConstInitializer(1, 2));
 
-        mlp.setWeights(1, new DenseLocalOnHeapMatrix(new double[][] {{20.0, 20.0}, {-20.0, -20.0}}));
-        mlp.setBiases(1, new DenseLocalOnHeapVector(new double[] {-10.0, 30.0}));
+        mlp.setWeights(1, new DenseMatrix(new double[][] {{20.0, 20.0}, {-20.0, -20.0}}));
+        mlp.setBiases(1, new DenseVector(new double[] {-10.0, 30.0}));
 
-        mlp.setWeights(2, new DenseLocalOnHeapMatrix(new double[][] {{20.0, 20.0}}));
-        mlp.setBiases(2, new DenseLocalOnHeapVector(new double[] {-30.0}));
+        mlp.setWeights(2, new DenseMatrix(new double[][] {{20.0, 20.0}}));
+        mlp.setBiases(2, new DenseVector(new double[] {-30.0}));
 
-        Matrix input = new DenseLocalOnHeapMatrix(new double[][] {{0.0, 0.0}, {0.0, 1.0}, {1.0, 0.0}, {1.0, 1.0}});
+        Matrix input = new DenseMatrix(new double[][] {{0.0, 0.0}, {0.0, 1.0}, {1.0, 0.0}, {1.0, 1.0}});
 
         Matrix predict = mlp.apply(input);
-        Matrix truth = new DenseLocalOnHeapMatrix(new double[][] {{0.0}, {1.0}, {1.0}, {0.0}});
+        Matrix truth = new DenseMatrix(new double[][] {{0.0}, {1.0}, {1.0}, {0.0}});
 
         TestUtils.checkIsInEpsilonNeighbourhood(predict.getRow(0), truth.getRow(0), 1E-4);
     }
@@ -99,8 +99,8 @@ public class MLPTest {
 
         MultilayerPerceptron stackedMLP = mlp1.add(mlp2);
 
-        Matrix predict = mlp.apply(new DenseLocalOnHeapMatrix(new double[][] {{1}, {2}, {3}, {4}}).transpose());
-        Matrix stackedPredict = stackedMLP.apply(new DenseLocalOnHeapMatrix(new double[][] {{1}, {2}, {3}, {4}}).transpose());
+        Matrix predict = mlp.apply(new DenseMatrix(new double[][] {{1}, {2}, {3}, {4}}).transpose());
+        Matrix stackedPredict = stackedMLP.apply(new DenseMatrix(new double[][] {{1}, {2}, {3}, {4}}).transpose());
 
         Assert.assertEquals(predict, stackedPredict);
     }
@@ -131,15 +131,15 @@ public class MLPTest {
         int firstLayerNeuronsCnt = 2;
         int secondLayerNeurons = 1;
 
-        DenseLocalOnHeapVector paramsVector = new DenseLocalOnHeapVector(new double[] {
+        DenseVector paramsVector = new DenseVector(new double[] {
             1.0, 2.0, 3.0, 4.0, 5.0, 6.0, // First layer weight matrix.
             7.0, 8.0, // Second layer weight matrix.
             9.0 // Second layer biases.
         });
 
-        DenseLocalOnHeapMatrix firstLayerWeights = new DenseLocalOnHeapMatrix(new double[][] {{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}});
-        DenseLocalOnHeapMatrix secondLayerWeights = new DenseLocalOnHeapMatrix(new double[][] {{7.0, 8.0}});
-        DenseLocalOnHeapVector secondLayerBiases = new DenseLocalOnHeapVector(new double[] {9.0});
+        DenseMatrix firstLayerWeights = new DenseMatrix(new double[][] {{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}});
+        DenseMatrix secondLayerWeights = new DenseMatrix(new double[][] {{7.0, 8.0}});
+        DenseVector secondLayerBiases = new DenseVector(new double[] {9.0});
 
         MLPArchitecture conf = new MLPArchitecture(inputSize).
             withAddedLayer(firstLayerNeuronsCnt, false, Activators.SIGMOID).
@@ -176,9 +176,9 @@ public class MLPTest {
         double x0 = 1.0;
         double x1 = 3.0;
 
-        Matrix inputs = new DenseLocalOnHeapMatrix(new double[][] {{x0, x1}}).transpose();
+        Matrix inputs = new DenseMatrix(new double[][] {{x0, x1}}).transpose();
         double ytt = 1.0;
-        Matrix truth = new DenseLocalOnHeapMatrix(new double[][] {{ytt}}).transpose();
+        Matrix truth = new DenseMatrix(new double[][] {{ytt}}).transpose();
 
         Vector grad = mlp.differentiateByParameters(LossFunctions.MSE, inputs, truth);
 

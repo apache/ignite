@@ -19,6 +19,7 @@ package org.apache.ignite.ml.knn.classification;
 
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.knn.KNNUtils;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
@@ -35,7 +36,7 @@ public class KNNClassificationTrainer implements SingleLabelDatasetTrainer<KNNCl
      * @return Model.
      */
     @Override public <K, V> KNNClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
-        return new KNNClassificationModel<>(KNNUtils.buildDataset(datasetBuilder, featureExtractor, lbExtractor));
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+        return new KNNClassificationModel(KNNUtils.buildDataset(datasetBuilder, featureExtractor, lbExtractor));
     }
 }

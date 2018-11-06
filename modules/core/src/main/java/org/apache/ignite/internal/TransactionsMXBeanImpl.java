@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCompute;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -107,6 +106,7 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
                         w.println("    Tx: [xid=" + info.getXid() +
                             ", label=" + info.getLabel() +
                             ", state=" + info.getState() +
+                            ", startTime=" + info.getFormattedStartTime() +
                             ", duration=" + info.getDuration() / 1000 +
                             ", isolation=" + info.getIsolation() +
                             ", concurrency=" + info.getConcurrency() +

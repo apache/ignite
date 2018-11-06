@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.nn;
 
+import java.io.Serializable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -24,16 +25,20 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.ml.TestUtils;
-import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.Tracer;
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.optimization.LossFunctions;
-import org.apache.ignite.ml.optimization.updatecalculators.*;
+import org.apache.ignite.ml.optimization.updatecalculators.NesterovParameterUpdate;
+import org.apache.ignite.ml.optimization.updatecalculators.NesterovUpdateCalculator;
+import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
+import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
+import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
+import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.io.Serializable;
 
 /**
  * Tests for {@link MLPTrainer} that require to start the whole Ignite infrastructure.
@@ -133,11 +138,11 @@ public class MLPTrainerIntegrationTest extends GridCommonAbstractTest {
             MultilayerPerceptron mlp = trainer.fit(
                 ignite,
                 xorCache,
-                (k, v) -> new double[]{ v.x, v.y },
+                (k, v) -> VectorUtils.of(v.x, v.y ),
                 (k, v) -> new double[]{ v.lb}
             );
 
-            Matrix predict = mlp.apply(new DenseLocalOnHeapMatrix(new double[][]{
+            Matrix predict = mlp.apply(new DenseMatrix(new double[][]{
                 {0.0, 0.0},
                 {0.0, 1.0},
                 {1.0, 0.0},
@@ -146,9 +151,9 @@ public class MLPTrainerIntegrationTest extends GridCommonAbstractTest {
 
             Tracer.showAscii(predict);
 
-            X.println(new DenseLocalOnHeapVector(new double[]{0.0}).minus(predict.getRow(0)).kNorm(2) + "");
+            X.println(new DenseVector(new double[]{0.0}).minus(predict.getRow(0)).kNorm(2) + "");
 
-            TestUtils.checkIsInEpsilonNeighbourhood(new DenseLocalOnHeapVector(new double[]{0.0}), predict.getRow(0), 1E-1);
+            TestUtils.checkIsInEpsilonNeighbourhood(new DenseVector(new double[]{0.0}), predict.getRow(0), 1E-1);
         }
         finally {
             xorCache.destroy();

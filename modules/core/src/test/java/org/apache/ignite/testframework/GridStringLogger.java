@@ -17,8 +17,11 @@
 
 package org.apache.ignite.testframework;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -131,7 +134,18 @@ public class GridStringLogger implements IgniteLogger {
         log(msg);
 
         if (e != null)
-            log(e.toString());
+            logThrowable(e);
+    }
+
+    /**
+     * @param e Exception.
+     */
+    private void logThrowable(@NotNull Throwable e) {
+        StringWriter writer = new StringWriter();
+
+        e.printStackTrace(new PrintWriter(writer));
+
+        log(writer.toString());
     }
 
     /** {@inheritDoc} */
@@ -144,7 +158,7 @@ public class GridStringLogger implements IgniteLogger {
         log(msg);
 
         if (e != null)
-            log(e.toString());
+            logThrowable(e);
     }
 
     /** {@inheritDoc} */

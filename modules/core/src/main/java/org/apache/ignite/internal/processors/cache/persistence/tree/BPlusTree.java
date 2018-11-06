@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.tree;
 
-import java.io.Externalizable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -50,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusLeaf
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.LongListReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
@@ -2156,7 +2156,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         if (reuseList == null)
             return -1;
 
-        DestroyBag bag = new DestroyBag();
+        LongListReuseBag bag = new LongListReuseBag();
 
         long pagesCnt = 0;
 
@@ -4832,31 +4832,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** {@inheritDoc} */
         @Override public boolean releaseAfterWrite(int cacheId, long pageId, long page, long pageAddr, G g, int lvl) {
             return g.canRelease(pageId, lvl);
-        }
-    }
-
-    /**
-     * Reuse bag for destroy.
-     */
-    protected static final class DestroyBag extends GridLongList implements ReuseBag {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         * Default constructor for {@link Externalizable}.
-         */
-        public DestroyBag() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void addFreePage(long pageId) {
-            add(pageId);
-        }
-
-        /** {@inheritDoc} */
-        @Override public long pollFreePage() {
-            return isEmpty() ? 0 : remove();
         }
     }
 

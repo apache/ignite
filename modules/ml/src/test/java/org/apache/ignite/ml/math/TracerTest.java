@@ -24,9 +24,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
-import org.apache.ignite.ml.math.impls.MathTestConstants;
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.primitives.MathTestConstants;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
+import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.junit.Test;
 
 import static java.nio.file.Files.createTempFile;
@@ -62,7 +64,7 @@ public class TracerTest {
      * @param size Vector size.
      */
     private Vector makeRandomVector(int size) {
-        DenseLocalOnHeapVector vec = new DenseLocalOnHeapVector(size);
+        DenseVector vec = new DenseVector(size);
 
         vec.assign((idx) -> Math.random());
 
@@ -74,7 +76,7 @@ public class TracerTest {
      * @param cols Amount of columns in matrix.
      */
     private Matrix makeRandomMatrix(int rows, int cols) {
-        DenseLocalOnHeapMatrix mtx = new DenseLocalOnHeapMatrix(rows, cols);
+        DenseMatrix mtx = new DenseMatrix(rows, cols);
 
         // Missing assign(f)?
         mtx.map((d) -> Math.random());
@@ -125,7 +127,7 @@ public class TracerTest {
         // Custom color mapping.
         verifyShowHtml(() -> Tracer.showHtml(mtx1, COLOR_MAPPER));
 
-        Matrix mtx2 = new DenseLocalOnHeapMatrix(100, 100);
+        Matrix mtx2 = new DenseMatrix(100, 100);
 
         double MAX = (double)(mtx2.rowSize() * mtx2.columnSize());
 
@@ -157,7 +159,7 @@ public class TracerTest {
         // Custom color mapping.
         Tracer.showHtml(mtx1, COLOR_MAPPER, true);
 
-        Matrix mtx2 = new DenseLocalOnHeapMatrix(100, 100);
+        Matrix mtx2 = new DenseMatrix(100, 100);
 
         double MAX = (double)(mtx2.rowSize() * mtx2.columnSize());
 
@@ -169,7 +171,7 @@ public class TracerTest {
     /** */
     @Test
     public void testWriteVectorToCSVFile() throws IOException {
-        DenseLocalOnHeapVector vector = new DenseLocalOnHeapVector(MathTestConstants.STORAGE_SIZE);
+        DenseVector vector = new DenseVector(MathTestConstants.STORAGE_SIZE);
 
         for (int i = 0; i < vector.size(); i++)
             vector.set(i, Math.random());
@@ -196,7 +198,7 @@ public class TracerTest {
     /** */
     @Test
     public void testWriteMatrixToCSVFile() throws IOException {
-        DenseLocalOnHeapMatrix matrix = new DenseLocalOnHeapMatrix(MathTestConstants.STORAGE_SIZE, MathTestConstants.STORAGE_SIZE);
+        DenseMatrix matrix = new DenseMatrix(MathTestConstants.STORAGE_SIZE, MathTestConstants.STORAGE_SIZE);
 
         for (int i = 0; i < matrix.rowSize(); i++)
             for (int j = 0; j < matrix.columnSize(); j++)

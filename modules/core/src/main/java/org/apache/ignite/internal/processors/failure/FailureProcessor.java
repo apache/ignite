@@ -29,10 +29,16 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE;
+
 /**
  * General failure processing API
  */
 public class FailureProcessor extends GridProcessorAdapter {
+    /** Value of the system property that enables threads dumping on failure. */
+    private static final boolean IGNITE_DUMP_THREADS_ON_FAILURE =
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE, true);
+
     /** Ignite. */
     private final Ignite ignite;
 
@@ -114,6 +120,9 @@ public class FailureProcessor extends GridProcessorAdapter {
 
         if (reserveBuf != null && X.hasCause(failureCtx.error(), OutOfMemoryError.class))
             reserveBuf = null;
+
+        if (IGNITE_DUMP_THREADS_ON_FAILURE)
+            U.dumpThreads(log);
 
         boolean invalidated = hnd.onFailure(ignite, failureCtx);
 

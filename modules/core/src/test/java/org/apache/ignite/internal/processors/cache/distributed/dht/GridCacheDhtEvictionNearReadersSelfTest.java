@@ -119,13 +119,6 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @SuppressWarnings({"SizeReplaceableByIsEmpty"})
     @Override protected void beforeTest() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {

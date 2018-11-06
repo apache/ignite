@@ -31,11 +31,11 @@ import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.SecurityCredentialsAttrFilterPredicate;
 import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.jetbrains.annotations.Nullable;
@@ -243,11 +243,7 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
     /** {@inheritDoc} */
     @Override public Map<String, Object> attributes() {
         // Even though discovery SPI removes this attribute after authentication, keep this check for safety.
-        return F.view(attrs, new IgnitePredicate<String>() {
-            @Override public boolean apply(String s) {
-                return !IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS.equals(s);
-            }
-        });
+        return F.view(attrs, new SecurityCredentialsAttrFilterPredicate());
     }
 
     /** {@inheritDoc} */

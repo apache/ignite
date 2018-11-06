@@ -28,12 +28,12 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.VectorUtils;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.math.util.MapUtil;
 import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledVector;
@@ -68,7 +68,7 @@ public class KMeansTrainer implements SingleLabelDatasetTrainer<KMeansModel> {
      * @return Model.
      */
     @Override public <K, V> KMeansModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
         assert datasetBuilder != null;
 
         PartitionDataBuilder<K, V, EmptyContext, LabeledDataset<Double, LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(
@@ -89,7 +89,7 @@ public class KMeansTrainer implements SingleLabelDatasetTrainer<KMeansModel> {
             int iteration = 0;
 
             while (iteration < maxIterations && !converged) {
-                Vector[] newCentroids = new DenseLocalOnHeapVector[k];
+                Vector[] newCentroids = new DenseVector[k];
 
                 TotalCostAndCounts totalRes = calcDataForNewCentroids(centers, dataset, cols);
 
@@ -181,7 +181,7 @@ public class KMeansTrainer implements SingleLabelDatasetTrainer<KMeansModel> {
     private Vector[] initClusterCentersRandomly(Dataset<EmptyContext, LabeledDataset<Double, LabeledVector>> dataset,
         int k) {
 
-        Vector[] initCenters = new DenseLocalOnHeapVector[k];
+        Vector[] initCenters = new DenseVector[k];
 
         List<LabeledVector> rndPnts = dataset.compute(data -> {
             List<LabeledVector> rndPnt = new ArrayList<>();

@@ -169,7 +169,7 @@ buildDEB () {
 
     # Assemble DEB packages
     cd ${DEB_WORK_DIR}/apache-ignite-${buildDirVersion}
-    debian/rules binary
+    fakeroot debian/rules binary
 
     # Gather DEBs
     find ${DEB_WORK_DIR} -name "*.deb" -exec mv -fv {} ${PACKAGING_DIR} \;
@@ -196,13 +196,6 @@ processTrap () {
 ###########
 START_TIME=$(date +%s)
 clear
-
-
-# Check for sudo
-if [ $EUID -ne 0 ]; then
-    echo "[ERROR] Packages building requires root | sudo privileges"
-    exit 1
-fi
 
 
 # Parse input options

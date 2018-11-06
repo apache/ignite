@@ -105,11 +105,11 @@ public class OptimizeMakeChangeGAExample {
             List<Gene> genes = getGenePool();
 
             // set selection method
-            gaConfig.setSelectionMethod(GAGridConstants.SELECTION_METHOD.SELECTON_METHOD_ELETISM);
-            gaConfig.setElitismCount(10);
+            gaConfig.setSelectionMtd(GAGridConstants.SELECTION_METHOD.SELECTON_METHOD_ELETISM);
+            gaConfig.setElitismCnt(10);
 
             // set the Chromosome Length to '4' since we have 4 coins.
-            gaConfig.setChromosomeLength(4);
+            gaConfig.setChromosomeLen(4);
 
             // set population size
             gaConfig.setPopulationSize(500);

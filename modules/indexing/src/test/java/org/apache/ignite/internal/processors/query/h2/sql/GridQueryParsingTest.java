@@ -129,11 +129,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         ignite = null;
-
-        super.afterTestsStopped();
     }
 
     /**

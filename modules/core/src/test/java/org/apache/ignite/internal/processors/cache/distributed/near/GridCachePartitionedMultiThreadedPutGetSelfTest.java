@@ -103,11 +103,6 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 

@@ -144,7 +144,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         }
 
         dsCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-            .setMaxSize(32 * 1024 * 1024)
+            .setMaxSize(32L * 1024 * 1024)
             .setPersistenceEnabled(true));
 
         cfg.setDataStorageConfiguration(dsCfg);

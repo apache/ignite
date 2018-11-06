@@ -83,13 +83,6 @@ public class TxDeadlockDetectionUnmasrhalErrorsTest extends GridCommonAbstractTe
         startGrid(1);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */

@@ -15,14 +15,13 @@
  * limitations under the License.
  */
 
-import webpack from 'webpack';
 import merge from 'webpack-merge';
 
 import path from 'path';
 
 import commonCfg from './webpack.common';
 
-import ExtractTextPlugin from 'extract-text-webpack-plugin';
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 const backendPort = process.env.BACKEND_PORT || 3000;
 const devServerPort = process.env.PORT || 9000;
@@ -41,33 +40,33 @@ export default merge(commonCfg, {
             },
             {
                 test: /\.scss$/,
-                // Version without extract plugin fails on some machines. https://github.com/sass/node-sass/issues/1895
-                use: ExtractTextPlugin.extract({
-                    fallback: 'style-loader',
-                    use: [
-                        {
-                            loader: 'css',
-                            options: {
-                                sourceMap: true
-                            }
-                        },
-                        {
-                            loader: 'sass',
-                            options: {
-                                sourceMap: true
-                            }
+                use: [
+                    MiniCssExtractPlugin.loader, // style-loader does not work with styles in IgniteModules
+                    {
+                        loader: 'css-loader',
+                        options: {
+                            sourceMap: true
                         }
-                    ]
-                })
+                    },
+                    {
+                        loader: 'sass-loader',
+                        options: {
+                            sourceMap: true,
+                            includePaths: [ path.join(__dirname, '../') ]
+                        }
+                    }
+                ]
             }
         ]
     },
+    plugins: [
+        new MiniCssExtractPlugin({filename: 'assets/css/[name].css'})
+    ],
     devServer: {
         compress: true,
         historyApiFallback: true,
         disableHostCheck: true,
         contentBase: path.resolve('build'),
-        // hot: true,
         inline: true,
         proxy: {
             '/socket.io': {
@@ -78,7 +77,7 @@ export default merge(commonCfg, {
                 target: `http://localhost:${backendPort}`,
                 ws: true
             },
-            '/api/v1/*': {
+            '/api/*': {
                 target: `http://localhost:${backendPort}`
             }
         },

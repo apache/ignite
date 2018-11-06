@@ -87,13 +87,6 @@ public abstract class H2DynamicIndexingComplexTest extends DynamicIndexAbstractS
         Ignition.start(serverConfiguration(3));
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /** Do test. */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testOperations() {

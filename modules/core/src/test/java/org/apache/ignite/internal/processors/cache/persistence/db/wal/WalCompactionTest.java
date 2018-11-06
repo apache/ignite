@@ -73,7 +73,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setPersistenceEnabled(true)
-                .setMaxSize(200 * 1024 * 1024))
+                .setMaxSize(200L * 1024 * 1024))
             .setWalMode(walMode)
             .setWalSegmentSize(WAL_SEGMENT_SIZE)
             .setWalHistorySize(500)
@@ -112,9 +112,28 @@ public class WalCompactionTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Tests applying updates from compacted WAL archive.
+     *
      * @throws Exception If failed.
      */
     public void testApplyingUpdatesFromCompactedWal() throws Exception {
+        testApplyingUpdatesFromCompactedWal(false);
+    }
+
+    /**
+     * Tests applying updates from compacted WAL archive when compressor is disabled.
+     *
+     * @throws Exception If failed.
+     */
+    public void testApplyingUpdatesFromCompactedWalWhenCompressorDisabled() throws Exception {
+        testApplyingUpdatesFromCompactedWal(true);
+    }
+
+    /**
+     * @param switchOffCompressor Switch off compressor after restart.
+     * @throws Exception If failed.
+     */
+    private void testApplyingUpdatesFromCompactedWal(boolean switchOffCompressor) throws Exception {
         IgniteEx ig = (IgniteEx)startGrids(3);
         ig.cluster().active(true);
 
@@ -171,6 +190,8 @@ public class WalCompactionTest extends GridCommonAbstractTest {
 
         for (File f : lfsFiles)
             f.delete();
+
+        compactionEnabled = !switchOffCompressor;
 
         ig = (IgniteEx)startGrids(3);
 

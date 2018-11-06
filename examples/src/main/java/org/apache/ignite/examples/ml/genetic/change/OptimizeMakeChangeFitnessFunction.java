@@ -76,10 +76,10 @@ public class OptimizeMakeChangeFitnessFunction implements IFitnessFunction {
         Gene nickelGene = (Gene)genes.get(2);
         Gene pennyGene = (Gene)genes.get(3);
 
-        int numQuarters = ((Coin)quarterGene.getValue()).getNumberOfCoins();
-        int numDimes = ((Coin)dimeGene.getValue()).getNumberOfCoins();
-        int numNickels = ((Coin)nickelGene.getValue()).getNumberOfCoins();
-        int numPennies = ((Coin)pennyGene.getValue()).getNumberOfCoins();
+        int numQuarters = ((Coin)quarterGene.getVal()).getNumberOfCoins();
+        int numDimes = ((Coin)dimeGene.getVal()).getNumberOfCoins();
+        int numNickels = ((Coin)nickelGene.getVal()).getNumberOfCoins();
+        int numPennies = ((Coin)pennyGene.getVal()).getNumberOfCoins();
 
         return (numQuarters * 25) + (numDimes * 10) + (numNickels * 5) + numPennies;
     }
@@ -95,7 +95,7 @@ public class OptimizeMakeChangeFitnessFunction implements IFitnessFunction {
         int totalNumberOfCoins = 0;
 
         for (Gene gene : genes) {
-            int numberOfCoins = ((Coin)gene.getValue()).getNumberOfCoins();
+            int numberOfCoins = ((Coin)gene.getVal()).getNumberOfCoins();
             totalNumberOfCoins = totalNumberOfCoins + numberOfCoins;
 
         }

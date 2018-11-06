@@ -77,11 +77,6 @@ public class GridCacheOffheapIndexEntryEvictTest extends GridCommonAbstractTest 
         startGrids(1);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */

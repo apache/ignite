@@ -106,13 +106,6 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
         startGrid(NODES - 1);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     ///
     /// ASYNC FILTER AND LISTENER. TEST LISTENER.
     ///

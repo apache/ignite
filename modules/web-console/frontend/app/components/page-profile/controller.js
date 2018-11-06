@@ -40,7 +40,7 @@ export default class PageProfileController {
     }
 
     generateToken() {
-        this.Confirm.confirm('Are you sure you want to change security token?')
+        this.Confirm.confirm('Are you sure you want to change security token?<br>If you change the token you will need to restart the agent.')
             .then(() => this.ui.user.token = this.LegacyUtils.randomString(20));
     }
 

@@ -47,7 +47,7 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     private final CacheGroupContext ctx;
 
     /** */
-    private final GroupAllocationTrucker groupPageAllocationTracker;
+    private final GroupAllocationTracker groupPageAllocationTracker;
 
     /** Interface describing a predicate of two integers. */
     private interface IntBiPredicate {
@@ -63,7 +63,7 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     /**
      *
      */
-    public static class GroupAllocationTrucker implements AllocatedPageTracker {
+    public static class GroupAllocationTracker implements AllocatedPageTracker {
         /** */
         private final LongAdder totalAllocatedPages = new LongAdder();
 
@@ -71,9 +71,9 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
         private final AllocatedPageTracker delegate;
 
         /**
-         * @param delegate Delegate allocation trucker.
+         * @param delegate Delegate allocation tracker.
          */
-        public GroupAllocationTrucker(AllocatedPageTracker delegate) {
+        public GroupAllocationTracker(AllocatedPageTracker delegate) {
             this.delegate = delegate;
         }
 
@@ -88,7 +88,7 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     /**
      *
      */
-    private static class NoopAllocationTrucker implements AllocatedPageTracker{
+    private static class NoopAllocationTracker implements AllocatedPageTracker{
         /** {@inheritDoc} */
         @Override public void updateTotalAllocatedPages(long delta) {
             // No-op.
@@ -112,7 +112,7 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
             this.groupPageAllocationTracker = dataRegionMetrics.getOrAllocateGroupPageAllocationTracker(ctx.groupId());
         }
         else
-            this.groupPageAllocationTracker = new GroupAllocationTrucker(new NoopAllocationTrucker());
+            this.groupPageAllocationTracker = new GroupAllocationTracker(new NoopAllocationTracker());
     }
 
     /** {@inheritDoc} */
@@ -229,14 +229,47 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
         return cnt;
     }
 
+    /**
+     * Count of partitions with a given state on the local node.
+     *
+     * @param state State.
+     */
+    private int localNodePartitionsCountByState(GridDhtPartitionState state) {
+        int cnt = 0;
+
+        for (GridDhtLocalPartition part : ctx.topology().localPartitions()) {
+            if (part.state() == state)
+                cnt++;
+        }
+
+        return cnt;
+    }
+
     /** {@inheritDoc} */
     @Override public int getLocalNodeOwningPartitionsCount() {
-        return nodePartitionsCountByState(ctx.shared().localNodeId(), GridDhtPartitionState.OWNING);
+        return localNodePartitionsCountByState(GridDhtPartitionState.OWNING);
     }
 
     /** {@inheritDoc} */
     @Override public int getLocalNodeMovingPartitionsCount() {
-        return nodePartitionsCountByState(ctx.shared().localNodeId(), GridDhtPartitionState.MOVING);
+        return localNodePartitionsCountByState(GridDhtPartitionState.MOVING);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getLocalNodeRentingPartitionsCount() {
+        return localNodePartitionsCountByState(GridDhtPartitionState.RENTING);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getLocalNodeRentingEntriesCount() {
+        long entriesCnt = 0;
+
+        for (GridDhtLocalPartition part : ctx.topology().localPartitions()) {
+            if (part.state() == GridDhtPartitionState.RENTING)
+                entriesCnt += part.dataStore().fullSize();
+        }
+
+        return entriesCnt;
     }
 
     /** {@inheritDoc} */

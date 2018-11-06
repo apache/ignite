@@ -93,13 +93,6 @@ public class IgniteCachePrimarySyncTest extends GridCommonAbstractTest {
         assertTrue(client.configuration().isClientMode());
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */

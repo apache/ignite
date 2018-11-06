@@ -17,9 +17,10 @@
 
 package org.apache.ignite.ml.regressions.linear;
 
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-
 import java.util.Arrays;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
 /**
  * Feature extractor wrapper that adds additional column filled by 1.
@@ -27,29 +28,29 @@ import java.util.Arrays;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class FeatureExtractorWrapper<K, V> implements IgniteBiFunction<K, V, double[]> {
+public class FeatureExtractorWrapper<K, V> implements IgniteBiFunction<K, V, Vector> {
     /** */
     private static final long serialVersionUID = -2686524650955735635L;
 
     /** Underlying feature extractor. */
-    private final IgniteBiFunction<K, V, double[]> featureExtractor;
+    private final IgniteBiFunction<K, V, Vector> featureExtractor;
 
     /**
      * Constructs a new instance of feature extractor wrapper.
      *
      * @param featureExtractor Underlying feature extractor.
      */
-    FeatureExtractorWrapper(IgniteBiFunction<K, V, double[]> featureExtractor) {
+    FeatureExtractorWrapper(IgniteBiFunction<K, V, Vector> featureExtractor) {
         this.featureExtractor = featureExtractor;
     }
 
     /** {@inheritDoc} */
-    @Override public double[] apply(K k, V v) {
-        double[] featureRow = featureExtractor.apply(k, v);
+    @Override public Vector apply(K k, V v) {
+        double[] featureRow = featureExtractor.apply(k, v).asArray();
         double[] row = Arrays.copyOf(featureRow, featureRow.length + 1);
 
         row[featureRow.length] = 1.0;
 
-        return row;
+        return VectorUtils.of(row);
     }
 }

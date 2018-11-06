@@ -49,7 +49,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 @SuppressWarnings("ForLoopReplaceableByForEach")
 public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
     /** Default degree of parallelism. */
-    private static final int DFLT_PARALLELISM = Math.max(1, Runtime.getRuntime().availableProcessors() / 4);
+    private static final int DFLT_PARALLELISM =
+        Math.min(4, Math.max(1, Runtime.getRuntime().availableProcessors() / 4));
 
     /** Count of rows, being processed within a single checkpoint lock. */
     private static final int BATCH_SIZE = 1000;

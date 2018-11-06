@@ -171,7 +171,6 @@ form(novalidate name=form)
         
     .pc-form-actions-panel
         button-preview-project(ng-hide='$ctrl.isNew$|async:this' cluster=model)
-        button-download-project(ng-hide='$ctrl.isNew$|async:this' cluster=model)
 
         .pc-form-actions-panel__right-after
         button.btn-ignite.btn-ignite--link-success(
@@ -179,16 +178,4 @@ form(novalidate name=form)
             ng-click='$ctrl.confirmAndReset()'
         )
             | Cancel
-        .btn-ignite-group
-            button.btn-ignite.btn-ignite--success(
-                ng-click='::$ctrl.formActionsMenu[0].click()'
-                type='button'
-            )
-                svg(ignite-icon='{{ ::$ctrl.formActionsMenu[0].icon }}').icon-left
-                | {{ ::$ctrl.formActionsMenu[0].text }}
-            button.btn-ignite.btn-ignite--success(
-                bs-dropdown='$ctrl.formActionsMenu'
-                data-placement='top-right'
-                type='button'
-            )
-                span.icon.fa.fa-caret-up
+        pc-split-button(actions=`::$ctrl.formActionsMenu`)

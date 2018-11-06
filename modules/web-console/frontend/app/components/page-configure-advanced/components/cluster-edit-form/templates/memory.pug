@@ -98,7 +98,7 @@ panel-collapsible(
                             .ignite-form-field__control
                                 -let items = memoryPolicies
 
-                                list-editable(ng-model=items name='memoryPolicies')
+                                list-editable.pc-list-editable-with-form-grid(ng-model=items name='memoryPolicies')
                                     list-editable-item-edit.pc-form-grid-row
                                         - form = '$parent.form'
                                         .pc-form-grid-col-60

@@ -84,11 +84,6 @@ public class CacheManualRebalancingTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 400_000;
     }

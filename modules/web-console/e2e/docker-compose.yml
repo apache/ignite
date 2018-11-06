@@ -35,7 +35,7 @@ services:
     environment:
       - DB_URL=mongodb://mongodb:27017/console-e2e
       - APP_URL=http://testenv:9001/
-      - TEAMCITY=true
+      - REPORTER=teamcity
       - QUARANTINE_MODE=true
     depends_on:
       - mongodb

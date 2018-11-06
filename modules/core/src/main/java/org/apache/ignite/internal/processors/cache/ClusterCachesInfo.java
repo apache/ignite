@@ -38,10 +38,12 @@ import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.GridCachePluginContext;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
@@ -60,6 +62,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.PluginProvider;
@@ -390,6 +393,31 @@ class ClusterCachesInfo {
                 }
             }
         }
+    }
+
+    /**
+     * Creates exchanges actions. Forms a list of caches and cache groups to be stopped
+     * due to dynamic cache start failure.
+     *
+     * @param failMsg Dynamic change request fail message.
+     * @param topVer Topology version.
+     */
+    public void onCacheChangeRequested(DynamicCacheChangeFailureMessage failMsg, AffinityTopologyVersion topVer) {
+        ExchangeActions exchangeActions = new ExchangeActions();
+
+        List<DynamicCacheChangeRequest> requests = new ArrayList<>(failMsg.cacheNames().size());
+
+        for (String cacheName : failMsg.cacheNames()) {
+            DynamicCacheDescriptor cacheDescr = registeredCaches.get(cacheName);
+
+            assert cacheDescr != null : "Dynamic cache descriptor is missing [cacheName=" + cacheName + "]";
+
+            requests.add(DynamicCacheChangeRequest.stopRequest(ctx, cacheName, cacheDescr.sql(), true));
+        }
+
+        processCacheChangeRequests(exchangeActions, requests, topVer,false);
+
+        failMsg.exchangeActions(exchangeActions);
     }
 
     /**
@@ -1752,7 +1780,7 @@ class ClusterCachesInfo {
 
         Map<String, Integer> caches = Collections.singletonMap(startedCacheCfg.getName(), cacheId);
 
-        boolean persistent = CU.isPersistentCache(startedCacheCfg, ctx.config().getDataStorageConfiguration());
+        boolean persistent = resolvePersistentFlag(exchActions, startedCacheCfg);
 
         CacheGroupDescriptor grpDesc = new CacheGroupDescriptor(
             startedCacheCfg,
@@ -1779,6 +1807,59 @@ class ClusterCachesInfo {
             exchActions.addCacheGroupToStart(grpDesc);
 
         return grpDesc;
+    }
+
+    /**
+     * Resolves persistent flag for new cache group descriptor.
+     *
+     * @param exchActions Optional exchange actions to update if new group was added.
+     * @param startedCacheCfg Started cache configuration.
+     */
+    private boolean resolvePersistentFlag(@Nullable ExchangeActions exchActions, CacheConfiguration<?, ?> startedCacheCfg) {
+        if (!ctx.clientNode()) {
+            // On server, we always can determine whether cache is persistent by local storage configuration.
+            return CU.isPersistentCache(startedCacheCfg, ctx.config().getDataStorageConfiguration());
+        }
+        else if (exchActions == null) {
+            // It's either client local join event or cache is statically configured on another node.
+            // No need to resolve on client - we'll anyway receive group descriptor from server with correct flag.
+            return false;
+        }
+        else {
+            // Dynamic cache start. Initiator of the start may not have known whether cache should be persistent.
+            // On client, we should peek attributes of any affinity server node to get data storage configuration.
+            Collection<ClusterNode> aliveSrvNodes = ctx.discovery().aliveServerNodes();
+
+            assert !aliveSrvNodes.isEmpty() : "No alive server nodes";
+
+            for (ClusterNode srvNode : aliveSrvNodes) {
+                if (CU.affinityNode(srvNode, startedCacheCfg.getNodeFilter())) {
+                    Object dsCfgBytes = srvNode.attribute(IgniteNodeAttributes.ATTR_DATA_STORAGE_CONFIG);
+
+                    if (dsCfgBytes instanceof byte[]) {
+                        try {
+                            DataStorageConfiguration crdDsCfg = new JdkMarshaller().unmarshal(
+                                (byte[])dsCfgBytes, U.resolveClassLoader(ctx.config()));
+
+                            return CU.isPersistentCache(startedCacheCfg, crdDsCfg);
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.error(log, "Failed to unmarshal remote data storage configuration [remoteNode=" +
+                                srvNode + ", cacheName=" + startedCacheCfg.getName() + "]", e);
+                        }
+                    }
+                    else {
+                        U.error(log, "Remote marshalled data storage configuration is absent [remoteNode=" + srvNode +
+                            ", cacheName=" + startedCacheCfg.getName() + ", dsCfg=" + dsCfgBytes + "]");
+                    }
+                }
+            }
+
+            U.error(log, "Failed to find affinity server node with data storage configuration for starting cache " +
+                "[cacheName=" + startedCacheCfg.getName() + ", aliveSrvNodes=" + aliveSrvNodes + "]");
+
+            return false;
+        }
     }
 
     /**

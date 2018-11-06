@@ -122,6 +122,11 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     public int walArchiveSegments();
 
     /**
+     * @return Last archived segment index.
+     */
+    public long lastArchivedSegment();
+
+    /**
      * Checks if WAL segment is under lock or reserved
      *
      * @param ptr Pointer to check.
@@ -144,4 +149,9 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * @param grpId Group id.
      */
     public boolean disabled(int grpId);
+
+    /**
+     * Cleanup all directories relating to WAL (e.g. work WAL dir, archive WAL dir).
+     */
+    public void cleanupWalDirectories() throws IgniteCheckedException;
 }

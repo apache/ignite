@@ -112,7 +112,7 @@ public class CacheReadThroughRestartSelfTest extends GridCacheAbstractSelfTest {
 
         Ignite ignite = grid(1);
 
-        cache = ignite.cache(DEFAULT_CACHE_NAME);
+        cache = ignite.cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
 
         for (TransactionConcurrency txConcurrency : TransactionConcurrency.values()) {
             for (TransactionIsolation txIsolation : TransactionIsolation.values()) {

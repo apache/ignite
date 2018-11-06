@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
@@ -58,7 +59,10 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
     public static final int MAX_HANDSHAKE_MSG_SIZE = 128;
 
     /** Connection-related metadata key. */
-    private static final int CONN_CTX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+    static final int CONN_CTX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+
+    /** Next connection id. */
+    private static AtomicInteger nextConnId = new AtomicInteger(1);
 
     /** Busy lock. */
     private final GridSpinBusyLock busyLock;
@@ -278,18 +282,28 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
      * @throws IgniteCheckedException If failed.
      */
     private ClientListenerConnectionContext prepareContext(GridNioSession ses, byte clientType) throws IgniteCheckedException {
+        long connId = nextConnectionId();
+
         switch (clientType) {
             case ODBC_CLIENT:
-                return new OdbcConnectionContext(ctx, busyLock, maxCursors);
+                return new OdbcConnectionContext(ctx, busyLock, connId, maxCursors);
 
             case JDBC_CLIENT:
-                return new JdbcConnectionContext(ctx, ses, busyLock, maxCursors);
+                return new JdbcConnectionContext(ctx, ses, busyLock, connId, maxCursors);
 
             case THIN_CLIENT:
-                return new ClientConnectionContext(ctx, maxCursors);
+                return new ClientConnectionContext(ctx, connId, maxCursors);
         }
 
         throw new IgniteCheckedException("Unknown client type: " + clientType);
+    }
+
+    /**
+     * Generate unique connection id.
+     * @return connection id.
+     */
+    private long nextConnectionId() {
+        return (ctx.discovery().localNode().order() << 32) + nextConnId.getAndIncrement();
     }
 
     /**

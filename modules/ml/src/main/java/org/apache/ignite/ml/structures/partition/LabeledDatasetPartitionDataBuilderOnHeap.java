@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.Iterator;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledVector;
@@ -38,7 +39,7 @@ public class LabeledDatasetPartitionDataBuilderOnHeap<K, V, C extends Serializab
     private static final long serialVersionUID = -7820760153954269227L;
 
     /** Extractor of X matrix row. */
-    private final IgniteBiFunction<K, V, double[]> xExtractor;
+    private final IgniteBiFunction<K, V, Vector> xExtractor;
 
     /** Extractor of Y vector value. */
     private final IgniteBiFunction<K, V, Double> yExtractor;
@@ -49,7 +50,7 @@ public class LabeledDatasetPartitionDataBuilderOnHeap<K, V, C extends Serializab
      * @param xExtractor Extractor of X matrix row.
      * @param yExtractor Extractor of Y vector value.
      */
-    public LabeledDatasetPartitionDataBuilderOnHeap(IgniteBiFunction<K, V, double[]> xExtractor,
+    public LabeledDatasetPartitionDataBuilderOnHeap(IgniteBiFunction<K, V, Vector> xExtractor,
                                          IgniteBiFunction<K, V, Double> yExtractor) {
         this.xExtractor = xExtractor;
         this.yExtractor = yExtractor;
@@ -66,16 +67,16 @@ public class LabeledDatasetPartitionDataBuilderOnHeap<K, V, C extends Serializab
 
         while (upstreamData.hasNext()) {
             UpstreamEntry<K, V> entry = upstreamData.next();
-            double[] row = xExtractor.apply(entry.getKey(), entry.getValue());
+            Vector row = xExtractor.apply(entry.getKey(), entry.getValue());
 
             if (xCols < 0) {
-                xCols = row.length;
+                xCols = row.size();
                 x = new double[Math.toIntExact(upstreamDataSize)][xCols];
             }
             else
-                assert row.length == xCols : "X extractor must return exactly " + xCols + " columns";
+                assert row.size() == xCols : "X extractor must return exactly " + xCols + " columns";
 
-            x[ptr] = row;
+            x[ptr] = row.asArray();
 
             y[ptr] = yExtractor.apply(entry.getKey(), entry.getValue());
 

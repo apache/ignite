@@ -51,7 +51,7 @@ public class IgniteCacheExpiryStoreLoadSelfTest extends GridCacheAbstractSelfTes
     private static final int TIME_TO_LIVE = 1000;
 
     /** Additional time to wait expiry process in milliseconds. */
-    private static final int WAIT_TIME = 1000;
+    private static final int WAIT_TIME = 1500;
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {

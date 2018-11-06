@@ -17,28 +17,27 @@
 
 package org.apache.ignite.ml.nn;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
+import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.initializers.RandomInitializer;
 import org.apache.ignite.ml.optimization.updatecalculators.ParameterUpdateCalculator;
 import org.apache.ignite.ml.trainers.MultiLabelDatasetTrainer;
 import org.apache.ignite.ml.util.Utils;
-
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
 
 /**
  * Multilayer perceptron trainer based on partition based {@link Dataset}.
@@ -110,7 +109,7 @@ public class MLPTrainer<P extends Serializable> implements MultiLabelDatasetTrai
 
     /** {@inheritDoc} */
     public <K, V> MultilayerPerceptron fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, double[]> lbExtractor) {
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, double[]> lbExtractor) {
 
         try (Dataset<EmptyContext, SimpleLabeledDatasetData> dataset = datasetBuilder.build(
             new EmptyContextBuilder<>(),
@@ -144,8 +143,8 @@ public class MLPTrainer<P extends Serializable> implements MultiLabelDatasetTrai
                                 double[] inputsBatch = batch(data.getFeatures(), rows, data.getRows());
                                 double[] groundTruthBatch = batch(data.getLabels(), rows, data.getRows());
 
-                                Matrix inputs = new DenseLocalOnHeapMatrix(inputsBatch, rows.length, 0);
-                                Matrix groundTruth = new DenseLocalOnHeapMatrix(groundTruthBatch, rows.length, 0);
+                                Matrix inputs = new DenseMatrix(inputsBatch, rows.length, 0);
+                                Matrix groundTruth = new DenseMatrix(groundTruthBatch, rows.length, 0);
 
                                 update = updater.calculateNewUpdate(
                                     mlp,

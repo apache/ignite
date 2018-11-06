@@ -134,11 +134,6 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
         grid = startGrid("igniteServerNode", cfg);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     public void testSinkPutsWithoutTransformation() throws Exception {
         Map<String, String> sinkProps = makeSinkProps(Utils.join(TOPICS, ","));
 

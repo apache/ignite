@@ -1,27 +1,21 @@
 {
   "name": "ignite-web-console-e2e-tests",
-  "version": "1.0.0",
+  "version": "2.7.0",
   "description": "E2E tests for Apache Ignite Web console",
   "private": true,
+  "main": "index.js",
   "scripts": {
-    "env": "node envtools.js start",
-    "test": "node testcafe.js --env=true"
+    "env": "node environment/launch-env.js",
+    "test": "node index.js --env=true"
   },
-  "author": "",
-  "contributors": [
-    {
-      "name": "",
-      "email": ""
-    }
-  ],
   "license": "Apache-2.0",
   "keywords": [
     "Apache Ignite Web console"
   ],
   "homepage": "https://ignite.apache.org/",
   "engines": {
-    "npm": "3.x.x",
-    "node": "4.x.x"
+    "npm": ">=5.x.x",
+    "node": ">=8.x.x <10.x.x"
   },
   "os": [
     "darwin",
@@ -39,7 +33,7 @@
     "objectid": "3.2.1",
     "path": "0.12.7",
     "sinon": "2.3.8",
-    "testcafe": "^0.19.0",
+    "testcafe": "0.19.0",
     "testcafe-angular-selectors": "0.3.0",
     "testcafe-reporter-teamcity": "1.0.9",
     "type-detect": "4.0.3",

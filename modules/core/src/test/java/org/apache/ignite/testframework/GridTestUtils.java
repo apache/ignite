@@ -1949,6 +1949,15 @@ public final class GridTestUtils {
      */
     public static void mergeExchangeWaitVersion(Ignite node, long topVer) {
         ((IgniteEx)node).context().cache().context().exchange().mergeExchangesTestWaitVersion(
-            new AffinityTopologyVersion(topVer, 0));
+            new AffinityTopologyVersion(topVer, 0), null);
+    }
+
+    /**
+     * @param node Node.
+     * @param topVer Ready exchange version to wait for before trying to merge exchanges.
+     */
+    public static void mergeExchangeWaitVersion(Ignite node, long topVer, List mergedEvts) {
+        ((IgniteEx)node).context().cache().context().exchange().mergeExchangesTestWaitVersion(
+            new AffinityTopologyVersion(topVer, 0), mergedEvts);
     }
 }

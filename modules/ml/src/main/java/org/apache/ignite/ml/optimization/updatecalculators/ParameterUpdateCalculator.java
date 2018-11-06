@@ -18,8 +18,8 @@
 package org.apache.ignite.ml.optimization.updatecalculators;
 
 import java.io.Serializable;
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
@@ -37,7 +37,7 @@ public interface ParameterUpdateCalculator<M, P extends Serializable> extends Se
      * @param loss Loss function.
      * @return Initialized parameters.
      */
-    P init(M mdl, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss);
+    public P init(M mdl, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss);
 
     /**
      * Calculate new update.
@@ -49,12 +49,12 @@ public interface ParameterUpdateCalculator<M, P extends Serializable> extends Se
      * @param groundTruth True values.
      * @return Updated parameters.
      */
-    P calculateNewUpdate(M mdl, P updaterParameters, int iteration, Matrix inputs, Matrix groundTruth);
+    public P calculateNewUpdate(M mdl, P updaterParameters, int iteration, Matrix inputs, Matrix groundTruth);
 
     /**
      * Update given obj with this parameters.
      *
      * @param obj Object to be updated.
      */
-    <M1 extends M> M1 update(M1 obj, P update);
+    public <M1 extends M> M1 update(M1 obj, P update);
 }

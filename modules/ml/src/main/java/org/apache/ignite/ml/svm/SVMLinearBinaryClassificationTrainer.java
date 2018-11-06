@@ -18,17 +18,17 @@
 package org.apache.ignite.ml.svm;
 
 import java.util.concurrent.ThreadLocalRandom;
-import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
-import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
+import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -56,7 +56,7 @@ public class SVMLinearBinaryClassificationTrainer implements SingleLabelDatasetT
      * @return Model.
      */
     @Override public <K, V> SVMLinearBinaryClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
         assert datasetBuilder != null;
 
@@ -71,7 +71,7 @@ public class SVMLinearBinaryClassificationTrainer implements SingleLabelDatasetT
             (upstream, upstreamSize) -> new EmptyContext(),
             partDataBuilder
         )) {
-            final int cols = dataset.compute(data -> data.colSize(), (a, b) -> a == null ? b : a);
+            final int cols = dataset.compute(org.apache.ignite.ml.structures.Dataset::colSize, (a, b) -> a == null ? b : a);
             final int weightVectorSizeWithIntercept = cols + 1;
             weights = initializeWeightsWithZeros(weightVectorSizeWithIntercept);
 
@@ -87,7 +87,7 @@ public class SVMLinearBinaryClassificationTrainer implements SingleLabelDatasetT
 
     /** */
     @NotNull private Vector initializeWeightsWithZeros(int vectorSize) {
-            return new DenseLocalOnHeapVector(vectorSize);
+            return new DenseVector(vectorSize);
     }
 
     /** */

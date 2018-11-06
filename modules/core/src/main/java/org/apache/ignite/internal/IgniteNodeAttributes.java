@@ -120,6 +120,9 @@ public final class IgniteNodeAttributes {
     /** Internal attribute name constant. */
     public static final String ATTR_MACS = ATTR_PREFIX + ".macs";
 
+    /** Allows to override {@link #ATTR_MACS} by adding this attribute in the user attributes. */
+    public static final String ATTR_MACS_OVERRIDE = "override." + ATTR_MACS;
+
     /** Internal attribute name constant. */
     public static final String ATTR_PHY_RAM = ATTR_PREFIX + ".phy.ram";
 
@@ -195,6 +198,12 @@ public final class IgniteNodeAttributes {
 
     /** User authentication enabled flag. */
     public static final String ATTR_AUTHENTICATION_ENABLED = ATTR_PREFIX + ".authentication.enabled";
+
+    /** Rebalance thread pool size. */
+    public static final String ATTR_REBALANCE_POOL_SIZE = ATTR_PREFIX + ".rebalance.pool.size";
+
+    /** Internal attribute name constant. */
+    public static final String ATTR_DYNAMIC_CACHE_START_ROLLBACK_SUPPORTED = ATTR_PREFIX + ".dynamic.cache.start.rollback.supported";
 
     /**
      * Enforces singleton.

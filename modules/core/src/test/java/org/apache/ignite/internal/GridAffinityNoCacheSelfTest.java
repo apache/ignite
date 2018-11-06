@@ -49,13 +49,6 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
         startGrids(2);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @throws Exception If failed.
      */

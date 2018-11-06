@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.cache.verify;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -66,6 +68,9 @@ public class CacheInfo extends VisorDataTransferObject {
 
     /** Mode. */
     private CacheMode mode;
+
+    /** Atomicity mode. */
+    private CacheAtomicityMode atomicityMode;
 
     /** Backups count. */
     private int backupsCnt;
@@ -228,6 +233,20 @@ public class CacheInfo extends VisorDataTransferObject {
     /**
      *
      */
+    public CacheAtomicityMode getAtomicityMode() {
+        return atomicityMode;
+    }
+
+    /**
+     * @param atomicityMode
+     */
+    public void setAtomicityMode(CacheAtomicityMode atomicityMode) {
+        this.atomicityMode = atomicityMode;
+    }
+
+    /**
+     *
+     */
     public int getBackupsCnt() {
         return backupsCnt;
     }
@@ -269,16 +288,21 @@ public class CacheInfo extends VisorDataTransferObject {
             case GROUPS:
                 System.out.println("[grpName=" + getGrpName() + ", grpId=" + getGrpId() + ", cachesCnt=" + getCachesCnt() +
                     ", prim=" + getPartitions() + ", mapped=" + getMapped() + ", mode=" + getMode() +
-                    ", backups=" + getBackupsCnt() + ", affCls=" + getAffinityClsName() + ']');
+                    ", atomicity=" + getAtomicityMode() + ", backups=" + getBackupsCnt() + ", affCls=" + getAffinityClsName() + ']');
 
                 break;
 
             default:
                 System.out.println("[cacheName=" + getCacheName() + ", cacheId=" + getCacheId() +
                     ", grpName=" + getGrpName() + ", grpId=" + getGrpId() + ", prim=" + getPartitions() +
-                    ", mapped=" + getMapped() + ", mode=" + getMode() +
+                    ", mapped=" + getMapped() + ", mode=" + getMode() + ", atomicity=" + getAtomicityMode() +
                     ", backups=" + getBackupsCnt() + ", affCls=" + getAffinityClsName() + ']');
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
     }
 
     /** {@inheritDoc} */
@@ -296,6 +320,7 @@ public class CacheInfo extends VisorDataTransferObject {
         out.writeInt(backupsCnt);
         U.writeString(out, affinityClsName);
         out.writeInt(cachesCnt);
+        U.writeEnum(out, atomicityMode);
     }
 
     /** {@inheritDoc} */
@@ -313,6 +338,7 @@ public class CacheInfo extends VisorDataTransferObject {
         backupsCnt = in.readInt();
         affinityClsName = U.readString(in);
         cachesCnt = in.readInt();
+        atomicityMode = protoVer >= V2 ? CacheAtomicityMode.fromOrdinal(in.readByte()) : null;
     }
 
     /** {@inheritDoc} */

@@ -114,6 +114,8 @@ import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 import static org.apache.ignite.transactions.TransactionState.PREPARING;
+import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
+import static org.apache.ignite.transactions.TransactionState.ROLLING_BACK;
 import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
 import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
@@ -331,10 +333,19 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     @Override public void onDisconnected(IgniteFuture reconnectFut) {
         txFinishSync.onDisconnected(reconnectFut);
 
-        for (IgniteInternalTx tx : idMap.values())
+        for (IgniteInternalTx tx : idMap.values()) {
             rollbackTx(tx, true, false);
-        for (IgniteInternalTx tx : nearIdMap.values())
+
+            tx.state(ROLLING_BACK);
+            tx.state(ROLLED_BACK);
+        }
+
+        for (IgniteInternalTx tx : nearIdMap.values()) {
             rollbackTx(tx, true, false);
+
+            tx.state(ROLLING_BACK);
+            tx.state(ROLLED_BACK);
+        }
 
         IgniteClientDisconnectedException err =
             new IgniteClientDisconnectedException(reconnectFut, "Client node disconnected.");
@@ -372,16 +383,16 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         if (state == ACTIVE || state == PREPARING || state == PREPARED || state == MARKED_ROLLBACK) {
             if (!tx.markFinalizing(status)) {
-                if (log.isDebugEnabled())
-                    log.debug("Will not try to commit invalidate transaction (could not mark finalized): " + tx);
+                if (log.isInfoEnabled())
+                    log.info("Will not try to commit invalidate transaction (could not mark finalized): " + tx);
 
                 return;
             }
 
             tx.salvageTx();
 
-            if (log.isDebugEnabled())
-                log.debug("Invalidated transaction because originating node left grid: " + CU.txString(tx));
+            if (log.isInfoEnabled())
+                log.info("Invalidated transaction because originating node left grid: " + CU.txString(tx));
         }
     }
 
@@ -2001,12 +2012,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param commit Whether transaction should be committed or rolled back.
      */
     public void finishTxOnRecovery(final IgniteInternalTx tx, boolean commit) {
-        if (log.isDebugEnabled())
-            log.debug("Finishing prepared transaction [tx=" + tx + ", commit=" + commit + ']');
+        if (log.isInfoEnabled())
+            log.info("Finishing prepared transaction [tx=" + tx + ", commit=" + commit + ']');
 
         if (!tx.markFinalizing(RECOVERY_FINISH)) {
-            if (log.isDebugEnabled())
-                log.debug("Will not try to commit prepared transaction (could not mark finalized): " + tx);
+            if (log.isInfoEnabled())
+                log.info("Will not try to commit prepared transaction (could not mark finalized): " + tx);
 
             return;
         }
@@ -2046,8 +2057,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         cctx.mvcc().addFuture(fut, fut.futureId());
 
-        if (log.isDebugEnabled())
-            log.debug("Checking optimistic transaction state on remote nodes [tx=" + tx + ", fut=" + fut + ']');
+        if (log.isInfoEnabled())
+            log.info("Checking optimistic transaction state on remote nodes [tx=" + tx + ", fut=" + fut + ']');
 
         fut.prepare();
     }

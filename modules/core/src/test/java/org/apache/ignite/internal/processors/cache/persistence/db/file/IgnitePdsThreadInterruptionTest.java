@@ -96,8 +96,6 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        super.afterTestsStopped();
-
         stopAllGrids();
 
         cleanPersistenceDir();

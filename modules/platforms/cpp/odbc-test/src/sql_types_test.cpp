@@ -128,7 +128,7 @@ BOOST_AUTO_TEST_CASE(TestByteArrayParamInsert)
 
     const int8_t data[] = { 'A','B','C','D','E','F','G','H','I','J' };
     std::vector<int8_t> paramData(data, data + sizeof(data) / sizeof(data[0]));
-    SQLCHAR request[] = "INSERT INTO TestType(_key, i8ArrayField) VALUES(?, ?)";;
+    SQLCHAR request[] = "INSERT INTO TestType(_key, i8ArrayField) VALUES(?, ?)";
 
     ret = SQLPrepare(stmt, request, SQL_NTS);
 
@@ -161,7 +161,7 @@ BOOST_AUTO_TEST_CASE(TestByteParamInsert)
 {
     SQLRETURN ret;
 
-    SQLCHAR request[] = "INSERT INTO TestType(_key, i8Field) VALUES(?, ?)";;
+    SQLCHAR request[] = "INSERT INTO TestType(_key, i8Field) VALUES(?, ?)";
 
     ret = SQLPrepare(stmt, request, SQL_NTS);
 

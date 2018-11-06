@@ -94,8 +94,7 @@ private[ignite] class IgniteExternalCatalog(defaultIgniteContext: IgniteContext)
     /** @inheritdoc */
     override def getTable(db: String, table: String): CatalogTable = getTableOption(db, table).get
 
-    /** @inheritdoc */
-    override def getTableOption(db: String, tabName: String): Option[CatalogTable] = {
+	def getTableOption(db: String, tabName: String): Option[CatalogTable] = {
         val ignite = igniteOrDefault(db, default)
 
         val gridName = igniteName(ignite)
@@ -234,16 +233,24 @@ private[ignite] class IgniteExternalCatalog(defaultIgniteContext: IgniteContext)
     override def listFunctions(db: String, pattern: String): Seq[String] = Seq.empty[String]
 
     /** @inheritdoc */
-    override def alterDatabase(dbDefinition: CatalogDatabase): Unit =
+    override def doAlterDatabase(dbDefinition: CatalogDatabase): Unit =
         throw new UnsupportedOperationException("unsupported")
 
     /** @inheritdoc */
-    override def alterTable(tableDefinition: CatalogTable): Unit =
+    override def doAlterFunction(db: String, funcDefinition: CatalogFunction): Unit =
         throw new UnsupportedOperationException("unsupported")
 
     /** @inheritdoc */
-    override def alterTableSchema(db: String, table: String, schema: StructType): Unit =
+    override def doAlterTableStats(db: String, table: String, stats: Option[CatalogStatistics]): Unit =
         throw new UnsupportedOperationException("unsupported")
+
+	/** @inheritdoc */
+	override def doAlterTable(tableDefinition: CatalogTable): Unit =
+		throw new UnsupportedOperationException("unsupported")
+
+	/** @inheritdoc */
+	override def doAlterTableDataSchema(db: String, table: String, schema: StructType): Unit =
+		throw new UnsupportedOperationException("unsupported")
 
     /** @inheritdoc */
     override protected def doCreateFunction(db: String, funcDefinition: CatalogFunction): Unit = { /* no-op */ }

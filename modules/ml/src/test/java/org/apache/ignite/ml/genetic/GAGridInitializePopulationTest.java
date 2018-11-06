@@ -43,9 +43,6 @@ public class GAGridInitializePopulationTest {
     /** GAGrid **/
     private GAGrid gaGrid = null;
 
-    /** GAConfiguraton */
-    private GAConfiguration gaConfig = null;
-
     @Before
     public void initialize() {
 
@@ -55,17 +52,17 @@ public class GAGridInitializePopulationTest {
             ignite = Ignition.start();
 
             // Create GAConfiguration
-            gaConfig = new GAConfiguration();
+            /* GAConfiguraton */ /** GAConfiguraton */GAConfiguration gaCfg = new GAConfiguration();
 
             // set Gene Pool
             List<Gene> genes = this.getGenePool();
 
             // set the Chromosome Length to '8' since password contains 8 characters.
-            gaConfig.setChromosomeLength(8);
+            gaCfg.setChromosomeLen(8);
 
-            gaConfig.setGenePool(genes);
+            gaCfg.setGenePool(genes);
 
-            gaGrid = new GAGrid(gaConfig, ignite);
+            gaGrid = new GAGrid(gaCfg, ignite);
         }
         catch (Exception e) {
             System.out.println(e);
@@ -86,12 +83,12 @@ public class GAGridInitializePopulationTest {
 
             List<List<?>> res = cursor.getAll();
 
-            Long count = new Long(0);
+            Long cnt = 0L;
 
-            for (List row : res) {
-                count = (Long)row.get(0);
-            }
-            assertEquals(83, count.longValue());
+            for (List row : res)
+                cnt = (Long)row.get(0);
+
+            assertEquals(83, cnt.longValue());
         }
 
         catch (Exception e) {
@@ -114,12 +111,12 @@ public class GAGridInitializePopulationTest {
 
             List<List<?>> res = cursor.getAll();
 
-            Long count = new Long(0);
+            Long cnt = 0L;
 
-            for (List row : res) {
-                count = (Long)row.get(0);
-            }
-            assertEquals(500, count.longValue());
+            for (List row : res)
+                cnt = (Long)row.get(0);
+
+            assertEquals(500, cnt.longValue());
         }
 
         catch (Exception e) {

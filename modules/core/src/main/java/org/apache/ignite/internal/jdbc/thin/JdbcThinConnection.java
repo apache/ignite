@@ -145,6 +145,8 @@ public class JdbcThinConnection implements Connection {
             if (connected)
                 return;
 
+            assert !closed;
+
             cliIo.start();
 
             connected = true;
@@ -189,7 +191,7 @@ public class JdbcThinConnection implements Connection {
 
             // Actual ON, if needed.
             if (newVal) {
-                if (!cmd0.isOrdered()  && !cliIo.igniteVersion().greaterThanEqual(2, 5, 0)) {
+                if (!cmd0.isOrdered()  && !cliIo.isUnorderedStreamSupported()) {
                     throw new SQLException("Streaming without order doesn't supported by server [remoteNodeVer="
                         + cliIo.igniteVersion() + ']', SqlStateCode.INTERNAL_ERROR);
                 }

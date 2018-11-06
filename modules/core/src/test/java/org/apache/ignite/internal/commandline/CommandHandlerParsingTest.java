@@ -21,15 +21,21 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.UUID;
 import junit.framework.TestCase;
+import org.apache.ignite.internal.commandline.cache.CacheArguments;
+import org.apache.ignite.internal.commandline.cache.CacheCommand;
+import org.apache.ignite.internal.visor.tx.VisorTxOperation;
 import org.apache.ignite.internal.visor.tx.VisorTxProjection;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 
 import static java.util.Arrays.asList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
+import static org.apache.ignite.internal.commandline.Command.CACHE;
 import static org.apache.ignite.internal.commandline.Command.WAL;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_PORT;
+import static org.apache.ignite.internal.commandline.CommandHandler.VI_CHECK_FIRST;
+import static org.apache.ignite.internal.commandline.CommandHandler.VI_CHECK_THROUGH;
 import static org.apache.ignite.internal.commandline.CommandHandler.WAL_DELETE;
 import static org.apache.ignite.internal.commandline.CommandHandler.WAL_PRINT;
 
@@ -49,6 +55,88 @@ public class CommandHandlerParsingTest extends TestCase {
         System.clearProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
 
         super.tearDown();
+    }
+
+    /**
+     * validate_indexes command arguments parsing and validation
+     */
+    public void testValidateIndexArguments() {
+        CommandHandler hnd = new CommandHandler();
+
+        //happy case for all parameters
+        try {
+            int expectedCheckFirst = 10;
+            int expectedCheckThrough = 11;
+            UUID nodeId = UUID.randomUUID();
+
+            CacheArguments args = hnd.parseAndValidate(
+                Arrays.asList(
+                    CACHE.text(),
+                    CacheCommand.VALIDATE_INDEXES.text(),
+                    "cache1, cache2",
+                    nodeId.toString(),
+                    VI_CHECK_FIRST,
+                    Integer.toString(expectedCheckFirst),
+                    VI_CHECK_THROUGH,
+                    Integer.toString(expectedCheckThrough)
+                )
+            ).cacheArgs();
+
+            assertEquals("nodeId parameter unexpected value", nodeId, args.nodeId());
+            assertEquals("checkFirst parameter unexpected value", expectedCheckFirst, args.checkFirst());
+            assertEquals("checkThrough parameter unexpected value", expectedCheckThrough, args.checkThrough());
+        }
+        catch (IllegalArgumentException e) {
+            fail("Unexpected exception: " + e);
+        }
+
+        try {
+            int expectedParam = 11;
+            UUID nodeId = UUID.randomUUID();
+
+            CacheArguments args = hnd.parseAndValidate(
+                Arrays.asList(
+                    CACHE.text(),
+                    CacheCommand.VALIDATE_INDEXES.text(),
+                    nodeId.toString(),
+                    VI_CHECK_THROUGH,
+                    Integer.toString(expectedParam)
+                )
+            ).cacheArgs();
+
+            assertNull("caches weren't specified, null value expected", args.caches());
+            assertEquals("nodeId parameter unexpected value", nodeId, args.nodeId());
+            assertEquals("checkFirst parameter unexpected value", -1, args.checkFirst());
+            assertEquals("checkThrough parameter unexpected value", expectedParam, args.checkThrough());
+        }
+        catch (IllegalArgumentException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            hnd.parseAndValidate(
+                Arrays.asList(
+                    CACHE.text(),
+                    CacheCommand.VALIDATE_INDEXES.text(),
+                    VI_CHECK_FIRST,
+                    "0"
+                )
+            );
+
+            fail("Expected exception hasn't been thrown");
+        }
+        catch (IllegalArgumentException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            hnd.parseAndValidate(Arrays.asList(CACHE.text(), CacheCommand.VALIDATE_INDEXES.text(), VI_CHECK_THROUGH));
+
+            fail("Expected exception hasn't been thrown");
+        }
+        catch (IllegalArgumentException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -168,6 +256,66 @@ public class CommandHandlerParsingTest extends TestCase {
         }
         catch (IllegalArgumentException e) {
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * Tests that the auto confirmation flag was correctly parsed.
+     */
+    public void testParseAutoConfirmationFlag() {
+        CommandHandler hnd = new CommandHandler();
+
+        for (Command cmd : Command.values()) {
+            if (cmd != Command.DEACTIVATE
+                && cmd != Command.BASELINE
+                && cmd != Command.TX)
+                continue;
+
+            Arguments args = hnd.parseAndValidate(asList(cmd.text()));
+
+            assertEquals(cmd, args.command());
+            assertEquals(DFLT_HOST, args.host());
+            assertEquals(DFLT_PORT, args.port());
+            assertEquals(false, args.autoConfirmation());
+
+            switch (cmd) {
+                case DEACTIVATE: {
+                    args = hnd.parseAndValidate(asList(cmd.text(), "--yes"));
+
+                    assertEquals(cmd, args.command());
+                    assertEquals(DFLT_HOST, args.host());
+                    assertEquals(DFLT_PORT, args.port());
+                    assertEquals(true, args.autoConfirmation());
+
+                    break;
+                }
+                case BASELINE: {
+                    for (String baselineAct : asList("add", "remove", "set")) {
+                        args = hnd.parseAndValidate(asList(cmd.text(), baselineAct, "c_id1,c_id2", "--yes"));
+
+                        assertEquals(cmd, args.command());
+                        assertEquals(DFLT_HOST, args.host());
+                        assertEquals(DFLT_PORT, args.port());
+                        assertEquals(baselineAct, args.baselineAction());
+                        assertEquals("c_id1,c_id2", args.baselineArguments());
+                        assertEquals(true, args.autoConfirmation());
+                    }
+
+                    break;
+                }
+                case TX: {
+                    args = hnd.parseAndValidate(asList(cmd.text(), "xid", "xid1", "minDuration", "10", "kill", "--yes"));
+
+                    assertEquals(cmd, args.command());
+                    assertEquals(DFLT_HOST, args.host());
+                    assertEquals(DFLT_PORT, args.port());
+                    assertEquals(true, args.autoConfirmation());
+
+                    assertEquals("xid1", args.transactionArguments().getXid());
+                    assertEquals(10_000, args.transactionArguments().getMinDuration().longValue());
+                    assertEquals(VisorTxOperation.KILL, args.transactionArguments().getOperation());
+                }
+            }
         }
     }
 

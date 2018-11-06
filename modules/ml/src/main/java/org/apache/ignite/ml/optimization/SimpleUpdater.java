@@ -17,7 +17,7 @@
 
 package org.apache.ignite.ml.optimization;
 
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Simple updater with fixed learning rate which doesn't guarantee convergence.

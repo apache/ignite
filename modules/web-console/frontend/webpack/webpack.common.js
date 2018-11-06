@@ -23,26 +23,24 @@ import presetEs2015 from 'babel-preset-es2015';
 import presetStage1 from 'babel-preset-stage-1';
 
 import CopyWebpackPlugin from 'copy-webpack-plugin';
-import ExtractTextPlugin from 'extract-text-webpack-plugin';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import ProgressBarPlugin from 'progress-bar-webpack-plugin';
 
 import eslintFormatter from 'eslint-friendly-formatter';
 
-const basedir = path.resolve('./');
-const contentBase = path.resolve('public');
-const node_modules = path.resolve('node_modules');
+const basedir = path.join(__dirname, '../');
+const contentBase = path.join(basedir, 'public');
+const node_modules = path.join(basedir, 'node_modules');
+const app = path.join(basedir, 'app');
 
-const app = path.resolve('app');
-const IgniteModules = process.env.IGNITE_MODULES ? path.join(process.env.IGNITE_MODULES, 'frontend') : path.resolve('ignite_modules');
-
-export default {
+/** @type {webpack.Configuration} */
+const config = {
     node: {
         fs: 'empty'
     },
     // Entry points.
     entry: {
-        app: path.join(app, 'app.js'),
+        app: path.join(basedir, 'index.js'),
         browserUpdate: path.join(app, 'browserUpdate', 'index.js')
     },
 
@@ -60,9 +58,7 @@ export default {
         alias: {
             app,
             images: path.join(basedir, 'public/images'),
-            views: path.join(basedir, 'views'),
-            Controllers: path.join(basedir, 'controllers'),
-            IgniteModules
+            views: path.join(basedir, 'views')
         }
     },
 
@@ -79,7 +75,10 @@ export default {
             // Exclude tpl.pug files to import in bundle.
             {
                 test: /^(?:(?!tpl\.pug$).)*\.pug$/, // TODO: check this regexp for correct.
-                loader: `pug-html?basedir=${basedir}`
+                loader: 'pug-html',
+                query: {
+                    basedir
+                }
             },
 
             // Render .tpl.pug files to assets folder.
@@ -94,7 +93,7 @@ export default {
             {
                 test: /\.js$/,
                 enforce: 'pre',
-                exclude: [node_modules],
+                exclude: [/node_modules/],
                 use: [{
                     loader: 'eslint',
                     options: {
@@ -106,7 +105,7 @@ export default {
                 }]
             },
             {
-                test: /\.(js)$/,
+                test: /\.js$/,
                 exclude: [node_modules],
                 use: [{
                     loader: 'babel-loader',
@@ -124,13 +123,18 @@ export default {
             },
             {
                 test: /\.(ttf|eot|svg|woff(2)?)(\?v=[\d.]+)?(\?[a-z0-9#-]+)?$/,
-                exclude: [contentBase, IgniteModules],
+                exclude: [contentBase],
                 loader: 'file?name=assets/fonts/[name].[ext]'
             },
             {
-                test: /.*\.svg$/,
-                include: [contentBase, IgniteModules],
+                test: /^(?:(?!url\.svg$).)*\.svg$/,
+                include: [contentBase],
                 use: ['svg-sprite-loader']
+            },
+            {
+                test: /.*\.url\.svg$/,
+                include: [contentBase],
+                loader: 'file?name=assets/fonts/[name].[ext]'
             },
             {
                 test: /\.(jpe?g|png|gif)$/i,
@@ -178,18 +182,13 @@ export default {
         }),
         new webpack.optimize.AggressiveMergingPlugin({moveToParents: true}),
         new HtmlWebpackPlugin({
-            template: './views/index.pug'
+            template: path.join(basedir, './views/index.pug')
         }),
-        new ExtractTextPlugin({filename: 'assets/css/[name].[hash].css', allChunks: true}),
         new CopyWebpackPlugin([
-            { context: 'public', from: '**/*.png' },
-            { context: 'public', from: '**/*.svg' },
-            { context: 'public', from: '**/*.ico' },
-            // Ignite modules.
-            { context: IgniteModules, from: '**/*.png', force: true },
-            { context: IgniteModules, from: '**/*.svg', force: true },
-            { context: IgniteModules, from: '**/*.ico', force: true }
+            { context: 'public', from: '**/*.{png,svg,ico}' }
         ]),
         new ProgressBarPlugin()
     ]
 };
+
+export default config;

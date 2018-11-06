@@ -45,7 +45,7 @@ export default class PageConfigureAdvancedCluster {
         this.isBlocked$ = clusterID$;
     }
 
-    save(cluster) {
-        this.ConfigureState.dispatchAction(advancedSaveCluster(cluster));
+    save({cluster, download}) {
+        this.ConfigureState.dispatchAction(advancedSaveCluster(cluster, download));
     }
 }

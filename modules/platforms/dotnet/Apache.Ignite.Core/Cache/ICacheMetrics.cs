@@ -654,5 +654,23 @@ namespace Apache.Ignite.Core.Cache
         /// Number of clearing partitions for rebalance.
         /// </returns>
         long RebalanceClearingPartitionsLeft { get; }
+
+        /// <summary>
+        /// Gets number of already rebalanced keys.
+        /// need to be cleared before actual rebalance start.
+        /// </summary>
+        /// <returns>
+        /// Number of already rebalanced keys.
+        /// </returns>
+        long RebalancedKeys { get; }
+
+        /// <summary>
+        /// Gets number of estimated keys to rebalance.
+        /// need to be cleared before actual rebalance start.
+        /// </summary>
+        /// <returns>
+        /// Number of estimated keys to rebalance.
+        /// </returns>
+        long EstimatedRebalancingKeys { get; }
     }
 }

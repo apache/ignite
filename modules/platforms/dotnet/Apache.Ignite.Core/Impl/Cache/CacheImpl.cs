@@ -53,6 +53,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** Flag: keep binary. */
         private readonly bool _flagKeepBinary;
 
+        /** Flag: allow atomic operations in transactions. */
+        private readonly bool _flagAllowAtomicOpsInTx;
+
         /** Flag: no-retries.*/
         private readonly bool _flagNoRetries;
 
@@ -73,15 +76,17 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="flagKeepBinary">Keep binary flag.</param>
         /// <param name="flagNoRetries">No-retries mode flag.</param>
         /// <param name="flagPartitionRecover">Partition recover mode flag.</param>
+        /// <param name="flagAllowAtomicOpsInTx">Allow atomic operations in transactions flag.</param>
         public CacheImpl(IPlatformTargetInternal target,
-            bool flagSkipStore, bool flagKeepBinary, bool flagNoRetries, bool flagPartitionRecover)
-            : base(target)
+            bool flagSkipStore, bool flagKeepBinary, bool flagNoRetries, bool flagPartitionRecover,
+            bool flagAllowAtomicOpsInTx) : base(target)
         {
             _ignite = target.Marshaller.Ignite;
             _flagSkipStore = flagSkipStore;
             _flagKeepBinary = flagKeepBinary;
             _flagNoRetries = flagNoRetries;
             _flagPartitionRecover = flagPartitionRecover;
+            _flagAllowAtomicOpsInTx = flagAllowAtomicOpsInTx;
 
             _txManager = GetConfiguration().AtomicityMode == CacheAtomicityMode.Transactional
                 ? new CacheTransactionManager(_ignite.GetIgnite().GetTransactions())
@@ -172,7 +177,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return this;
 
             return new CacheImpl<TK, TV>(DoOutOpObject((int) CacheOp.WithSkipStore),
-                true, _flagKeepBinary, true, _flagPartitionRecover);
+                true, _flagKeepBinary, true, _flagPartitionRecover, _flagAllowAtomicOpsInTx);
         }
 
         /// <summary>
@@ -196,7 +201,17 @@ namespace Apache.Ignite.Core.Impl.Cache
             }
 
             return new CacheImpl<TK1, TV1>(DoOutOpObject((int) CacheOp.WithKeepBinary),
-                _flagSkipStore, true, _flagNoRetries, _flagPartitionRecover);
+                _flagSkipStore, true, _flagNoRetries, _flagPartitionRecover, _flagAllowAtomicOpsInTx);
+        }
+
+        /** <inheritDoc /> */
+        public ICache<TK, TV> WithAllowAtomicOpsInTx()
+        {
+            if (_flagAllowAtomicOpsInTx)
+                return this;
+
+            return new CacheImpl<TK, TV>(DoOutOpObject((int)CacheOp.WithSkipStore),
+                true, _flagKeepBinary, _flagSkipStore, _flagPartitionRecover, true);
         }
 
         /** <inheritDoc /> */
@@ -207,13 +222,18 @@ namespace Apache.Ignite.Core.Impl.Cache
             var cache0 = DoOutOpObject((int)CacheOp.WithExpiryPolicy, w => ExpiryPolicySerializer.WritePolicy(w, plc));
 
             return new CacheImpl<TK, TV>(cache0, _flagSkipStore, _flagKeepBinary, 
-                _flagNoRetries, _flagPartitionRecover);
+                _flagNoRetries, _flagPartitionRecover, _flagAllowAtomicOpsInTx);
         }
 
         /** <inheritDoc /> */
         public bool IsKeepBinary
         {
             get { return _flagKeepBinary; }
+        }
+
+        /** <inheritDoc /> */
+        public bool IsAllowAtomicOpsInTx {
+            get { return _flagAllowAtomicOpsInTx; }
         }
 
         /** <inheritDoc /> */
@@ -1017,7 +1037,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return this;
 
             return new CacheImpl<TK, TV>(DoOutOpObject((int) CacheOp.WithNoRetries),
-                _flagSkipStore, _flagKeepBinary, true, _flagPartitionRecover);
+                _flagSkipStore, _flagKeepBinary, true, _flagPartitionRecover, _flagAllowAtomicOpsInTx);
         }
 
         /** <inheritDoc /> */
@@ -1027,7 +1047,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return this;
 
             return new CacheImpl<TK, TV>(DoOutOpObject((int) CacheOp.WithPartitionRecover),
-                _flagSkipStore, _flagKeepBinary, _flagNoRetries, true);
+                _flagSkipStore, _flagKeepBinary, _flagNoRetries, true, _flagAllowAtomicOpsInTx);
         }
 
         /** <inheritDoc /> */

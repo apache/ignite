@@ -22,8 +22,8 @@ include /app/helpers/jade/mixins
 panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
     panel-title Discovery
     panel-description
-        | TCP/IP discovery configuration. 
-        | #[a.link-success(href="https://apacheignite.readme.io/docs/cluster-config" target="_blank") More info]
+        | TCP/IP discovery configuration.
+        | #[a.link-success(href="https://apacheignite.readme.io/docs/cluster-discovery" target="_blank") More info]
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
         .pca-form-column-6.pc-form-grid-row
             .pc-form-grid-col-20

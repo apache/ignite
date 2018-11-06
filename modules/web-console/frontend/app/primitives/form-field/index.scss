@@ -309,6 +309,7 @@
 }
 
 .form-field__checkbox {
+    $errorSize: 16px;
     display: flex;
 
     .form-field {
@@ -321,11 +322,38 @@
             width: auto;
             margin-right: 10px;
             padding: 3px 0;
+            flex: 0 0 auto;
 
             input {
                 width: auto;
                 height: auto;
                 margin: 0;
+            }
+        }
+
+        &__errors {
+            position: static;
+            right: initial;
+            bottom: initial;
+            order: 3;
+            margin-left: 5px;
+
+            .form-field__error {
+                width: $errorSize;
+                height: $errorSize;
+
+                div {
+                    // Required to correctly position error popover
+                    top: -10px;
+                    height: 36px;
+                    
+                    width: $errorSize;                    
+                }
+
+                [ignite-icon] {
+                    width: $errorSize;
+                    top: 0;
+                }
             }
         }
     }

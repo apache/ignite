@@ -33,6 +33,11 @@
         </file>
 
         <file>
+            <source>MIGRATION_GUIDE.txt</source>
+            <outputDirectory>/</outputDirectory>
+        </file>
+
+        <file>
             <source>config/ignite-log4j.xml</source>
             <outputDirectory>/config</outputDirectory>
         </file>

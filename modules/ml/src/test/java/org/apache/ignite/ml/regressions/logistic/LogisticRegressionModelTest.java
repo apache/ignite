@@ -18,9 +18,9 @@
 package org.apache.ignite.ml.regressions.logistic;
 
 import org.apache.ignite.ml.TestUtils;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionModel;
 import org.junit.Test;
 
@@ -34,33 +34,33 @@ public class LogisticRegressionModelTest {
     /** */
     @Test
     public void testPredict() {
-        Vector weights = new DenseLocalOnHeapVector(new double[]{2.0, 3.0});
+        Vector weights = new DenseVector(new double[]{2.0, 3.0});
         LogisticRegressionModel mdl = new LogisticRegressionModel(weights, 1.0).withRawLabels(true);
 
-        Vector observation = new DenseLocalOnHeapVector(new double[]{1.0, 1.0});
+        Vector observation = new DenseVector(new double[]{1.0, 1.0});
         TestUtils.assertEquals(sigmoid(1.0 + 2.0 * 1.0 + 3.0 * 1.0), mdl.apply(observation), PRECISION);
 
-        observation = new DenseLocalOnHeapVector(new double[]{2.0, 1.0});
+        observation = new DenseVector(new double[]{2.0, 1.0});
         TestUtils.assertEquals(sigmoid(1.0 + 2.0 * 2.0 + 3.0 * 1.0), mdl.apply(observation), PRECISION);
 
-        observation = new DenseLocalOnHeapVector(new double[]{1.0, 2.0});
+        observation = new DenseVector(new double[]{1.0, 2.0});
         TestUtils.assertEquals(sigmoid(1.0 + 2.0 * 1.0 + 3.0 * 2.0), mdl.apply(observation), PRECISION);
 
-        observation = new DenseLocalOnHeapVector(new double[]{-2.0, 1.0});
+        observation = new DenseVector(new double[]{-2.0, 1.0});
         TestUtils.assertEquals(sigmoid(1.0 - 2.0 * 2.0 + 3.0 * 1.0), mdl.apply(observation), PRECISION);
 
-        observation = new DenseLocalOnHeapVector(new double[]{1.0, -2.0});
+        observation = new DenseVector(new double[]{1.0, -2.0});
         TestUtils.assertEquals(sigmoid(1.0 + 2.0 * 1.0 - 3.0 * 2.0), mdl.apply(observation), PRECISION);
     }
 
     /** */
     @Test(expected = CardinalityException.class)
     public void testPredictOnAnObservationWithWrongCardinality() {
-        Vector weights = new DenseLocalOnHeapVector(new double[]{2.0, 3.0});
+        Vector weights = new DenseVector(new double[]{2.0, 3.0});
 
         LogisticRegressionModel mdl = new LogisticRegressionModel(weights, 1.0);
 
-        Vector observation = new DenseLocalOnHeapVector(new double[]{1.0});
+        Vector observation = new DenseVector(new double[]{1.0});
 
         mdl.apply(observation);
     }
