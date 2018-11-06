@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.IgniteCheckedException;
-
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 
 /**
  * Special field set iterator based on database result set.
@@ -31,20 +31,39 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private transient MvccQueryTracker mvccTracker;
+
     /**
      * @param data Data.
+     * @param mvccTracker Mvcc tracker.
+     * @param forUpdate {@code SELECT FOR UPDATE} flag.
      * @throws IgniteCheckedException If failed.
      */
-    public H2FieldsIterator(ResultSet data) throws IgniteCheckedException {
-        super(data);
+    public H2FieldsIterator(ResultSet data, MvccQueryTracker mvccTracker, boolean forUpdate)
+        throws IgniteCheckedException {
+        super(data, forUpdate);
+
+        this.mvccTracker = mvccTracker;
     }
 
     /** {@inheritDoc} */
     @Override protected List<?> createRow() {
-        ArrayList<Object> res = new ArrayList<>(row.length);
+        List<Object> res = new ArrayList<>(row.length);
 
         Collections.addAll(res, row);
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onClose() throws IgniteCheckedException {
+        try {
+            super.onClose();
+        }
+        finally {
+            if (mvccTracker != null)
+                mvccTracker.onDone();
+        }
     }
 }

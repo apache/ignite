@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -68,7 +69,7 @@ public class PendingRow {
      * @throws IgniteCheckedException If failed.
      */
     PendingRow initKey(CacheGroupContext grp) throws IgniteCheckedException {
-        CacheDataRowAdapter rowData = new CacheDataRowAdapter(link);
+        CacheDataRowAdapter rowData = grp.mvccEnabled() ? new MvccDataRow(link) : new CacheDataRowAdapter(link);
         rowData.initFromLink(grp, CacheDataRowAdapter.RowData.KEY_ONLY);
 
         key = rowData.key();

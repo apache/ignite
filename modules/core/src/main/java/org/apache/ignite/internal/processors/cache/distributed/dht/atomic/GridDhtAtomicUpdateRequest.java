@@ -449,7 +449,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     @Override public int partition() {
         assert !F.isEmpty(keys) || !F.isEmpty(nearKeys);
 
-        int p = keys.size() > 0 ? keys.get(0).partition() : nearKeys.get(0).partition();
+        int p = !keys.isEmpty() ? keys.get(0).partition() : nearKeys.get(0).partition();
 
         assert p >= 0;
 

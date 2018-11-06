@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -124,9 +123,6 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
 
     /** {@inheritDoc} */
     @Override public long getTotalAllocatedPages() {
-        if (!metricsEnabled)
-            return 0;
-
         return totalAllocatedPages.longValue();
     }
 
@@ -172,7 +168,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
 
         long totalAllocated = getPageSize() * totalAllocatedPages.longValue();
 
-        return (float) (totalAllocated - freeSpace) / totalAllocated;
+        return totalAllocated != 0 ?
+            (float) (totalAllocated - freeSpace) / totalAllocated
+            : 0f;
     }
 
     /** {@inheritDoc} */
@@ -278,9 +276,6 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
 
     /** {@inheritDoc} */
     @Override public long getOffHeapSize() {
-        if (!metricsEnabled)
-            return 0;
-
         return offHeapSize.get();
     }
 

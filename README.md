@@ -16,26 +16,42 @@ You can find the full Apache Ignite documentation here: [Full documentation][doc
 
 ## What is Apache Ignite?
 
-[Apache Ignite][apache-ignite-homepage] is a memory-centric multi-model distributed
- <strong>database</strong>, <strong>caching</strong>, and <strong>processing</strong> platform for
- transactional, analytical, and streaming workloads, delivering in-memory speeds at petabyte scale.
+[Apache Ignite][apache-ignite-homepage] is a memory-centric distributed <strong>database</strong>, <strong>caching</strong>,
+ and <strong>processing</strong> platform for transactional, analytical, and streaming workloads delivering in-memory
+ speeds at petabyte scale.
 
 <p align="center">
-    <a href="https://apacheignite.readme.io/docs">
-        <img src="https://ignite.apache.org/images/durable-memory.png" width="900px"/>
+    <a href="https://ignite.apache.org/whatisignite.html">
+        <img src="https://ignite.apache.org/images/ignite_architecture.png" width="400px"/>
     </a>
 </p>
 
-## Durable Memory
-Ignite's durable memory component treats RAM not just as a caching layer but as a complete fully functional storage layer. This means that users can turn the persistence on and off as needed. If the persistence is off, then Ignite can act as a distributed **in-memory database** or **in-memory data grid**, depending on whether you prefer to use SQL or key-value APIs. If the persistence is turned on, then Ignite becomes a distributed, **horizontally scalable database** that guarantees full data consistency and is resilient to full cluster failures.
+## Memory-Centric Storage
+Apache Ignite is based on distributed memory-centric architecture that combines the performance and scale of in-memory
+computing together with the disk durability and strong consistency in one system.
 
-[Read More](https://apacheignite.readme.io/docs/durable-memory)
+The main difference between the memory-centric approach and the traditional disk-centric approach is that the memory
+is treated as a fully functional storage, not just as a caching layer, like most databases do.
+For example, Apache Ignite can function in a pure in-memory mode, in which case it can be treated as an
+In-Memory Database (IMDB) and In-Memory Data Grid (IMDG) in one.
+
+On the other hand, when persistence is turned on, Ignite begins to function as a memory-centric system where most of
+the processing happens in memory, but the data and indexes get persisted to disk. The main difference here
+from the traditional disk-centric RDBMS or NoSQL system is that Ignite is strongly consistent, horizontally
+scalable, and supports both SQL and key-value processing APIs.
+
+[Read More](https://ignite.apache.org/arch/memorycentric.html)
 
 ## Ignite Persistence
 
-Ignite Native Persistence is a distributed, ACID, and SQL-compliant **disk store** that transparently integrates with Ignite's Durable Memory as an optional disk layer storing data and indexes on SSD, Flash, 3D XPoint, and other types of non-volatile storages.
+Ignite Native Persistence is a distributed, ACID, and SQL-compliant **disk store** that transparently integrates with
+Ignite memory-centric storage as an optional disk layer storing data and indexes on SSD,
+ Flash, 3D XPoint, and other types of non-volatile storages.
 
-With the Ignite Persistence enabled, you no longer need to keep all the data and indexes in memory or warm it up after a node or cluster restart because the Durable Memory is tightly coupled with persistence and treats it as a secondary memory tier. This implies that if a subset of data or an index is missing in RAM, the Durable Memory will take it from the disk.
+With the Ignite Persistence enabled, you no longer need to keep all the data and indexes in memory or warm it
+up after a node or cluster restart because the Durable Memory is tightly coupled with persistence and treats
+it as a secondary memory tier. This implies that if a subset of data or an index is missing in RAM,
+the Durable Memory will take it from the disk.
 
 <p align="center">
     <a href="https://apacheignite.readme.io/docs/distributed-persistent-store">
@@ -43,7 +59,7 @@ With the Ignite Persistence enabled, you no longer need to keep all the data and
     </a>
 </p>
 
-[Read More](https://apacheignite.readme.io/docs/distributed-persistent-store)
+[Read More](https://ignite.apache.org/arch/persistence.html)
 
 ## ACID Compliance
 Data stored in Ignite is ACID-compliant both in memory and on disk, making Ignite a **strongly consistent** system. Ignite transactions work across the network and can span multiple servers.

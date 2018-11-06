@@ -254,6 +254,14 @@ public class StartNodeCallableImpl implements StartNodeCallable {
                     igniteHome = igniteHome.replaceFirst("~", homeDir);
                 }
 
+                String prepareStartCmd = new SB()
+                    // Ensure diagnostics in the log even in case if start node breaks silently.
+                    .a("nohup echo \"Preparing to start remote node...\" > ")
+                    .a(scriptOutputDir).a('/').a(scriptOutputFileName).a(" 2>& 1 &")
+                    .toString();
+
+                shell(ses, prepareStartCmd);
+
                 String startNodeCmd = new SB()
                     // Console output is consumed, started nodes must use Ignite file appenders for log.
                     .a("nohup ")

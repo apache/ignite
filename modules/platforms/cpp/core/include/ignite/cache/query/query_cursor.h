@@ -158,19 +158,14 @@ namespace ignite
                     impl::cache::query::QueryCursorImpl* impl0 = impl.Get();
 
                     if (impl0) {
-                        impl::Out2Operation<K, V> outOp;
+                        K key;
+                        V val;
+
+                        impl::Out2Operation<K, V> outOp(key, val);
 
                         impl0->GetNext(outOp, err);
 
-                        if (err.GetCode() == IgniteError::IGNITE_SUCCESS) 
-                        {
-                            K& key = outOp.Get1();
-                            V& val = outOp.Get2();
-
-                            return CacheEntry<K, V>(key, val);
-                        }
-                        else 
-                            return CacheEntry<K, V>();
+                        return CacheEntry<K, V>(key, val);
                     }
                     else
                     {

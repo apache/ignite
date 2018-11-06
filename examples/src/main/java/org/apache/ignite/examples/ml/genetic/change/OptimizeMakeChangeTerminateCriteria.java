@@ -18,8 +18,8 @@
 package org.apache.ignite.examples.ml.genetic.change;
 
 import java.util.List;
+import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.ml.genetic.Chromosome;
 import org.apache.ignite.ml.genetic.Gene;
 import org.apache.ignite.ml.genetic.parameter.ITerminateCriteria;
@@ -29,19 +29,21 @@ import org.apache.ignite.ml.genetic.utils.GAGridUtils;
  * Terminate Condition implementation for {@link OptimizeMakeChangeGAExample}.
  */
 public class OptimizeMakeChangeTerminateCriteria implements ITerminateCriteria {
-    /** Ignite logger. */
-    private IgniteLogger igniteLog;
-    /** Ignite instance. */
-    private Ignite ignite;
+    /** */
+    private final Ignite ignite;
+
+    /** */
+    private final Consumer<String> logConsumer;
 
     /**
      * Create class instance.
      *
      * @param ignite Ignite instance.
+     * @param logConsumer Logging consumer.
      */
-    public OptimizeMakeChangeTerminateCriteria(Ignite ignite) {
+    OptimizeMakeChangeTerminateCriteria(Ignite ignite, Consumer<String> logConsumer) {
         this.ignite = ignite;
-        this.igniteLog = ignite.log();
+        this.logConsumer = logConsumer;
     }
 
     /**
@@ -56,13 +58,14 @@ public class OptimizeMakeChangeTerminateCriteria implements ITerminateCriteria {
         int currGeneration) {
         boolean isTerminate = true;
 
-        igniteLog.info("##########################################################################################");
-        igniteLog.info("Generation: " + currGeneration);
-        igniteLog.info("Fittest is Chromosome Key: " + fittestChromosome);
-        igniteLog.info("Chromosome: " + fittestChromosome);
-        printCoins(GAGridUtils.getGenesInOrderForChromosome(ignite, fittestChromosome));
-        igniteLog.info("Avg Chromosome Fitness: " + averageFitnessScore);
-        igniteLog.info("##########################################################################################");
+        logConsumer.accept(
+            "\n##########################################################################################"
+                + "\n Generation: " + currGeneration
+                + "\n Fittest is Chromosome Key: " + fittestChromosome
+                + "\n Chromosome: " + fittestChromosome
+                + "\n" + reportCoins(GAGridUtils.getGenesInOrderForChromosome(ignite, fittestChromosome))
+                + "\nAvg Chromosome Fitness: " + averageFitnessScore
+                + "\n##########################################################################################");
 
         if (!(currGeneration > 5))
             isTerminate = false;
@@ -74,11 +77,16 @@ public class OptimizeMakeChangeTerminateCriteria implements ITerminateCriteria {
      * Helper to print change details.
      *
      * @param genes List if Genes.
+     * @return Details to print.
      */
-    private void printCoins(List<Gene> genes) {
+    private String reportCoins(List<Gene> genes) {
+        StringBuilder sb = new StringBuilder();
+
         for (Gene gene : genes) {
-            igniteLog.info("Coin Type: " + ((Coin)gene.getVal()).getCoinType().toString());
-            igniteLog.info("Number of Coins: " + ((Coin)gene.getVal()).getNumOfCoins());
+            sb.append("\nCoin Type: ").append(((Coin)gene.getVal()).getCoinType().toString())
+                .append("\nNumber of Coins: ").append(((Coin)gene.getVal()).getNumOfCoins());
         }
+
+        return sb.toString();
     }
 }

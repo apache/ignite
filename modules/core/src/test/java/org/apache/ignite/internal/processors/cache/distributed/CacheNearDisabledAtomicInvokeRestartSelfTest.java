@@ -74,7 +74,7 @@ public class CacheNearDisabledAtomicInvokeRestartSelfTest extends CacheAbstractR
     }
 
     /** {@inheritDoc} */
-    protected void checkCache(IgniteEx ignite, IgniteCache cache) throws Exception {
+    @Override protected void checkCache(IgniteEx ignite, IgniteCache cache) throws Exception {
         log.info("Start cache validation.");
 
         long startTime = U.currentTimeMillis();

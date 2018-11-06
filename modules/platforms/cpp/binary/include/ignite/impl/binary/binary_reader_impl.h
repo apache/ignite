@@ -902,6 +902,17 @@ namespace ignite
                 /**
                  * Read object.
                  *
+                 * @param res Read object.
+                 */
+                template<typename T>
+                void ReadTopObject(T& res)
+                {
+                    return ignite::binary::ReadHelper<T>::Read(*this, res);
+                }
+
+                /**
+                 * Read object.
+                 *
                  * @return Read object.
                  */
                 template<typename R, typename T>

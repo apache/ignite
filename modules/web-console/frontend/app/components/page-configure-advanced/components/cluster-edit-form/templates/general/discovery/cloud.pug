@@ -28,19 +28,42 @@ mixin discovery-cloud(modelAt='$ctrl.clonedCluster')
 
     div.pc-form-grid-row&attributes(attributes=attributes)
         .pc-form-grid-col-30
-            +text('Credential:', `${model}.credential`, '"credential"', 'false', 'Input cloud credential',
-                'Credential that is used during authentication on the cloud<br/>\
-                Depending on a cloud platform it can be a password or access key')
+            +form-field__text({
+                label: 'Credential:',
+                model: `${model}.credential`,
+                name: '"credential"',
+                placeholder: 'Input cloud credential',
+                tip: 'Credential that is used during authentication on the cloud<br/>\
+                      Depending on a cloud platform it can be a password or access key'
+            })
         .pc-form-grid-col-30
-            +text('Path to credential:', `${model}.credentialPath`, '"credentialPath"', 'false', 'Input path to credential',
-                'Path to a credential that is used during authentication on the cloud<br/>\
-                Access key or private key should be stored in a plain or PEM file without a passphrase')
+            +form-field__text({
+                label: 'Path to credential:',
+                model: `${model}.credentialPath`,
+                name: '"credentialPath"',
+                placeholder: 'Input path to credential',
+                tip: 'Path to a credential that is used during authentication on the cloud<br/>\
+                     Access key or private key should be stored in a plain or PEM file without a passphrase'
+            })
         .pc-form-grid-col-30
-            +text('Identity:', `${model}.identity`, '"' + discoveryKind + 'Identity"', required, 'Input identity',
-                'Identity that is used as a user name during a connection to the cloud<br/>\
-                Depending on a cloud platform it can be an email address, user name, etc')
+            +form-field__text({
+                label: 'Identity:',
+                model: `${model}.identity`,
+                name: '"' + discoveryKind + 'Identity"',
+                required: required,
+                placeholder: 'Input identity',
+                tip: 'Identity that is used as a user name during a connection to the cloud<br/>\
+                     Depending on a cloud platform it can be an email address, user name, etc'
+            })
         .pc-form-grid-col-30
-            +text('Provider:', `${model}.provider`, '"' + discoveryKind + 'Provider"', required, 'Input provider', 'Cloud provider to use')
+            +form-field__text({
+                label:'Provider:',
+                model: `${model}.provider`,
+                name: '"' + discoveryKind + 'Provider"',
+                required: required,
+                placeholder: 'Input provider',
+                tip: 'Cloud provider to use'
+            })
         .pc-form-grid-col-60
             .ignite-form-field
                 +list-text-field({
@@ -57,8 +80,7 @@ mixin discovery-cloud(modelAt='$ctrl.clonedCluster')
                         Note, that some cloud providers, like Google Compute Engine, doesn't have a notion of a region. For such providers regions are redundant"
                     }]`
                 )
-                    +unique-feedback(_, 'Such region already exists!')
-
+                    +form-field__error({ error: 'igniteUnique', message: 'Such region already exists!' })
         .pc-form-grid-col-60
             .ignite-form-field
                 +list-text-field({
@@ -75,4 +97,4 @@ mixin discovery-cloud(modelAt='$ctrl.clonedCluster')
                         Note, that some cloud providers, like Rackspace, doesn't have a notion of a zone. For such providers zones are redundant"
                     }]`
                 )
-                    +unique-feedback(_, 'Such zone already exists!')
+                    +form-field__error({ error: 'igniteUnique', message: 'Such zone already exists!' })

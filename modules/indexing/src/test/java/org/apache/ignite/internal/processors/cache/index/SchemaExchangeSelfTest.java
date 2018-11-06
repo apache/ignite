@@ -32,6 +32,7 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import java.util.Collections;
@@ -46,6 +47,9 @@ import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.recon
 public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
     /** Node on which filter should be applied (if any). */
     private static String filterNodeName;
+
+    /** */
+    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -541,7 +545,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
 
         cfg.setClientMode(client);
         cfg.setLocalHost("127.0.0.1");
-        cfg.setDiscoverySpi(new TestTcpDiscoverySpi());
+        cfg.setDiscoverySpi(new TestTcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         if (filterNodeName != null && F.eq(name, filterNodeName))
             cfg.setUserAttributes(Collections.singletonMap("AFF_NODE", true));
@@ -591,7 +595,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
         cfg.setClientMode(client);
         cfg.setLocalHost("127.0.0.1");
 
-        cfg.setDiscoverySpi(new TestTcpDiscoverySpi());
+        cfg.setDiscoverySpi(new TestTcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         return (IgniteEx)Ignition.start(cfg);
     }

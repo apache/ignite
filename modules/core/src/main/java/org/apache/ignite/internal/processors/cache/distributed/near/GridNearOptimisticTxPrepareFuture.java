@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapping;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -68,6 +69,7 @@ import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.noCoordinatorError;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 import static org.apache.ignite.transactions.TransactionState.PREPARING;
 
@@ -214,13 +216,12 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     /**
      * @return Keys for which {@code MiniFuture} isn't completed.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     public Set<IgniteTxKey> requestedKeys() {
         synchronized (this) {
             int size = futuresCountNoLock();
 
             for (int i = 0; i < size; i++) {
-                IgniteInternalFuture<GridNearTxPrepareResponse> fut = future(i);
+                IgniteInternalFuture fut = future(i);
 
                 if (isMini(fut) && !fut.isDone()) {
                     MiniFuture miniFut = (MiniFuture)fut;
@@ -246,7 +247,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
      * @param miniId Mini ID to find.
      * @return Mini future.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (this) {
@@ -254,7 +254,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
             // Avoid iterator creation.
             for (int i = size - 1; i >= 0; i--) {
-                IgniteInternalFuture<GridNearTxPrepareResponse> fut = future(i);
+                IgniteInternalFuture fut = future(i);
 
                 if (!isMini(fut))
                     continue;
@@ -380,6 +380,18 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 tx.colocatedLocallyMapped(true);
         }
 
+        if (write.context().mvccEnabled()) {
+            MvccCoordinator mvccCrd = write.context().affinity().mvccCoordinator(topVer);
+
+            if (mvccCrd == null) {
+                onDone(noCoordinatorError(topVer));
+
+                return;
+            }
+
+            initMvccVersionFuture(keyLockFut != null ? 2 : 1, remap);
+        }
+
         if (keyLockFut != null)
             keyLockFut.onAllKeysAdded();
 
@@ -424,6 +436,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
         boolean hasNearCache = false;
 
+        MvccCoordinator mvccCrd = null;
+
         for (IgniteTxEntry write : writes) {
             write.clearEntryReadVersion();
 
@@ -432,6 +446,16 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             if (updated == null)
                 // an exception occurred while transaction mapping, stop further processing
                 break;
+
+            if (write.context().mvccEnabled() && mvccCrd == null) {
+                mvccCrd = write.context().affinity().mvccCoordinator(topVer);
+
+                if (mvccCrd == null) {
+                    onDone(noCoordinatorError(topVer));
+
+                    break;
+                }
+            }
 
             if (write.context().isNear())
                 hasNearCache = true;
@@ -472,6 +496,11 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             return;
         }
 
+        assert !tx.txState().mvccEnabled() || mvccCrd != null;
+
+        if (mvccCrd != null)
+            initMvccVersionFuture(keyLockFut != null ? 2 : 1, remap);
+
         if (keyLockFut != null)
             keyLockFut.onAllKeysAdded();
 
@@ -495,8 +524,12 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     private void proceedPrepare(final Queue<GridDistributedTxMapping> mappings) {
         final GridDistributedTxMapping m = mappings.poll();
 
-        if (m == null)
+        if (m == null) {
+            if (mvccVerFut != null)
+                mvccVerFut.onLockReceived();
+
             return;
+        }
 
         proceedPrepare(m, mappings);
     }
@@ -562,7 +595,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
                 req.miniId(fut.futureId());
 
-                add(fut); // Append new future.
+                add((IgniteInternalFuture)fut); // Append new future.
 
                 if (n.isLocal()) {
                     assert !(m.hasColocatedCacheEntries() && m.hasNearCacheEntries()) : m;
@@ -679,7 +712,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 if (keyLockFut == null) {
                     keyLockFut = new KeyLockFuture();
 
-                    add(keyLockFut);
+                    add((IgniteInternalFuture)keyLockFut);
                 }
 
                 keyLockFut.addLockKey(entry.txKey());
@@ -726,7 +759,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     /**
      *
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     private void onTimeout() {
         if (cctx.tm().deadlockDetectionEnabled()) {
             Set<IgniteTxKey> keys = null;
@@ -738,7 +770,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                     int size = futuresCountNoLock();
 
                     for (int i = 0; i < size; i++) {
-                        IgniteInternalFuture<GridNearTxPrepareResponse> fut = future(i);
+                        IgniteInternalFuture fut = future(i);
 
                         if (isMini(fut) && !fut.isDone()) {
                             MiniFuture miniFut = (MiniFuture)fut;
@@ -756,7 +788,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 }
             }
 
-            add(new GridEmbeddedFuture<>(new IgniteBiClosure<TxDeadlock, Exception, GridNearTxPrepareResponse>() {
+            add(new GridEmbeddedFuture<>(new IgniteBiClosure<TxDeadlock, Exception, Object>() {
                 @Override public GridNearTxPrepareResponse apply(TxDeadlock deadlock, Exception e) {
                     if (e != null)
                         U.warn(log, "Failed to detect deadlock.", e);
@@ -787,7 +819,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     /** {@inheritDoc} */
     @Override public void addDiagnosticRequest(IgniteDiagnosticPrepareContext ctx) {
         if (!isDone()) {
-            for (IgniteInternalFuture<GridNearTxPrepareResponse> fut : futures()) {
+            for (IgniteInternalFuture fut : futures()) {
                 if (!fut.isDone()) {
                     if (fut instanceof MiniFuture) {
                         MiniFuture miniFut = (MiniFuture)fut;
@@ -843,19 +875,22 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     @Override public String toString() {
         Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
             @Override public String apply(IgniteInternalFuture<?> f) {
-                return "[node=" + ((MiniFuture)f).node().id() +
-                    ", loc=" + ((MiniFuture)f).node().isLocal() +
-                    ", done=" + f.isDone() + "]";
+                if (isMini(f)) {
+                    return "[node=" + ((MiniFuture)f).node().id() +
+                        ", loc=" + ((MiniFuture)f).node().isLocal() +
+                        ", done=" + f.isDone() + "]";
+                }
+                else
+                    return f.toString();
             }
-        }, new P1<IgniteInternalFuture<GridNearTxPrepareResponse>>() {
-            @Override public boolean apply(IgniteInternalFuture<GridNearTxPrepareResponse> fut) {
+        }, new P1<IgniteInternalFuture<Object>>() {
+            @Override public boolean apply(IgniteInternalFuture<Object> fut) {
                 return isMini(fut);
             }
         });
 
         return S.toString(GridNearOptimisticTxPrepareFuture.class, this,
             "innerFuts", futs,
-            "keyLockFut", keyLockFut,
             "tx", tx,
             "super", super.toString());
     }
@@ -879,7 +914,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         private GridDistributedTxMapping m;
 
         /** Flag to signal some result being processed. */
-        @SuppressWarnings("UnusedDeclaration")
         private volatile int rcvRes;
 
         /** Mappings to proceed prepare. */
@@ -964,7 +998,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         /**
          * @param res Result callback.
          */
-        @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
         void onResult(final GridNearTxPrepareResponse res) {
             if (isDone())
                 return;
@@ -1001,6 +1034,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                         // Proceed prepare before finishing mini future.
                         if (mappings != null)
                             parent.proceedPrepare(mappings);
+                        else if (parent.mvccVerFut != null)
+                            parent.mvccVerFut.onLockReceived();
 
                         // Finish this mini future.
                         onDone((GridNearTxPrepareResponse)null);

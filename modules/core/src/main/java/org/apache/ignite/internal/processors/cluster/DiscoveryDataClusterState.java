@@ -201,6 +201,23 @@ public class DiscoveryDataClusterState implements Serializable {
     }
 
     /**
+     *
+     * @return {@code True} If baseLine changed, {@code False} if not.
+     */
+    public boolean baselineChanged() {
+        BaselineTopology prevBLT = previousBaselineTopology();
+        BaselineTopology curBLT = baselineTopology();
+
+        if (prevBLT == null && curBLT != null)
+            return true;
+
+        if (prevBLT!= null && curBLT != null)
+            return !prevBLT.equals(curBLT);
+
+        return false;
+    }
+
+    /**
      * @return {@code True} if baseline topology is set in the cluster. {@code False} otherwise.
      */
     public boolean hasBaselineTopology() {
@@ -245,7 +262,8 @@ public class DiscoveryDataClusterState implements Serializable {
                 null,
                 null
             ) :
-            prevState;
+            prevState != null ? prevState :
+                    DiscoveryDataClusterState.createState(false, null);
     }
 
     /** {@inheritDoc} */

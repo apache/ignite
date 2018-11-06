@@ -140,7 +140,7 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
 
             for (int i = 1; i <= SPLIT_COUNT; i++) {
                 jobs.add(new ComputeJobAdapter(i) {
-                    @SuppressWarnings({"UnconditionalWait"})
+                    @Override @SuppressWarnings({"UnconditionalWait"})
                     public Serializable execute() {
                         assert taskSes != null;
 
@@ -167,7 +167,7 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
                                 lsnr.wait(WAIT_TIME);
                             }
 
-                            return lsnr.getAttributes().size() == 0 ? 0 : 1;
+                            return lsnr.getAttributes().isEmpty() ? 0 : 1;
                         }
                         catch (InterruptedException e) {
                             throw new IgniteException("Failed to wait for listener due to interruption.", e);

@@ -23,7 +23,7 @@ package org.apache.ignite.examples.ml.tutorial;
  */
 public class TutorialStepByStepExample {
     /** Run examples with default settings. */
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) {
         Step_1_Read_and_Learn.main(args);
         Step_2_Imputing.main(args);
         Step_3_Categorial.main(args);

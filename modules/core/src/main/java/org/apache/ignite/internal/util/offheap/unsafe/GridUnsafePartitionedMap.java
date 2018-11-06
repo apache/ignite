@@ -76,7 +76,6 @@ public class GridUnsafePartitionedMap implements GridOffHeapPartitionedMap {
      * @param lruStripes LRU stripes.
      * @param evictLsnr Eviction callback.
      */
-    @SuppressWarnings("unchecked")
     public GridUnsafePartitionedMap(int parts, int concurrency, float load, long initCap, long totalMem,
         short lruStripes, @Nullable GridOffHeapEvictListener evictLsnr) {
         this.parts = parts;
@@ -291,7 +290,7 @@ public class GridUnsafePartitionedMap implements GridOffHeapPartitionedMap {
     /** {@inheritDoc} */
     @Override public GridCloseableIterator<IgniteBiTuple<byte[], byte[]>> iterator() {
         return new PartitionedMapCloseableIterator<IgniteBiTuple<byte[], byte[]>>() {
-            protected void advance() throws IgniteCheckedException {
+            @Override protected void advance() throws IgniteCheckedException {
                 curIt = null;
 
                 while (p < parts) {
@@ -313,7 +312,7 @@ public class GridUnsafePartitionedMap implements GridOffHeapPartitionedMap {
         assert c != null;
 
         return new PartitionedMapCloseableIterator<T>() {
-            protected void advance() throws IgniteCheckedException {
+            @Override protected void advance() throws IgniteCheckedException {
                 curIt = null;
 
                 while (p < parts) {

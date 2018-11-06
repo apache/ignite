@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import JavaTypes from '../../app/services/JavaTypes.service.js';
+import JavaTypes from '../../app/services/JavaTypes.service';
 
 import generator from '../../app/modules/configuration/generator/ConfigurationGenerator';
 import transformer from '../../app/modules/configuration/generator/JavaTransformer.service';

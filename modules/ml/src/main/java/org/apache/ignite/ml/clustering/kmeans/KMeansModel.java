@@ -54,12 +54,12 @@ public class KMeansModel implements ClusterizationModel<Vector, Integer>, Export
     }
 
     /** Amount of centers in clusterization. */
-    @Override public int amountOfClusters() {
+    @Override public int getAmountOfClusters() {
         return centers.length;
     }
 
     /** Get centers of clusters. */
-    @Override public Vector[] centers() {
+    @Override public Vector[] getCenters() {
         return Arrays.copyOf(centers, centers.length);
     }
 

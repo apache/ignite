@@ -125,7 +125,7 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
         if (backups < 2)
             cacheCfg.setAffinity(affinityFunction());
         else
-            cacheCfg.setAffinity(affinityFunctionWithAffinityBackupFilter());
+            cacheCfg.setAffinity(affinityFunctionWithAffinityBackupFilter(SPLIT_ATTRIBUTE_NAME));
 
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setRebalanceMode(SYNC);
@@ -151,7 +151,7 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
     /**
      * @return Affinity function for test.
      */
-    protected abstract AffinityFunction affinityFunctionWithAffinityBackupFilter();
+    protected abstract AffinityFunction affinityFunctionWithAffinityBackupFilter(String attributeName);
 
     /**
      * @throws Exception If failed.
@@ -234,10 +234,14 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
         }
     }
 
+    /* Different affinityBackupFilters have different goals */
+    protected int expectedNodesForEachPartition() {
+       return backups + 1;
+    }
+
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ConstantConditions")
     private void checkPartitionsWithAffinityBackupFilter() throws Exception {
         AffinityFunction aff = cacheConfiguration(grid(0).configuration(), DEFAULT_CACHE_NAME).getAffinity();
 
@@ -248,11 +252,11 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
         for (int i = 0; i < partCnt; i++) {
             Collection<ClusterNode> nodes = affinity(cache).mapKeyToPrimaryAndBackups(i);
 
-            assertEquals(backups + 1, nodes.size());
+            assertEquals(expectedNodesForEachPartition(), nodes.size());
 
             Map<String, Integer> stat = getAttributeStatistic(nodes);
 
-            assertEquals(stat.get(FIRST_NODE_GROUP), new Integer(2));
+            assertEquals(stat.get(FIRST_NODE_GROUP), new Integer(expectedNodesForEachPartition() - 2 ));
 
             assertEquals(stat.get("B"), new Integer(1));
 

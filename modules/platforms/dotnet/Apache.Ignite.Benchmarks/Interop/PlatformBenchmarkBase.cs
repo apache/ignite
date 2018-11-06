@@ -135,7 +135,7 @@ namespace Apache.Ignite.Benchmarks.Interop
         {
             return new IgniteClientConfiguration
             {
-                Host = IPAddress.Loopback.ToString()
+                Endpoints = new[] {IPAddress.Loopback.ToString()}
             };
         }
     }

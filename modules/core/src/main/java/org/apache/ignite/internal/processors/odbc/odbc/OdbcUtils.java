@@ -173,6 +173,7 @@ public class OdbcUtils {
         String msg = err.getMessage();
 
         Throwable e = err.getCause();
+
         while (e != null) {
             if (e.getClass().getCanonicalName().equals("org.h2.jdbc.JdbcSQLException")) {
                 msg = e.getMessage();
@@ -202,7 +203,7 @@ public class OdbcUtils {
         if (iter.hasNext()) {
             List<?> res = iter.next();
 
-            if (res.size() > 0) {
+            if (!res.isEmpty()) {
                 Long affected = (Long) res.get(0);
 
                 if (affected != null)

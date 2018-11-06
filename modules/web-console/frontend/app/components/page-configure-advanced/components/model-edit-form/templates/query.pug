@@ -26,7 +26,7 @@ include /app/helpers/jade/mixins
 panel-collapsible(ng-form=form opened=`!!${model}.queryMetadata`)
     panel-title#query-title Domain model for SQL query
     panel-description
-        | Domain model properties for fields queries. 
+        | Domain model properties for fields queries.
         a.link-success(href='https://apacheignite.readme.io/docs/cache-queries' target='_blank') More info
     panel-content.pca-form-row
         .pca-form-column-6.pc-form-grid-row
@@ -37,16 +37,31 @@ panel-collapsible(ng-form=form opened=`!!${model}.queryMetadata`)
                 label Not available for annotated types
 
             .pc-form-grid-col-60(ng-if-start=`${model}.queryMetadata === 'Configuration'`)
-                +text('Table name:', `${model}.tableName`, '"tableName"', 'false', 'Enter table name')
+                +form-field__text({
+                    label: 'Table name:',
+                    model: `${model}.tableName`,
+                    name: '"tableName"',
+                    placeholder: 'Enter table name'
+                })
 
             .pc-form-grid-col-30(ng-if-start='$ctrl.available("2.0.0")')
-                +text('Key field name:', `${model}.keyFieldName`, '"keyFieldName"', 'false', 'Enter key field name',
-                    'Key name.<br/>' +
-                    'Can be used in field list to denote the key as a whole')
+                +form-field__text({
+                    label: 'Key field name:',
+                    model: `${model}.keyFieldName`,
+                    name: '"keyFieldName"',
+                    placeholder: 'Enter key field name',
+                    tip: 'Key name.<br/>' +
+                        'Can be used in field list to denote the key as a whole'
+                })
             .pc-form-grid-col-30(ng-if-end)
-                +text('Value field name:', `${model}.valueFieldName`, '"valueFieldName"', 'false', 'Enter value field name',
-                    'Value name.<br/>' +
-                    'Can be used in field list to denote the entire value')
+                +form-field__text({
+                    label: 'Value field name:',
+                    model: `${model}.valueFieldName`,
+                    name: '"valueFieldName"',
+                    placeholder: 'Enter value field name',
+                    tip: 'Value name.<br/>' +
+                        'Can be used in field list to denote the entire value'
+                })
 
             .pc-form-grid-col-60
                 mixin domains-query-fields
@@ -70,17 +85,24 @@ panel-collapsible(ng-form=form opened=`!!${model}.queryMetadata`)
                                         +form-field__text({
                                             label: 'Field name:',
                                             model: '$item.name',
-                                            name: '"name"', 
+                                            name: '"name"',
                                             required: true,
                                             placeholder: 'Enter field name'
                                         })(
-                                            data-ignite-unique=items
-                                            data-ignite-unique-property='name'
+                                            ignite-unique=items
+                                            ignite-unique-property='name'
                                             ignite-auto-focus
                                         )
-                                            +unique-feedback('"name"', 'Property with such name already exists!')
+                                            +form-field__error({ error: 'igniteUnique', message: 'Property with such name already exists!' })
                                     .pc-form-grid-col-30
-                                        +java-class-typeahead('Field full class name:', `$item.className`, '"className"', '$ctrl.queryFieldTypes', true, true, 'Enter field full class name')(
+                                        +form-field__java-class--typeahead({
+                                            label: 'Field full class name:',
+                                            model: `$item.className`,
+                                            name: '"className"',
+                                            options: '$ctrl.queryFieldTypes',
+                                            required: 'true',
+                                            placeholder: 'Enter field full class name'
+                                        })(
                                             ng-model-options='{allowInvalid: true}'
                                             extra-valid-java-identifiers='$ctrl.queryFieldTypes'
                                         )
@@ -130,11 +152,11 @@ panel-collapsible(ng-form=form opened=`!!${model}.queryMetadata`)
                                             required: true,
                                             placeholder: 'Enter field name'
                                         })(
-                                            data-ignite-unique=items
-                                            data-ignite-unique-property='field'
+                                            ignite-unique=items
+                                            ignite-unique-property='field'
                                             ignite-auto-focus
                                         )
-                                            +unique-feedback('"field"', 'Such field already exists!')
+                                            +form-field__error({ error: 'igniteUnique', message: 'Such field already exists!' })
                                     .pc-form-grid-col-30
                                         +form-field__text({
                                             label: 'Field alias',
@@ -190,7 +212,7 @@ panel-collapsible(ng-form=form opened=`!!${model}.queryMetadata`)
                                         ignite-unique-property='name'
                                         ignite-form-field-input-autofocus='true'
                                     )
-                                        +unique-feedback(_, 'Such index already exists!')
+                                        +form-field__error({ error: 'igniteUnique', message: 'Such index already exists!' })
                                 .pc-form-grid-col-30
                                     +form-field__dropdown({
                                         label: 'Index type:',
@@ -211,7 +233,7 @@ panel-collapsible(ng-form=form opened=`!!${model}.queryMetadata`)
                                             ng-required='true'
                                         )
                                             list-editable-item-view(item-name='indexField')
-                                                | {{ indexField.name }} 
+                                                | {{ indexField.name }}
                                                 span(ng-if='queryIndex.indexType === "SORTED"')
                                                     |  / {{ indexField.direction ? "ASC" : "DESC" }}
 
@@ -232,7 +254,7 @@ panel-collapsible(ng-form=form opened=`!!${model}.queryMetadata`)
                                                             ignite-unique-property='name'
                                                             ignite-auto-focus
                                                         )
-                                                            +unique-feedback(_, 'Such field already exists!')
+                                                            +form-field__error({ error: 'igniteUnique', message: 'Such field already exists!' })
                                                     .pc-form-grid-col-60(
                                                         ng-if='queryIndex.indexType === "SORTED"'
                                                     )

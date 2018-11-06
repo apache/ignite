@@ -24,28 +24,82 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
     panel-title Communication
     panel-description
         | Configuration of communication with other nodes by TCP/IP.
-        | Provide basic plumbing to send and receive grid messages and is utilized for all distributed grid operations. 
+        | Provide basic plumbing to send and receive grid messages and is utilized for all distributed grid operations.
         | #[a.link-success(href="https://apacheignite.readme.io/docs/network-config" target="_blank") More info]
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
         .pca-form-column-6.pc-form-grid-row
             .pc-form-grid-col-30
-                +number('Timeout:', `${model}.networkTimeout`, '"commNetworkTimeout"', 'true', '5000', '1', 'Maximum timeout in milliseconds for network requests')
+                +form-field__number({
+                    label: 'Timeout:',
+                    model: `${model}.networkTimeout`,
+                    name: '"commNetworkTimeout"',
+                    placeholder: '5000',
+                    min: '1',
+                    tip: 'Maximum timeout in milliseconds for network requests'
+                })
             .pc-form-grid-col-30
-                +number('Send retry delay:', `${model}.networkSendRetryDelay`, '"networkSendRetryDelay"', 'true', '1000', '1', 'Interval in milliseconds between message send retries')
+                +form-field__number({
+                    label: 'Send retry delay:',
+                    model: `${model}.networkSendRetryDelay`,
+                    name: '"networkSendRetryDelay"',
+                    placeholder: '1000',
+                    min: '1',
+                    tip: 'Interval in milliseconds between message send retries'
+                })
             .pc-form-grid-col-30
-                +number('Send retry count:', `${model}.networkSendRetryCount`, '"networkSendRetryCount"', 'true', '3', '1', 'Message send retries count')
+                +form-field__number({
+                    label: 'Send retry count:',
+                    model: `${model}.networkSendRetryCount`,
+                    name: '"networkSendRetryCount"',
+                    placeholder: '3',
+                    min: '1',
+                    tip: 'Message send retries count'
+                })
             .pc-form-grid-col-30(ng-if='$ctrl.available(["1.0.0", "2.3.0"])')
-                +number('Discovery startup delay:', `${model}.discoveryStartupDelay`, '"discoveryStartupDelay"', 'true', '60000', '1', 'This value is used to expire messages from waiting list whenever node discovery discrepancies happen')
+                +form-field__number({
+                    label: 'Discovery startup delay:',
+                    model: `${model}.discoveryStartupDelay`,
+                    name: '"discoveryStartupDelay"',
+                    placeholder: '60000',
+                    min: '1',
+                    tip: 'This value is used to expire messages from waiting list whenever node discovery discrepancies happen'
+                })
             .pc-form-grid-col-60
-                +java-class('Communication listener:', `${communication}.listener`, '"comListener"', 'true', 'false', 'Listener of communication events')
+                +form-field__java-class({
+                    label: 'Communication listener:',
+                    model: `${communication}.listener`,
+                    name: '"comListener"',
+                    tip: 'Listener of communication events'
+                })
             .pc-form-grid-col-30
-                +text-ip-address('Local IP address:', `${communication}.localAddress`, '"comLocalAddress"', 'true', '0.0.0.0',
-                    'Local host address for socket binding<br/>\
-                    If not specified use all available addres on local host')
+                +form-field__ip-address({
+                    label: 'Local IP address:',
+                    model: `${communication}.localAddress`,
+                    name: '"comLocalAddress"',
+                    enabled: 'true',
+                    placeholder: '0.0.0.0',
+                    tip: 'Local host address for socket binding<br/>\
+                         If not specified use all available addres on local host'
+                })
             .pc-form-grid-col-30
-                +number-min-max('Local port:', `${communication}.localPort`, '"comLocalPort"', 'true', '47100', '1024', '65535', 'Local port for socket binding')
+                +form-field__number({
+                    label: 'Local port:',
+                    model: `${communication}.localPort`,
+                    name: '"comLocalPort"',
+                    placeholder: '47100',
+                    min: '1024',
+                    max: '65535',
+                    tip: 'Local port for socket binding'
+                })
             .pc-form-grid-col-30
-                +number('Local port range:', `${communication}.localPortRange`, '"comLocalPortRange"', 'true', '100', '1', 'Local port range for local host ports')
+                +form-field__number({
+                    label: 'Local port range:',
+                    model: `${communication}.localPortRange`,
+                    name: '"comLocalPortRange"',
+                    placeholder: '100',
+                    min: '1',
+                    tip: 'Local port range for local host ports'
+                })
             .pc-form-grid-col-30
                 +form-field__number({
                     label: 'Shared memory port:',
@@ -60,21 +114,68 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                 )
                     +form-field__error({ error: 'notInCollection', message: 'Shared memory port should be more than "{{ ::$ctrl.Clusters.sharedMemoryPort.invalidValues[0] }}" or equal to "{{ ::$ctrl.Clusters.sharedMemoryPort.min }}"' })
             .pc-form-grid-col-30
-                +number('Idle connection timeout:', `${communication}.idleConnectionTimeout`, '"idleConnectionTimeout"', 'true', '30000', '1',
-                    'Maximum idle connection timeout upon which a connection to client will be closed')
+                +form-field__number({
+                    label: 'Idle connection timeout:',
+                    model: `${communication}.idleConnectionTimeout`,
+                    name: '"idleConnectionTimeout"',
+                    placeholder: '30000',
+                    min: '1',
+                    tip: 'Maximum idle connection timeout upon which a connection to client will be closed'
+                })
             .pc-form-grid-col-30
-                +number('Connect timeout:', `${communication}.connectTimeout`, '"connectTimeout"', 'true', '5000', '0', 'Connect timeout used when establishing connection with remote nodes')
+                +form-field__number({
+                    label: 'Connect timeout:',
+                    model: `${communication}.connectTimeout`,
+                    name: '"connectTimeout"',
+                    placeholder: '5000',
+                    min: '0',
+                    tip: 'Connect timeout used when establishing connection with remote nodes'
+                })
             .pc-form-grid-col-30
-                +number('Max. connect timeout:', `${communication}.maxConnectTimeout`, '"maxConnectTimeout"', 'true', '600000', '0', 'Maximum connect timeout')
+                +form-field__number({
+                    label: 'Max. connect timeout:',
+                    model: `${communication}.maxConnectTimeout`,
+                    name: '"maxConnectTimeout"',
+                    placeholder: '600000',
+                    min: '0',
+                    tip: 'Maximum connect timeout'
+                })
             .pc-form-grid-col-30
-                +number('Reconnect count:', `${communication}.reconnectCount`, '"comReconnectCount"', 'true', '10', '1',
-                    'Maximum number of reconnect attempts used when establishing connection with remote nodes')
+                +form-field__number({
+                    label: 'Reconnect count:',
+                    model: `${communication}.reconnectCount`,
+                    name: '"comReconnectCount"',
+                    placeholder: '10',
+                    min: '1',
+                    tip: 'Maximum number of reconnect attempts used when establishing connection with remote nodes'
+                })
             .pc-form-grid-col-30
-                +number('Socket send buffer:', `${communication}.socketSendBuffer`, '"socketSendBuffer"', 'true', '32768', '0', 'Send buffer size for sockets created or accepted by this SPI')
+                +form-field__number({
+                    label: 'Socket send buffer:',
+                    model: `${communication}.socketSendBuffer`,
+                    name: '"socketSendBuffer"',
+                    placeholder: '32768',
+                    min: '0',
+                    tip: 'Send buffer size for sockets created or accepted by this SPI'
+                })
             .pc-form-grid-col-30
-                +number('Socket receive buffer:', `${communication}.socketReceiveBuffer`, '"socketReceiveBuffer"', 'true', '32768', '0', 'Receive buffer size for sockets created or accepted by this SPI')
+                +form-field__number({
+                    label: 'Socket receive buffer:',
+                    model: `${communication}.socketReceiveBuffer`,
+                    name: '"socketReceiveBuffer"',
+                    placeholder: '32768',
+                    min: '0',
+                    tip: 'Receive buffer size for sockets created or accepted by this SPI'
+                })
             .pc-form-grid-col-30
-                +number('Slow client queue limit:', `${communication}.slowClientQueueLimit`, '"slowClientQueueLimit"', 'true', '0', '0', 'Slow client queue limit')
+                +form-field__number({
+                    label: 'Slow client queue limit:',
+                    model: `${communication}.slowClientQueueLimit`,
+                    name: '"slowClientQueueLimit"',
+                    placeholder: '0',
+                    min: '0',
+                    tip: 'Slow client queue limit'
+                })
             .pc-form-grid-col-30
                 +form-field__number({
                     label: 'Ack send threshold:',
@@ -117,18 +218,51 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     }`
                 )
             .pc-form-grid-col-30
-                +number('Socket write timeout:', `${communication}.socketWriteTimeout`, '"socketWriteTimeout"', 'true', '2000', '0', 'Socket write timeout')
+                +form-field__number({
+                    label: 'Socket write timeout:',
+                    model: `${communication}.socketWriteTimeout`,
+                    name: '"socketWriteTimeout"',
+                    placeholder: '2000',
+                    min: '0',
+                    tip: 'Socket write timeout'
+                })
             .pc-form-grid-col-30
-                +number('Selectors count:', `${communication}.selectorsCount`, '"selectorsCount"', 'true', 'min(4, availableProcessors)', '1', 'Count of selectors te be used in TCP server')
+                +form-field__number({
+                    label: 'Selectors count:',
+                    model: `${communication}.selectorsCount`,
+                    name: '"selectorsCount"',
+                    placeholder: 'min(4, availableProcessors)',
+                    min: '1',
+                    tip: 'Count of selectors te be used in TCP server'
+                })
             .pc-form-grid-col-60
-                +java-class('Address resolver:', `${communication}.addressResolver`, '"comAddressResolver"', 'true', 'false', 'Provides resolution between external and internal addresses')
+                +form-field__java-class({
+                    label: 'Address resolver:',
+                    model: `${communication}.addressResolver`,
+                    name: '"comAddressResolver"',
+                    tip: 'Provides resolution between external and internal addresses'
+                })
             .pc-form-grid-col-60
-                +checkbox('Direct buffer', `${communication}.directBuffer`, '"directBuffer"',
-                'If value is true, then SPI will use ByteBuffer.allocateDirect(int) call<br/>\
-                Otherwise, SPI will use ByteBuffer.allocate(int) call')
+                +form-field__checkbox({
+                    label: 'Direct buffer',
+                    model: `${communication}.directBuffer`,
+                    name: '"directBuffer"',
+                    tip: 'If value is true, then SPI will use ByteBuffer.allocateDirect(int) call<br/>\
+                          Otherwise, SPI will use ByteBuffer.allocate(int) call'
+                })
             .pc-form-grid-col-60
-                +checkbox('Direct send buffer', `${communication}.directSendBuffer`, '"directSendBuffer"', 'Flag defining whether direct send buffer should be used')
+                +form-field__checkbox({
+                    label: 'Direct send buffer',
+                    model: `${communication}.directSendBuffer`,
+                    name: '"directSendBuffer"',
+                    tip: 'Flag defining whether direct send buffer should be used'
+                })
             .pc-form-grid-col-60
-                +checkbox('TCP_NODELAY option', `${communication}.tcpNoDelay`, '"tcpNoDelay"', 'Value for TCP_NODELAY socket option')
+                +form-field__checkbox({
+                    label: 'TCP_NODELAY option',
+                    model: `${communication}.tcpNoDelay`,
+                    name: '"tcpNoDelay"',
+                    tip: 'Value for TCP_NODELAY socket option'
+                })
         .pca-form-column-6
             +preview-xml-java(model, 'clusterCommunication')

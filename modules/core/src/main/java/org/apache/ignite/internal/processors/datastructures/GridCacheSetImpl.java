@@ -45,7 +45,6 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryAdapter;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -158,14 +157,8 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
                 return cache.sizeAsync(new CachePeekMode[] {}).get() - 1;
             }
 
-            if (ctx.isLocal() || ctx.isReplicated()) {
-                GridConcurrentHashSet<SetItemKey> set = ctx.dataStructures().setData(id);
-
-                return set != null ? set.size() : 0;
-            }
-
             CacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null,
-                new GridSetQueryPredicate<>(id, collocated), null, false, false);
+                new GridSetQueryPredicate<>(id, collocated), collocated ? hdrPart : null, false, false);
 
             Collection<ClusterNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
 
@@ -188,13 +181,10 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public boolean isEmpty() {
         onAccess();
 
-        GridConcurrentHashSet<SetItemKey> set = ctx.dataStructures().setData(id);
-
-        return (set == null || set.isEmpty()) && size() == 0;
+        return size() == 0;
     }
 
     /** {@inheritDoc} */
@@ -437,7 +427,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     @SuppressWarnings("unchecked")
     private WeakReferenceCloseableIterator<T> sharedCacheIterator() throws IgniteCheckedException {
         CacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null,
-            new GridSetQueryPredicate<>(id, collocated), null, false, false);
+            new GridSetQueryPredicate<>(id, collocated), collocated ? hdrPart : null, false, false);
 
         Collection<ClusterNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
 
@@ -523,7 +513,6 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
      * @return Nodes where set data request should be sent.
      * @throws IgniteCheckedException If all cache nodes left grid.
      */
-    @SuppressWarnings("unchecked")
     private Collection<ClusterNode> dataNodes(AffinityTopologyVersion topVer) throws IgniteCheckedException {
         if (ctx.isLocal() || ctx.isReplicated())
             return Collections.singleton(ctx.localNode());

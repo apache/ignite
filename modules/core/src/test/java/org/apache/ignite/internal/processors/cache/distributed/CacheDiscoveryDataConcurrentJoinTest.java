@@ -43,7 +43,6 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 /**
  *
  */
-@SuppressWarnings("unchecked")
 public class CacheDiscoveryDataConcurrentJoinTest extends GridCommonAbstractTest {
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);

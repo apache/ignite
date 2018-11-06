@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 /**
  * Registry for IO versions.
  */
@@ -98,5 +100,10 @@ public final class IOVersions<V extends PageIO> {
             ", pageType=" + PageIO.getType(pageAddr);
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IOVersions.class, this);
     }
 }

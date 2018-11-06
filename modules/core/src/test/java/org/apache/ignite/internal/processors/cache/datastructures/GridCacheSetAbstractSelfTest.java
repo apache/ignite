@@ -43,6 +43,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -129,18 +130,12 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         for (int i = 0; i < gridCount(); i++) {
             IgniteKernal grid = (IgniteKernal)grid(i);
 
-            for (IgniteCache cache : grid.caches()) {
-                CacheDataStructuresManager dsMgr = grid.internalCache(cache.getName()).context().dataStructures();
+            for (IgniteInternalCache cache : grid.cachesx(null)) {
+                CacheDataStructuresManager dsMgr = cache.context().dataStructures();
 
                 Map map = GridTestUtils.getFieldValue(dsMgr, "setsMap");
 
                 assertEquals("Set not removed [grid=" + i + ", map=" + map + ']', 0, map.size());
-
-                map = GridTestUtils.getFieldValue(dsMgr, "setDataMap");
-
-                assertEquals("Set data not removed [grid=" + i + ", cache=" + cache.getName() + ", map=" + map + ']',
-                    0,
-                    map.size());
             }
         }
     }
@@ -416,7 +411,6 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      * @param collocated Collocation flag.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("deprecation")
     private void testIterator(boolean collocated) throws Exception {
         CollectionConfiguration colCfg = config(collocated);
 
@@ -582,8 +576,6 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         if (collectionCacheMode() == LOCAL)
             return;
 
-        fail("https://issues.apache.org/jira/browse/IGNITE-584");
-
         testNodeJoinsAndLeaves(false);
     }
 
@@ -593,8 +585,6 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     public void testNodeJoinsAndLeavesCollocated() throws Exception {
         if (collectionCacheMode() == LOCAL)
             return;
-
-        fail("https://issues.apache.org/jira/browse/IGNITE-584");
 
         testNodeJoinsAndLeaves(true);
     }
@@ -743,7 +733,6 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      * @param collocated Collocation flag.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("WhileLoopReplaceableByForEach")
     private void testCleanup(boolean collocated) throws Exception {
         CollectionConfiguration colCfg = config(collocated);
 

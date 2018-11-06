@@ -149,7 +149,6 @@ public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("UnusedParameters")
         private void readObject(ObjectInputStream in) throws IOException {
             try {
                 byte[] arr = new byte[in.readInt()];

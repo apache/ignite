@@ -16,9 +16,13 @@
  */
 
 import saver from 'file-saver';
+import _ from 'lodash';
 
 // TODO: Refactor this service for legacy tables with more than one input field.
-export default ['IgniteLegacyUtils', ['IgniteErrorPopover', function(ErrorPopover) {
+/**
+ * @param {import('./ErrorPopover.service').default} ErrorPopover
+ */
+export default function service(ErrorPopover) {
     function isDefined(v) {
         return !_.isNil(v);
     }
@@ -547,4 +551,6 @@ export default ['IgniteLegacyUtils', ['IgniteErrorPopover', function(ErrorPopove
             return true;
         }
     };
-}]];
+}
+
+service.$inject = ['IgniteErrorPopover'];

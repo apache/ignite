@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -72,6 +73,14 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
      */
     @Override public <K, V> KMeansModel fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+
+        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected <K, V> KMeansModel updateModel(KMeansModel mdl, DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+
         assert datasetBuilder != null;
 
         PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(
@@ -85,7 +94,7 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
             (upstream, upstreamSize) -> new EmptyContext(),
             partDataBuilder
         )) {
-            final int cols = dataset.compute(org.apache.ignite.ml.structures.Dataset::colSize, (a, b) -> {
+            final Integer cols = dataset.compute(org.apache.ignite.ml.structures.Dataset::colSize, (a, b) -> {
                 if (a == null)
                     return b == null ? 0 : b;
                 if (b == null)
@@ -93,7 +102,12 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
                 return b;
             });
 
-            centers = initClusterCentersRandomly(dataset, k);
+            if (cols == null)
+                return getLastTrainedModelOrThrowEmptyDatasetException(mdl);
+
+            centers = Optional.ofNullable(mdl)
+                .map(KMeansModel::getCenters)
+                .orElseGet(() -> initClusterCentersRandomly(dataset, k));
 
             boolean converged = false;
             int iteration = 0;
@@ -125,6 +139,11 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
             throw new RuntimeException(e);
         }
         return new KMeansModel(centers, distance);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean checkState(KMeansModel mdl) {
+        return mdl.getCenters().length == k && mdl.distanceMeasure().equals(distance);
     }
 
     /**
@@ -281,10 +300,12 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
             return this;
         }
 
+        /**
+         * @return centroid statistics.
+         */
         public ConcurrentHashMap<Integer, ConcurrentHashMap<Double, Integer>> getCentroidStat() {
             return centroidStat;
         }
-
     }
 
     /**
@@ -292,7 +313,7 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
      *
      * @return The parameter value.
      */
-    public int getK() {
+    public int getAmountOfClusters() {
         return k;
     }
 
@@ -302,7 +323,7 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
      * @param k The parameter value.
      * @return Model with new amount of clusters parameter value.
      */
-    public KMeansTrainer withK(int k) {
+    public KMeansTrainer withAmountOfClusters(int k) {
         this.k = k;
         return this;
     }

@@ -77,7 +77,9 @@ class BinaryObject {
         this._typeBuilder = BinaryTypeBuilder.fromTypeName(typeName);
         this._modified = false;
         this._schemaOffset = null;
+        this._hasSchema = false;
         this._compactFooter = false;
+        this._hasRawData = false;
     }
 
     /**
@@ -301,14 +303,22 @@ class BinaryObject {
             await this._typeBuilder.finalize(communicator);
             this._startPos = buffer.position;
             buffer.position = this._startPos + HEADER_LENGTH;
-            // write fields
-            for (let field of this._fields.values()) {
-                await field._writeValue(communicator, buffer, this._typeBuilder.getField(field.id).typeCode);
+            this._hasSchema = (this._fields.size > 0);
+            if (this._hasSchema) {
+                let field;
+                // write fields
+                for (field of this._fields.values()) {
+                    await field._writeValue(communicator, buffer, this._typeBuilder.getField(field.id).typeCode);
+                }
+                this._schemaOffset = buffer.position - this._startPos;
+                this._offsetType = field.getOffsetType(this._startPos);
+                // write schema
+                for (let field of this._fields.values()) {
+                    field._writeOffset(buffer, this._startPos, this._offsetType);
+                }
             }
-            this._schemaOffset = buffer.position - this._startPos;
-            // write schema
-            for (let field of this._fields.values()) {
-                field._writeOffset(buffer, this._startPos);
+            else {
+                this._schemaOffset = 0;
             }
             this._length = buffer.position - this._startPos;
             this._buffer = buffer;
@@ -333,7 +343,17 @@ class BinaryObject {
         // version
         this._buffer.writeByte(VERSION);
         // flags
-        this._buffer.writeShort(FLAG_USER_TYPE | FLAG_HAS_SCHEMA | FLAG_COMPACT_FOOTER);
+        let flags = FLAG_USER_TYPE;
+        if (this._hasSchema) {
+            flags = flags | FLAG_HAS_SCHEMA | FLAG_COMPACT_FOOTER;
+        }
+        if (this._offsetType === BinaryUtils.TYPE_CODE.BYTE) {
+            flags = flags | FLAG_OFFSET_ONE_BYTE;
+        }
+        else if (this._offsetType === BinaryUtils.TYPE_CODE.SHORT) {
+            flags = flags | FLAG_OFFSET_TWO_BYTES;
+        }
+        this._buffer.writeShort(flags);
         // type id
         this._buffer.writeInteger(this._typeBuilder.getTypeId());
         // hash code
@@ -342,7 +362,7 @@ class BinaryObject {
         // length
         this._buffer.writeInteger(this._length);
         // schema id
-        this._buffer.writeInteger(this._typeBuilder.getSchemaId());
+        this._buffer.writeInteger(this._hasSchema ? this._typeBuilder.getSchemaId() : 0);
         // schema offset
         this._buffer.writeInteger(this._schemaOffset);
     }
@@ -352,37 +372,43 @@ class BinaryObject {
      */
     async _read(communicator) {
         await this._readHeader(communicator);
-        this._buffer.position = this._startPos + this._schemaOffset;
-        const fieldOffsets = new Array();
-        const fieldIds = this._typeBuilder._schema.fieldIds;
-        let index = 0;
-        let fieldId;
-        while (this._buffer.position < this._startPos + this._length) {
-            if (!this._compactFooter) {
-                fieldId = this._buffer.readInteger();
-                this._typeBuilder._schema.addField(fieldId);
+        if (this._hasSchema) {
+            this._buffer.position = this._startPos + this._schemaOffset;
+            const fieldOffsets = new Array();
+            const fieldIds = this._typeBuilder._schema.fieldIds;
+            let index = 0;
+            let fieldId;
+            let schemaEndOffset = this._startPos + this._length;
+            if (this._hasRawData) {
+                schemaEndOffset -= BinaryUtils.getSize(BinaryUtils.TYPE_CODE.INTEGER);
             }
-            else {
-                if (index >= fieldIds.length) {
-                    throw Errors.IgniteClientError.serializationError(
-                        false, 'wrong number of fields in schema');
+            while (this._buffer.position < schemaEndOffset) {
+                if (!this._compactFooter) {
+                    fieldId = this._buffer.readInteger();
+                    this._typeBuilder._schema.addField(fieldId);
                 }
-                fieldId = fieldIds[index];
-                index++;
+                else {
+                    if (index >= fieldIds.length) {
+                        throw Errors.IgniteClientError.serializationError(
+                            false, 'wrong number of fields in schema');
+                    }
+                    fieldId = fieldIds[index];
+                    index++;
+                }
+                fieldOffsets.push([fieldId, this._buffer.readNumber(this._offsetType, false)]);
             }
-            fieldOffsets.push([fieldId, this._buffer.readNumber(this._offsetType)]);
-        }
-        fieldOffsets.sort((val1, val2) => val1[1] - val2[1]);
-        let offset;
-        let nextOffset;
-        let field;
-        for (let i = 0; i < fieldOffsets.length; i++) {
-            fieldId = fieldOffsets[i][0];
-            offset = fieldOffsets[i][1];
-            nextOffset = i + 1 < fieldOffsets.length ? fieldOffsets[i + 1][1] : this._schemaOffset;
-            field = BinaryObjectField._fromBuffer(
-                communicator,this._buffer, this._startPos + offset, nextOffset - offset, fieldId);
-            this._fields.set(field.id, field);
+            fieldOffsets.sort((val1, val2) => val1[1] - val2[1]);
+            let offset;
+            let nextOffset;
+            let field;
+            for (let i = 0; i < fieldOffsets.length; i++) {
+                fieldId = fieldOffsets[i][0];
+                offset = fieldOffsets[i][1];
+                nextOffset = i + 1 < fieldOffsets.length ? fieldOffsets[i + 1][1] : this._schemaOffset;
+                field = BinaryObjectField._fromBuffer(
+                    communicator,this._buffer, this._startPos + offset, nextOffset - offset, fieldId);
+                this._fields.set(field.id, field);
+            }
         }
         this._buffer.position = this._startPos + this._length;
     }
@@ -410,23 +436,15 @@ class BinaryObject {
         const schemaId = this._buffer.readInteger();
         // schema offset
         this._schemaOffset = this._buffer.readInteger();
-        const hasSchema = BinaryObject._isFlagSet(flags, FLAG_HAS_SCHEMA);
+        this._hasSchema = BinaryObject._isFlagSet(flags, FLAG_HAS_SCHEMA);
         this._compactFooter = BinaryObject._isFlagSet(flags, FLAG_COMPACT_FOOTER);
+        this._hasRawData = BinaryObject._isFlagSet(flags, FLAG_HAS_RAW_DATA);
         this._offsetType = BinaryObject._isFlagSet(flags, FLAG_OFFSET_ONE_BYTE) ?
             BinaryUtils.TYPE_CODE.BYTE :
             BinaryObject._isFlagSet(flags, FLAG_OFFSET_TWO_BYTES) ?
                 BinaryUtils.TYPE_CODE.SHORT :
                 BinaryUtils.TYPE_CODE.INTEGER;
-
-        if (BinaryObject._isFlagSet(flags, FLAG_HAS_RAW_DATA)) {
-            throw Errors.IgniteClientError.serializationError(
-                false, 'complex objects with raw data are not supported');
-        }
-        if (this._compactFooter && !hasSchema) {
-            throw Errors.IgniteClientError.serializationError(
-                false, 'schema is absent for object with compact footer');
-        }
-        this._typeBuilder = await BinaryTypeBuilder.fromTypeId(communicator, typeId, schemaId, hasSchema);
+        this._typeBuilder = await BinaryTypeBuilder.fromTypeId(communicator, typeId, this._compactFooter ? schemaId : null);
     }
 }
 
@@ -465,6 +483,17 @@ class BinaryObjectField {
         return this._value;
     }
 
+    getOffsetType(headerStartPos) {
+        let offset = this._offset - headerStartPos;
+        if (offset < 0x100) {
+            return BinaryUtils.TYPE_CODE.BYTE;
+        }
+        else if (offset < 0x10000) {
+            return BinaryUtils.TYPE_CODE.SHORT;
+        }
+        return BinaryUtils.TYPE_CODE.INTEGER;        
+    }
+
     static _fromBuffer(communicator, buffer, offset, length, id) {
         const result = new BinaryObjectField(null);
         result._id = id;
@@ -493,8 +522,8 @@ class BinaryObjectField {
         this._offset = offset;
     }
 
-    _writeOffset(buffer, headerStartPos) {
-        buffer.writeInteger(this._offset - headerStartPos);
+    _writeOffset(buffer, headerStartPos, offsetType) {
+        buffer.writeNumber(this._offset - headerStartPos, offsetType, false);
     }
 }
 

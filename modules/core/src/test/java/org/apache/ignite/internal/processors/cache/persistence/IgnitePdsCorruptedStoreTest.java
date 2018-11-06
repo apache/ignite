@@ -32,8 +32,8 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.AbstractFailureHandler;
 import org.apache.ignite.failure.FailureContext;
-import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -54,9 +54,6 @@ import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
@@ -180,6 +177,9 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
             startGrid(0);
         }
         catch (IgniteCheckedException ex) {
+            if (X.hasCause(ex, StorageException.class, IOException.class))
+                return; // Success;
+
             throw ex;
         }
 
@@ -418,7 +418,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     /**
      * Dummy failure handler
      */
-    public static class DummyFailureHandler implements FailureHandler {
+    public static class DummyFailureHandler extends AbstractFailureHandler {
         /** Failure. */
         private volatile boolean failure = false;
 
@@ -440,7 +440,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
+        @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
             failure = true;
             error = failureCtx.error();
 
@@ -457,11 +457,6 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
 
         /** Create FileIO closure. */
         private volatile IgniteBiClosure<File, OpenOption[], FileIO> createClo;
-
-        /** {@inheritDoc} */
-        @Override public FileIO create(File file) throws IOException {
-            return create(file, CREATE, READ, WRITE);
-        }
 
         /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... openOption) throws IOException {
