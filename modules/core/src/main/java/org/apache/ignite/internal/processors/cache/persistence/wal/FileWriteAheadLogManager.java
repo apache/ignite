@@ -2044,14 +2044,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             while ((segmentToCompress = segmentAware.waitNextSegmentToCompress())
                 <= segmentAware.lastTruncatedArchiveIdx())
-                segmentAware.removeFromCurrentlyCompressedList(segmentToCompress);
+                segmentAware.onSegmentCompressed(segmentToCompress);
 
             boolean reserved = reserve(new FileWALPointer(segmentToCompress, 0, 0));
 
             if (reserved)
                 return segmentToCompress;
             else {
-                segmentAware.removeFromCurrentlyCompressedList(segmentToCompress);
+                segmentAware.onSegmentCompressed(segmentToCompress);
 
                 return -1;
             }
@@ -2072,7 +2072,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                     if (segIdx <= segmentAware.lastCompressedIdx()) {
                         if (segIdx != -1)
-                            segmentAware.removeFromCurrentlyCompressedList(segIdx);
+                            segmentAware.onSegmentCompressed(segIdx);
 
                         continue;
                     }

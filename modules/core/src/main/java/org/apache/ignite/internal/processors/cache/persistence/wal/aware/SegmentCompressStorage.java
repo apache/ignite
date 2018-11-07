@@ -100,15 +100,6 @@ public class SegmentCompressStorage {
     }
 
     /**
-     * Removes given segment index from the list of segment indices being compressed.
-     *
-     * @param idx Segment index to remove.
-     */
-    synchronized void removeFromCurrentlyCompressedList(long idx) {
-        compressingSegments.remove(idx);
-    }
-
-    /**
      * @return Last compressed segment.
      */
     long lastCompressedIdx() {

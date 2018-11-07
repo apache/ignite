@@ -119,15 +119,6 @@ public class SegmentAware {
     }
 
     /**
-     * Removes given segment index from the list of segment indices being compressed.
-     *
-     * @param idx Segment index to remove.
-     */
-    public void removeFromCurrentlyCompressedList(long idx) {
-        segmentCompressStorage.removeFromCurrentlyCompressedList(idx);
-    }
-
-    /**
      * @return Last compressed segment.
      */
     public long lastCompressedIdx() {
