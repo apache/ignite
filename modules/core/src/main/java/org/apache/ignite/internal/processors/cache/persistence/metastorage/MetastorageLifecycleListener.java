@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.subscription.InternalSubscriber;
 
 /**
  * Listener for events of metastore lifecycle.
@@ -25,7 +24,7 @@ import org.apache.ignite.internal.processors.subscription.InternalSubscriber;
  * Database manager is responsible for initializing metastore on node startup
  * and notifying other components about its readiness.
  */
-public interface MetastorageLifecycleListener extends InternalSubscriber {
+public interface MetastorageLifecycleListener {
     /**
      * Is called when metastorage is made ready for read-only operations very early on node startup phase.
      *
