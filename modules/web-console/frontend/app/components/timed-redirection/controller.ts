@@ -23,18 +23,38 @@ interface State {
     params: RawParams
 }
 
-export class TimedRedirectionCtrl implements ng.IComponentController {
-    static $inject = ['$state'];
+export class TimedRedirectionCtrl implements ng.IComponentController, ng.IOnInit, ng.IOnDestroy {
+    static $inject = ['$state', '$interval', '$timeout'];
 
     lastSuccessState = JSON.parse(localStorage.getItem('lastStateChangeSuccess'));
 
     stateToGo: State = this.lastSuccessState || {name: 'default-state', params: {}};
 
-    urlToGo: string = this.$state.href(this.stateToGo.name, this.stateToGo.params);
+    secondsLeft: number = 10;
 
-    constructor(private $state) {}
+    countDown: ng.IPromise<ng.IIntervalService>;
 
-    go() {
+    constructor(private $state, private $interval, private $timeout) {}
+
+    $onInit() {
+        this.startCountDown();
+    }
+
+    $onDestroy() {
+        this.$interval.cancel(this.countDown);
+    }
+
+    go(): void {
         this.$state.go(this.stateToGo.name, this.stateToGo.params);
+    }
+
+    startCountDown(): void {
+        this.countDown = this.$interval(() => {
+            this.secondsLeft--;
+
+            if (this.secondsLeft === 0)
+                this.go();
+
+        }, 1000, this.secondsLeft);
     }
 }
