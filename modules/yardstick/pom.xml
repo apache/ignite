@@ -72,6 +72,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-aws</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.yardstickframework</groupId>
             <artifactId>yardstick</artifactId>
             <version>${yardstick.version}</version>
