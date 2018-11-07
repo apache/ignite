@@ -227,6 +227,19 @@ public class QueryUtils {
     }
 
     /**
+     * Hides logic of calculating primary key name of the table.
+     *
+     * @param tab query entity representing the table.
+     * @param schemaName schema of the table.
+     * @return name of the primary key of the table.
+     */
+    public static String primaryKeyName(QueryEntity tab, String schemaName) {
+        return tab.getKeyFieldName() != null ?
+            tab.getKeyFieldName() :
+            "PK_" + schemaName + "_" + tab.getTableName();
+    }
+
+    /**
      * Normalize cache query entities.
      *
      * @param entities Query entities.

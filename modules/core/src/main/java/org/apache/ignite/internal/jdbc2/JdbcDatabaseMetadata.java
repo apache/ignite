@@ -994,9 +994,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
                     if (!matches(schemaName, schemaPtrn))
                         continue;
 
-                    final String keyName = tab.getKeyFieldName() != null ?
-                        tab.getKeyFieldName() :
-                        "PK_" + schemaName + "_" + tabName;
+                    final String keyName = QueryUtils.primaryKeyName(tab, schemaName);
 
                     List<String> keyCols = QueryUtils.primaryKeyColumns(tab);
 
