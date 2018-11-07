@@ -121,7 +121,11 @@ public class TrainerTransformers {
                 IgniteBiFunction<K, V, Vector> featureExtractor,
                 IgniteBiFunction<K, V, L> lbExtractor) {
                 return runOnEnsemble(
-                    (db, i, fe) -> (() -> trainer.updateModel(((ModelWithMapping<Vector, Double, M>)mdl.getModels().get(i)).model(), db, fe, lbExtractor)),
+                    (db, i, fe) -> (() -> trainer.updateModel(
+                        ((ModelWithMapping<Vector, Double, M>)mdl.getModels().get(i)).model(),
+                        db,
+                        fe,
+                        lbExtractor)),
                     datasetBuilder,
                     ensembleSize,
                     subsampleRatio,
@@ -166,7 +170,10 @@ public class TrainerTransformers {
         List<int[]> mappings = null;
         if (featuresVectorSize > 0) {
             mappings = IntStream.range(0, ensembleSize).mapToObj(
-                modelIdx -> getMapping(featuresVectorSize, maximumFeaturesCntPerMdl, datasetBuilder.upstreamTransformersChain().seed() + modelIdx * MAGIC_PRIME))
+                modelIdx -> getMapping(
+                    featuresVectorSize,
+                    maximumFeaturesCntPerMdl,
+                    datasetBuilder.upstreamTransformersChain().seed() + modelIdx * MAGIC_PRIME))
                 .collect(Collectors.toList());
         }
 
