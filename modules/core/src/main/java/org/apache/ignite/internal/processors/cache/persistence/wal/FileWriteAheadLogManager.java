@@ -2040,11 +2040,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * Waits if there's no segment to archive right now.
          */
         private long tryReserveNextSegmentOrWait() throws IgniteInterruptedCheckedException{
-            long segmentToCompress;
-
-            while ((segmentToCompress = segmentAware.waitNextSegmentToCompress())
-                <= segmentAware.lastTruncatedArchiveIdx())
-                segmentAware.onSegmentCompressed(segmentToCompress);
+            long segmentToCompress = segmentAware.waitNextSegmentToCompress();
 
             boolean reserved = reserve(new FileWALPointer(segmentToCompress, 0, 0));
 
@@ -2068,11 +2064,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 long segIdx = -1L;
 
                 try {
-                    segIdx = tryReserveNextSegmentOrWait();
-
-                    if (segIdx <= segmentAware.lastCompressedIdx()) {
-                        if (segIdx != -1)
-                            segmentAware.onSegmentCompressed(segIdx);
+                    if ((segIdx = tryReserveNextSegmentOrWait())
+                        <= Math.max(segmentAware.lastTruncatedArchiveIdx(), segmentAware.lastCompressedIdx())) {
+                        segmentAware.onSegmentCompressed(segIdx);
 
                         continue;
                     }
