@@ -1467,8 +1467,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         boolean intercept = cctx.config().getInterceptor() != null;
 
-        boolean interceptorDisabled = false;
-
         Object key0 = null;
         Object val0 = null;
         WALPointer logPtr = null;
@@ -1522,9 +1520,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 Object interceptorVal = val0;
 
-                if (!(interceptorDisabled = cctx.dr().cacheInterceptorDisabled() &&
-                    explicitVer != null &&
-                    explicitVer.dataCenterId() != cctx.dr().dataCenterId())) {
+                boolean interceptorDisabled = cctx.dr().cacheInterceptorDisabled() &&
+                    explicitVer != null && explicitVer.dataCenterId() != cctx.dr().dataCenterId();
+
+                if (intercept = !interceptorDisabled) {
                     interceptorVal = cctx.config().getInterceptor().onBeforePut(
                         new CacheLazyEntry(cctx, key, old, keepBinary), val0);
                 }
@@ -1650,7 +1649,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         if (writeThrough)
             cctx.store().put(tx, key, val, newVer);
 
-        if (intercept && !interceptorDisabled)
+        if (intercept)
             cctx.config().getInterceptor().onAfterPut(new CacheLazyEntry(cctx, key, key0, val, val0, keepBinary, updateCntr0));
 
         return valid ? new GridCacheUpdateTxResult(true, updateCntr0, logPtr, mvccWaitTxs) :
