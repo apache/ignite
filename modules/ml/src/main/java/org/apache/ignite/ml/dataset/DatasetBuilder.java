@@ -56,42 +56,11 @@ public interface DatasetBuilder<K, V> {
         PartitionContextBuilder<K, V, C> partCtxBuilder, PartitionDataBuilder<K, V, C, D> partDataBuilder);
 
     /**
-     * Data from upstream is passed to partition {@code context} builder and partition {@code data} builder as
-     * a {@link Stream} of {@link UpstreamEntry}. This stream can be transformed with this method.
-     * Can be useful for example for bootstrapping dataset builder.
+     * Get upstream transformers chain.
      *
-     * @param transformer Transformer.
-     * @return This object.
+     * @return Upstream transformers chain.
      */
-    public <T> DatasetBuilder<K, V> addStreamTransformer(UpstreamTransformer<K, V, T> transformer);
-
-    /**
-     * Add upstream transformer based on given lambda.
-     *
-     * @param transformer Transformer.
-     * @return This object.
-     */
-    public default DatasetBuilder<K, V> addStreamTransformer(IgniteFunction<Stream<UpstreamEntry<K, V>>,
-        Stream<UpstreamEntry<K, V>>> transformer) {
-        return addStreamTransformer(new SimpleUpstreamTransformer<>(transformer));
-    }
-
-
-    /**
-     * Seed used by RNG in upstream transformations.
-     * If null value is provided, will be pseudo-randomly generated.
-     *
-     * @param seed seed.
-     * @return This object.
-     */
-    public DatasetBuilder<K, V> withTransformationSeed(Long seed);
-
-    /**
-     * Get seed used for upstream transformations.
-     *
-     * @return Seed used for upstream transformations.
-     */
-    public Long transformationSeed();
+    public UpstreamTransformerChain<K, V> upstreamTransformersChain();
 
     /**
      * Returns new instance of DatasetBuilder using conjunction of internal filter and {@code filterToAdd}.

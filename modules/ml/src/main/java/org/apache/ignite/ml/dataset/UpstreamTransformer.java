@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.dataset;
 
+import java.io.Serializable;
 import java.util.Random;
 import java.util.stream.Stream;
 
@@ -27,7 +28,7 @@ import java.util.stream.Stream;
  * @param <V> Type of values in the upstream.
  * @param <T> Data needed for this transformer.
  */
-public abstract class UpstreamTransformer<K, V, T> {
+public abstract class UpstreamTransformer<K, V, T> implements Serializable {
     /**
      * Performs transformation.
      *

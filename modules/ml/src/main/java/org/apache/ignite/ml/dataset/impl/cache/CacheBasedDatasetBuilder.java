@@ -73,11 +73,6 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
     private UpstreamTransformerChain<K, V> transformersChain;
 
     /**
-     * Seed used by RNG in upstream transformations.
-     */
-    private Long transformationSeed;
-
-    /**
      * Constructs a new instance of cache based dataset builder that makes {@link CacheBasedDataset} with default
      * predicate that passes all upstream entries to dataset.
      *
@@ -128,31 +123,18 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
             upstreamCache.getName(),
             filter,
             transformersChain,
-            transformationSeed,
             datasetCache.getName(),
             partCtxBuilder,
             RETRIES,
             RETRY_INTERVAL
         );
 
-        return new CacheBasedDataset<>(ignite, upstreamCache, filter, transformersChain, transformationSeed, datasetCache, partDataBuilder, datasetId);
+        return new CacheBasedDataset<>(ignite, upstreamCache, filter, transformersChain, datasetCache, partDataBuilder, datasetId);
     }
 
     /** {@inheritDoc} */
-    @Override public <T> DatasetBuilder<K, V> addStreamTransformer(UpstreamTransformer<K, V, T> transformer) {
-        transformersChain.addUpstreamTransformer(transformer);
-
-        return this;
-    }
-
-    @Override public DatasetBuilder<K, V> withTransformationSeed(Long seed) {
-        transformationSeed = seed;
-
-        return this;
-    }
-
-    @Override public Long transformationSeed() {
-        return transformationSeed;
+    @Override public UpstreamTransformerChain<K, V> upstreamTransformersChain() {
+        return transformersChain;
     }
 
     /**

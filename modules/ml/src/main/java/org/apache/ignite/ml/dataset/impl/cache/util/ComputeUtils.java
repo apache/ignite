@@ -49,9 +49,6 @@ public class ComputeUtils {
     private static final String DATA_STORAGE_KEY_TEMPLATE = "part_data_storage_%s";
 
     /** Relatively big prime used in seeding. */
-    private static final int MAGIC_PRIME = 951091;
-
-    /** Relatively big prime used in seeding. */
     public static final int MAGIC_PRIME_1 = 116243;
 
     /**
@@ -142,7 +139,6 @@ public class ComputeUtils {
      * @param upstreamCacheName Name of an {@code upstream} cache.
      * @param filter Filter for {@code upstream} data.
      * @param transformersChain Upstream transformers.
-     * @param transformationsSeed Seed used for upstream transformations.
      * @param datasetCacheName Name of a partition {@code context} cache.
      * @param datasetId Dataset ID.
      * @param part Partition index.
@@ -157,7 +153,6 @@ public class ComputeUtils {
         Ignite ignite,
         String upstreamCacheName, IgniteBiPredicate<K, V> filter,
         UpstreamTransformerChain<K, V> transformersChain,
-        Long transformationsSeed,
         String datasetCacheName,
         UUID datasetId,
         int part,
@@ -179,8 +174,9 @@ public class ComputeUtils {
             qry.setPartition(part);
             qry.setFilter(filter);
 
-            long seed = transformationsSeed == null ? new Random().nextLong() : transformationsSeed + part * MAGIC_PRIME_1;
-            long cnt = computeCount(upstreamCache, qry, transformersChain, seed);
+            setTransformationSeedForPartition(transformersChain, part);
+
+            long cnt = computeCount(upstreamCache, qry, transformersChain);
 
             if (cnt > 0) {
                 try (QueryCursor<UpstreamEntry<K, V>> cursor = upstreamCache.query(qry,
@@ -188,7 +184,7 @@ public class ComputeUtils {
 
                     Iterator<UpstreamEntry<K, V>> it = cursor.iterator();
                     if (!transformersChain.isEmpty()) {
-                        Stream<UpstreamEntry<K, V>> transformedStream = transformersChain.transform(seed, Utils.asStream(it));
+                        Stream<UpstreamEntry<K, V>> transformedStream = transformersChain.transform(Utils.asStream(it));
                         it = transformedStream.iterator();
                     }
 
@@ -201,6 +197,15 @@ public class ComputeUtils {
 
             return null;
         });
+    }
+
+    private static <K, V> void setTransformationSeedForPartition(UpstreamTransformerChain<K, V> transformersChain,
+        int part) {
+        if (transformersChain.seed() == null) {
+            transformersChain.setSeed(new Random().nextLong());
+        } else {
+            transformersChain.setSeed(transformersChain.seed() + part * MAGIC_PRIME_1);
+        }
     }
 
     /**
@@ -222,7 +227,6 @@ public class ComputeUtils {
      * @param upstreamCacheName Name of an {@code upstream} cache.
      * @param filter Filter for {@code upstream} data.
      * @param transformersChain Upstream data {@link Stream} transformers chain.
-     * @param transformationsSeed Seed used for upstream transformations.
      * @param ctxBuilder Partition {@code context} builder.
      */
     public static <K, V, C extends Serializable> void initContext(
@@ -230,7 +234,6 @@ public class ComputeUtils {
         String upstreamCacheName,
         IgniteBiPredicate<K, V> filter,
         UpstreamTransformerChain<K, V> transformersChain,
-        Long transformationsSeed,
         String datasetCacheName,
         PartitionContextBuilder<K, V, C> ctxBuilder,
         int retries,
@@ -246,15 +249,15 @@ public class ComputeUtils {
             qry.setFilter(filter);
 
             C ctx;
-            long upstreamTransformationsSeed = transformationsSeed == null ? new Random().nextLong() : transformationsSeed + part * MAGIC_PRIME;
-            long cnt = computeCount(locUpstreamCache, qry, transformersChain, upstreamTransformationsSeed);
+            setTransformationSeedForPartition(transformersChain, part);
+            long cnt = computeCount(locUpstreamCache, qry, transformersChain);
 
             try (QueryCursor<UpstreamEntry<K, V>> cursor = locUpstreamCache.query(qry,
                 e -> new UpstreamEntry<>(e.getKey(), e.getValue()))) {
 
                 Iterator<UpstreamEntry<K, V>> it = cursor.iterator();
                 if (!transformersChain.isEmpty()) {
-                    Stream<UpstreamEntry<K, V>> transformedStream = transformersChain.transform(upstreamTransformationsSeed, Utils.asStream(it));
+                    Stream<UpstreamEntry<K, V>> transformedStream = transformersChain.transform(Utils.asStream(it));
                     it = transformedStream.iterator();
                 }
                 Iterator<UpstreamEntry<K, V>> iter = new IteratorWithConcurrentModificationChecker<>(
@@ -296,7 +299,7 @@ public class ComputeUtils {
         PartitionContextBuilder<K, V, C> ctxBuilder,
         int retries,
         Long seed) {
-        initContext(ignite, upstreamCacheName, filter, transformersChain, seed, datasetCacheName, ctxBuilder, retries, 0);
+        initContext(ignite, upstreamCacheName, filter, transformersChain, datasetCacheName, ctxBuilder, retries, 0);
     }
 
     /**
@@ -334,14 +337,12 @@ public class ComputeUtils {
      * @param cache Ignite cache with upstream data.
      * @param qry Cache query.
      * @param transformersChain Transformers of stream of upstream data.
-     * @param seed Seed for RNG used in transformers chain.
      * @return Number of entries supplied by the iterator.
      */
     private static <K, V> long computeCount(
         IgniteCache<K, V> cache,
         ScanQuery<K, V> qry,
-        UpstreamTransformerChain<K, V> transformersChain,
-        long seed) {
+        UpstreamTransformerChain<K, V> transformersChain) {
         try (QueryCursor<UpstreamEntry<K, V>> cursor = cache.query(qry,
             e -> new UpstreamEntry<>(e.getKey(), e.getValue()))) {
 
@@ -349,7 +350,7 @@ public class ComputeUtils {
             // operations.
             return transformersChain.isEmpty() ?
                 computeCount(cursor.iterator()) :
-                computeCount(transformersChain.transform(seed, Utils.asStream(cursor.iterator())).iterator());
+                computeCount(transformersChain.transform(Utils.asStream(cursor.iterator())).iterator());
         }
     }
 

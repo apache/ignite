@@ -17,10 +17,13 @@
 
 package org.apache.ignite.ml.dataset;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Stream;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.trainers.transformers.SimpleUpstreamTransformer;
 
 /**
  * Class representing chain of transformers applied to upstream.
@@ -28,7 +31,11 @@ import java.util.stream.Stream;
  * @param <K> Type of upstream keys.
  * @param <V> Type of upstream values.
  */
-public class UpstreamTransformerChain<K, V> {
+public class UpstreamTransformerChain<K, V> implements Serializable {
+    /** Seed used for transformations. */
+    private Long seed;
+
+    /** List of upstream transformations. */
     private List<UpstreamTransformer<K, V, ?>> list;
 
     /**
@@ -64,14 +71,24 @@ public class UpstreamTransformerChain<K, V> {
     }
 
     /**
+     * Add upstream transformer based on given lambda.
+     *
+     * @param transformer Transformer.
+     * @return This object.
+     */
+    public UpstreamTransformerChain<K, V> addUpstreamTransformer(IgniteFunction<Stream<UpstreamEntry<K, V>>,
+        Stream<UpstreamEntry<K, V>>> transformer) {
+        return addUpstreamTransformer(new SimpleUpstreamTransformer<>(transformer));
+    }
+
+    /**
      * Performs stream transformation using RNG based on provided seed as pseudo-randomness source for all
      * transformers in the chain.
      *
-     * @param seed Seed for RNG.
      * @param upstream Upstream.
      * @return Transformed upstream.
      */
-    public Stream<UpstreamEntry<K, V>> transform(long seed, Stream<UpstreamEntry<K, V>> upstream) {
+    public Stream<UpstreamEntry<K, V>> transform(Stream<UpstreamEntry<K, V>> upstream) {
         Random rnd = new Random(seed);
 
         Stream<UpstreamEntry<K, V>> res = upstream;
@@ -90,5 +107,40 @@ public class UpstreamTransformerChain<K, V> {
      */
     public boolean isEmpty() {
         return list.isEmpty();
+    }
+
+    /**
+     * Set seed for transformations.
+     *
+     * @param seed Seed.
+     * @return This object.
+     */
+    public UpstreamTransformerChain<K, V> setSeed(long seed) {
+        this.seed = seed;
+
+        return this;
+    }
+
+    /**
+     * Modifies seed for transformations if it is present.
+     *
+     * @param f Modification function.
+     * @return This object.
+     */
+    public UpstreamTransformerChain<K, V> modifyIfPresent(IgniteFunction<Long, Long> f) {
+        if (seed != null) {
+            seed = f.apply(seed);
+        }
+
+        return this;
+    }
+
+    /**
+     * Get seed used for RNG in transformations.
+     *
+     * @return Seed used for RNG in transformations.
+     */
+    public Long seed() {
+        return seed;
     }
 }

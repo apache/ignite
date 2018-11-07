@@ -17,14 +17,21 @@
 
 package org.apache.ignite.ml.dataset.impl.local;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.ml.dataset.*;
+import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.PartitionContextBuilder;
+import org.apache.ignite.ml.dataset.PartitionDataBuilder;
+import org.apache.ignite.ml.dataset.UpstreamEntry;
+import org.apache.ignite.ml.dataset.UpstreamTransformerChain;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.util.Utils;
-
-import java.io.Serializable;
-import java.util.*;
-import java.util.stream.Stream;
 
 /**
  * A dataset builder that makes {@link LocalDataset}. Encapsulate logic of building local dataset such as allocation
@@ -50,8 +57,6 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
     private final IgniteBiPredicate<K, V> filter;
 
     private UpstreamTransformerChain<K, V> upstreamTransformers;
-
-    private Long upstreamTransformationSeed;
 
     /**
      * Constructs a new instance of local dataset builder that makes {@link LocalDataset} with default predicate that
@@ -107,24 +112,23 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
         for (int part = 0; part < partitions; part++) {
             int cnt = part == partitions - 1 ? entriesList.size() - ptr : Math.min(partSize, entriesList.size() - ptr);
 
-            long seed = upstreamTransformationSeed == null ?
-                new Random().nextLong() :
-                upstreamTransformationSeed + 951091 * part;
+            if (upstreamTransformers.seed() == null) {
+                upstreamTransformers.setSeed(new Random().nextLong());
+            } else {
+                upstreamTransformers.setSeed(upstreamTransformers.seed() + 951091 * part);
+            }
 
             if (!upstreamTransformers.isEmpty()) {
                 cnt = (int)upstreamTransformers.transform(
-                    seed,
                     Utils.asStream(new IteratorWindow<>(thirdKeysIter, k -> k, cnt))).count();
             }
 
             Iterator<UpstreamEntry<K, V>> iter;
             if (upstreamTransformers.isEmpty()) {
-                iter = new IteratorWindow<>(
-                    firstKeysIter, k -> k, cnt);
+                iter = new IteratorWindow<>(firstKeysIter, k -> k, cnt);
             }
             else {
                 iter = upstreamTransformers.transform(
-                    seed,
                     Utils.asStream(new IteratorWindow<>(firstKeysIter, k -> k, cnt))).iterator();
             }
             C ctx = cnt > 0 ? partCtxBuilder.build(iter, cnt) : null;
@@ -132,7 +136,6 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
             Iterator<UpstreamEntry<K, V>> iter1;
             if (upstreamTransformers.isEmpty()) {
                 iter1 = upstreamTransformers.transform(
-                    seed,
                     Utils.asStream(new IteratorWindow<>(secondKeysIter, k -> k, cnt))).iterator();
             }
             else {
@@ -155,21 +158,8 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> DatasetBuilder<K, V> addStreamTransformer(UpstreamTransformer<K, V, T> upstreamTransformer) {
-        upstreamTransformers.addUpstreamTransformer(upstreamTransformer);
-
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public DatasetBuilder<K, V> withTransformationSeed(Long seed) {
-        upstreamTransformationSeed = seed;
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Long transformationSeed() {
-        return upstreamTransformationSeed;
+    @Override public UpstreamTransformerChain<K, V> upstreamTransformersChain() {
+        return upstreamTransformers;
     }
 
     /**

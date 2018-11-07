@@ -17,10 +17,16 @@
 
 package org.apache.ignite.ml.trainers;
 
+import java.io.Serializable;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
+import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.PartitionContextBuilder;
+import org.apache.ignite.ml.dataset.PartitionDataBuilder;
+import org.apache.ignite.ml.dataset.UpstreamTransformerChain;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.environment.parallelism.Promise;
@@ -86,8 +92,13 @@ public class TrainerTransformers {
                 DatasetBuilder<K, V> datasetBuilder,
                 IgniteBiFunction<K, V, Vector> featureExtractor,
                 IgniteBiFunction<K, V, L> lbExtractor) {
+                datasetBuilder.upstreamTransformersChain().setSeed(
+                    transformationSeed == null
+                        ? new Random().nextLong()
+                        : transformationSeed);
+
                 return runOnEnsemble(
-                    (db, i, fe) -> (() -> trainer.fit(db.withTransformationSeed(transformationSeed + i * MAGIC_PRIME), fe, lbExtractor)),
+                    (db, i, fe) -> (() -> trainer.fit(db, fe, lbExtractor)),
                     datasetBuilder,
                     ensembleSize,
                     subsampleRatio,
@@ -149,24 +160,21 @@ public class TrainerTransformers {
         PredictionsAggregator aggregator,
         LearningEnvironment environment) {
 
-        Long seed = datasetBuilder.transformationSeed() != null
-            ? datasetBuilder.transformationSeed()
-            : new Random().nextLong();
-
         MLLogger log = environment.logger(datasetBuilder.getClass());
         log.log(MLLogger.VerboseLevel.LOW, "Start learning.");
 
         List<int[]> mappings = null;
         if (featuresVectorSize > 0) {
             mappings = IntStream.range(0, ensembleSize).mapToObj(
-                modelIdx -> getMapping(featuresVectorSize, maximumFeaturesCntPerMdl, seed + modelIdx * MAGIC_PRIME))
+                modelIdx -> getMapping(featuresVectorSize, maximumFeaturesCntPerMdl, datasetBuilder.upstreamTransformersChain().seed() + modelIdx * MAGIC_PRIME))
                 .collect(Collectors.toList());
         }
 
         Long startTs = System.currentTimeMillis();
 
-        DatasetBuilder<K, V> bootstrappedBuilder = datasetBuilder
-            .addStreamTransformer(new BaggingUpstreamTransformer<>(subsampleRatio));
+        datasetBuilder
+            .upstreamTransformersChain()
+            .addUpstreamTransformer(new BaggingUpstreamTransformer<>(subsampleRatio));
 
         List<IgniteSupplier<M>> tasks = new ArrayList<>();
         List<IgniteBiFunction<K, V, Vector>> extractors = null;
@@ -178,8 +186,12 @@ public class TrainerTransformers {
         }
 
         for (int i = 0; i < ensembleSize; i++) {
+            UpstreamTransformerChain<K, V> newChain = Utils.copy(datasetBuilder.upstreamTransformersChain());
+            DatasetBuilder<K, V> newBuilder = withNewChain(datasetBuilder, newChain);
+            int j = i;
+            newChain.modifyIfPresent(s -> s + j * MAGIC_PRIME);
             tasks.add(
-                trainingTaskGenerator.apply(bootstrappedBuilder, i, mappings != null ? extractors.get(i) : extractor));
+                trainingTaskGenerator.apply(newBuilder, i, mappings != null ? extractors.get(i) : extractor));
         }
 
         List<ModelWithMapping<Vector, Double, M>> models = environment.parallelismStrategy().submit(tasks)
@@ -317,5 +329,38 @@ public class TrainerTransformers {
         public IgniteFunction<X, X> mapping() {
             return mapping;
         }
+    }
+
+    /**
+     * Creates new dataset builder which is delegate of a given dataset builder in everything except
+     * new transformations chain.
+     *
+     * @param builder Initial builder.
+     * @param chain New chain.
+     * @param <K> Type of keys.
+     * @param <V> Type of values.
+     * @return new dataset builder which is delegate of a given dataset builder in everything except
+     * new transformations chain.
+     */
+    private static <K, V> DatasetBuilder<K, V> withNewChain(
+        DatasetBuilder<K, V> builder,
+        UpstreamTransformerChain<K, V> chain) {
+        return new DatasetBuilder<K, V>() {
+            /** {@inheritDoc} */
+            @Override public <C extends Serializable, D extends AutoCloseable> Dataset<C, D> build(
+                PartitionContextBuilder<K, V, C> partCtxBuilder, PartitionDataBuilder<K, V, C, D> partDataBuilder) {
+                return builder.build(partCtxBuilder, partDataBuilder);
+            }
+
+            /** {@inheritDoc} */
+            @Override public UpstreamTransformerChain<K, V> upstreamTransformersChain() {
+                return chain;
+            }
+
+            /** {@inheritDoc} */
+            @Override public DatasetBuilder<K, V> withFilter(IgniteBiPredicate<K, V> filterToAdd) {
+                return builder.withFilter(filterToAdd);
+            }
+        };
     }
 }

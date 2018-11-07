@@ -180,7 +180,6 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
                     upstreamCacheName,
                     (k, v) -> true,
                     UpstreamTransformerChain.empty(),
-                    567L,
                     datasetCacheName,
                     datasetId,
                     0,
