@@ -32,7 +32,7 @@ import static org.junit.Assert.assertThat;
 /**
  * Security tests for an execute server task.
  */
-public class ExecuteServiceTaskTest extends AbstractContextResolverSecurityProcessorTest {
+public class ExecuteServiceTaskSecurityTest extends AbstractContextResolverSecurityProcessorTest {
     /** */
     public void testExecute() throws Exception {
         successExecute(clntAllPerms, clntReadOnlyPerm);

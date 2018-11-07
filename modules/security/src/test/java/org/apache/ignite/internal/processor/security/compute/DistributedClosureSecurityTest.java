@@ -16,7 +16,7 @@ import static org.junit.Assert.assertThat;
 /**
  * Security tests for distributed closure.
  */
-public class DistributedClosureTest extends AbstractContextResolverSecurityProcessorTest {
+public class DistributedClosureSecurityTest extends AbstractContextResolverSecurityProcessorTest {
     /** */
     public void testDistributedClosure() {
         checkSuccess(clntAllPerms, clntReadOnlyPerm);

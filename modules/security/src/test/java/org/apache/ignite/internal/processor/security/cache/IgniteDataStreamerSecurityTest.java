@@ -20,7 +20,7 @@ import static org.junit.Assert.assertThat;
 /**
  * Security tests for IgniteDataStream receiver.
  */
-public class IgniteDataStreamerTest extends AbstractContextResolverSecurityProcessorTest {
+public class IgniteDataStreamerSecurityTest extends AbstractContextResolverSecurityProcessorTest {
     /** */
     public void testDataStreamer() {
         successReceiver(clntAllPerms, srvAllPerms);

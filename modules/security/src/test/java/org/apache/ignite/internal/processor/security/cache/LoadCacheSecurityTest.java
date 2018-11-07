@@ -23,7 +23,7 @@ import static org.junit.Assert.assertThat;
 /**
  * Security tests for cache data load.
  */
-public class LoadCacheTest extends AbstractContextResolverSecurityProcessorTest {
+public class LoadCacheSecurityTest extends AbstractContextResolverSecurityProcessorTest {
     /** {@inheritDoc} */
     @Override protected CacheConfiguration[] getCacheConfigurations() {
         return new CacheConfiguration[] {

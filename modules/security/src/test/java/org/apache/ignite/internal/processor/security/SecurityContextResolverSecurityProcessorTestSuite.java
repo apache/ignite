@@ -19,13 +19,13 @@ package org.apache.ignite.internal.processor.security;
 
 import java.util.Set;
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processor.security.cache.EntryProcessorTest;
-import org.apache.ignite.internal.processor.security.cache.IgniteDataStreamerTest;
-import org.apache.ignite.internal.processor.security.cache.LoadCacheTest;
-import org.apache.ignite.internal.processor.security.cache.ScanQueryTest;
-import org.apache.ignite.internal.processor.security.compute.ComputeTaskTest;
-import org.apache.ignite.internal.processor.security.compute.DistributedClosureTest;
-import org.apache.ignite.internal.processor.security.compute.ExecuteServiceTaskTest;
+import org.apache.ignite.internal.processor.security.cache.EntryProcessorSecurityTest;
+import org.apache.ignite.internal.processor.security.cache.IgniteDataStreamerSecurityTest;
+import org.apache.ignite.internal.processor.security.cache.LoadCacheSecurityTest;
+import org.apache.ignite.internal.processor.security.cache.ScanQuerySecurityTest;
+import org.apache.ignite.internal.processor.security.compute.ComputeTaskSecurityTest;
+import org.apache.ignite.internal.processor.security.compute.DistributedClosureSecurityTest;
+import org.apache.ignite.internal.processor.security.compute.ExecuteServiceTaskSecurityTest;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -47,13 +47,13 @@ public class SecurityContextResolverSecurityProcessorTestSuite extends TestSuite
     public static TestSuite suite(final @Nullable Set<Class> ignoredTests) {
         TestSuite suite = new TestSuite("Initiator Node's Security Context Test Suite");
 
-        suite.addTest(new TestSuite(DistributedClosureTest.class));
-        suite.addTest(new TestSuite(ComputeTaskTest.class));
-        suite.addTest(new TestSuite(ExecuteServiceTaskTest.class));
-        suite.addTest(new TestSuite(ScanQueryTest.class));
-        suite.addTest(new TestSuite(EntryProcessorTest.class));
-        suite.addTest(new TestSuite(IgniteDataStreamerTest.class));
-        suite.addTest(new TestSuite(LoadCacheTest.class));
+        suite.addTest(new TestSuite(DistributedClosureSecurityTest.class));
+        suite.addTest(new TestSuite(ComputeTaskSecurityTest.class));
+        suite.addTest(new TestSuite(ExecuteServiceTaskSecurityTest.class));
+        suite.addTest(new TestSuite(ScanQuerySecurityTest.class));
+        suite.addTest(new TestSuite(EntryProcessorSecurityTest.class));
+        suite.addTest(new TestSuite(IgniteDataStreamerSecurityTest.class));
+        suite.addTest(new TestSuite(LoadCacheSecurityTest.class));
 
         return suite;
     }

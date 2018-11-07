@@ -20,7 +20,7 @@ import static org.junit.Assert.assertThat;
 /**
  * Security test for scan query.
  */
-public class ScanQueryTest extends AbstractContextResolverSecurityProcessorTest {
+public class ScanQuerySecurityTest extends AbstractContextResolverSecurityProcessorTest {
     /** */
     public void testScanQuery() throws Exception {
         putTestData(srvAllPerms, CACHE_WITH_PERMS);

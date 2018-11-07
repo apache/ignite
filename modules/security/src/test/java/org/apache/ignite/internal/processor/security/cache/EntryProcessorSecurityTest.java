@@ -31,7 +31,7 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 /**
  * Security tests for EntityProcessor.
  */
-public class EntryProcessorTest extends AbstractContextResolverSecurityProcessorTest {
+public class EntryProcessorSecurityTest extends AbstractContextResolverSecurityProcessorTest {
     /** */
     public void testEntryProcessor() {
         successEntryProcessor(clntAllPerms, srvAllPerms);

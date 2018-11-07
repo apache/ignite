@@ -44,7 +44,7 @@ import static org.junit.Assert.assertThat;
 /**
  * Security tests for a compute task.
  */
-public class ComputeTaskTest extends AbstractContextResolverSecurityProcessorTest {
+public class ComputeTaskSecurityTest extends AbstractContextResolverSecurityProcessorTest {
     /** */
     public void testCompute() {
         checkSuccess(srvAllPerms, clntAllPerms);
@@ -194,5 +194,4 @@ public class ComputeTaskTest extends AbstractContextResolverSecurityProcessorTes
             return null;
         }
     }
-
 }
