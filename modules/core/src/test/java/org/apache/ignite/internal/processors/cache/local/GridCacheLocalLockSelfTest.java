@@ -36,7 +36,6 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
 /**
  * Test cases for multi-threaded tests.
  */
-@SuppressWarnings({"ProhibitedExceptionThrown"})
 public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
     /** Grid. */
     private Ignite ignite;
@@ -135,7 +134,6 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
         final Lock lock = cache.lock(1);
 
         GridTestThread t1 = new GridTestThread(new Callable<Object>() {
-            @SuppressWarnings({"CatchGenericClass"})
             @Nullable @Override public Object call() throws Exception {
                 info("Before lock for.key 1");
 
@@ -172,7 +170,6 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
         });
 
         GridTestThread t2 = new GridTestThread(new Callable<Object>() {
-            @SuppressWarnings({"CatchGenericClass"})
             @Nullable @Override public Object call() throws Exception {
                 info("Waiting for latch1...");
 

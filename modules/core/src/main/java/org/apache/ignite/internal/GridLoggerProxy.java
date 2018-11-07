@@ -80,7 +80,6 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
      * @param igniteInstanceName Ignite instance name (can be {@code null} for default grid).
      * @param id8 Node ID.
      */
-    @SuppressWarnings({"IfMayBeConditional", "SimplifiableIfStatement"})
     public GridLoggerProxy(IgniteLogger impl, @Nullable Object ctgr, @Nullable String igniteInstanceName, String id8) {
         assert impl != null;
 
@@ -221,7 +220,6 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         IgniteBiTuple<String, Object> t = stash.get();
 

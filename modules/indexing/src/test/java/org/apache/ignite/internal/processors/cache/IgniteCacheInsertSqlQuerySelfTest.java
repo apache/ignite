@@ -167,7 +167,6 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
     /**
      *
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testDuplicateKeysException() {
         final IgniteCache<Integer, Integer> p = ignite(0).cache("I2I");
 
