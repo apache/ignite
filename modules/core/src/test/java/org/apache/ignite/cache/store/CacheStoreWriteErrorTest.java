@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cache.store;
 
+import com.google.common.base.Throwables;
 import java.util.HashMap;
 import java.util.concurrent.Callable;
 import javax.cache.Cache;
@@ -57,10 +58,26 @@ public class CacheStoreWriteErrorTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checks that primary error ({@link CacheWriterException}) is not lost due to unwrapping a key.
+     * Checks primary error while saving batch with one entry.
      */
-    public void testPrimaryError() {
-        GridTestUtils.assertThrows(log,
+    public void testPrimaryErrorForBatchSize1() {
+        checkPrimaryError(1);
+    }
+
+    /**
+     * Checks primary error while saving batch with two entries.
+     */
+    public void testPrimaryErrorForBatchSize2() {
+        checkPrimaryError(2);
+    }
+
+    /**
+     * Checks that primary error ({@link CacheWriterException}) is not lost due to unwrapping a key.
+     *
+     * @param batchSize Batch size.
+     */
+    private void checkPrimaryError(int batchSize) {
+        Throwable t = GridTestUtils.assertThrows(log,
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     try (Ignite grid = startGrid()) {
@@ -68,9 +85,11 @@ public class CacheStoreWriteErrorTest extends GridCommonAbstractTest {
 
                         HashMap<BinaryObject, String> batch = new HashMap<>();
 
-                        BinaryObject key = grid.binary().builder("KEY_TYPE_NAME").setField("id", 0).build();
+                        for (int i = 0; i < batchSize; i++) {
+                            BinaryObject key = grid.binary().builder("KEY_TYPE_NAME").setField("id", i).build();
 
-                        batch.put(key, "VALUE");
+                            batch.put(key, "VALUE");
+                        }
 
                         cache.putAllAsync(batch).get();
                     }
@@ -78,12 +97,18 @@ public class CacheStoreWriteErrorTest extends GridCommonAbstractTest {
                     return null;
                 }
             }, CacheWriterException.class, null);
+
+        assertTrue("Stacktrace should contain the message of the original exception",
+            Throwables.getStackTraceAsString(t).contains(ThrowableCacheStore.EXCEPTION_MESSAGE));
     }
 
     /**
      * {@link CacheStore} implementation which throws {@link RuntimeException} for every write operation.
      */
     public static class ThrowableCacheStore extends CacheStoreAdapter<Object, Object> {
+        /** */
+        private static final String EXCEPTION_MESSAGE = "WRITE CACHE STORE EXCEPTION";
+
         /** {@inheritDoc} */
         @Override public Object load(Object o) throws CacheLoaderException {
             return null;
@@ -91,7 +116,7 @@ public class CacheStoreWriteErrorTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void write(Cache.Entry<?, ?> entry) throws CacheWriterException {
-            throw new RuntimeException();
+            throw new RuntimeException(EXCEPTION_MESSAGE);
         }
 
         /** {@inheritDoc} */

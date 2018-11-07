@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -399,8 +400,19 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
 
         Collection<Object> keys = new ArrayList<>(keys0.size());
 
-        for (KeyCacheObject key : keys0)
-            keys.add(cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, true, false));
+        for (KeyCacheObject key : keys0) {
+            try {
+                keys.add(cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, false));
+            }
+            catch (BinaryInvalidTypeException e) {
+                keys.add(cctx.toCacheKeyObject(key));
+
+                if (log.isDebugEnabled()) {
+                    log.warning("Failed to unwrap the key: " + key +
+                        " (the binary object will be used instead).");
+                }
+            }
+        }
 
         err.add(keys, res.error(), req.topologyVersion());
     }

@@ -34,6 +34,7 @@ import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -2734,9 +2735,22 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     continue;
                 }
 
-                if (storeErr != null &&
-                    storeErr.failedKeys().contains(entry.key().value(ctx.cacheObjectContext(), false)))
-                    continue;
+                if (storeErr != null) {
+                    Object key = entry.key();
+
+                    try {
+                        key = entry.key().value(ctx.cacheObjectContext(), false);
+                    }
+                    catch (BinaryInvalidTypeException e) {
+                        if (log.isDebugEnabled()) {
+                            log.warning("Failed to get a value of the key: " + key +
+                                " (the binary object will be used instead).");
+                        }
+                    }
+
+                    if (storeErr.failedKeys().contains(key))
+                        continue;
+                }
 
                 try {
                     // We are holding java-level locks on entries at this point.
