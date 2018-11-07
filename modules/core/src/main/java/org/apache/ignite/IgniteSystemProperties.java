@@ -1036,7 +1036,7 @@ public final class IgniteSystemProperties {
      *
      * Default is {@code false}.
      */
-    public static final String DISABLE_INTERCEPTOR_INVOCATION_ON_DR_EVENTS = "IGNITE_DISABLE_CACHE_INTERCEPTOR_INVOCATION_ON_DR_EVENTS";
+    public static final String IGNITE_DISABLE_INTERCEPTOR_INVOCATION_ON_DR_EVENTS = "IGNITE_DISABLE_CACHE_INTERCEPTOR_INVOCATION_ON_DR_EVENTS";
 
     /**
      * Enforces singleton.

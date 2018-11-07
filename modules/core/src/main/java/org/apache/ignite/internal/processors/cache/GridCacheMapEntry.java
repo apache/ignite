@@ -1522,9 +1522,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 Object interceptorVal = val0;
 
-                if(cctx.dr().cacheInterceptorDisabled() && explicitVer != null && explicitVer.dataCenterId() != cctx.dr().dataCenterId())
-                   interceptDisabled = true;
-                else {
+                if(!(interceptDisabled = cctx.dr().cacheInterceptorDisabled() && explicitVer != null && explicitVer.dataCenterId() != cctx.dr().dataCenterId())) {
                      interceptorVal = cctx.config().getInterceptor().onBeforePut(
                         new CacheLazyEntry(cctx, key, old, keepBinary),
                         val0
