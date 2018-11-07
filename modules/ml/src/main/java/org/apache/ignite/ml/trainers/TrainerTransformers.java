@@ -196,7 +196,7 @@ public class TrainerTransformers {
             UpstreamTransformerChain<K, V> newChain = Utils.copy(datasetBuilder.upstreamTransformersChain());
             DatasetBuilder<K, V> newBuilder = withNewChain(datasetBuilder, newChain);
             int j = i;
-            newChain.modifyIfPresent(s -> s + j * MAGIC_PRIME);
+            newChain.modifyIfPresent(s -> s + (j + 3) * MAGIC_PRIME);
             tasks.add(
                 trainingTaskGenerator.apply(newBuilder, i, mappings != null ? extractors.get(i) : extractor));
         }
