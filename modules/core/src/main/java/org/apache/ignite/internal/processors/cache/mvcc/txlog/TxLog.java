@@ -257,6 +257,8 @@ public class TxLog implements DbCheckpointListener {
      * @throws IgniteCheckedException If failed.
      */
     public void removeUntil(long major, long minor) throws IgniteCheckedException {
+        assert mgr.checkpointLockIsHeldByThread();
+
         TraversingClosure clo = new TraversingClosure(major, minor);
 
         tree.iterate(LOWEST, clo, clo);
