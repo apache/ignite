@@ -1304,8 +1304,10 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         List<List<?>> rows = new ArrayList<>();
 
         if (validCatalogPattern(catalog)) {
-            for(String schema : gcp.publicSchemaNames())
-                rows.add(Arrays.asList(schema, /*catalog:*/ null));
+            for (String schema : gcp.publicSchemaNames()) {
+                if (matches(schema, schemaPtrn))
+                    rows.add(Arrays.asList(schema, /*catalog:*/ null));
+            }
         }
 
         return new JdbcResultSet(true, null,
