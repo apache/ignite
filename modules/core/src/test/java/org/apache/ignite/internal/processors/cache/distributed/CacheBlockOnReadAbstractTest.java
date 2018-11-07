@@ -250,7 +250,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
         /**
          * Number of milliseconds to wait on the potentially blocking operation.
          */
-        long timeout() default 2000L;
+        long timeout() default 10_000L;
 
         /**
          * Cache atomicity mode.
@@ -399,7 +399,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(timeout = 4000L, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
+    @Params(atomicityMode = ATOMIC, cacheMode = PARTITIONED)
     public void testDestroyCacheAtomicPartitioned() throws Exception {
         doTestDestroyCache();
     }
@@ -407,7 +407,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(timeout = 4000L, atomicityMode = ATOMIC, cacheMode = REPLICATED)
+    @Params(atomicityMode = ATOMIC, cacheMode = REPLICATED)
     public void testDestroyCacheAtomicReplicated() throws Exception {
         doTestDestroyCache();
     }
@@ -415,7 +415,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(timeout = 4000L, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
+    @Params(atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
     public void testDestroyCacheTransactionalPartitioned() throws Exception {
         doTestDestroyCache();
     }
@@ -423,7 +423,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(timeout = 4000L, atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
+    @Params(atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
     public void testDestroyCacheTransactionalReplicated() throws Exception {
         doTestDestroyCache();
     }
@@ -589,7 +589,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(timeout = 4000L, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
+    @Params(atomicityMode = ATOMIC, cacheMode = PARTITIONED)
     public void testUpdateBaselineTopologyAtomicPartitioned() throws Exception {
         doTestUpdateBaselineTopology();
     }
@@ -597,7 +597,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(timeout = 4000L, atomicityMode = ATOMIC, cacheMode = REPLICATED)
+    @Params(atomicityMode = ATOMIC, cacheMode = REPLICATED)
     public void testUpdateBaselineTopologyAtomicReplicated() throws Exception {
         doTestUpdateBaselineTopology();
     }
@@ -605,7 +605,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(timeout = 4000L, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
+    @Params(atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
     public void testUpdateBaselineTopologyTransactionalPartitioned() throws Exception {
         doTestUpdateBaselineTopology();
     }
@@ -613,7 +613,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(timeout = 4000L, atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
+    @Params(atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
     public void testUpdateBaselineTopologyTransactionalReplicated() throws Exception {
         doTestUpdateBaselineTopology();
     }
@@ -784,7 +784,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED, timeout = 5_000L)
+    @Params(atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
     public void testStopClientTransactionalReplicated() throws Exception {
         doTestStopClient();
     }
@@ -939,7 +939,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
         doTest0(baseline.get(0), readOperation, backgroundOperation);
 
         try (AutoCloseable read = readOperation.start()) {
-            Thread.sleep(500L);
+            GridTestUtils.waitForCondition(() -> readOperation.readOperationsFinishedUnderBlock() > 0, 500L);
         }
 
         assertEquals(
@@ -971,6 +971,8 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
 
         cntFinishedReadOperations = new CountDownLatch(baseline.size() - 1);
 
+        int MIN_READ_OPERATIONS_CNT = 8;
+
         // Read while potentially blocking operation is executing.
         try (AutoCloseable block = backgroundOperation.start()) {
             cntFinishedReadOperations.await(10 * timeout(), TimeUnit.MILLISECONDS);
@@ -979,7 +981,10 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
             assertEquals("Messages weren't blocked in time", 0, cntFinishedReadOperations.getCount());
 
             try (AutoCloseable read = readOperation.start()) {
-                Thread.sleep(timeout());
+                GridTestUtils.waitForCondition(
+                    () -> readOperation.readOperationsFinishedUnderBlock() > MIN_READ_OPERATIONS_CNT,
+                    timeout()
+                );
             }
         }
         finally {
@@ -996,18 +1001,15 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
             readOperation.readOperationsFailed()
         );
 
+        int operationsFinished = readOperation.readOperationsFinishedUnderBlock();
+
         assertTrue(
-            "No read operations were finished during timeout.",
-            readOperation.readOperationsFinishedUnderBlock() > 0
+            "Not enough read operations were finished during timeout: " + operationsFinished,
+            operationsFinished > MIN_READ_OPERATIONS_CNT
         );
 
         // There were no operations as long as blocking timeout.
         assertNotAlmostEqual(timeout(), readOperation.maxReadDuration());
-
-        // On average every read operation was much faster then blocking timeout.
-        double avgDuration = (double)timeout() / readOperation.readOperationsFinishedUnderBlock();
-
-        assertTrue("Avarage duration was too long.",avgDuration < timeout() * 0.25);
     }
 
     /**

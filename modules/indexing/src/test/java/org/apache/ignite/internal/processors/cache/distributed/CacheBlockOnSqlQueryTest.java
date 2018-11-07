@@ -94,11 +94,6 @@ public class CacheBlockOnSqlQueryTest extends CacheBlockOnReadAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected long warmup() {
-        return 2 * super.warmup();
-    }
-
-    /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
     @Override public void testStartServerAtomicPartitioned() {
         fail("https://issues.apache.org/jira/browse/IGNITE-9916");

@@ -24,7 +24,6 @@ import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
@@ -47,34 +46,6 @@ public class CacheBlockOnScanTest extends CacheBlockOnReadAbstractTest {
         };
     }
 
-    /** {@inheritDoc} */
-    @Override protected long warmup() {
-        return 2 * super.warmup();
-    }
-
-    /** {@inheritDoc} */
-    @Params(baseline = 9, timeout = 4000L, atomicityMode = ATOMIC, cacheMode = PARTITIONED, allowException = true)
-    @Override public void testStopBaselineAtomicPartitioned() throws Exception {
-        super.testStopBaselineAtomicPartitioned();
-    }
-
-    /** {@inheritDoc} */
-    @Params(baseline = 9, timeout = 4000L, atomicityMode = ATOMIC, cacheMode = REPLICATED, allowException = true)
-    @Override public void testStopBaselineAtomicReplicated() throws Exception {
-        super.testStopBaselineAtomicReplicated();
-    }
-
-    /** {@inheritDoc} */
-    @Params(baseline = 9, timeout = 4000L, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED, allowException = true)
-    @Override public void testStopBaselineTransactionalPartitioned() throws Exception {
-        super.testStopBaselineTransactionalPartitioned();
-    }
-
-    /** {@inheritDoc} */
-    @Params(baseline = 9, timeout = 4000L, atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED, allowException = true)
-    @Override public void testStopBaselineTransactionalReplicated() throws Exception {
-        super.testStopBaselineTransactionalReplicated();
-    }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = REPLICATED)
