@@ -266,7 +266,6 @@ public class FileHandleManagerImpl implements FileHandleManager {
     /**
      * WAL writer worker.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     public class WALWriter extends GridWorker {
         /** Unconditional flush. */
         private static final long UNCONDITIONAL_FLUSH = -1L;
@@ -457,7 +456,6 @@ public class FileHandleManagerImpl implements FileHandleManager {
         /**
          * @param expPos Expected position.
          */
-        @SuppressWarnings("ForLoopReplaceableByForEach")
         void flushBuffer(long expPos) throws IgniteCheckedException {
             if (mmap)
                 return;
