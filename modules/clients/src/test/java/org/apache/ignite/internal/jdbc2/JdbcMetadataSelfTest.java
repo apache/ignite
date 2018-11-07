@@ -419,7 +419,6 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSchemasMetadata() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10118");
         try (Connection conn = DriverManager.getConnection(BASE_URL)) {
             ResultSet rs = conn.getMetaData().getSchemas();
 

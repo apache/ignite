@@ -37,6 +37,8 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteVersionUtils;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
@@ -1298,14 +1300,24 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public ResultSet getSchemas(String catalog, String schemaPtrn) throws SQLException {
-        updateMetaData();
+        GridKernalContext ctx = conn.ignite().context();
+        GridCacheProcessor gcp = ctx.cache();
 
-        List<List<?>> rows = new ArrayList<>(meta.size());
+        List<List<?>> rows = new ArrayList<>();
 
         if (validCatalogPattern(catalog)) {
-            for (String schema : meta.keySet()) {
+            for (DynamicCacheDescriptor desc : gcp.cacheDescriptors().values()) {
+                if (!desc.cacheType().userCache())
+                    continue;
+
+                if (desc.cacheConfiguration().getQueryEntities().isEmpty())
+                    continue;
+
+                String schema = QueryUtils.normalizeSchemaName(desc.cacheName(),
+                    desc.cacheConfiguration().getSqlSchema());
+
                 if (matches(schema, schemaPtrn))
-                    rows.add(Arrays.<Object>asList(schema, null));
+                    rows.add(Arrays.asList(schema, /*catalog:*/ null));
             }
         }
 
