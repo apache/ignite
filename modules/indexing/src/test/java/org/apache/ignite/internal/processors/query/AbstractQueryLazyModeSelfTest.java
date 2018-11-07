@@ -164,6 +164,7 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
 
     /**
      * Test release reserved partition after query complete.
+     * In case partitions not released the `awaitPartitionMapExchange` fails by timeout.
      *
      * @param pageSize Results page size.
      * @throws Exception If failed.
