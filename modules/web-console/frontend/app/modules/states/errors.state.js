@@ -26,9 +26,9 @@ angular
     .config(['$stateProvider', /** @param {import('@uirouter/angularjs').StateProvider} $stateProvider */ function($stateProvider) {
         // set up the states
         $stateProvider
-            .state('404', {
+            .state('base.404', {
                 url: '/404',
-                templateUrl: templateNotFoundPage,
+                template: `<timed-redirection></timed-redirection>`,
                 tfMetaTags: {
                     title: 'Page not found'
                 },

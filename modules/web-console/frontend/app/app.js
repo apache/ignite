@@ -150,6 +150,7 @@ import formField from './components/form-field';
 import igniteChart from './components/ignite-chart';
 import igniteChartSelector from './components/ignite-chart-series-selector';
 import statusOutput from './components/status-output';
+import timedRedirection from './components/timed-redirection';
 
 import pageProfile from './components/page-profile';
 import pagePasswordChanged from './components/page-password-changed';
@@ -264,7 +265,8 @@ export default angular.module('ignite-console', [
     statusOutput.name,
     progressLine.name,
     formField.name,
-    formSignup.name
+    formSignup.name,
+    timedRedirection.name
 ])
 .service('$exceptionHandler', $exceptionHandler)
 // Directives.
