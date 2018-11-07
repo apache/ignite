@@ -68,9 +68,12 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
+import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
+import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.pagemem.wal.record.SwitchSegmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableContext;
@@ -476,6 +479,22 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
+     *
+     */
+    private void startArchiverAndCompressor() {
+        if (isArchiverEnabled()) {
+            assert archiver != null;
+
+            new IgniteThread(archiver).start();
+        }
+
+        fileHandleManager.onActivate();
+
+        if (compressor != null)
+            compressor.start();
+    }
+
+    /**
      * Archiver can be not created, all files will be written to WAL folder, using absolute segment index.
      *
      * @return flag indicating if archiver is disabled.
@@ -560,11 +579,17 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (archiver != null)
                 archiver.shutdown();
 
-            if (compressor != null)
+            if (compressor != null) {
                 compressor.shutdown();
 
-            if (decompressor != null)
+                compressor = null;
+            }
+
+            if (decompressor != null) {
                 decompressor.shutdown();
+
+                decompressor = null;
+            }
         }
         catch (Exception e) {
             U.error(log, "Failed to gracefully close WAL segment: " + this.currHnd, e);
@@ -578,19 +603,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
 
         start0();
-
-        fileHandleManager.onActivate();
-
-        if (!cctx.kernalContext().clientNode()) {
-            if (isArchiverEnabled()) {
-                assert archiver != null;
-
-                new IgniteThread(archiver).start();
-            }
-
-            if (compressor != null)
-                compressor.start();
-        }
     }
 
     /** {@inheritDoc} */
@@ -618,6 +630,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     @Override public void resumeLogging(WALPointer lastPtr) throws IgniteCheckedException {
         assert currHnd == null;
         assert lastPtr == null || lastPtr instanceof FileWALPointer;
+
+        startArchiverAndCompressor();
+
         assert (isArchiverEnabled() && archiver != null) || (!isArchiverEnabled() && archiver == null) :
             "Trying to restore FileWriteHandle on deactivated write ahead log manager";
 
@@ -734,6 +749,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** {@inheritDoc} */
     @Override public WALPointer log(WALRecord rec, RolloverType rolloverType) throws IgniteCheckedException {
         if (serializer == null || mode == WALMode.NONE)
+            return null;
+
+        // Only delta-records, page snapshots and memory recovery are allowed to write in recovery mode.
+        if (cctx.kernalContext().recoveryMode() &&
+            !(rec instanceof PageDeltaRecord || rec instanceof PageSnapshot || rec instanceof MemoryRecoveryRecord))
             return null;
 
         FileWriteHandle currWrHandle = currentHandle();
@@ -1640,7 +1660,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         blockingSectionEnd();
                     }
 
-                    if (evt.isRecordable(EVT_WAL_SEGMENT_ARCHIVED)) {
+                    if (evt.isRecordable(EVT_WAL_SEGMENT_ARCHIVED) && !cctx.kernalContext().recoveryMode()) {
                         evt.record(new WalSegmentArchivedEvent(
                             cctx.discovery().localNode(),
                             res.getAbsIdx(),
@@ -1713,7 +1733,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * @return <ul><li>{@code True} if can read, no lock is held, </li><li>{@code false} if work segment, need
          * release segment later, use {@link #releaseWorkSegment} for unlock</li> </ul>
          */
-        @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
         public boolean checkCanReadArchiveOrReserveWorkSegment(long absIdx) {
             return segmentAware.checkCanReadArchiveOrReserveWorkSegment(absIdx);
         }
@@ -1721,7 +1740,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /**
          * @param absIdx Segment absolute index.
          */
-        @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
         public void releaseWorkSegment(long absIdx) {
             segmentAware.releaseWorkSegment(absIdx);
         }
@@ -1879,6 +1897,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 for (FileCompressorWorker worker: workers)
                     U.join(worker);
 
+                workers.clear();
+
                 U.cancel(this);
             }
 
@@ -1952,7 +1972,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             f0.force();
                         }
 
-                        if (evt.isRecordable(EVT_WAL_SEGMENT_COMPACTED)) {
+                        if (evt.isRecordable(EVT_WAL_SEGMENT_COMPACTED) && !cctx.kernalContext().recoveryMode()) {
                             evt.record(new WalSegmentCompactedEvent(
                                     cctx.localNode(),
                                     segIdx,

@@ -488,7 +488,6 @@ public class HadoopV2TaskContext extends HadoopTaskContext {
      * @return Native Hadoop split.
      * @throws IgniteCheckedException if failed.
      */
-    @SuppressWarnings("unchecked")
     public Object getNativeSplit(HadoopInputSplit split) throws IgniteCheckedException {
         if (split instanceof HadoopExternalSplit)
             return readExternalSplit((HadoopExternalSplit)split);

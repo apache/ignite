@@ -454,18 +454,7 @@ public class PageMemoryTracker implements IgnitePlugin {
             return;
 
         // Increment statistics.
-        AtomicInteger statCnt = stats.get(record.type());
-
-        if (statCnt == null) {
-            statCnt = new AtomicInteger();
-
-            AtomicInteger oldCnt = stats.putIfAbsent(record.type(), statCnt);
-
-            if (oldCnt != null)
-                statCnt = oldCnt;
-        }
-
-        statCnt.incrementAndGet();
+        stats.computeIfAbsent(record.type(), r -> new AtomicInteger()).incrementAndGet();
     }
 
     /**
