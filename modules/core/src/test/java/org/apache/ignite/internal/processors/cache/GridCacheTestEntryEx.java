@@ -911,7 +911,8 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         return false;
     }
 
-    @Override public CacheObject mvccPeek(boolean onheapOnly) {
+    /** {@inheritDoc} */
+    @Nullable @Override public CacheObject mvccPeek(boolean onheapOnly) {
         return null;
     }
 
@@ -919,8 +920,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     @Nullable @Override public CacheObject peek(boolean heap,
         boolean offheap,
         AffinityTopologyVersion topVer,
-        @Nullable IgniteCacheExpiryPolicy plc)
-    {
+        @Nullable IgniteCacheExpiryPolicy plc) {
         return null;
     }
 

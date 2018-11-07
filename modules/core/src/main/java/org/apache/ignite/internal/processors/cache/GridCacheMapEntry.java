@@ -3118,15 +3118,16 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheObject mvccPeek(boolean onheapOnly) throws IgniteCheckedException {
+    @Nullable @Override public CacheObject mvccPeek(boolean onheapOnly)
+        throws GridCacheEntryRemovedException, IgniteCheckedException {
         if (onheapOnly)
             return null;
 
         lockEntry();
 
         try {
-            // t0d0 do we need this check?
-//            checkObsolete();
+            checkObsolete();
+
             CacheDataRow row = cctx.offheap().mvccRead(cctx, key, MVCC_MAX_SNAPSHOT);
 
             return row != null ? row.value() : null;
