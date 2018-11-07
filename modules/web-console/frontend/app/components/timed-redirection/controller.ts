@@ -24,7 +24,7 @@ interface State {
 }
 
 export class TimedRedirectionCtrl implements ng.IComponentController, ng.IOnInit, ng.IOnDestroy {
-    static $inject = ['$state', '$interval', '$timeout'];
+    static $inject = ['$state', '$interval'];
 
     lastSuccessState = JSON.parse(localStorage.getItem('lastStateChangeSuccess'));
 
@@ -34,7 +34,7 @@ export class TimedRedirectionCtrl implements ng.IComponentController, ng.IOnInit
 
     countDown: ng.IPromise<ng.IIntervalService>;
 
-    constructor(private $state, private $interval, private $timeout) {}
+    constructor(private $state, private $interval) {}
 
     $onInit() {
         this.startCountDown();

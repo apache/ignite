@@ -15,8 +15,9 @@
     limitations under the License.
 
 
-div
-    a(ng-click='$ctrl.go()') Link
+h1 {{$ctrl.headerText}}
 
-div {{$ctrl.secondsLeft}}
+.subheader {{$ctrl.subHeaderText}}
+
+.redirectionText You’ll be redirected back automatically in {{$ctrl.secondsLeft}} seconds, or #[a(ng-click='$ctrl.go()') click here] to redirect now.
 

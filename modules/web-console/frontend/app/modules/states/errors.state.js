@@ -28,7 +28,11 @@ angular
         $stateProvider
             .state('base.404', {
                 url: '/404',
-                template: `<timed-redirection></timed-redirection>`,
+                component: 'timedRedirection',
+                resolve: {
+                    headerText: () => '404',
+                    subHeaderText: () => 'Page not found'
+                },
                 tfMetaTags: {
                     title: 'Page not found'
                 },
