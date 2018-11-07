@@ -441,7 +441,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public void localEvict(Collection<? extends K> keys);
 
     /**
-     * Peeks at value in the local storage using an optional peek mode.
+     * Peeks at a value in the local storage using an optional peek mode.
      * <p>
      * This method will not load a value from the configured {@link CacheStore} or from a remote node.
      * <h2 class="header">Transactions</h2>
