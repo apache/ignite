@@ -442,7 +442,7 @@ public class SegmentAwareTest extends TestCase {
 
         aware.setLastArchivedAbsoluteIndex(6);
 
-        for (int exp = 0; exp <=6; exp++)
+        for (int exp = 0; exp <= 6; exp++)
             assertEquals(exp, aware.waitNextSegmentToCompress());
     }
 

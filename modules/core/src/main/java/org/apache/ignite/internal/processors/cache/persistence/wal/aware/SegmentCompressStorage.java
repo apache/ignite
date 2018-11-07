@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.aware;
 
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 
 /**
  * Storage of actual information about current index of compressed segments.
