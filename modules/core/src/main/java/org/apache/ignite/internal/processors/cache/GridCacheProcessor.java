@@ -1931,6 +1931,25 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     }
 
     /**
+     * @return Collection (which is a view) of sql schemas available for user.
+     */
+    public Collection<String> publicSchemaNames() {
+        return F.viewReadOnly(cacheDescriptors().values(),
+            new IgniteClosure<DynamicCacheDescriptor, String>() {
+                @Override public String apply(DynamicCacheDescriptor desc) {
+                    return QueryUtils.normalizeSchemaName(desc.cacheName(), desc.cacheConfiguration().getSqlSchema());
+                }
+            },
+            new IgnitePredicate<DynamicCacheDescriptor>() {
+                @Override public boolean apply(DynamicCacheDescriptor desc) {
+                    return desc.cacheType().userCache()
+                        && !desc.cacheConfiguration().getQueryEntities().isEmpty();
+                }
+            }
+        );
+    }
+
+    /**
      * Gets cache mode.
      *
      * @param cacheName Cache name to check.
