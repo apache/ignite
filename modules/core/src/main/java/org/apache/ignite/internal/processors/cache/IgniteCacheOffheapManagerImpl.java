@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -75,6 +76,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
@@ -128,6 +130,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
     /** */
     protected GridStripedLock partStoreLock = new GridStripedLock(Runtime.getRuntime().availableProcessors());
+
+    /** Queue of counter update tasks*/
+    private final TreeSet<Item> queue = new TreeSet<>();
 
     /** {@inheritDoc} */
     @Override public GridAtomicLong globalRemoveId() {
@@ -1236,6 +1241,70 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             }
         }
 
+        /**
+         * Updates counter by delta from start position.
+         *
+         * @param start Start.
+         * @param delta Delta.
+         */
+        public synchronized void updateCounter(long start, long delta) {
+            long cur = cntr.get(), next;
+
+            if (cur > start) {
+                log.warning("Stale update counter task [cur=" + cur + ", start=" + start + ", delta=" + delta + ']');
+
+                return;
+            }
+
+            if (cur < start) {
+                // backup node with gaps
+                offer(new Item(start, delta));
+
+                return;
+            }
+
+            while (true) {
+                boolean res = cntr.compareAndSet(cur, next = start + delta);
+
+                assert res;
+
+                Item peek = peek();
+
+                if (peek == null || peek.start != next)
+                    return;
+
+                Item item = poll();
+
+                assert peek == item;
+
+                start = item.start;
+                delta = item.delta;
+                cur = next;
+            }
+        }
+
+        /**
+         * @return Retrieves the minimum update counter task from queue.
+         */
+        private Item poll() {
+            return queue.pollFirst();
+        }
+
+        /**
+         * @return Checks the minimum update counter task from queue.
+         */
+        private Item peek() {
+            return queue.isEmpty() ? null : queue.first();
+
+        }
+
+        /**
+         * @param item Adds update task to priority queue.
+         */
+        private void offer(Item item) {
+            queue.add(item);
+        }
+
         /** {@inheritDoc} */
         @Override public String name() {
             return name;
@@ -1720,6 +1789,31 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 return bytes.length;
             else
                 return 0;
+        }
+    }
+
+    /**
+     * Update counter task. Update from start value by delta value.
+     */
+    private static class Item implements Comparable<Item> {
+        /** */
+        private final long start;
+
+        /** */
+        private final long delta;
+
+        /**
+         * @param start Start value.
+         * @param delta Delta value.
+         */
+        private Item(long start, long delta) {
+            this.start = start;
+            this.delta = delta;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int compareTo(@NotNull Item o) {
+            return Long.compare(this.start, o.start);
         }
     }
 }
