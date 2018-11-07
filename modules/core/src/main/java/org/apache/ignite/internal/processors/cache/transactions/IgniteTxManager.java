@@ -2429,24 +2429,24 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @throws IgniteCheckedException If failed to add version to TxLog.
      */
     public void mvccFinish(IgniteTxAdapter tx, boolean commit) throws IgniteCheckedException {
-        cctx.database().checkpointReadLock();
+        if (!cctx.kernalContext().clientNode() && tx.mvccSnapshot != null && !(tx.near() && tx.remote())) {
+            WALPointer ptr = null;
 
-        WALPointer ptr = null;
+            cctx.database().checkpointReadLock();
 
-        try {
-            if (!cctx.kernalContext().clientNode() && tx.mvccSnapshot != null && !(tx.near() && tx.remote())) {
+            try {
                 if (cctx.wal() != null)
                     ptr = cctx.wal().log(newTxRecord(tx));
 
                 cctx.coordinators().updateState(tx.mvccSnapshot, commit ? TxState.COMMITTED : TxState.ABORTED, tx.local());
             }
-        }
-        finally {
-            cctx.database().checkpointReadUnlock();
-        }
+            finally {
+                cctx.database().checkpointReadUnlock();
+            }
 
-        if (ptr != null)
-            cctx.wal().flush(ptr, true);
+            if (ptr != null)
+                cctx.wal().flush(ptr, true);
+        }
     }
 
     /**
@@ -2456,18 +2456,18 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @throws IgniteCheckedException If failed to add version to TxLog.
      */
     public void mvccPrepare(IgniteTxAdapter tx) throws IgniteCheckedException {
-        cctx.database().checkpointReadLock();
+        if (!cctx.kernalContext().clientNode() && tx.mvccSnapshot != null && !(tx.near() && tx.remote())) {
+            cctx.database().checkpointReadLock();
 
-        try {
-            if (!cctx.kernalContext().clientNode() && tx.mvccSnapshot != null && !(tx.near() && tx.remote())) {
+            try {
                 if (cctx.wal() != null)
                     cctx.wal().log(newTxRecord(tx));
 
                 cctx.coordinators().updateState(tx.mvccSnapshot, TxState.PREPARED);
             }
-        }
-        finally {
-            cctx.database().checkpointReadUnlock();
+            finally {
+                cctx.database().checkpointReadUnlock();
+            }
         }
     }
 
