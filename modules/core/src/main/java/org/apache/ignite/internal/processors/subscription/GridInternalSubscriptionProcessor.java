@@ -57,7 +57,8 @@ public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
 
         lsnrs.computeIfAbsent(InternalSubscriber.class, (k) -> new ArrayList<>()).add(subscriber);
 
-        assert lsnrs.size() == 1 : lsnrs; // all subscribers have to be added before first getSubscribers() call.
+        if (lsnrs.size() > 1)
+            lsnrs.keySet().removeIf(k -> k != InternalSubscriber.class && k.isAssignableFrom(subscriber.getClass()));
     }
 
     /**
