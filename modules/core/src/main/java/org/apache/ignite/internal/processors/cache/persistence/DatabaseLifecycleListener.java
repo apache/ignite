@@ -18,12 +18,11 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.subscription.InternalSubscriber;
 
 /**
  *
  */
-public interface DatabaseLifecycleListener  extends InternalSubscriber {
+public interface DatabaseLifecycleListener {
     /**
      * Callback executed when data regions become to start-up.
      *
