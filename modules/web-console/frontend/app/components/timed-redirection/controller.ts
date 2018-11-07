@@ -52,8 +52,8 @@ export class TimedRedirectionCtrl implements ng.IComponentController, ng.IOnInit
         this.countDown = this.$interval(() => {
             this.secondsLeft--;
 
-            // if (this.secondsLeft === 0)
-            //     this.go();
+            if (this.secondsLeft === 0)
+                this.go();
 
         }, 1000, this.secondsLeft);
     }

@@ -38,9 +38,13 @@ angular
                 },
                 unsaved: true
             })
-            .state('403', {
+            .state('base.403', {
                 url: '/403',
-                templateUrl: templateNotAuthorizedPage,
+                component: 'timedRedirection',
+                resolve: {
+                    headerText: () => '403',
+                    subHeaderText: () => 'You are not authorized'
+                },
                 tfMetaTags: {
                     title: 'Not authorized'
                 },
