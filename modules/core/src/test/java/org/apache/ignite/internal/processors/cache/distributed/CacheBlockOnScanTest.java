@@ -48,6 +48,11 @@ public class CacheBlockOnScanTest extends CacheBlockOnReadAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected long warmup() {
+        return 2 * super.warmup();
+    }
+
+    /** {@inheritDoc} */
     @Params(baseline = 9, atomicityMode = ATOMIC, cacheMode = PARTITIONED, allowException = true)
     @Override public void testStopBaselineAtomicPartitioned() throws Exception {
         super.testStopBaselineAtomicPartitioned();
