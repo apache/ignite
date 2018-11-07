@@ -2123,8 +2123,15 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         if (locPart != null && locPart.state() == LOST) {
                             boolean marked = locPart.own();
 
-                            if (marked)
+                            if (marked) {
                                 updateLocal(locPart.id(), locPart.state(), updSeq, resTopVer);
+
+                                long updateCntr = locPart.updateCounter();
+
+                                //Set update counters to 0, for full rebalance.
+                                locPart.updateCounter(updateCntr, -updateCntr);
+                                locPart.initialUpdateCounter(0);
+                            }
                         }
                     }
                 }
