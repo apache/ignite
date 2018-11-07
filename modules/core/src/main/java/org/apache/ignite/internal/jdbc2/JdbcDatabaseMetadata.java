@@ -974,39 +974,39 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
 
         List<List<?>> rows = new ArrayList<>();
 
-        System.out.println("+++ public cache names = " + ctx.cache().publicCacheNames());
+        if (validCatalogPattern(catalog)) {
+            for (String cacheName : ctx.cache().publicCacheNames()) {
+                CacheConfiguration<?, ?> ccfg = ctx.cache().cacheDescriptor(cacheName).cacheConfiguration();
 
-        for (String cacheName : ctx.cache().publicCacheNames()) {
-            CacheConfiguration<?,?> ccfg = ctx.cache().cacheDescriptor(cacheName).cacheConfiguration();
+                Collection<QueryEntity> entities = ccfg.getQueryEntities();
 
-            Collection<QueryEntity> entities = ccfg.getQueryEntities();
+                for (QueryEntity tab : entities) {
+                    // todo: do we need to normalize table name?
+                    String tabName = tab.getTableName();
+                    // todo: remove assert
+                    assert tabName != null : "Table Name of the query entity is null; Entity " + tab;
 
-            for (QueryEntity tab : entities) {
-                // todo: do we need to normalize table name?
-                String tabName = tab.getTableName();
-                // todo: remove assert
-                assert tabName != null : "Table Name of the query entity is null; Entity " + tab;
+                    if (!matches(tabName, tblNamePtrn))
+                        continue;
 
-                if (!matches(tabName, tblNamePtrn))
-                    continue;
+                    String schemaName = QueryUtils.normalizeSchemaName(cacheName, ccfg.getSqlSchema());
 
-                String schemaName = QueryUtils.normalizeSchemaName(cacheName, ccfg.getSqlSchema());
+                    if (!matches(schemaName, schemaPtrn))
+                        continue;
 
-                if (!matches(schemaName, schemaPtrn))
-                    continue;
+                    final String keyName = tab.getKeyFieldName() != null ?
+                        tab.getKeyFieldName() :
+                        "PK_" + schemaName + "_" + tabName;
 
-                final String keyName = tab.getKeyFieldName() != null ?
-                    tab.getKeyFieldName() :
-                    "PK_" + schemaName + "_" + tabName;
+                    List<String> keyCols = QueryUtils.primaryKeyColumns(tab);
 
-                List<String> keyCols = QueryUtils.primaryKeyColumns(tab);
+                    for (int i = 0; i < keyCols.size(); i++) {
+                        String keyColName = keyCols.get(i);
 
-                for (int i = 0; i < keyCols.size(); i++) {
-                    String keyColName = keyCols.get(i);
+                        int keySeq = i + 1;
 
-                    int keySeq = i + 1;
-
-                    rows.add(Arrays.asList(/*catalog:*/ null, schemaName, tabName, keyColName, keySeq, keyName));
+                        rows.add(Arrays.asList(/*catalog:*/ null, schemaName, tabName, keyColName, keySeq, keyName));
+                    }
                 }
             }
         }
