@@ -16,8 +16,6 @@
  */
 
 import angular from 'angular';
-import templateNotFoundPage from 'views/404.tpl.pug';
-import templateNotAuthorizedPage from 'views/403.tpl.pug';
 
 angular
     .module('ignite-console.states.errors', [
