@@ -87,6 +87,13 @@ public interface DatasetBuilder<K, V> {
     public DatasetBuilder<K, V> withTransformationSeed(Long seed);
 
     /**
+     * Get seed used for upstream transformations.
+     *
+     * @return Seed used for upstream transformations.
+     */
+    public Long transformationSeed();
+
+    /**
      * Returns new instance of DatasetBuilder using conjunction of internal filter and {@code filterToAdd}.
      * @param filterToAdd Additional filter.
      */

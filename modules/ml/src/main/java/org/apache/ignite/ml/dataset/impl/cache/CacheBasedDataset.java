@@ -61,7 +61,11 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
     /** Filter for {@code upstream} data. */
     private final IgniteBiPredicate<K, V> filter;
 
+    /** Chain of transformers applied to upstream. */
     private UpstreamTransformerChain<K, V> upstreamTransformers;
+
+    /** Seed used in chain of transformers. */
+    private Long upstreamTransformationsSeed;
 
     /** Ignite Cache with partition {@code context}. */
     private final IgniteCache<Integer, C> datasetCache;
@@ -89,12 +93,14 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
         IgniteCache<K, V> upstreamCache,
         IgniteBiPredicate<K, V> filter,
         UpstreamTransformerChain<K, V> upstreamTransformers,
+        Long upstreamTransformationsSeed,
         IgniteCache<Integer, C> datasetCache, PartitionDataBuilder<K, V, C, D> partDataBuilder,
         UUID datasetId) {
         this.ignite = ignite;
         this.upstreamCache = upstreamCache;
         this.filter = filter;
         this.upstreamTransformers = upstreamTransformers;
+        this.upstreamTransformationsSeed = upstreamTransformationsSeed;
         this.datasetCache = datasetCache;
         this.partDataBuilder = partDataBuilder;
         this.datasetId = datasetId;
@@ -113,6 +119,7 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
                 upstreamCacheName,
                 filter,
                 upstreamTransformers,
+                upstreamTransformationsSeed,
                 datasetCacheName,
                 datasetId,
                 part,
@@ -143,6 +150,7 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
                 upstreamCacheName,
                 filter,
                 upstreamTransformers,
+                upstreamTransformationsSeed,
                 datasetCacheName,
                 datasetId,
                 part,

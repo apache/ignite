@@ -148,12 +148,18 @@ public class TrainerTransformers {
         IgniteBiFunction<K, V, Vector> extractor,
         PredictionsAggregator aggregator,
         LearningEnvironment environment) {
+
+        Long seed = datasetBuilder.transformationSeed() != null
+            ? datasetBuilder.transformationSeed()
+            : new Random().nextLong();
+
         MLLogger log = environment.logger(datasetBuilder.getClass());
         log.log(MLLogger.VerboseLevel.LOW, "Start learning.");
 
         List<int[]> mappings = null;
         if (featuresVectorSize > 0) {
-            mappings = IntStream.range(0, ensembleSize).mapToObj(modelIdx -> getMapping(featuresVectorSize, maximumFeaturesCntPerMdl))
+            mappings = IntStream.range(0, ensembleSize).mapToObj(
+                modelIdx -> getMapping(featuresVectorSize, maximumFeaturesCntPerMdl, seed + modelIdx * MAGIC_PRIME))
                 .collect(Collectors.toList());
         }
 
@@ -201,10 +207,11 @@ public class TrainerTransformers {
      *
      * @param featuresVectorSize Features vector size (Dimension of initial space).
      * @param maximumFeaturesCntPerMdl Dimension of target space.
+     * @param seed Seed.
      * @return Mapping R^featuresVectorSize -> R^maximumFeaturesCntPerMdl.
      */
-    public static int[] getMapping(int featuresVectorSize, int maximumFeaturesCntPerMdl) {
-        return Utils.selectKDistinct(featuresVectorSize, maximumFeaturesCntPerMdl, new Random());
+    public static int[] getMapping(int featuresVectorSize, int maximumFeaturesCntPerMdl, long seed) {
+        return Utils.selectKDistinct(featuresVectorSize, maximumFeaturesCntPerMdl, new Random(seed));
     }
 
     /**

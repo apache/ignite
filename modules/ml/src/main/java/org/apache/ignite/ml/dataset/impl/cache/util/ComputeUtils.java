@@ -51,6 +51,9 @@ public class ComputeUtils {
     /** Relatively big prime used in seeding. */
     private static final int MAGIC_PRIME = 951091;
 
+    /** Relatively big prime used in seeding. */
+    public static final int MAGIC_PRIME_1 = 116243;
+
     /**
      * Calls the specified {@code fun} function on all partitions so that is't guaranteed that partitions with the same
      * index of all specified caches will be placed on the same node and will not be moved before computation is
@@ -139,6 +142,7 @@ public class ComputeUtils {
      * @param upstreamCacheName Name of an {@code upstream} cache.
      * @param filter Filter for {@code upstream} data.
      * @param transformersChain Upstream transformers.
+     * @param transformationsSeed Seed used for upstream transformations.
      * @param datasetCacheName Name of a partition {@code context} cache.
      * @param datasetId Dataset ID.
      * @param part Partition index.
@@ -153,6 +157,7 @@ public class ComputeUtils {
         Ignite ignite,
         String upstreamCacheName, IgniteBiPredicate<K, V> filter,
         UpstreamTransformerChain<K, V> transformersChain,
+        Long transformationsSeed,
         String datasetCacheName,
         UUID datasetId,
         int part,
@@ -174,7 +179,7 @@ public class ComputeUtils {
             qry.setPartition(part);
             qry.setFilter(filter);
 
-            long seed = new Random().nextLong();
+            long seed = transformationsSeed == null ? new Random().nextLong() : transformationsSeed + part * MAGIC_PRIME_1;
             long cnt = computeCount(upstreamCache, qry, transformersChain, seed);
 
             if (cnt > 0) {
@@ -210,26 +215,26 @@ public class ComputeUtils {
 
     /**
      * Initializes partition {@code context} by loading it from a partition {@code upstream}.
-     *
+     *  @param <K> Type of a key in {@code upstream} data.
+     * @param <V> Type of a value in {@code upstream} data.
+     * @param <C> Type of a partition {@code context}.
      * @param ignite Ignite instance.
      * @param upstreamCacheName Name of an {@code upstream} cache.
      * @param filter Filter for {@code upstream} data.
      * @param transformersChain Upstream data {@link Stream} transformers chain.
+     * @param transformationsSeed Seed used for upstream transformations.
      * @param ctxBuilder Partition {@code context} builder.
-     * @param <K> Type of a key in {@code upstream} data.
-     * @param <V> Type of a value in {@code upstream} data.
-     * @param <C> Type of a partition {@code context}.
      */
     public static <K, V, C extends Serializable> void initContext(
         Ignite ignite,
         String upstreamCacheName,
         IgniteBiPredicate<K, V> filter,
         UpstreamTransformerChain<K, V> transformersChain,
+        Long transformationsSeed,
         String datasetCacheName,
         PartitionContextBuilder<K, V, C> ctxBuilder,
         int retries,
-        int interval,
-        Long seed) {
+        int interval) {
         affinityCallWithRetries(ignite, Arrays.asList(datasetCacheName, upstreamCacheName), part -> {
             Ignite locIgnite = Ignition.localIgnite();
 
@@ -241,7 +246,7 @@ public class ComputeUtils {
             qry.setFilter(filter);
 
             C ctx;
-            long upstreamTransformationsSeed = seed == null ? new Random().nextLong() : seed + part * MAGIC_PRIME;
+            long upstreamTransformationsSeed = transformationsSeed == null ? new Random().nextLong() : transformationsSeed + part * MAGIC_PRIME;
             long cnt = computeCount(locUpstreamCache, qry, transformersChain, upstreamTransformationsSeed);
 
             try (QueryCursor<UpstreamEntry<K, V>> cursor = locUpstreamCache.query(qry,
@@ -291,7 +296,7 @@ public class ComputeUtils {
         PartitionContextBuilder<K, V, C> ctxBuilder,
         int retries,
         Long seed) {
-        initContext(ignite, upstreamCacheName, filter, transformersChain, datasetCacheName, ctxBuilder, retries, 0, seed);
+        initContext(ignite, upstreamCacheName, filter, transformersChain, seed, datasetCacheName, ctxBuilder, retries, 0);
     }
 
     /**

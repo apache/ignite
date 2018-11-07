@@ -154,15 +154,22 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
         return new LocalDataset<>(ctxList, dataList);
     }
 
+    /** {@inheritDoc} */
     @Override public <T> DatasetBuilder<K, V> addStreamTransformer(UpstreamTransformer<K, V, T> upstreamTransformer) {
         upstreamTransformers.addUpstreamTransformer(upstreamTransformer);
 
         return this;
     }
 
+    /** {@inheritDoc} */
     @Override public DatasetBuilder<K, V> withTransformationSeed(Long seed) {
         upstreamTransformationSeed = seed;
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Long transformationSeed() {
+        return upstreamTransformationSeed;
     }
 
     /**

@@ -128,14 +128,14 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
             upstreamCache.getName(),
             filter,
             transformersChain,
+            transformationSeed,
             datasetCache.getName(),
             partCtxBuilder,
             RETRIES,
-            RETRY_INTERVAL,
-            transformationSeed
+            RETRY_INTERVAL
         );
 
-        return new CacheBasedDataset<>(ignite, upstreamCache, filter, transformersChain, datasetCache, partDataBuilder, datasetId);
+        return new CacheBasedDataset<>(ignite, upstreamCache, filter, transformersChain, transformationSeed, datasetCache, partDataBuilder, datasetId);
     }
 
     /** {@inheritDoc} */
@@ -149,6 +149,10 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
         transformationSeed = seed;
 
         return this;
+    }
+
+    @Override public Long transformationSeed() {
+        return transformationSeed;
     }
 
     /**
