@@ -1266,14 +1266,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                                             }
                                         }
 
-                                        ctx.cache().context().database().checkpointReadLock();
-
-                                        try {
-                                            txLog.removeUntil(snapshot.coordinatorVersion(), snapshot.cleanupVersion());
-                                        }
-                                        finally {
-                                            ctx.cache().context().database().checkpointReadUnlock();
-                                        }
+                                        txLog.removeUntil(snapshot.coordinatorVersion(), snapshot.cleanupVersion());
 
                                         if (log.isDebugEnabled())
                                             log.debug("Vacuum completed. " + metrics);
