@@ -240,7 +240,6 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
     }
 
     /**
-     * OOM on reduce. See IGNITE-9933
      * @throws Exception On error.
      */
     public void testHeavyGroupByPkLazy() throws Exception {
