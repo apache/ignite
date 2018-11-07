@@ -42,11 +42,13 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestDelayingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsAbstractMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -99,6 +101,8 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
         cfg.setClientMode(client);
 
+        cfg.setConsistentId(gridName);
+
         cfg.setCacheConfiguration(cacheConfiguration());
 
         return cfg;
@@ -127,6 +131,8 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
+
+        cleanPersistenceDir();
 
         delayPartExchange.set(false);
 
@@ -288,6 +294,9 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
             validateQuery(safe, part, ig);
         }
 
+        checkNewNode(true, canWrite, safe, part);
+        checkNewNode(false, canWrite, safe, part);
+
         // Check that partition state does not change after we start a new node.
         IgniteEx grd = startGrid(3);
 
@@ -312,6 +321,39 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
                 cache.put(i, i);
             }
+        }
+    }
+
+    /**
+     * @param client Client flag.
+     * @param canWrite Can write flag.
+     * @param safe Safe flag.
+     * @param part List of lost partitions.
+     * @throws Exception If failed to start a new node.
+     */
+    private void checkNewNode(
+        boolean client,
+        boolean canWrite,
+        boolean safe,
+        int part
+    ) throws Exception {
+        this.client = client;
+
+        try {
+            IgniteEx cl = (IgniteEx)startGrid("newNode");
+
+            CacheGroupContext grpCtx = cl.context().cache().cacheGroup(CU.cacheId(CACHE_NAME));
+
+            assertTrue(grpCtx.needsRecovery());
+
+            verifyCacheOps(canWrite, safe, part, cl);
+
+            validateQuery(safe, part, cl);
+        }
+        finally {
+            stopGrid("newNode", false);
+
+            this.client = false;
         }
     }
 
