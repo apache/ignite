@@ -943,6 +943,16 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
+     * Updates MVCC cache update counter on backup node.
+     *
+     * @param start Start position
+     * @param delta Delta.
+     */
+    public void updateCounter(long start, long delta) {
+        store.updateCounter(start, delta);
+    }
+
+    /**
      * @param val Initial update index value.
      */
     public void initialUpdateCounter(long val) {
