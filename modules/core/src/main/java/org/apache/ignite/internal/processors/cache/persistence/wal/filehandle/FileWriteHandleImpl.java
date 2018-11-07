@@ -55,6 +55,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.SWITCH_SEGMENT_RECORD;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.prepareSerializerVersionBuffer;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory.LATEST_SERIALIZER_VERSION;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
 import static org.apache.ignite.internal.util.IgniteUtils.findField;
@@ -106,18 +107,18 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
     /** */
     protected volatile long lastFsyncPos;
 
-    /** Stop guard to provide warranty that only one thread will be successful in calling {@link #close(boolean)} */
+    /** Stop guard to provide warranty that only one thread will be successful in calling {@link #close(boolean)}. */
     protected final AtomicBoolean stop = new AtomicBoolean(false);
 
     /** */
     private final Lock lock = new ReentrantLock();
 
-    /** Condition for timed wait of several threads, see {@link DataStorageConfiguration#getWalFsyncDelayNanos()} */
+    /** Condition for timed wait of several threads, see {@link DataStorageConfiguration#getWalFsyncDelayNanos()}. */
     private final Condition fsync = lock.newCondition();
 
     /**
      * Next segment available condition. Protection from "spurious wakeup" is provided by predicate {@link
-     * #fileIO}=<code>null</code>
+     * #fileIO}=<code>null</code>.
      */
     private final Condition nextSegment = lock.newCondition();
 
@@ -133,7 +134,7 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
     /** Persistence metrics tracker. */
     private final DataStorageMetricsImpl metrics;
 
-    /** WAL segment size in bytes. . This is maximum value, actual segments may be shorter. */
+    /** WAL segment size in bytes. This is maximum value, actual segments may be shorter. */
     private final long maxWalSegmentSize;
 
     /** Logger. */
@@ -167,6 +168,8 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
         DataStorageMetricsImpl metrics, FileHandleManagerImpl.WALWriter writer, long pos, WALMode mode, boolean mmap,
         boolean resume, long fsyncDelay, long maxWalSegmentSize) throws IOException {
         super(fileIO);
+        assert serializer != null;
+
         this.mmap = mmap;
         this.mode = mode;
         this.fsyncDelay = fsyncDelay;
@@ -174,20 +177,15 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
         this.maxWalSegmentSize = maxWalSegmentSize;
         this.log = cctx.logger(FileWriteHandleImpl.class);
         this.cctx = cctx;
-        walWriter = writer;
-
-        assert serializer != null;
+        this.walWriter = writer;
+        this.serializer = serializer;
+        this.written = pos;
+        this.lastFsyncPos = pos;
+        this.resume = resume;
+        this.buf = rbuf;
 
         if (!mmap)
             fileIO.position(pos);
-
-        this.serializer = serializer;
-
-        written = pos;
-        lastFsyncPos = pos;
-        this.resume = resume;
-
-        this.buf = rbuf;
     }
 
     /** {@inheritDoc} */
@@ -217,7 +215,7 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
 
         assert seg != null && seg.position() > 0;
 
-        FileWriteAheadLogManager.prepareSerializerVersionBuffer(getSegmentId(), serializerVer, false, seg.buffer());
+        prepareSerializerVersionBuffer(getSegmentId(), serializerVer, false, seg.buffer());
 
         seg.release();
     }
@@ -439,7 +437,7 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
     }
 
     /**
-     * @param buf Mapped byte buffer..
+     * @param buf Mapped byte buffer.
      * @param off Offset.
      * @param len Length.
      */
@@ -552,7 +550,7 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
     }
 
     /**
-     * Signals next segment available to wake up other worker threads waiting for WAL to write
+     * Signals next segment available to wake up other worker threads waiting for WAL to write.
      */
     @Override public void signalNextAvailable() {
         lock.lock();

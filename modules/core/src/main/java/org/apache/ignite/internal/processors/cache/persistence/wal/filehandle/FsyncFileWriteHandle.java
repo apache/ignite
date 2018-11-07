@@ -63,41 +63,31 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
 class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle {
     /** */
     private final RecordSerializer serializer;
-
     /** Max segment size. */
     private final long maxSegmentSize;
-
     /** Serializer latest version to use. */
     private final int serializerVersion =
         IgniteSystemProperties.getInteger(IGNITE_WAL_SERIALIZER_VERSION, LATEST_SERIALIZER_VERSION);
-
     /**
      * Accumulated WAL records chain. This reference points to latest WAL record. When writing records chain is iterated
      * from latest to oldest (see {@link WALRecord#previous()}) Records from chain are saved into buffer in reverse
      * order
      */
     private final AtomicReference<WALRecord> head = new AtomicReference<>();
-
     /**
      * Position in current file after the end of last written record (incremented after file channel write operation)
      */
     private volatile long written;
-
     /** */
     private volatile long lastFsyncPos;
-
     /** Stop guard to provide warranty that only one thread will be successful in calling {@link #close(boolean)} */
     private final AtomicBoolean stop = new AtomicBoolean(false);
-
     /** */
     private final Lock lock = new ReentrantLock();
-
     /** Condition activated each time writeBuffer() completes. Used to wait previously flushed write to complete */
     private final Condition writeComplete = lock.newCondition();
-
     /** Condition for timed wait of several threads, see {@link DataStorageConfiguration#getWalFsyncDelayNanos()} */
     private final Condition fsync = lock.newCondition();
-
     /**
      * Next segment available condition. Protection from "spurious wakeup" is provided by predicate {@link
      * #fileIO}=<code>null</code>
@@ -107,7 +97,6 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
     private final WALMode mode;
     /** Thread local byte buffer size, see {@link #tlb} */
     private final int tlbSize;
-
     /** Context. */
     protected final GridCacheSharedContext cctx;
     /** Persistence metrics tracker. */
@@ -149,23 +138,22 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
         DataStorageMetricsImpl metrics, RecordSerializer serializer, long pos,
         WALMode mode, long maxSegmentSize, int size, long fsyncDelay) throws IOException {
         super(fileIO);
+        assert serializer != null;
+
         this.mode = mode;
         tlbSize = size;
         this.cctx = cctx;
         this.metrics = metrics;
         this.log = cctx.logger(FsyncFileWriteHandle.class);
         this.fsyncDelay = fsyncDelay;
-
-        assert serializer != null;
-
-        fileIO.position(pos);
-
         this.maxSegmentSize = maxSegmentSize;
         this.serializer = serializer;
+        this.written = pos;
+        this.lastFsyncPos = pos;
 
         head.set(new FakeRecord(new FileWALPointer(fileIO.getSegmentId(), (int)pos, 0), false));
-        written = pos;
-        lastFsyncPos = pos;
+
+        fileIO.position(pos);
     }
 
     /** {@inheritDoc} */
@@ -182,7 +170,7 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
      * Write serializer version to current handle. NOTE: Method mutates {@code fileIO} position, written and
      * lastFsyncPos fields.
      *
-     * @throws IOException If fail to write serializer version.
+     * @throws IgniteCheckedException If fail to write serializer version.
      */
     @Override public void writeHeader() throws IgniteCheckedException {
         try {
@@ -480,9 +468,9 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
     }
 
     /**
-     * Serializes WAL records chain to provided byte buffer
+     * Serializes WAL records chain to provided byte buffer.
      *
-     * @param buf Buffer, will be filled with records chain from end to beginning
+     * @param buf Buffer, will be filled with records chain from end to beginning.
      * @param head Head of the chain to write to the buffer.
      * @return Position in file for this buffer.
      * @throws IgniteCheckedException If failed.
@@ -723,8 +711,8 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
 
     /**
      * @param pos Position in file to start write from. May be checked against actual position to wait previous writes
-     * to complete
-     * @param buf Buffer to write to file
+     * to complete.
+     * @param buf Buffer to write to file.
      * @throws StorageException If failed.
      */
     @SuppressWarnings("TooBroadScope")

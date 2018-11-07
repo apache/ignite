@@ -462,7 +462,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             walDisableContext = cctx.walState().walDisableContext();
 
             fileHandleManager = fileHandleManagerFactory.build(
-                cctx, metrics, mmap, lastWALPtr, serializer, this::currentHandle
+                cctx, metrics, mmap, lastWALPtr::get, serializer, this::currentHandle
             );
 
             fileHandleManager.start();
@@ -553,7 +553,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             cctx.time().removeTimeoutObject(timeoutObj);
 
         try {
-            fileHandleManager.stop();
+            fileHandleManager.onDeactivate();
 
             segmentAware.interrupt();
 

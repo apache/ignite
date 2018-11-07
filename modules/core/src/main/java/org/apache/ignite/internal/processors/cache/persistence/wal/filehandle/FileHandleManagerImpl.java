@@ -73,7 +73,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
     /** Use mapped byte buffer. */
     private final boolean mmap;
     /** Last WAL pointer. */
-    private final ThreadLocal<WALPointer> lastWALPtr;
+    private final Supplier<WALPointer> lastWALPtr;
     /** */
     private final RecordSerializer serializer;
     /** Current handle supplier. */
@@ -101,7 +101,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
         GridCacheSharedContext cctx,
         DataStorageMetricsImpl metrics,
         boolean mmap,
-        ThreadLocal<WALPointer> lastWALPtr,
+        Supplier<WALPointer> lastWALPtr,
         RecordSerializer serializer,
         Supplier<FileWriteHandle> currentHandleSupplier,
         WALMode mode,
@@ -157,21 +157,18 @@ public class FileHandleManagerImpl implements FileHandleManager {
         else
             rbuf = currentHandle().buf.reset();
 
-        FileWriteHandleImpl handle = null;
-
         try {
-            handle = new FileWriteHandleImpl(
+            return new FileWriteHandleImpl(
                 cctx, fileIO, rbuf, serializer, metrics, walWriter, 0,
                 mode, mmap, false, fsyncDelay, maxWalSegmentSize
             );
-            return handle;
         }
         catch (ClosedByInterruptException e) {
             if (rbuf != null)
                 rbuf.free();
         }
 
-        return handle;
+        return null;
     }
 
     /**
@@ -205,7 +202,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void stop() throws IgniteCheckedException {
+    @Override public void onDeactivate() throws IgniteCheckedException {
         FileWriteHandleImpl currHnd = currentHandle();
 
         if (mode == WALMode.BACKGROUND) {
@@ -501,8 +498,8 @@ public class FileHandleManagerImpl implements FileHandleManager {
 
         /**
          * @param pos Position in file to start write from. May be checked against actual position to wait previous
-         * writes to complete
-         * @param buf Buffer to write to file
+         * writes to complete.
+         * @param buf Buffer to write to file.
          * @throws StorageException If failed.
          * @throws IgniteCheckedException If failed.
          */

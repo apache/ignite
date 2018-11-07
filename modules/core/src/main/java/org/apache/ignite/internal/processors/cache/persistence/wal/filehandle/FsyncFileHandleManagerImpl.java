@@ -43,12 +43,12 @@ public class FsyncFileHandleManagerImpl implements FileHandleManager {
     /** Persistence metrics tracker. */
     private final DataStorageMetricsImpl metrics;
     /** Last WAL pointer. */
-    private final ThreadLocal<WALPointer> lastWALPtr;
+    private final Supplier<WALPointer> lastWALPtr;
     /** */
     protected final RecordSerializer serializer;
     /** Current handle supplier. */
     private final Supplier<FileWriteHandle> currentHandleSupplier;
-    /** WAL segment size in bytes. . This is maximum value, actual segments may be shorter. */
+    /** WAL segment size in bytes. This is maximum value, actual segments may be shorter. */
     private final long maxWalSegmentSize;
     /** Fsync delay. */
     private final long fsyncDelay;
@@ -67,7 +67,7 @@ public class FsyncFileHandleManagerImpl implements FileHandleManager {
      * @param tlbSize Thread local byte buffer size.
      */
     public FsyncFileHandleManagerImpl(GridCacheSharedContext cctx,
-        DataStorageMetricsImpl metrics, ThreadLocal<WALPointer> ptr, RecordSerializer serializer,
+        DataStorageMetricsImpl metrics, Supplier<WALPointer> ptr, RecordSerializer serializer,
         Supplier<FileWriteHandle> handle, WALMode mode,
         long maxWalSegmentSize, long fsyncDelay, int tlbSize) {
         this.cctx = cctx;
@@ -109,16 +109,16 @@ public class FsyncFileHandleManagerImpl implements FileHandleManager {
 
     /** {@inheritDoc} */
     @Override public void start() {
-        //NOOP
+        //NOOP.
     }
 
     /** {@inheritDoc} */
     @Override public void onActivate() {
-        //NOOP
+        //NOOP.
     }
 
     /** {@inheritDoc} */
-    @Override public void stop() throws IgniteCheckedException {
+    @Override public void onDeactivate() throws IgniteCheckedException {
         FsyncFileWriteHandle currHnd = currentHandle();
 
         if (mode == WALMode.BACKGROUND) {
@@ -132,7 +132,7 @@ public class FsyncFileHandleManagerImpl implements FileHandleManager {
 
     /** {@inheritDoc} */
     @Override public void resumeLogging() {
-        //NOOP
+        //NOOP.
     }
 
     /** {@inheritDoc} */

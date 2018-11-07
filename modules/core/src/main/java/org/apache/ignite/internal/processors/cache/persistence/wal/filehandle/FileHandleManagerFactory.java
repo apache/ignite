@@ -34,7 +34,7 @@ public class FileHandleManagerFactory {
     private final boolean walFsyncWithDedicatedWorker =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_WAL_FSYNC_WITH_DEDICATED_WORKER, false);
 
-    /** Data storage configuration */
+    /** Data storage configuration. */
     private final DataStorageConfiguration dsConf;
 
     /**
@@ -50,23 +50,24 @@ public class FileHandleManagerFactory {
      * @param mmap Using mmap.
      * @param lastWALPtr Last WAL pointer.
      * @param serializer Serializer.
-     * @param currentHandleSupplier Supplier of current handle.
+     * @param currHandleSupplier Supplier of current handle.
      * @return One of implementation of {@link FileHandleManager}.
      */
     public FileHandleManager build(
         GridCacheSharedContext cctx,
         DataStorageMetricsImpl metrics,
         boolean mmap,
-        ThreadLocal<WALPointer> lastWALPtr,
+        Supplier<WALPointer> lastWALPtr,
         RecordSerializer serializer,
-        Supplier<FileWriteHandle> currentHandleSupplier) {
+        Supplier<FileWriteHandle> currHandleSupplier
+    ) {
         if (dsConf.getWalMode() == WALMode.FSYNC && !walFsyncWithDedicatedWorker)
             return new FsyncFileHandleManagerImpl(
                 cctx,
                 metrics,
                 lastWALPtr,
                 serializer,
-                currentHandleSupplier,
+                currHandleSupplier,
                 dsConf.getWalMode(),
                 dsConf.getWalSegmentSize(),
                 dsConf.getWalFsyncDelayNanos(),
@@ -79,7 +80,7 @@ public class FileHandleManagerFactory {
                 mmap,
                 lastWALPtr,
                 serializer,
-                currentHandleSupplier,
+                currHandleSupplier,
                 dsConf.getWalMode(),
                 dsConf.getWalBufferSize(),
                 dsConf.getWalSegmentSize(),

@@ -60,11 +60,11 @@ public interface FileHandleManager {
     void onActivate();
 
     /**
-     * Stop manager.
+     * On deactivate.
      *
      * @throws IgniteCheckedException if fail.
      */
-    void stop() throws IgniteCheckedException;
+    void onDeactivate() throws IgniteCheckedException;
 
     /**
      * Resume logging.

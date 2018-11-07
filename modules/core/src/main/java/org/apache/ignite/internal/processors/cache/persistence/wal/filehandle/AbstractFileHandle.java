@@ -24,10 +24,10 @@ import org.jetbrains.annotations.NotNull;
  *
  */
 public abstract class AbstractFileHandle {
-    /** I/O interface for read/write operations with file */
+    /** I/O interface for read/write operations with file. */
     protected SegmentIO fileIO;
 
-    /** Segment idx corresponded to fileIo*/
+    /** Segment idx corresponded to fileIo. */
     private final long segmentIdx;
 
     /**
