@@ -931,7 +931,8 @@ public class GridReduceQueryExecutor {
                         GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, qryReqId, REDUCE)
                             .pageSize(r.pageSize())
                             .distributedJoinMode(OFF)
-                            .queryMemoryManager(new IgniteH2QueryMemoryManager(maxMem)));
+                            .queryMemoryManager((maxMem == Long.MAX_VALUE) ?
+                                null : new IgniteH2QueryMemoryManager(maxMem)));
 
                         try {
                             if (qry.explain())

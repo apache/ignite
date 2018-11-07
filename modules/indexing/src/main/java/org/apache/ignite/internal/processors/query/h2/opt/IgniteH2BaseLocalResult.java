@@ -33,7 +33,7 @@ import org.h2.value.ValueArray;
 /**
  * H2 local result.
  */
-public class IgniteH2LocalResult implements LocalResult {
+public class IgniteH2BaseLocalResult implements LocalResult {
     /** H2 Session. */
     private Session ses;
 
@@ -88,16 +88,10 @@ public class IgniteH2LocalResult implements LocalResult {
     /** Contains lobs. */
     private boolean containsLobs;
 
-    /** Query context. */
-    private final GridH2QueryContext qctx = GridH2QueryContext.get();
-
-    /** Allocated memory. */
-    private long allocMem;
-
     /**
      * Construct a local result object.
      */
-    public IgniteH2LocalResult() {
+    public IgniteH2BaseLocalResult() {
         // nothing to do
     }
 
@@ -108,7 +102,7 @@ public class IgniteH2LocalResult implements LocalResult {
      * @param expressions the expression array
      * @param visibleColCnt the number of visible columns
      */
-    public IgniteH2LocalResult(Session ses, Expression[] expressions, int visibleColCnt) {
+    public IgniteH2BaseLocalResult(Session ses, Expression[] expressions, int visibleColCnt) {
         this.ses = ses;
         this.rows = Utils.newSmallArrayList();
         this.visibleColCnt = visibleColCnt;
@@ -135,11 +129,11 @@ public class IgniteH2LocalResult implements LocalResult {
      * @param targetSession the session of the copy
      * @return the copy if possible, or null if copying is not possible
      */
-    @Override public IgniteH2LocalResult createShallowCopy(SessionInterface targetSession) {
+    @Override public IgniteH2BaseLocalResult createShallowCopy(SessionInterface targetSession) {
         if (containsLobs)
             return null;
 
-        IgniteH2LocalResult copy = new IgniteH2LocalResult();
+        IgniteH2BaseLocalResult copy = new IgniteH2BaseLocalResult();
 
         copy.ses = (Session) targetSession;
         copy.visibleColCnt = this.visibleColCnt;
@@ -331,21 +325,13 @@ public class IgniteH2LocalResult implements LocalResult {
     }
 
     /**
+     * Check memory available for query. Implemented in child classes.
+     * The no-op implementation is used for case query memory for SQL queries is not checked and tracked.
+     *
      * @param row Row.
      */
-    private void checkAvailableMemory(Value... row) {
-        IgniteH2QueryMemoryManager mem = qctx.queryMemoryManager();
-
-        if (mem == null)
-            return;
-
-        for (Value v : row) {
-            int size = v.getMemory();
-
-            allocMem += size;
-
-            mem.allocate(size);
-        }
+    protected void checkAvailableMemory(Value... row) {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -471,11 +457,6 @@ public class IgniteH2LocalResult implements LocalResult {
     /** {@inheritDoc} */
     @Override public void close() {
         closed = true;
-
-        IgniteH2QueryMemoryManager mem = qctx.queryMemoryManager();
-
-        if (mem != null)
-            mem.free(allocMem);
     }
 
     /** {@inheritDoc} */

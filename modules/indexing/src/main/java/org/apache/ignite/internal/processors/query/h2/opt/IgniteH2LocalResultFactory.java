@@ -28,11 +28,30 @@ import org.h2.result.LocalResultFactory;
 public class IgniteH2LocalResultFactory extends LocalResultFactory {
     /** {@inheritDoc} */
     @Override public LocalResult create(Session ses, Expression[] expressions, int visibleColCnt) {
-        return new IgniteH2LocalResult(ses, expressions, visibleColCnt);
+        IgniteH2QueryMemoryManager memMgr = memoryManager();
+
+        if (memMgr != null)
+            return new IgniteH2MemCheckLocalResult(ses, expressions, visibleColCnt, memMgr);
+        else
+            return new IgniteH2BaseLocalResult(ses, expressions, visibleColCnt);
     }
 
     /** {@inheritDoc} */
     @Override public LocalResult create() {
-        return new IgniteH2LocalResult();
+        IgniteH2QueryMemoryManager memMgr = memoryManager();
+
+        if (memMgr != null)
+            return new IgniteH2MemCheckLocalResult(memMgr);
+        else
+            return new IgniteH2BaseLocalResult();
+    }
+
+    /**
+     * @return Gathers memory manager fro query context.
+     */
+    private IgniteH2QueryMemoryManager memoryManager() {
+        GridH2QueryContext qctx = GridH2QueryContext.get();
+
+        return (qctx != null) ?  qctx.queryMemoryManager() : null;
     }
 }

@@ -47,7 +47,7 @@ public final class SqlFieldsQueryEx extends SqlFieldsQuery {
     private List<Object[]> batchedArgs;
 
     /** Max memory available for query local results per node. */
-    private long maxMemory = 4_000_000; //Long.MAX_VALUE;
+    private long maxMemory = Long.MAX_VALUE;
 
     /**
      * @param sql SQL query.
