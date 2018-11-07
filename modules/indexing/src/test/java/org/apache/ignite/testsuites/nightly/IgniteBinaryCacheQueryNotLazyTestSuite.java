@@ -239,7 +239,7 @@ public class IgniteBinaryCacheQueryNotLazyTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-//        GridTestUtils.setFieldValue(SqlFieldsQuery.class, "DFLT_LAZY", false);
+        GridTestUtils.setFieldValue(SqlFieldsQuery.class, "DFLT_LAZY", false);
 
         IgniteTestSuite suite = new IgniteTestSuite("Ignite Cache Queries Test Suite");
 
