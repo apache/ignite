@@ -106,8 +106,7 @@ public class SegmentAware {
     public long waitNextSegmentToCompress() throws IgniteInterruptedCheckedException {
         long idx;
 
-        while ((idx = segmentCompressStorage.nextSegmentToCompressOrWait()) <=
-            Math.max(lastTruncatedArchiveIdx(), lastCompressedIdx()))
+        while ((idx = segmentCompressStorage.nextSegmentToCompressOrWait()) <= lastTruncatedArchiveIdx())
             onSegmentCompressed(idx);
 
         return idx;
