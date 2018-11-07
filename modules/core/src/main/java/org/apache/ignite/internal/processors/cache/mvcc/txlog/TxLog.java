@@ -262,8 +262,14 @@ public class TxLog implements DbCheckpointListener {
         tree.iterate(LOWEST, clo, clo);
 
         if (clo.rows != null) {
-            for (TxKey row : clo.rows) {
-                remove(row);
+            mgr.checkpointReadLock();
+
+            try {
+                for (TxKey row : clo.rows)
+                    remove(row);
+            }
+            finally {
+                mgr.checkpointReadUnlock();
             }
         }
     }
@@ -273,17 +279,11 @@ public class TxLog implements DbCheckpointListener {
         Sync sync = syncObject(key);
 
         try {
-            mgr.checkpointReadLock();
-
-            try {
-                synchronized (sync) {
-                    tree.removex(key);
-                }
+            synchronized (sync) {
+                tree.removex(key);
             }
-            finally {
-                mgr.checkpointReadUnlock();
-            }
-        } finally {
+        }
+        finally {
             evict(key, sync);
         }
     }

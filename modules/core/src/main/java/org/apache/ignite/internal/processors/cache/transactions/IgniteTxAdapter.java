@@ -1154,7 +1154,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                     seal();
 
                 if (state == PREPARED || state == COMMITTED || state == ROLLED_BACK) {
-                    if (state == PREPARED && txState().mvccEnabled()) {
+                    if (state == PREPARED) {
                         try {
                             cctx.tm().mvccPrepare(this);
                         }

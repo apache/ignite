@@ -158,6 +158,9 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
         stopGrid(0);
 
         node = startGrid(0);
+
+        node.cluster().active(true);
+
         cache = node.cache(DEFAULT_CACHE_NAME);
 
         assertEquals((Integer)1, cache.get(1));

@@ -45,6 +45,9 @@ public class IoomFailureHandlerTest extends AbstractFailureHandlerTest {
     /** PDS enabled. */
     private boolean pds;
 
+    /** MVCC enabled. */
+    private boolean mvcc;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -69,7 +72,7 @@ public class IoomFailureHandlerTest extends AbstractFailureHandlerTest {
             .setName(DEFAULT_CACHE_NAME)
             .setCacheMode(CacheMode.PARTITIONED)
             .setBackups(0)
-            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+            .setAtomicityMode(mvcc ? CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT : CacheAtomicityMode.TRANSACTIONAL);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -94,21 +97,36 @@ public class IoomFailureHandlerTest extends AbstractFailureHandlerTest {
      * Test IgniteOutOfMemoryException handling with no store.
      */
     public void testIoomErrorNoStoreHandling() throws Exception {
-        testIoomErrorHandling(false);
+        testIoomErrorHandling(false, false);
     }
 
     /**
      * Test IgniteOutOfMemoryException handling with PDS.
      */
     public void testIoomErrorPdsHandling() throws Exception {
-        testIoomErrorHandling(true);
+        testIoomErrorHandling(true, false);
+    }
+
+    /**
+     * Test IgniteOutOfMemoryException handling with no store.
+     */
+    public void testIoomErrorMvccNoStoreHandling() throws Exception {
+        testIoomErrorHandling(false, true);
+    }
+
+    /**
+     * Test IgniteOutOfMemoryException handling with PDS.
+     */
+    public void testIoomErrorMvccPdsHandling() throws Exception {
+        testIoomErrorHandling(true, true);
     }
 
     /**
      * Test IOOME handling.
      */
-    public void testIoomErrorHandling(boolean pds) throws Exception {
+    public void testIoomErrorHandling(boolean pds, boolean mvcc) throws Exception {
         this.pds = pds;
+        this.mvcc = mvcc;
 
         IgniteEx ignite0 = startGrid(0);
         IgniteEx ignite1 = startGrid(1);
