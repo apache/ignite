@@ -288,10 +288,11 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
     /** {@inheritDoc} */
     @Override public void ensureStarted() throws IgniteCheckedException {
-        if (!ctx.clientNode() && txLog == null) {
+        if (!ctx.clientNode()) {
             assert mvccEnabled && mvccSupported;
 
-            txLog = new TxLog(ctx, ctx.cache().context().database());
+            if (txLog == null)
+                txLog = new TxLog(ctx, ctx.cache().context().database());
 
             startVacuumWorkers();
 
@@ -331,6 +332,15 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
         ctx.cache().context().pageStore().initialize(TX_LOG_CACHE_ID, 1,
             TX_LOG_CACHE_NAME, mgr.dataRegion(TX_LOG_CACHE_NAME).memoryMetrics());
+
+        boolean hasMvccCaches = ctx.cache().cacheGroups().stream().filter(CacheGroupContext::persistenceEnabled)
+            .anyMatch(g -> g.config().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT);
+
+        if (hasMvccCaches) {
+            txLog = new TxLog(ctx, mgr);
+
+            mvccEnabled = true;
+        }
     }
 
     /** {@inheritDoc} */

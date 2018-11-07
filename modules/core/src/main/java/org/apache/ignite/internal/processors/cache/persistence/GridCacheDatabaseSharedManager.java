@@ -98,6 +98,8 @@ import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.MvccDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.MvccTxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
@@ -114,6 +116,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntryType;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistory;
@@ -159,8 +162,9 @@ import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
 import org.apache.ignite.thread.IgniteThread;
-import org.jetbrains.annotations.NotNull;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
+import org.apache.ignite.transactions.TransactionState;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 
@@ -2209,6 +2213,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         break;
 
                     switch (rec.type()) {
+                        case MVCC_DATA_RECORD:
                         case DATA_RECORD:
                             checkpointReadLock();
 
@@ -2240,6 +2245,20 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             }
                             finally {
                                 checkpointReadUnlock();
+                            }
+
+                            break;
+
+                        case MVCC_TX_RECORD:
+                            try {
+                                MvccTxRecord txRecord = (MvccTxRecord)rec;
+
+                                byte txState = convertToTxState(txRecord.state());
+
+                                cctx.coordinators().updateState(txRecord.mvccVersion(), txState, false);
+                            }
+                            catch (IgniteCheckedException e) {
+                                throw new IgniteException(e);
                             }
 
                             break;
@@ -2297,6 +2316,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     break;
 
                 switch (rec.type()) {
+                    case MVCC_DATA_RECORD:
                     case DATA_RECORD:
                         if (metastoreOnly)
                             continue;
@@ -2364,6 +2384,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         finally {
                             pageMem.releasePage(rec0.groupId(), rec0.pageId(), page);
                         }
+
+                        break;
+
+                    case MVCC_TX_RECORD:
+                        if (metastoreOnly)
+                            continue;
+
+                        MvccTxRecord txRecord = (MvccTxRecord)rec;
+
+                        byte txState = convertToTxState(txRecord.state());
+
+                        cctx.coordinators().updateState(txRecord.mvccVersion(), txState, false);
 
                         break;
 
@@ -2534,6 +2566,28 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
+     * Convert {@link TransactionState} to Mvcc {@link TxState}.
+     *
+     * @param state TransactionState.
+     * @return TxState.
+     */
+    private byte convertToTxState(TransactionState state) {
+        switch (state) {
+            case PREPARED:
+                return TxState.PREPARED;
+
+            case COMMITTED:
+                return TxState.COMMITTED;
+
+            case ROLLED_BACK:
+                return TxState.ABORTED;
+
+            default:
+                throw new IllegalStateException("Unsupported TxState.");
+        }
+    }
+
+    /**
      * Wal truncate callBack.
      *
      * @param highBound WALPointer.
@@ -2580,14 +2634,26 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         switch (dataEntry.op()) {
             case CREATE:
             case UPDATE:
-                cacheCtx.offheap().update(
-                    cacheCtx,
-                    dataEntry.key(),
-                    dataEntry.value(),
-                    dataEntry.writeVersion(),
-                    0L,
-                    locPart,
-                    null);
+                if (dataEntry instanceof MvccDataEntry) {
+                    cacheCtx.offheap().mvccApplyUpdate(
+                        cacheCtx,
+                        dataEntry.key(),
+                        dataEntry.value(),
+                        dataEntry.writeVersion(),
+                        0L,
+                        locPart,
+                        ((MvccDataEntry)dataEntry).mvccVer());
+                }
+                else {
+                    cacheCtx.offheap().update(
+                        cacheCtx,
+                        dataEntry.key(),
+                        dataEntry.value(),
+                        dataEntry.writeVersion(),
+                        0L,
+                        locPart,
+                        null);
+                }
 
                 if (dataEntry.partitionCounter() != 0)
                     cacheCtx.offheap().onPartitionInitialCounterUpdated(partId, dataEntry.partitionCounter());
@@ -2595,7 +2661,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 break;
 
             case DELETE:
-                cacheCtx.offheap().remove(cacheCtx, dataEntry.key(), partId, locPart);
+                if (dataEntry instanceof MvccDataEntry) {
+                    cacheCtx.offheap().mvccApplyUpdate(
+                        cacheCtx,
+                        dataEntry.key(),
+                        null,
+                        dataEntry.writeVersion(),
+                        0L,
+                        locPart,
+                        ((MvccDataEntry)dataEntry).mvccVer());
+                }
+                else
+                    cacheCtx.offheap().remove(cacheCtx, dataEntry.key(), partId, locPart);
 
                 if (dataEntry.partitionCounter() != 0)
                     cacheCtx.offheap().onPartitionInitialCounterUpdated(partId, dataEntry.partitionCounter());
