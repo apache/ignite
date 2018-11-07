@@ -123,9 +123,11 @@ public class SegmentCompressStorage {
 
         Long idx = segmentsToCompress.poll();
 
+        assert idx != null;
+
         compressingSegments.add(idx);
 
-        return idx == null ? -1L : idx;
+        return idx;
     }
 
     /**

@@ -2064,12 +2064,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 long segIdx = -1L;
 
                 try {
-                    if ((segIdx = tryReserveNextSegmentOrWait())
-                        <= Math.max(segmentAware.lastTruncatedArchiveIdx(), segmentAware.lastCompressedIdx())) {
-                        segmentAware.onSegmentCompressed(segIdx);
-
+                    if ((segIdx = tryReserveNextSegmentOrWait()) == -1)
                         continue;
-                    }
 
                     deleteObsoleteRawSegments();
 

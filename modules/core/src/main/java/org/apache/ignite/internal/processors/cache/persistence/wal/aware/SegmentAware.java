@@ -104,7 +104,13 @@ public class SegmentAware {
      * there's no segment to archive right now.
      */
     public long waitNextSegmentToCompress() throws IgniteInterruptedCheckedException {
-        return segmentCompressStorage.nextSegmentToCompressOrWait();
+        long idx;
+
+        while ((idx = segmentCompressStorage.nextSegmentToCompressOrWait()) <=
+            Math.max(lastTruncatedArchiveIdx(), lastCompressedIdx()))
+            onSegmentCompressed(idx);
+
+        return idx;
     }
 
     /**
