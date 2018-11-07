@@ -6283,7 +6283,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 Object interceptorVal = updated0;
 
-                if (disableInterceptAfterFlag = !(cctx.dr().cacheInterceptorDisabled() && conflictVer != null))
+                if (!(disableInterceptAfterFlag = cctx.dr().cacheInterceptorDisabled() && conflictVer != null))
                     interceptorVal = cctx.config().getInterceptor().onBeforePut(interceptEntry, updated0);
 
                 if (interceptorVal == null) {
