@@ -1467,7 +1467,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         boolean intercept = cctx.config().getInterceptor() != null;
 
-        boolean interceptDisabled = false;
+        boolean interceptorDisabled = false;
 
         Object key0 = null;
         Object val0 = null;
@@ -1520,15 +1520,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 CacheLazyEntry e = new CacheLazyEntry(cctx, key, old, keepBinary);
 
-                boolean dcIdNotSame = explicitVer != null && explicitVer.dataCenterId() != cctx.dr().dataCenterId();
-
                 Object interceptorVal = val0;
 
-                if(!(interceptDisabled = cctx.dr().cacheInterceptorDisabled() && dcIdNotSame)) {
-                     interceptorVal = cctx.config().getInterceptor().onBeforePut(
-                        new CacheLazyEntry(cctx, key, old, keepBinary),
-                        val0
-                    );
+                if (!(interceptorDisabled = cctx.dr().cacheInterceptorDisabled() &&
+                    explicitVer != null &&
+                    explicitVer.dataCenterId() != cctx.dr().dataCenterId())) {
+                    interceptorVal = cctx.config().getInterceptor().onBeforePut(
+                        new CacheLazyEntry(cctx, key, old, keepBinary), val0);
                 }
 
                 key0 = e.key();
@@ -1652,7 +1650,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         if (writeThrough)
             cctx.store().put(tx, key, val, newVer);
 
-        if (intercept && !interceptDisabled)
+        if (intercept && !interceptorDisabled)
             cctx.config().getInterceptor().onAfterPut(new CacheLazyEntry(cctx, key, key0, val, val0, keepBinary, updateCntr0));
 
         return valid ? new GridCacheUpdateTxResult(true, updateCntr0, logPtr, mvccWaitTxs) :
@@ -1704,7 +1702,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         boolean intercept = cctx.config().getInterceptor() != null;
 
-        boolean interceptDisabled = false;
+        boolean interceptorDisabled = false;
 
         IgniteBiTuple<Boolean, Object> interceptRes = null;
 
@@ -1755,11 +1753,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (intercept) {
                 entry0 = new CacheLazyEntry(cctx, key, old, keepBinary);
 
-                if(cctx.dr().cacheInterceptorDisabled() && explicitVer != null && explicitVer.dataCenterId() != cctx.dr().dataCenterId()) {
-                    interceptDisabled = true;
-
+                if (!(interceptorDisabled = cctx.dr().cacheInterceptorDisabled() &&
+                    explicitVer != null &&
+                    explicitVer.dataCenterId() != cctx.dr().dataCenterId()))
                     interceptRes = new IgniteBiTuple<>(false, entry0.getValue());
-                } else
+                else
                     interceptRes = cctx.config().getInterceptor().onBeforeRemove(entry0);
 
 
@@ -1891,7 +1889,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         onUpdateFinished(updateCntr0);
 
-        if (intercept && !interceptDisabled)
+        if (intercept && !interceptorDisabled)
             cctx.config().getInterceptor().onAfterRemove(entry0);
 
         if (valid)
@@ -6285,9 +6283,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 Object interceptorVal = updated0;
 
-                if(cctx.dr().cacheInterceptorDisabled() && conflictVer != null)
-                    disableInterceptAfterFlag = true;
-                else
+                if(disableInterceptAfterFlag = !(cctx.dr().cacheInterceptorDisabled() && conflictVer != null))
                     interceptorVal = cctx.config().getInterceptor().onBeforePut(interceptEntry, updated0);
 
                 if (interceptorVal == null) {
@@ -6396,11 +6392,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     null,
                     keepBinary);
 
-                if (cctx.dr().cacheInterceptorDisabled() && conflictVer != null) {
-                    disableInterceptAfterFlag = true;
-
+                if (disableInterceptAfterFlag = cctx.dr().cacheInterceptorDisabled() && conflictVer != null)
                     interceptRes = new IgniteBiTuple<>(false, intercepEntry.getValue());
-                }
                 else
                     interceptRes = cctx.config().getInterceptor().onBeforeRemove(intercepEntry);
 
