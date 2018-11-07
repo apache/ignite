@@ -34,6 +34,12 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /** */
 public class MvccCachePeekTest extends CacheMvccAbstractTest {
     /** */
+    private interface ThrowingRunnable {
+        /** */
+        void run() throws Exception;
+    }
+
+    /** */
     private IgniteCache<Object, Object> cache;
 
     /** {@inheritDoc} */
@@ -46,17 +52,36 @@ public class MvccCachePeekTest extends CacheMvccAbstractTest {
         super.beforeTest();
 
         startGridsMultiThreaded(3);
-
-        cache = grid(0).getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-            .setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
-            .setBackups(1)
-            .setCacheMode(cacheMode()));
     }
 
     /**
      * @throws Exception if failed.
      */
     public void testPeek() throws Exception {
+        doWithCache(this::checkPeekSerial);
+        doWithCache(this::checkPeekDoesNotSeeAbortedVersions);
+        doWithCache(this::checkPeekDoesNotSeeActiveVersions);
+        doWithCache(this::checkPeekOnheap);
+        doWithCache(this::checkPeekNearCache);
+    }
+
+    /** */
+    private void doWithCache(ThrowingRunnable action) throws Exception {
+        cache = grid(0).getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
+            .setBackups(1)
+            .setCacheMode(cacheMode()));
+
+        try {
+            action.run();
+        }
+        finally {
+            cache.destroy();
+        }
+    }
+
+    /** */
+    private void checkPeekSerial() throws Exception {
         Stream.of(primaryKey(cache), backupKey(cache)).forEach(key -> {
             assertNull(cache.localPeek(key));
 
@@ -70,10 +95,8 @@ public class MvccCachePeekTest extends CacheMvccAbstractTest {
         });
     }
 
-    /**
-     * @throws Exception if failed.
-     */
-    public void testPeekDoesNotSeeAbortedVersions() throws Exception {
+    /** */
+    private void checkPeekDoesNotSeeAbortedVersions() throws Exception {
         Integer pk = primaryKey(cache);
 
         cache.put(pk, 1);
@@ -87,10 +110,8 @@ public class MvccCachePeekTest extends CacheMvccAbstractTest {
         assertEquals(1, cache.localPeek(pk));
     }
 
-    /**
-     * @throws Exception if failed.
-     */
-    public void testPeekDoesNotSeeActiveVersions() throws Exception {
+    /** */
+    private void checkPeekDoesNotSeeActiveVersions() throws Exception {
         Integer pk = primaryKey(cache);
 
         cache.put(pk, 1);
@@ -120,10 +141,8 @@ public class MvccCachePeekTest extends CacheMvccAbstractTest {
         fut.get();
     }
 
-    /**
-     * @throws Exception if failed.
-     */
-    public void testPeekOnheap() throws Exception {
+    /** */
+    private void checkPeekOnheap() throws Exception {
         Stream.of(primaryKey(cache), backupKey(cache), nearKey(cache)).forEach(key -> {
             cache.put(key, 1);
 
@@ -131,10 +150,8 @@ public class MvccCachePeekTest extends CacheMvccAbstractTest {
         });
     }
 
-    /**
-     * @throws Exception if failed.
-     */
-    public void testPeekNearCache() throws Exception {
+    /** */
+    private void checkPeekNearCache() throws Exception {
         Stream.of(primaryKey(cache), backupKey(cache), nearKey(cache)).forEach(key -> {
             cache.put(key, 1);
 
