@@ -173,7 +173,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             log
         );
 
-        cctx.kernalContext().internalSubscriptionProcessor().registerSubscriber(walDisableContext);
+        cctx.kernalContext().internalSubscriptionProcessor().registerMetastorageListener(walDisableContext);
 
     }
 

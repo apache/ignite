@@ -17,13 +17,11 @@
 package org.apache.ignite.internal.processors.subscription;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -36,7 +34,11 @@ import org.jetbrains.annotations.NotNull;
  */
 public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
     /** */
-    private final Map<Class, List<InternalSubscriber>> lsnrs = new ConcurrentHashMap<>();
+    private List<MetastorageLifecycleListener> metastorageListeners = new ArrayList<>();
+
+    /** */
+    private List<DatabaseLifecycleListener> databaseListeners = new ArrayList<>();
+
 
     /**
      * @param ctx Kernal context.
@@ -45,39 +47,29 @@ public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
         super(ctx);
     }
 
-    /**
-     * Register internal subscriber listener.
-     * Note: all listeners should be registered before first {@link #getSubscribers(Class)} call.
-     *
-     * @param subscriber Internal subscriber.
-     */
-    public void registerSubscriber(InternalSubscriber subscriber) {
-        if (subscriber == null)
-            throw new NullPointerException("Subscriber should be not-null.");
+    /** */
+    public void registerMetastorageListener(@NotNull MetastorageLifecycleListener metastorageListener) {
+        if (metastorageListener == null)
+            throw new NullPointerException("Metastorage subscriber should be not-null.");
 
-        lsnrs.computeIfAbsent(InternalSubscriber.class, (k) -> new ArrayList<>()).add(subscriber);
-
-        if (lsnrs.size() > 1)
-            lsnrs.keySet().removeIf(k -> k != InternalSubscriber.class && k.isAssignableFrom(subscriber.getClass()));
+        metastorageListeners.add(metastorageListener);
     }
 
-    /**
-     * Get subscribers for given type.
-     * Note: all listeners should be registered before first {@link #getSubscribers(Class)} call.
-     *
-     * @param type Internal subscriber type.
-     * @return Subscribers list.
-     */
-    public @NotNull <T extends InternalSubscriber> List<T> getSubscribers(Class<T> type) {
-        List<InternalSubscriber> res = lsnrs.get(type);
+    /** */
+    public List<MetastorageLifecycleListener> getMetastorageSubscribers() {
+        return metastorageListeners;
+    }
 
-        if (res == null) {
-            res = lsnrs.getOrDefault(InternalSubscriber.class, Collections.emptyList()).stream()
-                .filter(s -> type.isAssignableFrom(s.getClass())).collect(Collectors.toList());
+    /** */
+    public void registerDatabaseListener(@NotNull DatabaseLifecycleListener databaseListener) {
+        if (databaseListener == null)
+            throw new NullPointerException("Database subscriber should be not-null.");
 
-            lsnrs.put(type, res);
-        }
+        databaseListeners.add(databaseListener);
+    }
 
-        return (List<T>)res;
+    /** */
+    public List<DatabaseLifecycleListener> getDatabaseListeners() {
+        return databaseListeners;
     }
 }

@@ -332,7 +332,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @return Database lifecycle listeners.
      */
     protected List<DatabaseLifecycleListener> getDatabaseListeners(GridKernalContext kctx) {
-        return kctx.internalSubscriptionProcessor().getSubscribers(DatabaseLifecycleListener.class);
+        return kctx.internalSubscriptionProcessor().getDatabaseListeners();
     }
 
     /**
