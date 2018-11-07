@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processor.security;
+package org.apache.ignite.internal.processor.security.compute;
 
 import java.util.concurrent.ExecutionException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processor.security.AbstractContextResolverSecurityProcessorTest;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -34,19 +35,19 @@ import static org.junit.Assert.assertThat;
 public class ExecuteServiceTaskTest extends AbstractContextResolverSecurityProcessorTest {
     /** */
     public void testExecute() throws Exception {
-        successExecute(clnt, clntNoPutPerm);
-        successExecute(clnt, srvNoPutPerm);
-        successExecute(srv, clntNoPutPerm);
-        successExecute(srv, srvNoPutPerm);
-        successExecute(srv, srv);
-        successExecute(clnt, clnt);
+        successExecute(clntAllPerms, clntReadOnlyPerm);
+        successExecute(clntAllPerms, srvReadOnlyPerm);
+        successExecute(srvAllPerms, clntReadOnlyPerm);
+        successExecute(srvAllPerms, srvReadOnlyPerm);
+        successExecute(srvAllPerms, srvAllPerms);
+        successExecute(clntAllPerms, clntAllPerms);
 
-        failExecute(clntNoPutPerm, srv);
-        failExecute(clntNoPutPerm, clnt);
-        failExecute(srvNoPutPerm, srv);
-        failExecute(srvNoPutPerm, clnt);
-        failExecute(srvNoPutPerm, srvNoPutPerm);
-        failExecute(clntNoPutPerm, clntNoPutPerm);
+        failExecute(clntReadOnlyPerm, srvAllPerms);
+        failExecute(clntReadOnlyPerm, clntAllPerms);
+        failExecute(srvReadOnlyPerm, srvAllPerms);
+        failExecute(srvReadOnlyPerm, clntAllPerms);
+        failExecute(srvReadOnlyPerm, srvReadOnlyPerm);
+        failExecute(clntReadOnlyPerm, clntReadOnlyPerm);
     }
 
     /**
@@ -60,13 +61,13 @@ public class ExecuteServiceTaskTest extends AbstractContextResolverSecurityProce
             .submit(
                 new IgniteRunnable() {
                     @Override public void run() {
-                        Ignition.localIgnite().cache(CACHE_NAME)
+                        Ignition.localIgnite().cache(CACHE_WITH_PERMS)
                             .put("key", val);
                     }
                 }
             ).get();
 
-        assertThat(remote.cache(CACHE_NAME).get("key"), is(val));
+        assertThat(remote.cache(CACHE_WITH_PERMS).get("key"), is(val));
     }
 
     /**
@@ -82,7 +83,7 @@ public class ExecuteServiceTaskTest extends AbstractContextResolverSecurityProce
                             .submit(
                                 new IgniteRunnable() {
                                     @Override public void run() {
-                                        Ignition.localIgnite().cache(CACHE_NAME).put("fail_key", -1);
+                                        Ignition.localIgnite().cache(CACHE_WITH_PERMS).put("fail_key", -1);
                                     }
                                 }
                             ).get();
@@ -95,6 +96,6 @@ public class ExecuteServiceTaskTest extends AbstractContextResolverSecurityProce
             )
         );
 
-        assertThat(remote.cache(CACHE_NAME).get("fail_key"), nullValue());
+        assertThat(remote.cache(CACHE_WITH_PERMS).get("fail_key"), nullValue());
     }
 }

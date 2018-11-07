@@ -19,6 +19,13 @@ package org.apache.ignite.internal.processor.security;
 
 import java.util.Set;
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processor.security.cache.EntryProcessorTest;
+import org.apache.ignite.internal.processor.security.cache.IgniteDataStreamerTest;
+import org.apache.ignite.internal.processor.security.cache.LoadCacheTest;
+import org.apache.ignite.internal.processor.security.cache.ScanQueryTest;
+import org.apache.ignite.internal.processor.security.compute.ComputeTaskTest;
+import org.apache.ignite.internal.processor.security.compute.DistributedClosureTest;
+import org.apache.ignite.internal.processor.security.compute.ExecuteServiceTaskTest;
 import org.jetbrains.annotations.Nullable;
 
 /**

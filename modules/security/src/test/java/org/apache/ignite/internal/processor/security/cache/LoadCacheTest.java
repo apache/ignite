@@ -1,4 +1,4 @@
-package org.apache.ignite.internal.processor.security;
+package org.apache.ignite.internal.processor.security.cache;
 
 import java.util.UUID;
 import javax.cache.Cache;
@@ -9,6 +9,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processor.security.AbstractContextResolverSecurityProcessorTest;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -27,11 +28,11 @@ public class LoadCacheTest extends AbstractContextResolverSecurityProcessorTest 
     @Override protected CacheConfiguration[] getCacheConfigurations() {
         return new CacheConfiguration[] {
             new CacheConfiguration<String, Integer>()
-                .setName(CACHE_NAME)
+                .setName(CACHE_WITH_PERMS)
                 .setCacheMode(CacheMode.PARTITIONED)
                 .setReadFromBackup(false),
             new CacheConfiguration<Integer, Integer>()
-                .setName(SEC_CACHE_NAME)
+                .setName(CACHE_WITHOUT_PERMS)
                 .setCacheMode(CacheMode.PARTITIONED)
                 .setReadFromBackup(false)
                 .setCacheStoreFactory(new TestStoreFactory())
@@ -40,14 +41,14 @@ public class LoadCacheTest extends AbstractContextResolverSecurityProcessorTest 
 
     /** */
     public void testLoadCache() {
-        successLoad(clnt, srv);
-        successLoad(clnt, srvNoPutPerm);
-        successLoad(srv, srv);
-        successLoad(srv, srvNoPutPerm);
+        successLoad(clntAllPerms, srvAllPerms);
+        successLoad(clntAllPerms, srvReadOnlyPerm);
+        successLoad(srvAllPerms, srvAllPerms);
+        successLoad(srvAllPerms, srvReadOnlyPerm);
 
-        failLoad(clntNoPutPerm, srv);
-        failLoad(srvNoPutPerm, srv);
-        failLoad(srvNoPutPerm, srvNoPutPerm);
+        failLoad(clntReadOnlyPerm, srvAllPerms);
+        failLoad(srvReadOnlyPerm, srvAllPerms);
+        failLoad(srvReadOnlyPerm, srvReadOnlyPerm);
     }
 
     /**
@@ -59,11 +60,11 @@ public class LoadCacheTest extends AbstractContextResolverSecurityProcessorTest 
 
         Integer val = values.getAndIncrement();
 
-        initiator.<Integer, Integer>cache(SEC_CACHE_NAME).loadCache(
+        initiator.<Integer, Integer>cache(CACHE_WITHOUT_PERMS).loadCache(
             new TestClosure(remote.localNode().id(), "key", val)
         );
 
-        assertThat(srv.cache(CACHE_NAME).get("key"), is(val));
+        assertThat(srvAllPerms.cache(CACHE_WITH_PERMS).get("key"), is(val));
     }
 
     /**
@@ -75,7 +76,7 @@ public class LoadCacheTest extends AbstractContextResolverSecurityProcessorTest 
 
         assertCauseMessage(
             GridTestUtils.assertThrowsWithCause(
-                () -> initiator.<Integer, Integer>cache(SEC_CACHE_NAME)
+                () -> initiator.<Integer, Integer>cache(CACHE_WITHOUT_PERMS)
                     .loadCache(
                         new TestClosure(remote.localNode().id(), "fail_key", -1)
                     )
@@ -83,7 +84,7 @@ public class LoadCacheTest extends AbstractContextResolverSecurityProcessorTest 
             )
         );
 
-        assertThat(remote.cache(CACHE_NAME).get("fail_key"), nullValue());
+        assertThat(remote.cache(CACHE_WITH_PERMS).get("fail_key"), nullValue());
     }
 
     /**
@@ -117,7 +118,7 @@ public class LoadCacheTest extends AbstractContextResolverSecurityProcessorTest 
         /** {@inheritDoc} */
         @Override public boolean apply(Integer k, Integer v) {
             if (remoteId.equals(loc.cluster().localNode().id()))
-                loc.cache(CACHE_NAME).put(key, val);
+                loc.cache(CACHE_WITH_PERMS).put(key, val);
 
             return false;
         }

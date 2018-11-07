@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processor.security;
+package org.apache.ignite.internal.processor.security.cache;
 
 import java.util.Collections;
 import java.util.UUID;
@@ -25,6 +25,7 @@ import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processor.security.AbstractContextResolverSecurityProcessorTest;
 import org.apache.ignite.plugin.security.SecurityPermission;
 
 /**
@@ -33,12 +34,12 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 public class EntryProcessorTest extends AbstractContextResolverSecurityProcessorTest {
     /** */
     public void testEntryProcessor() {
-        successEntryProcessor(clnt, srv);
-        successEntryProcessor(clnt, srvNoPutPerm);
-        successEntryProcessor(srv, srvNoPutPerm);
+        successEntryProcessor(clntAllPerms, srvAllPerms);
+        successEntryProcessor(clntAllPerms, srvReadOnlyPerm);
+        successEntryProcessor(srvAllPerms, srvReadOnlyPerm);
 
-        failEntryProcessor(clntNoPutPerm, srv);
-        failEntryProcessor(srvNoPutPerm, srv);
+        failEntryProcessor(clntReadOnlyPerm, srvAllPerms);
+        failEntryProcessor(srvReadOnlyPerm, srvAllPerms);
     }
 
     /**
@@ -116,7 +117,7 @@ public class EntryProcessorTest extends AbstractContextResolverSecurityProcessor
 
         /** {@inheritDoc} */
         @Override public void call() {
-            initiator.<Integer, Integer>cache(SEC_CACHE_NAME).invoke(
+            initiator.<Integer, Integer>cache(CACHE_WITHOUT_PERMS).invoke(
                 primaryKey(remote),
                 new TestEntryProcessor(remote.localNode().id())
             );
@@ -137,7 +138,7 @@ public class EntryProcessorTest extends AbstractContextResolverSecurityProcessor
 
         /** {@inheritDoc} */
         @Override public void call() {
-            initiator.<Integer, Integer>cache(SEC_CACHE_NAME).invokeAsync(
+            initiator.<Integer, Integer>cache(CACHE_WITHOUT_PERMS).invokeAsync(
                 primaryKey(remote),
                 new TestEntryProcessor(remote.localNode().id())
             ).get();
@@ -158,7 +159,7 @@ public class EntryProcessorTest extends AbstractContextResolverSecurityProcessor
 
         /** {@inheritDoc} */
         @Override public void call() {
-            initiator.<Integer, Integer>cache(SEC_CACHE_NAME).invokeAll(
+            initiator.<Integer, Integer>cache(CACHE_WITHOUT_PERMS).invokeAll(
                 Collections.singleton(primaryKey(remote)),
                 new TestEntryProcessor(remote.localNode().id())
             ).values().stream().findFirst().ifPresent(EntryProcessorResult::get);
@@ -179,7 +180,7 @@ public class EntryProcessorTest extends AbstractContextResolverSecurityProcessor
 
         /** {@inheritDoc} */
         @Override public void call() {
-            initiator.<Integer, Integer>cache(SEC_CACHE_NAME).invokeAllAsync(
+            initiator.<Integer, Integer>cache(CACHE_WITHOUT_PERMS).invokeAllAsync(
                 Collections.singleton(primaryKey(remote)),
                 new TestEntryProcessor(remote.localNode().id())
             ).get().values().stream().findFirst().ifPresent(EntryProcessorResult::get);
@@ -206,7 +207,7 @@ public class EntryProcessorTest extends AbstractContextResolverSecurityProcessor
             IgniteEx loc = (IgniteEx)Ignition.localIgnite();
 
             if (remoteId.equals(loc.localNode().id()))
-                loc.context().security().authorize(CACHE_NAME, SecurityPermission.CACHE_PUT);
+                loc.context().security().authorize(CACHE_WITH_PERMS, SecurityPermission.CACHE_PUT);
 
             return null;
         }

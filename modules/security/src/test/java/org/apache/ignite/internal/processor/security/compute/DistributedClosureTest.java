@@ -1,8 +1,10 @@
-package org.apache.ignite.internal.processor.security;
+package org.apache.ignite.internal.processor.security.compute;
 
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processor.security.AbstractContextResolverSecurityProcessorTest;
+import org.apache.ignite.internal.processor.security.TriConsumer;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -17,19 +19,19 @@ import static org.junit.Assert.assertThat;
 public class DistributedClosureTest extends AbstractContextResolverSecurityProcessorTest {
     /** */
     public void testDistributedClosure() {
-        checkSuccess(clnt, clntNoPutPerm);
-        checkSuccess(clnt, srvNoPutPerm);
-        checkSuccess(srv, clntNoPutPerm);
-        checkSuccess(srv, srvNoPutPerm);
-        checkSuccess(srv, srv);
-        checkSuccess(clnt, clnt);
+        checkSuccess(clntAllPerms, clntReadOnlyPerm);
+        checkSuccess(clntAllPerms, srvReadOnlyPerm);
+        checkSuccess(srvAllPerms, clntReadOnlyPerm);
+        checkSuccess(srvAllPerms, srvReadOnlyPerm);
+        checkSuccess(srvAllPerms, srvAllPerms);
+        checkSuccess(clntAllPerms, clntAllPerms);
 
-        checkFail(clntNoPutPerm, srv);
-        checkFail(clntNoPutPerm, clnt);
-        checkFail(srvNoPutPerm, srv);
-        checkFail(srvNoPutPerm, clnt);
-        checkFail(srvNoPutPerm, srvNoPutPerm);
-        checkFail(clntNoPutPerm, clntNoPutPerm);
+        checkFail(clntReadOnlyPerm, srvAllPerms);
+        checkFail(clntReadOnlyPerm, clntAllPerms);
+        checkFail(srvReadOnlyPerm, srvAllPerms);
+        checkFail(srvReadOnlyPerm, clntAllPerms);
+        checkFail(srvReadOnlyPerm, srvReadOnlyPerm);
+        checkFail(clntReadOnlyPerm, clntReadOnlyPerm);
     }
 
     /**
@@ -40,14 +42,14 @@ public class DistributedClosureTest extends AbstractContextResolverSecurityProce
         successClosure(
             initiator, remote,
             (cmp, k, v) -> cmp.broadcast(
-                () -> Ignition.localIgnite().cache(CACHE_NAME).put(k, v)
+                () -> Ignition.localIgnite().cache(CACHE_WITH_PERMS).put(k, v)
             )
         );
 
         successClosure(
             initiator, remote,
             (cmp, k, v) -> cmp.broadcastAsync(
-                () -> Ignition.localIgnite().cache(CACHE_NAME).put(k, v)
+                () -> Ignition.localIgnite().cache(CACHE_WITH_PERMS).put(k, v)
             ).get()
         );
 
@@ -55,7 +57,7 @@ public class DistributedClosureTest extends AbstractContextResolverSecurityProce
             initiator, remote,
             (cmp, k, v) -> cmp.call(
                 () -> {
-                    Ignition.localIgnite().cache(CACHE_NAME).put(k, v);
+                    Ignition.localIgnite().cache(CACHE_WITH_PERMS).put(k, v);
 
                     return null;
                 }
@@ -66,7 +68,7 @@ public class DistributedClosureTest extends AbstractContextResolverSecurityProce
             initiator, remote,
             (cmp, k, v) -> cmp.callAsync(
                 () -> {
-                    Ignition.localIgnite().cache(CACHE_NAME).put(k, v);
+                    Ignition.localIgnite().cache(CACHE_WITH_PERMS).put(k, v);
 
                     return null;
                 }
@@ -76,14 +78,14 @@ public class DistributedClosureTest extends AbstractContextResolverSecurityProce
         successClosure(
             initiator, remote,
             (cmp, k, v) -> cmp.run(
-                () -> Ignition.localIgnite().cache(CACHE_NAME).put(k, v)
+                () -> Ignition.localIgnite().cache(CACHE_WITH_PERMS).put(k, v)
             )
         );
 
         successClosure(
             initiator, remote,
             (cmp, k, v) -> cmp.runAsync(
-                () -> Ignition.localIgnite().cache(CACHE_NAME).put(k, v)
+                () -> Ignition.localIgnite().cache(CACHE_WITH_PERMS).put(k, v)
             ).get()
         );
 
@@ -92,7 +94,7 @@ public class DistributedClosureTest extends AbstractContextResolverSecurityProce
             (cmp, k, v) -> cmp.apply(
                 new IgniteClosure<Object, Object>() {
                     @Override public Object apply(Object o) {
-                        Ignition.localIgnite().cache(CACHE_NAME).put(k, v);
+                        Ignition.localIgnite().cache(CACHE_WITH_PERMS).put(k, v);
 
                         return null;
                     }
@@ -105,7 +107,7 @@ public class DistributedClosureTest extends AbstractContextResolverSecurityProce
             (cmp, k, v) -> cmp.applyAsync(
                 new IgniteClosure<Object, Object>() {
                     @Override public Object apply(Object o) {
-                        Ignition.localIgnite().cache(CACHE_NAME).put(k, v);
+                        Ignition.localIgnite().cache(CACHE_WITH_PERMS).put(k, v);
 
                         return null;
                     }
@@ -122,14 +124,14 @@ public class DistributedClosureTest extends AbstractContextResolverSecurityProce
         failClosure(
             initiator, remote,
             (cmp, k, v) -> cmp.broadcast(
-                () -> Ignition.localIgnite().cache(CACHE_NAME).put(k, v)
+                () -> Ignition.localIgnite().cache(CACHE_WITH_PERMS).put(k, v)
             )
         );
 
         failClosure(
             initiator, remote,
             (cmp, k, v) -> cmp.broadcastAsync(
-                () -> Ignition.localIgnite().cache(CACHE_NAME).put(k, v)
+                () -> Ignition.localIgnite().cache(CACHE_WITH_PERMS).put(k, v)
             ).get()
         );
 
@@ -137,7 +139,7 @@ public class DistributedClosureTest extends AbstractContextResolverSecurityProce
             initiator, remote,
             (cmp, k, v) -> cmp.call(
                 () -> {
-                    Ignition.localIgnite().cache(CACHE_NAME).put(k, v);
+                    Ignition.localIgnite().cache(CACHE_WITH_PERMS).put(k, v);
 
                     return null;
                 }
@@ -148,7 +150,7 @@ public class DistributedClosureTest extends AbstractContextResolverSecurityProce
             initiator, remote,
             (cmp, k, v) -> cmp.callAsync(
                 () -> {
-                    Ignition.localIgnite().cache(CACHE_NAME).put(k, v);
+                    Ignition.localIgnite().cache(CACHE_WITH_PERMS).put(k, v);
 
                     return null;
                 }
@@ -158,14 +160,14 @@ public class DistributedClosureTest extends AbstractContextResolverSecurityProce
         failClosure(
             initiator, remote,
             (cmp, k, v) -> cmp.run(
-                () -> Ignition.localIgnite().cache(CACHE_NAME).put(k, v)
+                () -> Ignition.localIgnite().cache(CACHE_WITH_PERMS).put(k, v)
             )
         );
 
         failClosure(
             initiator, remote,
             (cmp, k, v) -> cmp.runAsync(
-                () -> Ignition.localIgnite().cache(CACHE_NAME).put(k, v)
+                () -> Ignition.localIgnite().cache(CACHE_WITH_PERMS).put(k, v)
             ).get()
         );
 
@@ -174,7 +176,7 @@ public class DistributedClosureTest extends AbstractContextResolverSecurityProce
             (cmp, k, v) -> cmp.apply(
                 new IgniteClosure<Object, Object>() {
                     @Override public Object apply(Object o) {
-                        Ignition.localIgnite().cache(CACHE_NAME).put(k, v);
+                        Ignition.localIgnite().cache(CACHE_WITH_PERMS).put(k, v);
 
                         return null;
                     }
@@ -187,7 +189,7 @@ public class DistributedClosureTest extends AbstractContextResolverSecurityProce
             (cmp, k, v) -> cmp.applyAsync(
                 new IgniteClosure<Object, Object>() {
                     @Override public Object apply(Object o) {
-                        Ignition.localIgnite().cache(CACHE_NAME).put(k, v);
+                        Ignition.localIgnite().cache(CACHE_WITH_PERMS).put(k, v);
 
                         return null;
                     }
@@ -207,7 +209,7 @@ public class DistributedClosureTest extends AbstractContextResolverSecurityProce
 
         consumer.accept(initiator.compute(initiator.cluster().forNode(remote.localNode())), "key", val);
 
-        assertThat(remote.cache(CACHE_NAME).get("key"), is(val));
+        assertThat(remote.cache(CACHE_WITH_PERMS).get("key"), is(val));
     }
 
     /**
@@ -226,6 +228,6 @@ public class DistributedClosureTest extends AbstractContextResolverSecurityProce
             )
         );
 
-        assertThat(remote.cache(CACHE_NAME).get("fail_key"), nullValue());
+        assertThat(remote.cache(CACHE_WITH_PERMS).get("fail_key"), nullValue());
     }
 }

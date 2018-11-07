@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processor.security;
+package org.apache.ignite.internal.processor.security.compute;
 
 import java.util.HashMap;
 import java.util.List;
@@ -30,6 +30,8 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processor.security.AbstractContextResolverSecurityProcessorTest;
+import org.apache.ignite.internal.processor.security.TriConsumer;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -45,19 +47,19 @@ import static org.junit.Assert.assertThat;
 public class ComputeTaskTest extends AbstractContextResolverSecurityProcessorTest {
     /** */
     public void testCompute() {
-        checkSuccess(srv, clnt);
-        checkSuccess(srv, srvNoPutPerm);
-        checkSuccess(srv, clntNoPutPerm);
-        checkSuccess(clnt, srv);
-        checkSuccess(clnt, srvNoPutPerm);
-        checkSuccess(clnt, clntNoPutPerm);
+        checkSuccess(srvAllPerms, clntAllPerms);
+        checkSuccess(srvAllPerms, srvReadOnlyPerm);
+        checkSuccess(srvAllPerms, clntReadOnlyPerm);
+        checkSuccess(clntAllPerms, srvAllPerms);
+        checkSuccess(clntAllPerms, srvReadOnlyPerm);
+        checkSuccess(clntAllPerms, clntReadOnlyPerm);
 
-        checkFail(srvNoPutPerm, srv);
-        checkFail(srvNoPutPerm, clnt);
-        checkFail(srvNoPutPerm, clntNoPutPerm);
-        checkFail(clntNoPutPerm, srv);
-        checkFail(clntNoPutPerm, srvNoPutPerm);
-        checkFail(clntNoPutPerm, clnt);
+        checkFail(srvReadOnlyPerm, srvAllPerms);
+        checkFail(srvReadOnlyPerm, clntAllPerms);
+        checkFail(srvReadOnlyPerm, clntReadOnlyPerm);
+        checkFail(clntReadOnlyPerm, srvAllPerms);
+        checkFail(clntReadOnlyPerm, srvReadOnlyPerm);
+        checkFail(clntReadOnlyPerm, clntAllPerms);
     }
 
     /**
@@ -106,7 +108,7 @@ public class ComputeTaskTest extends AbstractContextResolverSecurityProcessorTes
 
         consumer.accept(initiator.compute(), "key", val);
 
-        assertThat(remote.cache(CACHE_NAME).get("key"), is(val));
+        assertThat(remote.cache(CACHE_WITH_PERMS).get("key"), is(val));
     }
 
     /**
@@ -122,7 +124,7 @@ public class ComputeTaskTest extends AbstractContextResolverSecurityProcessorTes
             )
         );
 
-        assertThat(remote.cache(CACHE_NAME).get("fail_key"), nullValue());
+        assertThat(remote.cache(CACHE_WITH_PERMS).get("fail_key"), nullValue());
     }
 
     /**
@@ -168,7 +170,7 @@ public class ComputeTaskTest extends AbstractContextResolverSecurityProcessorTes
                     }
 
                     @Override public Object execute() throws IgniteException {
-                        loc.cache(CACHE_NAME).put(key, val);
+                        loc.cache(CACHE_WITH_PERMS).put(key, val);
 
                         return null;
                     }

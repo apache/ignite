@@ -1,4 +1,4 @@
-package org.apache.ignite.internal.processor.security;
+package org.apache.ignite.internal.processor.security.cache;
 
 import java.util.Map;
 import java.util.UUID;
@@ -7,6 +7,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processor.security.AbstractContextResolverSecurityProcessorTest;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.stream.StreamVisitor;
@@ -22,14 +23,14 @@ import static org.junit.Assert.assertThat;
 public class IgniteDataStreamerTest extends AbstractContextResolverSecurityProcessorTest {
     /** */
     public void testDataStreamer() {
-        successReceiver(clnt, srv);
-        successReceiver(clnt, srvNoPutPerm);
-        successReceiver(srv, srv);
-        successReceiver(srv, srvNoPutPerm);
+        successReceiver(clntAllPerms, srvAllPerms);
+        successReceiver(clntAllPerms, srvReadOnlyPerm);
+        successReceiver(srvAllPerms, srvAllPerms);
+        successReceiver(srvAllPerms, srvReadOnlyPerm);
 
-        failReceiver(clntNoPutPerm, srv);
-        failReceiver(srvNoPutPerm, srv);
-        failReceiver(srvNoPutPerm, srvNoPutPerm);
+        failReceiver(clntReadOnlyPerm, srvAllPerms);
+        failReceiver(srvReadOnlyPerm, srvAllPerms);
+        failReceiver(srvReadOnlyPerm, srvReadOnlyPerm);
     }
 
     /**
@@ -42,7 +43,7 @@ public class IgniteDataStreamerTest extends AbstractContextResolverSecurityProce
         assertCauseMessage(
             GridTestUtils.assertThrowsWithCause(
                 () -> {
-                    try (IgniteDataStreamer<Integer, Integer> strm = initiator.dataStreamer(SEC_CACHE_NAME)) {
+                    try (IgniteDataStreamer<Integer, Integer> strm = initiator.dataStreamer(CACHE_WITHOUT_PERMS)) {
                         strm.receiver(
                             StreamVisitor.from(
                                 new TestClosure(remote.localNode().id(), "fail_key", -1)
@@ -55,7 +56,7 @@ public class IgniteDataStreamerTest extends AbstractContextResolverSecurityProce
             )
         );
 
-        assertThat(remote.cache(CACHE_NAME).get("fail_key"), nullValue());
+        assertThat(remote.cache(CACHE_WITH_PERMS).get("fail_key"), nullValue());
     }
 
     /**
@@ -67,7 +68,7 @@ public class IgniteDataStreamerTest extends AbstractContextResolverSecurityProce
 
         Integer val = values.getAndIncrement();
 
-        try (IgniteDataStreamer<Integer, Integer> strm = initiator.dataStreamer(SEC_CACHE_NAME)) {
+        try (IgniteDataStreamer<Integer, Integer> strm = initiator.dataStreamer(CACHE_WITHOUT_PERMS)) {
             strm.receiver(
                 StreamVisitor.from(
                     new TestClosure(remote.localNode().id(), "key", val)
@@ -76,7 +77,7 @@ public class IgniteDataStreamerTest extends AbstractContextResolverSecurityProce
             strm.addData(primaryKey(remote), 100);
         }
 
-        assertThat(remote.cache(CACHE_NAME).get("key"), is(val));
+        assertThat(remote.cache(CACHE_WITH_PERMS).get("key"), is(val));
     }
 
     /**
@@ -110,7 +111,7 @@ public class IgniteDataStreamerTest extends AbstractContextResolverSecurityProce
             Ignite loc = Ignition.localIgnite();
 
             if (remoteId.equals(loc.cluster().localNode().id()))
-                loc.cache(CACHE_NAME).put(key, val);
+                loc.cache(CACHE_WITH_PERMS).put(key, val);
         }
     }
 }

@@ -35,39 +35,39 @@ import static org.junit.Assert.assertThat;
  */
 public class AbstractContextResolverSecurityProcessorTest extends AbstractSecurityTest {
     /** Cache name for tests. */
-    protected static final String CACHE_NAME = "TEST_CACHE";
+    protected static final String CACHE_WITH_PERMS = "TEST_CACHE";
 
     /** Cache name for tests. */
-    protected static final String SEC_CACHE_NAME = "SECOND_TEST_CACHE";
+    protected static final String CACHE_WITHOUT_PERMS = "SECOND_TEST_CACHE";
 
     /** Values. */
     protected AtomicInteger values = new AtomicInteger(0);
 
     /** Sever node that has all permissions. */
-    protected IgniteEx srv;
+    protected IgniteEx srvAllPerms;
 
     /** Client node that has all permissions. */
-    protected IgniteEx clnt;
+    protected IgniteEx clntAllPerms;
 
-    /** Sever node that hasn't put permission to TEST_CACHE. */
-    protected IgniteEx srvNoPutPerm;
+    /** Sever node that has read only permission for TEST_CACHE. */
+    protected IgniteEx srvReadOnlyPerm;
 
-    /** Client node that hasn't put permission to TEST_CACHE. */
-    protected IgniteEx clntNoPutPerm;
+    /** Client node that has read only permission for TEST_CACHE. */
+    protected IgniteEx clntReadOnlyPerm;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        srv = startGrid("user_0", builder().build());
+        srvAllPerms = startGrid("user_0", builder().build());
 
-        clnt = startGrid("user_1", builder().build(), true);
+        clntAllPerms = startGrid("user_1", builder().build(), true);
 
-        srvNoPutPerm = startGrid("user_2",
-            builder().appendCachePermissions(CACHE_NAME, CACHE_READ).build());
+        srvReadOnlyPerm = startGrid("user_2",
+            builder().appendCachePermissions(CACHE_WITH_PERMS, CACHE_READ).build());
 
-        clntNoPutPerm = startGrid("user_3",
-            builder().appendCachePermissions(CACHE_NAME, CACHE_READ).build(), true);
+        clntReadOnlyPerm = startGrid("user_3",
+            builder().appendCachePermissions(CACHE_WITH_PERMS, CACHE_READ).build(), true);
 
         grid(0).cluster().active(true);
     }
@@ -84,11 +84,11 @@ public class AbstractContextResolverSecurityProcessorTest extends AbstractSecuri
     protected CacheConfiguration[] getCacheConfigurations() {
         return new CacheConfiguration[] {
             new CacheConfiguration<>()
-                .setName(CACHE_NAME)
+                .setName(CACHE_WITH_PERMS)
                 .setCacheMode(CacheMode.PARTITIONED)
                 .setReadFromBackup(false),
             new CacheConfiguration<>()
-                .setName(SEC_CACHE_NAME)
+                .setName(CACHE_WITHOUT_PERMS)
                 .setCacheMode(CacheMode.PARTITIONED)
                 .setReadFromBackup(false)
         };
@@ -101,7 +101,7 @@ public class AbstractContextResolverSecurityProcessorTest extends AbstractSecuri
      * @return Key.
      */
     protected Integer primaryKey(IgniteEx ignite) {
-        Affinity<Integer> affinity = ignite.affinity(SEC_CACHE_NAME);
+        Affinity<Integer> affinity = ignite.affinity(CACHE_WITHOUT_PERMS);
 
         int i = 0;
         do {

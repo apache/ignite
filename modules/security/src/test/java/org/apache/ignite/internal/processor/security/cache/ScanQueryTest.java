@@ -1,4 +1,4 @@
-package org.apache.ignite.internal.processor.security;
+package org.apache.ignite.internal.processor.security.cache;
 
 import java.util.UUID;
 import javax.cache.Cache;
@@ -6,6 +6,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processor.security.AbstractContextResolverSecurityProcessorTest;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -22,40 +23,40 @@ import static org.junit.Assert.assertThat;
 public class ScanQueryTest extends AbstractContextResolverSecurityProcessorTest {
     /** */
     public void testScanQuery() throws Exception {
-        putTestData(srv, CACHE_NAME);
-        putTestData(srv, SEC_CACHE_NAME);
+        putTestData(srvAllPerms, CACHE_WITH_PERMS);
+        putTestData(srvAllPerms, CACHE_WITHOUT_PERMS);
 
         awaitPartitionMapExchange();
 
-        successQuery(clnt, srv, CACHE_NAME);
-        successQuery(srv, srv, CACHE_NAME);
-        successQuery(clnt, srv, SEC_CACHE_NAME);
-        successQuery(srv, srv, SEC_CACHE_NAME);
+        successQuery(clntAllPerms, srvAllPerms, CACHE_WITH_PERMS);
+        successQuery(srvAllPerms, srvAllPerms, CACHE_WITH_PERMS);
+        successQuery(clntAllPerms, srvAllPerms, CACHE_WITHOUT_PERMS);
+        successQuery(srvAllPerms, srvAllPerms, CACHE_WITHOUT_PERMS);
 
-        successTransform(clnt, srv, CACHE_NAME);
-        successTransform(srv, srv, CACHE_NAME);
-        successTransform(clnt, srv, SEC_CACHE_NAME);
-        successTransform(srv, srv, SEC_CACHE_NAME);
+        successTransform(clntAllPerms, srvAllPerms, CACHE_WITH_PERMS);
+        successTransform(srvAllPerms, srvAllPerms, CACHE_WITH_PERMS);
+        successTransform(clntAllPerms, srvAllPerms, CACHE_WITHOUT_PERMS);
+        successTransform(srvAllPerms, srvAllPerms, CACHE_WITHOUT_PERMS);
 
-        successQuery(clnt, srvNoPutPerm, CACHE_NAME);
-        successQuery(srv, srvNoPutPerm, CACHE_NAME);
-        successQuery(clnt, srvNoPutPerm, SEC_CACHE_NAME);
-        successQuery(srv, srvNoPutPerm, SEC_CACHE_NAME);
+        successQuery(clntAllPerms, srvReadOnlyPerm, CACHE_WITH_PERMS);
+        successQuery(srvAllPerms, srvReadOnlyPerm, CACHE_WITH_PERMS);
+        successQuery(clntAllPerms, srvReadOnlyPerm, CACHE_WITHOUT_PERMS);
+        successQuery(srvAllPerms, srvReadOnlyPerm, CACHE_WITHOUT_PERMS);
 
-        successTransform(clnt, srvNoPutPerm, CACHE_NAME);
-        successTransform(srv, srvNoPutPerm, CACHE_NAME);
-        successTransform(clnt, srvNoPutPerm, SEC_CACHE_NAME);
-        successTransform(srv, srvNoPutPerm, SEC_CACHE_NAME);
+        successTransform(clntAllPerms, srvReadOnlyPerm, CACHE_WITH_PERMS);
+        successTransform(srvAllPerms, srvReadOnlyPerm, CACHE_WITH_PERMS);
+        successTransform(clntAllPerms, srvReadOnlyPerm, CACHE_WITHOUT_PERMS);
+        successTransform(srvAllPerms, srvReadOnlyPerm, CACHE_WITHOUT_PERMS);
 
-        failQuery(clntNoPutPerm, srv, CACHE_NAME);
-        failQuery(srvNoPutPerm, srv, CACHE_NAME);
-        failQuery(clntNoPutPerm, srv, SEC_CACHE_NAME);
-        failQuery(srvNoPutPerm, srv, SEC_CACHE_NAME);
+        failQuery(clntReadOnlyPerm, srvAllPerms, CACHE_WITH_PERMS);
+        failQuery(srvReadOnlyPerm, srvAllPerms, CACHE_WITH_PERMS);
+        failQuery(clntReadOnlyPerm, srvAllPerms, CACHE_WITHOUT_PERMS);
+        failQuery(srvReadOnlyPerm, srvAllPerms, CACHE_WITHOUT_PERMS);
 
-        failTransform(clntNoPutPerm, srv, CACHE_NAME);
-        failTransform(srvNoPutPerm, srv, CACHE_NAME);
-        failTransform(clntNoPutPerm, srv, SEC_CACHE_NAME);
-        failTransform(srvNoPutPerm, srv, SEC_CACHE_NAME);
+        failTransform(clntReadOnlyPerm, srvAllPerms, CACHE_WITH_PERMS);
+        failTransform(srvReadOnlyPerm, srvAllPerms, CACHE_WITH_PERMS);
+        failTransform(clntReadOnlyPerm, srvAllPerms, CACHE_WITHOUT_PERMS);
+        failTransform(srvReadOnlyPerm, srvAllPerms, CACHE_WITHOUT_PERMS);
     }
 
     /**
@@ -79,7 +80,7 @@ public class ScanQueryTest extends AbstractContextResolverSecurityProcessorTest 
             )
         );
 
-        assertThat(remote.cache(CACHE_NAME).get("fail_key"), nullValue());
+        assertThat(remote.cache(CACHE_WITH_PERMS).get("fail_key"), nullValue());
     }
 
     /**
@@ -98,7 +99,7 @@ public class ScanQueryTest extends AbstractContextResolverSecurityProcessorTest 
             )
         ).getAll();
 
-        assertThat(remote.cache(CACHE_NAME).get("key"), is(val));
+        assertThat(remote.cache(CACHE_WITH_PERMS).get("key"), is(val));
     }
 
     /**
@@ -121,7 +122,7 @@ public class ScanQueryTest extends AbstractContextResolverSecurityProcessorTest 
             )
         );
 
-        assertThat(remote.cache(CACHE_NAME).get("fail_key"), nullValue());
+        assertThat(remote.cache(CACHE_WITH_PERMS).get("fail_key"), nullValue());
     }
 
     /**
@@ -139,7 +140,7 @@ public class ScanQueryTest extends AbstractContextResolverSecurityProcessorTest 
             new Transformer(remote.localNode().id(), "key", val)
         ).getAll();
 
-        assertThat(remote.cache(CACHE_NAME).get("key"), is(val));
+        assertThat(remote.cache(CACHE_WITH_PERMS).get("key"), is(val));
     }
 
     /**
@@ -186,7 +187,7 @@ public class ScanQueryTest extends AbstractContextResolverSecurityProcessorTest 
          */
         protected void put() {
             if (remoteId.equals(loc.cluster().localNode().id()))
-                loc.cache(CACHE_NAME).put(key, val);
+                loc.cache(CACHE_WITH_PERMS).put(key, val);
         }
     }
 
