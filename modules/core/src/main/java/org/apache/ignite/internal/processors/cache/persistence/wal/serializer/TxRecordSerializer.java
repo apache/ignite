@@ -75,7 +75,7 @@ public class TxRecordSerializer {
      * @param rec TxRecord.
      * @param buf Byte buffer.
      */
-    public void writeTx(TxRecord rec, ByteBuffer buf) {
+    public void write(TxRecord rec, ByteBuffer buf) {
         buf.put((byte)rec.state().ordinal());
         RecordV1Serializer.putVersion(buf, rec.nearXidVersion(), true);
         RecordV1Serializer.putVersion(buf, rec.writeVersion(), true);
@@ -147,7 +147,7 @@ public class TxRecordSerializer {
      * @param rec TxRecord.
      * @return Size of TxRecord in bytes.
      */
-    public int sizeTx(TxRecord rec) {
+    public int size(TxRecord rec) {
         int size = 0;
 
         size += /* transaction state. */ 1;
@@ -220,7 +220,7 @@ public class TxRecordSerializer {
      * @param buf Byte buffer.
      * @throws IgniteCheckedException In case of fail.
      */
-    public void writeMvccTx(MvccTxRecord rec, ByteBuffer buf) throws IgniteCheckedException {
+    public void write(MvccTxRecord rec, ByteBuffer buf) throws IgniteCheckedException {
         buf.put((byte)rec.state().ordinal());
 
         RecordV1Serializer.putVersion(buf, rec.nearXidVersion(), true);
@@ -257,7 +257,7 @@ public class TxRecordSerializer {
      * @return Size of TxRecord in bytes.
      * @throws IgniteCheckedException In case of fail.
      */
-    public int sizeMvccTx(MvccTxRecord rec) throws IgniteCheckedException {
-       return sizeTx(rec) + MVCC_VERSION_SIZE;
+    public int size(MvccTxRecord rec) throws IgniteCheckedException {
+       return size((TxRecord)rec) + MVCC_VERSION_SIZE;
     }
 }

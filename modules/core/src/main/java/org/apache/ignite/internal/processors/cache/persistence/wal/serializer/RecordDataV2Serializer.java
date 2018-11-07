@@ -104,10 +104,10 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer implements Re
                 return 4 /*type*/ + 8 /*timestamp*/ + 2 /*constId*/;
 
             case TX_RECORD:
-                return txRecordSerializer.sizeTx((TxRecord)rec);
+                return txRecordSerializer.size((TxRecord)rec);
 
             case MVCC_TX_RECORD:
-                return txRecordSerializer.sizeMvccTx((MvccTxRecord)rec);
+                return txRecordSerializer.size((MvccTxRecord)rec);
 
             default:
                 return super.plainSize(rec);
@@ -266,12 +266,12 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer implements Re
                 break;
 
             case TX_RECORD:
-                txRecordSerializer.writeTx((TxRecord)rec, buf);
+                txRecordSerializer.write((TxRecord)rec, buf);
 
                 break;
 
             case MVCC_TX_RECORD:
-                txRecordSerializer.writeMvccTx((MvccTxRecord)rec, buf);
+                txRecordSerializer.write((MvccTxRecord)rec, buf);
 
                 break;
 

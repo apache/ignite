@@ -500,7 +500,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return 0;
 
             case TX_RECORD:
-                return txRecordSerializer.sizeTx((TxRecord)record);
+                return txRecordSerializer.size((TxRecord)record);
 
             default:
                 throw new UnsupportedOperationException("Type: " + record.type());
@@ -1687,7 +1687,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case TX_RECORD:
-                txRecordSerializer.writeTx((TxRecord)rec, buf);
+                txRecordSerializer.write((TxRecord)rec, buf);
 
                 break;
 
