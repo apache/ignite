@@ -940,10 +940,10 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      *
      * @throws Exception In case of error.
      */
-    public void _testObjectQueryWithSwap() throws Exception {
-        fail("http://atlassian.gridgain.com/jira/browse/GG-11216");
-
-        IgniteCache<Integer, ObjectValue> cache = jcache(Integer.class, ObjectValue.class);
+    public void testObjectQueryWithSwap() throws Exception {
+        CacheConfiguration<Integer, ObjectValue> config = new CacheConfiguration<Integer, ObjectValue>(cacheConfiguration());
+        config.setOnheapCacheEnabled(true);
+        IgniteCache<Integer, ObjectValue> cache = jcache(ignite(), config, Integer.class, ObjectValue.class);
 
         boolean partitioned = cache.getConfiguration(CacheConfiguration.class).getCacheMode() == PARTITIONED;
 
@@ -956,16 +956,14 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
             IgniteCache<Integer, ObjectValue> c = g.cache(cache.getName());
 
             for (int i = 0; i < cnt; i++) {
-                if (i % 2 == 0) {
-                    assertNotNull(c.localPeek(i, CachePeekMode.ONHEAP));
+                assertNotNull(c.localPeek(i, CachePeekMode.ONHEAP));
 
-                    c.localEvict(Collections.singleton(i)); // Swap.
+                c.localEvict(Collections.singleton(i)); // Swap.
 
-                    if (!partitioned || g.affinity(cache.getName()).mapKeyToNode(i).isLocal()) {
-                        ObjectValue peekVal = c.localPeek(i, CachePeekMode.ONHEAP);
+                if (!partitioned || g.affinity(cache.getName()).mapKeyToNode(i).isLocal()) {
+                    ObjectValue peekVal = c.localPeek(i, CachePeekMode.ONHEAP);
 
-                        assertNull("Non-null value for peek [key=" + i + ", val=" + peekVal + ']', peekVal);
-                    }
+                    assertNull("Non-null value for peek [key=" + i + ", val=" + peekVal + ']', peekVal);
                 }
             }
         }
