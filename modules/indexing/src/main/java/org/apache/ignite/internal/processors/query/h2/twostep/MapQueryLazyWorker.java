@@ -241,7 +241,7 @@ public class MapQueryLazyWorker extends GridWorker {
      */
     public void submitStopTask(Runnable task) {
         synchronized (mux) {
-            if (LAZY_WORKER.get() != null)
+            if (currentWorker() != null)
                 task.run();
             else
                 submit(task);

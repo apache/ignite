@@ -71,7 +71,6 @@ class GridMergeIndexIterator implements Iterator<List<?>>, AutoCloseable {
      * @param run Query run.
      * @param qryReqId Query request ID.
      * @param distributedJoins Distributed joins.
-     * @param mvccTracker MVCC tracker.
      * @throws IgniteCheckedException if failed.
      */
     GridMergeIndexIterator(GridReduceQueryExecutor rdcExec,

@@ -127,7 +127,6 @@ public class FunctionalQueryTest {
                 assertEquals(exp, act);
             }
 
-
             // Check lazy = false mode.
             qry = new SqlFieldsQuery("select id, name from Person where id >= ?")
                 .setArgs(minId)

@@ -4061,13 +4061,14 @@ public abstract class IgniteUtils {
      * @param log Logger to log possible checked exception with (optional).
      */
     public static void close(@Nullable AutoCloseable rsrc, @Nullable IgniteLogger log) {
-        if (rsrc != null)
+        if (rsrc != null) {
             try {
                 rsrc.close();
             }
             catch (Exception e) {
                 warn(log, "Failed to close resource: " + e.getMessage(), e);
             }
+        }
     }
 
     /**
