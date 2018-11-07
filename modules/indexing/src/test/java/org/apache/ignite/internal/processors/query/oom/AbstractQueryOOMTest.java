@@ -51,7 +51,6 @@ import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
     /** */
     private static final long KEY_CNT = 2_000_000L;
-//    private static final long KEY_CNT = 2_000L;
 
     /** */
     private static final String CACHE_NAME = "test_cache";
