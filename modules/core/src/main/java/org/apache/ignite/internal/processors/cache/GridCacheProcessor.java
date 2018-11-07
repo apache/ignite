@@ -1503,7 +1503,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         pluginMgr.validate();
 
-        if (cfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
+        if (!recoveryMode && cfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
             sharedCtx.coordinators().ensureStarted();
 
         sharedCtx.jta().registerCache(cfg);
@@ -2294,6 +2294,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         );
 
         cacheContext.finishRecovery(cacheStartVer, updatedDescriptor.cacheConfiguration().isStatisticsEnabled());
+
+        if (cacheContext.config().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
+            sharedCtx.coordinators().ensureStarted();
 
         onKernalStart(cacheContext.cache());
 

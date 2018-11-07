@@ -93,6 +93,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -1270,15 +1271,14 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
                                         if (log.isDebugEnabled())
                                             log.debug("Vacuum completed. " + metrics);
-                                    }
-                                    catch (NodeStoppingException ignored) {
-                                        if (log.isDebugEnabled())
-                                            log.debug("Cannot complete vacuum (node is stopping).");
+                                    } catch (Throwable e) {
+                                        if (X.hasCause(e, NodeStoppingException.class)) {
+                                            if (log.isDebugEnabled())
+                                                log.debug("Cannot complete vacuum (node is stopping).");
 
-                                        metrics = new VacuumMetrics();
-                                    }
-                                    catch (Throwable e) {
-                                        ex = new GridClosureException(e);
+                                            metrics = new VacuumMetrics();
+                                        } else
+                                            ex = new GridClosureException(e);
                                     }
 
                                     res.onDone(metrics, ex);
@@ -2409,27 +2409,27 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                     entry = cctx.cache().entryEx(key);
                 }
 
-                cctx.shared().database().checkpointReadLock();
-
                 int cleaned = 0;
 
                 try {
-                    if (cleanupRows != null)
-                        cleaned = part.dataStore().cleanup(cctx, cleanupRows);
+                    cctx.shared().database().checkpointReadLock();
 
-                    if (rest != null) {
-                        if (rest.getClass() == ArrayList.class) {
-                            for (MvccDataRow row : ((List<MvccDataRow>)rest)) {
-                                part.dataStore().updateTxState(cctx, row);
-                            }
+                    try {
+                        if (cleanupRows != null)
+                            cleaned = part.dataStore().cleanup(cctx, cleanupRows);
+
+                        if (rest != null) {
+                            if (rest.getClass() == ArrayList.class) {
+                                for (MvccDataRow row : ((List<MvccDataRow>) rest)) {
+                                    part.dataStore().updateTxState(cctx, row);
+                                }
+                            } else
+                                part.dataStore().updateTxState(cctx, (MvccDataRow) rest);
                         }
-                        else
-                            part.dataStore().updateTxState(cctx, (MvccDataRow)rest);
+                    } finally {
+                        cctx.shared().database().checkpointReadUnlock();
                     }
-                }
-                finally {
-                    cctx.shared().database().checkpointReadUnlock();
-
+                } finally {
                     entry.unlockEntry();
                     cctx.evicts().touch(entry, AffinityTopologyVersion.NONE);
 
