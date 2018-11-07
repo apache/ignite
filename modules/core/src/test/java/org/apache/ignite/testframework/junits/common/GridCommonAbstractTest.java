@@ -946,61 +946,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     * Use method for manual rebalaincing cache on all nodes. Note that using
-     * <pre name="code" class="java">
-     *   for (int i = 0; i < G.allGrids(); i++)
-     *     grid(i).cache(CACHE_NAME).rebalance().get();
-     * </pre>
-     * for rebalancing cache will lead to flaky test cases.
-     *
-     * @param ignite Ignite server instance for getting {@code compute} facade over all cluster nodes.
-     * @param cacheName Cache name for manual rebalancing on cluster. Usually used when used when
-     * {@link CacheConfiguration#getRebalanceDelay()} configuration parameter set to {@code -1} value.
-     * @throws IgniteCheckedException If fails.
-     */
-    protected void manualCacheRebalancing(Ignite ignite,
-        final String cacheName) throws IgniteCheckedException {
-        if (ignite.configuration().isClientMode())
-            return;
-
-        IgniteFuture<Void> fut =
-            ignite.compute().withTimeout(5_000).broadcastAsync(new IgniteRunnable() {
-                /** */
-                @LoggerResource
-                IgniteLogger log;
-
-                /** */
-                @IgniteInstanceResource
-                private Ignite ignite;
-
-                /** {@inheritDoc} */
-                @Override public void run() {
-                    IgniteCache<?, ?> cache = ignite.cache(cacheName);
-
-                    assertNotNull(cache);
-
-                    while (!(Boolean)cache.rebalance().get()) {
-                        try {
-                            U.sleep(100);
-                        }
-                        catch (IgniteInterruptedCheckedException e) {
-                            throw new IgniteException(e);
-                        }
-                    }
-
-                    if (log.isInfoEnabled())
-                        log.info("Manual rebalance finished [node=" + ignite.name() + ", cache=" + cacheName + "]");
-                }
-            });
-
-        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return fut.isDone();
-            }
-        }, 5_000));
-    }
-
-    /**
      * @param ignite Node.
      */
     public void dumpCacheDebugInfo(Ignite ignite) {

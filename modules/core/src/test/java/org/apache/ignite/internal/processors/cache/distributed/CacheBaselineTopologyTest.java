@@ -30,6 +30,9 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
@@ -50,8 +53,13 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -904,6 +912,73 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         for (int k = 0; k < 1000; k++)
             assertEquals("k=" + k, Integer.valueOf(k), cache.get(k));
+    }
+
+    /**
+     * Use method for manual rebalancing cache on all nodes. Note that using
+     * <pre name="code" class="java">
+     *   for (int i = 0; i < G.allGrids(); i++)
+     *     grid(i).cache(CACHE_NAME).rebalance().get();
+     * </pre>
+     * for rebalancing cache will lead to flaky test cases.
+     *
+     * @param ignite Ignite server instance for getting {@code compute} facade over all cluster nodes.
+     * @param cacheName Cache name for manual rebalancing on cluster. Usually used when used when
+     * {@link CacheConfiguration#getRebalanceDelay()} configuration parameter set to {@code -1} value.
+     * @throws IgniteCheckedException If fails.
+     */
+    private void manualCacheRebalancing(Ignite ignite,
+        final String cacheName) throws IgniteCheckedException {
+        if (ignite.configuration().isClientMode())
+            return;
+
+        IgniteFuture<Void> fut =
+            ignite.compute().withTimeout(5_000).broadcastAsync(new ManualRebalancer(cacheName));
+
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return fut.isDone();
+            }
+        }, 5_000));
+    }
+
+    /**
+     *
+     */
+    private static class ManualRebalancer implements IgniteRunnable {
+        /** */
+        @LoggerResource
+        IgniteLogger log;
+
+        /** */
+        @IgniteInstanceResource
+        private Ignite ignite;
+
+        /** */
+        private final String cacheName;
+
+        public ManualRebalancer(String cacheName) {
+            this.cacheName = cacheName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            IgniteCache<?, ?> cache = ignite.cache(cacheName);
+
+            assertNotNull(cache);
+
+            while (!cache.rebalance().get()) {
+                try {
+                    U.sleep(100);
+                }
+                catch (IgniteInterruptedCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            }
+
+            if (log.isInfoEnabled())
+                log.info("Manual rebalance finished [node=" + ignite.name() + ", cache=" + cacheName + "]");
+        }
     }
 
     /** */
