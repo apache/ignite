@@ -114,7 +114,7 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
 
         final CountDownLatch latch = new CountDownLatch(qryThreads);
 
-        final AtomicBoolean queryProceed = new AtomicBoolean();
+        final AtomicBoolean queryProcessed = new AtomicBoolean();
 
         // Do many concurrent queries.
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
@@ -127,14 +127,14 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
 
                     cursor.getAll();
 
-                    queryProceed.set(true);
+                    queryProcessed.set(true);
                 }
             }
         }, qryThreads, "usr-qry");
 
         latch.await();
 
-        assertTrue(GridTestUtils.waitForCondition(queryProceed::get, 1000));
+        assertTrue(GridTestUtils.waitForCondition(queryProcessed::get, 1000));
 
         execute(srv, new SqlFieldsQuery("CREATE INDEX PERSON_NAME ON Person (name asc)")).getAll();
         execute(srv, new SqlFieldsQuery("DROP INDEX PERSON_NAME")).getAll();
