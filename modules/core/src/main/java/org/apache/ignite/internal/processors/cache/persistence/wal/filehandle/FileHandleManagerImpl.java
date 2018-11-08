@@ -501,7 +501,6 @@ public class FileHandleManagerImpl implements FileHandleManager {
          * @throws StorageException If failed.
          * @throws IgniteCheckedException If failed.
          */
-        @SuppressWarnings("TooBroadScope")
         private void writeBuffer(long pos, ByteBuffer buf) throws StorageException, IgniteCheckedException {
             FileWriteHandleImpl hdl = currentHandle();
 
