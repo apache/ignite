@@ -129,8 +129,12 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
 
         IgniteWriteAheadLogManager wal = node.context().cache().context().wal();
 
-        if (disableCheckpointer)
+        if (disableCheckpointer){
+            //Force checkpoint. See for details: https://issues.apache.org/jira/browse/IGNITE-10187
+            node.context().cache().context().database().waitForCheckpoint(null);
+
             ((GridCacheDatabaseSharedManager)node.context().cache().context().database()).enableCheckpoints(false).get();
+        }
 
         GridTimeoutProcessor.CancelableTask flushTask = GridTestUtils.getFieldValue(wal, FileWriteAheadLogManager.class, "backgroundFlushSchedule");
         WalStateManager.WALDisableContext wctx = GridTestUtils.getFieldValue(wal, FileWriteAheadLogManager.class, "walDisableContext");
