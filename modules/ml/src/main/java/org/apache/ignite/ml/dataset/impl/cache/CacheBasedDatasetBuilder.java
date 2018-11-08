@@ -76,7 +76,7 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
      * Constructs a new instance of cache based dataset builder that makes {@link CacheBasedDataset} with default
      * predicate that passes all upstream entries to dataset.
      *
-     * @param ignite        Ignite instance.
+     * @param ignite Ignite instance.
      * @param upstreamCache Ignite Cache with {@code upstream} data.
      */
     public CacheBasedDatasetBuilder(Ignite ignite, IgniteCache<K, V> upstreamCache) {
@@ -86,9 +86,9 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
     /**
      * Constructs a new instance of cache based dataset builder that makes {@link CacheBasedDataset}.
      *
-     * @param ignite        Ignite instance.
+     * @param ignite Ignite instance.
      * @param upstreamCache Ignite Cache with {@code upstream} data.
-     * @param filter        Filter for {@code upstream} data.
+     * @param filter Filter for {@code upstream} data.
      */
     public CacheBasedDatasetBuilder(Ignite ignite, IgniteCache<K, V> upstreamCache, IgniteBiPredicate<K, V> filter) {
         this.ignite = ignite;
