@@ -118,6 +118,8 @@ public class IoomFailureHandlerTest extends AbstractFailureHandlerTest {
      * Test IgniteOutOfMemoryException handling with PDS.
      */
     public void testIoomErrorMvccPdsHandling() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10185");
+
         testIoomErrorHandling(true, true);
     }
 
