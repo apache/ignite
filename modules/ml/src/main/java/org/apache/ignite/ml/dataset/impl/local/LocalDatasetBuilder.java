@@ -39,22 +39,17 @@ import org.apache.ignite.ml.util.Utils;
  * @param <V> Type of a value in {@code upstream} data.
  */
 public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
-    /**
-     * {@code Map} with upstream data.
-     */
+    /** {@code Map} with upstream data. */
     private final Map<K, V> upstreamMap;
 
-    /**
-     * Number of partitions.
-     */
+    /** Number of partitions. */
     private final int partitions;
 
-    /**
-     * Filter for {@code upstream} data.
-     */
+    /** Filter for {@code upstream} data. */
     private final IgniteBiPredicate<K, V> filter;
 
-    private UpstreamTransformerChain<K, V> upstreamTransformers;
+    /** Upstream transformers. */
+    private final UpstreamTransformerChain<K, V> upstreamTransformers;
 
     /**
      * Constructs a new instance of local dataset builder that makes {@link LocalDataset} with default predicate that
