@@ -181,12 +181,11 @@ public class TrainerTransformers {
             .addUpstreamTransformer(new BaggingUpstreamTransformer<>(subsampleRatio));
 
         List<IgniteSupplier<M>> tasks = new ArrayList<>();
-        List<IgniteBiFunction<K, V, Vector>> extractors = null;
+        List<IgniteBiFunction<K, V, Vector>> extractors = new ArrayList<>();
         if (mappings != null) {
-            extractors = mappings
-                .stream()
-                .map(m -> wrapExtractor(extractor, m))
-                .collect(Collectors.toList());
+            for (int[] mapping : mappings) {
+                extractors.add(wrapExtractor(extractor, mapping));
+            }
         }
 
         for (int i = 0; i < ensembleSize; i++) {

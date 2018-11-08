@@ -238,8 +238,7 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
                 UpstreamEntry<Integer, Integer> e = upstream.next();
                 return e.getKey() + e.getValue();
             },
-            0,
-            null
+            0
         );
 
         assertEquals(1, datasetCache.size());

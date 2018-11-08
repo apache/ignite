@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.dataset.Dataset;
+import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamTransformerChain;
 import org.apache.ignite.ml.dataset.impl.cache.util.ComputeUtils;
@@ -80,7 +81,7 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
      * @param ignite Ignite instance.
      * @param upstreamCache Ignite Cache with {@code upstream} data.
      * @param filter Filter for {@code upstream} data.
-     * @param upstreamTransformers Transformers of upstream data.
+     * @param upstreamTransformers Transformers of upstream data (see description in {@link DatasetBuilder}).
      * @param datasetCache Ignite Cache with partition {@code context}.
      * @param partDataBuilder Partition {@code data} builder.
      * @param datasetId Dataset ID.

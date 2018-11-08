@@ -20,10 +20,8 @@ package org.apache.ignite.ml.dataset.impl.local;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionContextBuilder;
@@ -92,7 +90,7 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
         List<C> ctxList = new ArrayList<>();
         List<D> dataList = new ArrayList<>();
 
-        List<UpstreamEntry<K, V>> entriesList = new LinkedList<>();
+        List<UpstreamEntry<K, V>> entriesList = new ArrayList<>();
 
         upstreamMap
             .entrySet()
@@ -112,11 +110,8 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
         for (int part = 0; part < partitions; part++) {
             int cnt = part == partitions - 1 ? entriesList.size() - ptr : Math.min(partSize, entriesList.size() - ptr);
 
-            if (upstreamTransformers.seed() == null) {
-                upstreamTransformers.setSeed(new Random().nextLong());
-            } else {
-                upstreamTransformers.setSeed(upstreamTransformers.seed() + 951091 * part);
-            }
+            int p = part;
+            upstreamTransformers.modifySeed(s -> s + p);
 
             if (!upstreamTransformers.isEmpty()) {
                 cnt = (int)upstreamTransformers.transform(

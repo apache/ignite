@@ -171,17 +171,18 @@ public class ComputeUtils {
             qry.setPartition(part);
             qry.setFilter(filter);
 
-            transformersChain.modifySeed(s -> s + part);
+            UpstreamTransformerChain<K, V> chainCopy = Utils.copy(transformersChain);
+            chainCopy.modifySeed(s -> s + part);
 
-            long cnt = computeCount(upstreamCache, qry, transformersChain);
+            long cnt = computeCount(upstreamCache, qry, chainCopy);
 
             if (cnt > 0) {
                 try (QueryCursor<UpstreamEntry<K, V>> cursor = upstreamCache.query(qry,
                     e -> new UpstreamEntry<>(e.getKey(), e.getValue()))) {
 
                     Iterator<UpstreamEntry<K, V>> it = cursor.iterator();
-                    if (!transformersChain.isEmpty()) {
-                        Stream<UpstreamEntry<K, V>> transformedStream = transformersChain.transform(Utils.asStream(it));
+                    if (!chainCopy.isEmpty()) {
+                        Stream<UpstreamEntry<K, V>> transformedStream = chainCopy.transform(Utils.asStream(it));
                         it = transformedStream.iterator();
                     }
 
@@ -237,15 +238,17 @@ public class ComputeUtils {
             qry.setFilter(filter);
 
             C ctx;
-            transformersChain.modifySeed(s -> s + part);
+            UpstreamTransformerChain<K, V> chainCopy = Utils.copy(transformersChain);
+            chainCopy.modifySeed(s -> s + part);
+
             long cnt = computeCount(locUpstreamCache, qry, transformersChain);
 
             try (QueryCursor<UpstreamEntry<K, V>> cursor = locUpstreamCache.query(qry,
                 e -> new UpstreamEntry<>(e.getKey(), e.getValue()))) {
 
                 Iterator<UpstreamEntry<K, V>> it = cursor.iterator();
-                if (!transformersChain.isEmpty()) {
-                    Stream<UpstreamEntry<K, V>> transformedStream = transformersChain.transform(Utils.asStream(it));
+                if (!chainCopy.isEmpty()) {
+                    Stream<UpstreamEntry<K, V>> transformedStream = chainCopy.transform(Utils.asStream(it));
                     it = transformedStream.iterator();
                 }
                 Iterator<UpstreamEntry<K, V>> iter = new IteratorWithConcurrentModificationChecker<>(
@@ -285,8 +288,7 @@ public class ComputeUtils {
         UpstreamTransformerChain<K, V> transformersChain,
         String datasetCacheName,
         PartitionContextBuilder<K, V, C> ctxBuilder,
-        int retries,
-        Long seed) {
+        int retries) {
         initContext(ignite, upstreamCacheName, filter, transformersChain, datasetCacheName, ctxBuilder, retries, 0);
     }
 
