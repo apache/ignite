@@ -121,7 +121,7 @@ public class IgniteCacheCommitDelayTxRecoveryTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @Test
-    public void testRecovery() throws Exception {
+    public void recovery() throws Exception {
         checkRecovery(backups, useStore);
     }
 
