@@ -179,6 +179,17 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception if failed.
      */
+    public void testNewFailure() throws Exception {
+        partLossPlc = PartitionLossPolicy.READ_ONLY_SAFE;
+
+        isPersistenceEnabled = true;
+
+        checkLostPartition(false, true, killSingleNode);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
     public void testReadOnlyAll() throws Exception {
         partLossPlc = PartitionLossPolicy.READ_ONLY_ALL;
 
