@@ -104,7 +104,6 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
             .setPageSize(pageSize)
-            .setCheckpointFrequency(750)
             .setDefaultDataRegionConfiguration(drCfg)
             .setFileIOFactory(U.isLinux() ? factory : new PunchFileIOFactory(factory));
 
@@ -221,10 +220,12 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
         for (int i = 0; i < cnt; i += 2)
             assertEquals(new TestVal(i), cache.getAndRemove(i));
 
-        U.sleep(1000);
+        GridCacheDatabaseSharedManager dbMgr = ((GridCacheDatabaseSharedManager)ignite.context()
+            .cache().context().database());
 
-        FilePageStoreManager storeMgr = ((GridCacheDatabaseSharedManager)ignite.context()
-            .cache().context().database()).getFileStoreManager();
+        dbMgr.forceCheckpoint("test compression").finishFuture().get();
+
+        FilePageStoreManager storeMgr = dbMgr.getFileStoreManager();
 
         checkFileIOFactory(storeMgr.getPageStoreFileIoFactory());
 
@@ -234,7 +235,16 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < parts; i++) {
             PageStore store = storeMgr.getStore(cctx.cacheId(), i);
-            if (store.getSparseSize() < store.pages() * store.getPageSize())
+
+            long virtualSize = store.getPageSize() * store.pages();
+            long sparseSize = store.getSparseSize();
+
+            info("virt: " + virtualSize + "   sparse: " + sparseSize);
+
+            if (!store.exists())
+                continue;
+
+            if (virtualSize > sparseSize)
                 return;
         }
 
