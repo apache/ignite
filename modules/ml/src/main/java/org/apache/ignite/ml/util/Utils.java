@@ -105,6 +105,14 @@ public class Utils {
         return selectKDistinct(n, k, new Random());
     }
 
+    /**
+     * Convert given iterator to a stream with known count of entries.
+     *
+     * @param iter Iterator.
+     * @param cnt Count.
+     * @param <T> Type of entries.
+     * @return Stream constructed from iterator.
+     */
     public static <T> Stream<T> asStream(Iterator<T> iter, long cnt) {
         return StreamSupport.stream(
                 Spliterators.spliterator(iter, cnt, Spliterator.ORDERED),

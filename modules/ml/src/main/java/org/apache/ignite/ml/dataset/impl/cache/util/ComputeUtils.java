@@ -182,7 +182,7 @@ public class ComputeUtils {
 
                     Iterator<UpstreamEntry<K, V>> it = cursor.iterator();
                     if (!chainCopy.isEmpty()) {
-                        Stream<UpstreamEntry<K, V>> transformedStream = chainCopy.transform(Utils.asStream(it));
+                        Stream<UpstreamEntry<K, V>> transformedStream = chainCopy.transform(Utils.asStream(it, cnt));
                         it = transformedStream.iterator();
                     }
 
@@ -248,7 +248,7 @@ public class ComputeUtils {
 
                 Iterator<UpstreamEntry<K, V>> it = cursor.iterator();
                 if (!chainCopy.isEmpty()) {
-                    Stream<UpstreamEntry<K, V>> transformedStream = chainCopy.transform(Utils.asStream(it));
+                    Stream<UpstreamEntry<K, V>> transformedStream = chainCopy.transform(Utils.asStream(it, cnt));
                     it = transformedStream.iterator();
                 }
                 Iterator<UpstreamEntry<K, V>> iter = new IteratorWithConcurrentModificationChecker<>(
