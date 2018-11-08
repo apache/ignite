@@ -506,7 +506,8 @@ public interface IgniteCacheOffheapManager {
         final boolean primary,
         final boolean backup,
         final AffinityTopologyVersion topVer,
-        final boolean keepBinary) throws IgniteCheckedException;
+        final boolean keepBinary,
+        MvccSnapshot mvccSnapshot) throws IgniteCheckedException;
 
     /**
      * @param cacheId Cache ID.
