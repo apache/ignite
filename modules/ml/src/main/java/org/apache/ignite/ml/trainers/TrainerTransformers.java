@@ -84,8 +84,8 @@ public class TrainerTransformers {
         PredictionsAggregator aggregator,
         Long transformationSeed) {
         return new DatasetTrainer<ModelsComposition, L>() {
-            @Override
-            public <K, V> ModelsComposition fit(
+            /** {@inheritDoc} */
+            @Override public <K, V> ModelsComposition fit(
                 DatasetBuilder<K, V> datasetBuilder,
                 IgniteBiFunction<K, V, Vector> featureExtractor,
                 IgniteBiFunction<K, V, L> lbExtractor) {
@@ -106,13 +106,13 @@ public class TrainerTransformers {
                     environment);
             }
 
-            @Override
-            protected boolean checkState(ModelsComposition mdl) {
+            /** {@inheritDoc} */
+            @Override protected boolean checkState(ModelsComposition mdl) {
                 return mdl.getModels().stream().allMatch(m -> trainer.checkState((M)m));
             }
 
-            @Override
-            protected <K, V> ModelsComposition updateModel(
+            /** {@inheritDoc} */
+            @Override protected <K, V> ModelsComposition updateModel(
                 ModelsComposition mdl,
                 DatasetBuilder<K, V> datasetBuilder,
                 IgniteBiFunction<K, V, Vector> featureExtractor,
@@ -192,7 +192,7 @@ public class TrainerTransformers {
             UpstreamTransformerChain<K, V> newChain = Utils.copy(datasetBuilder.upstreamTransformersChain());
             DatasetBuilder<K, V> newBuilder = withNewChain(datasetBuilder, newChain);
             int j = i;
-            newChain.modifySeed(s -> s^2 + j);
+            newChain.modifySeed(s -> s ^ 2 + j);
             tasks.add(
                 trainingTaskGenerator.apply(newBuilder, i, mappings != null ? extractors.get(i) : extractor));
         }
