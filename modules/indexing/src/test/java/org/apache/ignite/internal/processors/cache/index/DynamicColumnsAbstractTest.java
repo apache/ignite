@@ -231,7 +231,6 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
      * @param sql Statement.
      * @param msg Expected message.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     protected void assertThrows(final Ignite node, final String sql, String msg) {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -249,7 +248,6 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
      * @param cls Expected exception class.
      * @param msg Expected message.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     protected void assertThrowsAnyCause(final Ignite node, final String sql, Class<? extends Throwable> cls,
         String msg) {
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {

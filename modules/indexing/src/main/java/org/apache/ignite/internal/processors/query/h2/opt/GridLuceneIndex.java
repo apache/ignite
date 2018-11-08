@@ -395,7 +395,7 @@ public class GridLuceneIndex implements AutoCloseable {
 //            parser.setAllowLeadingWildcard(true);
             String [] items = qry.split("\\s");
             //qty: hello limit:100 type:blog user:xiaoming
-            int limit =  Integer.MAX_VALUE;
+            int limit =  600; // Integer.MAX_VALUE;
             String uid = null;
             String sort = null;
             StringBuilder sb = new StringBuilder();

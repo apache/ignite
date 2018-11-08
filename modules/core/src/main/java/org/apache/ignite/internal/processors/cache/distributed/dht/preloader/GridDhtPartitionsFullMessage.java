@@ -25,8 +25,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
@@ -803,7 +805,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      *
      * @param other Other full message.
      */
-    public void merge(GridDhtPartitionsFullMessage other) {
+    public void merge(GridDhtPartitionsFullMessage other, GridDiscoveryManager discovery) {
         assert other.exchangeId() == null && exchangeId() == null :
             "Both current and merge full message must have exchangeId == null"
              + other.exchangeId() + "," + exchangeId();
@@ -814,8 +816,18 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
             GridDhtPartitionFullMap currMap = partitions().get(grpId);
 
-            if (currMap == null || updMap.compareTo(currMap) >= 0)
+            if (currMap == null)
                 partitions().put(grpId, updMap);
+            else {
+                ClusterNode currentMapSentBy = discovery.node(currMap.nodeId());
+                ClusterNode newMapSentBy = discovery.node(updMap.nodeId());
+
+                if (newMapSentBy == null)
+                    return;
+
+                if (currentMapSentBy == null || newMapSentBy.order() > currentMapSentBy.order() || updMap.compareTo(currMap) >= 0)
+                    partitions().put(grpId, updMap);
+            }
         }
     }
 }

@@ -106,7 +106,6 @@ public class IgniteCacheTestSuite5 extends TestSuite {
 
         suite.addTestSuite(ConcurrentCacheStartTest.class);
 
-
         //suite.addTestSuite(GridCacheAtomicPreloadSelfTest.class);
         //suite.addTestSuite(IgniteCacheContainsKeyColocatedAtomicSelfTest.class);
         //suite.addTestSuite(IgniteCacheContainsKeyNearAtomicSelfTest.class);
