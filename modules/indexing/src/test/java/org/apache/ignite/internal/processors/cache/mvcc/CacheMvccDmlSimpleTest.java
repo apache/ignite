@@ -28,12 +28,16 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.Arrays.asList;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class CacheMvccDmlSimpleTest extends CacheMvccAbstractTest {
     /** */
     private IgniteCache<?, ?> cache;
@@ -58,7 +62,8 @@ public class CacheMvccDmlSimpleTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
-    public void testInsert() throws Exception {
+    @Test
+    public void insert() throws Exception {
         int cnt = update("insert into Integer(_key, _val) values(1, 1),(2, 2)");
 
         assertEquals(2, cnt);
@@ -78,7 +83,8 @@ public class CacheMvccDmlSimpleTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
-    public void testMerge() throws Exception {
+    @Test
+    public void merge() throws Exception {
         {
             int cnt = update("merge into Integer(_key, _val) values(1, 1),(2, 2)");
 
@@ -97,7 +103,8 @@ public class CacheMvccDmlSimpleTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
-    public void testUpdate() throws Exception {
+    @Test
+    public void update() throws Exception {
         {
             int cnt = update("update Integer set _val = 42 where _key = 42");
 
@@ -139,7 +146,8 @@ public class CacheMvccDmlSimpleTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
-    public void testDelete() throws Exception {
+    @Test
+    public void delete() throws Exception {
         {
             int cnt = update("delete from Integer where _key = 42");
 

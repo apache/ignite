@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
@@ -86,7 +87,7 @@ public class IgniteCacheMvccSqlTestSuite extends TestSuite {
         // Simple tests.
         suite.addTestSuite(MvccEmptyTransactionSelfTest.class);
         suite.addTestSuite(CacheMvccSqlConfigurationValidationTest.class);
-        suite.addTestSuite(CacheMvccDmlSimpleTest.class);
+        suite.addTest(new JUnit4TestAdapter(CacheMvccDmlSimpleTest.class));
         suite.addTestSuite(SqlTransactionsCommandsWithMvccEnabledSelfTest.class);
         suite.addTestSuite(CacheMvccSizeTest.class);
         suite.addTestSuite(CacheMvccSqlUpdateCountersTest.class);
