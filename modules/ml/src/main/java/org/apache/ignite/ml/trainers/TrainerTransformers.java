@@ -192,7 +192,7 @@ public class TrainerTransformers {
             UpstreamTransformerChain<K, V> newChain = Utils.copy(datasetBuilder.upstreamTransformersChain());
             DatasetBuilder<K, V> newBuilder = withNewChain(datasetBuilder, newChain);
             int j = i;
-            newChain.modifySeed(s -> s ^ 2 + j);
+            newChain.modifySeed(s -> s * s + j);
             tasks.add(
                 trainingTaskGenerator.apply(newBuilder, i, mappings != null ? extractors.get(i) : extractor));
         }
