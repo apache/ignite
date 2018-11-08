@@ -533,7 +533,6 @@ public abstract class GridCommonAbstractTest2 extends GridAbstractTest2 {
     /**
      * @throws InterruptedException If interrupted.
      */
-    @SuppressWarnings("BusyWait")
     protected void awaitPartitionMapExchange() throws InterruptedException {
         awaitPartitionMapExchange(false, false, null);
     }
@@ -545,7 +544,6 @@ public abstract class GridCommonAbstractTest2 extends GridAbstractTest2 {
      *      be filtered
      * @throws InterruptedException If interrupted.
      */
-    @SuppressWarnings("BusyWait")
     protected void awaitPartitionMapExchange(
         boolean waitEvicts,
         boolean waitNode2PartUpdate,
@@ -675,7 +673,7 @@ public abstract class GridCommonAbstractTest2 extends GridAbstractTest2 {
 
                             if (readyVer.topologyVersion() > 0 && c.context().started()) {
                                 // Must map on updated version of topology.
-                                Collection<ClusterNode> affNodes =
+                                List<ClusterNode> affNodes =
                                     dht.context().affinity().assignment(readyVer).idealAssignment().get(p);
 
                                 int affNodesCnt = affNodes.size();
@@ -689,8 +687,13 @@ public abstract class GridCommonAbstractTest2 extends GridAbstractTest2 {
 
                                 GridDhtLocalPartition loc = top.localPartition(p, readyVer, false);
 
+                                boolean notPrimary = !affNodes.isEmpty() &&
+                                    !exchMgr.rebalanceTopologyVersion().equals(AffinityTopologyVersion.NONE) &&
+                                    !affNodes.get(0).equals(dht.context().affinity().primaryByPartition(p, readyVer));
+
                                 if (affNodesCnt != ownerNodesCnt || !affNodes.containsAll(owners) ||
-                                    (waitEvicts && loc != null && loc.state() != GridDhtPartitionState.OWNING)) {
+                                    (waitEvicts && loc != null && loc.state() != GridDhtPartitionState.OWNING) ||
+                                    notPrimary) {
                                     if (i % 50 == 0)
                                         LT.warn(log(), "Waiting for topology map update [" +
                                             "igniteInstanceName=" + g.name() +
@@ -1487,7 +1490,7 @@ public abstract class GridCommonAbstractTest2 extends GridAbstractTest2 {
 
     /**
      * @param ignite Grid.
-     * @return {@link IgniteCompute} for given grid's local node.
+     * @return {@link org.apache.ignite.IgniteCompute} for given grid's local node.
      */
     protected IgniteCompute forLocal(Ignite ignite) {
         return ignite.compute(ignite.cluster().forLocal());
@@ -1495,7 +1498,7 @@ public abstract class GridCommonAbstractTest2 extends GridAbstractTest2 {
 
     /**
      * @param prj Projection.
-     * @return {@link IgniteCompute} for given projection.
+     * @return {@link org.apache.ignite.IgniteCompute} for given projection.
      */
     protected IgniteCompute compute(ClusterGroup prj) {
         return prj.ignite().compute(prj);
@@ -1503,7 +1506,7 @@ public abstract class GridCommonAbstractTest2 extends GridAbstractTest2 {
 
     /**
      * @param prj Projection.
-     * @return {@link IgniteMessaging} for given projection.
+     * @return {@link org.apache.ignite.IgniteMessaging} for given projection.
      */
     protected IgniteMessaging message(ClusterGroup prj) {
         return prj.ignite().message(prj);
@@ -1511,7 +1514,7 @@ public abstract class GridCommonAbstractTest2 extends GridAbstractTest2 {
 
     /**
      * @param prj Projection.
-     * @return {@link IgniteMessaging} for given projection.
+     * @return {@link org.apache.ignite.IgniteMessaging} for given projection.
      */
     protected IgniteEvents events(ClusterGroup prj) {
         return prj.ignite().events(prj);
