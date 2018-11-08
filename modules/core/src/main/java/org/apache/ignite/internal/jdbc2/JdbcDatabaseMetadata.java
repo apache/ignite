@@ -981,9 +981,8 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
                 Collection<QueryEntity> entities = ccfg.getQueryEntities();
 
                 for (QueryEntity tab : entities) {
-                    // todo: do we need to normalize table name?
                     String tabName = tab.getTableName();
-                    // todo: remove assert
+
                     assert tabName != null : "Table Name of the query entity is null; Entity " + tab;
 
                     if (!matches(tabName, tblNamePtrn))
