@@ -512,7 +512,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         QueryCursor<Cache.Entry<Key, GridCacheQueryTestValue>> qry = cache
             .query(new SqlQuery<Key, GridCacheQueryTestValue>(GridCacheQueryTestValue.class,
-                    "fieldName='field1' and field2=1 and field3=1 and id=100500 and embeddedField2=11 and x=3"));
+                "fieldName='field1' and field2=1 and field3=1 and id=100500 and embeddedField2=11 and x=3"));
 
         Cache.Entry<Key, GridCacheQueryTestValue> entry = F.first(qry.getAll());
 
@@ -1153,9 +1153,12 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception In case of error.
      */
     public void testTwoObjectsTextSearch() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10162");
-
-        IgniteCache<Object, Object> c = jcache(Object.class, Object.class);
+        CacheConfiguration conf = new CacheConfiguration(cacheConfiguration());
+        conf.setQueryEntities(Arrays.asList(
+            new QueryEntity(Integer.class, ObjectValue.class),
+            new QueryEntity(String.class, ObjectValueOther.class)
+        ));
+        IgniteCache<Object, Object> c = jcache(ignite(), conf, Object.class, Object.class);
 
         c.put(1, new ObjectValue("ObjectValue str", 1));
         c.put("key", new ObjectValueOther("ObjectValueOther str"));
@@ -2352,9 +2355,9 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
          */
         @Override public String toString() {
             return "EnumObject{" +
-                    "id=" + id +
-                    ", type=" + type +
-                    '}';
+                "id=" + id +
+                ", type=" + type +
+                '}';
         }
     }
 
