@@ -203,7 +203,7 @@ public class GridSqlQuerySplitter {
         // subqueries because we do not have unique FROM aliases yet.
         GridSqlQuery qry = parse(prepared, false);
 
-        String originalSql = qry.getSQL();
+        String originalSql = prepared.getSQL();
 
 //        debug("ORIGINAL", originalSql);
 
