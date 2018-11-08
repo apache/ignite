@@ -151,15 +151,11 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
                 tx.rollback();
             else
                 tx.commit();
-
-            GridTestUtils.setFieldValue(wctx, "disableWal", false);
         }
 
         stopGrid(0);
 
         node = startGrid(0);
-
-        node.cluster().active(true);
 
         cache = node.cache(DEFAULT_CACHE_NAME);
 
