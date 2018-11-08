@@ -186,7 +186,7 @@ public class GridDhtPartitionsStateValidator {
 
             final GridDhtPartitionsSingleMessage message = e.getValue();
 
-            CachePartitionPartialCountersMap countersMap = message.partitionUpdateCountersUnsorted(top.groupId(), partitions);
+            CachePartitionPartialCountersMap countersMap = message.partitionUpdateCounters(top.groupId(), partitions);
 
             Map<Integer, Long> sizesMap = message.partitionSizes(top.groupId());
 
@@ -246,7 +246,7 @@ public class GridDhtPartitionsStateValidator {
 
             final GridDhtPartitionsSingleMessage message = e.getValue();
 
-            CachePartitionPartialCountersMap countersMap = message.partitionUpdateCountersUnsorted(top.groupId(), partitions);
+            CachePartitionPartialCountersMap countersMap = message.partitionUpdateCounters(top.groupId(), partitions);
 
             Map<Integer, Long> sizesMap = message.partitionSizes(top.groupId());
 
