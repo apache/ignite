@@ -2146,7 +2146,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             try (ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zip)))) {
                 zos.setLevel(dsCfg.getWalCompactionLevel());
-                zos.putNextEntry(new ZipEntry(cctx.igniteInstanceName() + "-" + nextSegment));
+                zos.putNextEntry(new ZipEntry(cctx.igniteInstanceName() + "-" + nextSegment + ".wal"));
 
                 ByteBuffer buf = ByteBuffer.allocate(HEADER_RECORD_SIZE);
                 buf.order(ByteOrder.nativeOrder());
