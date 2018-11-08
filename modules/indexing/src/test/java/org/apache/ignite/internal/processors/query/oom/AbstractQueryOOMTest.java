@@ -63,6 +63,9 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
     /** */
     private static final long HANG_TIMEOUT =  15 * 60 * 1000;
 
+    /** */
+    private static long origJoinTimeout;
+
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 30 * 60 * 1000; // 30 mins
@@ -112,6 +115,10 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
+        origJoinTimeout = GridTestUtils.getFieldValue(IgniteProcessProxy.class, "NODE_JOIN_TIMEOUT");
+
+        GridTestUtils.setFieldValue(IgniteProcessProxy.class, "NODE_JOIN_TIMEOUT", 60_000L);
+
         cleanPersistenceDir();
 
         Ignite local = startGrid(0);
@@ -146,6 +153,8 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         IgniteProcessProxy.killAll();
+
+        GridTestUtils.setFieldValue(IgniteProcessProxy.class, "NODE_JOIN_TIMEOUT", origJoinTimeout);
     }
 
     /** {@inheritDoc} */
