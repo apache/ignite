@@ -1942,8 +1942,11 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
             },
             new IgnitePredicate<DynamicCacheDescriptor>() {
                 @Override public boolean apply(DynamicCacheDescriptor desc) {
-                    return desc.cacheType().userCache()
-                        && !desc.cacheConfiguration().getQueryEntities().isEmpty();
+                    boolean isPublic = desc.cacheType().userCache();
+
+                    boolean hasTables = !(desc.cacheConfiguration().getQueryEntities().isEmpty());
+
+                    return isPublic && hasTables;
                 }
             }
         );
