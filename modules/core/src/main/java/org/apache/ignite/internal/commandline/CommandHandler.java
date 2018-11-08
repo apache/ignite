@@ -36,6 +36,7 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeTask;
@@ -118,6 +119,7 @@ import org.apache.ignite.internal.visor.verify.VisorViewCacheCmd;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheTask;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheTaskResult;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
@@ -585,6 +587,30 @@ public class CommandHandler {
     }
 
     /**
+     * @param client Client.
+     *
+     * @return List of hosts.
+     */
+    private Stream<IgniteBiTuple<GridClientNode, String>> listHosts(GridClient client) throws GridClientException {
+        return client.compute().nodes(GridClientNode::connectable).stream().flatMap(node ->
+            Stream.concat(node.tcpAddresses() == null ? Stream.empty() : node.tcpAddresses().stream(),
+                node.tcpHostNames() == null ? Stream.empty() : node.tcpHostNames().stream()).map(addr ->
+                    new IgniteBiTuple<>(node, addr + ":" + node.tcpPort())));
+    }
+
+    /**
+     * @param client Client.
+     *
+     * @return List of hosts.
+     */
+    private Stream<IgniteBiTuple<GridClientNode, List<String>>> listHostsByClientNode(GridClient client) throws GridClientException {
+        return client.compute().nodes(GridClientNode::connectable).stream().map(node ->
+                new IgniteBiTuple<>(node, Stream.concat(node.tcpAddresses() == null ? Stream.empty() : node.tcpAddresses().stream(),
+                    node.tcpHostNames() == null ? Stream.empty() : node.tcpHostNames().stream()).map(addr -> addr + ":" + node.tcpPort()).collect(Collectors.toList()))
+            );
+    }
+
+    /**
      * @param client Client
      * @param taskClsName Task class name.
      * @param taskArgs Task args.
@@ -613,9 +639,9 @@ public class CommandHandler {
 
         if (nodeId == null) {
             // Prefer node from connect string.
-            String origAddr = clientCfg.getServers().iterator().next();
+            final String cfgAddr = clientCfg.getServers().iterator().next();
 
-            String[] parts = origAddr.split(":");
+            String[] parts = cfgAddr.split(":");
 
             if (DFLT_HOST.equals(parts[0])) {
                 InetAddress addr;
@@ -630,20 +656,16 @@ public class CommandHandler {
                 if (addr.isLoopbackAddress())
                     throw new GridClientException("Can't find localhost name.");
 
-                origAddr = addr.getHostName() + ":" + parts[1];
+                String origAddr = addr.getHostName() + ":" + parts[1];
+
+                node = listHosts(client).filter(tuple -> origAddr.equals(tuple.get2())).findFirst().map(IgniteBiTuple::get1).orElse(null);
+
+                if (node == null)
+                    node = listHostsByClientNode(client).filter(tuple -> tuple.get2().size() == 1 && cfgAddr.equals(tuple.get2().get(0))).
+                        findFirst().map(IgniteBiTuple::get1).orElse(null);
             }
-
-            for (GridClientNode clientNode : compute.nodes(GridClientNode::connectable)) {
-                Iterator<String> it = F.concat(clientNode.tcpAddresses().iterator(), clientNode.tcpHostNames().iterator());
-
-                while (it.hasNext()) {
-                    if (origAddr.equals(it.next() + ":" + clientNode.tcpPort())) {
-                        node = clientNode;
-
-                        break;
-                    }
-                }
-            }
+            else
+                node = listHosts(client).filter(tuple -> cfgAddr.equals(tuple.get2())).findFirst().map(IgniteBiTuple::get1).orElse(null);
 
             // Otherwise choose random node.
             if (node == null)
