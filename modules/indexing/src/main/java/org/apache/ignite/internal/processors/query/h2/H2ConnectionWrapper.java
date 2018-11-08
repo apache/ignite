@@ -33,7 +33,7 @@ public class H2ConnectionWrapper implements AutoCloseable {
     private final Connection conn;
 
     /** */
-    private final Thread intiThread;
+    private final Thread initThread;
 
     /** */
     private volatile String schema;
@@ -46,7 +46,7 @@ public class H2ConnectionWrapper implements AutoCloseable {
      */
     H2ConnectionWrapper(Connection conn) {
         this.conn = conn;
-        intiThread = Thread.currentThread();
+        initThread = Thread.currentThread();
 
         initStatementCache();
     }
@@ -104,7 +104,7 @@ public class H2ConnectionWrapper implements AutoCloseable {
      * @return Thread where the connection was created.
      */
     public Thread initialThread() {
-        return intiThread;
+        return initThread;
     }
 
     /** {@inheritDoc} */

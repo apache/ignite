@@ -29,7 +29,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -131,9 +130,9 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
             }
         }
 
-        awaitPartitionMapExchange();
+        awaitPartitionMapExchange(true, true, null);
 
-        U.sleep(5_000);
+        local.cluster().active(false);
 
         stopAllGrids(false);
     }
@@ -169,9 +168,9 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        IgniteProcessProxy.killAll();
-
         stopAllGrids(false);
+
+        IgniteProcessProxy.killAll();
     }
 
     /**

@@ -373,11 +373,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             ObjectPoolReusable<H2ConnectionWrapper> reusableConnection = pool.borrow();
 
-            ConcurrentHashMap<H2ConnectionWrapper, Boolean> perThreadConns = conns.get(Thread.currentThread());
-
             ConcurrentHashMap<H2ConnectionWrapper, Boolean> newMap = new ConcurrentHashMap<>();
 
-            perThreadConns = conns.putIfAbsent(Thread.currentThread(), newMap);
+            ConcurrentHashMap<H2ConnectionWrapper, Boolean> perThreadConns = conns.putIfAbsent(Thread.currentThread(), newMap);
 
             if (perThreadConns == null)
                 perThreadConns = newMap;
