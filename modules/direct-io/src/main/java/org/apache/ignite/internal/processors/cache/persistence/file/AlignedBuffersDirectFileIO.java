@@ -223,9 +223,20 @@ public class AlignedBuffersDirectFileIO extends AbstractFileIO {
     @Override public int read(ByteBuffer destBuf, long filePosition) throws IOException {
         int size = checkSizeIsPadded(destBuf.remaining());
 
-        if (isKnownAligned(destBuf))
-            return readIntoAlignedBuffer(destBuf, filePosition);
+        return isKnownAligned(destBuf) ?
+            readIntoAlignedBuffer(destBuf, filePosition) :
+            readIntoUnalignedBuffer(destBuf, filePosition, size);
+    }
 
+    /**
+     * @param destBuf Destination aligned byte buffer.
+     * @param filePosition File position.
+     * @param size Buffer size to write, should be divisible by {@link #ioBlockSize}.
+     * @return Number of read bytes, possibly zero, or <tt>-1</tt> if the
+     *         given position is greater than or equal to the file's current size.
+     * @throws IOException If failed.
+     */
+    private int readIntoUnalignedBuffer(ByteBuffer destBuf, long filePosition, int size) throws IOException {
         boolean useTlb = size == pageSize;
         ByteBuffer alignedBuf = useTlb ? tlbOnePageAligned.get() : AlignedBuffers.allocate(ioBlockSize, size);
 
@@ -262,29 +273,45 @@ public class AlignedBuffersDirectFileIO extends AbstractFileIO {
 
     /** {@inheritDoc} */
     @Override public int write(ByteBuffer srcBuf, long filePosition) throws IOException {
-        int size = checkSizeIsPadded(srcBuf.remaining());
+        return isKnownAligned(srcBuf) ?
+            writeFromAlignedBuffer(srcBuf, filePosition) :
+            writeFromUnalignedBuffer(srcBuf, filePosition);
+    }
 
-        if (isKnownAligned(srcBuf))
-            return writeFromAlignedBuffer(srcBuf, filePosition);
+    /**
+     * @param srcBuf buffer to check if it is known buffer.
+     * @param filePosition File position.
+     * @return Number of written bytes.
+     * @throws IOException If failed.
+     */
+    private int writeFromUnalignedBuffer(ByteBuffer srcBuf, long filePosition) throws IOException {
+        int size = srcBuf.remaining();
 
-        boolean useTlb = size == pageSize;
+        boolean useTlb = size <= pageSize;
         ByteBuffer alignedBuf = useTlb ? tlbOnePageAligned.get() : AlignedBuffers.allocate(ioBlockSize, size);
 
         try {
             assert alignedBuf.position() == 0 : "Temporary aligned buffer is in incorrect state: position is set incorrectly";
-            assert alignedBuf.limit() == size : "Temporary aligned buffer is in incorrect state: limit is set incorrectly";
+            assert alignedBuf.limit() >= size : "Temporary aligned buffer is in incorrect state: limit is set incorrectly";
 
             int initPos = srcBuf.position();
 
             alignedBuf.put(srcBuf);
             alignedBuf.flip();
 
-            srcBuf.position(initPos); // will update later from write results
+            int len = alignedBuf.remaining();
+
+            if (len % ioBlockSize != 0)
+                alignBufferLimit(alignedBuf);
 
             int written = writeFromAlignedBuffer(alignedBuf, filePosition);
 
-            if (written > 0)
-                srcBuf.position(initPos + written);
+            // Actual written length can be greater than the original buffer,
+            // since we artificially expanded it to have correctly aligned size.
+            if (written > len)
+                written = len;
+
+            srcBuf.position(initPos + written);
 
             return written;
         }
@@ -294,6 +321,17 @@ public class AlignedBuffersDirectFileIO extends AbstractFileIO {
             if (!useTlb)
                 AlignedBuffers.free(alignedBuf);
         }
+    }
+
+    /**
+     * @param buf Byte buffer to align.
+     */
+    private void alignBufferLimit(ByteBuffer buf) {
+        int len = buf.remaining();
+
+        int alignedLen = (len / ioBlockSize + 1) * ioBlockSize;
+
+        buf.limit(buf.limit() + alignedLen - len);
     }
 
     /**
