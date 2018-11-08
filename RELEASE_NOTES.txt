@@ -133,7 +133,7 @@ ML:
 * Added support of Multi-Class for Logistic Regression
 * Implemented distributed binary logistic regression
 
-De[endency updates:
+Dependency updates:
 * Apache Camel updated to 2.22.0
 * Apache Commons Beanutils updated to 1.9.3
 * Apache Hadoop Yarn updated to 2.7.7
