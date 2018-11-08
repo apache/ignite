@@ -246,35 +246,6 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     }
 
     /**
-     * @param grpId Cache group ID.
-     * @param partsCnt Total cache partitions.
-     * @return Partition update counters.
-     */
-    @SuppressWarnings("unchecked")
-    public CachePartitionPartialCountersMap partitionUpdateCountersUnsorted(int grpId, int partsCnt) {
-        Object res = partCntrs == null ? null : partCntrs.get(grpId);
-
-        if (res == null)
-            return CachePartitionPartialCountersMap.EMPTY;
-
-        if (res instanceof CachePartitionPartialCountersMap)
-            return (CachePartitionPartialCountersMap)res;
-
-        assert res instanceof Map : res;
-
-        Map<Integer, T2<Long, Long>> map = (Map<Integer, T2<Long, Long>>)res;
-
-        CachePartitionPartialCountersMap partCounersMap = new CachePartitionPartialCountersMap(partsCnt);
-
-        for (Map.Entry<Integer, T2<Long, Long>> e : map.entrySet())
-            partCounersMap.add(e.getKey(), e.getValue().get1(), e.getValue().get2());
-
-        partCounersMap.trim();
-
-        return partCounersMap;
-    }
-
-    /**
      * Adds partition sizes map for specified {@code grpId} to the current message.
      *
      * @param grpId Group id.
