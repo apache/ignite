@@ -592,10 +592,11 @@ public class CommandHandler {
      * @return List of hosts.
      */
     private Stream<IgniteBiTuple<GridClientNode, String>> listHosts(GridClient client) throws GridClientException {
-        return client.compute().nodes(GridClientNode::connectable).stream().flatMap(node ->
-            Stream.concat(node.tcpAddresses() == null ? Stream.empty() : node.tcpAddresses().stream(),
-                node.tcpHostNames() == null ? Stream.empty() : node.tcpHostNames().stream()).map(addr ->
-                    new IgniteBiTuple<>(node, addr + ":" + node.tcpPort())));
+        return client.compute().nodes(GridClientNode::connectable).stream().
+            flatMap(node -> Stream.concat(node.tcpAddresses() == null ? Stream.empty() : node.tcpAddresses().stream(),
+                                            node.tcpHostNames() == null ? Stream.empty() : node.tcpHostNames().stream()).
+                                  map(addr -> new IgniteBiTuple<>(node, addr + ":" + node.tcpPort()))
+            );
     }
 
     /**
@@ -604,10 +605,11 @@ public class CommandHandler {
      * @return List of hosts.
      */
     private Stream<IgniteBiTuple<GridClientNode, List<String>>> listHostsByClientNode(GridClient client) throws GridClientException {
-        return client.compute().nodes(GridClientNode::connectable).stream().map(node ->
-                new IgniteBiTuple<>(node, Stream.concat(node.tcpAddresses() == null ? Stream.empty() : node.tcpAddresses().stream(),
-                    node.tcpHostNames() == null ? Stream.empty() : node.tcpHostNames().stream()).map(addr -> addr + ":" + node.tcpPort()).collect(Collectors.toList()))
-            );
+        return client.compute().nodes(GridClientNode::connectable).stream().
+                map(node -> new IgniteBiTuple<>(node, Stream.concat(node.tcpAddresses() == null ? Stream.empty() : node.tcpAddresses().stream(),
+                                                        node.tcpHostNames() == null ? Stream.empty() : node.tcpHostNames().stream()).
+                                                      map(addr -> addr + ":" + node.tcpPort()).collect(Collectors.toList()))
+                );
     }
 
     /**
