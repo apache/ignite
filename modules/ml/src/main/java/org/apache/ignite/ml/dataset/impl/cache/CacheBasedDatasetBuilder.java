@@ -56,7 +56,7 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
     private final IgniteBiPredicate<K, V> filter;
 
     /** Chain of upstream transformers. */
-    private UpstreamTransformerChain<K, V> transformersChain;
+    private final UpstreamTransformerChain<K, V> transformersChain;
 
     /**
      * Constructs a new instance of cache based dataset builder that makes {@link CacheBasedDataset} with default
