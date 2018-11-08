@@ -42,7 +42,6 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
             .setAuthenticationEnabled(true)
             .setPluginConfigurations(
                 new TestSecurityPluginConfiguration()
-                    .setSecurityProcessorClass("org.apache.ignite.internal.processor.security.TestSecurityProcessor")
                     .setLogin(login)
                     .setPwd(pwd)
                     .setUserObj(userObj)

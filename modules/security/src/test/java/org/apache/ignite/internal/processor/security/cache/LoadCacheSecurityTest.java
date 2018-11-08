@@ -9,7 +9,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processor.security.AbstractContextResolverSecurityProcessorTest;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -23,12 +22,12 @@ import static org.junit.Assert.assertThat;
 /**
  * Security tests for cache data load.
  */
-public class LoadCacheSecurityTest extends AbstractContextResolverSecurityProcessorTest {
+public class LoadCacheSecurityTest extends AbstractCacheSecurityTest {
     /** {@inheritDoc} */
     @Override protected CacheConfiguration[] getCacheConfigurations() {
         return new CacheConfiguration[] {
             new CacheConfiguration<String, Integer>()
-                .setName(CACHE_WITH_PERMS)
+                .setName(CACHE_NAME)
                 .setCacheMode(CacheMode.PARTITIONED)
                 .setReadFromBackup(false),
             new CacheConfiguration<Integer, Integer>()
@@ -64,7 +63,7 @@ public class LoadCacheSecurityTest extends AbstractContextResolverSecurityProces
             new TestClosure(remote.localNode().id(), "key", val)
         );
 
-        assertThat(srvAllPerms.cache(CACHE_WITH_PERMS).get("key"), is(val));
+        assertThat(srvAllPerms.cache(CACHE_NAME).get("key"), is(val));
     }
 
     /**
@@ -84,7 +83,7 @@ public class LoadCacheSecurityTest extends AbstractContextResolverSecurityProces
             )
         );
 
-        assertThat(remote.cache(CACHE_WITH_PERMS).get("fail_key"), nullValue());
+        assertThat(remote.cache(CACHE_NAME).get("fail_key"), nullValue());
     }
 
     /**
@@ -118,7 +117,7 @@ public class LoadCacheSecurityTest extends AbstractContextResolverSecurityProces
         /** {@inheritDoc} */
         @Override public boolean apply(Integer k, Integer v) {
             if (remoteId.equals(loc.cluster().localNode().id()))
-                loc.cache(CACHE_WITH_PERMS).put(key, val);
+                loc.cache(CACHE_NAME).put(key, val);
 
             return false;
         }

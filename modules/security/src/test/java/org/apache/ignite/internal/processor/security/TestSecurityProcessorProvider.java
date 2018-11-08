@@ -41,10 +41,6 @@ import org.jetbrains.annotations.Nullable;
  * Security processor provider for tests.
  */
 public class TestSecurityProcessorProvider implements PluginProvider {
-    /** Default test security processor class name. */
-    public static String DFLT_TEST_SECURITY_PROCESSOR_CLS_NAME =
-        "org.apache.ignite.internal.processors.security.os.GridOsSecurityProcessor";
-
     /** {@inheritDoc} */
     @Override public String name() {
         return "TestSecurityProcessorProvider";
@@ -127,7 +123,7 @@ public class TestSecurityProcessorProvider implements PluginProvider {
             }
         }
 
-        return DFLT_TEST_SECURITY_PROCESSOR_CLS_NAME;
+        throw new IllegalStateException("Security processor class isn't defined.");
     }
 
     /** {@inheritDoc} */

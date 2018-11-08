@@ -7,7 +7,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processor.security.AbstractContextResolverSecurityProcessorTest;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.stream.StreamVisitor;
@@ -20,7 +19,7 @@ import static org.junit.Assert.assertThat;
 /**
  * Security tests for IgniteDataStream receiver.
  */
-public class IgniteDataStreamerSecurityTest extends AbstractContextResolverSecurityProcessorTest {
+public class IgniteDataStreamerSecurityTest extends AbstractCacheSecurityTest {
     /** */
     public void testDataStreamer() {
         successReceiver(clntAllPerms, srvAllPerms);
@@ -56,7 +55,7 @@ public class IgniteDataStreamerSecurityTest extends AbstractContextResolverSecur
             )
         );
 
-        assertThat(remote.cache(CACHE_WITH_PERMS).get("fail_key"), nullValue());
+        assertThat(remote.cache(CACHE_NAME).get("fail_key"), nullValue());
     }
 
     /**
@@ -77,7 +76,7 @@ public class IgniteDataStreamerSecurityTest extends AbstractContextResolverSecur
             strm.addData(primaryKey(remote), 100);
         }
 
-        assertThat(remote.cache(CACHE_WITH_PERMS).get("key"), is(val));
+        assertThat(remote.cache(CACHE_NAME).get("key"), is(val));
     }
 
     /**
@@ -111,7 +110,7 @@ public class IgniteDataStreamerSecurityTest extends AbstractContextResolverSecur
             Ignite loc = Ignition.localIgnite();
 
             if (remoteId.equals(loc.cluster().localNode().id()))
-                loc.cache(CACHE_WITH_PERMS).put(key, val);
+                loc.cache(CACHE_NAME).put(key, val);
         }
     }
 }

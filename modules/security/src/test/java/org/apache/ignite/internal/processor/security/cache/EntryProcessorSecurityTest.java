@@ -25,13 +25,12 @@ import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processor.security.AbstractContextResolverSecurityProcessorTest;
 import org.apache.ignite.plugin.security.SecurityPermission;
 
 /**
  * Security tests for EntityProcessor.
  */
-public class EntryProcessorSecurityTest extends AbstractContextResolverSecurityProcessorTest {
+public class EntryProcessorSecurityTest extends AbstractCacheSecurityTest {
     /** */
     public void testEntryProcessor() {
         successEntryProcessor(clntAllPerms, srvAllPerms);
@@ -207,7 +206,7 @@ public class EntryProcessorSecurityTest extends AbstractContextResolverSecurityP
             IgniteEx loc = (IgniteEx)Ignition.localIgnite();
 
             if (remoteId.equals(loc.localNode().id()))
-                loc.context().security().authorize(CACHE_WITH_PERMS, SecurityPermission.CACHE_PUT);
+                loc.context().security().authorize(CACHE_NAME, SecurityPermission.CACHE_PUT);
 
             return null;
         }

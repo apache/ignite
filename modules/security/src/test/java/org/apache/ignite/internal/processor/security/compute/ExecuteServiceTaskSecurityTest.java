@@ -61,13 +61,13 @@ public class ExecuteServiceTaskSecurityTest extends AbstractContextResolverSecur
             .submit(
                 new IgniteRunnable() {
                     @Override public void run() {
-                        Ignition.localIgnite().cache(CACHE_WITH_PERMS)
+                        Ignition.localIgnite().cache(CACHE_NAME)
                             .put("key", val);
                     }
                 }
             ).get();
 
-        assertThat(remote.cache(CACHE_WITH_PERMS).get("key"), is(val));
+        assertThat(remote.cache(CACHE_NAME).get("key"), is(val));
     }
 
     /**
@@ -83,7 +83,7 @@ public class ExecuteServiceTaskSecurityTest extends AbstractContextResolverSecur
                             .submit(
                                 new IgniteRunnable() {
                                     @Override public void run() {
-                                        Ignition.localIgnite().cache(CACHE_WITH_PERMS).put("fail_key", -1);
+                                        Ignition.localIgnite().cache(CACHE_NAME).put("fail_key", -1);
                                     }
                                 }
                             ).get();
@@ -96,6 +96,6 @@ public class ExecuteServiceTaskSecurityTest extends AbstractContextResolverSecur
             )
         );
 
-        assertThat(remote.cache(CACHE_WITH_PERMS).get("fail_key"), nullValue());
+        assertThat(remote.cache(CACHE_NAME).get("fail_key"), nullValue());
     }
 }

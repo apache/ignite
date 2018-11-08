@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processor.security;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -35,18 +34,15 @@ import static org.junit.Assert.assertThat;
  */
 public class AbstractContextResolverSecurityProcessorTest extends AbstractSecurityTest {
     /** Cache name for tests. */
-    protected static final String CACHE_WITH_PERMS = "TEST_CACHE";
-
-    /** Cache name for tests. */
-    protected static final String CACHE_WITHOUT_PERMS = "SECOND_TEST_CACHE";
+    protected static final String CACHE_NAME = "TEST_CACHE";
 
     /** Values. */
     protected AtomicInteger values = new AtomicInteger(0);
 
-    /** Sever node that has all permissions. */
+    /** Sever node that has all permissions for TEST_CACHE. */
     protected IgniteEx srvAllPerms;
 
-    /** Client node that has all permissions. */
+    /** Client node that has all permissions for TEST_CACHE. */
     protected IgniteEx clntAllPerms;
 
     /** Sever node that has read only permission for TEST_CACHE. */
@@ -64,10 +60,10 @@ public class AbstractContextResolverSecurityProcessorTest extends AbstractSecuri
         clntAllPerms = startGrid("user_1", builder().build(), true);
 
         srvReadOnlyPerm = startGrid("user_2",
-            builder().appendCachePermissions(CACHE_WITH_PERMS, CACHE_READ).build());
+            builder().appendCachePermissions(CACHE_NAME, CACHE_READ).build());
 
         clntReadOnlyPerm = startGrid("user_3",
-            builder().appendCachePermissions(CACHE_WITH_PERMS, CACHE_READ).build(), true);
+            builder().appendCachePermissions(CACHE_NAME, CACHE_READ).build(), true);
 
         grid(0).cluster().active(true);
     }
@@ -75,43 +71,10 @@ public class AbstractContextResolverSecurityProcessorTest extends AbstractSecuri
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setCacheConfiguration(getCacheConfigurations());
-    }
-
-    /**
-     * Getting array of cache configurations.
-     */
-    protected CacheConfiguration[] getCacheConfigurations() {
-        return new CacheConfiguration[] {
-            new CacheConfiguration<>()
-                .setName(CACHE_WITH_PERMS)
+            .setCacheConfiguration(new CacheConfiguration<>()
+                .setName(CACHE_NAME)
                 .setCacheMode(CacheMode.PARTITIONED)
-                .setReadFromBackup(false),
-            new CacheConfiguration<>()
-                .setName(CACHE_WITHOUT_PERMS)
-                .setCacheMode(CacheMode.PARTITIONED)
-                .setReadFromBackup(false)
-        };
-    }
-
-    /**
-     * Getting the key that is contained on primary partition on passed node.
-     *
-     * @param ignite Node.
-     * @return Key.
-     */
-    protected Integer primaryKey(IgniteEx ignite) {
-        Affinity<Integer> affinity = ignite.affinity(CACHE_WITHOUT_PERMS);
-
-        int i = 0;
-        do {
-            if (affinity.isPrimary(ignite.localNode(), ++i))
-                return i;
-
-        }
-        while (i <= 1_000);
-
-        throw new IllegalStateException(ignite.name() + " isn't primary node for any key.");
+                .setReadFromBackup(false));
     }
 
     /**

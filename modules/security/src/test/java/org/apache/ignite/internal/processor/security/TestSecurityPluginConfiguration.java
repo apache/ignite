@@ -1,5 +1,6 @@
 package org.apache.ignite.internal.processor.security;
 
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 
@@ -7,6 +8,10 @@ import org.apache.ignite.plugin.security.SecurityPermissionSet;
  * Security configuration for test.
  */
 public class TestSecurityPluginConfiguration implements PluginConfiguration {
+    /** Default test security processor class name. */
+    public static final String DFLT_TEST_SECURITY_PROCESSOR_CLS_NAME =
+        "org.apache.ignite.internal.processor.security.TestSecurityProcessor";
+
     /** Security permission set. */
     private SecurityPermissionSet prmSet;
 
@@ -90,6 +95,9 @@ public class TestSecurityPluginConfiguration implements PluginConfiguration {
      * Getting security processor class name.
      */
     public String getSecurityProcessorClass() {
+        if(F.isEmpty(secProcCls))
+            return DFLT_TEST_SECURITY_PROCESSOR_CLS_NAME;
+
         return secProcCls;
     }
 

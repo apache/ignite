@@ -6,7 +6,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processor.security.AbstractContextResolverSecurityProcessorTest;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -20,41 +19,41 @@ import static org.junit.Assert.assertThat;
 /**
  * Security test for scan query.
  */
-public class ScanQuerySecurityTest extends AbstractContextResolverSecurityProcessorTest {
+public class ScanQuerySecurityTest extends AbstractCacheSecurityTest {
     /** */
     public void testScanQuery() throws Exception {
-        putTestData(srvAllPerms, CACHE_WITH_PERMS);
+        putTestData(srvAllPerms, CACHE_NAME);
         putTestData(srvAllPerms, CACHE_WITHOUT_PERMS);
 
         awaitPartitionMapExchange();
 
-        successQuery(clntAllPerms, srvAllPerms, CACHE_WITH_PERMS);
-        successQuery(srvAllPerms, srvAllPerms, CACHE_WITH_PERMS);
+        successQuery(clntAllPerms, srvAllPerms, CACHE_NAME);
+        successQuery(srvAllPerms, srvAllPerms, CACHE_NAME);
         successQuery(clntAllPerms, srvAllPerms, CACHE_WITHOUT_PERMS);
         successQuery(srvAllPerms, srvAllPerms, CACHE_WITHOUT_PERMS);
 
-        successTransform(clntAllPerms, srvAllPerms, CACHE_WITH_PERMS);
-        successTransform(srvAllPerms, srvAllPerms, CACHE_WITH_PERMS);
+        successTransform(clntAllPerms, srvAllPerms, CACHE_NAME);
+        successTransform(srvAllPerms, srvAllPerms, CACHE_NAME);
         successTransform(clntAllPerms, srvAllPerms, CACHE_WITHOUT_PERMS);
         successTransform(srvAllPerms, srvAllPerms, CACHE_WITHOUT_PERMS);
 
-        successQuery(clntAllPerms, srvReadOnlyPerm, CACHE_WITH_PERMS);
-        successQuery(srvAllPerms, srvReadOnlyPerm, CACHE_WITH_PERMS);
+        successQuery(clntAllPerms, srvReadOnlyPerm, CACHE_NAME);
+        successQuery(srvAllPerms, srvReadOnlyPerm, CACHE_NAME);
         successQuery(clntAllPerms, srvReadOnlyPerm, CACHE_WITHOUT_PERMS);
         successQuery(srvAllPerms, srvReadOnlyPerm, CACHE_WITHOUT_PERMS);
 
-        successTransform(clntAllPerms, srvReadOnlyPerm, CACHE_WITH_PERMS);
-        successTransform(srvAllPerms, srvReadOnlyPerm, CACHE_WITH_PERMS);
+        successTransform(clntAllPerms, srvReadOnlyPerm, CACHE_NAME);
+        successTransform(srvAllPerms, srvReadOnlyPerm, CACHE_NAME);
         successTransform(clntAllPerms, srvReadOnlyPerm, CACHE_WITHOUT_PERMS);
         successTransform(srvAllPerms, srvReadOnlyPerm, CACHE_WITHOUT_PERMS);
 
-        failQuery(clntReadOnlyPerm, srvAllPerms, CACHE_WITH_PERMS);
-        failQuery(srvReadOnlyPerm, srvAllPerms, CACHE_WITH_PERMS);
+        failQuery(clntReadOnlyPerm, srvAllPerms, CACHE_NAME);
+        failQuery(srvReadOnlyPerm, srvAllPerms, CACHE_NAME);
         failQuery(clntReadOnlyPerm, srvAllPerms, CACHE_WITHOUT_PERMS);
         failQuery(srvReadOnlyPerm, srvAllPerms, CACHE_WITHOUT_PERMS);
 
-        failTransform(clntReadOnlyPerm, srvAllPerms, CACHE_WITH_PERMS);
-        failTransform(srvReadOnlyPerm, srvAllPerms, CACHE_WITH_PERMS);
+        failTransform(clntReadOnlyPerm, srvAllPerms, CACHE_NAME);
+        failTransform(srvReadOnlyPerm, srvAllPerms, CACHE_NAME);
         failTransform(clntReadOnlyPerm, srvAllPerms, CACHE_WITHOUT_PERMS);
         failTransform(srvReadOnlyPerm, srvAllPerms, CACHE_WITHOUT_PERMS);
     }
@@ -80,7 +79,7 @@ public class ScanQuerySecurityTest extends AbstractContextResolverSecurityProces
             )
         );
 
-        assertThat(remote.cache(CACHE_WITH_PERMS).get("fail_key"), nullValue());
+        assertThat(remote.cache(CACHE_NAME).get("fail_key"), nullValue());
     }
 
     /**
@@ -99,7 +98,7 @@ public class ScanQuerySecurityTest extends AbstractContextResolverSecurityProces
             )
         ).getAll();
 
-        assertThat(remote.cache(CACHE_WITH_PERMS).get("key"), is(val));
+        assertThat(remote.cache(CACHE_NAME).get("key"), is(val));
     }
 
     /**
@@ -122,7 +121,7 @@ public class ScanQuerySecurityTest extends AbstractContextResolverSecurityProces
             )
         );
 
-        assertThat(remote.cache(CACHE_WITH_PERMS).get("fail_key"), nullValue());
+        assertThat(remote.cache(CACHE_NAME).get("fail_key"), nullValue());
     }
 
     /**
@@ -140,7 +139,7 @@ public class ScanQuerySecurityTest extends AbstractContextResolverSecurityProces
             new Transformer(remote.localNode().id(), "key", val)
         ).getAll();
 
-        assertThat(remote.cache(CACHE_WITH_PERMS).get("key"), is(val));
+        assertThat(remote.cache(CACHE_NAME).get("key"), is(val));
     }
 
     /**
@@ -187,7 +186,7 @@ public class ScanQuerySecurityTest extends AbstractContextResolverSecurityProces
          */
         protected void put() {
             if (remoteId.equals(loc.cluster().localNode().id()))
-                loc.cache(CACHE_WITH_PERMS).put(key, val);
+                loc.cache(CACHE_NAME).put(key, val);
         }
     }
 
