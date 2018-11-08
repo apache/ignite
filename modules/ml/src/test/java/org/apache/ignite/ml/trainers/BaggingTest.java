@@ -17,6 +17,9 @@
 
 package org.apache.ignite.ml.trainers;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
@@ -34,13 +37,11 @@ import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpda
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
 import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionModel;
 import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionSGDTrainer;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-
+/**
+ * Tests for bagging algorithm.
+ */
 public class BaggingTest extends TrainerTest {
     /**
      * Test that count of entries in context is equal to initial dataset size * subsampleRatio.
@@ -58,18 +59,21 @@ public class BaggingTest extends TrainerTest {
         count((ctxCount, countData, integer) -> countData.cnt);
     }
 
+    /**
+     * Test that bagged log regression makes correct predictions.
+     */
     @Test
     public void testNaiveBaggingLogRegression() {
         Map<Integer, Double[]> cacheMock = getCacheMock();
 
         DatasetTrainer<LogisticRegressionModel, Double> trainer =
-            (LogisticRegressionSGDTrainer<?>) new LogisticRegressionSGDTrainer<>()
-            .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
-                SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg))
-            .withMaxIterations(30000)
-            .withLocIterations(100)
-            .withBatchSize(10)
-            .withSeed(123L);
+            (LogisticRegressionSGDTrainer<?>)new LogisticRegressionSGDTrainer<>()
+                .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
+                    SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg))
+                .withMaxIterations(30000)
+                .withLocIterations(100)
+                .withBatchSize(10)
+                .withSeed(123L);
 
         DatasetTrainer<ModelsComposition, Double> baggedTrainer =
             TrainerTransformers.makeBagged(
@@ -89,6 +93,11 @@ public class BaggingTest extends TrainerTest {
         TestUtils.assertEquals(1, mdl.apply(VectorUtils.of(10, 100)), PRECISION);
     }
 
+    /**
+     * Method used to test counts of data passed in context and in data builders.
+     *
+     * @param counter Function specifying which data we should count.
+     */
     protected void count(IgniteTriFunction<Long, CountData, Integer, Long> counter) {
         Map<Integer, Double[]> cacheMock = getCacheMock();
 
@@ -104,7 +113,11 @@ public class BaggingTest extends TrainerTest {
         TestUtils.assertEquals(twoLinearlySeparableClasses.length * subsampleRatio, res, twoLinearlySeparableClasses.length / 10);
     }
 
-    @NotNull
+    /**
+     * Create cache mock.
+     *
+     * @return Cache mock.
+     */
     private Map<Integer, Double[]> getCacheMock() {
         Map<Integer, Double[]> cacheMock = new HashMap<>();
 
@@ -118,6 +131,13 @@ public class BaggingTest extends TrainerTest {
         return cacheMock;
     }
 
+    /**
+     * Get sum of two Long values each of which can be null.
+     *
+     * @param a First value.
+     * @param b Second value.
+     * @return Sum of parameters.
+     */
     protected static Long plusOfNullables(Long a, Long b) {
         if (a == null) {
             return b;
@@ -129,15 +149,26 @@ public class BaggingTest extends TrainerTest {
         return a + b;
     }
 
+    /**
+     * Trainer used to count entries in context or in data.
+     */
     protected static class CountTrainer extends DatasetTrainer<Model<Vector, Double>, Double> {
+        /**
+         * Function specifying which entries to count.
+         */
         private final IgniteTriFunction<Long, CountData, Integer, Long> counter;
 
+        /**
+         * Construct instance of this class.
+         *
+         * @param counter Function specifying which entries to count.
+         */
         public CountTrainer(IgniteTriFunction<Long, CountData, Integer, Long> counter) {
             this.counter = counter;
         }
 
-        @Override
-        public <K, V> Model<Vector, Double> fit(
+        /** {@inheritDoc} */
+        @Override public <K, V> Model<Vector, Double> fit(
             DatasetBuilder<K, V> datasetBuilder,
             IgniteBiFunction<K, V, Vector> featureExtractor,
             IgniteBiFunction<K, V, Double> lbExtractor) {
@@ -151,13 +182,13 @@ public class BaggingTest extends TrainerTest {
             return x -> Double.valueOf(cnt);
         }
 
-        @Override
-        protected boolean checkState(Model<Vector, Double> mdl) {
+        /** {@inheritDoc} */
+        @Override protected boolean checkState(Model<Vector, Double> mdl) {
             return true;
         }
 
-        @Override
-        protected <K, V> Model<Vector, Double> updateModel(
+        /** {@inheritDoc} */
+        @Override protected <K, V> Model<Vector, Double> updateModel(
             Model<Vector, Double> mdl,
             DatasetBuilder<K, V> datasetBuilder,
             IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
@@ -165,15 +196,22 @@ public class BaggingTest extends TrainerTest {
         }
     }
 
+    /** Data for count trainer. */
     protected static class CountData implements AutoCloseable {
+        /** Counter. */
         private long cnt;
 
+        /**
+         * Construct instance of this class.
+         *
+         * @param cnt Counter.
+         */
         public CountData(long cnt) {
             this.cnt = cnt;
         }
 
-        @Override
-        public void close() throws Exception {
+        /** {@inheritDoc} */
+        @Override public void close() throws Exception {
             // No-op
         }
     }

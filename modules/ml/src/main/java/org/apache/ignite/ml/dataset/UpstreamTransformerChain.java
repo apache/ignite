@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Stream;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.trainers.transformers.SimpleUpstreamTransformer;
 
 /**
  * Class representing chain of transformers applied to upstream.
@@ -36,7 +35,7 @@ public class UpstreamTransformerChain<K, V> implements Serializable {
     private Long seed;
 
     /** List of upstream transformations. */
-    private List<UpstreamTransformer<K, V, ?>> list;
+    private List<UpstreamTransformer<K, V>> list;
 
     /**
      * Creates empty upstream transformers chain.
@@ -48,23 +47,23 @@ public class UpstreamTransformerChain<K, V> implements Serializable {
         return new UpstreamTransformerChain<>();
     }
 
-    public static <K, V> UpstreamTransformerChain<K, V> of(UpstreamTransformer<K, V, ?> trans) {
+    public static <K, V> UpstreamTransformerChain<K, V> of(UpstreamTransformer<K, V> trans) {
         UpstreamTransformerChain<K, V> res = new UpstreamTransformerChain<>();
         return res.addUpstreamTransformer(trans);
     }
 
     private UpstreamTransformerChain() {
         list = new ArrayList<>();
+        seed = new Random().nextLong();
     }
 
     /**
      * Adds upstream transformer to this chain.
      *
      * @param next Transformer to add.
-     * @param <T> Type of data neede by this transformer.
      * @return This chain with added transformer.
      */
-    public <T> UpstreamTransformerChain<K, V> addUpstreamTransformer(UpstreamTransformer<K, V, T> next) {
+    public UpstreamTransformerChain<K, V> addUpstreamTransformer(UpstreamTransformer<K, V> next) {
         list.add(next);
 
         return this;
@@ -78,7 +77,7 @@ public class UpstreamTransformerChain<K, V> implements Serializable {
      */
     public UpstreamTransformerChain<K, V> addUpstreamTransformer(IgniteFunction<Stream<UpstreamEntry<K, V>>,
         Stream<UpstreamEntry<K, V>>> transformer) {
-        return addUpstreamTransformer(new SimpleUpstreamTransformer<>(transformer));
+        return addUpstreamTransformer((rnd, upstream) -> transformer.apply(upstream));
     }
 
     /**
@@ -93,7 +92,7 @@ public class UpstreamTransformerChain<K, V> implements Serializable {
 
         Stream<UpstreamEntry<K, V>> res = upstream;
 
-        for (UpstreamTransformer<K, V, ?> kvUpstreamTransformer : list) {
+        for (UpstreamTransformer<K, V> kvUpstreamTransformer : list) {
             res = kvUpstreamTransformer.transform(rnd, res);
         }
 
@@ -127,10 +126,8 @@ public class UpstreamTransformerChain<K, V> implements Serializable {
      * @param f Modification function.
      * @return This object.
      */
-    public UpstreamTransformerChain<K, V> modifyIfPresent(IgniteFunction<Long, Long> f) {
-        if (seed != null) {
-            seed = f.apply(seed);
-        }
+    public UpstreamTransformerChain<K, V> modifySeed(IgniteFunction<Long, Long> f) {
+        seed = f.apply(seed);
 
         return this;
     }

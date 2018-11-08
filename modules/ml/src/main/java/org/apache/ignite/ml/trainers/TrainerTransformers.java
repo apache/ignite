@@ -47,9 +47,6 @@ import java.util.stream.IntStream;
  * Class containing various trainer transformers.
  */
 public class TrainerTransformers {
-    /** Relatively big prime used in seeding. */
-    private static final int MAGIC_PRIME = 953851;
-
     /**
      * Add bagging logic to a given trainer.
      *
@@ -173,7 +170,7 @@ public class TrainerTransformers {
                 modelIdx -> getMapping(
                     featuresVectorSize,
                     maximumFeaturesCntPerMdl,
-                    datasetBuilder.upstreamTransformersChain().seed() + modelIdx * MAGIC_PRIME))
+                    datasetBuilder.upstreamTransformersChain().seed() + modelIdx))
                 .collect(Collectors.toList());
         }
 
@@ -196,7 +193,7 @@ public class TrainerTransformers {
             UpstreamTransformerChain<K, V> newChain = Utils.copy(datasetBuilder.upstreamTransformersChain());
             DatasetBuilder<K, V> newBuilder = withNewChain(datasetBuilder, newChain);
             int j = i;
-            newChain.modifyIfPresent(s -> s + (j + 3) * MAGIC_PRIME);
+            newChain.modifySeed(s -> s^2 + j);
             tasks.add(
                 trainingTaskGenerator.apply(newBuilder, i, mappings != null ? extractors.get(i) : extractor));
         }
@@ -279,7 +276,7 @@ public class TrainerTransformers {
      */
     private static class ModelWithMapping<X, Y, M extends Model<X, Y>> implements Model<X, Y> {
         /** Model. */
-        private M model;
+        private final M model;
 
         /** Mapping. */
         private IgniteFunction<X, X> mapping;

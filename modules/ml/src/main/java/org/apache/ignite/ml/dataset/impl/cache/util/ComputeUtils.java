@@ -48,9 +48,6 @@ public class ComputeUtils {
      */
     private static final String DATA_STORAGE_KEY_TEMPLATE = "part_data_storage_%s";
 
-    /** Relatively big prime used in seeding. */
-    public static final int MAGIC_PRIME_1 = 116243;
-
     /**
      * Calls the specified {@code fun} function on all partitions so that is't guaranteed that partitions with the same
      * index of all specified caches will be placed on the same node and will not be moved before computation is
@@ -174,7 +171,7 @@ public class ComputeUtils {
             qry.setPartition(part);
             qry.setFilter(filter);
 
-            setTransformationSeedForPartition(transformersChain, part);
+            transformersChain.modifySeed(s -> s + part);
 
             long cnt = computeCount(upstreamCache, qry, transformersChain);
 
@@ -197,15 +194,6 @@ public class ComputeUtils {
 
             return null;
         });
-    }
-
-    private static <K, V> void setTransformationSeedForPartition(UpstreamTransformerChain<K, V> transformersChain,
-        int part) {
-        if (transformersChain.seed() == null) {
-            transformersChain.setSeed(new Random().nextLong());
-        } else {
-            transformersChain.setSeed(transformersChain.seed() + part * MAGIC_PRIME_1);
-        }
     }
 
     /**
@@ -249,7 +237,7 @@ public class ComputeUtils {
             qry.setFilter(filter);
 
             C ctx;
-            setTransformationSeedForPartition(transformersChain, part);
+            transformersChain.modifySeed(s -> s + part);
             long cnt = computeCount(locUpstreamCache, qry, transformersChain);
 
             try (QueryCursor<UpstreamEntry<K, V>> cursor = locUpstreamCache.query(qry,

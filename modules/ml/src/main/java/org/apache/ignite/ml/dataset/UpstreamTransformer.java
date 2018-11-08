@@ -22,38 +22,19 @@ import java.util.Random;
 import java.util.stream.Stream;
 
 /**
- * Class encapsulating transformer of upstream.
+ * Interface of transformer of upstream.
  *
  * @param <K> Type of keys in the upstream.
  * @param <V> Type of values in the upstream.
- * @param <T> Data needed for this transformer.
  */
-public abstract class UpstreamTransformer<K, V, T> implements Serializable {
-    /**
-     * Performs transformation.
-     *
-     * @param rnd RNG.
-     * @param upstream Upstream.
-     * @return Transformed upstream.
-     */
-    public final Stream<UpstreamEntry<K, V>> transform(Random rnd, Stream<UpstreamEntry<K, V>> upstream) {
-        return transform(createData(rnd), upstream);
-    }
-
-    /**
-     * Creates data needed for this transformer based (if needed) on given RNG.
-     *
-     * @param rnd RNG.
-     * @return Data needed for this transformer based (if needed) on given RNG.
-     */
-    protected abstract T createData(Random rnd);
-
+@FunctionalInterface
+public interface UpstreamTransformer<K, V> extends Serializable {
     /**
      * Perform transformation of upstream.
      *
-     * @param data Data needed for transformation.
+     * @param rnd RNG.
      * @param upstream Upstream.
      * @return Transformed upstream.
      */
-    protected abstract Stream<UpstreamEntry<K, V>> transform(T data, Stream<UpstreamEntry<K, V>> upstream);
+    public Stream<UpstreamEntry<K, V>> transform(Random rnd, Stream<UpstreamEntry<K, V>> upstream);
 }

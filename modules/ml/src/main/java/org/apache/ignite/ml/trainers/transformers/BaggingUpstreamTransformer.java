@@ -33,7 +33,7 @@ import java.util.stream.Stream;
  * @param <K> Type of upstream keys.
  * @param <V> Type of upstream values.
  */
-public class BaggingUpstreamTransformer<K, V> extends UpstreamTransformer<K, V, PoissonDistribution> {
+public class BaggingUpstreamTransformer<K, V> implements UpstreamTransformer<K, V> {
     /** Ratio of subsample to entire upstream size */
     private double subsampleRatio;
 
@@ -47,17 +47,13 @@ public class BaggingUpstreamTransformer<K, V> extends UpstreamTransformer<K, V, 
     }
 
     /** {@inheritDoc} */
-    @Override public PoissonDistribution createData(Random rnd) {
-        return new PoissonDistribution(
+    @Override public Stream<UpstreamEntry<K, V>> transform(Random rnd, Stream<UpstreamEntry<K, V>> upstream) {
+        PoissonDistribution poisson = new PoissonDistribution(
             new Well19937c(rnd.nextLong()),
             subsampleRatio,
             PoissonDistribution.DEFAULT_EPSILON,
             PoissonDistribution.DEFAULT_MAX_ITERATIONS);
-    }
 
-    /** {@inheritDoc} */
-    @Override protected Stream<UpstreamEntry<K, V>> transform(PoissonDistribution poisson, Stream<UpstreamEntry<K, V>> upstream) {
-        // TODO: Investigate optimization described in IGNITE-10144.
         return upstream.sequential().flatMap(en -> Stream.generate(() -> en).limit(poisson.sample()));
     }
 }
