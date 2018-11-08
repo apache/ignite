@@ -33,6 +33,7 @@ import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
@@ -622,6 +623,13 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     private void doTestUpdateBaselineTopology() throws Exception {
+        AtomicBoolean shouldStopDiscoveryMessages = new AtomicBoolean(false);
+
+        // Workaround to wait on new server node as well.
+        baseline.add(0, baseline.get(0));
+
+        baseline.addAll(srvs);
+
         doTest(
             asMessagePredicate(discoEvt -> {
                 if (discoEvt instanceof DiscoveryCustomEvent) {
@@ -629,7 +637,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
 
                     DiscoveryCustomMessage customMsg = discoCustomEvt.customMessage();
 
-                    return customMsg instanceof ChangeGlobalStateMessage;
+                    return customMsg instanceof ChangeGlobalStateMessage && shouldStopDiscoveryMessages.get();
                 }
 
                 return false;
@@ -639,9 +647,13 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
 
                 IgniteEx ignite = startGrid(UUID.randomUUID().toString());
 
+                baseline.add(ignite);
+
+                shouldStopDiscoveryMessages.set(true);
+
                 baseline.get(0).cluster().setBaselineTopology(baseline.get(0).context().discovery().topologyVersion());
 
-                baseline.add(ignite);
+                shouldStopDiscoveryMessages.set(false);
             }
         );
     }
@@ -939,7 +951,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
         doTest0(baseline.get(0), readOperation, backgroundOperation);
 
         try (AutoCloseable read = readOperation.start()) {
-            GridTestUtils.waitForCondition(() -> readOperation.readOperationsFinishedUnderBlock() > 0, 500L);
+            GridTestUtils.waitForCondition(() -> readOperation.readOperationsFinishedUnderBlock() > 0, 1000L);
         }
 
         assertEquals(
@@ -1162,8 +1174,8 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
          * @return Whether the given message should be blocked or not.
          */
         private boolean blockMessage(ClusterNode node, Message msg) {
-            boolean block = blockMsg.test(msg)
-                && baseline.stream().map(IgniteEx::name).anyMatch(node.consistentId()::equals);
+            boolean block = baseline.stream().map(IgniteEx::name).anyMatch(node.consistentId()::equals)
+                && blockMsg.test(msg);
 
             if (block)
                 cntFinishedReadOperations.countDown();

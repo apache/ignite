@@ -38,8 +38,13 @@ public class CacheBlockOnSingleGetTest extends CacheBlockOnReadAbstractTest {
 
             /** {@inheritDoc} */
             @Override public void doRead() {
-                for (int i = 0; i < DFLT_PARTITIONS_COUNT * 4; i++)
-                    cache().get(random.nextInt(entriesCount()));
+                for (int i = 0; i < DFLT_PARTITIONS_COUNT * 4; i++) {
+                    int key = random.nextInt(entriesCount());
+
+                    int val = cache().get(key);
+
+                    assertEquals(key, val);
+                }
             }
         };
     }
