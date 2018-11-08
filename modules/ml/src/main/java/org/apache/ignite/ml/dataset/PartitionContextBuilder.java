@@ -62,7 +62,7 @@ public interface PartitionContextBuilder<K, V, C extends Serializable> extends S
      * @param upstreamDataSize Partition {@code upstream} data size.
      * @return Partition {@code context}.
      */
-    default public C build(Stream<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize) {
+    public default C build(Stream<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize) {
         return build(upstreamData.iterator(), upstreamDataSize);
     }
 

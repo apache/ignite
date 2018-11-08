@@ -37,39 +37,25 @@ import java.util.UUID;
  * @param <V> Type of a value in {@code upstream} data.
  */
 public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
-    /**
-     * Number of retries for the case when one of partitions not found on the node where loading is performed.
-     */
+    /** Number of retries for the case when one of partitions not found on the node where loading is performed. */
     private static final int RETRIES = 15 * 60;
 
-    /**
-     * Retry interval (ms) for the case when one of partitions not found on the node where loading is performed.
-     */
+    /** Retry interval (ms) for the case when one of partitions not found on the node where loading is performed. */
     private static final int RETRY_INTERVAL = 1000;
 
-    /**
-     * Template of the name of Ignite Cache containing partition {@code context}.
-     */
+    /** Template of the name of Ignite Cache containing partition {@code context}. */
     private static final String DATASET_CACHE_TEMPLATE = "%s_DATASET_%s";
 
-    /**
-     * Ignite instance.
-     */
+    /** Ignite instance. */
     private final Ignite ignite;
 
-    /**
-     * Ignite Cache with {@code upstream} data.
-     */
+    /** Ignite Cache with {@code upstream} data. */
     private final IgniteCache<K, V> upstreamCache;
 
-    /**
-     * Filter for {@code upstream} data.
-     */
+    /** Filter for {@code upstream} data. */
     private final IgniteBiPredicate<K, V> filter;
 
-    /**
-     * Chain of upstream transformers.
-     */
+    /** Chain of upstream transformers. */
     private UpstreamTransformerChain<K, V> transformersChain;
 
     /**
@@ -97,12 +83,9 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
         transformersChain = UpstreamTransformerChain.empty();
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override
-    public <C extends Serializable, D extends AutoCloseable> CacheBasedDataset<K, V, C, D> build(
+    @Override public <C extends Serializable, D extends AutoCloseable> CacheBasedDataset<K, V, C, D> build(
         PartitionContextBuilder<K, V, C> partCtxBuilder, PartitionDataBuilder<K, V, C, D> partDataBuilder) {
         UUID datasetId = UUID.randomUUID();
 

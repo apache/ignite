@@ -38,20 +38,31 @@ public class UpstreamTransformerChain<K, V> implements Serializable {
     private List<UpstreamTransformer<K, V>> list;
 
     /**
-     * Creates empty upstream transformers chain.
-     * @param <K>
-     * @param <V>
-     * @return
+     * Creates empty upstream transformers chain (basically identity function).
+     *
+     * @param <K> Type of upstream keys.
+     * @param <V> Type of upstream values.
+     * @return Empty upstream transformers chain.
      */
     public static <K, V> UpstreamTransformerChain<K, V> empty() {
         return new UpstreamTransformerChain<>();
     }
 
+    /**
+     * Creates upstream transformers chain consisting of one specified transformer.
+     *
+     * @param <K> Type of upstream keys.
+     * @param <V> Type of upstream values.
+     * @return Upstream transformers chain consisting of one specified transformer.
+     */
     public static <K, V> UpstreamTransformerChain<K, V> of(UpstreamTransformer<K, V> trans) {
         UpstreamTransformerChain<K, V> res = new UpstreamTransformerChain<>();
         return res.addUpstreamTransformer(trans);
     }
 
+    /**
+     * Construct instance of this class.
+     */
     private UpstreamTransformerChain() {
         list = new ArrayList<>();
         seed = new Random().nextLong();

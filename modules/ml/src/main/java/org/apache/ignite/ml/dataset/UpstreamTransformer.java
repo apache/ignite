@@ -32,7 +32,7 @@ public interface UpstreamTransformer<K, V> extends Serializable {
     /**
      * Perform transformation of upstream.
      *
-     * @param rnd RNG.
+     * @param rnd Random numbers generator.
      * @param upstream Upstream.
      * @return Transformed upstream.
      */
