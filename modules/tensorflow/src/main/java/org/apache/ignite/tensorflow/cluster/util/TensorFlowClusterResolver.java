@@ -17,6 +17,11 @@
 
 package org.apache.ignite.tensorflow.cluster.util;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -96,12 +101,17 @@ public class TensorFlowClusterResolver {
         Affinity<?> affinity = ignite.affinity(upstreamCacheName);
         int parts = affinity.partitions();
 
+        Set<UUID> distinctNodeIds = new HashSet<>();
         for (int part = 0; part < parts; part++) {
             ClusterNode node = affinity.mapPartitionToNode(part);
             UUID nodeId = node.id();
+            distinctNodeIds.add(nodeId);
+        }
+        List<UUID> nodeIds = new ArrayList<>(distinctNodeIds);
+        Collections.sort(nodeIds);
 
+        for (UUID nodeId : nodeIds) {
             int port = portMgr.acquirePort(nodeId);
-
             spec.addTask(WORKER_JOB_NAME, nodeId, port);
         }
     }
