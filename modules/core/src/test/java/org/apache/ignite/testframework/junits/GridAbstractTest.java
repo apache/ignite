@@ -121,6 +121,12 @@ import org.apache.log4j.Priority;
 import org.apache.log4j.RollingFileAppender;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.rules.TestName;
+import org.junit.rules.TestRule;
+import org.junit.runners.model.Statement;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.FileSystemXmlApplicationContext;
@@ -573,7 +579,8 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
+    @Before
+    @Override public void setUp() throws Exception {
         stopGridErr = false;
 
         clsLdr = Thread.currentThread().getContextClassLoader();
@@ -1788,7 +1795,8 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /** {@inheritDoc} */
-    @Override protected void tearDown() throws Exception {
+    @After
+    @Override public void tearDown() throws Exception {
         long dur = System.currentTimeMillis() - ts;
 
         info(">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
@@ -2113,15 +2121,40 @@ public abstract class GridAbstractTest extends TestCase {
         return new TestCounters(cfg);
     }
 
+    @Rule public TestName name = new TestName();
+
+    @Override public String getName() {
+        String junit3Name = super.getName();
+
+        return junit3Name != null ? junit3Name : this.name.getMethodName();
+    }
+
+    @Rule public TestRule runRule = (base, description) -> new Statement() {
+        @Override public void evaluate() throws Throwable {
+            runTest(base);
+        }
+    };
+
     /** {@inheritDoc} */
     @SuppressWarnings({"ProhibitedExceptionDeclared"})
     @Override protected void runTest() throws Throwable {
+        runTest(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                GridAbstractTest.super.runTest();
+            }
+        });
+    }
+
+    private void runTest(Statement testRoutine) throws Throwable {
         final AtomicReference<Throwable> ex = new AtomicReference<>();
 
         Thread runner = new IgniteThread(getTestIgniteInstanceName(), "test-runner", new Runnable() {
             @Override public void run() {
                 try {
-                    runTestInternal();
+                    if (forceFailure)
+                        fail("Forced failure: " + forceFailureMsg);
+
+                    testRoutine.evaluate();
                 }
                 catch (Throwable e) {
                     IgniteClosure<Throwable, Throwable> hnd = errorHandler();
@@ -2195,17 +2228,6 @@ public abstract class GridAbstractTest extends TestCase {
         testCnt = cnt;
 
         forceTestCnt = true;
-    }
-
-    /**
-     * @throws Throwable If failed.
-     */
-    @SuppressWarnings({"ProhibitedExceptionDeclared"})
-    private void runTestInternal() throws Throwable {
-        if (forceFailure)
-            fail("Forced failure: " + forceFailureMsg);
-        else
-            super.runTest();
     }
 
     /**

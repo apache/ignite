@@ -42,7 +42,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest2;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -54,16 +54,12 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertTrue;
 
 /**
  *
  */
 @RunWith(Parameterized.class)
-public class IgniteCacheCommitDelayTxRecoveryTest extends GridCommonAbstractTest2 {
+public class IgniteCacheCommitDelayTxRecoveryTest extends GridCommonAbstractTest {
     /** */
     @Parameterized.Parameters(name = "with backups={0} and useStore={1}")
     public static Iterable<Object[]> data() {
@@ -124,7 +120,8 @@ public class IgniteCacheCommitDelayTxRecoveryTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
-    @Test public void testRecovery() throws Exception {
+    @Test
+    public void testRecovery() throws Exception {
         checkRecovery(backups, useStore);
     }
 
