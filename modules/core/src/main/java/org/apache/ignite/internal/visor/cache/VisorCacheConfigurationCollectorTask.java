@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.visor.cache;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,13 +48,29 @@ public class VisorCacheConfigurationCollectorTask
         if (results == null)
             return null;
 
-        if (results.size() == 1)
-            return results.get(0).getData();
-
         Map<String, VisorCacheConfiguration> map = new HashMap<>();
 
-        for (ComputeJobResult res : results)
-            map.putAll(res.getData());
+        List<Exception> resultsExceptions = null;
+
+        for (ComputeJobResult res : results) {
+            if (res.getException() == null)
+                map.putAll(res.getData());
+            else {
+                if (resultsExceptions == null)
+                    resultsExceptions = new ArrayList<>(results.size());
+
+                resultsExceptions.add(new IgniteException("Job failed on node: " + res.getNode().id(), res.getException()));
+            }
+        }
+
+        if (resultsExceptions != null) {
+            IgniteException e = new IgniteException("Reduce failed because of job failed on some nodes");
+
+            for (Exception ex : resultsExceptions)
+                e.addSuppressed(ex);
+
+            throw e;
+        }
 
         return map;
     }
