@@ -75,15 +75,14 @@ public class BaggedLogisticRegressionSGDTrainerExample {
 
             System.out.println(">>> Perform the training to get the model.");
 
-            DatasetTrainer< ModelsComposition, Double> baggedTrainer =
-                TrainerTransformers.makeBagged(
-                    trainer,
-                    10,
-                    0.6,
-                    4,
-                    3,
-                    new OnMajorityPredictionsAggregator(),
-                    123L);
+            DatasetTrainer< ModelsComposition, Double> baggedTrainer = TrainerTransformers.makeBagged(
+                trainer,
+                10,
+                0.6,
+                4,
+                3,
+                new OnMajorityPredictionsAggregator(),
+                123L);
 
             System.out.println(">>> Perform evaluation of the model.");
 
