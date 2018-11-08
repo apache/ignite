@@ -93,11 +93,7 @@ public class FailureProcessor extends GridProcessorAdapter {
      * @return Default {@link FailureHandler} implementation.
      */
     protected FailureHandler getDefaultFailureHandler() {
-        FailureHandler hnd = new StopNodeOrHaltFailureHandler();
-
-        hnd.setIgnoredFailureTypes(Collections.singleton(SYSTEM_WORKER_BLOCKED));
-
-        return hnd;
+        return new StopNodeOrHaltFailureHandler();
     }
 
     /**
