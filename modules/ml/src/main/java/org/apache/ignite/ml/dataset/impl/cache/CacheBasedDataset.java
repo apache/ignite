@@ -63,7 +63,7 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
     private final IgniteBiPredicate<K, V> filter;
 
     /** Chain of transformers applied to upstream. */
-    private UpstreamTransformerChain<K, V> upstreamTransformers;
+    private final UpstreamTransformerChain<K, V> upstreamTransformers;
 
     /** Ignite Cache with partition {@code context}. */
     private final IgniteCache<Integer, C> datasetCache;
