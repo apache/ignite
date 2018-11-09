@@ -22,7 +22,6 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -185,6 +184,22 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 "(see DataStorageConfiguration#walPath, DataStorageConfiguration#walArchivePath, " +
                 "DataStorageConfiguration#storagePath properties). " +
                 "Current persistence store directory is: [" + tmpDir + "]");
+        }
+
+        File[] files = storeWorkDir.listFiles();
+
+        for (File file : files) {
+            if (file.isDirectory()) {
+                File[] tmpFiles = file.listFiles((k, v) -> v.endsWith(CACHE_DATA_TMP_FILENAME));
+
+                if (tmpFiles != null) {
+                    for (File tmpFile : tmpFiles) {
+                        if (!tmpFile.delete())
+                            log.warning("Failed to delete temporary cache config file" +
+                                    "(make sure Ignite process has enough rights):" + file.getName());
+                    }
+                }
+            }
         }
     }
 
@@ -355,17 +370,17 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             if (overwrite || !Files.exists(filePath) || Files.size(filePath) == 0) {
                 File tmp = new File(file.getParent(), file.getName() + TMP_SUFFIX);
 
-                tmp.createNewFile();
+                if (tmp.exists() && !tmp.delete()) {
+                    log.warning("Failed to delete temporary cache config file" +
+                            "(make sure Ignite process has enough rights):" + file.getName());
+                }
 
                 // Pre-existing file will be truncated upon stream open.
                 try (OutputStream stream = new BufferedOutputStream(new FileOutputStream(tmp))) {
                     marshaller.marshal(cacheData, stream);
                 }
 
-                if (file.exists())
-                    file.delete();
-
-                Files.move(tmp.toPath(), file.toPath());
+                Files.move(tmp.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
         }
         catch (IOException ex) {
@@ -736,20 +751,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         for (File file : files) {
             if (file.isDirectory()) {
-                File[] tmpFiles = file.listFiles(new FilenameFilter() {
-                    @Override public boolean accept(File dir, String name) {
-                        return name.endsWith(CACHE_DATA_TMP_FILENAME);
-                    }
-                });
-
-                if (tmpFiles != null) {
-                    for (File tmpFile: tmpFiles) {
-                        if (!tmpFile.delete())
-                            log.warning("Failed to delete temporary cache config file" +
-                                    "(make sure Ignite process has enough rights):" + file.getName());
-                    }
-                }
-
                 if (file.getName().startsWith(CACHE_DIR_PREFIX)) {
                     File conf = new File(file, CACHE_DATA_FILENAME);
 
