@@ -59,6 +59,7 @@ import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2CollocationModel.isCollocated;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst.TRUE;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.AVG;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.CAST;
@@ -999,7 +1000,6 @@ public class GridSqlQuerySplitter {
      * @param prnt Parent expression.
      * @param childIdx Child index.
      */
-    @SuppressWarnings("SuspiciousMethodCalls")
     private void pushDownColumnsInExpression(
         Set<GridSqlAlias> tblAliases,
         Map<String,GridSqlAlias> cols,
@@ -2469,6 +2469,9 @@ public class GridSqlQuerySplitter {
 
         GridH2Table tbl = (GridH2Table)leftCol.getTable();
 
+        if (!isAffinityKey(leftCol.getColumnId(), tbl))
+            return null;
+
         GridH2RowDescriptor desc = tbl.rowDescriptor();
 
         IndexColumn affKeyCol = tbl.getAffinityKeyColumn();
@@ -2500,6 +2503,27 @@ public class GridSqlQuerySplitter {
         }
         else
             return null;
+    }
+
+    /**
+     *
+     * @param colId Column ID to check
+     * @param tbl H2 Table
+     * @return is affinity key or not
+     */
+    private static boolean isAffinityKey(int colId, GridH2Table tbl) {
+        GridH2RowDescriptor desc = tbl.rowDescriptor();
+
+        if (desc.isKeyColumn(colId))
+            return true;
+
+        IndexColumn affKeyCol = tbl.getAffinityKeyColumn();
+
+        try {
+            return affKeyCol != null && colId >= DEFAULT_COLUMNS_COUNT && desc.isColumnKeyProperty(colId - DEFAULT_COLUMNS_COUNT) && colId == affKeyCol.column.getColumnId();
+        } catch(IllegalStateException e) {
+            return false;
+        }
     }
 
     /**

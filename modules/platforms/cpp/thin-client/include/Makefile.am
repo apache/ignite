@@ -17,11 +17,12 @@
 
 ACLOCAL_AMFLAGS =-I m4
 
-noinst_HEADERS = \
+nobase_include_HEADERS = \
     ignite/thin/ssl_mode.h \
     ignite/thin/ignite_client.h \
     ignite/thin/ignite_client_configuration.h \
     ignite/thin/cache/cache_client.h \
+    ignite/thin/cache/cache_peek_mode.h \
     ignite/impl/thin/writable_key.h \
     ignite/impl/thin/readable.h \
     ignite/impl/thin/writable.h \
