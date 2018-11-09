@@ -897,6 +897,15 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) throws IgniteCheckedException {
+        synchronized (activeTrackers) {
+            curCrd = pickedMvccCrd;
+        }
+
+        return null;
+    }
+
     /**
      * @param crdNode Assigned coordinator node.
      * @return Coordinator version.
