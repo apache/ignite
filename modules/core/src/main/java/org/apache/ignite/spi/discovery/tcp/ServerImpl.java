@@ -5622,8 +5622,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
             }
-            else
-                log.warning("Skip notifyDiscoveryListener spiState = " + state0
+            else if (log.isInfoEnabled())
+                log.info("Skip notifyDiscoveryListener spiState = " + state0
                     + ", waitForNotification = " +waitForNotification
                     + ", listener = " + lsnr
                     + ", creatorNode = " + node
