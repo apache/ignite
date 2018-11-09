@@ -5510,8 +5510,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                     assert msg.topologyVersion() == ring.topologyVersion() :
                         "msg: " + msg + ", topVer=" + ring.topologyVersion();
 
-                    assert ring.node(msg.creatorNodeId()) != null : "Node in the ring doesn't exist in the ring " + ring;
-
                     if(pendingMsgs.procCustomMsgs.add(msg.id()))
                         notifyDiscoveryListener(msg, waitForNotification);
                     else
@@ -5519,7 +5517,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     msg.message(null, msg.messageBytes());
                 } else
-                    log.warning("Unverified message [msg=" + msg + "]");
+                    log.warning("unverified message [msg=" + msg + "] yet");
 
                 if (sendMessageToRemotes(msg))
                     sendMessageAcrossRing(msg);
@@ -5625,13 +5623,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             TcpDiscoveryNode node = ring.node(msg.creatorNodeId());
 
-            if (log.isInfoEnabled())
-                log.info("notifyDiscoveryListener spiState = " + spiState
-                    + ", waitForNotification = " +waitForNotification
-                    + ", listener = " + lsnr
-                    + ", creatorNodeId = " + node
-                    + ", for message = " + msg
-                );
+            assert node != null : "Creator node doesn't exist in the ring " + ring;
 
             if (lsnr != null && (state0 == CONNECTED || state0 == DISCONNECTING)) {
                 DiscoverySpiCustomMessage msgObj;
@@ -5666,7 +5658,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                         throw new IgniteException("Failed to marshal mutable discovery message: " + msgObj, t);
                     }
                 }
-            }
+            } else
+                log.warning("notifyDiscoveryListener spiState = " + state0
+                    + ", waitForNotification = " +waitForNotification
+                    + ", listener = " + lsnr
+                    + ", creatorNode = " + node
+                    + ", for message = " + msg
+                );
         }
 
         /**
