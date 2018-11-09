@@ -1854,37 +1854,6 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         assertFalse(res.isEmpty());
     }
 
-    /**
-     *
-     */
-    public void testJoinWithSubquery2() {
-        IgniteCache<Integer, Contract> c1 = ignite(0).createCache(
-            cacheConfig("Contract", true,
-                Integer.class, Contract.class));
-
-        IgniteCache<Integer, PromoContract> c2 = ignite(0).createCache(
-            cacheConfig("PromoContract", true,
-                Integer.class, PromoContract.class));
-
-        IgniteCache<Integer, UserOrder> cu= ignite(0).createCache(
-            cacheConfig("UserOrder", true,
-                Integer.class, UserOrder.class));
-
-        for (int i = 0; i < 100; i++) {
-            int coId = i % 10;
-            int cust = i / 10;
-            c1.put( i, new Contract(coId, cust));
-        }
-
-        for (int i = 0; i < 10; i++)
-            c2.put(i, new PromoContract((i % 5) + 1, i));
-
-        final List<List<?>> res = c2.query(new SqlFieldsQuery("SELECT p.CO_ID \n" +
-            "FROM (SELECT distinct CO_ID, OFFER_ID FROM PromoContract) as p \n" +
-            "LEFT JOIN \"Contract\".Contract c ON c.CO_ID = p.CO_ID \n" +
-            "LEFT JOIN \"UserOrder\".UserOrder u ON u.id = p.OFFER_ID")).getAll();
-    }
-
     /** @throws Exception if failed. */
     public void testDistributedAggregates() throws Exception {
         final String cacheName = "ints";

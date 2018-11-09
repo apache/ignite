@@ -739,6 +739,8 @@ public class GridSqlQuerySplitter {
 
         QueryModel wrapQrym = new QueryModel(Type.SELECT, wrapSubqry, 0, wrapAlias);
 
+        debug("doPushDownQueryModelRange0 " + begin  + " " + end, printQueryModel(wrapQrym));
+
         wrapQrym.needSplit = needSplit;
 
         // Prepare all the prerequisites.
@@ -762,8 +764,12 @@ public class GridSqlQuerySplitter {
         // Move all the related WHERE conditions to wrap query.
         pushDownWhereConditions(tblAliases, cols, wrapAlias, select);
 
+        debug("doPushDownQueryModelRange1 " + begin  + " " + end, printQueryModel(wrapQrym));
+
         // Push down to a subquery all the JOIN elements and process ON conditions.
         pushDownJoins(tblAliases, cols, qrym, begin, end, wrapAlias);
+
+        debug("doPushDownQueryModelRange2 " + begin  + " " + end, printQueryModel(wrapQrym));
 
         // Add all the collected columns to the wrap query.
         for (GridSqlAlias col : cols.values())
@@ -778,12 +784,16 @@ public class GridSqlQuerySplitter {
             wrapQrym.add(child);
         }
 
+        debug("doPushDownQueryModelRange3 " + begin  + " " + end, printQueryModel(wrapQrym));
+
         // Replace the first child model with the created one.
         qrym.set(begin, wrapQrym);
 
         // Drop others.
         for (int x = begin + 1, i = x; i <= end; i++)
             qrym.remove(x);
+
+        debug("doPushDownQueryModelRange end " + begin  + " " + end, printQueryModel(qrym));
     }
 
     /**
