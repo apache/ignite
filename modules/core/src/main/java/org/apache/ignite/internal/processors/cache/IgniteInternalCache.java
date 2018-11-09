@@ -215,7 +215,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param <V1> Cache value type.
      * @return Base cache for this projection.
      */
-    @SuppressWarnings({"ClassReferencesSubclass"})
     public <K1, V1> IgniteInternalCache<K1, V1> cache();
 
     /**

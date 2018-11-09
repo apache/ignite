@@ -275,7 +275,7 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
      * @param locked Whether the key is locked
      * @throws Exception if failed.
      */
-    @SuppressWarnings({"ThrowableNotThrown", "unchecked"})
+    @SuppressWarnings({"unchecked"})
     private void checkLocks(String cacheName, List<Integer> keys, boolean locked) throws Exception {
         Ignite node = ignite(2);
         IgniteCache cache = node.cache(cacheName);
