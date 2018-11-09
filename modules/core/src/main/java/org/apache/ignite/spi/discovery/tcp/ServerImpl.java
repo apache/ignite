@@ -84,7 +84,6 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridTuple;
-import org.apache.ignite.internal.util.lang.gridfunc.HasEqualIdPredicate;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -5583,14 +5582,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             ClusterNode node = ring.node(msg.creatorNodeId());
 
-            if (snapshot != null)
-                node = F.find(snapshot, node, new HasEqualIdPredicate(msg.creatorNodeId()));
-            else
-                log.warning("Topology snapshot for version " + msg.topologyVersion() +" is null, fallback to ring lookup");
-
-            assert node != null : "Creator node doesn't exist in the snapshot or current topology " + ring;
-
-            if (lsnr != null && (state0 == CONNECTED || state0 == DISCONNECTING)) {
+            if (lsnr != null && (state0 == CONNECTED || state0 == DISCONNECTING) && node != null) {
                 DiscoverySpiCustomMessage msgObj;
 
                 try {
@@ -5624,7 +5616,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
             } else
-                log.warning("notifyDiscoveryListener spiState = " + state0
+                log.warning("Skip notifyDiscoveryListener spiState = " + state0
                     + ", waitForNotification = " +waitForNotification
                     + ", listener = " + lsnr
                     + ", creatorNode = " + node

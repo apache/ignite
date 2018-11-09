@@ -977,8 +977,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             assert customMsg != null && customMsg.id() != null : customMsg;
 
             if (rcvdCustomMsgs.contains(customMsg.id())) {
-                if (log.isDebugEnabled())
-                    log.debug("Received duplicated custom message, will ignore [msg=" + customMsg + "]");
+                log.warning("Received duplicated custom message, will ignore [msg=" + customMsg + "]");
 
                 return true;
             }
