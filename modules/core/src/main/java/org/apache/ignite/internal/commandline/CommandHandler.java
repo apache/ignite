@@ -2557,8 +2557,12 @@ public class CommandHandler {
 
                         tryConnectMaxCount--;
                     }
-                    else
+                    else {
+                        if (tryConnectMaxCount == 0)
+                            throw new GridClientException("Authentication error, max retries exceeded");
+
                         throw e;
+                    }
                 }
             }
             return EXIT_CODE_OK;
