@@ -158,7 +158,7 @@ BOOST_AUTO_TEST_CASE(TestPutStringToWstring)
 
 BOOST_AUTO_TEST_CASE(TestPutStringToLong)
 {
-    long numBuf;
+    SQLINTEGER numBuf;
     SqlLen reslen = 0;
 
     ApplicationDataBuffer appBuf(OdbcNativeType::AI_SIGNED_LONG, &numBuf, sizeof(numBuf), &reslen);
@@ -275,7 +275,7 @@ BOOST_AUTO_TEST_CASE(TestPutDecimalToDouble)
 
 BOOST_AUTO_TEST_CASE(TestPutDecimalToLong)
 {
-    long numBuf;
+    SQLINTEGER numBuf;
     SqlLen reslen = 0;
 
     ApplicationDataBuffer appBuf(OdbcNativeType::AI_SIGNED_LONG, &numBuf, sizeof(numBuf), &reslen);

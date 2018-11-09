@@ -23,18 +23,14 @@
 #endif //min
 
 #include <stdint.h>
-#include <ctime>
 
 #include <string>
-#include <algorithm>
-#include <sstream>
 
 #include <ignite/common/utils.h>
 #include <ignite/common/decimal.h>
 
 #include "ignite/impl/binary/binary_reader_impl.h"
 #include "ignite/impl/binary/binary_writer_impl.h"
-#include <iterator>
 
 namespace ignite
 {
@@ -42,67 +38,6 @@ namespace ignite
     {
         /** Using common version of the util. */
         using common::IntoLower;
-
-        /**
-         * Skip leading spaces.
-         * 
-         * @param begin Iterator to the beginning of the character sequence.
-         * @param end Iterator to the end of the character sequence.
-         * @return Iterator to first non-blanc character.
-         */
-        template<typename Iterator>
-        Iterator SkipLeadingSpaces(Iterator begin, Iterator end)
-        {
-            Iterator res = begin;
-
-            while (isspace(*res) && res != end)
-                ++res;
-
-            return res;
-        }
-
-        /**
-         * Skip trailing spaces.
-         * 
-         * @param begin Iterator to the beginning of the character sequence.
-         * @param end Iterator to the end of the character sequence.
-         * @return Iterator to last non-blanc character.
-         */
-        template<typename Iterator>
-        Iterator SkipTrailingSpaces(Iterator begin, Iterator end)
-        {
-            Iterator res = end - 1;
-
-            while (isspace(*res) && res != begin - 1)
-                --res;
-
-            return res + 1;
-        }
-
-        /**
-         * Remove leading and trailing spaces.
-         * 
-         * @param begin Iterator to the beginning of the character sequence.
-         * @param end Iterator to the end of the character sequence.
-         * @return String without leading and trailing spaces.
-         */
-        template<typename Iterator>
-        std::string RemoveSurroundingSpaces(Iterator begin, Iterator end)
-        {
-            std::string res;
-
-            if (begin >= end)
-                return res;
-
-            Iterator skipped_leading = SkipLeadingSpaces(begin, end);
-            Iterator skipped_trailing = SkipTrailingSpaces(skipped_leading, end);
-
-            res.reserve(skipped_trailing - skipped_leading);
-
-            std::copy(skipped_leading, skipped_trailing, std::back_inserter(res));
-
-            return res;
-        }
 
         template<typename T>
         T* GetPointerWithOffset(T* ptr, size_t offset)

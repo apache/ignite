@@ -21,6 +21,7 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Objects;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -68,7 +69,7 @@ public class GridCacheSetItemKey implements SetItemKey, Externalizable {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int res = setId.hashCode();
+        int res = setId == null ? 0 : setId.hashCode();
 
         res = 31 * res + item.hashCode();
 
@@ -85,7 +86,7 @@ public class GridCacheSetItemKey implements SetItemKey, Externalizable {
 
         GridCacheSetItemKey that = (GridCacheSetItemKey)o;
 
-        return setId.equals(that.setId) && item.equals(that.item);
+        return Objects.equals(this.setId, that.setId) && item.equals(that.item);
     }
 
     /** {@inheritDoc} */

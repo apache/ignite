@@ -194,8 +194,8 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
             int sent = firstSpi().connCheckStatusMsgCntSent;
             int received = nextSpi.connCheckStatusMsgCntReceived;
 
-            assert sent >= 3 && sent < 7 : "messages sent: " + sent;
-            assert received >= 3 && received < 7 : "messages received: " + received;
+            assert sent >= 15 && sent < 25 : "messages sent: " + sent;
+            assert received >= 15 && received < 25 : "messages received: " + received;
         }
         finally {
             firstSpi().resetState();
@@ -323,7 +323,7 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
         }
 
         /** {@inheritDoc} */
-        protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res, long timeout)
+        @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res, long timeout)
             throws IOException {
             if (cntConnCheckMsg && msg instanceof TcpDiscoveryConnectionCheckMessage)
                 connCheckStatusMsgCntReceived++;

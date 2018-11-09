@@ -242,7 +242,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
     @Override public void onKernalStop0(boolean cancel) {
         busyLock.writeLock().lock();
 
@@ -315,6 +314,9 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      */
     private void record0(Event evt, Object... params) {
         assert evt != null;
+
+        if (ctx.recoveryMode())
+            return;
 
         if (!enterBusy())
             return;
@@ -947,7 +949,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @return Collection of events.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "deprecation"})
+    @SuppressWarnings({"deprecation"})
     private <T extends Event> List<T> query(IgnitePredicate<T> p, Collection<? extends ClusterNode> nodes,
         long timeout) throws IgniteCheckedException {
         assert p != null;
@@ -1468,7 +1470,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         }
 
         /** {@inheritDoc} */
-        public IgnitePredicate<? extends Event> listener() {
+        @Override public IgnitePredicate<? extends Event> listener() {
             return lsnr;
         }
 

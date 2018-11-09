@@ -19,17 +19,16 @@ package org.apache.ignite.yardstick;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParametersDelegate;
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.ignite.yardstick.cache.IgniteStreamerBenchmark;
 import org.apache.ignite.yardstick.upload.UploadBenchmarkArguments;
 import org.jetbrains.annotations.Nullable;
@@ -58,6 +57,10 @@ public class IgniteBenchmarkArguments {
     /** */
     @Parameter(names = {"-sm", "--syncMode"}, description = "Synchronization mode")
     private CacheWriteSynchronizationMode syncMode = CacheWriteSynchronizationMode.PRIMARY_SYNC;
+
+    /** */
+    @Parameter(names = {"--atomic-mode", "--atomicMode"})
+    @Nullable private CacheAtomicityMode atomicMode = null;
 
     /** */
     @Parameter(names = {"-cl", "--client"}, description = "Client flag")
@@ -103,6 +106,14 @@ public class IgniteBenchmarkArguments {
     /** */
     @Parameter(names = {"-pa", "--preloadAmount"}, description = "Data pre-loading amount for load tests")
     private int preloadAmount = 500_000;
+
+    /** */
+    @Parameter(names = {"-pdrm", "--preloadDataRegionMult"}, description = "Data region size multiplier for preload.")
+    private int preloadDataRegionMult = 0;
+
+    /** */
+    @Parameter(names = {"-ep", "--enablePreload"}, description = "Enable preload flag.")
+    private boolean enablePreload = false;
 
     /** */
     @Parameter(names = {"-plfreq", "--preloadLogFrequency"}, description = "Interval between printing logs")
@@ -269,6 +280,15 @@ public class IgniteBenchmarkArguments {
     @GridToStringInclude
     public UploadBenchmarkArguments upload = new UploadBenchmarkArguments();
 
+    /** */
+    @Parameter(names = {"--mvcc-contention-range", "--mvccContentionRange"},
+        description = "Mvcc benchmark specific: " +
+            "Size of range of table keys that should be used in query. " +
+            "Should be less than 'range'. " +
+            "Useful together with 'sqlRange' to control, how often key contentions of sql operations occur.")
+    @GridToStringInclude
+    public long mvccContentionRange = 10_000;
+
     /**
      * @return {@code True} if need set {@link DataStorageConfiguration}.
      */
@@ -381,6 +401,11 @@ public class IgniteBenchmarkArguments {
         return syncMode;
     }
 
+    /** With what cache atomicity mode to create tables. */
+    @Nullable public CacheAtomicityMode atomicMode(){
+        return atomicMode;
+    }
+
     /**
      * @return Backups.
      */
@@ -409,6 +434,10 @@ public class IgniteBenchmarkArguments {
         return range;
     }
 
+    public void setRange(int newVal) {
+        range = newVal;
+    }
+
     /**
      * @return Scale factor.
      */
@@ -421,6 +450,20 @@ public class IgniteBenchmarkArguments {
      */
     public int preloadAmount() {
         return preloadAmount;
+    }
+
+    /**
+     * @return Preload data region multiplier.
+     */
+    public int preloadDataRegionMult() {
+        return preloadDataRegionMult;
+    }
+
+    /**
+     * @return Reset range for preload flag.
+     */
+    public boolean enablePreload() {
+        return enablePreload;
     }
 
     /**
@@ -660,6 +703,13 @@ public class IgniteBenchmarkArguments {
      */
     public int clientNodesAfterId() {
         return clientNodesAfterId;
+    }
+
+    /**
+     * @return Mvcc contention range.
+     */
+    public long mvccContentionRange() {
+        return mvccContentionRange;
     }
 
     /** {@inheritDoc} */

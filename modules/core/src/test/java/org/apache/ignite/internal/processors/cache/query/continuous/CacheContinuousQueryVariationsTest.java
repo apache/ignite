@@ -362,7 +362,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
                     if (tx != null)
                         tx.commit();
 
-                    waitAndCheckEvent(evtsQueues, key, null, oldVal, keepBinary, withFilter);
+                    waitAndCheckEvent(evtsQueues, key, oldVal, oldVal, keepBinary, withFilter);
 
                     expData.remove(key);
 
@@ -375,7 +375,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
                     if (tx != null)
                         tx.commit();
 
-                    waitAndCheckEvent(evtsQueues, key, null, oldVal, keepBinary, withFilter);
+                    waitAndCheckEvent(evtsQueues, key, oldVal, oldVal, keepBinary, withFilter);
 
                     expData.remove(key);
 
@@ -401,7 +401,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
                     if (tx != null)
                         tx.commit();
 
-                    waitAndCheckEvent(evtsQueues, key, null, oldVal, keepBinary, withFilter);
+                    waitAndCheckEvent(evtsQueues, key, oldVal, oldVal, keepBinary, withFilter);
 
                     expData.remove(key);
 
@@ -701,12 +701,12 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
                         }, 5_000);
 
                         checkEvent(evts.get(0), CREATED, value(1), null);
-                        checkEvent(evts.get(1), REMOVED, null, value(1));
+                        checkEvent(evts.get(1), REMOVED, value(1), value(1));
                         checkEvent(evts.get(2), CREATED, value(2), null);
-                        checkEvent(evts.get(3), REMOVED, null, value(2));
+                        checkEvent(evts.get(3), REMOVED, value(2), value(2));
                         checkEvent(evts.get(4), CREATED, value(3), null);
                         checkEvent(evts.get(5), EventType.UPDATED, value(4), value(3));
-                        checkEvent(evts.get(6), REMOVED, null, value(4));
+                        checkEvent(evts.get(6), REMOVED, value(4), value(4));
                         checkEvent(evts.get(7), CREATED, value(5), null);
                         checkEvent(evts.get(8), EventType.UPDATED, value(6), value(5));
 

@@ -19,18 +19,24 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -92,6 +98,14 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
     /** Serialized partitions that must be cleared and re-loaded. */
     private byte[] partsToReloadBytes;
+
+    /** Partitions sizes. */
+    @GridToStringInclude
+    @GridDirectTransient
+    private Map<Integer, Map<Integer, Long>> partsSizes;
+
+    /** Serialized partitions sizes. */
+    private byte[] partsSizesBytes;
 
     /** Topology version. */
     private AffinityTopologyVersion topVer;
@@ -164,6 +178,8 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         cp.partHistSuppliersBytes = partHistSuppliersBytes;
         cp.partsToReload = partsToReload;
         cp.partsToReloadBytes = partsToReloadBytes;
+        cp.partsSizes = partsSizes;
+        cp.partsSizesBytes = partsSizesBytes;
         cp.topVer = topVer;
         cp.errs = errs;
         cp.errsBytes = errsBytes;
@@ -208,8 +224,10 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     /**
      * @param joinedNodeAff Caches affinity for joining nodes.
      */
-    void joinedNodeAffinity(Map<Integer, CacheGroupAffinityMessage> joinedNodeAff) {
+    GridDhtPartitionsFullMessage joinedNodeAffinity(Map<Integer, CacheGroupAffinityMessage> joinedNodeAff) {
         this.joinedNodeAff = joinedNodeAff;
+
+        return this;
     }
 
     /**
@@ -331,11 +349,43 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         return partHistSuppliers;
     }
 
+    /**
+     *
+     */
     public Set<Integer> partsToReload(UUID nodeId, int grpId) {
         if (partsToReload == null)
             return Collections.emptySet();
 
         return partsToReload.get(nodeId, grpId);
+    }
+
+    /**
+     * Adds partition sizes map for specified {@code grpId} to the current message.
+     *
+     * @param grpId Group id.
+     * @param partSizesMap Partition sizes map.
+     */
+    public void addPartitionSizes(int grpId, Map<Integer, Long> partSizesMap) {
+        if (partSizesMap.isEmpty())
+            return;
+
+        if (partsSizes == null)
+            partsSizes = new HashMap<>();
+
+        partsSizes.put(grpId, partSizesMap);
+    }
+
+    /**
+     * Returns partition sizes map for specified {@code grpId}.
+     *
+     * @param grpId Group id.
+     * @return Partition sizes map (partId, partSize).
+     */
+    public Map<Integer, Long> partitionSizes(int grpId) {
+        if (partsSizes == null)
+            return Collections.emptyMap();
+
+        return partsSizes.getOrDefault(grpId, Collections.emptyMap());
     }
 
     /**
@@ -364,62 +414,75 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             (!F.isEmpty(errs) && errsBytes == null);
 
         if (marshal) {
-            byte[] partsBytes0 = null;
-            byte[] partCntrsBytes0 = null;
-            byte[] partCntrsBytes20 = null;
-            byte[] partHistSuppliersBytes0 = null;
-            byte[] partsToReloadBytes0 = null;
-            byte[] errsBytes0 = null;
+            // Reserve at least 2 threads for system operations.
+            int parallelismLvl = Math.max(1, ctx.kernalContext().config().getSystemThreadPoolSize() - 2);
+
+            Collection<Object> objectsToMarshall = new ArrayList<>();
 
             if (!F.isEmpty(parts) && partsBytes == null)
-                partsBytes0 = U.marshal(ctx, parts);
+                objectsToMarshall.add(parts);
 
             if (partCntrs != null && !partCntrs.empty() && partCntrsBytes == null)
-                partCntrsBytes0 = U.marshal(ctx, partCntrs);
+                objectsToMarshall.add(partCntrs);
 
             if (partCntrs2 != null && !partCntrs2.empty() && partCntrsBytes2 == null)
-                partCntrsBytes20 = U.marshal(ctx, partCntrs2);
+                objectsToMarshall.add(partCntrs2);
 
             if (partHistSuppliers != null && partHistSuppliersBytes == null)
-                partHistSuppliersBytes0 = U.marshal(ctx, partHistSuppliers);
+                objectsToMarshall.add(partHistSuppliers);
 
             if (partsToReload != null && partsToReloadBytes == null)
-                partsToReloadBytes0 = U.marshal(ctx, partsToReload);
+                objectsToMarshall.add(partsToReload);
+
+            if (partsSizes != null && partsSizesBytes == null)
+                objectsToMarshall.add(partsSizes);
 
             if (!F.isEmpty(errs) && errsBytes == null)
-                errsBytes0 = U.marshal(ctx, errs);
+                objectsToMarshall.add(errs);
+
+            Collection<byte[]> marshalled = U.doInParallel(
+                parallelismLvl,
+                ctx.kernalContext().getSystemExecutorService(),
+                objectsToMarshall,
+                new IgniteThrowableConsumer<Object, byte[]>() {
+                    @Override public byte[] accept(Object payload) throws IgniteCheckedException {
+                        byte[] marshalled = U.marshal(ctx, payload);
+
+                        if(compress)
+                            marshalled = U.zip(marshalled, ctx.gridConfig().getNetworkCompressionLevel());
+
+                        return marshalled;
+                    }
+            });
+
+            Iterator<byte[]> iterator = marshalled.iterator();
+
+            if (!F.isEmpty(parts) && partsBytes == null)
+                partsBytes = iterator.next();
+
+            if (partCntrs != null && !partCntrs.empty() && partCntrsBytes == null)
+                partCntrsBytes = iterator.next();
+
+            if (partCntrs2 != null && !partCntrs2.empty() && partCntrsBytes2 == null)
+                partCntrsBytes2 = iterator.next();
+
+            if (partHistSuppliers != null && partHistSuppliersBytes == null)
+                partHistSuppliersBytes = iterator.next();
+
+            if (partsToReload != null && partsToReloadBytes == null)
+                partsToReloadBytes = iterator.next();
+
+            if (partsSizes != null && partsSizesBytes == null)
+                partsSizesBytes = iterator.next();
+
+            if (!F.isEmpty(errs) && errsBytes == null)
+                errsBytes = iterator.next();
 
             if (compress) {
-                assert !compressed();
+                assert !compressed() : "Unexpected compressed state";
 
-                try {
-                    byte[] partsBytesZip = U.zip(partsBytes0);
-                    byte[] partCntrsBytesZip = U.zip(partCntrsBytes0);
-                    byte[] partCntrsBytes2Zip = U.zip(partCntrsBytes20);
-                    byte[] partHistSuppliersBytesZip = U.zip(partHistSuppliersBytes0);
-                    byte[] partsToReloadBytesZip = U.zip(partsToReloadBytes0);
-                    byte[] exsBytesZip = U.zip(errsBytes0);
-
-                    partsBytes0 = partsBytesZip;
-                    partCntrsBytes0 = partCntrsBytesZip;
-                    partCntrsBytes20 = partCntrsBytes2Zip;
-                    partHistSuppliersBytes0 = partHistSuppliersBytesZip;
-                    partsToReloadBytes0 = partsToReloadBytesZip;
-                    errsBytes0 = exsBytesZip;
-
-                    compressed(true);
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(ctx.logger(getClass()), "Failed to compress partitions data: " + e, e);
-                }
+                compressed(true);
             }
-
-            partsBytes = partsBytes0;
-            partCntrsBytes = partCntrsBytes0;
-            partCntrsBytes2 = partCntrsBytes20;
-            partHistSuppliersBytes = partHistSuppliersBytes0;
-            partsToReloadBytes = partsToReloadBytes0;
-            errsBytes = errsBytes0;
         }
     }
 
@@ -441,11 +504,51 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
+        ClassLoader classLoader = U.resolveClassLoader(ldr, ctx.gridConfig());
+
+        Collection<byte[]> objectsToUnmarshall = new ArrayList<>();
+
+        // Reserve at least 2 threads for system operations.
+        int parallelismLvl = Math.max(1, ctx.kernalContext().config().getSystemThreadPoolSize() - 2);
+
+        if (partsBytes != null && parts == null)
+            objectsToUnmarshall.add(partsBytes);
+
+        if (partCntrsBytes != null && partCntrs == null)
+            objectsToUnmarshall.add(partCntrsBytes);
+
+        if (partCntrsBytes2 != null && partCntrs2 == null)
+            objectsToUnmarshall.add(partCntrsBytes2);
+
+        if (partHistSuppliersBytes != null && partHistSuppliers == null)
+            objectsToUnmarshall.add(partHistSuppliersBytes);
+
+        if (partsToReloadBytes != null && partsToReload == null)
+            objectsToUnmarshall.add(partsToReloadBytes);
+
+        if (partsSizesBytes != null && partsSizes == null)
+            objectsToUnmarshall.add(partsSizesBytes);
+
+        if (errsBytes != null && errs == null)
+            objectsToUnmarshall.add(errsBytes);
+
+        Collection<Object> unmarshalled = U.doInParallel(
+            parallelismLvl,
+            ctx.kernalContext().getSystemExecutorService(),
+            objectsToUnmarshall,
+            new IgniteThrowableConsumer<byte[], Object>() {
+                @Override public Object accept(byte[] binary) throws IgniteCheckedException {
+                    return compressed()
+                        ? U.unmarshalZip(ctx.marshaller(), binary, classLoader)
+                        : U.unmarshal(ctx, binary, classLoader);
+                }
+            }
+        );
+
+        Iterator<Object> iterator = unmarshalled.iterator();
+
         if (partsBytes != null && parts == null) {
-            if (compressed())
-                parts = U.unmarshalZip(ctx.marshaller(), partsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-            else
-                parts = U.unmarshal(ctx, partsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            parts = (Map<Integer, GridDhtPartitionFullMap>)iterator.next();
 
             if (dupPartsData != null) {
                 assert parts != null;
@@ -475,46 +578,41 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             }
         }
 
+        if (partCntrsBytes != null && partCntrs == null)
+            partCntrs = (IgniteDhtPartitionCountersMap)iterator.next();
+
+        if (partCntrsBytes2 != null && partCntrs2 == null)
+            partCntrs2 = (IgniteDhtPartitionCountersMap2)iterator.next();
+
+        if (partHistSuppliersBytes != null && partHistSuppliers == null)
+            partHistSuppliers = (IgniteDhtPartitionHistorySuppliersMap)iterator.next();
+
+        if (partsToReloadBytes != null && partsToReload == null)
+            partsToReload = (IgniteDhtPartitionsToReloadMap)iterator.next();
+
+        if (partsSizesBytes != null && partsSizes == null)
+            partsSizes = (Map<Integer, Map<Integer, Long>>)iterator.next();
+
+        if (errsBytes != null && errs == null)
+            errs = (Map<UUID, Exception>)iterator.next();
+
         if (parts == null)
             parts = new HashMap<>();
-
-        if (partCntrsBytes != null && partCntrs == null) {
-            if (compressed())
-                partCntrs = U.unmarshalZip(ctx.marshaller(), partCntrsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-            else
-                partCntrs = U.unmarshal(ctx, partCntrsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-        }
-
-        if (partCntrsBytes2 != null && partCntrs2 == null) {
-            if (compressed())
-                partCntrs2 = U.unmarshalZip(ctx.marshaller(), partCntrsBytes2, U.resolveClassLoader(ldr, ctx.gridConfig()));
-            else
-                partCntrs2 = U.unmarshal(ctx, partCntrsBytes2, U.resolveClassLoader(ldr, ctx.gridConfig()));
-        }
-
-        if (partHistSuppliersBytes != null && partHistSuppliers == null) {
-            if (compressed())
-                partHistSuppliers = U.unmarshalZip(ctx.marshaller(), partHistSuppliersBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-            else
-                partHistSuppliers = U.unmarshal(ctx, partHistSuppliersBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-        }
-
-        if (partsToReloadBytes != null && partsToReload == null) {
-            if (compressed())
-                partsToReload = U.unmarshalZip(ctx.marshaller(), partsToReloadBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-            else
-                partsToReload = U.unmarshal(ctx, partsToReloadBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-        }
 
         if (partCntrs == null)
             partCntrs = new IgniteDhtPartitionCountersMap();
 
-        if (errsBytes != null && errs == null) {
-            if (compressed())
-                errs = U.unmarshalZip(ctx.marshaller(), errsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-            else
-                errs = U.unmarshal(ctx, errsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-        }
+        if (partCntrs2 == null)
+            partCntrs2 = new IgniteDhtPartitionCountersMap2();
+
+        if(partHistSuppliers == null)
+            partHistSuppliers = new IgniteDhtPartitionHistorySuppliersMap();
+
+        if(partsToReload == null)
+            partsToReload = new IgniteDhtPartitionsToReloadMap();
+
+        if(partsSizes == null)
+            partsSizes = new HashMap<>();
 
         if (errs == null)
             errs = new HashMap<>();
@@ -584,18 +682,24 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeByteArray("partsToReloadBytes", partsToReloadBytes))
+                if (!writer.writeByteArray("partsSizesBytes", partsSizesBytes))
                     return false;
 
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeMessage("resTopVer", resTopVer))
+                if (!writer.writeByteArray("partsToReloadBytes", partsToReloadBytes))
                     return false;
 
                 writer.incrementState();
 
             case 15:
+                if (!writer.writeMessage("resTopVer", resTopVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 16:
                 if (!writer.writeMessage("topVer", topVer))
                     return false;
 
@@ -682,7 +786,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 reader.incrementState();
 
             case 13:
-                partsToReloadBytes = reader.readByteArray("partsToReloadBytes");
+                partsSizesBytes = reader.readByteArray("partsSizesBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -690,7 +794,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 reader.incrementState();
 
             case 14:
-                resTopVer = reader.readMessage("resTopVer");
+                partsToReloadBytes = reader.readByteArray("partsToReloadBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -698,6 +802,14 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 reader.incrementState();
 
             case 15:
+                resTopVer = reader.readMessage("resTopVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 16:
                 topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
@@ -717,12 +829,43 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 16;
+        return 17;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtPartitionsFullMessage.class, this, "partCnt", parts != null ? parts.size() : 0,
             "super", super.toString());
+    }
+
+    /**
+     * Merges (replaces with newer) partitions map from given {@code other} full message.
+     *
+     * @param other Other full message.
+     */
+    public void merge(GridDhtPartitionsFullMessage other, GridDiscoveryManager discovery) {
+        assert other.exchangeId() == null && exchangeId() == null :
+            "Both current and merge full message must have exchangeId == null"
+             + other.exchangeId() + "," + exchangeId();
+
+        for (Map.Entry<Integer, GridDhtPartitionFullMap> groupAndMap : other.partitions().entrySet()) {
+            int grpId = groupAndMap.getKey();
+            GridDhtPartitionFullMap updMap = groupAndMap.getValue();
+
+            GridDhtPartitionFullMap currMap = partitions().get(grpId);
+
+            if (currMap == null)
+                partitions().put(grpId, updMap);
+            else {
+                ClusterNode currentMapSentBy = discovery.node(currMap.nodeId());
+                ClusterNode newMapSentBy = discovery.node(updMap.nodeId());
+
+                if (newMapSentBy == null)
+                    return;
+
+                if (currentMapSentBy == null || newMapSentBy.order() > currentMapSentBy.order() || updMap.compareTo(currMap) >= 0)
+                    partitions().put(grpId, updMap);
+            }
+        }
     }
 }

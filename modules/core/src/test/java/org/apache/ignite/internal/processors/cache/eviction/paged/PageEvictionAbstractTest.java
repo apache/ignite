@@ -40,13 +40,13 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
     protected static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Offheap size for memory policy. */
-    private static final int SIZE = 96 * 1024 * 1024;
+    private static final int SIZE = 20 * 1024 * 1024;
 
     /** Page size. */
     static final int PAGE_SIZE = 2048;
 
     /** Number of entries. */
-    static final int ENTRIES = 80_000;
+    static final int ENTRIES = 12_000;
 
     /** Empty pages pool size. */
     private static final int EMPTY_PAGES_POOL_SIZE = 100;

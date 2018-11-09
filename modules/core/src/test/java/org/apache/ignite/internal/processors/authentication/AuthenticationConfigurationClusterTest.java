@@ -59,9 +59,24 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setMaxSize(200L * 1024 * 1024)
                 .setPersistenceEnabled(true)));
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        GridTestUtils.setFieldValue(User.class, "bCryptGensaltLog2Rounds", 4);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        GridTestUtils.setFieldValue(User.class, "bCryptGensaltLog2Rounds", 10);
     }
 
     /** {@inheritDoc} */

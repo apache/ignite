@@ -247,7 +247,7 @@ public class GridNioFilterChainSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        public String toString() {
+        @Override public String toString() {
             return "AppendingFilter [param=" + param + ']';
         }
 

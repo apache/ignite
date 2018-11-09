@@ -15,7 +15,7 @@
     limitations under the License.
 
 doctype html
-html(ng-app='ignite-console' id='app' ng-strict-di)
+html
     head
         base(href='/')
 
@@ -28,6 +28,8 @@ html(ng-app='ignite-console' id='app' ng-strict-di)
 
         meta(name='fragment' content='!')
 
+        link(rel='preload' as='font' href='assets/fonts/roboto-bold-webfont.woff' type='font/woff' crossorigin='anonymous')
+
     body.theme-line.body-overlap(ng-class='{ "demo-mode": IgniteDemoMode }')
 
         .splash.splash-max-foreground(hide-on-state-change)
@@ -38,9 +40,5 @@ html(ng-app='ignite-console' id='app' ng-strict-di)
                     .bounce3
 
                 .splash-wellcome Loading...
-
-        .ribbon-wrapper.left(ng-if='!IgniteDemoMode')
-            .ribbon
-                label Beta
 
         .wrapper(ui-view='')

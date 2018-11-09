@@ -64,6 +64,7 @@ import org.apache.ignite.cache.query.annotations.QueryTextField;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
@@ -96,6 +97,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.internal.processors.cache.query.CacheQueryType.FULL_TEXT;
 import static org.apache.ignite.internal.processors.cache.query.CacheQueryType.SCAN;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.junit.Assert.assertArrayEquals;
 
 /**
@@ -142,8 +144,11 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         c.setDiscoverySpi(new TcpDiscoverySpi().setForceServerMode(true).setIpFinder(ipFinder));
 
-        if (igniteInstanceName.startsWith("client"))
+        if (igniteInstanceName.startsWith("client")) {
             c.setClientMode(true);
+
+            c.setDataStorageConfiguration(new DataStorageConfiguration());
+        }
 
         return c;
     }
@@ -458,7 +463,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         assertEquals(1, res.getValue().intValue());
 
-        U.sleep(800); // Less than minimal amount of time that must pass before a cache entry is considered expired.
+        U.sleep(300); // Less than minimal amount of time that must pass before a cache entry is considered expired.
 
         qry =  cache.query(new SqlQuery<Integer, Integer>(Integer.class, "1=1")).getAll();
 
@@ -466,7 +471,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         assertEquals(1, res.getValue().intValue());
 
-        U.sleep(1200); // No expiry guarantee here. Test should be refactored in case of fails.
+        U.sleep(1800); // No expiry guarantee here. Test should be refactored in case of fails.
 
         qry = cache.query(new SqlQuery<Integer, Integer>(Integer.class, "1=1")).getAll();
 
@@ -1774,6 +1779,53 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testLocalSqlQueryFromClient() throws Exception {
+        try {
+            Ignite g = startGrid("client");
+
+            IgniteCache<Integer, Integer> c = jcache(g, Integer.class, Integer.class);
+
+            for (int i = 0; i < 10; i++)
+                c.put(i, i);
+
+            SqlQuery<Integer, Integer> qry = new SqlQuery<>(Integer.class, "_key >= 5 order by _key");
+
+            qry.setLocal(true);
+
+            assertThrowsWithCause(() -> c.query(qry), CacheException.class);
+        }
+        finally {
+            stopGrid("client");
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLocalSqlFieldsQueryFromClient() throws Exception {
+        try {
+            Ignite g = startGrid("client");
+
+            IgniteCache<UUID, Person> c = jcache(g, UUID.class, Person.class);
+
+            Person p = new Person("Jon", 1500);
+
+            c.put(p.id(), p);
+
+            SqlFieldsQuery qry = new SqlFieldsQuery("select count(*) from Person");
+
+            qry.setLocal(true);
+
+            assertThrowsWithCause(() -> c.query(qry), CacheException.class);
+        }
+        finally {
+            stopGrid("client");
+        }
+    }
+
+    /**
      *
      */
     private static class ArrayObject implements Serializable {
@@ -2174,7 +2226,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     /**
      * Empty test object.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class EmptyObject {
         /** */
         private int val;

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.client.suite;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.TaskEventSubjectIdSelfTest;
 import org.apache.ignite.internal.client.ClientDefaultCacheSelfTest;
 import org.apache.ignite.internal.client.ClientReconnectionSelfTest;
 import org.apache.ignite.internal.client.ClientTcpMultiThreadedSelfTest;
@@ -48,9 +49,11 @@ import org.apache.ignite.internal.client.router.TcpSslRouterSelfTest;
 import org.apache.ignite.internal.client.util.ClientByteUtilsTest;
 import org.apache.ignite.internal.client.util.ClientConsistentHashSelfTest;
 import org.apache.ignite.internal.client.util.ClientJavaHasherSelfTest;
+import org.apache.ignite.internal.processors.rest.ChangeStateCommandHandlerTest;
 import org.apache.ignite.internal.processors.rest.ClientMemcachedProtocolSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorAuthenticationWithCredsSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorAuthenticationWithTokenSelfTest;
+import org.apache.ignite.internal.processors.rest.JettyRestProcessorGetAllAsArrayTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorSignedSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorUnsignedSelfTest;
 import org.apache.ignite.internal.processors.rest.RestBinaryProtocolSelfTest;
@@ -58,9 +61,12 @@ import org.apache.ignite.internal.processors.rest.RestMemcacheProtocolSelfTest;
 import org.apache.ignite.internal.processors.rest.RestProcessorMultiStartSelfTest;
 import org.apache.ignite.internal.processors.rest.RestProcessorStartSelfTest;
 import org.apache.ignite.internal.processors.rest.TaskCommandHandlerSelfTest;
+import org.apache.ignite.internal.processors.rest.TcpRestUnmarshalVulnerabilityTest;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.TcpRestParserSelfTest;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolConnectSelfTest;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolGetAllAsArrayTest;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolServerSelfTest;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolStringAtomicDatastructuresSelfTest;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolStringSelfTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
 
@@ -84,20 +90,24 @@ public class IgniteClientTestSuite extends TestSuite {
 
         // Test custom binary protocol with test client.
         suite.addTestSuite(RestBinaryProtocolSelfTest.class);
+        suite.addTestSuite(TcpRestUnmarshalVulnerabilityTest.class);
 
         // Test jetty rest processor
         suite.addTestSuite(JettyRestProcessorSignedSelfTest.class);
         suite.addTestSuite(JettyRestProcessorUnsignedSelfTest.class);
         suite.addTestSuite(JettyRestProcessorAuthenticationWithCredsSelfTest.class);
         suite.addTestSuite(JettyRestProcessorAuthenticationWithTokenSelfTest.class);
+        suite.addTestSuite(JettyRestProcessorGetAllAsArrayTest.class);
 
         // Test TCP rest processor with original memcache client.
         suite.addTestSuite(ClientMemcachedProtocolSelfTest.class);
 
         // Test TCP rest processor with original REDIS client.
         suite.addTestSuite(RedisProtocolStringSelfTest.class);
+        suite.addTestSuite(RedisProtocolGetAllAsArrayTest.class);
         suite.addTestSuite(RedisProtocolConnectSelfTest.class);
         suite.addTestSuite(RedisProtocolServerSelfTest.class);
+        suite.addTestSuite(RedisProtocolStringAtomicDatastructuresSelfTest.class);
 
         suite.addTestSuite(RestProcessorStartSelfTest.class);
 
@@ -135,6 +145,8 @@ public class IgniteClientTestSuite extends TestSuite {
 
         // Rest task command handler test.
         suite.addTestSuite(TaskCommandHandlerSelfTest.class);
+        suite.addTestSuite(ChangeStateCommandHandlerTest.class);
+        suite.addTestSuite(TaskEventSubjectIdSelfTest.class);
 
         // Default cache only test.
         suite.addTestSuite(ClientDefaultCacheSelfTest.class);

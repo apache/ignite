@@ -28,8 +28,9 @@ import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -70,7 +71,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     /** Partitions sizes. */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<Integer, Map<Integer, Long>> partSizes;
+    private Map<Integer, Map<Integer, Long>> partsSizes;
 
     /** Serialized partitions counters. */
     private byte[] partsSizesBytes;
@@ -108,6 +109,9 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
      */
     private GridDhtPartitionsFullMessage finishMsg;
 
+    /** */
+    private GridLongList activeQryTrackers;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -129,6 +133,20 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
         this.client = client;
         this.compress = compress;
+    }
+
+    /**
+     * @return Active queries started with previous coordinator.
+     */
+    GridLongList activeQueries() {
+        return activeQryTrackers;
+    }
+
+    /**
+     * @param activeQrys Active queries started with previous coordinator.
+     */
+    void activeQueries(GridLongList activeQrys) {
+        this.activeQryTrackers = activeQrys;
     }
 
     /**
@@ -237,10 +255,10 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         if (partSizesMap.isEmpty())
             return;
 
-        if (partSizes == null)
-            partSizes = new HashMap<>();
+        if (partsSizes == null)
+            partsSizes = new HashMap<>();
 
-        partSizes.put(grpId, partSizesMap);
+        partsSizes.put(grpId, partSizesMap);
     }
 
     /**
@@ -250,10 +268,10 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
      * @return Partition sizes map (partId, partSize).
      */
     public Map<Integer, Long> partitionSizes(int grpId) {
-        if (partSizes == null)
+        if (partsSizes == null)
             return Collections.emptyMap();
 
-        return partSizes.getOrDefault(grpId, Collections.emptyMap());
+        return partsSizes.getOrDefault(grpId, Collections.emptyMap());
     }
 
     /**
@@ -324,14 +342,14 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         boolean marshal = (parts != null && partsBytes == null) ||
             (partCntrs != null && partCntrsBytes == null) ||
             (partHistCntrs != null && partHistCntrsBytes == null) ||
-            (partSizes != null && partsSizesBytes == null) ||
+            (partsSizes != null && partsSizesBytes == null) ||
             (err != null && errBytes == null);
 
         if (marshal) {
             byte[] partsBytes0 = null;
             byte[] partCntrsBytes0 = null;
             byte[] partHistCntrsBytes0 = null;
-            byte[] partSizesBytes0 = null;
+            byte[] partsSizesBytes0 = null;
             byte[] errBytes0 = null;
 
             if (parts != null && partsBytes == null)
@@ -343,8 +361,8 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
             if (partHistCntrs != null && partHistCntrsBytes == null)
                 partHistCntrsBytes0 = U.marshal(ctx, partHistCntrs);
 
-            if (partSizes != null && partsSizesBytes == null)
-                partSizesBytes0 = U.marshal(ctx, partSizes);
+            if (partsSizes != null && partsSizesBytes == null)
+                partsSizesBytes0 = U.marshal(ctx, partsSizes);
 
             if (err != null && errBytes == null)
                 errBytes0 = U.marshal(ctx, err);
@@ -356,13 +374,13 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                     byte[] partsBytesZip = U.zip(partsBytes0);
                     byte[] partCntrsBytesZip = U.zip(partCntrsBytes0);
                     byte[] partHistCntrsBytesZip = U.zip(partHistCntrsBytes0);
-                    byte[] partSizesBytesZip = U.zip(partSizesBytes0);
+                    byte[] partsSizesBytesZip = U.zip(partsSizesBytes0);
                     byte[] exBytesZip = U.zip(errBytes0);
 
                     partsBytes0 = partsBytesZip;
                     partCntrsBytes0 = partCntrsBytesZip;
                     partHistCntrsBytes0 = partHistCntrsBytesZip;
-                    partSizesBytes0 = partSizesBytesZip;
+                    partsSizesBytes0 = partsSizesBytesZip;
                     errBytes0 = exBytesZip;
 
                     compressed(true);
@@ -375,7 +393,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
             partsBytes = partsBytes0;
             partCntrsBytes = partCntrsBytes0;
             partHistCntrsBytes = partHistCntrsBytes0;
-            partsSizesBytes = partSizesBytes0;
+            partsSizesBytes = partsSizesBytes0;
             errBytes = errBytes0;
         }
     }
@@ -405,11 +423,11 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                 partHistCntrs = U.unmarshal(ctx, partHistCntrsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
         }
 
-        if (partsSizesBytes != null && partSizes == null) {
+        if (partsSizesBytes != null && partsSizes == null) {
             if (compressed())
-                partSizes = U.unmarshalZip(ctx.marshaller(), partsSizesBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+                partsSizes = U.unmarshalZip(ctx.marshaller(), partsSizesBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
             else
-                partSizes = U.unmarshal(ctx, partsSizesBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+                partsSizes = U.unmarshal(ctx, partsSizesBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
         }
 
         if (errBytes != null && err == null) {
@@ -508,6 +526,12 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                     return false;
 
                 writer.incrementState();
+
+            case 14:
+                if (!writer.writeMessage("activeQryTrackers", activeQryTrackers))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -595,6 +619,14 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                     return false;
 
                 reader.incrementState();
+
+            case 14:
+                activeQryTrackers = reader.readMessage("activeQryTrackers");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridDhtPartitionsSingleMessage.class);
@@ -607,7 +639,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 14;
+        return 15;
     }
 
     /** {@inheritDoc} */

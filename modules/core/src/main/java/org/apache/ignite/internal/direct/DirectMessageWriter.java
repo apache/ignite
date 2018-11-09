@@ -388,7 +388,7 @@ public class DirectMessageWriter implements MessageWriter {
         }
 
         /** {@inheritDoc} */
-        public String toString() {
+        @Override public String toString() {
             return S.toString(StateItem.class, this);
         }
     }

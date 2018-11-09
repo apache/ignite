@@ -36,8 +36,29 @@ public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage {
         super(creatorNodeId);
     }
 
+    /**
+     * Gets topology change flag.<br>
+     * {@code True} means node intent to fail nodes in a ring.
+     *
+     * @return Change topology flag.
+     */
+    public boolean changeTopology() {
+        return getFlag(CHANGE_TOPOLOGY_FLAG_POS);
+    }
+
+    /**
+     * Gets topology change flag.<br>
+     * {@code True} means node intent to fail nodes in a ring.
+     *
+     * @param changeTop Change topology flag.
+     */
+    public void changeTopology(boolean changeTop) {
+        setFlag(CHANGE_TOPOLOGY_FLAG_POS, changeTop);
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(TcpDiscoveryHandshakeRequest.class, this, "super", super.toString());
+        return S.toString(TcpDiscoveryHandshakeRequest.class, this, "super", super.toString(),
+            "isChangeTopology", changeTopology());
     }
 }

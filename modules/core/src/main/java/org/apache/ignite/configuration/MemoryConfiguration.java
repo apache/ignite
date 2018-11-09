@@ -19,6 +19,7 @@ package org.apache.ignite.configuration;
 
 import java.io.Serializable;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -66,7 +67,6 @@ public class MemoryConfiguration implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Default memory policy start size (256 MB). */
-    @SuppressWarnings("UnnecessaryBoxing")
     public static final long DFLT_MEMORY_POLICY_INITIAL_SIZE = 256L * 1024 * 1024;
 
     /** Fraction of available memory to allocate for default DataRegion. */
@@ -304,5 +304,10 @@ public class MemoryConfiguration implements Serializable {
         this.dfltMemPlcName = dfltMemPlcName;
 
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(MemoryConfiguration.class, this);
     }
 }

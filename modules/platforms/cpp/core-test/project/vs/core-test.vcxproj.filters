@@ -125,39 +125,36 @@
     <Filter Include="Code\Types">
       <UniqueIdentifier>{fb43524e-3694-44ee-b153-770cd9cf6c7a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Code\Types">
-      <UniqueIdentifier>{fb43524e-3694-44ee-b153-770cd9cf6c7a}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\config\cache-test-32.xml">
+    <None Include="..\..\config\invalid.xml">
       <Filter>Configs</Filter>
     </None>
     <None Include="..\..\config\cache-test.xml">
       <Filter>Configs</Filter>
     </None>
-    <None Include="..\..\config\cache-test-default.xml">
+    <None Include="..\..\config\cache-test-32.xml">
       <Filter>Configs</Filter>
     </None>
-    <None Include="..\..\config\cache-query-32.xml">
+    <None Include="..\..\config\cache-test-default.xml">
       <Filter>Configs</Filter>
     </None>
     <None Include="..\..\config\cache-query.xml">
       <Filter>Configs</Filter>
     </None>
-    <None Include="..\..\config\cache-query-default.xml">
+    <None Include="..\..\config\cache-query-32.xml">
       <Filter>Configs</Filter>
     </None>
-    <None Include="..\..\config\cache-query-continuous-32.xml">
+    <None Include="..\..\config\cache-query-default.xml">
       <Filter>Configs</Filter>
     </None>
     <None Include="..\..\config\cache-query-continuous.xml">
       <Filter>Configs</Filter>
     </None>
-    <None Include="..\..\config\cache-query-continuous-default.xml">
+    <None Include="..\..\config\cache-query-continuous-32.xml">
       <Filter>Configs</Filter>
     </None>
-    <None Include="..\..\config\invalid.xml">
+    <None Include="..\..\config\cache-query-continuous-default.xml">
       <Filter>Configs</Filter>
     </None>
     <None Include="..\..\config\cache-identity.xml">
@@ -169,13 +166,13 @@
     <None Include="..\..\config\cache-identity-default.xml">
       <Filter>Configs</Filter>
     </None>
-    <None Include="..\..\config\cache-store-default.xml">
-      <Filter>Configs</Filter>
-    </None>
     <None Include="..\..\config\cache-store.xml">
       <Filter>Configs</Filter>
     </None>
     <None Include="..\..\config\cache-store-32.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\cache-store-default.xml">
       <Filter>Configs</Filter>
     </None>
     <None Include="..\..\config\isolated.xml">

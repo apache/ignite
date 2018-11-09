@@ -56,7 +56,9 @@ export default angular.module('ignite-console.page-configure.validation', [])
 
             $onInit() {
                 this.ngModel.$validators.notInCollection = (item) => {
-                    if (!this.items) return true;
+                    if (!this.items)
+                        return true;
+
                     return !this.items.includes(item);
                 };
             }
@@ -87,7 +89,9 @@ export default angular.module('ignite-console.page-configure.validation', [])
 
             $onInit() {
                 this.ngModel.$validators.inCollection = (item) => {
-                    if (!this.items) return false;
+                    if (!this.items)
+                        return false;
+
                     const items = this.pluck ? this.items.map((i) => i[this.pluck]) : this.items;
                     return Array.isArray(item)
                         ? item.every((i) => items.includes(i))

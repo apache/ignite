@@ -27,7 +27,7 @@ export class NotebooksListCtrl {
 
         this.rowsToShow = 8;
 
-        const notebookNameTemplate = `<div class="ui-grid-cell-contents notebook-name"><a ui-sref="base.sql.tabs.notebook({ noteId: row.entity._id })">{{ row.entity.name }}</a></div>`;
+        const notebookNameTemplate = `<div class="ui-grid-cell-contents notebook-name"><a ui-sref="base.sql.notebook({ noteId: row.entity._id })">{{ row.entity.name }}</a></div>`;
         const sqlQueryTemplate = `<div class="ui-grid-cell-contents">{{row.entity.sqlQueriesParagraphsLength}}</div>`;
         const scanQueryTemplate = `<div class="ui-grid-cell-contents">{{row.entity.scanQueriesPsaragraphsLength}}</div>`;
 
@@ -39,8 +39,8 @@ export class NotebooksListCtrl {
 
         const columnDefs = [
             { name: 'name', displayName: 'Notebook name', categoryDisplayName: 'Name', field: 'name', cellTemplate: notebookNameTemplate, pinnedLeft: true, filter: { placeholder: 'Filter by Name...' } },
-            { name: 'sqlQueryNum', displayName: 'SQL Queries', categoryDisplayName: 'SQL Queries', field: 'sqlQueriesParagraphsLength', cellTemplate: sqlQueryTemplate, enableSorting: true, type: 'number', minWidth: 150, width: 150, enableFiltering: false },
-            { name: 'scanQueryNum', displayName: 'Scan Queries', categoryDisplayName: 'Scan Queries', field: 'scanQueriesParagraphsLength', cellTemplate: scanQueryTemplate, enableSorting: true, type: 'number', minWidth: 150, width: 150, enableFiltering: false }
+            { name: 'sqlQueryNum', displayName: 'SQL Queries', categoryDisplayName: 'SQL Queries', field: 'sqlQueriesParagraphsLength', cellTemplate: sqlQueryTemplate, enableSorting: true, type: 'number', minWidth: 150, width: '10%', enableFiltering: false },
+            { name: 'scanQueryNum', displayName: 'Scan Queries', categoryDisplayName: 'Scan Queries', field: 'scanQueriesParagraphsLength', cellTemplate: scanQueryTemplate, enableSorting: true, type: 'number', minWidth: 150, width: '10%', enableFiltering: false }
         ];
 
         this.gridOptions = {
@@ -98,14 +98,14 @@ export class NotebooksListCtrl {
             this.IgniteLoading.start('notebooksLoading');
             this.notebooks = await this.IgniteNotebook.read();
             this.gridOptions.data = this._preprocessNotebooksList(this.notebooks);
-
-        } catch (err) {
+        }
+        catch (err) {
             this.IgniteMessages.showError(err);
-
-        } finally {
+        }
+        finally {
             this.$scope.$applyAsync();
 
-            await this.IgniteLoading.finish('notebooksLoading');
+            this.IgniteLoading.finish('notebooksLoading');
         }
     }
 
@@ -135,19 +135,21 @@ export class NotebooksListCtrl {
 
     async createNotebook() {
         try {
-            const newNotebookName =  await this.IgniteInput.input('New query notebook', 'Notebook name');
+            const newNotebookName = await this.IgniteInput.input('New query notebook', 'Notebook name');
 
             this.IgniteLoading.start('notebooksLoading');
+
             await this.IgniteNotebook.create(newNotebookName);
-            await this.IgniteLoading.finish('notebooksLoading');
+
+            this.IgniteLoading.finish('notebooksLoading');
 
             this._loadAllNotebooks();
-
-        } catch (err) {
+        }
+        catch (err) {
             this.IgniteMessages.showError(err);
-
-        } finally {
-            await this.IgniteLoading.finish('notebooksLoading');
+        }
+        finally {
+            this.IgniteLoading.finish('notebooksLoading');
 
             if (this.createNotebookModal)
                 this.createNotebookModal.$promise.then(this.createNotebookModal.hide);
@@ -156,20 +158,22 @@ export class NotebooksListCtrl {
 
     async renameNotebok() {
         try {
-            const currentNotebook =  this.gridApi.selection.legacyGetSelectedRows()[0];
-            const newNotebookName =  await this.IgniteInput.input('Rename notebook', 'Notebook name', currentNotebook.name);
+            const currentNotebook = this.gridApi.selection.legacyGetSelectedRows()[0];
+            const newNotebookName = await this.IgniteInput.input('Rename notebook', 'Notebook name', currentNotebook.name);
 
             if (this.getNotebooksNames().find((name) => newNotebookName === name))
                 throw Error(`Notebook with name "${newNotebookName}" already exists!`);
 
             this.IgniteLoading.start('notebooksLoading');
+
             await this.IgniteNotebook.save(Object.assign(currentNotebook, {name: newNotebookName}));
-
-        } catch (err) {
+        }
+        catch (err) {
             this.IgniteMessages.showError(err);
+        }
+        finally {
+            this.IgniteLoading.finish('notebooksLoading');
 
-        } finally {
-            await this.IgniteLoading.finish('notebooksLoading');
             this._loadAllNotebooks();
         }
     }
@@ -180,16 +184,18 @@ export class NotebooksListCtrl {
             const newNotebookName = await this.IgniteInput.clone(clonedNotebook.name, this.getNotebooksNames());
 
             this.IgniteLoading.start('notebooksLoading');
+
             await this.IgniteNotebook.clone(newNotebookName, clonedNotebook);
-            await this.IgniteLoading.finish('notebooksLoading');
+
+            this.IgniteLoading.finish('notebooksLoading');
 
             this._loadAllNotebooks();
-
-        } catch (err) {
+        }
+        catch (err) {
             this.IgniteMessages.showError(err);
-
-        } finally {
-            await this.IgniteLoading.finish('notebooksLoading');
+        }
+        finally {
+            this.IgniteLoading.finish('notebooksLoading');
 
             if (this.createNotebookModal)
                 this.createNotebookModal.$promise.then(this.createNotebookModal.hide);
@@ -203,15 +209,17 @@ export class NotebooksListCtrl {
     async deleteNotebooks() {
         try {
             this.IgniteLoading.start('notebooksLoading');
+
             await this.IgniteNotebook.removeBatch(this.gridApi.selection.legacyGetSelectedRows());
-            await this.IgniteLoading.finish('notebooksLoading');
+
+            this.IgniteLoading.finish('notebooksLoading');
 
             this._loadAllNotebooks();
-
-        } catch (err) {
+        }
+        catch (err) {
             this.IgniteMessages.showError(err);
 
-            await this.IgniteLoading.finish('notebooksLoading');
+            this.IgniteLoading.finish('notebooksLoading');
         }
     }
 

@@ -33,8 +33,16 @@ import org.jetbrains.annotations.Nullable;
  */
 public enum CacheAtomicityMode {
     /**
-     * Specified fully {@code ACID}-compliant transactional cache behavior. See
-     * {@link Transaction} for more information about transactions.
+     * Enables fully {@code ACID}-compliant transactional cache behavior for the key-value API.
+     * <p>
+     * <b>Note!</b> In this mode, transactional consistency is guaranteed for key-value API operations only.
+     * To enable ACID capabilities for SQL transactions, use the {@code TRANSACTIONAL_SNAPSHOT} mode.
+     * <p>
+     * <b>Note!</b> This atomicity mode is not compatible with the other modes within the same transaction.
+     * if a transaction is executed over multiple caches, all caches must have the same atomicity mode,
+     * either {@code TRANSACTIONAL_SNAPSHOT} or {@code TRANSACTIONAL}.
+     * <p>
+     * See {@link Transaction} for more information about transactions.
      */
     TRANSACTIONAL,
 
@@ -88,7 +96,30 @@ public enum CacheAtomicityMode {
      *
      * @see IgniteCache#withNoRetries()
      */
-    ATOMIC;
+    ATOMIC,
+
+    /**
+     * Specifies fully {@code ACID}-compliant transactional cache behavior for both key-value API and SQL transactions.
+     * <p>
+     * This atomicity mode enables multiversion concurrency control (MVCC) for the cache. In MVCC-enabled caches,
+     * when a transaction updates a row, it creates a new version of that row instead of overwriting it.
+     * Other users continue to see the old version of the row until the transaction is committed.
+     * In this way, readers and writers do not conflict with each other and always work with a consistent dataset.
+     * The old version of data is cleaned up when it's no longer accessed by anyone.
+     * <p>
+     * With this mode enabled, one node is elected as an MVCC coordinator. This node tracks all in-flight transactions
+     * and queries executed in the cluster. Each transaction or query executed over the cache with
+     * {@code TRANSACTIONAL_SNAPSHOT} mode works with a current snapshot of data generated for this transaction or query
+     * by the coordinator. This snapshot ensures that the transaction works with a consistent database state
+     * during its execution period.
+     * <p>
+     * <b>Note!</b> This atomicity mode is not compatible with the other modes within the same transaction.
+     * If a transaction is executed over multiple caches, all caches must have the same atomicity mode,
+     * either {@code TRANSACTIONAL_SNAPSHOT} or {@code TRANSACTIONAL}.
+     * <p>
+     * See {@link Transaction} for more information about transactions.
+     */
+    TRANSACTIONAL_SNAPSHOT;
 
     /** Enumerated values. */
     private static final CacheAtomicityMode[] VALS = values();

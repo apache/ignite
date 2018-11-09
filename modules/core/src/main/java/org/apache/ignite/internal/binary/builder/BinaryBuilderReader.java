@@ -162,7 +162,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
      * @param pos Position in the source array.
      * @return Read byte value.
      */
-    public byte readBytePositioned(int pos) {
+    @Override public byte readBytePositioned(int pos) {
         return BinaryPrimitives.readByte(arr, pos);
     }
 

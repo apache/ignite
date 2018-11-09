@@ -127,7 +127,7 @@ suite('CacheServiceTestsSuite', () => {
     test('Get all caches by space', (done) => {
         cachesService.listBySpaces(testSpaces[0]._id)
             .then((caches) =>
-                assert.equal(caches.length, 5)
+                assert.equal(caches.length, 7)
             )
             .then(done)
             .catch(done);
@@ -136,7 +136,7 @@ suite('CacheServiceTestsSuite', () => {
     test('Remove all caches in space', (done) => {
         cachesService.removeAll(testAccounts[0]._id, false)
             .then(({rowsAffected}) =>
-                assert.equal(rowsAffected, 5)
+                assert.equal(rowsAffected, 7)
             )
             .then(done)
             .catch(done);

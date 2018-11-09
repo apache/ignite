@@ -21,7 +21,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 /**
  *
  */
-public class IncludeSensitiveAtomicTest extends IncludeSensitiveTest {
+public class IncludeSensitiveAtomicTest extends IncludeSensitiveAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return CacheAtomicityMode.ATOMIC;

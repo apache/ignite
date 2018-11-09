@@ -70,7 +70,6 @@ abstract class TcpDiscoveryImpl {
     private int debugMsgHist = 512;
 
     /** Received messages. */
-    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     protected ConcurrentLinkedDeque<String> debugLogQ;
 
     /** */
@@ -232,6 +231,20 @@ abstract class TcpDiscoveryImpl {
     public abstract void failNode(UUID nodeId, @Nullable String warning);
 
     /**
+     * Dumps ring structure to logger.
+     *
+     * @param log Logger.
+     */
+    public abstract void dumpRingStructure(IgniteLogger log);
+
+    /**
+     * Get current topology version.
+     *
+     * @return Current topology version.
+     */
+    public abstract long getCurrentTopologyVersion();
+
+    /**
      * @param igniteInstanceName Ignite instance name.
      * @throws IgniteSpiException If failed.
      */
@@ -244,6 +257,13 @@ abstract class TcpDiscoveryImpl {
      * @throws IgniteSpiException If failed.
      */
     public int boundPort() throws IgniteSpiException {
+        return 0;
+    }
+
+    /**
+     * @return connection check interval.
+     */
+    public long connectionCheckInterval() {
         return 0;
     }
 
@@ -306,7 +326,6 @@ abstract class TcpDiscoveryImpl {
     /**
      * @throws IgniteSpiException If failed.
      */
-    @SuppressWarnings("BusyWait")
     protected final void registerLocalNodeAddress() throws IgniteSpiException {
         // Make sure address registration succeeded.
         // ... but limit it if join timeout is configured.

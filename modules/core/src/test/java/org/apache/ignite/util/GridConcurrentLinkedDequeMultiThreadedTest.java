@@ -36,7 +36,6 @@ public class GridConcurrentLinkedDequeMultiThreadedTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"BusyWait"})
     public void testQueueMultiThreaded() throws Exception {
         final AtomicBoolean done = new AtomicBoolean();
 
@@ -89,8 +88,7 @@ public class GridConcurrentLinkedDequeMultiThreadedTest extends GridCommonAbstra
             "queue-prod"
         );
 
-        Thread.sleep(2 * 60 * 1000);
-
+        Thread.sleep(20 * 1000);
 
         done.set(true);
 

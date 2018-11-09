@@ -34,6 +34,7 @@
 #include "ignite/ignite.h"
 #include "ignite/ignition.h"
 #include "ignite/test_utils.h"
+#include "teamcity_messages.h"
 
 using namespace boost::unit_test;
 
@@ -963,6 +964,9 @@ BOOST_AUTO_TEST_CASE(TestSqlQuery)
  */
 BOOST_AUTO_TEST_CASE(TestSqlQueryDistributedJoins)
 {
+    if (JetBrains::underTeamcity())
+        return;
+
     Cache<int, QueryPerson> cache1 = GetPersonCache();
     Cache<int, QueryRelation> cache2 = GetRelationCache();
 
@@ -1241,6 +1245,9 @@ BOOST_AUTO_TEST_CASE(TestSqlFieldsQueryBasic)
  */
 BOOST_AUTO_TEST_CASE(TestSqlFieldsQueryDistributedJoins)
 {
+    if (JetBrains::underTeamcity())
+        return;
+
     Cache<int, QueryPerson> cache1 = GetPersonCache();
     Cache<int, QueryRelation> cache2 = GetRelationCache();
 

@@ -114,7 +114,6 @@ public class KeyValuePersistenceSettings implements Serializable {
      *
      * @param settings string containing xml with persistence settings for Ignite cache key/value
      */
-    @SuppressWarnings("UnusedDeclaration")
     public KeyValuePersistenceSettings(String settings) {
         init(settings);
     }
@@ -124,7 +123,6 @@ public class KeyValuePersistenceSettings implements Serializable {
      *
      * @param settingsFile xml file with persistence settings for Ignite cache key/value
      */
-    @SuppressWarnings("UnusedDeclaration")
     public KeyValuePersistenceSettings(File settingsFile) {
         InputStream in;
 
@@ -207,7 +205,6 @@ public class KeyValuePersistenceSettings implements Serializable {
      *
      * @return POJO fields list.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public List<PojoField> getFields() {
         List<PojoField> fields = new LinkedList<>();
 
@@ -225,7 +222,6 @@ public class KeyValuePersistenceSettings implements Serializable {
      *
      * @return POJO fields list.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public List<PojoField> getKeyFields() {
         return keyPersistenceSettings.getFields();
     }
@@ -235,7 +231,6 @@ public class KeyValuePersistenceSettings implements Serializable {
      *
      * @return POJO fields list.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public List<PojoField> getValueFields() {
         return valPersistenceSettings.getFields();
     }

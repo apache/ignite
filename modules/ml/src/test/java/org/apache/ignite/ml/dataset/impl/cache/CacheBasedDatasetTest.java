@@ -33,8 +33,8 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -63,7 +63,7 @@ public class CacheBasedDatasetTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    @Override protected void beforeTest() {
         /* Grid instance. */
         ignite = grid(NODE_COUNT);
         ignite.configuration().setPeerClassLoadingEnabled(true);
@@ -86,6 +86,9 @@ public class CacheBasedDatasetTest extends GridCommonAbstractTest {
             (upstream, upstreamSize) -> upstreamSize,
             (upstream, upstreamSize, ctx) -> new SimpleDatasetData(new double[0], 0)
         );
+
+        assertEquals("Upstream cache name from dataset",
+            upstreamCache.getName(), dataset.getUpstreamCache().getName());
 
         assertTrue("Before computation all partitions should not be reserved",
             areAllPartitionsNotReserved(upstreamCache.getName(), dataset.getDatasetCache().getName()));

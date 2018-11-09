@@ -29,8 +29,12 @@ export default class ClusterEditFormController {
     onSave;
 
     static $inject = ['IgniteLegacyUtils', 'IgniteEventGroups', 'IgniteConfirm', 'IgniteVersion', '$scope', 'Clusters', 'IgniteFormUtils'];
+    /**
+     * @param {import('app/services/Clusters').default} Clusters
+     */
     constructor(IgniteLegacyUtils, IgniteEventGroups, IgniteConfirm, IgniteVersion, $scope, Clusters, IgniteFormUtils) {
-        Object.assign(this, {IgniteLegacyUtils, IgniteEventGroups, IgniteConfirm, IgniteVersion, $scope, Clusters, IgniteFormUtils});
+        Object.assign(this, {IgniteLegacyUtils, IgniteEventGroups, IgniteConfirm, IgniteVersion, $scope, IgniteFormUtils});
+        this.Clusters = Clusters;
     }
 
     $onDestroy() {
@@ -39,8 +43,6 @@ export default class ClusterEditFormController {
 
     $onInit() {
         this.available = this.IgniteVersion.available.bind(this.IgniteVersion);
-
-        let __original_value;
 
         const rebuildDropdowns = () => {
             this.eventStorage = [

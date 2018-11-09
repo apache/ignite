@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
+import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -39,7 +40,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Test for replicated cache with one node.
  */
-@SuppressWarnings("Duplicates")
 public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -54,6 +54,10 @@ public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonA
         cacheCfg.setCacheMode(cacheMode());
         cacheCfg.setRebalanceMode(CacheRebalanceMode.SYNC);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+
+        // TODO IGNITE-9530 Remove this clause.
+        if (atomicMode() == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
+            cacheCfg.setNearConfiguration(null);
 
         cfg.setCacheConfiguration(cacheCfg);
 
@@ -164,7 +168,14 @@ public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonA
             for (int i = 0; i < 10; i++)
                 cache.put("key" + i, i);
 
-            cache.clear();
+            if (atomicMode() != CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
+                cache.clear();
+            else { // TODO IGNITE-7952. Remove "else" clause - do cache.clear() instead of iteration.
+                for (Iterator it = cache.iterator(); it.hasNext();) {
+                    it.next();
+                    it.remove();
+                }
+            }
 
             qry.setLocalListener(new CacheEntryUpdatedListener<String, Integer>() {
                 @Override public void onUpdated(Iterable<CacheEntryEvent<? extends String, ? extends Integer>> evts)

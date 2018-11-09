@@ -186,7 +186,7 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
             GridCacheDatabaseSharedManager dbMgr,
             FileWriteAheadLogManager wal
         ) throws IgniteCheckedException{
-            WALPointer lowBoundForTruncate = dbMgr.checkpointHistory().lowCheckpointBound();
+            WALPointer lowBoundForTruncate = dbMgr.checkpointHistory().firstCheckpointPointer();
 
             if (lowBoundForTruncate == null)
                 return Collections.emptyList();
@@ -227,7 +227,7 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
             GridCacheDatabaseSharedManager dbMgr,
             FileWriteAheadLogManager wal
         ) throws IgniteCheckedException {
-            WALPointer lowBoundForTruncate = dbMgr.checkpointHistory().lowCheckpointBound();
+            WALPointer lowBoundForTruncate = dbMgr.checkpointHistory().firstCheckpointPointer();
 
             if (lowBoundForTruncate == null)
                 return Collections.emptyList();

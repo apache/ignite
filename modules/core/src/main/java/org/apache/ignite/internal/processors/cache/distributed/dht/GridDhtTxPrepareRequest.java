@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -87,6 +88,10 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     @GridDirectCollection(GridCacheVersion.class)
     private Collection<GridCacheVersion> ownedVals;
 
+    /** */
+    @GridDirectCollection(PartitionUpdateCountersMessage.class)
+    private Collection<PartitionUpdateCountersMessage> counters;
+
     /** Near transaction ID. */
     private GridCacheVersion nearXidVer;
 
@@ -102,6 +107,9 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** */
     @GridDirectTransient
     private List<IgniteTxKey> nearWritesCacheMissed;
+
+    /** */
+    private MvccSnapshot mvccSnapshot;
 
     /** {@code True} if remote tx should skip adding itself to completed versions map on finish. */
     private boolean skipCompletedVers;
@@ -126,7 +134,9 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
      * @param last {@code True} if this is last prepare request for node.
      * @param addDepInfo Deployment info flag.
      * @param storeWriteThrough Cache store write through flag.
-     * @param retVal Need return value flag.
+     * @param retVal Need return value flag
+     * @param mvccSnapshot Mvcc snapshot.
+     * @param counters Update counters for mvcc Tx.
      */
     public GridDhtTxPrepareRequest(
         IgniteUuid futId,
@@ -144,7 +154,9 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         int taskNameHash,
         boolean addDepInfo,
         boolean storeWriteThrough,
-        boolean retVal) {
+        boolean retVal,
+        MvccSnapshot mvccSnapshot,
+        Collection<PartitionUpdateCountersMessage> counters) {
         super(tx,
             timeout,
             null,
@@ -165,6 +177,8 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         this.nearXidVer = nearXidVer;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
+        this.mvccSnapshot = mvccSnapshot;
+        this.counters = counters;
 
         storeWriteThrough(storeWriteThrough);
         needReturnValue(retVal);
@@ -174,6 +188,20 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         nearNodeId = tx.nearNodeId();
 
         skipCompletedVers = tx.xidVersion() == tx.nearXidVersion();
+    }
+
+    /**
+     * @return Mvcc info.
+     */
+    public MvccSnapshot mvccSnapshot() {
+        return mvccSnapshot;
+    }
+
+    /**
+     * @return Update counters list.
+     */
+    public Collection<PartitionUpdateCountersMessage> updateCounters() {
+        return counters;
     }
 
     /**
@@ -381,11 +409,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridDhtTxPrepareRequest.class, this, "super", super.toString());
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -474,6 +497,18 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
             case 32:
                 if (!writer.writeMessage("topVer", topVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 33:
+                if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
+                    return false;
+
+                writer.incrementState();
+
+            case 34:
+                if (!writer.writeCollection("counters", counters, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -598,6 +633,22 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
                 reader.incrementState();
 
+            case 33:
+                mvccSnapshot = reader.readMessage("mvccSnapshot");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 34:
+                counters = reader.readCollection("counters", MessageCollectionItemType.MSG);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridDhtTxPrepareRequest.class);
@@ -610,6 +661,16 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 33;
+        return 35;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return U.safeAbs(version().hashCode());
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridDhtTxPrepareRequest.class, this, "super", super.toString());
     }
 }
