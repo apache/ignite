@@ -5423,7 +5423,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             processCustomMessage(msg, waitForNotification);
                         }
-                    } else
+                    }
+                    else
                         log.warning("Discarding duplicated custom event message [msg=" + msg + "]");
 
                     msg.message(null, msg.messageBytes());
@@ -5478,7 +5479,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                         log.warning("Discarding duplicated custom event message [msg=" + msg + "]");
 
                     msg.message(null, msg.messageBytes());
-                } else
+                }
+                else
                     log.warning("Unverified message [msg=" + msg + "] yet");
 
                 if (sendMessageToRemotes(msg))
@@ -5607,7 +5609,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                         log.info("Await future for message: " + msgObj);
 
                     fut.get();
-                } else if(log.isInfoEnabled())
+                }
+                else if(log.isInfoEnabled())
                     log.info("Skip wait future for message: " + msgObj);
 
                 if (msgObj.isMutable()) {
@@ -5618,7 +5621,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                         throw new IgniteException("Failed to marshal mutable discovery message: " + msgObj, t);
                     }
                 }
-            } else
+            }
+            else
                 log.warning("Skip notifyDiscoveryListener spiState = " + state0
                     + ", waitForNotification = " +waitForNotification
                     + ", listener = " + lsnr
