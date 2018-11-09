@@ -375,11 +375,6 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
      */
     private static class CountedFileIOFactory extends RandomAccessFileIOFactory {
         /** {@inheritDoc} */
-        @Override public FileIO create(File file) throws IOException {
-            return create(file, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
-        }
-
-        /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
             return new CountedFileIO(file, modes);
         }

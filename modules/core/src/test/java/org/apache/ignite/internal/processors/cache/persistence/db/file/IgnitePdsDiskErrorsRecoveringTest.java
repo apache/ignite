@@ -25,7 +25,6 @@ import java.nio.file.OpenOption;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -39,6 +38,7 @@ import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -52,9 +52,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_MMAP;
 
 /**
@@ -97,6 +94,8 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        cfg.setConsistentId(igniteInstanceName);
+
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(
                         new DataRegionConfiguration().setMaxSize(100L * 1024 * 1024).setPersistenceEnabled(true))
@@ -129,27 +128,36 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         // Fail to initialize page store. 2 extra pages is needed for MetaStorage.
         ioFactory = new FilteringFileIOFactory(".bin", new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), 2 * PAGE_SIZE));
 
-        final IgniteEx grid = startGrid(0);
-
         boolean failed = false;
+
+        IgniteInternalFuture startGridFut = GridTestUtils.runAsync(() -> {
+            try {
+                IgniteEx grid = startGrid(0);
+
+                grid.cluster().active(true);
+            }
+            catch (Exception e) {
+                throw new RuntimeException("Failed to start node.", e);
+            }
+        });
+
         try {
-            grid.cluster().active(true);
-        } catch (Exception expected) {
-            log.warning("Expected cache error", expected);
+            startGridFut.get();
+        }
+        catch (Exception e) {
+            Assert.assertTrue(e.getMessage().contains("Failed to start node."));
 
             failed = true;
         }
 
         Assert.assertTrue("Cache initialization must failed", failed);
 
-        // Grid should be automatically stopped after checkpoint fail.
-        awaitStop(grid);
-
         // Grid should be successfully recovered after stopping.
         ioFactory = null;
 
-        IgniteEx recoveredGrid = startGrid(0);
-        recoveredGrid.active(true);
+        IgniteEx grid = startGrid(0);
+
+        grid.cluster().active(true);
     }
 
     /**
@@ -177,15 +185,18 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         boolean activationFailed = false;
         try {
             grid = startGrid(0);
-            grid.cluster().active(true);
         }
-        catch (IgniteException e) {
-            log.warning("Activation test exception", e);
+        catch (IgniteCheckedException e) {
+            boolean interrupted = Thread.interrupted();
+
+            if (interrupted)
+                log.warning("Ignore interrupted excpetion [" +
+                    "thread=" + Thread.currentThread().getName() + ']', e);
 
             activationFailed = true;
         }
 
-        Assert.assertTrue("Activation must be failed", activationFailed);
+        Assert.assertTrue("Ignite instance startup must be failed", activationFailed);
 
         // Grid should be automatically stopped after checkpoint fail.
         awaitStop(grid);
@@ -314,7 +325,9 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
     public void testRecoveringOnWALWritingFail1() throws Exception {
         // Allow to allocate only 1 wal segment, fail on write to second.
         ioFactory = new FilteringFileIOFactory(".wal", new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), WAL_SEGMENT_SIZE));
+
         System.setProperty(IGNITE_WAL_MMAP, "true");
+
         doTestRecoveringOnWALWritingFail();
     }
 
@@ -324,7 +337,9 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
     public void testRecoveringOnWALWritingFail2() throws Exception {
         // Fail somewhere on the second wal segment.
         ioFactory = new FilteringFileIOFactory(".wal", new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), (long) (1.5 * WAL_SEGMENT_SIZE)));
+
         System.setProperty(IGNITE_WAL_MMAP, "false");
+
         doTestRecoveringOnWALWritingFail();
     }
 
@@ -332,18 +347,23 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
      * Test node stopping & recovery on WAL writing fail.
      */
     private void doTestRecoveringOnWALWritingFail() throws Exception {
-        final IgniteEx grid = startGrid(0);
+        IgniteEx grid = startGrid(0);
 
         FileWriteAheadLogManager wal = (FileWriteAheadLogManager)grid.context().cache().context().wal();
+
         wal.setFileIOFactory(ioFactory);
 
         grid.cluster().active(true);
 
         int failedPosition = -1;
 
-        for (int i = 0; i < 1000; i++) {
+        final int keysCount = 2000;
+
+        final int dataSize = 2048;
+
+        for (int i = 0; i < keysCount; i++) {
             byte payload = (byte) i;
-            byte[] data = new byte[2048];
+            byte[] data = new byte[dataSize];
             Arrays.fill(data, payload);
 
             try {
@@ -357,7 +377,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         }
 
         // We must be able to put something into cache before fail.
-        Assert.assertTrue(failedPosition > 0);
+        Assert.assertTrue("One of the cache puts must be failed", failedPosition > 0);
 
         // Grid should be automatically stopped after WAL fail.
         awaitStop(grid);
@@ -365,15 +385,16 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         ioFactory = null;
 
         // Grid should be successfully recovered after stopping.
-        IgniteEx recoveredGrid = startGrid(0);
-        recoveredGrid.cluster().active(true);
+        grid = startGrid(0);
+
+        grid.cluster().active(true);
 
         for (int i = 0; i < failedPosition; i++) {
             byte payload = (byte) i;
-            byte[] data = new byte[2048];
+            byte[] data = new byte[dataSize];
             Arrays.fill(data, payload);
 
-            byte[] actualData = (byte[]) recoveredGrid.cache(CACHE_NAME).get(i);
+            byte[] actualData = (byte[]) grid.cache(CACHE_NAME).get(i);
             Assert.assertArrayEquals(data, actualData);
         }
     }
@@ -473,11 +494,6 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public FileIO create(File file) throws IOException {
-            return create(file, CREATE, WRITE, READ);
-        }
-
-        /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
             if (file.getName().endsWith(pattern))
                 return delegate.create(file, modes);
@@ -505,11 +521,6 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         private LimitedSizeFileIOFactory(FileIOFactory delegate, long fsSpaceBytes) {
             this.delegate = delegate;
             this.availableSpaceBytes = new AtomicLong(fsSpaceBytes);
-        }
-
-        /** {@inheritDoc} */
-        @Override public FileIO create(File file) throws IOException {
-            return new LimitedSizeFileIO(delegate.create(file), availableSpaceBytes);
         }
 
         /** {@inheritDoc} */
