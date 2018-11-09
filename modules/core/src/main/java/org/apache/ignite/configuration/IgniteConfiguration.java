@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.util.Map;
 import java.util.UUID;
+import java.util.zip.Deflater;
 import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryListener;
 import javax.cache.expiry.ExpiryPolicy;
@@ -117,6 +118,9 @@ public class IgniteConfiguration {
 
     /** Default maximum timeout to wait for network responses in milliseconds (value is {@code 5,000ms}). */
     public static final long DFLT_NETWORK_TIMEOUT = 5000;
+
+    /** Default compression level for network messages (value is Deflater.BEST_SPEED. */
+    public static final int DFLT_NETWORK_COMPRESSION = Deflater.BEST_SPEED;
 
     /** Default interval between message send retries. */
     public static final long DFLT_SEND_RETRY_DELAY = 1000;
@@ -294,6 +298,9 @@ public class IgniteConfiguration {
 
     /** Maximum network requests timeout. */
     private long netTimeout = DFLT_NETWORK_TIMEOUT;
+
+    /** Compression level for network binary messages. */
+    private int netCompressionLevel = DFLT_NETWORK_COMPRESSION;
 
     /** Interval between message send retries. */
     private long sndRetryDelay = DFLT_SEND_RETRY_DELAY;
@@ -1453,6 +1460,29 @@ public class IgniteConfiguration {
         this.netTimeout = netTimeout;
 
         return this;
+    }
+
+    /**
+     * Compression level of internal network messages.
+     * <p>
+     * If not provided, then default value
+     * Deflater.BEST_SPEED is used.
+     *
+     * @return Network messages default compression level.
+     */
+    public int getNetworkCompressionLevel() {
+        return netCompressionLevel;
+    }
+
+    /**
+     * Compression level for internal network messages.
+     * <p>
+     * If not provided, then default value
+     * Deflater.BEST_SPEED is used.
+     *
+     */
+    public void setNetworkCompressionLevel(int netCompressionLevel) {
+        this.netCompressionLevel = netCompressionLevel;
     }
 
     /**
