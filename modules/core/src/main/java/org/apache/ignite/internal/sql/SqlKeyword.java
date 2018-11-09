@@ -26,6 +26,12 @@ import org.apache.ignite.internal.util.typedef.F;
  * SQL keyword constants.
  */
 public class SqlKeyword {
+    /** Keyword: KILL. */
+    public static final String KILL = "KILL";
+
+    /** Keyword: QUERY. */
+    public static final String QUERY = "QUERY";
+
     /** Keyword: ALTER. */
     public static final String ALTER = "ALTER";
 
