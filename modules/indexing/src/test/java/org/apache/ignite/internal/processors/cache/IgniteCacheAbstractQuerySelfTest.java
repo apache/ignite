@@ -266,7 +266,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         super.afterTest();
 
         for(String cacheName : ignite().cacheNames())
-            ignite().cache(cacheName).removeAll();
+            ignite().cache(cacheName).destroy();
     }
 
     /** {@inheritDoc} */
@@ -625,7 +625,13 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception In case of error.
      */
     public void testSimpleCustomTableName() throws Exception {
-        final IgniteCache<Integer, Object> cache = ignite().cache(DEFAULT_CACHE_NAME);
+        CacheConfiguration cacheConf = new CacheConfiguration<>(cacheConfiguration())
+            .setName(DEFAULT_CACHE_NAME)
+            .setQueryEntities(Arrays.asList(
+                new QueryEntity(Integer.class, Type1.class),
+                new QueryEntity(Integer.class, Type2.class)
+            ));
+        final IgniteCache<Integer, Object> cache = ignite().getOrCreateCache(cacheConf);
 
         cache.put(10, new Type1(1, "Type1 record #1"));
         cache.put(20, new Type1(2, "Type1 record #2"));
