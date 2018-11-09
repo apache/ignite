@@ -24,6 +24,7 @@ import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -173,7 +174,8 @@ public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage {
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        CacheObjectContext objCtx = ctx.cacheContext(cacheId).cacheObjectContext();
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
+        CacheObjectContext objCtx = cctx.cacheObjectContext();
 
         if (keys != null) {
             for (int i = 0; i < keys.size(); i++) {
@@ -193,6 +195,8 @@ public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage {
                                 entryVal.prepareMarshal(objCtx);
                         }
                     }
+                    else if (val instanceof GridInvokeValue)
+                        ((GridInvokeValue)val).prepareMarshal(cctx);
                 }
             }
         }
@@ -221,6 +225,8 @@ public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage {
                                 entryVal.finishUnmarshal(objCtx, ldr);
                         }
                     }
+                    else if (val instanceof GridInvokeValue)
+                        ((GridInvokeValue)val).finishUnmarshal(ctx, ldr);
                 }
             }
         }

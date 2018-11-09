@@ -87,7 +87,7 @@ struct SqlGetInfoTestSuiteFixture : odbc::OdbcTestSuite
      */
     SqlGetInfoTestSuiteFixture()
     {
-        grid = StartTestNode("queries-test.xml", "NodeMain");
+        grid = StartPlatformNode("queries-test.xml", "NodeMain");
     }
 
     /**

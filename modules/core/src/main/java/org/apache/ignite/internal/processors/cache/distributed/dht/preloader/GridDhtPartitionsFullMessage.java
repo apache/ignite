@@ -25,11 +25,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -796,5 +798,36 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Override public String toString() {
         return S.toString(GridDhtPartitionsFullMessage.class, this, "partCnt", parts != null ? parts.size() : 0,
             "super", super.toString());
+    }
+
+    /**
+     * Merges (replaces with newer) partitions map from given {@code other} full message.
+     *
+     * @param other Other full message.
+     */
+    public void merge(GridDhtPartitionsFullMessage other, GridDiscoveryManager discovery) {
+        assert other.exchangeId() == null && exchangeId() == null :
+            "Both current and merge full message must have exchangeId == null"
+             + other.exchangeId() + "," + exchangeId();
+
+        for (Map.Entry<Integer, GridDhtPartitionFullMap> groupAndMap : other.partitions().entrySet()) {
+            int grpId = groupAndMap.getKey();
+            GridDhtPartitionFullMap updMap = groupAndMap.getValue();
+
+            GridDhtPartitionFullMap currMap = partitions().get(grpId);
+
+            if (currMap == null)
+                partitions().put(grpId, updMap);
+            else {
+                ClusterNode currentMapSentBy = discovery.node(currMap.nodeId());
+                ClusterNode newMapSentBy = discovery.node(updMap.nodeId());
+
+                if (newMapSentBy == null)
+                    return;
+
+                if (currentMapSentBy == null || newMapSentBy.order() > currentMapSentBy.order() || updMap.compareTo(currMap) >= 0)
+                    partitions().put(grpId, updMap);
+            }
+        }
     }
 }

@@ -40,7 +40,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointe
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.transactions.TransactionState;
-import sun.nio.ch.DirectBuffer;
 
 /**
  * Statistic for overall WAL file

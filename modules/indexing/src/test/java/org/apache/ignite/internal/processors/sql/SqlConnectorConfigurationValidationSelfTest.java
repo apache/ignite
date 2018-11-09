@@ -163,7 +163,7 @@ public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstr
      * @param sqlCfg SQL configuration.
      * @param success Success flag. * @throws Exception If failed.
      */
-    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
+    @SuppressWarnings({"unchecked"})
     private void check(SqlConnectorConfiguration sqlCfg, boolean success) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration();
 

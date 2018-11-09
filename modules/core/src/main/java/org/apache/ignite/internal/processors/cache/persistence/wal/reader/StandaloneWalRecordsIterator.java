@@ -22,6 +22,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
@@ -42,6 +43,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.AbstractWalRe
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.ReadFileHandle;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordDataV1Serializer.EncryptedDataEntry;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentFileInputFactory;
@@ -115,7 +117,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         FileWALPointer lowBound,
         FileWALPointer highBound,
         boolean keepBinary,
-        int initialReadBufferSize
+        int initialReadBufferSize,
+        boolean strictBoundsCheck
     ) throws IgniteCheckedException {
         super(
             log,
@@ -125,6 +128,9 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             initialReadBufferSize,
             FILE_INPUT_FACTORY
         );
+
+        if (strictBoundsCheck)
+            strictCheck(walFiles, lowBound, highBound);
 
         this.lowBound = lowBound;
         this.highBound = highBound;
@@ -136,6 +142,55 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         init(walFiles);
 
         advance();
+    }
+
+    /**
+     * @param walFiles Wal files.
+     * @return printable indexes of segment files.
+     */
+    private static String printIndexes(List<FileDescriptor> walFiles) {
+        return "[" + String.join(",", walFiles.stream().map(f -> Long.toString(f.idx())).collect(Collectors.toList())) + "]";
+    }
+
+    /**
+     * @param walFiles Wal files.
+     * @param lowBound Low bound.
+     * @param highBound High bound.
+     *
+     * @throws IgniteCheckedException if failed
+     */
+    private static void strictCheck(List<FileDescriptor> walFiles, FileWALPointer lowBound, FileWALPointer highBound) throws IgniteCheckedException {
+        int idx = 0;
+
+        if (lowBound.index() > Long.MIN_VALUE) {
+            for (; idx < walFiles.size(); idx++) {
+                FileDescriptor desc = walFiles.get(idx);
+
+                assert desc != null;
+
+                if (desc.idx() == lowBound.index())
+                    break;
+            }
+        }
+
+        if (idx == walFiles.size())
+            throw new IgniteCheckedException("Wal segments not in bounds. loBoundIndex=" + lowBound.index() +
+                                                ", indexes=" + printIndexes(walFiles));
+
+        long curWalSegmIdx = walFiles.get(idx).idx();
+
+        for (; idx < walFiles.size() && curWalSegmIdx <= highBound.index(); idx++, curWalSegmIdx++) {
+            FileDescriptor desc = walFiles.get(idx);
+
+            assert desc != null;
+
+            if (curWalSegmIdx != desc.idx())
+                throw new IgniteCheckedException("Wal segment " + curWalSegmIdx + " not found in files " + printIndexes(walFiles));
+        }
+
+        if (highBound.index() < Long.MAX_VALUE && curWalSegmIdx <= highBound.index())
+            throw new IgniteCheckedException("Wal segments not in bounds. hiBoundIndex=" + highBound.index() +
+                                                ", indexes=" + printIndexes(walFiles));
     }
 
     /**
@@ -375,6 +430,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         final IgniteCacheObjectProcessor processor,
         final CacheObjectContext fakeCacheObjCtx,
         final DataEntry dataEntry) throws IgniteCheckedException {
+        if(dataEntry instanceof EncryptedDataEntry)
+            return dataEntry;
 
         final KeyCacheObject key;
         final CacheObject val;

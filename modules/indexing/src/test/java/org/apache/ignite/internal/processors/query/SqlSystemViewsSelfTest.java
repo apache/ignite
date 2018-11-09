@@ -19,24 +19,36 @@ package org.apache.ignite.internal.processors.query;
 
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import javax.cache.Cache;
+import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.eviction.EvictableEntry;
+import org.apache.ignite.cache.eviction.EvictionFilter;
+import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterMetrics;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.util.lang.GridNodePredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
@@ -73,7 +85,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("unchecked")
     private List<List<?>> execSql(Ignite ignite, String sql, Object ... args) {
-        IgniteCache cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+        IgniteCache cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         SqlFieldsQuery qry = new SqlFieldsQuery(sql);
 
@@ -114,7 +126,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
      * Test system views modifications.
      */
     public void testModifications() throws Exception {
-        startGrid();
+        startGrid(getConfiguration());
 
         assertSqlError("DROP TABLE IGNITE.NODES");
 
@@ -499,6 +511,229 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
         assertEquals("node2", res.get(0).get(0));
     }
 
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration() throws Exception {
+        return super.getConfiguration().setCacheConfiguration(new CacheConfiguration().setName(DEFAULT_CACHE_NAME));
+    }
+
+    /**
+     * Test caches system views.
+     */
+    @SuppressWarnings("ConstantConditions")
+    public void testCachesViews() throws Exception {
+        DataStorageConfiguration dsCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setName("def").setPersistenceEnabled(true))
+            .setDataRegionConfigurations(new DataRegionConfiguration().setName("dr1"),
+                new DataRegionConfiguration().setName("dr2"));
+
+        IgniteEx ignite0 = startGrid(getConfiguration().setDataStorageConfiguration(dsCfg));
+
+        Ignite ignite1 = startGrid(getConfiguration().setDataStorageConfiguration(dsCfg).setIgniteInstanceName("node1"));
+
+        ignite0.cluster().active(true);
+
+        Ignite ignite2 = startGrid(getConfiguration().setDataStorageConfiguration(dsCfg).setIgniteInstanceName("node2"));
+
+        Ignite ignite3 = startGrid(getConfiguration().setDataStorageConfiguration(dsCfg).setIgniteInstanceName("node3")
+            .setClientMode(true));
+
+        ignite0.getOrCreateCache(new CacheConfiguration<>()
+            .setName("cache_atomic_part")
+            .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setGroupName("cache_grp")
+            .setNodeFilter(new TestNodeFilter(ignite0.cluster().localNode()))
+        );
+
+        ignite0.getOrCreateCache(new CacheConfiguration<>()
+            .setName("cache_atomic_repl")
+            .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+            .setCacheMode(CacheMode.REPLICATED)
+            .setDataRegionName("dr1")
+            .setTopologyValidator(new TestTopologyValidator())
+        );
+
+        ignite0.getOrCreateCache(new CacheConfiguration<>()
+            .setName("cache_tx_part")
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setGroupName("cache_grp")
+            .setNodeFilter(new TestNodeFilter(ignite0.cluster().localNode()))
+        );
+
+        ignite0.getOrCreateCache(new CacheConfiguration<>()
+            .setName("cache_tx_repl")
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setCacheMode(CacheMode.REPLICATED)
+            .setDataRegionName("dr2")
+            .setEvictionFilter(new TestEvictionFilter())
+            .setEvictionPolicyFactory(new TestEvictionPolicyFactory())
+            .setOnheapCacheEnabled(true)
+        );
+
+        execSql("CREATE TABLE cache_sql (ID INT PRIMARY KEY, VAL VARCHAR) WITH " +
+            "\"cache_name=cache_sql,template=partitioned,atomicity=atomic\"");
+
+        awaitPartitionMapExchange();
+
+        List<List<?>> resAll = execSql("SELECT NAME, CACHE_ID, CACHE_TYPE, GROUP_ID, GROUP_NAME, " +
+                "CACHE_MODE, ATOMICITY_MODE, IS_ONHEAP_CACHE_ENABLED, IS_COPY_ON_READ, IS_LOAD_PREVIOUS_VALUE, " +
+                "IS_READ_FROM_BACKUP, PARTITION_LOSS_POLICY, NODE_FILTER, TOPOLOGY_VALIDATOR, IS_EAGER_TTL, " +
+                "WRITE_SYNCHRONIZATION_MODE, IS_INVALIDATE, IS_EVENTS_DISABLED, IS_STATISTICS_ENABLED, " +
+                "IS_MANAGEMENT_ENABLED, BACKUPS, AFFINITY, AFFINITY_MAPPER, " +
+                "REBALANCE_MODE, REBALANCE_BATCH_SIZE, REBALANCE_TIMEOUT, REBALANCE_DELAY, REBALANCE_THROTTLE, " +
+                "REBALANCE_BATCHES_PREFETCH_COUNT, REBALANCE_ORDER, " +
+                "EVICTION_FILTER, EVICTION_POLICY_FACTORY, " +
+                "IS_NEAR_CACHE_ENABLED, NEAR_CACHE_EVICTION_POLICY_FACTORY, NEAR_CACHE_START_SIZE, " +
+                "DEFAULT_LOCK_TIMEOUT, CACHE_INTERCEPTOR, CACHE_STORE_FACTORY, " +
+                "IS_STORE_KEEP_BINARY, IS_READ_THROUGH, IS_WRITE_THROUGH, " +
+                "IS_WRITE_BEHIND_ENABLED, WRITE_BEHIND_COALESCING, WRITE_BEHIND_FLUSH_SIZE, " +
+                "WRITE_BEHIND_FLUSH_FREQUENCY, WRITE_BEHIND_FLUSH_THREAD_COUNT, WRITE_BEHIND_FLUSH_BATCH_SIZE, " +
+                "MAX_CONCURRENT_ASYNC_OPERATIONS, CACHE_LOADER_FACTORY, CACHE_WRITER_FACTORY, EXPIRY_POLICY_FACTORY, " +
+                "IS_SQL_ESCAPE_ALL, SQL_SCHEMA, SQL_INDEX_MAX_INLINE_SIZE, IS_SQL_ONHEAP_CACHE_ENABLED, " +
+                "SQL_ONHEAP_CACHE_MAX_SIZE, QUERY_DETAILS_METRICS_SIZE, QUERY_PARALLELISM, MAX_QUERY_ITERATORS_COUNT, " +
+                "DATA_REGION_NAME FROM IGNITE.CACHES");
+
+        assertColumnTypes(resAll.get(0),
+            String.class, Integer.class, String.class, Integer.class, String.class,
+            String.class, String.class, Boolean.class, Boolean.class, Boolean.class,
+            Boolean.class, String.class, String.class, String.class, Boolean.class,
+            String.class, Boolean.class, Boolean.class, Boolean.class,
+            Boolean.class, Integer.class, String.class, String.class,
+            String.class, Integer.class, Long.class, Long.class, Long.class, // Rebalance.
+            Long.class, Integer.class,
+            String.class, String.class, // Eviction.
+            Boolean.class, String.class, Integer.class, // Near cache.
+            Long.class, String.class, String.class,
+            Boolean.class, Boolean.class, Boolean.class,
+            Boolean.class, Boolean.class, Integer.class, // Write-behind.
+            Long.class, Integer.class, Integer.class,
+            Integer.class, String.class, String.class, String.class,
+            Boolean.class, String.class, Integer.class, Boolean.class, // SQL.
+            Integer.class, Integer.class, Integer.class, Integer.class,
+            String.class);
+
+        assertEquals("cache_tx_part", execSql("SELECT NAME FROM IGNITE.CACHES WHERE " +
+            "CACHE_MODE = 'PARTITIONED' AND ATOMICITY_MODE = 'TRANSACTIONAL' AND NAME like 'cache%'").get(0).get(0));
+
+        assertEquals("cache_atomic_repl", execSql("SELECT NAME FROM IGNITE.CACHES WHERE " +
+            "CACHE_MODE = 'REPLICATED' AND ATOMICITY_MODE = 'ATOMIC' AND NAME like 'cache%'").get(0).get(0));
+
+        assertEquals(2L, execSql("SELECT COUNT(*) FROM IGNITE.CACHES WHERE GROUP_NAME = 'cache_grp'")
+            .get(0).get(0));
+
+        assertEquals("cache_atomic_repl", execSql("SELECT NAME FROM IGNITE.CACHES " +
+            "WHERE DATA_REGION_NAME = 'dr1'").get(0).get(0));
+
+        assertEquals("cache_tx_repl", execSql("SELECT NAME FROM IGNITE.CACHES " +
+            "WHERE DATA_REGION_NAME = 'dr2'").get(0).get(0));
+
+        assertEquals("PARTITIONED", execSql("SELECT CACHE_MODE FROM IGNITE.CACHES " +
+            "WHERE NAME = 'cache_atomic_part'").get(0).get(0));
+
+        assertEquals("USER", execSql("SELECT CACHE_TYPE FROM IGNITE.CACHES WHERE NAME = 'cache_sql'")
+            .get(0).get(0));
+
+        assertEquals(0L, execSql("SELECT COUNT(*) FROM IGNITE.CACHES WHERE NAME = 'no_such_cache'").get(0)
+            .get(0));
+
+        assertEquals(0L, execSql("SELECT COUNT(*) FROM IGNITE.CACHES WHERE NAME = 1").get(0).get(0));
+
+        assertEquals("TestNodeFilter", execSql("SELECT NODE_FILTER FROM IGNITE.CACHES WHERE NAME = " +
+            "'cache_atomic_part'").get(0).get(0));
+
+        assertEquals("TestEvictionFilter", execSql("SELECT EVICTION_FILTER FROM IGNITE.CACHES " +
+            "WHERE NAME = 'cache_tx_repl'").get(0).get(0));
+
+        assertEquals("TestEvictionPolicyFactory", execSql("SELECT EVICTION_POLICY_FACTORY " +
+            "FROM IGNITE.CACHES WHERE NAME = 'cache_tx_repl'").get(0).get(0));
+
+        assertEquals("TestTopologyValidator", execSql("SELECT TOPOLOGY_VALIDATOR FROM IGNITE.CACHES " +
+            "WHERE NAME = 'cache_atomic_repl'").get(0).get(0));
+
+        // Check quick count.
+        assertEquals(execSql("SELECT COUNT(*) FROM IGNITE.CACHES").get(0).get(0),
+            execSql("SELECT COUNT(*) FROM IGNITE.CACHES WHERE CACHE_ID <> CACHE_ID + 1").get(0).get(0));
+
+        // Check that caches are the same on BLT, BLT filtered by node filter, non BLT and client nodes.
+        assertEquals(5L, execSql("SELECT COUNT(*) FROM IGNITE.CACHES WHERE NAME like 'cache%'").get(0)
+            .get(0));
+
+        assertEquals(5L, execSql(ignite1, "SELECT COUNT(*) FROM IGNITE.CACHES WHERE NAME like 'cache%'")
+            .get(0).get(0));
+
+        assertEquals(5L, execSql(ignite2, "SELECT COUNT(*) FROM IGNITE.CACHES WHERE NAME like 'cache%'")
+            .get(0).get(0));
+
+        assertEquals(5L, execSql(ignite3, "SELECT COUNT(*) FROM IGNITE.CACHES WHERE NAME like 'cache%'")
+            .get(0).get(0));
+
+        // Check cache groups.
+        resAll = execSql("SELECT ID, GROUP_NAME, IS_SHARED, CACHE_COUNT, " +
+            "CACHE_MODE, ATOMICITY_MODE, AFFINITY, PARTITIONS_COUNT, " +
+            "NODE_FILTER, DATA_REGION_NAME, TOPOLOGY_VALIDATOR, PARTITION_LOSS_POLICY, " +
+            "REBALANCE_MODE, REBALANCE_DELAY, REBALANCE_ORDER, BACKUPS " +
+            "FROM IGNITE.CACHE_GROUPS");
+
+        assertColumnTypes(resAll.get(0),
+            Integer.class, String.class, Boolean.class, Integer.class,
+            String.class, String.class, String.class, Integer.class,
+            String.class, String.class, String.class, String.class,
+            String.class, Long.class, Integer.class, Integer.class);
+
+        assertEquals(2, execSql("SELECT CACHE_COUNT FROM IGNITE.CACHE_GROUPS " +
+            "WHERE GROUP_NAME = 'cache_grp'").get(0).get(0));
+
+        assertEquals("cache_grp", execSql("SELECT GROUP_NAME FROM IGNITE.CACHE_GROUPS " +
+            "WHERE IS_SHARED = true AND GROUP_NAME like 'cache%'").get(0).get(0));
+
+        // Check index on ID column.
+        assertEquals("cache_tx_repl", execSql("SELECT GROUP_NAME FROM IGNITE.CACHE_GROUPS " +
+            "WHERE ID = ?", ignite0.cachex("cache_tx_repl").context().groupId()).get(0).get(0));
+
+        assertEquals(0, execSql("SELECT ID FROM IGNITE.CACHE_GROUPS WHERE ID = 0").size());
+
+        // Check join by indexed column.
+        assertEquals("cache_tx_repl", execSql("SELECT CG.GROUP_NAME FROM IGNITE.CACHES C JOIN " +
+            "IGNITE.CACHE_GROUPS CG ON C.GROUP_ID = CG.ID WHERE C.NAME = 'cache_tx_repl'").get(0).get(0));
+
+        // Check join by non-indexed column.
+        assertEquals("cache_grp", execSql("SELECT CG.GROUP_NAME FROM IGNITE.CACHES C JOIN " +
+            "IGNITE.CACHE_GROUPS CG ON C.GROUP_NAME = CG.GROUP_NAME WHERE C.NAME = 'cache_tx_part'").get(0).get(0));
+
+        // Check configuration equality for cache and cache group views.
+        assertEquals(3L, execSql("SELECT COUNT(*) FROM IGNITE.CACHES C JOIN IGNITE.CACHE_GROUPS CG " +
+            "ON C.NAME = CG.GROUP_NAME WHERE C.NAME like 'cache%' " +
+            "AND C.CACHE_MODE = CG.CACHE_MODE " +
+            "AND C.ATOMICITY_MODE = CG.ATOMICITY_MODE " +
+            "AND COALESCE(C.AFFINITY, '-') = COALESCE(CG.AFFINITY, '-') " +
+            "AND COALESCE(C.NODE_FILTER, '-') = COALESCE(CG.NODE_FILTER, '-') " +
+            "AND COALESCE(C.DATA_REGION_NAME, '-') = COALESCE(CG.DATA_REGION_NAME, '-') " +
+            "AND COALESCE(C.TOPOLOGY_VALIDATOR, '-') = COALESCE(CG.TOPOLOGY_VALIDATOR, '-') " +
+            "AND C.PARTITION_LOSS_POLICY = CG.PARTITION_LOSS_POLICY " +
+            "AND C.REBALANCE_MODE = CG.REBALANCE_MODE " +
+            "AND C.REBALANCE_DELAY = CG.REBALANCE_DELAY " +
+            "AND C.REBALANCE_ORDER = CG.REBALANCE_ORDER " +
+            "AND C.BACKUPS = CG.BACKUPS").get(0).get(0));
+
+        // Check quick count.
+        assertEquals(execSql("SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS").get(0).get(0),
+            execSql("SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS WHERE ID <> ID + 1").get(0).get(0));
+
+        // Check that cache groups are the same on different nodes.
+        assertEquals(4L, execSql("SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS " +
+            "WHERE GROUP_NAME like 'cache%'").get(0).get(0));
+
+        assertEquals(4L, execSql(ignite1, "SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS " +
+            "WHERE GROUP_NAME like 'cache%'").get(0).get(0));
+
+        assertEquals(4L, execSql(ignite2, "SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS " +
+            "WHERE GROUP_NAME like 'cache%'").get(0).get(0));
+
+        assertEquals(4L, execSql(ignite3, "SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS " +
+            "WHERE GROUP_NAME like 'cache%'").get(0).get(0));
+    }
+
     /**
      * Gets ignite configuration with persistence enabled.
      */
@@ -527,5 +762,71 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
         Time time0 = (Time)sqlTime;
 
         return time0.getTime() + TimeZone.getDefault().getOffset(time0.getTime());
+    }
+
+    /**
+     *
+     */
+    private static class TestNodeFilter extends GridNodePredicate {
+        /**
+         * @param node Node.
+         */
+        public TestNodeFilter(ClusterNode node) {
+            super(node);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "TestNodeFilter";
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TestEvictionFilter implements EvictionFilter<Object, Object> {
+        /** {@inheritDoc} */
+        @Override public boolean evictAllowed(Cache.Entry<Object, Object> entry) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "TestEvictionFilter";
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TestEvictionPolicyFactory implements Factory<EvictionPolicy<Object, Object>> {
+        /** {@inheritDoc} */
+        @Override public EvictionPolicy<Object, Object> create() {
+            return new EvictionPolicy<Object, Object>() {
+                @Override public void onEntryAccessed(boolean rmv, EvictableEntry<Object, Object> entry) {
+                    // No-op.
+                }
+            };
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "TestEvictionPolicyFactory";
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TestTopologyValidator implements TopologyValidator {
+        /** {@inheritDoc} */
+        @Override public boolean validate(Collection<ClusterNode> nodes) {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "TestTopologyValidator";
+        }
     }
 }

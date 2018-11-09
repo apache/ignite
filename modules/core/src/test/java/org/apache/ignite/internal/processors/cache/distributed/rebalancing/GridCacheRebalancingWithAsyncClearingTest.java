@@ -31,12 +31,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 
@@ -65,7 +64,7 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
                                             .setMaxSize(100L * 1024 * 1024))
         );
 
-        cfg.setCacheConfiguration(new CacheConfiguration(CACHE_NAME)
+        cfg.setCacheConfiguration(new CacheConfiguration<>(CACHE_NAME)
                 .setBackups(2)
                 .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
                 .setIndexedTypes(Integer.class, Integer.class)
@@ -106,16 +105,17 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
         ig.cluster().active(true);
 
         // High number of keys triggers long partition eviction.
-        final int keysCount = 300_000;
+        final int keysCnt = SF.applyLB(300_000, 10_000);
 
-        try (IgniteDataStreamer ds = ig.dataStreamer(CACHE_NAME)) {
+        try (IgniteDataStreamer<Integer, Integer> ds = ig.dataStreamer(CACHE_NAME)) {
             log.info("Writing initial data...");
 
             ds.allowOverwrite(true);
-            for (int k = 1; k <= keysCount; k++) {
+
+            for (int k = 1; k <= keysCnt; k++) {
                 ds.addData(k, k);
 
-                if (k % 50_000 == 0)
+                if (k % 10_000 == 0)
                     log.info("Written " + k + " entities.");
             }
 
@@ -126,14 +126,15 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
 
         awaitPartitionMapExchange();
 
-        try (IgniteDataStreamer ds = ig.dataStreamer(CACHE_NAME)) {
+        try (IgniteDataStreamer<Integer, Integer> ds = ig.dataStreamer(CACHE_NAME)) {
             log.info("Writing external data...");
 
             ds.allowOverwrite(true);
-            for (int k = 1; k <= keysCount; k++) {
+
+            for (int k = 1; k <= keysCnt; k++) {
                 ds.addData(k, 2 * k);
 
-                if (k % 50_000 == 0)
+                if (k % 10_000 == 0)
                     log.info("Written " + k + " entities.");
             }
 
@@ -179,10 +180,12 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
             ignite.cache(CACHE_NAME).rebalance().get();
 
         // Check no data loss.
-        for (int k = 1; k <= keysCount; k++) {
-            Integer value = cache.get(k);
-            Assert.assertNotNull("Value for " + k + " is null", value);
-            Assert.assertEquals("Check failed for " + k + " " + value, 2 * k, (int) value);
+        for (int k = 1; k <= keysCnt; k++) {
+            Integer val = cache.get(k);
+
+            Assert.assertNotNull("Value for " + k + " is null", val);
+
+            Assert.assertEquals("Check failed for " + k + " " + val, 2 * k, (int)val);
         }
     }
 
@@ -196,16 +199,16 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
         ignite.cluster().active(true);
 
         // High number of keys triggers long partition eviction.
-        final int keysCount = 500_000;
+        final int keysCnt = SF.applyLB(300_000, 10_000);
 
-        try (IgniteDataStreamer ds = ignite.dataStreamer(CACHE_NAME)) {
+        try (IgniteDataStreamer<Integer, Integer> ds = ignite.dataStreamer(CACHE_NAME)) {
             log.info("Writing initial data...");
 
             ds.allowOverwrite(true);
-            for (int k = 1; k <= keysCount; k++) {
+            for (int k = 1; k <= keysCnt; k++) {
                 ds.addData(k, k);
 
-                if (k % 50_000 == 0)
+                if (k % 10_000 == 0)
                     log.info("Written " + k + " entities.");
             }
 
@@ -231,10 +234,12 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
         awaitPartitionMapExchange();
 
         // Check no data loss.
-        for (int k = 1; k <= keysCount; k++) {
-            Integer value = (Integer) ignite.cache(CACHE_NAME).get(k);
-            Assert.assertNotNull("Value for " + k + " is null", value);
-            Assert.assertEquals("Check failed for " + k + " = " + value, k, (int) value);
+        for (int k = 1; k <= keysCnt; k++) {
+            Integer val = (Integer) ignite.cache(CACHE_NAME).get(k);
+
+            Assert.assertNotNull("Value for " + k + " is null", val);
+
+            Assert.assertEquals("Check failed for " + k + " = " + val, k, (int)val);
         }
     }
 }

@@ -131,7 +131,6 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("NullableProblems")
     public void testUpdateProperties() throws Exception {
         assertEmpty(mgr.directoryListing(ROOT_ID));
 

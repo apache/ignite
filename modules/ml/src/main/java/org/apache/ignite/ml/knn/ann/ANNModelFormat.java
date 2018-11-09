@@ -41,7 +41,7 @@ public class ANNModelFormat extends KNNModelFormat implements Serializable {
      * @param k Amount of nearest neighbors.
      * @param measure Distance measure.
      * @param stgy kNN strategy.
-     * @param candidatesStat
+     * @param candidatesStat The stat about candidates.
      */
     public ANNModelFormat(int k,
         DistanceMeasure measure,

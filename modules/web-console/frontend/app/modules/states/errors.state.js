@@ -23,7 +23,7 @@ angular
     .module('ignite-console.states.errors', [
         'ui.router'
     ])
-    .config(['$stateProvider', function($stateProvider) {
+    .config(['$stateProvider', /** @param {import('@uirouter/angularjs').StateProvider} $stateProvider */ function($stateProvider) {
         // set up the states
         $stateProvider
             .state('404', {

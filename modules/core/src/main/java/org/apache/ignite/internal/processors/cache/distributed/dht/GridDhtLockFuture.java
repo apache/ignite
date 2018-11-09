@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVe
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedLockFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersionAware;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
@@ -526,7 +527,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
      * @param nodeId Left node ID
      * @return {@code True} if node was in the list.
      */
-    @SuppressWarnings({"ThrowableInstanceNeverThrown"})
     @Override public boolean onNodeLeft(UUID nodeId) {
         boolean found = false;
 
@@ -1162,7 +1162,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings({"ThrowableInstanceNeverThrown"})
         @Override public void onTimeout() {
             if (log.isDebugEnabled())
                 log.debug("Timed out waiting for lock response: " + this);

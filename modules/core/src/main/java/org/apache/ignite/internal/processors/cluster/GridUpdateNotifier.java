@@ -48,10 +48,10 @@ class GridUpdateNotifier {
     private static final int WORKER_THREAD_SLEEP_TIME = 5000;
 
     /** Default URL for request Ignite updates. */
-    private final static String DEFAULT_IGNITE_UPDATES_URL = "https://ignite.apache.org/latest";
+    private static final String DEFAULT_IGNITE_UPDATES_URL = "https://ignite.apache.org/latest";
 
     /** Default HTTP parameter for request Ignite updates. */
-    private final static String DEFAULT_IGNITE_UPDATES_PARAMS = "?ver=";
+    private static final String DEFAULT_IGNITE_UPDATES_PARAMS = "?ver=";
 
     /** Grid version. */
     private final String ver;

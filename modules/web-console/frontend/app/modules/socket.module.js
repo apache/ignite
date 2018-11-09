@@ -21,7 +21,7 @@ import io from 'socket.io-client'; // eslint-disable-line no-unused-vars
 angular
 .module('ignite-console.socket', [
 ])
-.provider('igniteSocketFactory', [function() {
+.provider('igniteSocketFactory', function() {
     let _options = {};
 
     /**
@@ -31,11 +31,17 @@ angular
         _options = options;
     };
 
-    this.$get = ['socketFactory', function(socketFactory) {
+    function factory(socketFactory) {
         return function() {
             const ioSocket = io.connect(_options);
 
             return socketFactory({ioSocket});
         };
-    }];
-}]);
+    }
+
+    factory.$inject = ['socketFactory'];
+
+    this.$get = factory;
+
+    return this;
+});

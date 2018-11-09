@@ -56,7 +56,7 @@ struct AuthenticationTestSuiteFixture : odbc::OdbcTestSuite
 {
     static Ignite StartAdditionalNode(const char* name)
     {
-        return StartTestNode("queries-auth.xml", name);
+        return StartPlatformNode("queries-auth.xml", name);
     }
 
     /**

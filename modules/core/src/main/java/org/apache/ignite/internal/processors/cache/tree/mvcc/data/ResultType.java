@@ -30,5 +30,9 @@ public enum ResultType {
     /** */
     LOCKED,
     /** */
-    VERSION_MISMATCH
+    VERSION_MISMATCH,
+    /** */
+    FILTERED,
+    /** */
+    REMOVED_NOT_NULL,
 }

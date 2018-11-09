@@ -232,7 +232,6 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
      * @param miniId Mini ID to find.
      * @return Mini future.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (GridNearOptimisticSerializableTxPrepareFuture.this) {
@@ -383,7 +382,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             return;
         }
 
-        assert !tx.txState().mvccEnabled(cctx) || mvccCrd != null || F.isEmpty(writes);
+        assert !tx.txState().mvccEnabled() || mvccCrd != null || F.isEmpty(writes);
 
         tx.addEntryMapping(mappings.values());
 
@@ -810,7 +809,6 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         private GridDistributedTxMapping m;
 
         /** Flag to signal some result being processed. */
-        @SuppressWarnings("UnusedDeclaration")
         private volatile int rcvRes;
 
         /**
@@ -884,7 +882,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
          * @param res Result callback.
          * @param updateMapping Update mapping flag.
          */
-        @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
+        @SuppressWarnings({"unchecked"})
         void onResult(final GridNearTxPrepareResponse res, boolean updateMapping) {
             if (isDone())
                 return;

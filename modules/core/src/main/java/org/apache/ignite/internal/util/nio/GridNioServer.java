@@ -193,11 +193,9 @@ public class GridNioServer<T> {
     private volatile long idleTimeout = ConnectorConfiguration.DFLT_IDLE_TIMEOUT;
 
     /** For test purposes only. */
-    @SuppressWarnings("UnusedDeclaration")
     private boolean skipWrite;
 
     /** For test purposes only. */
-    @SuppressWarnings("UnusedDeclaration")
     private boolean skipRead;
 
     /** Local address. */
@@ -1830,6 +1828,9 @@ public class GridNioServer<T> {
                 }
                 else if (err != null)
                     lsnr.onFailure(SYSTEM_WORKER_TERMINATION, err);
+                else
+                    // In case of closed == true, prevent general-case termination handling.
+                    cancel();
             }
         }
 
@@ -2906,6 +2907,9 @@ public class GridNioServer<T> {
                     lsnr.onFailure(CRITICAL_ERROR, err);
                 else if (err != null)
                     lsnr.onFailure(SYSTEM_WORKER_TERMINATION, err);
+                else
+                    // In case of closed == true, prevent general-case termination handling.
+                    cancel();
             }
         }
 

@@ -58,6 +58,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -65,12 +66,11 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
-import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
@@ -1150,6 +1150,17 @@ public class GridCacheUtils {
     }
 
     /**
+     * @param cacheName Cache name.
+     * @param grpName Group name.
+     * @return Group ID.
+     */
+    public static int cacheGroupId(String cacheName, @Nullable String grpName) {
+        assert cacheName != null;
+
+        return grpName != null ? CU.cacheId(grpName) : CU.cacheId(cacheName);
+    }
+
+    /**
      * @param cfg Grid configuration.
      * @param cacheName Cache name.
      * @return {@code True} in this is IGFS data or meta cache.
@@ -1574,7 +1585,7 @@ public class GridCacheUtils {
     /**
      * @return default TX configuration if system cache is used or current grid TX config otherwise.
      */
-    public static TransactionConfiguration transactionConfiguration(final @Nullable GridCacheContext sysCacheCtx,
+    public static TransactionConfiguration transactionConfiguration(@Nullable final GridCacheContext sysCacheCtx,
         final IgniteConfiguration cfg) {
         return sysCacheCtx != null && sysCacheCtx.systemTx()
             ? DEFAULT_TX_CFG
@@ -1744,7 +1755,7 @@ public class GridCacheUtils {
         boolean readThrough,
         boolean skipVals
     ) {
-        if (!readThrough || skipVals ||
+        if (cctx.mvccEnabled() || !readThrough || skipVals ||
             (key != null && !cctx.affinity().backupsByKey(key, topVer).contains(cctx.localNode())))
             return null;
 
@@ -1898,6 +1909,17 @@ public class GridCacheUtils {
         }
 
         return false;
+    }
+
+    /**
+     * @param pageSize Page size.
+     * @param encSpi Encryption spi.
+     * @return Page size without encryption overhead.
+     */
+    public static int encryptedPageSize(int pageSize, EncryptionSpi encSpi) {
+        return pageSize
+            - (encSpi.encryptedSizeNoPadding(pageSize) - pageSize)
+            - encSpi.blockSize(); /* For CRC. */
     }
 
     /**
