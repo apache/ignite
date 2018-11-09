@@ -1350,8 +1350,8 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
 
                     readOperationsFinishedUnderBlock.incrementAndGet();
                 }
-                catch (Exception e) {
-                    boolean threadInterrupted = X.hasCause(e,
+                catch (Throwable t) {
+                    boolean threadInterrupted = X.hasCause(t,
                         InterruptedException.class,
                         IgniteInterruptedException.class,
                         IgniteInterruptedCheckedException.class
@@ -1359,13 +1359,13 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
 
                     if (threadInterrupted)
                         Thread.currentThread().interrupt();
-                    else if (allowException() && X.hasCause(e, ClusterTopologyCheckedException.class))
+                    else if (allowException() && X.hasCause(t, ClusterTopologyCheckedException.class))
                         readOperationsFinishedUnderBlock.incrementAndGet();
                     else {
                         readOperationsFailed.incrementAndGet();
 
-                        if (loggedMessages.add(e.getMessage()))
-                            log.error("Error during read operation execution", e);
+                        if (loggedMessages.add(t.getMessage()))
+                            log.error("Error during read operation execution", t);
 
                         continue;
                     }

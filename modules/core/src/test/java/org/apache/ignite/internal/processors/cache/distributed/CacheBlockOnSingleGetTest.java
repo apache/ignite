@@ -41,9 +41,14 @@ public class CacheBlockOnSingleGetTest extends CacheBlockOnReadAbstractTest {
                 for (int i = 0; i < DFLT_PARTITIONS_COUNT * 4; i++) {
                     int key = random.nextInt(entriesCount());
 
-                    int val = cache().get(key);
+                    Integer val = cache().get(key);
 
-                    assertEquals(key, val);
+                    assertNotNull(
+                        String.format("cache().get(key) returned null value for key %d on iteration %d.", key, i),
+                        val
+                    );
+
+                    assertEquals(key, val.intValue());
                 }
             }
         };
