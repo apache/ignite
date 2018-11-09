@@ -666,8 +666,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 if (type == EVT_DISCOVERY_CUSTOM_EVT) {
                     assert customMsg != null;
 
-                    if (log.isInfoEnabled())
-                        log.info("Custom discovery message received : " + customMsg);
+                    if (log.isDebugEnabled())
+                        log.debug("Custom discovery message received : " + customMsg);
 
                     boolean incMinorTopVer;
 

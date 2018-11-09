@@ -5378,9 +5378,6 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param waitForNotification If {@code true} then thread will wait when discovery event notification has finished.
          */
         private void processCustomMessage(TcpDiscoveryCustomEventMessage msg, boolean waitForNotification) {
-            if (log.isInfoEnabled())
-                log.info("processCustomMessage [msg=" + msg + "], waitForNotification=" + waitForNotification);
-
             if (isLocalNodeCoordinator()) {
                 boolean delayMsg;
 
@@ -5480,8 +5477,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     msg.message(null, msg.messageBytes());
                 }
-                else
-                    log.warning("Unverified message [msg=" + msg + "] yet");
 
                 if (sendMessageToRemotes(msg))
                     sendMessageAcrossRing(msg);
@@ -5604,14 +5599,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     hist,
                     msgObj);
 
-                if (waitForNotification || msgObj.isMutable()) {
-                    if (log.isInfoEnabled())
-                        log.info("Await future for message: " + msgObj);
-
+                if (waitForNotification || msgObj.isMutable())
                     fut.get();
-                }
-                else if(log.isInfoEnabled())
-                    log.info("Skip wait future for message: " + msgObj);
 
                 if (msgObj.isMutable()) {
                     try {
