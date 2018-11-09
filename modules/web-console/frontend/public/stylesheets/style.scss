@@ -33,6 +33,14 @@ body {
     flex: 1 0 auto;
 }
 
+.container--responsive {
+    padding: 0 30px;
+
+    .gridster-wrapper {
+        margin: -20px !important;
+    }
+}
+
 hr {
     margin: 20px 0;
 }
@@ -62,7 +70,7 @@ hr {
 }
 
 .table.table-vertical-middle tbody > tr > td {
-  vertical-align: middle;
+    vertical-align: middle;
 }
 
 .table .ui-grid-settings {
@@ -95,7 +103,7 @@ hr {
 }
 
 .tooltip {
-  word-wrap: break-word;
+    word-wrap: break-word;
 }
 
 .theme-line ul.dropdown-menu {
@@ -288,10 +296,6 @@ body > .wrapper > ui-view {
 
 .use-cache {
     display: flex;
-
-    input[type="checkbox"] {
-        width: 20px;
-    }
 }
 
 .group-section {
@@ -492,62 +496,40 @@ button.form-control {
         border-top: 1px solid $ignite-border-color;
     }
 
+    .btn-ignite-group {
+        padding: 0;
+        border: none;
+        margin-right: 0;
+        background: transparent;
+    }
+
     .sql-controls {
-        position: relative;
-        top: -1px;
+        display: flex;
+        justify-content: space-between;
         border-top: 1px solid #ddd;
 
-        padding: 10px 10px;
+        & > div {
+            display: flex;
+            padding: 10px;
+            align-items: flex-start;
 
-        input[type="checkbox"] {
-            line-height: 20px;
-            margin-right: 5px;
-        }
-
-        label {
-            line-height: 28px;
-            vertical-align: middle;
-        }
-
-        .btn {
-            line-height: 20px;
-        }
-
-        .ignite-form-field {
-            margin-right: 10px;
-
-            .ignite-form-field__label {
-                float: left;
-                width: auto;
-                margin-right: 5px;
-                line-height: 28px;
+            &:nth-child(2) {
+                flex: 1;
+                justify-content: flex-end;
             }
 
-            .ignite-form-field__label + div {
-                display: block;
-                float: none;
-                width: auto;
+            &:last-child {
+                flex-direction: column;
+                flex-basis: 25%;
             }
         }
 
-        .tipLabel .btn {
-            float: right;
+        button + button {
+            margin-left: 20px;
         }
 
-        .pull-right {
-            margin-left: 10px;
-
-            .ignite-form-field {
-                margin-right: -24px;
-
-                label {
-                    margin-left: 5px;
-                }
-            }
-        }
-
-        .col-sm-3 + .tipLabel {
-            margin-left: 0;
+        .form-field--inline + .form-field--inline {
+            margin-left: 20px;
         }
     }
 
@@ -611,19 +593,10 @@ button.form-control {
 }
 
 .theme-line .panel-heading {
-    padding: 5px 10px;
     margin: 0;
     cursor: pointer;
     font-size: $font-size-large;
     line-height: 24px;
-
-    label {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        max-width: calc(100% - 85px);
-        cursor: pointer;
-    }
 
     .btn-group {
         vertical-align: top;
@@ -1063,7 +1036,28 @@ button.form-control {
     position: absolute;
     z-index: 1030;
     min-width: 305px;
-    max-width: 450px;
+    max-width: 335px;
+
+    treecontrol li {
+        line-height: 16px;
+    }
+
+    treeitem ul {
+        margin-top: -2px;
+        margin-bottom: 2px;
+    }
+
+    .node-display {
+        position: relative;
+        top: 0;
+
+        max-width: 280px;
+
+        text-overflow: ellipsis;
+        line-height: 16px;
+
+        overflow: hidden;
+    }
 
     .popover-title {
         color: black;
@@ -1206,12 +1200,12 @@ label {
 }
 
 .fa-chevron-circle-down {
-    color: $brand-primary;
+    color: $ignite-brand-success;
     margin-right: 5px;
 }
 
 .fa-chevron-circle-right {
-    color: $brand-primary;
+    color: $ignite-brand-success;
     margin-right: 5px;
 }
 
@@ -1387,8 +1381,8 @@ th[st-sort] {
 // element a background, we're telling Safari that it *really* needs to
 // paint the whole area. See https://github.com/ajaxorg/ace/issues/2872
 .ace_scrollbar-inner {
-	background-color: #FFF;
-	opacity: 0.01;
+    background-color: #FFF;
+    opacity: 0.01;
 
     .ace_dark & {
         background-color: #000;
@@ -1641,7 +1635,7 @@ button.select-toggle::after {
     border-right: 0.3em solid transparent;
     border-left: 0.3em solid transparent;
     position: absolute;
-    right: 5px;
+    right: 10px;
     top: 50%;
     vertical-align: middle;
 }
@@ -1757,7 +1751,20 @@ treecontrol.tree-classic {
 }
 
 .getting-started {
+    min-height: 240px;
     margin: 15px 15px 300px;
+
+    ul {
+        line-height: 20px;
+    }
+
+    [class*="col-"] {
+        align-self: flex-start !important;
+    }
+
+    .align-center {
+        justify-content: center !important;
+    }
 }
 
 .getting-started-demo {
@@ -1862,69 +1869,6 @@ treecontrol.tree-classic {
     border-bottom-width: 0;
 }
 
-.ribbon-wrapper {
-    width: 150px;
-    height: 150px;
-    position: absolute;
-    overflow: hidden;
-    top: 0;
-    z-index: 1001;
-    pointer-events: none;
-}
-
-.ribbon-wrapper.right {
-    right: 0;
-}
-
-.ribbon {
-    position: absolute;
-    top: 42px;
-    width: 200px;
-    padding: 1px 0;
-    color: $btn-primary-color;
-    background: $btn-primary-border;
-
-    -moz-box-shadow: 0 0 10px rgba(0,0,0,0.5);
-    -webkit-box-shadow: 0 0 10px rgba(0,0,0,0.5);
-    box-shadow: 0 0 10px rgba(0,0,0,0.5);
-
-    right: -42px;
-    -moz-transform: rotate(45deg);
-    -webkit-transform: rotate(45deg);
-    -o-transform: rotate(45deg);
-    -ms-transform: rotate(45deg);
-    transform: rotate(45deg);
-
-    > label {
-        display: block;
-        padding: 1px 0;
-        height: 24px;
-        line-height: 18px;
-
-        text-align: center;
-        text-decoration: none;
-        font-family: $font-family-sans-serif;
-        font-size: 20px;
-        font-weight: 500;
-
-        border: 1px solid rgba(255,255,255,0.3);
-
-        -moz-text-shadow: 0 0 10px rgba(0,0,0,0.31);
-        -webkit-text-shadow: 0 0 10px rgba(0,0,0,0.31);
-        text-shadow: 0 0 10px rgba(0,0,0,0.31);
-    }
-}
-
-.ribbon-wrapper.left {
-    overflow: visible;
-
-    .ribbon {
-        transform: rotate(-45deg);
-        left: -75px;
-        top: 10px;
-    }
-}
-
 html, body {
     width: 100%;
     min-height: 100vh;
@@ -1955,10 +1899,10 @@ html, body {
 }
 
 .splash:before {
-  content: '';
-  display: inline-block;
-  height: 100%;
-  vertical-align: middle;
+    content: '';
+    display: inline-block;
+    height: 100%;
+    vertical-align: middle;
 }
 
 .spinner {
@@ -2094,15 +2038,32 @@ header.header-with-selector {
 
     div {
         display: flex;
-    }
+        align-items: center;
 
-    .btn-ignite + .btn-ignite-group {
-        position: relative;
-        margin-left: 20px;
+        &:nth-child(2) {
+            .btn-ignite {
+                margin-left: 20px;
+            }
 
-        ul.dropdown-menu {
-            min-width: 100%;
-            font-family: Roboto;
+            .btn-ignite-group {
+                .btn-ignite {
+                    margin-left: 0;
+                }
+            }
+
+            .btn-ignite + .btn-ignite-group {
+                position: relative;
+                margin-left: 20px;
+
+                button {
+                    margin-left: 0;
+                }
+
+                ul.dropdown-menu {
+                    min-width: 100%;
+                    font-family: Roboto;
+                }
+            }
         }
     }
 }

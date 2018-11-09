@@ -437,6 +437,6 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
      * binary enum.
      */
     public boolean isTypeEquals(final Class<?> cls) {
-        return ctx.descriptorForClass(cls, false).typeId() == typeId();
+        return ctx.descriptorForClass(cls, false, false).typeId() == typeId();
     }
 }

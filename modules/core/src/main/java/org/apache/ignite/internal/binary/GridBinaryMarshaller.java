@@ -240,14 +240,17 @@ public class GridBinaryMarshaller {
 
     /**
      * @param obj Object to marshal.
+     * @param failIfUnregistered Throw exception if class isn't registered.
      * @return Byte array.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    public byte[] marshal(@Nullable Object obj) throws BinaryObjectException {
+    public byte[] marshal(@Nullable Object obj, boolean failIfUnregistered) throws BinaryObjectException {
         if (obj == null)
             return new byte[] { NULL };
 
         try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx)) {
+            writer.failIfUnregistered(failIfUnregistered);
+
             writer.marshal(obj);
 
             return writer.array();

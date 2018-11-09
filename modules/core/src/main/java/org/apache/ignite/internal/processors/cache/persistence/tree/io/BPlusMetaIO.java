@@ -77,7 +77,7 @@ public class BPlusMetaIO extends PageIO {
      * @return Number of levels in this tree.
      */
     public int getLevelsCount(long pageAddr) {
-        return PageUtils.getByte(pageAddr, LVLS_OFF);
+        return Byte.toUnsignedInt(PageUtils.getByte(pageAddr, LVLS_OFF));
     }
 
     /**

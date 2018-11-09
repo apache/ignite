@@ -20,16 +20,23 @@ package org.apache.ignite.internal.visor.tx;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.io.Serializable;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collection;
+import java.util.TimeZone;
 import java.util.UUID;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
+import org.jetbrains.annotations.Nullable;
 
 /**
  */
@@ -38,7 +45,15 @@ public class VisorTxInfo extends VisorDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
+    private static DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+
+    /** */
     private IgniteUuid xid;
+
+    /**
+     * Transaction start time.
+     */
+    private long startTime;
 
     /** */
     private long duration;
@@ -64,6 +79,15 @@ public class VisorTxInfo extends VisorDataTransferObject {
     /** */
     private int size;
 
+    /** */
+    private IgniteUuid nearXid;
+
+    /** */
+    private Collection<UUID> masterNodeIds;
+
+    /** */
+    private AffinityTopologyVersion topVer;
+
     /**
      * Default constructor.
      */
@@ -73,6 +97,7 @@ public class VisorTxInfo extends VisorDataTransferObject {
 
     /**
      * @param xid Xid.
+     * @param startTime Start time of transaction.
      * @param duration Duration.
      * @param isolation Isolation.
      * @param concurrency Concurrency.
@@ -82,10 +107,11 @@ public class VisorTxInfo extends VisorDataTransferObject {
      * @param state State.
      * @param size Size.
      */
-    public VisorTxInfo(IgniteUuid xid, long duration, TransactionIsolation isolation,
+    public VisorTxInfo(IgniteUuid xid, long startTime, long duration, TransactionIsolation isolation,
         TransactionConcurrency concurrency, long timeout, String lb, Collection<UUID> primaryNodes,
-        TransactionState state, int size) {
+        TransactionState state, int size, IgniteUuid nearXid, Collection<UUID> masterNodeIds, AffinityTopologyVersion topVer) {
         this.xid = xid;
+        this.startTime = startTime;
         this.duration = duration;
         this.isolation = isolation;
         this.concurrency = concurrency;
@@ -94,11 +120,29 @@ public class VisorTxInfo extends VisorDataTransferObject {
         this.primaryNodes = primaryNodes;
         this.state = state;
         this.size = size;
+        this.nearXid = nearXid;
+        this.masterNodeIds = masterNodeIds;
+        this.topVer = topVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V3;
     }
 
     /** */
     public IgniteUuid getXid() {
         return xid;
+    }
+
+    /** */
+    public long getStartTime() {
+        return startTime;
+    }
+
+    /** */
+    public String getFormattedStartTime() {
+        return dateTimeFormatter.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(startTime), TimeZone.getDefault().toZoneId()));
     }
 
     /** */
@@ -114,6 +158,11 @@ public class VisorTxInfo extends VisorDataTransferObject {
     /** */
     public TransactionConcurrency getConcurrency() {
         return concurrency;
+    }
+
+    /** */
+    public AffinityTopologyVersion getTopologyVersion() {
+        return topVer;
     }
 
     /** */
@@ -141,6 +190,16 @@ public class VisorTxInfo extends VisorDataTransferObject {
         return size;
     }
 
+    /** */
+    @Nullable public IgniteUuid getNearXid() {
+        return nearXid;
+    }
+
+    /** */
+    @Nullable public Collection<UUID> getMasterNodeIds() {
+        return masterNodeIds;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeGridUuid(out, xid);
@@ -152,6 +211,11 @@ public class VisorTxInfo extends VisorDataTransferObject {
         U.writeCollection(out, primaryNodes);
         U.writeEnum(out, state);
         out.writeInt(size);
+        U.writeGridUuid(out, nearXid);
+        U.writeCollection(out, masterNodeIds);
+        out.writeLong(startTime);
+        out.writeLong(topVer == null ? -1 : topVer.topologyVersion());
+        out.writeInt(topVer == null ? -1 : topVer.minorTopologyVersion());
     }
 
     /** {@inheritDoc} */
@@ -165,6 +229,50 @@ public class VisorTxInfo extends VisorDataTransferObject {
         primaryNodes = U.readCollection(in);
         state = TransactionState.fromOrdinal(in.readByte());
         size = in.readInt();
+        if (protoVer >= V2) {
+            nearXid = U.readGridUuid(in);
+            masterNodeIds = U.readCollection(in);
+            startTime = in.readLong();
+        }
+        if (protoVer >= V3) {
+            long topVer = in.readLong();
+            int minorTopVer = in.readInt();
+
+            if (topVer != -1)
+                this.topVer = new AffinityTopologyVersion(topVer, minorTopVer);
+        }
+    }
+
+    /**
+     * Get tx info as user string.
+     *
+     * @return User string.
+     */
+    public String toUserString() {
+        return "    Tx: [xid=" + getXid() +
+            ", label=" + getLabel() +
+            ", state=" + getState() +
+            ", startTime=" + getFormattedStartTime() +
+            ", duration=" + getDuration() / 1000 +
+            ", isolation=" + getIsolation() +
+            ", concurrency=" + getConcurrency() +
+            ", topVer=" + (getTopologyVersion() == null ? "N/A" : getTopologyVersion()) +
+            ", timeout=" + getTimeout() +
+            ", size=" + getSize() +
+            ", dhtNodes=" + (getPrimaryNodes() == null ? "N/A" :
+            F.transform(getPrimaryNodes(), new IgniteClosure<UUID, String>() {
+                @Override public String apply(UUID id) {
+                    return U.id8(id);
+                }
+            })) +
+            ", nearXid=" + getNearXid() +
+            ", parentNodeIds=" + (getMasterNodeIds() == null ? "N/A" :
+            F.transform(getMasterNodeIds(), new IgniteClosure<UUID, String>() {
+                @Override public String apply(UUID id) {
+                    return U.id8(id);
+                }
+            })) +
+            ']';
     }
 
     /** {@inheritDoc} */

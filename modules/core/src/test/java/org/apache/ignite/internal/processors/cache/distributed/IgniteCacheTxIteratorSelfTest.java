@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -104,7 +105,7 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
         try {
             for (CacheMode mode : CacheMode.values()) {
                 for (CacheAtomicityMode atomMode : CacheAtomicityMode.values()) {
-                    if (mode == CacheMode.PARTITIONED) {
+                    if (mode == CacheMode.PARTITIONED && atomMode != CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT) {
                         // Near cache makes sense only for partitioned cache.
                         checkTxCache(CacheMode.PARTITIONED, atomMode, true, false);
                     }
@@ -137,7 +138,7 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
             nearEnabled,
             useEvicPlc);
 
-        final IgniteCache<String, TestClass> cache = ignite.createCache(ccfg);
+        final IgniteCache<String, TestClass> cache = ignite.createCache(ccfg).withAllowAtomicOpsInTx();
 
         info("Checking cache [mode=" + mode + ", atomMode=" + atomMode + ", near=" + nearEnabled +
             ", evict=" + useEvicPlc + ']');
@@ -154,6 +155,13 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
                 for (TransactionIsolation iso : TransactionIsolation.values()) {
                     for (TransactionConcurrency con : TransactionConcurrency.values()) {
                         try (Transaction transaction = ignite.transactions().txStart(con, iso)) {
+                            //TODO: IGNITE-7187: Fix when ticket will be implemented. (Near cache)
+                            //TODO: IGNITE-7956: Fix when ticket will be implemented. (Eviction)
+                            if (((IgniteCacheProxy)cache).context().mvccEnabled() &&
+                                ((iso != TransactionIsolation.REPEATABLE_READ && con != TransactionConcurrency.PESSIMISTIC)
+                                    || nearEnabled || useEvicPlc))
+                                return; // Nothing to do. Mode is not supported.
+
                             assertEquals(val, cache.get(key));
 
                             transaction.commit();

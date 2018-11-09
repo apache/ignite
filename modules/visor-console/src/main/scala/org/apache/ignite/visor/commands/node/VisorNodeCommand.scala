@@ -206,6 +206,7 @@ class VisorNodeCommand extends VisorConsoleCommand {
 
                         t += ("ID", node.id)
                         t += ("ID8", nid8(node))
+                        t += ("Consistent ID", node.consistentId())
                         t += ("Node Type", if (node.isClient) "Client" else "Server")
                         t += ("Order", node.order)
 

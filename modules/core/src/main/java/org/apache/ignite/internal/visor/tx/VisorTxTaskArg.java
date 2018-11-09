@@ -24,7 +24,6 @@ import java.util.List;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
-import org.apache.ignite.internal.visor.baseline.VisorBaselineTask;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
@@ -39,31 +38,31 @@ public class VisorTxTaskArg extends VisorDataTransferObject {
     private VisorTxOperation op;
 
     /** */
-    private @Nullable Integer limit;
+    @Nullable private Integer limit;
 
     /** */
-    private @Nullable Long minDuration;
+    @Nullable private Long minDuration;
 
     /** */
-    private @Nullable Integer minSize;
+    @Nullable private Integer minSize;
 
     /** */
-    private @Nullable TransactionState state;
+    @Nullable private TransactionState state;
 
     /** */
-    private @Nullable VisorTxProjection proj;
+    @Nullable private VisorTxProjection proj;
 
     /** */
-    private @Nullable List<String> consistentIds;
+    @Nullable private List<String> consistentIds;
 
     /** */
-    private @Nullable String xid;
+    @Nullable private String xid;
 
     /** */
-    private @Nullable String lbRegex;
+    @Nullable private String lbRegex;
 
     /** */
-    private @Nullable VisorTxSortOrder sortOrder;
+    @Nullable private VisorTxSortOrder sortOrder;
 
     /**
      * Default constructor.

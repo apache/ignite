@@ -21,6 +21,8 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
+import java.util.UUID;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
@@ -41,17 +43,17 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     /**
      * Index of coordinator node.
      */
-    final static int SRV_CRD_IDX = 0;
+    static final int SRV_CRD_IDX = 0;
 
     /**
      * Index of non coordinator server node.
      */
-    final static int SRV_IDX = 1;
+    static final int SRV_IDX = 1;
 
     /**
      * Index of client.
      */
-    final static int CLI_IDX = 2;
+    static final int CLI_IDX = 2;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -282,6 +284,76 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     }
 
     /**
+     * Tests that we can add dynamically UUID column to tables.
+     *
+     * @throws SQLException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    public void testAddColumnUUID() throws SQLException {
+        CacheConfiguration<Integer, Object> ccfg = defaultCacheConfiguration().setName("GuidTest")
+                .setIndexedTypes(Integer.class, GuidTest.class);
+
+        Random rnd = new Random();
+
+        IgniteCache<Integer, Object> cache = ignite(nodeIndex()).getOrCreateCache(ccfg);
+
+        run(cache, "ALTER TABLE \"GuidTest\".GuidTest ADD COLUMN GUID UUID");
+        run(cache, "ALTER TABLE \"GuidTest\".GuidTest ADD COLUMN DATA BINARY(128)");
+
+        doSleep(500);
+
+        QueryField c1 = c("GUID", Object.class.getName());
+        QueryField c2 = c("DATA", byte[].class.getName());
+
+        checkTableState("GuidTest", "GUIDTEST", c1, c2);
+
+        UUID guid1 = UUID.randomUUID();
+        UUID guid2 = UUID.randomUUID();
+
+        // Populate random data for BINARY field.
+        byte[] data1 = new byte[128];
+        rnd.nextBytes(data1);
+        byte[] data2 = new byte[128];
+        rnd.nextBytes(data2);
+
+        run(cache, "INSERT INTO \"GuidTest\".GuidTest (_key, id, guid, data) values " +
+                "(1, 1, ?, ?)", guid1.toString(), data1);
+
+        cache.put(2, new GuidTest(2, guid2, data2));
+
+        List<List<?>> res = run(cache, "select _key, id, guid from \"GuidTest\".GuidTest order by id");
+
+        assertEquals(Arrays.asList(Arrays.asList(1, 1, guid1), Arrays.asList(2, 2, guid2)), res);
+
+        // Additional check for BINARY field content.
+        res = run(cache, "select data from \"GuidTest\".GuidTest order by id");
+
+        assertTrue(Arrays.equals(data1, (byte[])res.get(0).get(0)));
+        assertTrue(Arrays.equals(data2, (byte[])res.get(1).get(0)));
+
+        if (!Boolean.valueOf(GridTestProperties.getProperty(BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER))) {
+            GuidTest val1 = (GuidTest)cache.get(1);
+            GuidTest val2 = (GuidTest)cache.get(2);
+
+            assertEquals(guid1, val1.guid());
+            assertEquals(guid2, val2.guid());
+            assertTrue(Arrays.equals(data1, val1.data()));
+            assertTrue(Arrays.equals(data2, val2.data()));
+        }
+        else {
+            BinaryObject val1 = (BinaryObject)cache.withKeepBinary().get(1);
+            BinaryObject val2 = (BinaryObject)cache.withKeepBinary().get(2);
+
+            assertEquals(guid1, val1.field("guid"));
+            assertEquals(guid2, val2.field("guid"));
+            assertTrue(Arrays.equals(data1, val1.field("data")));
+            assertTrue(Arrays.equals(data2, val2.field("data")));
+        }
+
+        cache.destroy();
+    }
+
+    /**
      * Test addition of column with not null constraint.
      */
     public void testAddNotNullColumn() throws SQLException {
@@ -310,7 +382,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     /**
      * Test that {@code ADD COLUMN} fails for non dynamic table that has flat value.
      */
-    @SuppressWarnings({"unchecked", "ThrowFromFinallyBlock"})
+    @SuppressWarnings({"unchecked"})
     public void testTestAlterTableOnFlatValueNonDynamicTable() {
         CacheConfiguration c =
             new CacheConfiguration("ints").setIndexedTypes(Integer.class, Integer.class)
@@ -329,7 +401,6 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     /**
      * Test that {@code ADD COLUMN} fails for dynamic table that has flat value.
      */
-    @SuppressWarnings({"unchecked", "ThrowFromFinallyBlock"})
     public void testTestAlterTableOnFlatValueDynamicTable() {
         try {
             run("CREATE TABLE TEST (id int primary key, x varchar) with \"wrap_value=false\"");
@@ -688,7 +759,6 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
      * @param sql Statement.
      * @param msg Expected message.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     protected void assertThrows(final String sql, String msg) {
         assertThrows(grid(nodeIndex()), sql, msg);
     }
@@ -700,7 +770,6 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
      * @param cls Expected exception class.
      * @param msg Expected message.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     protected void assertThrowsAnyCause(final String sql, Class<? extends Throwable> cls, String msg) {
         assertThrowsAnyCause(grid(nodeIndex()), sql, cls, msg);
     }
@@ -715,7 +784,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     }
 
     /** City class. */
-    private final static class City {
+    private static final class City {
         /** City id. */
         @QuerySqlField
         private int id;
@@ -768,6 +837,51 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
          */
         public void state(String state) {
             this.state = state;
+        }
+    }
+
+    /**  */
+    private static final class GuidTest {
+        /** */
+        @QuerySqlField
+        private int id;
+
+        /** */
+        private UUID guid;
+
+        /** */
+        private byte[] data;
+
+        /**
+         * @param id   Id.
+         * @param guid Guid.
+         * @param data Data.
+         */
+        public GuidTest(int id, UUID guid, byte[] data) {
+            this.id = id;
+            this.guid = guid;
+            this.data = data;
+        }
+
+        /**
+         * @return Id.
+         */
+        public int id() {
+            return id;
+        }
+
+        /**
+         * @return Guid.
+         */
+        public UUID guid() {
+            return guid;
+        }
+
+        /**
+         * @return Data.
+         */
+        public byte[] data() {
+            return data;
         }
     }
 }

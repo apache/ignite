@@ -33,10 +33,6 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 
-import static org.apache.ignite.igfs.IgfsMode.DUAL_ASYNC;
-import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
-import static org.apache.ignite.igfs.IgfsMode.PROXY;
-
 /**
  * Tests for IGFS working in mode when remote file system exists: DUAL_SYNC, DUAL_ASYNC.
  */

@@ -48,8 +48,8 @@ public class GridLogThrottle {
     private static final int throttleCap = IgniteSystemProperties.getInteger(IGNITE_LOG_THROTTLE_CAPACITY, 128);
 
     /** Errors. */
-    private static final ConcurrentMap<IgniteBiTuple<Class<? extends Throwable>, String>, Long> errors =
-        new ConcurrentLinkedHashMap<>(throttleCap, 1f, DFLT_CONCUR_LVL, throttleCap);
+    private static volatile ConcurrentMap<IgniteBiTuple<Class<? extends Throwable>, String>, Long> errors =
+        new ConcurrentLinkedHashMap<>(throttleCap, 0.75f, DFLT_CONCUR_LVL, throttleCap);
 
     /**
      * Sets system-wide log throttle timeout.
@@ -88,7 +88,7 @@ public class GridLogThrottle {
     public static void error(@Nullable IgniteLogger log, @Nullable Throwable e, String msg) {
         assert !F.isEmpty(msg);
 
-        log(log, e, msg, null, LogLevel.ERROR, false, false);
+        log(log, e, msg, LogLevel.ERROR, false, false);
     }
 
     /**
@@ -102,7 +102,7 @@ public class GridLogThrottle {
     public static void error(@Nullable IgniteLogger log, @Nullable Throwable e, String msg, boolean byMsg) {
         assert !F.isEmpty(msg);
 
-        log(log, e, msg, null, LogLevel.ERROR, false, byMsg);
+        log(log, e, msg, LogLevel.ERROR, false, byMsg);
     }
 
     /**
@@ -114,7 +114,7 @@ public class GridLogThrottle {
     public static void warn(@Nullable IgniteLogger log, String msg) {
         assert !F.isEmpty(msg);
 
-        log(log, null, msg, null, LogLevel.WARN, false, false);
+        log(log, null, msg, LogLevel.WARN, false, false);
     }
 
     /**
@@ -129,7 +129,7 @@ public class GridLogThrottle {
     public static void warn(@Nullable IgniteLogger log, @Nullable Throwable e, String msg, boolean quite, boolean byMsg) {
         assert !F.isEmpty(msg);
 
-        log(log, e, msg, null, LogLevel.WARN, quite, byMsg);
+        log(log, e, msg, LogLevel.WARN, quite, byMsg);
     }
 
 
@@ -143,20 +143,7 @@ public class GridLogThrottle {
     public static void warn(@Nullable IgniteLogger log, String msg, boolean quiet) {
         assert !F.isEmpty(msg);
 
-        log(log, null, msg, null, LogLevel.WARN, quiet, false);
-    }
-
-    /**
-     * Logs warning if needed.
-     *
-     * @param log Logger.
-     * @param longMsg Long message (or just message).
-     * @param shortMsg Short message for quiet logging.
-     */
-    public static void warn(@Nullable IgniteLogger log, String longMsg, @Nullable String shortMsg) {
-        assert !F.isEmpty(longMsg);
-
-        log(log, null, longMsg, shortMsg, LogLevel.WARN, false, false);
+        log(log, null, msg, LogLevel.WARN, quiet, false);
     }
 
     /**
@@ -169,7 +156,7 @@ public class GridLogThrottle {
     public static void info(@Nullable IgniteLogger log, String msg, boolean quiet) {
         assert !F.isEmpty(msg);
 
-        log(log, null, msg, null, LogLevel.INFO, quiet, false);
+        log(log, null, msg, LogLevel.INFO, quiet, false);
     }
 
     /**
@@ -188,7 +175,7 @@ public class GridLogThrottle {
      * Clears all stored data. This will make throttle to behave like a new one.
      */
     public static void clear() {
-        errors.clear();
+        errors = new ConcurrentLinkedHashMap<>(throttleCap, 0.75f, DFLT_CONCUR_LVL, throttleCap);
     }
 
     /**
@@ -197,13 +184,17 @@ public class GridLogThrottle {
      * @param log Logger.
      * @param e Error (optional).
      * @param longMsg Long message (or just message).
-     * @param shortMsg Short message for quiet logging.
      * @param level Level where messages should appear.
      * @param byMsg Errors group by message, not by tuple(error, msg).
      */
     @SuppressWarnings({"RedundantTypeArguments"})
-    private static void log(@Nullable IgniteLogger log, @Nullable Throwable e, String longMsg,
-        @Nullable String shortMsg, LogLevel level, boolean quiet, boolean byMsg) {
+    private static void log(@Nullable IgniteLogger log,
+        @Nullable Throwable e,
+        String longMsg,
+        LogLevel level,
+        boolean quiet,
+        boolean byMsg
+    ) {
         assert !F.isEmpty(longMsg);
 
         IgniteBiTuple<Class<? extends Throwable>, String> tup =
@@ -217,7 +208,7 @@ public class GridLogThrottle {
 
             if (loggedTs == null || loggedTs < curTs - throttleTimeout) {
                 if (replace(tup, loggedTs, curTs)) {
-                    level.doLog(log, longMsg, shortMsg, e, quiet);
+                    level.doLog(log, longMsg, e, quiet);
 
                     break;
                 }
@@ -258,32 +249,32 @@ public class GridLogThrottle {
     private enum LogLevel {
         /** Error level. */
         ERROR {
-            @Override public void doLog(IgniteLogger log, String longMsg, String shortMsg, Throwable e, boolean quiet) {
+            @Override public void doLog(IgniteLogger log, String msg, Throwable e, boolean quiet) {
                 if (e != null)
-                    U.error(log, longMsg, e);
+                    U.error(log, msg, e);
                 else
-                    U.error(log, longMsg);
+                    U.error(log, msg);
             }
         },
 
         /** Warn level. */
         WARN {
-            @Override public void doLog(IgniteLogger log, String longMsg, String shortMsg, Throwable e, boolean quiet) {
+            @Override public void doLog(IgniteLogger log, String msg, Throwable e, boolean quiet) {
                 if (quiet)
-                    U.quietAndWarn(log, longMsg, F.isEmpty(shortMsg) ? longMsg : shortMsg);
+                    U.quietAndWarn(log, msg);
                 else
-                    U.warn(log, longMsg, F.isEmpty(shortMsg) ? longMsg : shortMsg);
+                    U.warn(log, msg);
             }
         },
 
         /** Info level. */
         INFO {
-            @Override public void doLog(IgniteLogger log, String longMsg, String shortMsg, Throwable e, boolean quiet) {
+            @Override public void doLog(IgniteLogger log, String msg, Throwable e, boolean quiet) {
                 if (quiet)
-                    U.quietAndInfo(log, longMsg);
+                    U.quietAndInfo(log, msg);
                 else {
                     if (log.isInfoEnabled())
-                        log.info(longMsg);
+                        log.info(msg);
                 }
             }
         };
@@ -292,10 +283,9 @@ public class GridLogThrottle {
          * Performs logging operation.
          *
          * @param log Logger to use.
-         * @param longMsg Long message.
-         * @param shortMsg Short message.
+         * @param msg Long message.
          * @param e Exception to attach to log.
          */
-        public abstract void doLog(IgniteLogger log, String longMsg, String shortMsg, Throwable e, boolean quiet);
+        public abstract void doLog(IgniteLogger log, String msg, Throwable e, boolean quiet);
     }
 }

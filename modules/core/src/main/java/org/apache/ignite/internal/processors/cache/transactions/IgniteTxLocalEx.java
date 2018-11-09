@@ -56,4 +56,12 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
      * @throws IgniteCheckedException If finish failed.
      */
     public boolean localFinish(boolean commit, boolean clearThreadMap) throws IgniteCheckedException;
+
+    /**
+     * Remembers that particular cache partition was touched by current tx.
+     *
+     * @param cacheId Cache id.
+     * @param partId Partition id.
+     */
+    public void touchPartition(int cacheId, int partId);
 }

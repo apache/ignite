@@ -44,6 +44,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterGroup;
@@ -57,6 +61,8 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.http.GridEmbeddedHttpServer;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -300,7 +306,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * Test job to test possible indefinite recursion in detecting peer deploy aware.
      */
-    @SuppressWarnings({"UnusedDeclaration"})
     private class SelfReferencedJob extends ComputeJobAdapter implements GridPeerDeployAware {
         /** */
         private SelfReferencedJob ref;
@@ -845,6 +850,103 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
         for (int i = Integer.MIN_VALUE; i < 0; i++)
             assertEquals(0, U.ceilPow2(i));
+    }
+
+    /**
+     *
+     */
+    public void testIsOldestNodeVersionAtLeast() {
+        IgniteProductVersion v240 = IgniteProductVersion.fromString("2.4.0");
+        IgniteProductVersion v241 = IgniteProductVersion.fromString("2.4.1");
+        IgniteProductVersion v250 = IgniteProductVersion.fromString("2.5.0");
+        IgniteProductVersion v250ts = IgniteProductVersion.fromString("2.5.0-b1-3");
+
+        TcpDiscoveryNode node240 = new TcpDiscoveryNode();
+        node240.version(v240);
+
+        TcpDiscoveryNode node241 = new TcpDiscoveryNode();
+        node241.version(v241);
+
+        TcpDiscoveryNode node250 = new TcpDiscoveryNode();
+        node250.version(v250);
+
+        TcpDiscoveryNode node250ts = new TcpDiscoveryNode();
+        node250ts.version(v250ts);
+
+        assertTrue(U.isOldestNodeVersionAtLeast(v240, Arrays.asList(node240, node241, node250, node250ts)));
+        assertFalse(U.isOldestNodeVersionAtLeast(v241, Arrays.asList(node240, node241, node250, node250ts)));
+        assertTrue(U.isOldestNodeVersionAtLeast(v250, Arrays.asList(node250, node250ts)));
+        assertTrue(U.isOldestNodeVersionAtLeast(v250ts, Arrays.asList(node250, node250ts)));
+    }
+
+    /**
+     *
+     */
+    public void testDoInParallel() throws Throwable {
+        CyclicBarrier barrier = new CyclicBarrier(3);
+
+        IgniteUtils.doInParallel(3,
+            Executors.newFixedThreadPool(3),
+            Arrays.asList(1, 2, 3),
+            i -> {
+                try {
+                    barrier.await(1, TimeUnit.SECONDS);
+                }
+                catch (Exception e) {
+                    throw new IgniteCheckedException(e);
+                }
+            }
+        );
+    }
+
+    /**
+     *
+     */
+    public void testDoInParallelBatch() {
+        CyclicBarrier barrier = new CyclicBarrier(3);
+
+        try {
+            IgniteUtils.doInParallel(2,
+                Executors.newFixedThreadPool(3),
+                Arrays.asList(1, 2, 3),
+                i -> {
+                    try {
+                        barrier.await(400, TimeUnit.MILLISECONDS);
+                    }
+                    catch (Exception e) {
+                        throw new IgniteCheckedException(e);
+                    }
+                }
+            );
+
+            fail("Should throw timeout exception");
+        }
+        catch (Exception e) {
+            assertTrue(e.toString(), X.hasCause(e, TimeoutException.class));
+        }
+    }
+
+    /**
+     *
+     */
+    public void testDoInParallelException() {
+        String expectedException = "ExpectedException";
+
+        try {
+            IgniteUtils.doInParallel(3,
+                Executors.newFixedThreadPool(1),
+                Arrays.asList(1, 2, 3),
+                i -> {
+                    if (i == 1)
+                        throw new IgniteCheckedException(expectedException);
+                }
+            );
+
+            fail("Should throw ParallelExecutionException");
+        }
+        catch (IgniteCheckedException e) {
+            assertEquals(expectedException, e.getMessage());
+        }
     }
 
     /**

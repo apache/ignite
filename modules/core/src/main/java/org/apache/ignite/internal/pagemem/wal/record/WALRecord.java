@@ -153,7 +153,13 @@ public abstract class WALRecord {
         /** Page list meta reset count record. */
         PAGE_LIST_META_RESET_COUNT_RECORD,
 
-        /** Switch segment record. */
+        /** Switch segment record.
+         *  Marker record for indicate end of segment.
+         *  If the next one record is written down exactly at the end of segment,
+         *  SWITCH_SEGMENT_RECORD will not be written, if not then it means that we have more
+         *  that one byte in the end,then we write SWITCH_SEGMENT_RECORD as marker end of segment.
+         *  No need write CRC or WAL pointer for this record. It is byte marker record.
+         *  */
         SWITCH_SEGMENT_RECORD,
 
         /** */
@@ -174,8 +180,26 @@ public abstract class WALRecord {
         /** Exchange record. */
         EXCHANGE,
 
-        /** Baseline topology record. */
-        BASELINE_TOP_RECORD;
+        /** Reserved for future record. */
+        RESERVED,
+
+        /** Rotated id part record. */
+        ROTATED_ID_PART_RECORD,
+
+        /** */
+        MVCC_DATA_PAGE_MARK_UPDATED_RECORD,
+
+        /** */
+        MVCC_DATA_PAGE_TX_STATE_HINT_UPDATED_RECORD,
+
+        /** */
+        MVCC_DATA_PAGE_NEW_TX_STATE_HINT_UPDATED_RECORD,
+
+        /** Encrypted WAL-record. */
+        ENCRYPTED_RECORD,
+
+        /** Ecnrypted data record */
+        ENCRYPTED_DATA_RECORD;
 
         /** */
         private static final RecordType[] VALS = RecordType.values();
@@ -264,13 +288,6 @@ public abstract class WALRecord {
         assert size >= 0: size;
 
         this.size = size;
-    }
-
-    /**
-     * @return Need wal rollOver.
-     */
-    public boolean rollOver(){
-        return false;
     }
 
     /**

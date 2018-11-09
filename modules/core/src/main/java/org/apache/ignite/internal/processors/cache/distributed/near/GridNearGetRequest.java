@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionable;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -45,6 +46,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemTy
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Get request. Responsible for obtaining entry from primary node. 'Near' means 'Initiating node' here, not 'Near Cache'.
@@ -106,6 +108,9 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
     /** TTL for read operation. */
     private long accessTtl;
 
+    /** */
+    private MvccSnapshot mvccSnapshot;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -128,6 +133,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
      * @param createTtl New TTL to set after entry is created, -1 to leave unchanged.
      * @param accessTtl New TTL to set after entry is accessed, -1 to leave unchanged.
      * @param addDepInfo Deployment info.
+     * @param mvccSnapshot Mvcc snapshot.
      */
     public GridNearGetRequest(
         int cacheId,
@@ -144,7 +150,8 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
         boolean addReader,
         boolean skipVals,
         boolean addDepInfo,
-        boolean recovery
+        boolean recovery,
+        @Nullable MvccSnapshot mvccSnapshot
     ) {
         assert futId != null;
         assert miniId != null;
@@ -173,6 +180,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
         this.createTtl = createTtl;
         this.accessTtl = accessTtl;
         this.addDepInfo = addDepInfo;
+        this.mvccSnapshot = mvccSnapshot;
 
         if (readThrough)
             flags |= READ_THROUGH_FLAG_MASK;
@@ -185,6 +193,13 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
 
         if (recovery)
             flags |= RECOVERY_FLAG_MASK;
+    }
+
+    /**
+     * @return Mvcc version.
+     */
+    @Nullable public MvccSnapshot mvccSnapshot() {
+        return mvccSnapshot;
     }
 
     /**
@@ -411,6 +426,12 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
 
                 writer.incrementState();
 
+            case 14:
+                if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -515,6 +536,14 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
 
                 reader.incrementState();
 
+            case 14:
+                mvccSnapshot = reader.readMessage("mvccSnapshot");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridNearGetRequest.class);
@@ -527,7 +556,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 14;
+        return 15;
     }
 
     /** {@inheritDoc} */

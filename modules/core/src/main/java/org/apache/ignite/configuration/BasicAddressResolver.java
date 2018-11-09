@@ -24,7 +24,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -79,9 +81,11 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public class BasicAddressResolver implements AddressResolver {
     /** Address map. */
+    @GridToStringInclude
     private final Map<InetAddress, InetAddress> inetAddrMap;
 
     /** Socket address map. */
+    @GridToStringInclude
     private final Map<InetSocketAddress, InetSocketAddress> inetSockAddrMap;
 
     /**
@@ -142,5 +146,10 @@ public class BasicAddressResolver implements AddressResolver {
             return Collections.singletonList(new InetSocketAddress(inetAddr, addr.getPort()));
 
         return Collections.emptyList();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(BasicAddressResolver.class, this);
     }
 }

@@ -15,15 +15,20 @@
 # limitations under the License.
 #
 
-FROM node:8
+FROM node:8-slim
 
-RUN mkdir -p /opt/web-console-backend
+ENV NPM_CONFIG_LOGLEVEL error
 
-WORKDIR /opt/web-console-backend
+WORKDIR /opt/web-console
 
-COPY build .
+# Install node modules for frontend and backend modules.
+COPY backend/package*.json backend/
+RUN (cd backend && npm install --no-optional --production)
 
-RUN npm install --only=production --no-optional
+# Copy source.
+COPY backend backend
+
+COPY web-agent/target/ignite-web-agent-*.zip backend/agent_dists
 
 EXPOSE 3000
 

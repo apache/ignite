@@ -11,13 +11,13 @@
 #
 
 Name:             apache-ignite
-Version:          2.5.0
+Version:          2.7.0
 Release:          1
 Summary:          Apache Ignite In-Memory Computing, Database and Caching Platform
 Group:            Development/System
 License:          ASL 2.0
 URL:              https://ignite.apache.org/
-Source:           %{name}-fabric-%{version}-bin.zip
+Source:           %{name}-%{version}-bin.zip
 Requires:         java-1.8.0, chkconfig
 Requires(pre):    shadow-utils
 Provides:         %{name}
@@ -36,7 +36,7 @@ in-memory speeds at petabyte scale
 # Prepare step: unpack sources
 #
 
-%setup -q -n %{name}-fabric-%{version}-bin
+%setup -q -n %{name}-%{version}-bin
 
 
 #%pre
@@ -64,6 +64,10 @@ echoUpgradeMessage () {
     echo "======================================================================================================="
 }
 
+setPermissions () {
+    chown -R %{user}:%{user} %{_sharedstatedir}/%{name} %{_log}/%{name}
+}
+
 case $1 in
     1|configure)
         # DEB postinst upgrade
@@ -75,7 +79,7 @@ case $1 in
         useradd -r -d %{_datadir}/%{name} -s /usr/sbin/nologin %{user}
 
         # Change ownership for work and log directories
-        chown -vR %{user}:%{user} %{_sharedstatedir}/%{name} %{_log}/%{name}
+        setPermissions
 
         # Install alternatives
         # Commented out until ignitevisorcmd / ignitesqlline is ready to work from any user
@@ -97,8 +101,10 @@ case $1 in
                     cp -rf $file %{_sharedstatedir}/%{name}/
                 fi
             done
-            chown -vR %{user}:%{user} %{_sharedstatedir}/%{name} %{_log}/%{name}
         fi
+
+        # Change ownership for work and log directories (yum resets permissions on upgrade nevertheless)
+        setPermissions
         ;;
 esac
 
@@ -112,10 +118,19 @@ esac
 #     1 - Upgrade
 #
 
+stopIgniteNodes () {
+    if ! $(grep -q "Microsoft" /proc/version); then
+        systemctl stop 'apache-ignite@*'
+    fi
+    ps ax | grep '\-DIGNITE_HOME' | head -n-1 | awk {'print $1'} | while read pid; do
+        kill -INT ${pid}
+    done
+}
+
 case $1 in
     0|remove)
-        # Stop all nodes
-        systemctl stop 'apache-ignite@*'
+        # Stop all nodes (both service and standalone)
+        stopIgniteNodes
 
         # Remove alternatives
         # Commented out until ignitevisorcmd / ignitesqlline is ready to work from any user
@@ -125,10 +140,11 @@ case $1 in
         #update-alternatives --display ignitesqlline || true
         ;;
     1|upgrade)
+        # Stop all nodes (both service and standalone)
         echo "=================================================================================="
         echo "  WARNING: All running Apache Ignite's nodes will be stopped upon package update  "
         echo "=================================================================================="
-        systemctl stop 'apache-ignite@*'
+        stopIgniteNodes
         ;;
 esac
 
@@ -230,6 +246,7 @@ ln -sf %{_log}/%{name} %{buildroot}%{_sharedstatedir}/%{name}/log
 %{_datadir}/%{name}/libs
 %{_datadir}/%{name}/platforms
 %{_datadir}/%{name}/work
+%{_datadir}/doc/%{name}-%{version}
 %{_libdir}/%{name}
 %{_sysconfdir}/systemd/system/%{name}@.service
 %{_sharedstatedir}/%{name}/log
@@ -239,6 +256,7 @@ ln -sf %{_log}/%{name} %{buildroot}%{_sharedstatedir}/%{name}/log
 %doc README.txt
 %doc NOTICE
 %doc RELEASE_NOTES.txt
+%doc MIGRATION_GUIDE.txt
 %license LICENSE
 
 
@@ -248,8 +266,15 @@ ln -sf %{_log}/%{name} %{buildroot}%{_sharedstatedir}/%{name}/log
 # Changelog
 #
 
+* Thu Jul 26 2018 Peter Ivanov <mr.weider@gmail.com> - 2.7.0-1
+- Updated Apache Ignite to version 2.7.0
+
+* Fri Jun 15 2018 Peter Ivanov <mr.weider@gmail.com> - 2.6.0-1
+- Updated Apache Ignite to version 2.6.0
+
 * Tue Apr 17 2018 Peter Ivanov <mr.weider@gmail.com> - 2.5.0-1
 - Updated Apache Ignite to version 2.5.0
 
 * Wed Jan 17 2018 Peter Ivanov <mr.weider@gmail.com> - 2.4.0-1
 - Initial package release
+

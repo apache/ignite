@@ -441,8 +441,11 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * If another thread is already performing flush, this method will block, wait for
      * another thread to complete flush and exit. If you don't want to wait in this case,
      * use {@link #tryFlush()} method.
+     * <p>
+     * Note that #flush() guarantees completion of all futures returned by {@link #addData(Object, Object)}, listeners
+     * should be tracked separately.
      *
-     * @throws CacheException If failed to map key to node.
+     * @throws CacheException If failed to load data from buffer.
      * @throws IgniteInterruptedException If thread has been interrupted.
      * @throws IllegalStateException If grid has been concurrently stopped or
      *      {@link #close(boolean)} has already been called on streamer.
@@ -456,7 +459,7 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * Makes an attempt to stream remaining data. This method is mostly similar to {@link #flush},
      * with the difference that it won't wait and will exit immediately.
      *
-     * @throws CacheException If failed to map key to node.
+     * @throws CacheException If failed to load data from buffer.
      * @throws IgniteInterruptedException If thread has been interrupted.
      * @throws IllegalStateException If grid has been concurrently stopped or
      *      {@link #close(boolean)} has already been called on streamer.
@@ -468,7 +471,7 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * Streams any remaining data and closes this streamer.
      *
      * @param cancel {@code True} to cancel ongoing streaming operations.
-     * @throws CacheException If failed to map key to node.
+     * @throws CacheException If failed to close data streamer.
      * @throws IgniteInterruptedException If thread has been interrupted.
      * @throws IgniteDataStreamerTimeoutException If {@code timeout} is exceeded, only if cancel is {@code false}.
      */

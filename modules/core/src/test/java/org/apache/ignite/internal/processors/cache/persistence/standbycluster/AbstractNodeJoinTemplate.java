@@ -301,8 +301,12 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
         return super.getConfiguration(name)
             .setDiscoverySpi(
                 new TcpDiscoverySpi()
-                    .setIpFinder(ipFinder)
-            );
+                    .setIpFinder(ipFinder))
+            .setDataStorageConfiguration(
+                new DataStorageConfiguration()
+                    .setDefaultDataRegionConfiguration(
+                        new DataRegionConfiguration()
+                            .setMaxSize(100 * 1024 * 1024)));
     }
 
     /** {@inheritDoc} */
@@ -782,7 +786,9 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
 
                     Map<String, GridCacheAdapter> caches = caches(ig);
 
-                    Assert.assertEquals(0, caches.size());
+                    for (GridCacheAdapter cacheAdapter : caches.values())
+                        Assert.assertTrue("Cache should be in recovery mode: " + cacheAdapter.context(),
+                            cacheAdapter.context().isRecoveryMode());
                 }
             });
         }

@@ -17,12 +17,13 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.CacheGroupMetricsMXBeanImpl.GroupAllocationTrucker;
+import org.apache.ignite.internal.processors.cache.CacheGroupMetricsMXBeanImpl.GroupAllocationTracker;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
@@ -39,7 +40,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
     private final LongAdder totalAllocatedPages = new LongAdder();
 
     /** */
-    private final ConcurrentHashMap<Integer, GroupAllocationTrucker> groupAllocationTruckers = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Integer, GroupAllocationTracker> grpAllocationTrackers = new ConcurrentHashMap<>();
 
     /**
      * Counter for number of pages occupied by large entries (one entry is larger than one page).
@@ -60,6 +61,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
 
     /** */
     private final AtomicLong offHeapSize = new AtomicLong();
+
+    /** */
+    private final AtomicLong checkpointBufferSize = new AtomicLong();
 
     /** */
     private volatile boolean metricsEnabled;
@@ -119,9 +123,6 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
 
     /** {@inheritDoc} */
     @Override public long getTotalAllocatedPages() {
-        if (!metricsEnabled)
-            return 0;
-
         return totalAllocatedPages.longValue();
     }
 
@@ -129,7 +130,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
     @Override public long getTotalAllocatedSize() {
         assert pageMem != null;
 
-        return getTotalAllocatedPages() * pageMem.pageSize();
+        return getTotalAllocatedPages() * (persistenceEnabled ? pageMem.pageSize() : pageMem.systemPageSize());
     }
 
     /** {@inheritDoc} */
@@ -167,7 +168,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
 
         long totalAllocated = getPageSize() * totalAllocatedPages.longValue();
 
-        return (float) (totalAllocated - freeSpace) / totalAllocated;
+        return totalAllocated != 0 ?
+            (float) (totalAllocated - freeSpace) / totalAllocated
+            : 0f;
     }
 
     /** {@inheritDoc} */
@@ -211,12 +214,12 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
 
     /** {@inheritDoc} */
     @Override public long getPhysicalMemorySize() {
-        return getPhysicalMemoryPages() * pageMem.pageSize();
+        return getPhysicalMemoryPages() * pageMem.systemPageSize();
     }
 
     /** {@inheritDoc} */
-    @Override public long getCheckpointBufferPages() {
-        if (!metricsEnabled)
+    @Override public long getUsedCheckpointBufferPages() {
+        if (!metricsEnabled || !persistenceEnabled)
             return 0;
 
         assert pageMem != null;
@@ -225,8 +228,16 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
     }
 
     /** {@inheritDoc} */
+    @Override public long getUsedCheckpointBufferSize() {
+        return getUsedCheckpointBufferPages() * pageMem.systemPageSize();
+    }
+
+    /** {@inheritDoc} */
     @Override public long getCheckpointBufferSize() {
-        return getCheckpointBufferPages() * pageMem.pageSize();
+        if (!metricsEnabled || !persistenceEnabled)
+            return 0;
+
+        return checkpointBufferSize.get();
     }
 
     /** {@inheritDoc} */
@@ -265,9 +276,6 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
 
     /** {@inheritDoc} */
     @Override public long getOffHeapSize() {
-        if (!metricsEnabled)
-            return 0;
-
         return offHeapSize.get();
     }
 
@@ -276,15 +284,21 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
         if (!metricsEnabled)
             return 0;
 
-        return pageMem.loadedPages() * pageMem.pageSize();
+        return pageMem.loadedPages() * pageMem.systemPageSize();
     }
 
     /**
-     *
      * @param size Region size.
      */
     public void updateOffHeapSize(long size) {
         this.offHeapSize.addAndGet(size);
+    }
+
+    /**
+     * @param size Checkpoint buffer size.
+     */
+    public void updateCheckpointBufferSize(long size) {
+        this.checkpointBufferSize.addAndGet(size);
     }
 
     /**
@@ -340,31 +354,33 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
             dirtyPages.reset();
     }
 
-    /**
-     * Increments totalAllocatedPages counter.
-     */
-    public void incrementTotalAllocatedPages() {
-        updateTotalAllocatedPages(1);
-    }
-
     /** {@inheritDoc} */
     @Override public void updateTotalAllocatedPages(long delta) {
-        if (metricsEnabled) {
-            totalAllocatedPages.add(delta);
+        totalAllocatedPages.add(delta);
 
-            if (delta > 0)
-                updateAllocationRateMetrics(delta);
-        }
+        if (metricsEnabled && delta > 0)
+            updateAllocationRateMetrics(delta);
     }
 
     /**
-     * Get or allocate group allocation trucker.
+     * Get or allocate group allocation tracker.
      *
      * @param grpId Group id.
-     * @return Group allocation trucker.
+     * @return Group allocation tracker.
      */
-    public GroupAllocationTrucker getOrAllocateGroupPageAllocationTracker(int grpId) {
-        return groupAllocationTruckers.getOrDefault(grpId, new GroupAllocationTrucker(this));
+    public GroupAllocationTracker getOrAllocateGroupPageAllocationTracker(int grpId) {
+        GroupAllocationTracker tracker = grpAllocationTrackers.get(grpId);
+
+        if (tracker == null) {
+            tracker = new GroupAllocationTracker(this);
+
+            GroupAllocationTracker old = grpAllocationTrackers.putIfAbsent(grpId, tracker);
+
+            if (old != null)
+                return old;
+        }
+
+        return tracker;
     }
 
     /**

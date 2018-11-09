@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-const { Role, t } = require('testcafe');
-import { resolveUrl } from './envtools';
+import { Role, t } from 'testcafe';
+import { resolveUrl } from './environment/envtools';
 import {pageSignin as page} from './page-models/pageSignin';
 
 export const createRegularUser = () => {
-    return new Role(resolveUrl('/signin'), async() => {
+    return Role(resolveUrl('/signin'), async() => {
         await t.eval(() => window.localStorage.clear());
 
         // Disable "Getting started" modal.

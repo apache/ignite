@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.rest;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -72,6 +74,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerFuture;
+import org.apache.ignite.internal.visor.compute.VisorGatewayTask;
 import org.apache.ignite.internal.visor.util.VisorClusterGroupEmptyException;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -81,6 +84,8 @@ import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.thread.IgniteThread;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_SECURITY_TOKEN_TIMEOUT;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_SESSION_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_START_ON_CLIENT;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.AUTHENTICATE;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_AUTH_FAILED;
@@ -99,8 +104,14 @@ public class GridRestProcessor extends GridProcessorAdapter {
     /** Delay between sessions timeout checks. */
     private static final int SES_TIMEOUT_CHECK_DELAY = 1_000;
 
-    /** Default session timout. */
-    private static final int DEFAULT_SES_TIMEOUT = 30_000;
+    /** Default session timeout, in seconds. */
+    private static final int DFLT_SES_TIMEOUT = 30;
+
+    /** The default interval used to invalidate sessions, in seconds. */
+    private static final int DFLT_SES_TOKEN_INVALIDATE_INTERVAL = 5 * 60;
+
+    /** Index of task name wrapped by VisorGatewayTask */
+    private static final int WRAPPED_TASK_IDX = 1;
 
     /** Protocols. */
     private final Collection<GridRestProtocol> protos = new ArrayList<>();
@@ -139,6 +150,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
     /** Session time to live. */
     private final long sesTtl;
+
+    /** Interval to invalidate session tokens. */
+    private final long sesTokTtl;
 
     /**
      * @param req Request.
@@ -252,8 +266,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 SecurityContext secCtx0 = ses.secCtx;
 
                 try {
-                    if (secCtx0 == null)
-                        ses.secCtx = secCtx0 = authenticate(req);
+                    if (secCtx0 == null || ses.isTokenExpired(sesTokTtl))
+                        ses.secCtx = secCtx0 = authenticate(req, ses);
 
                     authorize(req, secCtx0);
                 }
@@ -337,7 +351,11 @@ public class GridRestProcessor extends GridProcessorAdapter {
                             .a(", params=").a(tskReq.params());
                     }
 
-                    sb.a(", err=").a(e.getMessage() != null ? e.getMessage() : e.getClass().getName()).a(']');
+                    sb.a(", err=")
+                        .a(e.getMessage() != null ? e.getMessage() : e.getClass().getName())
+                        .a(", trace=")
+                        .a(getErrorMessage(e))
+                        .a(']');
 
                     res = new GridRestResponse(STATUS_FAILED, sb.toString());
                 }
@@ -352,6 +370,21 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 return res;
             }
         });
+    }
+
+    /**
+     * @param th Th.
+     * @return Stack trace
+     */
+    private String getErrorMessage(Throwable th) {
+        if (th == null)
+            return "";
+
+        StringWriter writer = new StringWriter();
+
+        th.printStackTrace(new PrintWriter(writer));
+
+        return writer.toString();
     }
 
     /**
@@ -426,7 +459,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 UUID sesId = clientId2SesId.get(clientId);
 
                 if (sesId == null || !sesId.equals(U.bytesToUuid(sesTok, 0)))
-                    throw new IgniteCheckedException("Failed to handle request - unsupported case (misamatched " +
+                    throw new IgniteCheckedException("Failed to handle request - unsupported case (mismatched " +
                         "clientId and session token) [clientId=" + clientId + ", sesTok=" +
                         U.byteArray2HexString(sesTok) + "]");
 
@@ -452,22 +485,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
     public GridRestProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        long sesExpTime0;
-        String sesExpTime = null;
-
-        try {
-            sesExpTime = System.getProperty(IgniteSystemProperties.IGNITE_REST_SESSION_TIMEOUT);
-
-            sesExpTime0 = sesExpTime != null ? Long.valueOf(sesExpTime) * 1000 : DEFAULT_SES_TIMEOUT;
-        }
-        catch (NumberFormatException ignore) {
-            U.warn(log, "Failed parsing IGNITE_REST_SESSION_TIMEOUT system variable [IGNITE_REST_SESSION_TIMEOUT="
-                + sesExpTime + "]");
-
-            sesExpTime0 = DEFAULT_SES_TIMEOUT;
-        }
-
-        sesTtl = sesExpTime0;
+        sesTtl = IgniteSystemProperties.getLong(IGNITE_REST_SESSION_TIMEOUT, DFLT_SES_TIMEOUT) * 1000;
+        sesTokTtl = IgniteSystemProperties.getLong(IGNITE_REST_SECURITY_TOKEN_TIMEOUT, DFLT_SES_TOKEN_INVALIDATE_INTERVAL) * 100;
 
         sesTimeoutCheckerThread = new IgniteThread(ctx.igniteInstanceName(), "session-timeout-worker",
             new GridWorker(ctx.igniteInstanceName(), "session-timeout-worker", log) {
@@ -479,9 +498,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
                             Session ses = e.getValue();
 
                             if (ses.isTimedOut(sesTtl)) {
-                                sesId2Ses.remove(ses.sesId, ses);
-
                                 clientId2SesId.remove(ses.clientId, ses.sesId);
+                                sesId2Ses.remove(ses.sesId, ses);
                             }
                         }
                     }
@@ -607,7 +625,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             return;
 
         if (req instanceof GridRestCacheRequest) {
-            GridRestCacheRequest req0 = (GridRestCacheRequest) req;
+            GridRestCacheRequest req0 = (GridRestCacheRequest)req;
 
             req0.key(interceptor.onReceive(req0.key()));
             req0.value(interceptor.onReceive(req0.value()));
@@ -625,7 +643,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             }
         }
         else if (req instanceof GridRestTaskRequest) {
-            GridRestTaskRequest req0 = (GridRestTaskRequest) req;
+            GridRestTaskRequest req0 = (GridRestTaskRequest)req;
 
             List<Object> oldParams = req0.params();
 
@@ -731,7 +749,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
         Object creds = req.credentials();
 
         if (creds instanceof SecurityCredentials)
-            return  (SecurityCredentials)creds;
+            return (SecurityCredentials)creds;
 
         if (creds instanceof String) {
             String credStr = (String)creds;
@@ -757,7 +775,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * @return Authentication subject context.
      * @throws IgniteCheckedException If authentication failed.
      */
-    private SecurityContext authenticate(GridRestRequest req) throws IgniteCheckedException {
+    private SecurityContext authenticate(GridRestRequest req, Session ses) throws IgniteCheckedException {
         assert req.clientId() != null;
 
         AuthenticationContext authCtx = new AuthenticationContext();
@@ -766,9 +784,23 @@ public class GridRestProcessor extends GridProcessorAdapter {
         authCtx.subjectId(req.clientId());
         authCtx.nodeAttributes(Collections.<String, Object>emptyMap());
         authCtx.address(req.address());
-        authCtx.credentials(credentials(req));
+
+        SecurityCredentials creds = credentials(req);
+
+        if (creds.getLogin() == null) {
+            SecurityCredentials sesCreds = ses.creds;
+
+            if (sesCreds != null)
+                creds = ses.creds;
+        }
+        else
+            ses.creds = creds;
+
+        authCtx.credentials(creds);
 
         SecurityContext subjCtx = ctx.security().authenticate(authCtx);
+
+        ses.lastInvalidateTime.set(U.currentTimeMillis());
 
         if (subjCtx == null) {
             if (req.credentials() == null)
@@ -839,7 +871,13 @@ public class GridRestProcessor extends GridProcessorAdapter {
             case EXE:
             case RESULT:
                 perm = SecurityPermission.TASK_EXECUTE;
-                name = ((GridRestTaskRequest)req).taskName();
+
+                GridRestTaskRequest taskReq = (GridRestTaskRequest)req;
+                name = taskReq.taskName();
+
+                // We should extract task name wrapped by VisorGatewayTask.
+                if (VisorGatewayTask.class.getName().equals(name))
+                    name = (String)taskReq.params().get(WRAPPED_TASK_IDX);
 
                 break;
 
@@ -847,6 +885,14 @@ public class GridRestProcessor extends GridProcessorAdapter {
             case DESTROY_CACHE:
                 perm = SecurityPermission.ADMIN_CACHE;
                 name = ((GridRestCacheRequest)req).cacheName();
+
+                break;
+
+            case CLUSTER_ACTIVE:
+            case CLUSTER_INACTIVE:
+            case CLUSTER_ACTIVATE:
+            case CLUSTER_DEACTIVATE:
+                perm = SecurityPermission.ADMIN_OPS;
 
                 break;
 
@@ -863,8 +909,6 @@ public class GridRestProcessor extends GridProcessorAdapter {
             case NAME:
             case LOG:
             case CLUSTER_CURRENT_STATE:
-            case CLUSTER_ACTIVE:
-            case CLUSTER_INACTIVE:
             case AUTHENTICATE:
             case ADD_USER:
             case REMOVE_USER:
@@ -880,7 +924,6 @@ public class GridRestProcessor extends GridProcessorAdapter {
     }
 
     /**
-     *
      * @return Whether or not REST is enabled.
      */
     private boolean isRestEnabled() {
@@ -972,7 +1015,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * Session.
      */
     private static class Session {
-        /** Expiration flag. It's a final state of lastToucnTime. */
+        /** Expiration flag. It's a final state of lastTouchTime. */
         private static final Long TIMEDOUT_FLAG = 0L;
 
         /** Client id. */
@@ -987,11 +1030,17 @@ public class GridRestProcessor extends GridProcessorAdapter {
          */
         private final AtomicLong lastTouchTime = new AtomicLong(U.currentTimeMillis());
 
+        /** Time when session token was invalidated last time. */
+        private final AtomicLong lastInvalidateTime = new AtomicLong(U.currentTimeMillis());
+
         /** Security context. */
         private volatile SecurityContext secCtx;
 
         /** Authorization context. */
         private volatile AuthorizationContext authCtx;
+
+        /** Credentials that can be used for security token invalidation.*/
+        private volatile SecurityCredentials creds;
 
         /**
          * @param clientId Client ID.
@@ -1045,6 +1094,16 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 return true;
 
             return U.currentTimeMillis() - time0 > sesTimeout && lastTouchTime.compareAndSet(time0, TIMEDOUT_FLAG);
+        }
+
+        /**
+         * Checks if session token should be invalidated.
+         *
+         * @param sesTokTtl Session token expire time.
+         * @return {@code true} if session token should be invalidated.
+         */
+        boolean isTokenExpired(long sesTokTtl) {
+            return U.currentTimeMillis() - lastInvalidateTime.get() > sesTokTtl;
         }
 
         /**

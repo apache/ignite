@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { dropTestDB, insertTestUser, resolveUrl } from '../../envtools';
+import { dropTestDB, insertTestUser, resolveUrl } from '../../environment/envtools';
 import { createRegularUser } from '../../roles';
 import {pageProfile} from '../../page-models/pageProfile';
 import {confirmation} from '../../components/confirmation';
@@ -39,13 +39,16 @@ fixture('Checking user credentials change')
 test('Testing secure token change', async(t) => {
     await t.click(pageProfile.securityToken.panel.heading);
 
-    const currentToken = await pageProfile.securityToken.value.innerText;
+    const currentToken = await pageProfile.securityToken.value.control.value;
 
     await t
         .click(pageProfile.securityToken.generateTokenButton)
-        .expect(confirmation.body.innerText).contains('Are you sure you want to change security token?')
+        .expect(confirmation.body.innerText).contains(
+`Are you sure you want to change security token?
+If you change the token you will need to restart the agent.`
+        )
         .click(confirmation.confirmButton)
-        .expect(pageProfile.securityToken.value.innerText).notEql(currentToken);
+        .expect(pageProfile.securityToken.value.control.value).notEql(currentToken);
 });
 
 test('Testing password change', async(t) => {

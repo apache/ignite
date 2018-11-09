@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.wal.record.BaselineTopologyRecord;
 import org.apache.ignite.internal.pagemem.wal.record.CacheState;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -36,6 +35,8 @@ import org.apache.ignite.internal.pagemem.wal.record.ExchangeRecord;
 import org.apache.ignite.internal.pagemem.wal.record.SnapshotRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
@@ -43,32 +44,26 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.record.Header
 /**
  * Record data V2 serializer.
  */
-public class RecordDataV2Serializer implements RecordDataSerializer {
+public class RecordDataV2Serializer extends RecordDataV1Serializer implements RecordDataSerializer {
     /** Length of HEADER record data. */
-    static final int HEADER_RECORD_DATA_SIZE = /*Magic*/8 + /*Version*/4;
-
-    /** V1 data serializer delegate. */
-    private final RecordDataV1Serializer delegateSerializer;
+    private static final int HEADER_RECORD_DATA_SIZE = /*Magic*/8 + /*Version*/4;
 
     /** Serializer of {@link TxRecord} records. */
     private final TxRecordSerializer txRecordSerializer;
 
-    /** Serializer of {@link BaselineTopologyRecord} records. */
-    private final BaselineTopologyRecordSerializer bltRecSerializer;
-
     /**
      * Create an instance of V2 data serializer.
      *
-     * @param delegateSerializer V1 data serializer.
+     * @param cctx Cache shared context.
      */
-    public RecordDataV2Serializer(RecordDataV1Serializer delegateSerializer) {
-        this.delegateSerializer = delegateSerializer;
+    public RecordDataV2Serializer(GridCacheSharedContext cctx) {
+        super(cctx);
+
         this.txRecordSerializer = new TxRecordSerializer();
-        this.bltRecSerializer = new BaselineTopologyRecordSerializer(delegateSerializer.cctx());
     }
 
     /** {@inheritDoc} */
-    @Override public int size(WALRecord rec) throws IgniteCheckedException {
+    @Override protected int plainSize(WALRecord rec) throws IgniteCheckedException {
         switch (rec.type()) {
             case HEADER_RECORD:
                 return HEADER_RECORD_DATA_SIZE;
@@ -86,7 +81,7 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
                 return 18 + cacheStatesSize + (walPtr == null ? 0 : 16);
 
             case DATA_RECORD:
-                return delegateSerializer.size(rec) + 8/*timestamp*/;
+                return super.plainSize(rec) + 8/*timestamp*/;
 
             case SNAPSHOT:
                 return 8 + 1;
@@ -97,18 +92,16 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
             case TX_RECORD:
                 return txRecordSerializer.size((TxRecord)rec);
 
-            case BASELINE_TOP_RECORD:
-                return bltRecSerializer.size((BaselineTopologyRecord)rec);
-
             default:
-                return delegateSerializer.size(rec);
+                return super.plainSize(rec);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public WALRecord readRecord(
-        WALRecord.RecordType type,
-        ByteBufferBackedDataInput in
+    @Override WALRecord readPlainRecord(
+        RecordType type,
+        ByteBufferBackedDataInput in,
+        boolean encrypted
     ) throws IOException, IgniteCheckedException {
         switch (type) {
             case CHECKPOINT_RECORD:
@@ -138,9 +131,21 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
                 List<DataEntry> entries = new ArrayList<>(entryCnt);
 
                 for (int i = 0; i < entryCnt; i++)
-                    entries.add(delegateSerializer.readDataEntry(in));
+                    entries.add(readPlainDataEntry(in));
 
                 return new DataRecord(entries, timeStamp);
+
+            case ENCRYPTED_DATA_RECORD:
+                entryCnt = in.readInt();
+                timeStamp = in.readLong();
+
+                entries = new ArrayList<>(entryCnt);
+
+                for (int i = 0; i < entryCnt; i++)
+                    entries.add(readEncryptedDataEntry(in));
+
+                return new DataRecord(entries, timeStamp);
+
             case SNAPSHOT:
                 long snpId = in.readLong();
                 byte full = in.readByte();
@@ -157,17 +162,13 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
             case TX_RECORD:
                 return txRecordSerializer.read(in);
 
-            case BASELINE_TOP_RECORD:
-                return bltRecSerializer.read(in);
-
             default:
-                return delegateSerializer.readRecord(type, in);
+                return super.readPlainRecord(type, in, encrypted);
         }
-
     }
 
     /** {@inheritDoc} */
-    @Override public void writeRecord(WALRecord rec, ByteBuffer buf) throws IgniteCheckedException {
+    @Override protected void writePlainRecord(WALRecord rec, ByteBuffer buf) throws IgniteCheckedException {
         if (rec instanceof HeaderRecord)
             throw new UnsupportedOperationException("Writing header records is forbidden since version 2 of serializer");
 
@@ -204,8 +205,14 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
                 buf.putInt(dataRec.writeEntries().size());
                 buf.putLong(dataRec.timestamp());
 
-                for (DataEntry dataEntry : dataRec.writeEntries())
-                    RecordDataV1Serializer.putDataEntry(buf, dataEntry);
+                boolean encrypted = isDataRecordEncrypted(dataRec);
+
+                for (DataEntry dataEntry : dataRec.writeEntries()) {
+                    if (encrypted)
+                        putEncryptedDataEntry(buf, dataEntry);
+                    else
+                        putPlainDataEntry(buf, dataEntry);
+                }
 
                 break;
 
@@ -231,13 +238,8 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
 
                 break;
 
-            case BASELINE_TOP_RECORD:
-                bltRecSerializer.write((BaselineTopologyRecord)rec, buf);
-
-                break;
-
             default:
-                delegateSerializer.writeRecord(rec, buf);
+                super.writePlainRecord(rec, buf);
         }
     }
 

@@ -39,7 +39,9 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             "PagesWritten",
             "PagesReplaced",
             "OffHeapSize",
-            "OffheapUsedSize"
+            "OffheapUsedSize",
+            "UsedCheckpointBufferPages",
+            "UsedCheckpointBufferSize"
         };
 
         /// <summary>

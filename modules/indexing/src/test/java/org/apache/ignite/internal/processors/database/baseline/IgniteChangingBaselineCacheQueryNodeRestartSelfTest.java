@@ -65,6 +65,8 @@ public class IgniteChangingBaselineCacheQueryNodeRestartSelfTest extends IgniteC
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+
         cleanPersistenceDir();
     }
 

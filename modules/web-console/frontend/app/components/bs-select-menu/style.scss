@@ -48,9 +48,8 @@
     }
 
     .bssm-item-text {
-        overflow: hidden;
+        overflow: visible;
         white-space: nowrap;
-        text-overflow: ellipsis;
     }
 
     &>li {
@@ -63,13 +62,14 @@
             padding-bottom: 9px;
             background-color: transparent;
             border-radius: 0;
+            padding-right: 30px;
 
             &:hover {
                 background-color: #eeeeee;
             }
         }
 
-        &:last-child > .bssm-item-button {
+        &:last-of-type > .bssm-item-button {
             border-bottom: none;
             padding-bottom: 10px;
         }

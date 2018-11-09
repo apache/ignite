@@ -42,6 +42,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.GridHandleTable;
 import org.apache.ignite.internal.util.io.GridDataOutput;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.MarshallerContext;
 
@@ -180,7 +181,8 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
         if (obj == null)
             writeByte(NULL);
         else {
-            if (obj instanceof Throwable && !(obj instanceof Externalizable)) {
+            if (obj instanceof Throwable && !(obj instanceof Externalizable) || U.isEnum(obj.getClass())) {
+                // Avoid problems with differing Enum objects or Enum implementation class deadlocks.
                 writeByte(JDK);
 
                 try {
@@ -325,7 +327,6 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
      * @param fields class fields details.
      * @throws IOException In case of error.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     void writeSerializable(Object obj, List<Method> mtds, OptimizedClassDescriptor.Fields fields)
         throws IOException {
         for (int i = 0; i < mtds.size(); i++) {
@@ -478,7 +479,6 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
      * @param fields Fields.
      * @throws IOException In case of error.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     private void writeFields(Object obj, OptimizedClassDescriptor.ClassFields fields) throws IOException {
         for (int i = 0; i < fields.size(); i++) {
             OptimizedClassDescriptor.FieldInfo t = fields.get(i);

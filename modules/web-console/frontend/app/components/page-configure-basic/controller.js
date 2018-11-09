@@ -40,7 +40,7 @@ export default class PageConfigureBasicController {
     form;
 
     static $inject = [
-        Confirm.name, '$uiRouter', ConfigureState.name, ConfigSelectors.name, Clusters.name, Caches.name, IgniteVersion.name, '$element', 'ConfigChangesGuard', 'IgniteFormUtils', '$scope'
+        'Confirm', '$uiRouter', 'ConfigureState', 'ConfigSelectors', 'Clusters', 'Caches', 'IgniteVersion', '$element', 'ConfigChangesGuard', 'IgniteFormUtils', '$scope'
     ];
 
     /**
@@ -81,8 +81,13 @@ export default class PageConfigureBasicController {
     }
 
     _uiCanExit($transition$) {
-        if ($transition$.options().custom.justIDUpdate) return true;
+        const options = $transition$.options();
+
+        if (options.custom.justIDUpdate || options.redirectedFrom)
+            return true;
+
         $transition$.onSuccess({}, () => this.reset());
+
         return Observable.forkJoin(
             this.ConfigureState.state$.pluck('edit', 'changes').take(1),
             this.clusterID$.switchMap((id) => this.ConfigureState.state$.let(this.ConfigSelectors.selectClusterShortCaches(id))).take(1),
@@ -136,12 +141,12 @@ export default class PageConfigureBasicController {
 
         this.formActionsMenu = [
             {
-                text: 'Save changes and download project',
+                text: 'Save and Download',
                 click: () => this.save(true),
                 icon: 'download'
             },
             {
-                text: 'Save changes',
+                text: 'Save',
                 click: () => this.save(),
                 icon: 'checkmark'
             }
@@ -150,11 +155,12 @@ export default class PageConfigureBasicController {
         this.cachesColDefs = [
             {name: 'Name:', cellClass: 'pc-form-grid-col-10'},
             {name: 'Mode:', cellClass: 'pc-form-grid-col-10'},
-            {name: 'Atomicity:', cellClass: 'pc-form-grid-col-10', tip: `
+            {name: 'Atomicity:', cellClass: 'pc-form-grid-col-20', tip: `
                 Atomicity:
                 <ul>
                     <li>ATOMIC - in this mode distributed transactions and distributed locking are not supported</li>
                     <li>TRANSACTIONAL - in this mode specified fully ACID-compliant transactional cache behavior</li>
+                    <li>TRANSACTIONAL_SNAPSHOT - in this mode specified fully ACID-compliant transactional cache behavior for both key-value API and SQL transactions</li>
                 </ul>
             `},
             {name: 'Backups:', cellClass: 'pc-form-grid-col-10', tip: `
@@ -178,7 +184,9 @@ export default class PageConfigureBasicController {
     }
 
     save(download = false) {
-        if (this.form.$invalid) return this.IgniteFormUtils.triggerValidation(this.form, this.$scope);
+        if (this.form.$invalid)
+            return this.IgniteFormUtils.triggerValidation(this.form, this.$scope);
+
         this.ConfigureState.dispatchAction((download ? basicSaveAndDownload : basicSave)(cloneDeep(this.clonedCluster)));
     }
 
@@ -189,7 +197,7 @@ export default class PageConfigureBasicController {
 
     confirmAndReset() {
         return this.Confirm.confirm('Are you sure you want to undo all changes for current cluster?')
-        .then(() => this.reset())
-        .catch(() => {});
+            .then(() => this.reset())
+            .catch(() => {});
     }
 }

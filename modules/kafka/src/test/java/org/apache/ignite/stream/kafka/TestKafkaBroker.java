@@ -27,7 +27,8 @@ import java.util.Properties;
 import java.util.concurrent.TimeoutException;
 import kafka.server.KafkaConfig;
 import kafka.server.KafkaServer;
-import kafka.utils.SystemTime$;
+import kafka.zk.KafkaZkClient;
+import org.apache.kafka.common.utils.SystemTime;
 import kafka.utils.TestUtils;
 import kafka.utils.ZkUtils;
 import org.I0Itec.zkclient.ZkClient;
@@ -36,7 +37,9 @@ import org.apache.curator.test.TestingServer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.StringSerializer;
 import scala.Tuple2;
 
 /**
@@ -99,7 +102,9 @@ public class TestKafkaBroker {
 
         servers.add(kafkaSrv);
 
-        TestUtils.createTopic(zkUtils, topic, partitions, replicationFactor,
+        KafkaZkClient client = kafkaSrv.zkClient();
+
+        TestUtils.createTopic(client, topic, partitions, replicationFactor,
             scala.collection.JavaConversions.asScalaBuffer(servers), new Properties());
     }
 
@@ -152,7 +157,7 @@ public class TestKafkaBroker {
     private void setupKafkaServer() throws IOException {
         kafkaCfg = new KafkaConfig(getKafkaConfig());
 
-        kafkaSrv = TestUtils.createServer(kafkaCfg, SystemTime$.MODULE$);
+        kafkaSrv = TestUtils.createServer(kafkaCfg, new SystemTime());
 
         kafkaSrv.startup();
     }
@@ -202,15 +207,6 @@ public class TestKafkaBroker {
     }
 
     /**
-     * Obtains Zookeeper address.
-     *
-     * @return Zookeeper address.
-     */
-    public String getZookeeperAddress() {
-        return BROKER_HOST + ":" + ZK_PORT;
-    }
-
-    /**
      * Obtains producer config.
      *
      * @return Kafka Producer config.
@@ -218,9 +214,10 @@ public class TestKafkaBroker {
     private Properties getProducerConfig() {
         Properties props = new Properties();
 
-        props.put("bootstrap.servers", getBrokerAddress());
-        props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-        props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, getBrokerAddress());
+        props.put(ProducerConfig.CLIENT_ID_CONFIG, "KafkaTestProducer");
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
 
         return props;
     }

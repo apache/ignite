@@ -31,7 +31,7 @@ public interface TreeFilter extends Predicate<double[]>, Serializable {
      * @param other Predicate that will be logically-ANDed with this predicate.
      * @return Returns a composed predicate
      */
-    default TreeFilter and(TreeFilter other) {
+    public default TreeFilter and(TreeFilter other) {
         Objects.requireNonNull(other);
         return (t) -> test(t) && other.test(t);
     }

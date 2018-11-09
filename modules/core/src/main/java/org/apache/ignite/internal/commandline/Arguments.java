@@ -41,7 +41,7 @@ public class Arguments {
     private String pwd;
 
     /** Force option is used for auto confirmation. */
-    private boolean force;
+    private boolean autoConfirmation;
 
     /**
      * Action for baseline command.
@@ -71,10 +71,10 @@ public class Arguments {
      */
     private String walArgs;
 
-    /** Ping timeout for grid client. See {@link GridClientConfiguration#pingTimeout}.*/
+    /** Ping timeout for grid client. See {@link GridClientConfiguration#pingTimeout}. */
     private long pingTimeout;
 
-    /** Ping interval for grid client. See {@link GridClientConfiguration#pingInterval}.*/
+    /** Ping interval for grid client. See {@link GridClientConfiguration#pingInterval}. */
     private long pingInterval;
 
     /**
@@ -91,11 +91,11 @@ public class Arguments {
      * @param walArgs WAL args.
      * @param pingTimeout Ping timeout. See {@link GridClientConfiguration#pingTimeout}.
      * @param pingInterval Ping interval. See {@link GridClientConfiguration#pingInterval}.
-     * @param force Force flag.
+     * @param autoConfirmation Auto confirmation flag.
      */
     public Arguments(Command cmd, String host, String port, String user, String pwd, String baselineAct,
-                     String baselineArgs, VisorTxTaskArg txArg, CacheArguments cacheArgs, String walAct, String walArgs,
-                     Long pingTimeout, Long pingInterval, boolean force) {
+        String baselineArgs, VisorTxTaskArg txArg, CacheArguments cacheArgs, String walAct, String walArgs,
+        Long pingTimeout, Long pingInterval, boolean autoConfirmation) {
         this.cmd = cmd;
         this.host = host;
         this.port = port;
@@ -109,7 +109,7 @@ public class Arguments {
         this.walArgs = walArgs;
         this.pingTimeout = pingTimeout;
         this.pingInterval = pingInterval;
-        this.force = force;
+        this.autoConfirmation = autoConfirmation;
     }
 
     /**
@@ -136,15 +136,29 @@ public class Arguments {
     /**
      * @return user name
      */
-    public String user() {
+    public String getUserName() {
         return user;
+    }
+
+    /**
+     * @param user New user name.
+     */
+    public void setUserName(String user) {
+        this.user = user;
     }
 
     /**
      * @return password
      */
-    public String password() {
+    public String getPassword() {
         return pwd;
+    }
+
+    /**
+     * @param pwd New password.
+     */
+    public void setPassword(String pwd) {
+        this.pwd = pwd;
     }
 
     /**
@@ -208,9 +222,9 @@ public class Arguments {
     }
 
     /**
-     * @return Force option.
+     * @return Auto confirmation option.
      */
-    public boolean force() {
-        return force;
+    public boolean autoConfirmation() {
+        return autoConfirmation;
     }
 }

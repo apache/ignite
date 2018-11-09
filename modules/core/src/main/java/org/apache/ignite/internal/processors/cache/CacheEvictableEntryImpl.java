@@ -43,7 +43,6 @@ public class CacheEvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
     /**
      * @param cached Cached entry.
      */
-    @SuppressWarnings({"TypeMayBeWeakened"})
     protected CacheEvictableEntryImpl(GridCacheEntryEx cached) {
         this.cached = cached;
     }
@@ -126,7 +125,6 @@ public class CacheEvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public V getValue() {
         try {
             IgniteInternalTx tx = cached.context().tm().userTx();

@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>ignite-zookeeper</artifactId>
-    <version>2.5.0-SNAPSHOT</version>
+    <version>2.7.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
     <dependencies>
@@ -71,16 +71,18 @@
             <version>${guava16.version}</version>
         </dependency>
 
+        <!-- Do not remove org.codehaus.jackson:jackson-core-asl it is required by Apache Curator at runtime -->
         <dependency>
             <groupId>org.codehaus.jackson</groupId>
             <artifactId>jackson-core-asl</artifactId>
-            <version>${jackson.version}</version>
+            <version>${jackson1.version}</version>
         </dependency>
 
+        <!-- Do not remove org.codehaus.jackson:jackson-mapper-asl it is required by Apache Curator at runtime -->
         <dependency>
             <groupId>org.codehaus.jackson</groupId>
             <artifactId>jackson-mapper-asl</artifactId>
-            <version>${jackson.version}</version>
+            <version>${jackson1.version}</version>
         </dependency>
 
         <dependency>

@@ -25,10 +25,16 @@ export default class ClusterEditFormController {
     caches;
     /** @type {ig.menu<string>} */
     cachesMenu;
+    /** @type {ng.ICompiledExpression} */
+    onSave;
 
     static $inject = ['IgniteLegacyUtils', 'IgniteEventGroups', 'IgniteConfirm', 'IgniteVersion', '$scope', 'Clusters', 'IgniteFormUtils'];
+    /**
+     * @param {import('app/services/Clusters').default} Clusters
+     */
     constructor(IgniteLegacyUtils, IgniteEventGroups, IgniteConfirm, IgniteVersion, $scope, Clusters, IgniteFormUtils) {
-        Object.assign(this, {IgniteLegacyUtils, IgniteEventGroups, IgniteConfirm, IgniteVersion, $scope, Clusters, IgniteFormUtils});
+        Object.assign(this, {IgniteLegacyUtils, IgniteEventGroups, IgniteConfirm, IgniteVersion, $scope, IgniteFormUtils});
+        this.Clusters = Clusters;
     }
 
     $onDestroy() {
@@ -37,8 +43,6 @@ export default class ClusterEditFormController {
 
     $onInit() {
         this.available = this.IgniteVersion.available.bind(this.IgniteVersion);
-
-        let __original_value;
 
         const rebuildDropdowns = () => {
             this.eventStorage = [
@@ -89,6 +93,11 @@ export default class ClusterEditFormController {
 
         this.$scope.ui = this.IgniteFormUtils.formUI();
         this.$scope.ui.loadedPanels = ['checkpoint', 'serviceConfiguration', 'odbcConfiguration'];
+
+        this.formActions = [
+            {text: 'Save', icon: 'checkmark', click: () => this.save()},
+            {text: 'Save and Download', icon: 'download', click: () => this.save(true)}
+        ];
     }
 
     $onChanges(changes) {
@@ -120,10 +129,10 @@ export default class ClusterEditFormController {
         return [this.cluster, this.clonedCluster].map(this.Clusters.normalize);
     }
 
-    save() {
+    save(download) {
         if (this.$scope.ui.inputForm.$invalid)
             return this.IgniteFormUtils.triggerValidation(this.$scope.ui.inputForm, this.$scope);
-        this.onSave({$event: cloneDeep(this.clonedCluster)});
+        this.onSave({$event: {cluster: cloneDeep(this.clonedCluster), download}});
     }
 
     reset = () => this.clonedCluster = cloneDeep(this.cluster);

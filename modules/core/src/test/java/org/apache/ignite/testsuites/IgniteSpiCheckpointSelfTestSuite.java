@@ -59,6 +59,7 @@ public class IgniteSpiCheckpointSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridSharedFsCheckpointSpiSelfTest.class));
         suite.addTest(new TestSuite(GridSharedFsCheckpointSpiStartStopSelfTest.class));
         suite.addTest(new TestSuite(GridSharedFsCheckpointSpiConfigSelfTest.class));
+        //suite.addTest(new TestSuite(GridSharedFsCheckpointSpiMultiThreadedSelfTest.class));
 
         return suite;
     }

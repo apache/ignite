@@ -145,7 +145,8 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
         for (Integer key : keys)
             cache.put(key, VAL_PREFIX + key);
 
-        IgniteCache<Integer, String> clientCache = grid(CLIENT_NAME).getOrCreateCache(CACHE_NAME);
+        IgniteCache<Integer, String> clientCache = grid(CLIENT_NAME).getOrCreateCache(CACHE_NAME)
+            .withAllowAtomicOpsInTx();
 
         assertTrue(GridTestUtils.waitForCondition(
             new GridAbsPredicate() {
@@ -246,7 +247,8 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
         for (Integer key : keys)
             cache.put(key, VAL_PREFIX + key);
 
-        IgniteCache<Integer, String> clientCache = grid(CLIENT_NAME).getOrCreateCache(CACHE_NAME);
+        IgniteCache<Integer, String> clientCache = grid(CLIENT_NAME).getOrCreateCache(CACHE_NAME)
+            .withAllowAtomicOpsInTx();
 
         try (Transaction tx = grid(CLIENT_NAME).transactions().txStart()) {
             if (batchMode) {

@@ -23,10 +23,11 @@ import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsBinaryMe
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsBinarySortObjectFieldsTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCorruptedIndexTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsMarshallerMappingRestoreOnNodeStartTest;
-import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTxCacheHistoricalRebalancingTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTxCacheRebalancingTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTxHistoricalRebalancingTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePersistentStoreCacheGroupsTest;
 import org.apache.ignite.internal.processors.cache.persistence.PersistenceDirectoryWarningLoggingTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgniteLogicalRecoveryTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsMultiNodePutGetRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPageEvictionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsCacheDestroyDuringCheckpointTest;
@@ -40,6 +41,8 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalR
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRecoveryWithCompactionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalPathsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRecoveryTxLogicalRecordsTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRolloverRecordLoggingFsyncTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRolloverRecordLoggingLogOnlyTest;
 
 /**
  * Test suite for tests that cover core PDS features and depend on indexing module.
@@ -59,19 +62,24 @@ public class IgnitePdsWithIndexingCoreTestSuite extends TestSuite {
         suite.addTestSuite(PersistenceDirectoryWarningLoggingTest.class);
         suite.addTestSuite(WalPathsTest.class);
         suite.addTestSuite(WalRecoveryTxLogicalRecordsTest.class);
+        suite.addTestSuite(WalRolloverRecordLoggingFsyncTest.class);
+        suite.addTestSuite(WalRolloverRecordLoggingLogOnlyTest.class);
 
         suite.addTestSuite(IgniteWalRecoveryTest.class);
         suite.addTestSuite(IgniteWalRecoveryWithCompactionTest.class);
         suite.addTestSuite(IgnitePdsNoActualWalHistoryTest.class);
-        suite.addTestSuite(IgnitePdsAtomicCacheRebalancingTest.class);
-        suite.addTestSuite(IgnitePdsTxCacheRebalancingTest.class);
-
-        suite.addTestSuite(IgnitePdsAtomicCacheHistoricalRebalancingTest.class);
-        suite.addTestSuite(IgnitePdsTxCacheHistoricalRebalancingTest.class);
         suite.addTestSuite(IgniteWalRebalanceTest.class);
 
+        suite.addTestSuite(IgnitePdsAtomicCacheRebalancingTest.class);
+        suite.addTestSuite(IgnitePdsAtomicCacheHistoricalRebalancingTest.class);
+
+        suite.addTestSuite(IgnitePdsTxCacheRebalancingTest.class);
+        suite.addTestSuite(IgnitePdsTxHistoricalRebalancingTest.class);
+
         suite.addTestSuite(IgniteWalRecoveryPPCTest.class);
+
         suite.addTestSuite(IgnitePdsDiskErrorsRecoveringTest.class);
+
         suite.addTestSuite(IgnitePdsCacheDestroyDuringCheckpointTest.class);
 
         suite.addTestSuite(IgnitePdsBinaryMetadataOnClusterRestartTest.class);
@@ -80,6 +88,8 @@ public class IgnitePdsWithIndexingCoreTestSuite extends TestSuite {
         suite.addTestSuite(IgnitePdsBinarySortObjectFieldsTest.class);
 
         suite.addTestSuite(IgnitePdsCorruptedIndexTest.class);
+
+        suite.addTestSuite(IgniteLogicalRecoveryTest.class);
 
         return suite;
     }

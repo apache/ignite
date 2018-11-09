@@ -62,7 +62,7 @@ public class IgfsDataPutProcessor implements EntryProcessor<IgfsBlockKey, byte[]
     }
 
     /** {@inheritDoc} */
-    public Void process(MutableEntry<IgfsBlockKey, byte[]> entry, Object... args)
+    @Override public Void process(MutableEntry<IgfsBlockKey, byte[]> entry, Object... args)
         throws EntryProcessorException {
         byte[] curVal = entry.getValue();
 

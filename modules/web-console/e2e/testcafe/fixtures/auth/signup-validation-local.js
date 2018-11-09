@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {resolveUrl} from '../../envtools';
+import {resolveUrl} from '../../environment/envtools';
 import {pageSignup as page} from '../../page-models/pageSignup';
 
 fixture('Signup validation local').page(resolveUrl('/signup'));

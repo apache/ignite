@@ -23,7 +23,9 @@ export default function pcUiGridFilters(uiGridConstants) {
         require: 'uiGrid',
         link: {
             pre(scope, el, attr, grid) {
-                if (!grid.grid.options.enableFiltering) return;
+                if (!grid.grid.options.enableFiltering)
+                    return;
+
                 grid.grid.options.columnDefs.filter((cd) => cd.multiselectFilterOptions).forEach((cd) => {
                     cd.headerCellTemplate = template;
                     cd.filter = {
