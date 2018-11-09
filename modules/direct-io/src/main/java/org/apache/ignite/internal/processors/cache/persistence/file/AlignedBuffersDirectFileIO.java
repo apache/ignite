@@ -301,6 +301,7 @@ public class AlignedBuffersDirectFileIO extends AbstractFileIO {
 
             int len = alignedBuf.remaining();
 
+            // Compressed buffer of wrong size can be passed here.
             if (len % ioBlockSize != 0)
                 alignBufferLimit(alignedBuf);
 
