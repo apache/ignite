@@ -5461,7 +5461,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             processCustomMessage(msg, waitForNotification);
                         }
-                    }
+                    } else
+                        log.warning("Discarding duplicated custom event message [msg=" + msg + "]");
 
                     msg.message(null, msg.messageBytes());
                 }
@@ -5499,28 +5500,24 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
             }
             else {
-                TcpDiscoverySpiState state0;
+                if (msg.verified()) {
+                    if(msg.topologyVersion() != ring.topologyVersion()) {
+                        log.warning("Discarding custom event message [msg=" + msg + ", ring=" + ring + ']');
 
-                synchronized (mux) {
-                    state0 = spiState;
-                }
+                        return;
+                    }
 
-                if (msg.verified() && msg.topologyVersion() != ring.topologyVersion()) {
-                    if (log.isDebugEnabled())
-                        log.debug("Discarding custom event message [msg=" + msg + ", ring=" + ring + ']');
-
-                    return;
-                }
-
-                if (msg.verified() && state0 == CONNECTED && pendingMsgs.procCustomMsgs.add(msg.id())) {
                     assert msg.topologyVersion() == ring.topologyVersion() :
                         "msg: " + msg + ", topVer=" + ring.topologyVersion();
 
-                    notifyDiscoveryListener(msg, waitForNotification);
-                }
+                    if(pendingMsgs.procCustomMsgs.add(msg.id()))
+                        notifyDiscoveryListener(msg, waitForNotification);
+                    else
+                        log.warning("Discarding duplicated custom event message [msg=" + msg + "]");
 
-                if (msg.verified())
                     msg.message(null, msg.messageBytes());
+                } else
+                    log.warning("Unverified message [msg=" + msg + "]");
 
                 if (sendMessageToRemotes(msg))
                     sendMessageAcrossRing(msg);
@@ -5622,12 +5619,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             Collection<ClusterNode> snapshot = hist.get(msg.topologyVersion());
 
-            if (lsnr != null && (spiState == CONNECTED || spiState == DISCONNECTING)) {
-                TcpDiscoveryNode node = ring.node(msg.creatorNodeId());
+            TcpDiscoveryNode node = ring.node(msg.creatorNodeId());
 
-                if (node == null)
-                    return;
-
+            if (lsnr != null && (spiState == CONNECTED || spiState == DISCONNECTING) && node != null) {
                 DiscoverySpiCustomMessage msgObj;
 
                 try {
@@ -5644,8 +5638,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                     hist,
                     msgObj);
 
-                if (waitForNotification || msgObj.isMutable())
+                if (waitForNotification || msgObj.isMutable()) {
+                    if (log.isInfoEnabled())
+                        log.info("Await future for message: " + msgObj);
+
                     fut.get();
+                } else if(log.isInfoEnabled())
+                    log.info("Skip wait future for message: " + msgObj);
 
                 if (msgObj.isMutable()) {
                     try {
@@ -5655,7 +5654,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                         throw new IgniteException("Failed to marshal mutable discovery message: " + msgObj, t);
                     }
                 }
-            }
+            } else
+                log.warning("notifyDiscoveryListener spiState = " + spiState
+                    + ", waitForNotification = " +waitForNotification
+                    + ", listener = " + lsnr + ", creatorNodeId = " + node
+                    + ", for message = " + msg
+                );
         }
 
         /**
