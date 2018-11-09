@@ -62,7 +62,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
-import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -111,7 +110,6 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCa
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FsyncModeFileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.query.GridCacheDistributedQueryManager;
 import org.apache.ignite.internal.processors.cache.query.GridCacheLocalQueryManager;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
@@ -213,9 +211,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** */
     private final boolean startClientCaches =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_START_CACHES_ON_JOIN, false);
-
-    private final boolean walFsyncWithDedicatedWorker =
-        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_WAL_FSYNC_WITH_DEDICATED_WORKER, false);
 
     /** Enables start caches in parallel. */
     private final boolean IGNITE_ALLOW_START_CACHES_IN_PARALLEL =
@@ -3041,13 +3036,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             walMgr = ctx.plugins().createComponent(IgniteWriteAheadLogManager.class);
 
-            if (walMgr == null) {
-                if (ctx.config().getDataStorageConfiguration().getWalMode() == WALMode.FSYNC &&
-                    !walFsyncWithDedicatedWorker)
-                    walMgr = new FsyncModeFileWriteAheadLogManager(ctx);
-                else
-                    walMgr = new FileWriteAheadLogManager(ctx);
-            }
+            if (walMgr == null)
+                walMgr = new FileWriteAheadLogManager(ctx);
         }
         else {
             if (CU.isPersistenceEnabled(ctx.config()) && ctx.clientNode()) {
@@ -3525,7 +3515,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
      * @return Future that will be completed when cache is deployed.
      */
-    @SuppressWarnings("IfMayBeConditional")
     public IgniteInternalFuture<Boolean> dynamicStartCache(
         @Nullable CacheConfiguration ccfg,
         String cacheName,
@@ -3549,7 +3538,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @param ccfg Cache configuration.
      */
-    @SuppressWarnings("IfMayBeConditional")
     public IgniteInternalFuture<Boolean> dynamicStartSqlCache(
         CacheConfiguration ccfg
     ) {
@@ -3578,7 +3566,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
      * @return Future that will be completed when cache is deployed.
      */
-    @SuppressWarnings("IfMayBeConditional")
     public IgniteInternalFuture<Boolean> dynamicStartCache(
         @Nullable CacheConfiguration ccfg,
         String cacheName,
