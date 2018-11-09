@@ -1441,6 +1441,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
         protected CacheConfiguration<KeyType, ValueType> createCacheConfiguration() {
             return new CacheConfiguration<KeyType, ValueType>(DEFAULT_CACHE_NAME)
                 .setBackups(backupsCount())
+                .setReadFromBackup(false)
                 .setAffinity(
                     new RendezvousAffinityFunction()
                         .setPartitions(DFLT_PARTITIONS_COUNT)
