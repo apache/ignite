@@ -186,11 +186,6 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public FileIO create(File file) throws IOException {
-            return create(file, CREATE, READ, WRITE);
-        }
-
-        /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
             final FileIO delegate = delegateFactory.create(file, modes);
 

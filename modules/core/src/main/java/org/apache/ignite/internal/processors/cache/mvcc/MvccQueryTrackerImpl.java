@@ -61,6 +61,9 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
     /** */
     private final boolean canRemap;
 
+    /** */
+    private boolean done;
+
     /**
      * @param cctx Cache context.
      */
@@ -136,6 +139,9 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
 
     /** {@inheritDoc} */
     @Override public void onDone() {
+        if (!checkDone())
+            return;
+
         MvccProcessor prc = cctx.shared().coordinators();
 
         MvccSnapshot snapshot = snapshot();
@@ -151,7 +157,7 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
     @Override public IgniteInternalFuture<Void> onDone(@NotNull GridNearTxLocal tx, boolean commit) {
         MvccSnapshot snapshot = snapshot(), txSnapshot = tx.mvccSnapshot();
 
-        if (snapshot == null && txSnapshot == null)
+        if (!checkDone() || snapshot == null && txSnapshot == null)
             return commit ? new GridFinishedFuture<>() : null;
 
         MvccProcessor prc = cctx.shared().coordinators();
@@ -326,6 +332,14 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
         }
 
         return true;
+    }
+
+    /** */
+    private synchronized boolean checkDone() {
+        if (!done)
+            return done = true;
+
+        return false;
     }
 
     /** {@inheritDoc} */
