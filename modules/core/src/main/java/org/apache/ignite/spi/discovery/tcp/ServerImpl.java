@@ -84,6 +84,7 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridTuple;
+import org.apache.ignite.internal.util.lang.gridfunc.HasEqualIdPredicate;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -5621,9 +5622,14 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             Collection<ClusterNode> snapshot = hist.get(msg.topologyVersion());
 
-            TcpDiscoveryNode node = ring.node(msg.creatorNodeId());
+            ClusterNode node = ring.node(msg.creatorNodeId());
 
-            assert node != null : "Creator node doesn't exist in the ring " + ring;
+            if (snapshot != null)
+                node = F.find(snapshot, node, new HasEqualIdPredicate(msg.creatorNodeId()));
+            else
+                log.warning("Topology snapshot for version " + msg.topologyVersion() +" is null, fallback to ring lookup");
+
+            assert node != null : "Creator node doesn't exist in the snapshot or current topology " + ring;
 
             if (lsnr != null && (state0 == CONNECTED || state0 == DISCONNECTING)) {
                 DiscoverySpiCustomMessage msgObj;
