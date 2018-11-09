@@ -17,16 +17,9 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.Socket;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
@@ -34,14 +27,9 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryEnsureDelivery;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.mockito.internal.util.reflection.Whitebox;
@@ -50,14 +38,6 @@ import org.mockito.internal.util.reflection.Whitebox;
  *
  */
 public class TcpDiscoveryDisconnectingTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
-    private volatile boolean blockMsgs;
-
-    /** */
-    private Set<TcpDiscoveryAbstractMessage> receivedEnsuredMsgs;
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -105,7 +85,7 @@ public class TcpDiscoveryDisconnectingTest extends GridCommonAbstractTest {
 
         assertEquals(3, messages.size());
     }
-    
+
     /**
      * @param disco Discovery SPI.
      * @param id Message id.
