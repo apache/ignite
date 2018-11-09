@@ -15,25 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.lang;
+package org.apache.ignite.internal.processors.cache.persistence.wal.filehandle;
 
-import java.io.Serializable;
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
+import org.jetbrains.annotations.NotNull;
 
 /**
- * Represents an operation that accepts a single input argument and returns no result. Unlike most other functional
- * interfaces, {@code IgniteThrowableConsumer} is expected to operate via side-effects.
  *
- * @param <E> Type of closure parameter.
- * @param <R> Type of result value.
  */
-public interface IgniteThrowableConsumer<E, R> extends Serializable {
+public abstract class AbstractFileHandle {
+    /** I/O interface for read/write operations with file. */
+    protected SegmentIO fileIO;
+
+    /** Segment idx corresponded to fileIo. */
+    private final long segmentIdx;
+
     /**
-     * Consumer body.
-     *
-     * @param e Consumer parameter.
-     * @return Result of consumer operation.
-     * @throws IgniteCheckedException if body execution was failed.
+     * @param fileIO I/O interface for read/write operations of AbstractFileHandle.
      */
-    public R accept(E e) throws IgniteCheckedException;
+    public AbstractFileHandle(@NotNull SegmentIO fileIO) {
+        this.fileIO = fileIO;
+        segmentIdx = fileIO.getSegmentId();
+    }
+
+    /**
+     * @return Absolute WAL segment file index (incremental counter).
+     */
+    public long getSegmentId(){
+        return segmentIdx;
+    }
 }

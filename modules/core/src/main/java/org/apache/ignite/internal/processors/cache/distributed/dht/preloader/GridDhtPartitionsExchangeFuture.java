@@ -3479,7 +3479,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         || grpCtx.config().getRebalanceMode() == CacheRebalanceMode.NONE
                         || grpCtx.config().getExpiryPolicyFactory() == null
                         || SKIP_PARTITION_SIZE_VALIDATION)
-                        return;
+                        return null;
 
                     try {
                         validator.validatePartitionCountersAndSizes(GridDhtPartitionsExchangeFuture.this, top, msgs);
@@ -3488,6 +3488,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         log.warning("Partition states validation has failed for group: " + grpCtx.cacheOrGroupName() + ". " + ex.getMessage());
                         // TODO: Handle such errors https://issues.apache.org/jira/browse/IGNITE-7833
                     }
+
+                    return null;
                 }
             );
         }
@@ -3520,6 +3522,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         assignPartitionSizes(top);
                     else
                         assignPartitionStates(top);
+
+                    return null;
                 }
             );
         }
@@ -3976,6 +3980,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                                 null);
                         }
                     }
+
+                    return null;
                 });
         }
         catch (IgniteCheckedException e) {
