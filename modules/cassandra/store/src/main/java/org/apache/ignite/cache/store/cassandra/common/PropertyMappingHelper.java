@@ -45,17 +45,17 @@ public class PropertyMappingHelper {
     private static final Map<Class, TypeHandler> JAVA_TO_CASSANDRA_MAPPING = new HashMap<Class, TypeHandler>() {{
         put(String.class, TypeHandlerHelper.getInstanceFromClass(StringTypeHandler.class));
         put(Integer.class, TypeHandlerHelper.getInstanceFromClass(IntegerTypeHandler.class));
-        put(int.class, TypeHandlerHelper.getInstanceFromClass(IntegerTypeHandler.class));
+        put(int.class, TypeHandlerHelper.getInstanceFromClass(PrimitiveIntegerTypeHandler.class));
         put(Short.class, TypeHandlerHelper.getInstanceFromClass(ShortTypeHandler.class));
-        put(short.class, TypeHandlerHelper.getInstanceFromClass(ShortTypeHandler.class));
+        put(short.class, TypeHandlerHelper.getInstanceFromClass(PrimitiveShortTypeHandler.class));
         put(Long.class, TypeHandlerHelper.getInstanceFromClass(LongTypeHandler.class));
-        put(long.class, TypeHandlerHelper.getInstanceFromClass(LongTypeHandler.class));
+        put(long.class, TypeHandlerHelper.getInstanceFromClass(PrimitiveLongTypeHandler.class));
         put(Double.class, TypeHandlerHelper.getInstanceFromClass(DoubleTypeHandler.class));
-        put(double.class, TypeHandlerHelper.getInstanceFromClass(DoubleTypeHandler.class));
+        put(double.class, TypeHandlerHelper.getInstanceFromClass(PrimitiveDoubleTypeHandler.class));
         put(Boolean.class, TypeHandlerHelper.getInstanceFromClass(BooleanTypeHandler.class));
-        put(boolean.class, TypeHandlerHelper.getInstanceFromClass(BooleanTypeHandler.class));
+        put(boolean.class, TypeHandlerHelper.getInstanceFromClass(PrimitiveBooleanTypeHandler.class));
         put(Float.class, TypeHandlerHelper.getInstanceFromClass(FloatTypeHandler.class));
-        put(float.class, TypeHandlerHelper.getInstanceFromClass(FloatTypeHandler.class));
+        put(float.class, TypeHandlerHelper.getInstanceFromClass(PrimitiveFloatTypeHandler.class));
         put(ByteBuffer.class, TypeHandlerHelper.getInstanceFromClass(ByteBufferTypeHandler.class));
         put(BYTES_ARRAY_CLASS, TypeHandlerHelper.getInstanceFromClass(ByteArrayTypeHandler.class));
         put(BigDecimal.class, TypeHandlerHelper.getInstanceFromClass(BigDecimalTypeHandler.class));
