@@ -1883,7 +1883,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         try {
                             l = iter0.next();
                         }
+                        catch (CacheException e) {
+                            throw e;
+                        }
                         catch (Exception e) {
+                            throw new CacheException(e);
+                        }
                             if (e instanceof CacheException)
                                 throw e;
 
