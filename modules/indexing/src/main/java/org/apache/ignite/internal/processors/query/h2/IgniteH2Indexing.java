@@ -1889,11 +1889,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         catch (Exception e) {
                             throw new CacheException(e);
                         }
-                            if (e instanceof CacheException)
-                                throw e;
-
-                            throw new CacheException(e);
-                        }
 
                         return new CacheEntryImpl<>((K)l.get(0), (V)l.get(1));
                     }
