@@ -180,10 +180,11 @@ public interface IgniteCacheOffheapManager {
     /**
      * @param cctx Cache context.
      * @param key Key.
+     * @param mvccSnapshot MVCC snapshot.
      * @return Cached row, if available, null otherwise.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public CacheDataRow mvccRead(GridCacheContext cctx, KeyCacheObject key, MvccSnapshot ver)
+    @Nullable public CacheDataRow mvccRead(GridCacheContext cctx, KeyCacheObject key, MvccSnapshot mvccSnapshot)
         throws IgniteCheckedException;
 
     /**
@@ -435,6 +436,7 @@ public interface IgniteCacheOffheapManager {
      * @param primary Primary entries flag.
      * @param backup Backup entries flag.
      * @param topVer Topology version.
+     * @param mvccSnapshot MVCC snapshot.
      * @return Rows iterator.
      * @throws IgniteCheckedException If failed.
      */
@@ -493,21 +495,21 @@ public interface IgniteCacheOffheapManager {
 
     /**
      * @param cctx Cache context.
-     * @param primary Primary entries flag.
-     * @param backup Backup entries flag.
+     * @param primary {@code True} if need to return primary entries.
+     * @param backup {@code True} if need to return backup entries.
      * @param topVer Topology version.
      * @param keepBinary Keep binary flag.
+     * @param mvccSnapshot MVCC snapshot.
      * @return Entries iterator.
      * @throws IgniteCheckedException If failed.
      */
-    // TODO: MVCC>
     public <K, V> GridCloseableIterator<Cache.Entry<K, V>> cacheEntriesIterator(
         GridCacheContext cctx,
         final boolean primary,
         final boolean backup,
         final AffinityTopologyVersion topVer,
         final boolean keepBinary,
-        MvccSnapshot mvccSnapshot) throws IgniteCheckedException;
+        @Nullable MvccSnapshot mvccSnapshot) throws IgniteCheckedException;
 
     /**
      * @param cacheId Cache ID.

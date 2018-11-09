@@ -87,14 +87,13 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.affinity.GridCacheAffinityImpl;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteExternalizableExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -783,9 +782,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                 IgniteCacheOffheapManager offheapMgr = ctx.isNear() ? ctx.near().dht().context().offheap() : ctx.offheap();
 
-                MvccQueryTracker mvccTracker = MvccUtils.mvccTracker(ctx, null);
+                MvccSnapshot mvccSnapshot = ctx.mvccEnabled() ? MvccUtils.MVCC_MAX_SNAPSHOT : null;
 
-                its.add(offheapMgr.<K, V>cacheEntriesIterator(ctx, modes.primary, modes.backup, topVer, ctx.keepBinary(), mvccTracker.snapshot()));
+                its.add(offheapMgr
+                    .cacheEntriesIterator(ctx, modes.primary, modes.backup, topVer, ctx.keepBinary(), mvccSnapshot));
             }
         }
         else if (modes.heap) {
@@ -885,10 +885,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             GridCacheContext ctx0;
 
             while (true) {
-                if (nearKey) {
-                    ctx0 = context();
+                if (nearKey)
                     e = peekEx(key);
-                }
                 else {
                     ctx0 = ctx.isNear() ? ctx.near().dht().context() : ctx;
                     e = modes.offheap ? ctx0.cache().entryEx(key) : ctx0.cache().peekEx(key);

@@ -87,13 +87,6 @@ public class IgniteCacheMvccTestSuite extends TestSuite {
         @Override protected CacheAtomicityMode atomicityMode() {
             return TRANSACTIONAL_SNAPSHOT;
         }
-
-        /** {@inheritDoc} */
-        @Override public void testLocalEntries() throws Exception {
-//            fail("https://issues.apache.org/jira/browse/IGNITE-10167");
-
-            super.testLocalEntries();
-        }
     }
 
     /** */
@@ -101,13 +94,6 @@ public class IgniteCacheMvccTestSuite extends TestSuite {
         /** {@inheritDoc} */
         @Override protected CacheAtomicityMode atomicityMode() {
             return TRANSACTIONAL_SNAPSHOT;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void testLocalEntries() throws Exception {
-//            fail("https://issues.apache.org/jira/browse/IGNITE-10167");
-
-            super.testLocalEntries();
         }
     }
 }
