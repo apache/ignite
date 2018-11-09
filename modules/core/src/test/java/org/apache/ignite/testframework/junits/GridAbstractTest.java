@@ -2121,15 +2121,15 @@ public abstract class GridAbstractTest extends TestCase {
         return new TestCounters(cfg);
     }
 
-    @Rule public TestName name = new TestName();
+    @Rule public transient TestName nameRule = new TestName();
 
     @Override public String getName() {
         String junit3Name = super.getName();
 
-        return junit3Name != null ? junit3Name : this.name.getMethodName();
+        return junit3Name != null ? junit3Name : nameRule.getMethodName();
     }
 
-    @Rule public TestRule runRule = (base, description) -> new Statement() {
+    @Rule public transient TestRule runRule = (base, description) -> new Statement() {
         @Override public void evaluate() throws Throwable {
             runTest(base);
         }
