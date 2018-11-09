@@ -982,9 +982,8 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
                 Collection<QueryEntity> entities = ccfg.getQueryEntities();
 
                 for (QueryEntity tab : entities) {
-                    // todo: do we need to normalize table name?
                     String tabName = tab.getTableName();
-                    // todo: remove assert
+
                     assert tabName != null : "Table Name of the query entity is null; Entity " + tab;
 
                     if (!matches(tabName, tblNamePtrn))
@@ -995,9 +994,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
                     if (!matches(schemaName, schemaPtrn))
                         continue;
 
-                    final String keyName = tab.getKeyFieldName() != null ?
-                        tab.getKeyFieldName() :
-                        "PK_" + schemaName + "_" + tabName;
+                    final String keyName = QueryUtils.primaryKeyName(tab, schemaName);
 
                     List<String> keyCols = QueryUtils.primaryKeyColumns(tab);
 
