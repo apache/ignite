@@ -994,7 +994,7 @@ public class GridDhtPartitionDemander {
         /** */
         private final IgniteLogger log;
 
-        /** Remaining. T2: startTime, partitions */
+        /** Remaining. */
         private final Map<UUID, IgniteDhtDemandedPartitionsMap> remaining = new HashMap<>();
 
         /** Missed. */
@@ -1115,8 +1115,7 @@ public class GridDhtPartitionDemander {
                     return;
 
                 U.log(log, ("Cancelled rebalancing [grp=" + grp.cacheOrGroupName() +
-                    ", supplier=" + nodeId + ", topVer=" + topologyVersion() +
-                    "]"));
+                    ", supplier=" + nodeId + ", topVer=" + topologyVersion() + ']'));
 
                 cleanupRemoteContexts(nodeId);
 
