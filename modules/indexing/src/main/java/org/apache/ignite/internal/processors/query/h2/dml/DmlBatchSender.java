@@ -207,7 +207,7 @@ public class DmlBatchSender {
      * @return Triple [number of rows actually changed; keys that failed to update (duplicates or concurrently
      *     updated ones); chain of exceptions for all keys whose processing resulted in error, or null for no errors].
      */
-    @SuppressWarnings({"unchecked", "ConstantConditions"})
+    @SuppressWarnings({"unchecked"})
     private DmlPageProcessingResult processPage(GridCacheContext cctx, Batch batch) {
         Map<Object, EntryProcessorResult<Boolean>> res;
 

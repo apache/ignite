@@ -37,6 +37,11 @@ public class User implements Serializable {
     /** Default user password. */
     private static final String DFLT_USER_PASSWORD = "ignite";
 
+    /**
+     * @see BCrypt#GENSALT_DEFAULT_LOG2_ROUNDS
+     */
+    private static int bCryptGensaltLog2Rounds = 10;
+
     /** User name. */
     private String name;
 
@@ -107,7 +112,7 @@ public class User implements Serializable {
      * @return Hashed password.
      */
     @Nullable private static String password_bcrypt(String passwd) {
-        return BCrypt.hashpw(passwd, BCrypt.gensalt());
+        return BCrypt.hashpw(passwd, BCrypt.gensalt(bCryptGensaltLog2Rounds));
     }
 
     /**
