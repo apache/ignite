@@ -26,6 +26,7 @@ import java.math.BigDecimal;
  * Type handler for convert java {@link BigDecimal} &lt;-&gt; cassandra 'decimal'
  */
 public class BigDecimalTypeHandler implements TypeHandler<BigDecimal, BigDecimal> {
+    private static final long serialVersionUID = -3250017425792473843L;
 
     /**
      * {@inheritDoc}

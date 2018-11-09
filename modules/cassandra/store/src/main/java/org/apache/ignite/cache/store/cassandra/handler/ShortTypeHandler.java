@@ -24,6 +24,7 @@ import com.datastax.driver.core.Row;
  * Type handler for convert java {@link Short} &lt;-&gt; cassandra 'smallint'
  */
 public class ShortTypeHandler implements TypeHandler<Short, Short> {
+    private static final long serialVersionUID = -3783451038314088622L;
 
     /**
      * {@inheritDoc}

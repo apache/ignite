@@ -26,6 +26,7 @@ import java.util.Date;
  * Type handler for convert java {@link Date} &lt;-&gt; cassandra 'timestamp'
  */
 public class DateTypeHandler implements TypeHandler<Date, Date> {
+    private static final long serialVersionUID = -408976844667561421L;
 
     /**
      * {@inheritDoc}

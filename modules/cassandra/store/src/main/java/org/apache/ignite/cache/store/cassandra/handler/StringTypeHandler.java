@@ -24,6 +24,7 @@ import com.datastax.driver.core.Row;
  * Type handler for convert java {@link String} &lt;-&gt; cassandra 'text'
  */
 public class StringTypeHandler implements TypeHandler<String, String> {
+    private static final long serialVersionUID = -3240475921734257322L;
 
     /**
      * {@inheritDoc}

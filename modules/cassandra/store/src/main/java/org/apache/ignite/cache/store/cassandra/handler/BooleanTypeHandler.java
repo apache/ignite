@@ -24,6 +24,7 @@ import com.datastax.driver.core.Row;
  * Type handler for convert java {@link Boolean} &lt;-&gt; cassandra 'boolean'
  */
 public class BooleanTypeHandler implements TypeHandler<Boolean, Boolean> {
+    private static final long serialVersionUID = -1086338937803678432L;
 
     /**
      * {@inheritDoc}

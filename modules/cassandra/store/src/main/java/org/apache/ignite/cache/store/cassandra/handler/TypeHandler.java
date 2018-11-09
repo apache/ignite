@@ -19,11 +19,13 @@ package org.apache.ignite.cache.store.cassandra.handler;
 
 import com.datastax.driver.core.Row;
 
+import java.io.Serializable;
+
 /**
  * Interface which should be implemented by all handlers responsible
  * for converting data to/from primitive Cassandra type.
  */
-public interface TypeHandler<J, C> {
+public interface TypeHandler<J, C> extends Serializable {
     /**
      * Get primitive Cassandra type object from database and convert to complex Java type object
      *

@@ -24,6 +24,7 @@ import com.datastax.driver.core.Row;
  * Type handler for convert java {@link Integer} &lt;-&gt; cassandra 'int'
  */
 public class IntegerTypeHandler implements TypeHandler<Integer, Integer> {
+    private static final long serialVersionUID = -2254452892101448184L;
 
     /**
      * {@inheritDoc}

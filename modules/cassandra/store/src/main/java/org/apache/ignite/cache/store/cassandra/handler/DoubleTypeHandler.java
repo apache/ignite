@@ -24,6 +24,7 @@ import com.datastax.driver.core.Row;
  * Type handler for convert java {@link Double} &lt;-&gt; cassandra 'double'
  */
 public class DoubleTypeHandler implements TypeHandler<Double, Double> {
+    private static final long serialVersionUID = 2165323112631971960L;
 
     /**
      * {@inheritDoc}

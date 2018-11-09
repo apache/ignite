@@ -26,6 +26,7 @@ import java.util.UUID;
  * Type handler for convert java {@link UUID} &lt;-&gt; cassandra 'uuid'
  */
 public class UUIDTypeHandler implements TypeHandler<UUID, UUID> {
+    private static final long serialVersionUID = 4850049778645507121L;
 
     /**
      * {@inheritDoc}

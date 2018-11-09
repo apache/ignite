@@ -24,6 +24,7 @@ import com.datastax.driver.core.Row;
  * Type handler for convert java {@link Long} &lt;-&gt; cassandra 'date'
  */
 public class PrimitiveLongTypeHandler implements TypeHandler<Long, Long> {
+    private static final long serialVersionUID = -5991180176181590567L;
 
     /**
      * {@inheritDoc}

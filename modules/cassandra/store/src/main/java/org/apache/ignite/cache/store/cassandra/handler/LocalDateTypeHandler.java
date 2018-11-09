@@ -25,6 +25,7 @@ import com.datastax.driver.core.Row;
  * Type handler for convert java {@link com.datastax.driver.core.LocalDate} &lt;-&gt; cassandra 'date'
  */
 public class LocalDateTypeHandler implements TypeHandler<LocalDate, LocalDate> {
+    private static final long serialVersionUID = -1282145501284750825L;
 
     /**
      * {@inheritDoc}

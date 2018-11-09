@@ -24,6 +24,7 @@ import com.datastax.driver.core.Row;
  * Type handler for convert java {@link Float} &lt;-&gt; cassandra 'float'
  */
 public class PrimitiveFloatTypeHandler implements TypeHandler<Float, Float> {
+    private static final long serialVersionUID = -3806376256745705231L;
 
     /**
      * {@inheritDoc}

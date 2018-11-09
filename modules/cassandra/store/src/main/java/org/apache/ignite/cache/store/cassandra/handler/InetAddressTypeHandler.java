@@ -26,6 +26,7 @@ import java.net.InetAddress;
  * Type handler for convert java {@link InetAddress} &lt;-&gt; cassandra 'inet'
  */
 public class InetAddressTypeHandler implements TypeHandler<InetAddress, InetAddress> {
+    private static final long serialVersionUID = -7670853885182246732L;
 
     /**
      * {@inheritDoc}

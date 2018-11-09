@@ -26,6 +26,7 @@ import java.nio.ByteBuffer;
  * Type handler for convert java byte[] &lt;-&gt; cassandra 'blob'
  */
 public class ByteArrayTypeHandler implements TypeHandler<byte[], ByteBuffer> {
+    private static final long serialVersionUID = 563339834580541003L;
 
     /**
      * {@inheritDoc}

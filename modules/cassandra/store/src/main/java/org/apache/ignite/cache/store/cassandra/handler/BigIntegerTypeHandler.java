@@ -26,6 +26,7 @@ import java.math.BigInteger;
  * Type handler for convert java {@link BigInteger} &lt;-&gt; cassandra 'varint'
  */
 public class BigIntegerTypeHandler implements TypeHandler<BigInteger, BigInteger> {
+    private static final long serialVersionUID = 887012126046068873L;
 
     /**
      * {@inheritDoc}
