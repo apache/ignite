@@ -37,9 +37,13 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.lang.gridfunc.RunnableWrapperClosure;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
@@ -62,9 +66,6 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
 
     /** */
     private static final long HANG_TIMEOUT =  15 * 60 * 1000;
-
-    /** */
-    private static long origJoinTimeout;
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
@@ -90,7 +91,7 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
             .setCacheConfiguration(new CacheConfiguration()
                 .setName(CACHE_NAME)
                 .setNodeFilter(new TestNodeFilter())
-                .setBackups(1)
+                .setBackups(0)
                 .setQueryParallelism(queryParallelism())
                 .setQueryEntities(Collections.singleton(new QueryEntity()
                     .setTableName("test")
@@ -114,10 +115,6 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
     @SuppressWarnings("unchecked")
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
-
-        origJoinTimeout = GridTestUtils.getFieldValue(IgniteProcessProxy.class, "NODE_JOIN_TIMEOUT");
-
-        GridTestUtils.setFieldValue(IgniteProcessProxy.class, "NODE_JOIN_TIMEOUT", 60_000L);
 
         cleanPersistenceDir();
 
@@ -151,14 +148,13 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
 
         stopAllGrids();
-
-        IgniteProcessProxy.killAll();
-
-        GridTestUtils.setFieldValue(IgniteProcessProxy.class, "NODE_JOIN_TIMEOUT", origJoinTimeout);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    /**
+     * beforeTest is not user to save the time fot muted tests.
+     * @throws Exception On error.
+     */
+    private void startTestGrid() throws Exception {
         super.beforeTest();
 
         log.info("Restart cluster");
@@ -186,6 +182,8 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
      * @throws Exception On error.
      */
     public void testHeavyScanLazy() throws Exception {
+        startTestGrid();
+
         checkQuery("SELECT * from test", KEY_CNT, true);
     }
 
@@ -194,6 +192,9 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
      */
     public void testHeavyScanNonLazy() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-9480");
+
+        startTestGrid();
+
         checkQueryExpectOOM("SELECT * from test", false);
     }
 
@@ -203,6 +204,9 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
      */
     public void testHeavySortByPkLazy() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-9933");
+
+        startTestGrid();
+
         checkQueryExpectOOM("SELECT * from test ORDER BY id", true);
     }
 
@@ -211,6 +215,9 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
      */
     public void testHeavySortByPkNotLazy() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-9480");
+
+        startTestGrid();
+
         checkQueryExpectOOM("SELECT * from test ORDER BY id", false);
     }
 
@@ -220,6 +227,9 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
      */
     public void testHeavySortByIndexLazy() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-9933");
+
+        startTestGrid();
+
         checkQueryExpectOOM("SELECT * from test ORDER BY indexed", true);
     }
 
@@ -228,6 +238,9 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
      */
     public void testHeavySortByIndexNotLazy() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-9480");
+
+        startTestGrid();
+
         checkQueryExpectOOM("SELECT * from test ORDER BY indexed", false);
     }
 
@@ -236,6 +249,9 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
      */
     public void testHeavySortByNotIndexLazy() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-9480");
+
+        startTestGrid();
+
         checkQueryExpectOOM("SELECT * from test ORDER BY STR", true);
     }
 
@@ -244,6 +260,9 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
      */
     public void testHeavySortByNotIndexNotLazy() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-9480");
+
+        startTestGrid();
+
         checkQueryExpectOOM("SELECT * from test ORDER BY str", false);
     }
 
@@ -251,6 +270,8 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
      * @throws Exception On error.
      */
     public void testHeavyGroupByPkLazy() throws Exception {
+        startTestGrid();
+
         checkQuery("SELECT id, sum(val) from test GROUP BY id", KEY_CNT, true, true);
     }
 
@@ -259,7 +280,10 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
      */
     public void testHeavyGroupByPkNotLazy() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-9480");
-        checkQueryExpectOOM("SELECT sum(val) from test GROUP BY id", false);
+
+        startTestGrid();
+
+        checkQueryExpectOOM("SELECT id, sum(val) from test GROUP BY id", false, true);
     }
 
 
@@ -269,6 +293,16 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
      * @throws Exception On error.
      */
     private void checkQueryExpectOOM(String sql, boolean lazy) throws Exception {
+        checkQueryExpectOOM(sql, lazy, false);
+    }
+
+    /**
+     * @param sql Query.
+     * @param lazy Lazy mode.
+     * @param collocated Collocated GROUP BY mode.
+     * @throws Exception On error.
+     */
+    private void checkQueryExpectOOM(String sql, boolean lazy, boolean collocated) throws Exception {
         final AtomicBoolean hangTimeout = new AtomicBoolean();
         final AtomicBoolean hangCheckerEnd = new AtomicBoolean();
 
@@ -296,7 +330,7 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
         });
 
         try {
-            checkQuery(sql, 0, lazy);
+            checkQuery(sql, 0, lazy, collocated);
         }
         catch (Exception e) {
             if (hangTimeout.get()) {

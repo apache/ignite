@@ -111,9 +111,6 @@ public class IgniteProcessProxy implements IgniteEx {
     /** Waiting milliseconds of the left of a node to topology. */
     private static final long NODE_LEFT_TIMEOUT = 30_000L;
 
-    /** Waiting milliseconds of the join a remote node to topology. */
-    private static long NODE_JOIN_TIMEOUT = 30_000L;
-
     /** Jvm process with ignite instance. */
     private final transient GridJavaProcess proc;
 
@@ -197,10 +194,8 @@ public class IgniteProcessProxy implements IgniteEx {
             System.getProperty("surefire.test.class.path")
         );
 
-        if (locJvmGrid != null) {
-            assert rmtNodeStartedLatch.await(NODE_JOIN_TIMEOUT, TimeUnit.MILLISECONDS) :
-                "Remote node has not joined [id=" + id + ", timeout=" + NODE_JOIN_TIMEOUT + ']';
-        }
+        if (locJvmGrid != null)
+            assert rmtNodeStartedLatch.await(30, TimeUnit.SECONDS): "Remote node has not joined [id=" + id + ']';
 
         IgniteProcessProxy prevVal = gridProxies.putIfAbsent(cfg.getIgniteInstanceName(), this);
 
