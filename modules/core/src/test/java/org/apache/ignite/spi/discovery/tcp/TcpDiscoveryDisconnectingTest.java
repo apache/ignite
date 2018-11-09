@@ -43,7 +43,6 @@ import org.mockito.internal.util.reflection.Whitebox;
  *
  */
 public class TcpDiscoveryDisconnectingTest extends GridCommonAbstractTest {
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
@@ -53,7 +52,6 @@ public class TcpDiscoveryDisconnectingTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCustomMessageWhileSpiIsStopping() throws Exception {
-
         List<DummyCustomDiscoveryMessage> messages = new CopyOnWriteArrayList<>();
 
         startGrids(3);
