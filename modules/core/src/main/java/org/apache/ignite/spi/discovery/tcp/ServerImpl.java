@@ -5510,6 +5510,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     assert msg.topologyVersion() == ring.topologyVersion() :
                         "msg: " + msg + ", topVer=" + ring.topologyVersion();
 
+                    assert ring.node(msg.creatorNodeId()) != null : "Node in the ring doesn't exist in the ring " + ring;
+
                     if(pendingMsgs.procCustomMsgs.add(msg.id()))
                         notifyDiscoveryListener(msg, waitForNotification);
                     else
@@ -5609,19 +5611,29 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void notifyDiscoveryListener(TcpDiscoveryCustomEventMessage msg, boolean waitForNotification) {
             DiscoverySpiListener lsnr = spi.lsnr;
 
-            TcpDiscoverySpiState spiState = spiStateCopy();
+            TcpDiscoverySpiState state0;
 
             Map<Long, Collection<ClusterNode>> hist;
 
             synchronized (mux) {
                 hist = new TreeMap<>(topHist);
+
+                state0 = spiState;
             }
 
             Collection<ClusterNode> snapshot = hist.get(msg.topologyVersion());
 
             TcpDiscoveryNode node = ring.node(msg.creatorNodeId());
 
-            if (lsnr != null && (spiState == CONNECTED || spiState == DISCONNECTING) && node != null) {
+            if (log.isInfoEnabled())
+                log.info("notifyDiscoveryListener spiState = " + spiState
+                    + ", waitForNotification = " +waitForNotification
+                    + ", listener = " + lsnr
+                    + ", creatorNodeId = " + node
+                    + ", for message = " + msg
+                );
+
+            if (lsnr != null && (state0 == CONNECTED || state0 == DISCONNECTING)) {
                 DiscoverySpiCustomMessage msgObj;
 
                 try {
@@ -5654,12 +5666,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         throw new IgniteException("Failed to marshal mutable discovery message: " + msgObj, t);
                     }
                 }
-            } else
-                log.warning("notifyDiscoveryListener spiState = " + spiState
-                    + ", waitForNotification = " +waitForNotification
-                    + ", listener = " + lsnr + ", creatorNodeId = " + node
-                    + ", for message = " + msg
-                );
+            }
         }
 
         /**
