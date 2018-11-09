@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 
 /**
  * Utility class for reading MNIST dataset.
@@ -44,7 +44,7 @@ public class MnistUtils {
      * @return Stream of MNIST samples.
      * @throws IgniteException In case of exception.
      */
-    public static Stream<DenseLocalOnHeapVector> mnistAsStream(String imagesPath, String labelsPath, Random rnd, int cnt)
+    public static Stream<DenseVector> mnistAsStream(String imagesPath, String labelsPath, Random rnd, int cnt)
         throws IOException {
         FileInputStream isImages = new FileInputStream(imagesPath);
         FileInputStream isLabels = new FileInputStream(labelsPath);
@@ -75,7 +75,7 @@ public class MnistUtils {
         isImages.close();
         isLabels.close();
 
-        return lst.subList(0, cnt).stream().map(DenseLocalOnHeapVector::new);
+        return lst.subList(0, cnt).stream().map(DenseVector::new);
     }
 
     /**

@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.CacheKeepBinaryTransactionTes
 import org.apache.ignite.internal.processors.cache.CacheNearReaderUpdateTest;
 import org.apache.ignite.internal.processors.cache.CacheRebalancingSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheSerializableTransactionsTest;
+import org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTest;
 import org.apache.ignite.internal.processors.cache.ClusterStatePartitionedSelfTest;
 import org.apache.ignite.internal.processors.cache.ClusterStateReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.ConcurrentCacheStartTest;
@@ -37,7 +38,6 @@ import org.apache.ignite.internal.processors.cache.IgniteCachePutStackOverflowSe
 import org.apache.ignite.internal.processors.cache.IgniteCacheReadThroughEvictionsVariationsSuite;
 import org.apache.ignite.internal.processors.cache.IgniteCacheStoreCollectionTest;
 import org.apache.ignite.internal.processors.cache.PartitionsExchangeOnDiscoveryHistoryOverflowTest;
-import org.apache.ignite.internal.processors.cache.distributed.Cache64kPartitionsTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentNodeJoinValidationTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheGroupsPartitionLossPolicySelfTest;
@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.Ignite
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.CacheManualRebalancingTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheSyncRebalanceModeSelfTest;
 import org.apache.ignite.internal.processors.cache.store.IgniteCacheWriteBehindNoUpdateSelfTest;
+import org.apache.ignite.testframework.junits.GridAbstractTest;
 
 /**
  * Test suite.
@@ -58,6 +59,8 @@ public class IgniteCacheTestSuite5 extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
+        System.setProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, "false");
+
         TestSuite suite = new TestSuite("IgniteCache Test Suite part 5");
 
         suite.addTestSuite(CacheSerializableTransactionsTest.class);
@@ -77,6 +80,7 @@ public class IgniteCacheTestSuite5 extends TestSuite {
 
         suite.addTestSuite(ClusterStatePartitionedSelfTest.class);
         suite.addTestSuite(ClusterStateReplicatedSelfTest.class);
+        suite.addTestSuite(ClusterReadOnlyModeTest.class);
         suite.addTestSuite(IgniteCachePartitionLossPolicySelfTest.class);
         suite.addTestSuite(IgniteCacheGroupsPartitionLossPolicySelfTest.class);
 
@@ -102,8 +106,9 @@ public class IgniteCacheTestSuite5 extends TestSuite {
 
         suite.addTestSuite(ConcurrentCacheStartTest.class);
 
-        suite.addTestSuite(Cache64kPartitionsTest.class);
-
+        //suite.addTestSuite(GridCacheAtomicPreloadSelfTest.class);
+        //suite.addTestSuite(IgniteCacheContainsKeyColocatedAtomicSelfTest.class);
+        //suite.addTestSuite(IgniteCacheContainsKeyNearAtomicSelfTest.class);
         return suite;
     }
 }

@@ -338,7 +338,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
                     }
 
                     GridTestUtils.runMultiThreaded(new CI1Exc<Integer>() {
-                        public void applyx(Integer idx) throws Exception {
+                        @Override public void applyx(Integer idx) throws Exception {
                             Transaction tx = clientTxs.get(idx);
 
                             assertEquals(SUSPENDED, tx.state());
@@ -740,7 +740,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
      * @param <E1> Type of first closure parameter.
      * @param <E2> Type of second closure parameter.
      */
-    public static abstract class CI2Exc<E1, E2> implements CI2<E1, E2> {
+    public abstract static class CI2Exc<E1, E2> implements CI2<E1, E2> {
         /**
          * Closure body.
          *
@@ -766,7 +766,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
      *
      * @param <T> Type of closure parameter.
      */
-    public static abstract class CI1Exc<T> implements CI1<T> {
+    public abstract static class CI1Exc<T> implements CI1<T> {
         /**
          * Closure body.
          *
@@ -789,7 +789,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
     /**
      * Runnable that can throw any exception.
      */
-    public static abstract class RunnableX implements Runnable {
+    public abstract static class RunnableX implements Runnable {
         /**
          * Closure body.
          *

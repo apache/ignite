@@ -16,9 +16,10 @@
 
 .list-editable-cols__header(
     ng-class='::[$ctrl.rowClass, {"list-editable-cols__header__multiple-cols": $ctrl.colDefs.length > 1}]'
+    ng-disabled='$ctrl.ngDisabled'
 )
     .list-editable-cols__header-cell(ng-repeat='col in ::$ctrl.colDefs' ng-class='::col.cellClass')
-        span.ignite-form-field__label
+        span.form-field__label
             | {{ ::col.name }}
             svg(
                 ng-if='::col.tip'

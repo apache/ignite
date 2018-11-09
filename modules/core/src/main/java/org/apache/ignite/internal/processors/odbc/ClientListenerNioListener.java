@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
@@ -26,11 +27,14 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
+import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.processors.security.SecurityContextHolder;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -58,7 +62,10 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
     public static final int MAX_HANDSHAKE_MSG_SIZE = 128;
 
     /** Connection-related metadata key. */
-    private static final int CONN_CTX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+    static final int CONN_CTX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+
+    /** Next connection id. */
+    private static AtomicInteger nextConnId = new AtomicInteger(1);
 
     /** Busy lock. */
     private final GridSpinBusyLock busyLock;
@@ -124,8 +131,6 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
         if (connCtx == null) {
             onHandshake(ses, msg);
 
-            ses.addMeta(CONN_CTX_HANDSHAKE_PASSED, true);
-
             return;
         }
 
@@ -157,7 +162,23 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
                     ses.remoteAddress() + ", req=" + req + ']');
             }
 
-            ClientListenerResponse resp = handler.handle(req);
+            ClientListenerResponse resp;
+
+            AuthorizationContext authCtx = connCtx.authorizationContext();
+            SecurityContext oldSecCtx = SecurityContextHolder.push(connCtx.securityContext());
+
+            if (authCtx != null)
+                AuthorizationContext.context(authCtx);
+
+            try {
+                resp = handler.handle(req);
+            }
+            finally {
+                SecurityContextHolder.pop(oldSecCtx);
+
+                if (authCtx != null)
+                    AuthorizationContext.clear();
+            }
 
             if (resp != null) {
                 if (log.isDebugEnabled()) {
@@ -231,6 +252,8 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
                 throw new IgniteCheckedException("Unsupported version.");
 
             connCtx.handler().writeHandshake(writer);
+
+            ses.addMeta(CONN_CTX_HANDSHAKE_PASSED, true);
         }
         catch (IgniteAccessControlException authEx) {
             writer.writeBoolean(false);
@@ -278,18 +301,28 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
      * @throws IgniteCheckedException If failed.
      */
     private ClientListenerConnectionContext prepareContext(GridNioSession ses, byte clientType) throws IgniteCheckedException {
+        long connId = nextConnectionId();
+
         switch (clientType) {
             case ODBC_CLIENT:
-                return new OdbcConnectionContext(ctx, busyLock, maxCursors);
+                return new OdbcConnectionContext(ctx, ses, busyLock, connId, maxCursors);
 
             case JDBC_CLIENT:
-                return new JdbcConnectionContext(ctx, ses, busyLock, maxCursors);
+                return new JdbcConnectionContext(ctx, ses, busyLock, connId, maxCursors);
 
             case THIN_CLIENT:
-                return new ClientConnectionContext(ctx, maxCursors);
+                return new ClientConnectionContext(ctx, connId, maxCursors);
         }
 
         throw new IgniteCheckedException("Unknown client type: " + clientType);
+    }
+
+    /**
+     * Generate unique connection id.
+     * @return connection id.
+     */
+    private long nextConnectionId() {
+        return (ctx.discovery().localNode().order() << 32) + nextConnId.getAndIncrement();
     }
 
     /**

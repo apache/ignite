@@ -31,6 +31,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.UnregisteredBinaryTypeException;
+import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -242,6 +244,14 @@ public class GridCacheReturn implements Externalizable, Message {
                 v = resMap;
             }
 
+            // These exceptions mean that we should register class and call EntryProcessor again.
+            if (err != null) {
+                if (err instanceof UnregisteredClassException)
+                    throw (UnregisteredClassException) err;
+                else if (err instanceof UnregisteredBinaryTypeException)
+                    throw (UnregisteredBinaryTypeException) err;
+            }
+
             CacheInvokeResult res0 = err == null ? CacheInvokeResult.fromResult(res) : CacheInvokeResult.fromError(err);
 
             Object resKey = key0 != null ? key0 :
@@ -259,7 +269,10 @@ public class GridCacheReturn implements Externalizable, Message {
                 invokeResCol = new ArrayList<>();
 
             CacheInvokeDirectResult res0 = err == null ?
-                new CacheInvokeDirectResult(key, cctx.toCacheObject(res)) : new CacheInvokeDirectResult(key, err);
+                cctx.transactional() ?
+                    new CacheInvokeDirectResult(key, cctx.toCacheObject(res)) :
+                    CacheInvokeDirectResult.lazyResult(key, res) :
+                new CacheInvokeDirectResult(key, err);
 
             invokeResCol.add(res0);
         }
@@ -295,6 +308,18 @@ public class GridCacheReturn implements Externalizable, Message {
         }
 
         resMap.putAll((Map<Object, EntryProcessorResult>)other.v);
+    }
+
+    /**
+     * Converts entry processor invokation results to cache object instances.
+     *
+     * @param ctx Cache context.
+     */
+    public void marshalResult(GridCacheContext ctx) {
+        if (invokeRes && invokeResCol != null) {
+            for (CacheInvokeDirectResult directRes : invokeResCol)
+                directRes.marshalResult(ctx);
+        }
     }
 
     /**
@@ -466,7 +491,6 @@ public class GridCacheReturn implements Externalizable, Message {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         assert false;
     }

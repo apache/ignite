@@ -30,17 +30,22 @@ export default class ConfigureState {
         const reducer = (state = {}, action) => {
             try {
                 return this._combinedReducer(state, action);
-            } catch (e) {
+            }
+            catch (e) {
                 console.error(e);
+
                 return state;
             }
         };
+
         this.actions$.scan(reducer, {}).do((v) => this.state$.next(v)).subscribe();
     }
 
     addReducer(combineFn) {
         const old = this._combinedReducer;
+
         this._combinedReducer = (state, action) => combineFn(old(state, action), action);
+
         return this;
     }
 
@@ -49,6 +54,7 @@ export default class ConfigureState {
             return action((a) => this.actions$.next(a), () => this.state$.getValue());
 
         this.actions$.next(action);
+
         return action;
     }
 }

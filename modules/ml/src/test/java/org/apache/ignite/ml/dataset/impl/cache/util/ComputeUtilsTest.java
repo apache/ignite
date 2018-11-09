@@ -177,6 +177,7 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
                 part -> ComputeUtils.<Integer, Integer, Serializable, TestPartitionData>getData(
                     ignite,
                     upstreamCacheName,
+                    (k, v) -> true,
                     datasetCacheName,
                     datasetId,
                     0,
@@ -225,6 +226,7 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
         ComputeUtils.<Integer, Integer, Integer>initContext(
             ignite,
             upstreamCacheName,
+            (k, v) -> true,
             datasetCacheName,
             (upstream, upstreamSize) -> {
 

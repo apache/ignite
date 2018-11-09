@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.Collection;
-import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -47,7 +46,7 @@ public interface GridDhtTopologyFuture extends IgniteInternalFuture<AffinityTopo
 
     /**
      * Gets result topology version of this future. Result version can differ from initial exchange version
-     * if excanges for multiple discovery events are merged, in this case result version is version of last
+     * if exchanges for multiple discovery events are merged, in this case result version is version of last
      * discovery event.
      * <p>
      * This method should be called only for finished topology future

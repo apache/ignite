@@ -46,7 +46,7 @@ import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVE
  */
 public class PartitionsExchangeOnDiscoveryHistoryOverflowTest extends IgniteCacheAbstractTest {
     /** */
-    private static final int CACHES_COUNT = 50;
+    private static final int CACHES_COUNT = 30;
 
     /** */
     private static final int DISCOVERY_HISTORY_SIZE = 10;

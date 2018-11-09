@@ -23,10 +23,8 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCluster;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -245,17 +243,11 @@ public interface ClusterNode extends BaselineNode {
     public boolean isDaemon();
 
     /**
-     * Tests whether or not this node is connected to cluster as a client.
-     * <p>
-     * Do not confuse client in terms of
-     * discovery {@link DiscoverySpi#isClientMode()} and client in terms of cache
-     * {@link IgniteConfiguration#isClientMode()}. Cache clients cannot carry data,
-     * while topology clients connect to topology in a different way.
+     * Whether this node is cache client (see {@link IgniteConfiguration#isClientMode()}).
      *
-     * @return {@code True} if this node is a client node, {@code false} otherwise.
+     * @return {@code True if client}.
+     *
      * @see IgniteConfiguration#isClientMode()
-     * @see Ignition#isClientMode()
-     * @see DiscoverySpi#isClientMode()
      */
     public boolean isClient();
 }

@@ -153,10 +153,10 @@ export const completeConfiguration = (configuration) => ({
     configuration
 });
 
-export const advancedSaveCluster = (cluster) => ({type: ADVANCED_SAVE_CLUSTER, cluster});
-export const advancedSaveCache = (cache) => ({type: ADVANCED_SAVE_CACHE, cache});
-export const advancedSaveIGFS = (igfs) => ({type: ADVANCED_SAVE_IGFS, igfs});
-export const advancedSaveModel = (model) => ({type: ADVANCED_SAVE_MODEL, model});
+export const advancedSaveCluster = (cluster, download = false) => ({type: ADVANCED_SAVE_CLUSTER, cluster, download});
+export const advancedSaveCache = (cache, download = false) => ({type: ADVANCED_SAVE_CACHE, cache, download});
+export const advancedSaveIGFS = (igfs, download = false) => ({type: ADVANCED_SAVE_IGFS, igfs, download});
+export const advancedSaveModel = (model, download = false) => ({type: ADVANCED_SAVE_MODEL, model, download});
 
 export const basicSave = (cluster) => ({type: BASIC_SAVE, cluster});
 export const basicSaveAndDownload = (cluster) => ({type: BASIC_SAVE_AND_DOWNLOAD, cluster});

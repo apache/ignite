@@ -33,6 +33,7 @@ import org.apache.ignite.examples.ContinuousMapperExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.ContinuousMapperExamplesSelfTest;
 import org.apache.ignite.examples.DeploymentExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.DeploymentExamplesSelfTest;
+import org.apache.ignite.examples.EncryptedCacheExampleSelfTest;
 import org.apache.ignite.examples.EventsExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.EventsExamplesSelfTest;
 import org.apache.ignite.examples.IgfsExamplesSelfTest;
@@ -100,6 +101,9 @@ public class IgniteExamplesSelfTestSuite extends TestSuite {
 
         // ML Grid.
         suite.addTest(IgniteExamplesMLTestSuite.suite());
+
+        // Encryption.
+        suite.addTestSuite(EncryptedCacheExampleSelfTest.class);
 
         return suite;
     }

@@ -63,6 +63,12 @@ namespace Apache.Ignite.Core.Compute
         ICompute WithNoFailover();
 
         /// <summary>
+        /// Disables caching for the next executed task in the current thread.
+        /// </summary>
+        /// <returns>This compute instance for chaining calls.</returns>
+        ICompute WithNoResultCache();
+
+        /// <summary>
         /// Sets task timeout for the next executed task on this projection in the current thread.
         /// When task starts execution, the timeout is reset, so one timeout is used only once.
         /// </summary>

@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Throttles threads that generate dirty pages during ongoing checkpoint.
@@ -113,10 +114,12 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
      * @param stateChecker Checkpoint lock state provider.
      * @param log Logger.
      */
-    public PagesWriteSpeedBasedThrottle(PageMemoryImpl pageMemory,
-        CheckpointWriteProgressSupplier cpProgress,
-        CheckpointLockStateChecker stateChecker,
-        IgniteLogger log) {
+    public PagesWriteSpeedBasedThrottle(
+            PageMemoryImpl pageMemory,
+            CheckpointWriteProgressSupplier cpProgress,
+            CheckpointLockStateChecker stateChecker,
+            IgniteLogger log
+    ) {
         this.pageMemory = pageMemory;
         this.cpProgress = cpProgress;
         totalPages = pageMemory.totalPages();
@@ -229,6 +232,11 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
      * @param throttleParkTimeNs the maximum number of nanoseconds to wait
      */
     protected void doPark(long throttleParkTimeNs) {
+        if (throttleParkTimeNs > LOGGING_THRESHOLD) {
+            U.warn(log, "Parking thread=" + Thread.currentThread().getName()
+                + " for timeout(ms)=" + (throttleParkTimeNs / 1_000_000));
+        }
+
         LockSupport.parkNanos(throttleParkTimeNs);
     }
 

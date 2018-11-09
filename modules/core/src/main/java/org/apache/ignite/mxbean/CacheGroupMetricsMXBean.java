@@ -100,6 +100,22 @@ public interface CacheGroupMetricsMXBean {
     public int getLocalNodeMovingPartitionsCount();
 
     /**
+     * Gets count of partitions with state RENTING for this cache group located on this node.
+     *
+     * @return Partitions count.
+     */
+    @MXBeanDescription("Count of partitions with state RENTING for this cache group located on this node.")
+    public int getLocalNodeRentingPartitionsCount();
+
+    /**
+     * Gets count of entries remains to evict in RENTING partitions located on this node for this cache group.
+     *
+     * @return Entries count.
+     */
+    @MXBeanDescription("Count of entries remains to evict in RENTING partitions located on this node for this cache group.")
+    public long getLocalNodeRentingEntriesCount();
+
+    /**
      * Gets count of partitions with state OWNING for this cache group in the entire cluster.
      *
      * @return Partitions count.

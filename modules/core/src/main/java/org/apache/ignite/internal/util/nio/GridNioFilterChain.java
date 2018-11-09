@@ -77,7 +77,7 @@ public class GridNioFilterChain<T> extends GridNioFilterAdapter {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         if (str == null) {
             StringBuilder res = new StringBuilder("FilterChain[filters=[");
 

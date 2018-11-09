@@ -34,6 +34,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -67,6 +68,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -103,7 +105,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"IfMayBeConditional", "unchecked"})
+    @SuppressWarnings({"unchecked"})
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -122,7 +124,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
             CacheConfiguration cc = defaultCacheConfiguration();
 
             cc.setCacheMode(mode);
-            cc.setAtomicityMode(TRANSACTIONAL);
+            cc.setAtomicityMode(getCacheAtomicityMode());
 
             if (nearEnabled) {
                 NearCacheConfiguration nearCfg = new NearCacheConfiguration();
@@ -147,6 +149,13 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         }
 
         return cfg;
+    }
+
+    /**
+     * @return Default cache atomicity mode.
+     */
+    protected CacheAtomicityMode getCacheAtomicityMode() {
+        return TRANSACTIONAL;
     }
 
     /**
@@ -204,7 +213,6 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ErrorNotRethrown")
     private void checkDataStreamer() throws Exception {
         try {
             useCache = true;
@@ -371,11 +379,27 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
                     if (aff.isPrimary(locNode, key) || aff.isBackup(locNode, key)) {
                         GridCacheEntryEx entry = cache0.entryEx(key);
 
-                        entry.unswap();
+                        try {
+                            // lock non obsolete entry
+                            while (true) {
+                                entry.lockEntry();
 
-                        assertNotNull("Missing entry for key: " + key, entry);
-                        assertEquals(new Integer((key < 100 ? -1 : key)),
-                            CU.value(entry.rawGet(), cache0.context(), false));
+                                if (!entry.obsolete())
+                                    break;
+
+                                entry.unlockEntry();
+
+                                entry = cache0.entryEx(key);
+                            }
+
+                            entry.unswap();
+
+                            assertEquals(new Integer((key < 100 ? -1 : key)),
+                                CU.value(entry.rawGet(), cache0.context(), false));
+                        }
+                        finally {
+                            entry.unlockEntry();
+                        }
                     }
                 }
             }
@@ -714,7 +738,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testFlush() throws Exception {
-        mode = LOCAL;
+        // Local caches are not allowed with MVCC enabled.
+        mode = getCacheAtomicityMode() != TRANSACTIONAL_SNAPSHOT ? LOCAL : PARTITIONED;
 
         useCache = true;
 
@@ -766,7 +791,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTryFlush() throws Exception {
-        mode = LOCAL;
+        // Local caches are not allowed with MVCC enabled.
+        mode = getCacheAtomicityMode() != TRANSACTIONAL_SNAPSHOT ? LOCAL : PARTITIONED;
 
         useCache = true;
 
@@ -801,7 +827,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testFlushTimeout() throws Exception {
-        mode = LOCAL;
+        // Local caches are not allowed with MVCC enabled.
+        mode = getCacheAtomicityMode() != TRANSACTIONAL_SNAPSHOT ? LOCAL : PARTITIONED;
 
         useCache = true;
 

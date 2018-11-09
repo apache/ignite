@@ -70,7 +70,8 @@ export default function listEditableCols() {
         },
         bindToController: {
             colDefs: '<listEditableCols',
-            rowClass: '@?listEditableColsRowClass'
+            rowClass: '@?listEditableColsRowClass',
+            ngDisabled: '<?'
         }
     };
 }

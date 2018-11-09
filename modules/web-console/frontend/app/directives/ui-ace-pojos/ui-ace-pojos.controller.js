@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
 import {nonNil} from 'app/utils/lodashMixins';
 
-export default ['$scope', 'JavaTypes', 'JavaTransformer', function($scope, JavaTypes, generator) {
+export default function controller($scope, JavaTypes, generator) {
     const ctrl = this;
 
     this.$onInit = () => {
@@ -96,4 +97,6 @@ export default ['$scope', 'JavaTypes', 'JavaTransformer', function($scope, JavaT
         $scope.$watch('ctrl.pojos', updatePojosData);
         $scope.$watch('ctrl.class', updatePojosData);
     };
-}];
+}
+
+controller.$inject = ['$scope', 'JavaTypes', 'JavaTransformer'];

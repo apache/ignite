@@ -28,8 +28,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.zip.GZIPOutputStream;
 import org.apache.commons.codec.binary.Base64OutputStream;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.console.agent.rest.RestResult;
-import org.apache.log4j.Logger;
+import org.apache.ignite.logger.slf4j.Slf4jLogger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.ignite.console.agent.AgentUtils.removeCallback;
 import static org.apache.ignite.console.agent.AgentUtils.fromJSON;
@@ -40,14 +42,14 @@ import static org.apache.ignite.console.agent.AgentUtils.toJSON;
  * Base class for web socket handlers.
  */
 abstract class AbstractListener implements Emitter.Listener {
+    /** */
+    final IgniteLogger log = new Slf4jLogger(LoggerFactory.getLogger(AbstractListener.class));
+
     /** UTF8 charset. */
     private static final Charset UTF8 = Charset.forName("UTF-8");
 
     /** */
     private ExecutorService pool;
-
-    /** */
-    final Logger log = Logger.getLogger(this.getClass().getName());
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -69,34 +71,32 @@ abstract class AbstractListener implements Emitter.Listener {
             if (pool == null)
                 pool = newThreadPool();
 
-            pool.submit(new Runnable() {
-                @Override public void run() {
-                    try {
-                        Object res = execute(params);
+            pool.submit(() -> {
+                try {
+                    Object res = execute(params);
 
-                        // TODO IGNITE-6127 Temporary solution until GZip support for socket.io-client-java.
-                        // See: https://github.com/socketio/socket.io-client-java/issues/312
-                        // We can GZip manually for now.
-                        if (res instanceof RestResult) {
-                            RestResult restRes = (RestResult) res;
+                    // TODO IGNITE-6127 Temporary solution until GZip support for socket.io-client-java.
+                    // See: https://github.com/socketio/socket.io-client-java/issues/312
+                    // We can GZip manually for now.
+                    if (res instanceof RestResult) {
+                        RestResult restRes = (RestResult) res;
 
-                            if (restRes.getData() != null) {
-                                ByteArrayOutputStream baos = new ByteArrayOutputStream(4096);
-                                Base64OutputStream b64os = new Base64OutputStream(baos, true, 0, null);
-                                GZIPOutputStream gzip = new GZIPOutputStream(b64os);
+                        if (restRes.getData() != null) {
+                            ByteArrayOutputStream baos = new ByteArrayOutputStream(4096);
+                            Base64OutputStream b64os = new Base64OutputStream(baos, true, 0, null);
+                            GZIPOutputStream gzip = new GZIPOutputStream(b64os);
 
-                                gzip.write(restRes.getData().getBytes(UTF8));
+                            gzip.write(restRes.getData().getBytes(UTF8));
 
-                                gzip.close();
+                            gzip.close();
 
-                                restRes.zipData(baos.toString());
-                            }
+                            restRes.zipData(baos.toString());
                         }
-
-                        cb.call(null, toJSON(res));
-                    } catch (Exception e) {
-                        cb.call(e, null);
                     }
+
+                    cb.call(null, toJSON(res));
+                } catch (Exception e) {
+                    cb.call(e, null);
                 }
             });
         }

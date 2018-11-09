@@ -25,7 +25,7 @@ import org.apache.ignite.spi.communication.CommunicationSpi;
  */
 public class GridTcpCommunicationSpiTcpFailureDetectionSelfTest extends GridTcpCommunicationSpiTcpSelfTest {
     /** */
-    private final static int SPI_COUNT = 4;
+    private static final int SPI_COUNT = 4;
 
     private TcpCommunicationSpi spis[] = new TcpCommunicationSpi[SPI_COUNT];
 

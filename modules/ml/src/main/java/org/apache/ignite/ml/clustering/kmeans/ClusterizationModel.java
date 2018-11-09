@@ -22,8 +22,8 @@ import org.apache.ignite.ml.Model;
 /** Base interface for all clusterization models. */
 public interface ClusterizationModel<P, V> extends Model<P, V> {
     /** Gets the clusters count. */
-    public int amountOfClusters();
+    public int getAmountOfClusters();
 
     /** Get cluster centers. */
-    public P[] centers();
+    public P[] getCenters();
 }

@@ -33,6 +33,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
@@ -277,37 +278,45 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
     }
 
     /**
-     *
+     * @param checkClientCaches Check presence of client caches, false to skip.
      */
-    protected void checkOnlySystemCaches() {
+    protected void checkOnlySystemCaches(boolean checkClientCaches) {
         IgniteEx ig1 = grid(node1);
         IgniteEx ig2 = grid(node2);
         IgniteEx client = grid(nodeClient);
 
         Assert.assertNull(ig1.cache(ccfg1staticName));
         Assert.assertNull(ig1.cache(ccfg2staticName));
-        Assert.assertNull(ig1.cache(ccfg3staticName));
 
         Assert.assertNull(ig1.cache(ccfg1staticWithFilterName));
         Assert.assertNull(ig1.cache(ccfg2staticWithFilterName));
 
         Assert.assertNull(ig2.cache(ccfg1staticName));
         Assert.assertNull(ig2.cache(ccfg2staticName));
-        Assert.assertNull(ig2.cache(ccfg3staticName));
 
-        Assert.assertNull(ig2.cache(ccfg3staticWithFilterName));
         Assert.assertNull(ig2.cache(ccfg2staticWithFilterName));
 
         Assert.assertNull(client.cache(ccfg1staticName));
         Assert.assertNull(client.cache(ccfg2staticName));
-        Assert.assertNull(client.cache(ccfg3staticName));
 
-        Assert.assertNull(client.cache(ccfg3staticWithFilterName));
         Assert.assertNull(client.cache(ccfg1staticWithFilterName));
 
-        checkDescriptors(ig1,Collections.emptySet());
-        checkDescriptors(ig2,Collections.emptySet());
-        checkDescriptors(client, Collections.emptySet());
+        if (checkClientCaches) {
+            Assert.assertNull(ig1.cache(ccfg3staticName));
+
+            Assert.assertNull(ig2.cache(ccfg3staticName));
+            Assert.assertNull(ig2.cache(ccfg3staticWithFilterName));
+
+            Assert.assertNull(client.cache(ccfg3staticName));
+            Assert.assertNull(client.cache(ccfg3staticWithFilterName));
+        }
+
+        Set cachesToCheck = checkClientCaches ? Collections.emptySet()
+            : Sets.newHashSet(ccfg3staticName, ccfg3staticWithFilterName);
+
+        checkDescriptors(ig1, cachesToCheck);
+        checkDescriptors(ig2, cachesToCheck);
+        checkDescriptors(client, cachesToCheck);
     }
 
     /**
@@ -380,7 +389,7 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
         }
 
         /** {@inheritDoc} */
-        @Override public void onDiscovery(
+        @Override public IgniteFuture<?> onDiscovery(
             int type,
             long topVer,
             ClusterNode node,
@@ -388,9 +397,9 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
             @Nullable Map<Long, Collection<ClusterNode>> topHist,
             @Nullable DiscoverySpiCustomMessage data
         ) {
-            delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, data);
+            IgniteFuture<?> fut = delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, data);
 
-            if (type == EVT_CLIENT_NODE_DISCONNECTED)
+            if (type == EVT_CLIENT_NODE_DISCONNECTED) {
                 try {
                     System.out.println("Await cluster change state");
 
@@ -399,6 +408,9 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
                 catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
+            }
+
+            return fut;
         }
     }
 

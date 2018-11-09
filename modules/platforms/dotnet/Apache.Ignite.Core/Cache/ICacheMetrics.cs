@@ -654,5 +654,111 @@ namespace Apache.Ignite.Core.Cache
         /// Number of clearing partitions for rebalance.
         /// </returns>
         long RebalanceClearingPartitionsLeft { get; }
+
+        /// <summary>
+        /// Gets number of already rebalanced keys.
+        /// need to be cleared before actual rebalance start.
+        /// </summary>
+        /// <returns>
+        /// Number of already rebalanced keys.
+        /// </returns>
+        long RebalancedKeys { get; }
+
+        /// <summary>
+        /// Gets number of estimated keys to rebalance.
+        /// need to be cleared before actual rebalance start.
+        /// </summary>
+        /// <returns>
+        /// Number of estimated keys to rebalance.
+        /// </returns>
+        long EstimatedRebalancingKeys { get; }
+
+        /// <summary>
+        /// The total number of cache invocations, caused update.
+        /// </summary>
+        /// <returns>
+        /// The number of invocation updates.
+        /// </returns>
+        long EntryProcessorPuts { get; }
+
+        /// <summary>
+        /// The total number of cache invocations, caused removal.
+        /// </summary>
+        /// <returns>
+        /// The number of invocation removals.
+        /// </returns>
+        long EntryProcessorRemovals { get; }
+
+        /// <summary>
+        /// The total number of cache invocations, caused no updates.
+        /// </summary>
+        /// <returns>
+        /// The number of read-only invocations.
+        /// </returns>
+        long EntryProcessorReadOnlyInvocations { get; }
+
+        /// <summary>
+        /// The total number of cache invocations.
+        /// </summary>
+        /// <returns>
+        /// The number of cache invocations.
+        /// </returns>
+        long EntryProcessorInvocations { get; }
+
+        /// <summary>
+        /// The total number of invocations on keys, which exist in cache.
+        /// </summary>
+        /// <returns>
+        /// The number of cache invocation hits.
+        /// </returns>
+        long EntryProcessorHits { get; }
+
+        /// <summary>
+        /// The percentage of invocations on keys, which exist in cache.
+        /// </summary>
+        /// <returns>
+        /// The percentage of successful invocation hits.
+        /// </returns>
+        float EntryProcessorHitPercentage { get; }
+
+        /// <summary>
+        /// The total number of invocations on keys, which don't exist in cache.
+        /// </summary>
+        /// <returns>
+        /// The number of cache invocation misses.
+        /// </returns>
+        long EntryProcessorMisses { get; }
+
+        /// <summary>
+        /// The percentage of invocations on keys, which don't exist in cache.
+        /// </summary>
+        /// <returns>
+        /// The percentage of invocation misses.
+        /// </returns>
+        float EntryProcessorMissPercentage { get; }
+
+        /// <summary>
+        /// The mean time to execute cache invokes.
+        /// </summary>
+        /// <returns>
+        /// The time in µs.
+        /// </returns>
+        float EntryProcessorAverageInvocationTime { get; }
+
+        /// <summary>
+        /// So far, the minimum time to execute cache invokes.
+        /// </summary>
+        /// <returns>
+        /// The time in µs.
+        /// </returns>
+        float EntryProcessorMinInvocationTime { get; }
+
+        /// <summary>
+        /// So far, the maximum time to execute cache invokes.
+        /// </summary>
+        /// <returns>
+        /// The time in µs.
+        /// </returns>
+        float EntryProcessorMaxInvocationTime { get; }
     }
 }

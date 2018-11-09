@@ -133,16 +133,25 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
                 while (!isCancelled()) {
                     boolean expiredRemains = false;
 
-                    for (GridCacheTtlManager mgr : mgrs) {
-                        if (mgr.expire(CLEANUP_WORKER_ENTRIES_PROCESS_LIMIT))
-                            expiredRemains = true;
+                    // TTL cleanup is allowed only when node joined to topology.
+                    if (!cctx.kernalContext().recoveryMode()) {
+                        for (GridCacheTtlManager mgr : mgrs) {
+                            updateHeartbeat();
 
-                        if (isCancelled())
-                            return;
+                            if (mgr.expire(CLEANUP_WORKER_ENTRIES_PROCESS_LIMIT))
+                                expiredRemains = true;
+
+                            if (isCancelled())
+                                return;
+                        }
                     }
+
+                    updateHeartbeat();
 
                     if (!expiredRemains)
                         U.sleep(CLEANUP_WORKER_SLEEP_INTERVAL);
+
+                    onIdle();
                 }
             }
             catch (Throwable t) {

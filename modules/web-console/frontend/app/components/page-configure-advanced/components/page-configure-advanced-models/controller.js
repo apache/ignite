@@ -32,7 +32,8 @@ import {default as ConfigureState} from 'app/components/page-configure/services/
 import {default as Models} from 'app/services/Models';
 
 export default class PageConfigureAdvancedModels {
-    static $inject = [ConfigSelectors.name, ConfigureState.name, '$uiRouter', Models.name, '$state', 'configSelectionManager'];
+    static $inject = ['ConfigSelectors', 'ConfigureState', '$uiRouter', 'Models', '$state', 'configSelectionManager'];
+
     /**
      * @param {ConfigSelectors} ConfigSelectors
      * @param {ConfigureState} ConfigureState
@@ -156,8 +157,8 @@ export default class PageConfigureAdvancedModels {
         this.$state.go('base.configuration.edit.advanced.models.model', {modelID});
     }
 
-    save(model) {
-        this.ConfigureState.dispatchAction(advancedSaveModel(model));
+    save({model, download}) {
+        this.ConfigureState.dispatchAction(advancedSaveModel(model, download));
     }
 
     /**

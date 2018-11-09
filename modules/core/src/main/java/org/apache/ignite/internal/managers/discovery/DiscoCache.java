@@ -26,6 +26,7 @@ import java.util.UUID;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -108,10 +109,14 @@ public class DiscoCache {
     /** */
     private final P1<ClusterNode> aliveNodePred;
 
+    /** */
+    private final MvccCoordinator mvccCrd;
+
     /**
      * @param topVer Topology version.
      * @param state Current cluster state.
      * @param loc Local node.
+     * @param mvccCrd MVCC coordinator node.
      * @param rmtNodes Remote nodes.
      * @param allNodes All nodes.
      * @param srvNodes Server nodes.
@@ -130,6 +135,7 @@ public class DiscoCache {
         AffinityTopologyVersion topVer,
         DiscoveryDataClusterState state,
         ClusterNode loc,
+        MvccCoordinator mvccCrd,
         List<ClusterNode> rmtNodes,
         List<ClusterNode> allNodes,
         List<ClusterNode> srvNodes,
@@ -148,6 +154,7 @@ public class DiscoCache {
         this.topVer = topVer;
         this.state = state;
         this.loc = loc;
+        this.mvccCrd = mvccCrd;
         this.rmtNodes = rmtNodes;
         this.allNodes = allNodes;
         this.srvNodes = srvNodes;
@@ -157,17 +164,15 @@ public class DiscoCache {
         this.allCacheNodes = allCacheNodes;
         this.cacheGrpAffNodes = cacheGrpAffNodes;
         this.nodeMap = nodeMap;
-        alives.addAll(alives0);
+        this.alives.addAll(alives0);
         this.minNodeVer = minNodeVer;
         this.minSrvNodeVer = minSrvNodeVer;
         this.nodeIdToConsIdx = nodeIdToConsIdx;
         this.consIdxToNodeId = consIdxToNodeId;
 
         aliveBaselineNodePred = new P1<BaselineNode>() {
-            @Override
-            public boolean apply(BaselineNode node) {
+            @Override public boolean apply(BaselineNode node) {
                 return node instanceof ClusterNode && alives.contains(((ClusterNode)node).id());
-
             }
         };
 
@@ -176,6 +181,13 @@ public class DiscoCache {
                 return alives.contains(node.id());
             }
         };
+    }
+
+    /**
+     * @return Mvcc coordinator node.
+     */
+    @Nullable public MvccCoordinator mvccCoordinator() {
+        return mvccCrd;
     }
 
     /**
@@ -312,6 +324,16 @@ public class DiscoCache {
     }
 
     /**
+     * @return Oldest server node.
+     */
+    @Nullable public ClusterNode oldestServerNode(){
+        if (!srvNodes.isEmpty())
+            return srvNodes.get(0);
+
+        return null;
+    }
+
+    /**
      * @param nodeId Node ID.
      * @return {@code True} if node is in alives list.
      */
@@ -416,6 +438,26 @@ public class DiscoCache {
     }
 
     /**
+     *
+     * Returns {@code True} if all nodes has the given attribute and its value equals to {@code expVal}.
+     *
+     * @param <T> Attribute Type.
+     * @param name Attribute name.
+     * @param expVal Expected value.
+     * @return {@code True} if all the given nodes has the given attribute and its value equals to {@code expVal}.
+     */
+    public <T> boolean checkAttribute(String name, T expVal) {
+        for (ClusterNode node : allNodes) {
+            T attr = node.attribute(name);
+
+            if (attr == null || !expVal.equals(attr))
+                return false;
+        }
+
+        return true;
+    }
+
+    /**
      * @param nodes Cluster nodes.
      * @return Empty collection if nodes list is {@code null}
      */
@@ -433,6 +475,7 @@ public class DiscoCache {
             ver,
             state == null ? this.state : state,
             loc,
+            mvccCrd,
             rmtNodes,
             allNodes,
             srvNodes,

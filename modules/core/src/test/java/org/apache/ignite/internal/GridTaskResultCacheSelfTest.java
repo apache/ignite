@@ -47,10 +47,21 @@ public class GridTaskResultCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testNoCacheResults() throws Exception {
+    public void testNoCacheResultAnnotationUsage() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
-        ignite.compute().execute(GridResultNoCacheTestTask.class, "Grid Result No Cache Test Argument");
+        ignite.compute()
+            .execute(GridResultNoCacheResultAnnotationTestTask.class, "Grid Result No Cache Annotation Test Argument");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNoCacheResultMethodUsage() throws Exception {
+        Ignite ignite = G.ignite(getTestIgniteInstanceName());
+
+        ignite.compute().withNoResultCache()
+                .execute(GridResultNoCacheResultMethodTestTask.class, "Grid Result No Cache Method Test Argument");
     }
 
     /**
@@ -65,8 +76,7 @@ public class GridTaskResultCacheSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @ComputeTaskNoResultCache
-    private static class GridResultNoCacheTestTask extends GridAbstractCacheTestTask {
+    private static class GridResultNoCacheResultMethodTestTask extends GridAbstractCacheTestTask {
         /** {@inheritDoc} */
         @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
             assert res.getData() != null;
@@ -81,6 +91,14 @@ public class GridTaskResultCacheSelfTest extends GridCommonAbstractTest {
 
             return null;
         }
+    }
+
+    /**
+     *
+     */
+    @ComputeTaskNoResultCache
+    private static class GridResultNoCacheResultAnnotationTestTask extends GridResultNoCacheResultMethodTestTask {
+
     }
 
     /**

@@ -22,7 +22,7 @@ import 'rxjs/add/operator/publishReplay';
 
 // Controller for Clusters screen.
 export default class PageConfigureAdvancedCluster {
-    static $inject = ['$uiRouter', ConfigSelectors.name, ConfigureState.name];
+    static $inject = ['$uiRouter', 'ConfigSelectors', 'ConfigureState'];
 
     /**
      * @param {uirouter.UIRouter} $uiRouter
@@ -45,7 +45,7 @@ export default class PageConfigureAdvancedCluster {
         this.isBlocked$ = clusterID$;
     }
 
-    save(cluster) {
-        this.ConfigureState.dispatchAction(advancedSaveCluster(cluster));
+    save({cluster, download}) {
+        this.ConfigureState.dispatchAction(advancedSaveCluster(cluster, download));
     }
 }

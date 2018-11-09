@@ -21,6 +21,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
@@ -31,6 +32,7 @@ import org.apache.ignite.internal.visor.util.VisorTaskUtils;
  * Task that modify value in specified cache.
  */
 @GridInternal
+@GridVisorManagementTask
 public class VisorCacheModifyTask extends VisorOneNodeTask<VisorCacheModifyTaskArg, VisorCacheModifyTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -41,7 +43,7 @@ public class VisorCacheModifyTask extends VisorOneNodeTask<VisorCacheModifyTaskA
     }
 
     /**
-     * Job that clear specified caches.
+     * Job that modify value in specified cache.
      */
     private static class VisorCacheModifyJob extends VisorJob<VisorCacheModifyTaskArg, VisorCacheModifyTaskResult> {
         /** */
@@ -88,18 +90,18 @@ public class VisorCacheModifyTask extends VisorOneNodeTask<VisorCacheModifyTaskA
                         VisorQueryUtils.convertValue(old));
 
                 case GET:
-                    Object value = cache.get(key);
+                    Object val = cache.get(key);
 
-                    return new VisorCacheModifyTaskResult(nid, VisorTaskUtils.compactClass(value),
-                        VisorQueryUtils.convertValue(value));
+                    return new VisorCacheModifyTaskResult(nid, VisorTaskUtils.compactClass(val),
+                        VisorQueryUtils.convertValue(val));
 
                 case REMOVE:
-                    Object removed = cache.get(key);
+                    Object rmv = cache.get(key);
 
                     cache.remove(key);
 
-                    return new VisorCacheModifyTaskResult(nid, VisorTaskUtils.compactClass(removed),
-                        VisorQueryUtils.convertValue(removed));
+                    return new VisorCacheModifyTaskResult(nid, VisorTaskUtils.compactClass(rmv),
+                        VisorQueryUtils.convertValue(rmv));
             }
 
             return new VisorCacheModifyTaskResult(nid, null, null);

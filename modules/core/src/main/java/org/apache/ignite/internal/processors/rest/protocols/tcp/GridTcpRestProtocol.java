@@ -27,6 +27,7 @@ import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -46,6 +47,8 @@ import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioServerListener;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.IgnitePortProtocol;
 import org.jetbrains.annotations.Nullable;
@@ -71,7 +74,6 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("BusyWait")
     @Override public void start(final GridRestProtocolHandler hnd) throws IgniteCheckedException {
         assert hnd != null;
 
@@ -126,14 +128,12 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
                 "[firstPort=" + cfg.getPort() + ", lastPort=" + lastPort + ", host=" + host + ']');
         }
         catch (SSLException e) {
-            U.warn(log, "Failed to start " + name() + " protocol on port " + port + ": " + e.getMessage(),
-                "Failed to start " + name() + " protocol on port " + port + ". Check if SSL context factory is " +
-                    "properly configured.");
+            U.warn(log, "Failed to start " + name() + " protocol on port " + port + ". Check if SSL context factory " +
+                "is properly configured: " + e.getMessage());
         }
         catch (IOException e) {
-            U.warn(log, "Failed to start " + name() + " protocol on port " + port + ": " + e.getMessage(),
-                "Failed to start " + name() + " protocol on port " + port + ". " +
-                    "Check restTcpHost configuration property.");
+            U.warn(log, "Failed to start " + name() + " protocol on port " + port + ". " +
+                "Check restTcpHost configuration property: " + e.getMessage());
         }
     }
 
@@ -149,7 +149,15 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
         marshMap.put(GridClientOptimizedMarshaller.ID, optMarsh);
         marshMap.put(GridClientZipOptimizedMarshaller.ID, new GridClientZipOptimizedMarshaller(optMarsh, providers));
-        marshMap.put(GridClientJdkMarshaller.ID, new GridClientJdkMarshaller());
+
+        try {
+            IgnitePredicate<String> clsFilter = MarshallerUtils.classNameFilter(this.getClass().getClassLoader());
+
+            marshMap.put(GridClientJdkMarshaller.ID, new GridClientJdkMarshaller(clsFilter));
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
 
         lsnr.marshallers(marshMap);
     }

@@ -172,6 +172,11 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     }
 
     /** {@inheritDoc} */
+    @Override public void clearStatistics(Collection<String> caches) {
+        cluster.clearStatistics(caches);
+    }
+
+    /** {@inheritDoc} */
     @Override public void setTxTimeoutOnPartitionMapExchange(long timeout) {
         cluster.setTxTimeoutOnPartitionMapExchange(timeout);
     }

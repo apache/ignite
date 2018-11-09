@@ -17,14 +17,10 @@
 
 package org.apache.ignite.ml.preprocessing.binarization;
 
-import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.dataset.UpstreamEntry;
-import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
-import org.apache.ignite.ml.preprocessing.normalization.NormalizationPartitionData;
-import org.apache.ignite.ml.preprocessing.normalization.NormalizationPreprocessor;
 
 /**
  * Trainer of the binarization preprocessor.
@@ -32,26 +28,27 @@ import org.apache.ignite.ml.preprocessing.normalization.NormalizationPreprocesso
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class BinarizationTrainer<K, V> implements PreprocessingTrainer<K, V, double[], double[]> {
+public class BinarizationTrainer<K, V> implements PreprocessingTrainer<K, V, Vector, Vector> {
     /** Threshold. */
     private double threshold;
 
     /** {@inheritDoc} */
     @Override public BinarizationPreprocessor<K, V> fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, double[]> basePreprocessor) {
+        IgniteBiFunction<K, V, Vector> basePreprocessor) {
         return new BinarizationPreprocessor<>(threshold, basePreprocessor);
     }
 
     /**
-     * Gets the threshold parameter value.
-     * @return The parameter value.
+     * Get the threshold parameter value.
+     *
+     * @return The property value.
      */
-    public double threshold() {
+    public double getThreshold() {
         return threshold;
     }
 
     /**
-     * Sets the threshold parameter value.
+     * Set the threshold parameter value.
      *
      * @param threshold The given value.
      * @return The Binarization trainer.

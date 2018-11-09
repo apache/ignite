@@ -17,6 +17,14 @@
 
 @import '../../../public/stylesheets/variables';
 
+// Use this class to control grid header height
+.ui-grid-ignite__panel {
+    $panel-height: 64px;
+    $title-height: 36px;
+    padding-top: ($panel-height - $title-height) / 2 !important;
+    padding-bottom: ($panel-height - $title-height) / 2 !important;
+}
+
 .ui-grid.ui-grid--ignite {
     $height: 46px;
 
@@ -200,10 +208,6 @@
                 }
 
                 .ui-grid-header--subcategories {
-                    .ui-grid-tree-base-row-header-buttons {
-                        margin-top: 10px;
-                    }
-
                     .ui-grid-selection-row-header-buttons {
                         margin-top: 12px;
 
@@ -441,7 +445,7 @@
                     z-index: 1;
 
                     width: 4px;
-                    height: 46px;
+                    height: 47px;
 
                     background: #0067b9;
                     box-shadow: 0 -1px 0 0 rgba(0, 0, 0, .3), 0 -1px 0 0 rgba(0, 103, 185, 1);
