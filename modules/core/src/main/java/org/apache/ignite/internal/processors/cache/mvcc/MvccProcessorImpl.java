@@ -219,6 +219,9 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     /** Flag whether all nodes in cluster support MVCC. */
     private volatile boolean mvccSupported = true;
 
+    /** Last elected MVCC coordinator. */
+    private volatile MvccCoordinator pickedMvccCrd;
+
     /**
      * Maps failed node id to votes accumulator for that node.
      */
@@ -371,8 +374,9 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     /** {@inheritDoc} */
     @Override public void onNodeLeft(ClusterNode node, DiscoCache cache) {
         MvccCoordinator newMvccCrd = cache.mvccCoordinator();
+        MvccCoordinator curCrd0 = curCrd;
 
-        if (newMvccCrd == null || newMvccCrd.nodeId().equals(curCrd.nodeId()))
+        if (newMvccCrd == null || curCrd0 == null || newMvccCrd.nodeId().equals(curCrd0.nodeId()))
             return;
 
         GridLongList activeQryTrackers = updateCoordinator(newMvccCrd);
@@ -402,9 +406,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
         ctx.cache().context().tm().rollbackMvccTxOnCoordinatorChange();
 
-        if (ctx.localNodeId().equals(curCrd.nodeId())) {
-            assert ctx.localNodeId().equals(curCrd.nodeId());
-
+        if (ctx.localNodeId().equals(discoCache.mvccCoordinator().nodeId())) {
             MvccCoordinator crd = discoCache.mvccCoordinator();
 
             assert crd != null;
@@ -851,7 +853,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     @Override public MvccCoordinator pickMvccCoordinator(int evtType, Collection<ClusterNode> nodes, long topVer) {
         checkMvccSupported(nodes);
 
-        MvccCoordinator crd = curCrd;
+        MvccCoordinator crd = pickedMvccCrd;
 
         if (crd == null ||
             ((evtType == EVT_NODE_FAILED || evtType == EVT_NODE_LEFT) && !F.nodeIds(nodes).contains(crd.nodeId()))) {
@@ -881,6 +883,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 log.info("Assigned mvcc coordinator [crd=" + crd + ", crdNode=" + crdNode + ']');
             else if (crd == null)
                 U.warn(log, "New mvcc coordinator was not assigned [topVer=" + topVer + ']');
+
+            pickedMvccCrd = crd;
         }
 
         return crd;

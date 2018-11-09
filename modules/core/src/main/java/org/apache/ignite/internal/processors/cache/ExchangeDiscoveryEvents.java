@@ -78,7 +78,7 @@ public class ExchangeDiscoveryEvents {
     ExchangeDiscoveryEvents(GridDhtPartitionsExchangeFuture fut) {
         MvccCoordinator crd0 = fut.firstEventCache().mvccCoordinator();
 
-        newMvccCrd = crd0 != null && (crd0.topologyVersion().equals(topVer) || fut.activateCluster());
+        newMvccCrd = crd0 != null && (crd0.topologyVersion().equals(fut.initialVersion()) || fut.activateCluster());
 
         addEvent(fut.initialVersion(), fut.firstEvent(), fut.firstEventCache());
     }
