@@ -685,14 +685,14 @@ public class GridReduceQueryExecutor {
                     throw new CacheException("Partitions are not supported for replicated caches");
             }
 
-            final int parallelismLvl = qry.explain() || isReplicatedOnly ? 1 :
+            final int segmentsPerIndex = qry.explain() || isReplicatedOnly ? 1 :
                 findFirstPartitioned(cacheIds).config().getQueryParallelism();
 
             if (qry.isLocal())
-                nodeSources = singletonMap(ctx.discovery().localNode(), parallelismLvl);
+                nodeSources = singletonMap(ctx.discovery().localNode(), segmentsPerIndex);
             else {
                 NodesForPartitionsResult nodesParts =
-                    nodesForPartitions(cacheIds, topVer, parts, isReplicatedOnly, qryReqId, parallelismLvl);
+                    nodesForPartitions(cacheIds, topVer, parts, isReplicatedOnly, segmentsPerIndex, qryReqId);
 
                 nodeSources = nodesParts.nodesSources();
                 partsMap = nodesParts.partitionsMap();
@@ -724,14 +724,11 @@ public class GridReduceQueryExecutor {
             }
 
             if (sfuFut != null && !sfuFut.isFailed())
-                sfuFut.init(topVer, nodes);
+                sfuFut.init(topVer, nodeSources.keySet());
 
             int tblIdx = 0;
 
             final boolean skipMergeTbl = !qry.explain() && qry.skipMergeTable();
-
-            final int segmentsPerIndex = qry.explain() || isReplicatedOnly ? 1 :
-                findFirstPartitioned(cacheIds).config().getQueryParallelism();
 
             int replicatedQrysCnt = 0;
 
@@ -781,6 +778,8 @@ public class GridReduceQueryExecutor {
             if(!isReplicatedOnly) {
                 for (Integer nodeSrcCnt : nodeSources.values())
                     sourcesCnt += nodeSrcCnt;
+
+                assert sourcesCnt > 0;
             }
 
             r.latch(new CountDownLatch(isReplicatedOnly ? 1 :
@@ -1065,7 +1064,9 @@ public class GridReduceQueryExecutor {
 
         final long reqId = qryIdGen.incrementAndGet();
 
-        NodesForPartitionsResult nodesParts = nodesForPartitions(cacheIds, topVer, parts, isReplicatedOnly, reqId);
+        final int segs = isReplicatedOnly ? 1 : findFirstPartitioned(cacheIds).config().getQueryParallelism();
+
+        NodesForPartitionsResult nodesParts = nodesForPartitions(cacheIds, topVer, parts, isReplicatedOnly, segs, reqId);
 
         final GridRunningQueryInfo qryInfo = new GridRunningQueryInfo(reqId, selectQry, GridCacheQueryType.SQL_FIELDS,
             schemaName, U.currentTimeMillis(), cancel, false);

@@ -642,21 +642,21 @@ public class GridMapQueryExecutor {
             lockFut = null;
         }
 
-        final int firstSegment;
+        final int firstSeg;
 
         if (segments > 1) {
-            BitSet segmentSet = new BitSet(segments);
+            BitSet qrySegs = new BitSet(segments);
 
             if (qryParts != null) {
                 for (int i = 0; i < qryParts.length; i++)
-                    segmentSet.set(H2Utils.segmentForPartition(qryParts[i], parallelismLvl));
+                    qrySegs.set(H2Utils.segmentForPartition(qryParts[i], segments));
             }
             else
-                segmentSet.set(0, segments);
+                qrySegs.set(0, segments);
 
-            firstSegment = segmentSet.nextSetBit(0);
+            firstSeg = qrySegs.nextSetBit(0);
 
-            for (int i = segmentSet.nextSetBit(firstSegment + 1); i >= 0; i = segments.nextSetBit(i + 1)) {
+            for (int i = qrySegs.nextSetBit(firstSeg + 1); i >= 0; i = qrySegs.nextSetBit(i + 1)) {
                 assert !F.isEmpty(cacheIds);
 
                 final int segment = i;
@@ -718,11 +718,11 @@ public class GridMapQueryExecutor {
             }
         }
         else
-            firstSegment = 0;
+            firstSeg = 0;
 
         onQueryRequest0(node,
             req.requestId(),
-            firstSegment,
+            firstSeg,
             req.schemaName(),
             req.queries(),
             cacheIds,
