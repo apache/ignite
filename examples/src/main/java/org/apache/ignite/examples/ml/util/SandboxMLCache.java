@@ -17,7 +17,6 @@
 
 package org.apache.ignite.examples.ml.util;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.nio.file.Paths;
 import java.text.NumberFormat;
@@ -95,7 +94,7 @@ public class SandboxMLCache {
 
         IgniteCache<Integer, Vector> cache = getCache();
 
-        Scanner scanner = new Scanner(new File(dataset.getFileName()));
+        Scanner scanner = new Scanner(SandboxMLCache.class.getResourceAsStream(dataset.getFileName()));
 
         int cnt = 0;
         while (scanner.hasNextLine()) {
