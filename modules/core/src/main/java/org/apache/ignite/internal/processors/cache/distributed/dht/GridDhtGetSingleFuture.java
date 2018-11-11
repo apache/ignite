@@ -35,8 +35,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.ReaderArguments;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFutureAdapter.LostPolicyValidator;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -46,6 +48,9 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static java.util.Collections.singleton;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFutureAdapter.OperationType.READ;
 
 /**
  *
@@ -255,7 +260,8 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
         if (!map(key)) {
             retry = cctx.affinity().partition(key);
 
-            onDone((GridCacheEntryInfo)null);
+            if (!isDone())
+                onDone((GridCacheEntryInfo)null);
 
             return;
         }
@@ -285,11 +291,28 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
 
             assert this.part == -1;
 
+            if (part.state() == GridDhtPartitionState.LOST && !recovery) {
+                Throwable error = LostPolicyValidator.validate(cctx, key, READ, singleton(part.id()));
+
+                if (error != null) {
+                    onDone(null, error);
+
+                    return false;
+                }
+            }
+
             // By reserving, we make sure that partition won't be unloaded while processed.
             if (part.reserve()) {
-                this.part = part.id();
+                if (part.state() == GridDhtPartitionState.OWNING || part.state() == GridDhtPartitionState.LOST) {
+                    this.part = part.id();
 
-                return true;
+                    return true;
+                }
+                else {
+                    part.release();
+
+                    return false;
+                }
             }
             else
                 return false;
