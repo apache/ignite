@@ -540,7 +540,6 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
     /**
      * Outer test object.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public static class TestOuterObject {
         /** Inner object. */
         public TestObject fInner;
@@ -565,7 +564,6 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
     /**
      * Test object class, c
      */
-    @SuppressWarnings("UnusedDeclaration")
     public static class TestObject {
         /** Primitive fields. */
         public byte fByte;
@@ -659,7 +657,6 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
     /**
      * Inner test object.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public static class TestInnerObject {
         /** Value. */
         private int val;

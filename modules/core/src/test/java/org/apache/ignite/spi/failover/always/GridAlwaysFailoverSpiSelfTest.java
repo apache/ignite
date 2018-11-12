@@ -57,7 +57,6 @@ public class GridAlwaysFailoverSpiSelfTest extends GridSpiAbstractTest<AlwaysFai
     /**
      * @throws Exception If test failed.
      */
-    @SuppressWarnings("unchecked")
     public void testTwoNodes() throws Exception {
         AlwaysFailoverSpi spi = getSpi();
 

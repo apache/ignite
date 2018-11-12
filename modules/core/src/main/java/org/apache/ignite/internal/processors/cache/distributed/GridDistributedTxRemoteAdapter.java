@@ -117,7 +117,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     private boolean started;
 
     /** {@code True} only if all write entries are locked by this transaction. */
-    @SuppressWarnings("UnusedDeclaration")
     @GridToStringInclude
     private volatile int commitAllowed;
 
@@ -431,7 +430,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     /**
      * @throws IgniteCheckedException If commit failed.
      */
-    @SuppressWarnings({"CatchGenericClass"})
     private void commitIfLocked() throws IgniteCheckedException {
         if (state() == COMMITTING) {
             for (IgniteTxEntry txEntry : writeEntries()) {
