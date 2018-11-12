@@ -37,7 +37,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -50,7 +49,6 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -184,13 +182,22 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      * @param collocated Collocation flag.
      * @throws Exception If failed.
      */
-    private void testCreateRemove(boolean collocated) throws Exception {
+    protected void testCreateRemove(boolean collocated) throws Exception {
+        testCreateRemove(collocated, 0);
+    }
+
+    /**
+     * @param collocated Collocation flag.
+     * @param nodeIdx Index of the node from which to create set.
+     * @throws Exception If failed.
+     */
+    protected void testCreateRemove(boolean collocated, int nodeIdx) throws Exception {
         for (int i = 0; i < gridCount(); i++)
             assertNull(grid(i).set(SET_NAME, null));
 
         CollectionConfiguration colCfg0 = config(collocated);
 
-        IgniteSet<Integer> set0 = grid(0).set(SET_NAME, colCfg0);
+        IgniteSet<Integer> set0 = grid(nodeIdx).set(SET_NAME, colCfg0);
 
         assertNotNull(set0);
 
@@ -414,10 +421,19 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      * @param collocated Collocation flag.
      * @throws Exception If failed.
      */
-    private void testIterator(boolean collocated) throws Exception {
+    protected void testIterator(boolean collocated) throws Exception {
+        testIterator(collocated, 0);
+    }
+
+    /**
+     * @param collocated Collocation flag.
+     * @param nodeIdx Index of the node from which to create set.
+     * @throws Exception If failed.
+     */
+    protected void testIterator(boolean collocated, int nodeIdx) throws Exception {
         CollectionConfiguration colCfg = config(collocated);
 
-        final IgniteSet<Integer> set0 = grid(0).set(SET_NAME, colCfg);
+        final IgniteSet<Integer> set0 = grid(nodeIdx).set(SET_NAME, colCfg);
 
         for (int i = 0; i < gridCount(); i++) {
             IgniteSet<Integer> set = grid(i).set(SET_NAME, null);
@@ -736,7 +752,6 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      * @param collocated Collocation flag.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("WhileLoopReplaceableByForEach")
     private void testCleanup(boolean collocated) throws Exception {
         CollectionConfiguration colCfg = config(collocated);
 
@@ -1163,29 +1178,6 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
             }
 
             assertTrue(found);
-        }
-    }
-
-    /**
-     * Node filter to exclude one node from affinity nodes.
-     */
-    protected static class CacheNodeFilter implements IgnitePredicate<ClusterNode> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private final ClusterNode excludedNode;
-
-        /**
-         * @param excludedNode Node to be excluded from affinity nodes.
-         */
-        public CacheNodeFilter(ClusterNode excludedNode) {
-            this.excludedNode = excludedNode;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean apply(ClusterNode node) {
-            return !excludedNode.equals(node);
         }
     }
 }

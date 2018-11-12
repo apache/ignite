@@ -23,13 +23,26 @@ import org.apache.ignite.configuration.IgniteConfiguration;
  * Tests IgniteSet with client node on {@code PARTITIONED} cache.
  */
 public class GridCachePartitionedSetWithClientSelfTest extends GridCachePartitionedSetSelfTest {
+    /** */
+    private static final int CLIENT_NODE_IDX = 4;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setClientMode(getTestIgniteInstanceIndex(igniteInstanceName) == (gridCount() - 1));
+        cfg.setClientMode(getTestIgniteInstanceIndex(igniteInstanceName) == CLIENT_NODE_IDX);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void testCreateRemove(boolean collocated) throws Exception {
+        testCreateRemove(collocated, CLIENT_NODE_IDX);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void testIterator(boolean collocated) throws Exception {
+        testIterator(collocated, CLIENT_NODE_IDX);
     }
 
     /** {@inheritDoc} */

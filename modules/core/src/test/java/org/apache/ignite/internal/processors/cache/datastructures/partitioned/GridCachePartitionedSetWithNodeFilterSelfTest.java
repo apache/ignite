@@ -18,6 +18,9 @@
 package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
 
 import org.apache.ignite.configuration.CollectionConfiguration;
+import org.apache.ignite.util.AttributeNodeFilter;
+
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 
 /**
  * Tests IgniteSet with node filter on {@code PARTITIONED} cache.
@@ -27,7 +30,7 @@ public class GridCachePartitionedSetWithNodeFilterSelfTest extends GridCachePart
     @Override protected CollectionConfiguration collectionConfiguration() {
         CollectionConfiguration cfg = super.collectionConfiguration();
 
-        cfg.setNodeFilter(new CacheNodeFilter(grid(0).localNode()));
+        cfg.setNodeFilter(new AttributeNodeFilter(ATTR_IGNITE_INSTANCE_NAME, getTestIgniteInstanceName(0)));
 
         return cfg;
     }
