@@ -87,6 +87,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
     /** */
     private final String idxName;
 
+    /** */
     private final StatisticsHolder statisticsHolder;
 
     /** */
