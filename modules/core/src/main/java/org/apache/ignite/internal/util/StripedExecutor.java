@@ -202,14 +202,17 @@ public class StripedExecutor implements ExecutorService {
                         .a("    Thread name: ").a(stripe.thread.getName()).a(U.nl());
 
                 stripe.contHist.descendingMap().values().stream().limit(5)
-                        .forEach((snaps) -> {
-                            for (StripeSnap snap: snaps)
-                                sb.a("  ").a(LocalDateTime.ofInstant(
+                        .forEach(snaps -> {
+                            synchronized (snaps) {
+                                for (StripeSnap snap : snaps) {
+                                    sb.a("  ").a(LocalDateTime.ofInstant(
                                         Instant.ofEpochMilli(snap.timestamp()),
                                         sysZoneId).format(formatter))
-                                    .a(" ")
-                                    .a("queue size: ").a(snap.queueSize()).a(" ")
-                                    .a("runnables: ").a(snap.message()).a(U.nl());
+                                        .a(" ")
+                                        .a("queue size: ").a(snap.queueSize()).a(" ")
+                                        .a("runnables: ").a(snap.message()).a(U.nl());
+                                }
+                            }
                 });
 
                 String msg = sb.toString();
