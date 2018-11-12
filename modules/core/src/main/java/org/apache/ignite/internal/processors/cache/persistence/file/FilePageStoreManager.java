@@ -77,6 +77,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.Files.delete;
 import static java.nio.file.Files.newDirectoryStream;
+import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.UNCOMPRESSED_PAGE;
 
 /**
@@ -1170,16 +1171,15 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         private final PageStore[] partStores;
 
         /**
-         *
          */
         CacheStoreHolder(PageStore idxStore, PageStore[] partStores) {
-            this.idxStore = idxStore;
-            this.partStores = partStores;
+            this.idxStore = requireNonNull(idxStore);
+            this.partStores = requireNonNull(partStores);
         }
 
         /** {@inheritDoc} */
         @Override public PageStore get(int idx) {
-            return idx == partStores.length ? idxStore : partStores[idx];
+            return requireNonNull(idx == partStores.length ? idxStore : partStores[idx]);
         }
 
         /** {@inheritDoc} */
