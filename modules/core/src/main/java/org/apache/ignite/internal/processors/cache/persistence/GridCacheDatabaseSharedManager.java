@@ -172,6 +172,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** */
     public static final String IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC = "IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC";
 
+    /** */
+    public static final String IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP = "IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP";
+
     /** MemoryPolicyConfiguration name reserved for meta store. */
     private static final String METASTORE_DATA_REGION_NAME = "metastoreMemPlc";
 
@@ -376,6 +379,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** Initially disabled cache groups. */
     private Collection<Integer> initiallyWalDisabledGrps;
+
+    /** Skip checkpoint on node stop. */
+    private final boolean skipCheckpointOnNodeStop = IgniteSystemProperties.getBoolean(IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, false);
 
     /**
      * @param ctx Kernal context.
@@ -2420,6 +2426,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             // After partition states are restored, it is necessary to update internal data structures in topology.
             grp.topology().afterStateRestored(grp.topology().lastTopologyChangeVersion());
+
+            if (grp.cacheOrGroupName().equals("CACHE") && grp.topology().hasMovingPartitions()) {
+                int k = 2;
+            }
         }
     }
 
@@ -2905,6 +2915,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             while (!isCancelled()) {
                 waitCheckpointEvent();
+
+                if (skipCheckpointOnNodeStop && (isCancelled || shutdownNow)) {
+                    log.warning("Skip checkpoint on node stop.");
+
+                    return;
+                }
 
                 GridFutureAdapter<Void> enableChangeApplied = GridCacheDatabaseSharedManager.this.enableChangeApplied;
 

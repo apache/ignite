@@ -813,7 +813,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             if (loc != null)
                 loc.awaitDestroy();
 
-            locParts.set(p, loc = new GridDhtLocalPartition(ctx, grp, p));
+            locParts.set(p, loc = new GridDhtLocalPartition(ctx, grp, p, false));
 
             long updCntr = cntrMap.updateCounter(p);
 
@@ -844,7 +844,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             if (part != null && part.state() != EVICTED)
                 return part;
 
-            part = new GridDhtLocalPartition(ctx, grp, p);
+            part = new GridDhtLocalPartition(ctx, grp, p, true);
 
             locParts.set(p, part);
 
@@ -921,7 +921,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             "[grp=" + grp.cacheOrGroupName() + ", part=" + p + ", topVer=" + topVer +
                             ", this.topVer=" + this.readyTopVer + ']');
 
-                    locParts.set(p, loc = new GridDhtLocalPartition(ctx, grp, p));
+                    locParts.set(p, loc = new GridDhtLocalPartition(ctx, grp, p, false));
 
                     this.updateSeq.incrementAndGet();
 
