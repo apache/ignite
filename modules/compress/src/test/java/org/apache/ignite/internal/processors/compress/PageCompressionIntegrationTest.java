@@ -101,6 +101,7 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
         factory = getFileIOFactory();
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
+            .setMetricsEnabled(true)
             .setPageSize(16 * 1024)
             .setDefaultDataRegionConfiguration(drCfg)
             .setFileIOFactory(U.isLinux() ? factory : new PunchFileIOFactory(factory));
@@ -193,7 +194,7 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    void doTestPageCompression() throws Exception {
+    private void doTestPageCompression() throws Exception {
         IgniteEx ignite = startGrid(0);
 
         ignite.cluster().active(true);
@@ -227,17 +228,39 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
 
         checkFileIOFactory(storeMgr.getPageStoreFileIoFactory());
 
+        Thread.sleep(100); // Wait for metrics update.
+
+        long storeSize = ignite.dataStorageMetrics().getStorageSize();
+        long sparseStoreSize = ignite.dataStorageMetrics().getSparseStorageSize();
+
+        assertTrue("storeSize: " + storeSize, storeSize > 0);
+
+        if (U.isLinux()) {
+            assertTrue("sparseSize: " + sparseStoreSize, sparseStoreSize > 0);
+            assertTrue(storeSize + " > " + sparseStoreSize, storeSize > sparseStoreSize);
+        }
+        else
+            assertTrue(sparseStoreSize < 0);
+
         GridCacheContext<?,?> cctx = ignite.cachex(cacheName).context();
+
+        int cacheId = cctx.cacheId();
+        int groupId = cctx.groupId();
+
+        assertEquals(cacheId, groupId);
 
         int parts = cctx.affinity().partitions();
 
         for (int i = 0; i < parts; i++) {
-            PageStore store = storeMgr.getStore(cctx.cacheId(), i);
+            PageStore store = storeMgr.getStore(cacheId, i);
 
+            long realSize = store.size();
             long virtualSize = store.getPageSize() * store.pages();
             long sparseSize = store.getSparseSize();
 
-            info("virt: " + virtualSize + "   sparse: " + sparseSize);
+            assertTrue(virtualSize > 0);
+
+            error("virt: " + virtualSize + ",  real: " + realSize + ",  sparse: " + sparseSize);
 
             if (!store.exists())
                 continue;

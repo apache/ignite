@@ -31,6 +31,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.AbstractList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -1075,6 +1076,15 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /**
      * @param grpId Cache group ID.
+     * @return Collection of related page stores.
+     * @throws IgniteCheckedException If failed.
+     */
+    public Collection<PageStore> getStores(int grpId) throws IgniteCheckedException {
+        return getHolder(grpId);
+    }
+
+    /**
+     * @param grpId Cache group ID.
      * @param partId Partition ID.
      * @return Page store for the corresponding parameters.
      * @throws IgniteCheckedException If cache or partition with the given ID was not created.
@@ -1152,7 +1162,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /**
      *
      */
-    private static class CacheStoreHolder {
+    private static class CacheStoreHolder extends AbstractList<PageStore> {
         /** Index store. */
         private final PageStore idxStore;
 
@@ -1162,9 +1172,19 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         /**
          *
          */
-        public CacheStoreHolder(PageStore idxStore, PageStore[] partStores) {
+        CacheStoreHolder(PageStore idxStore, PageStore[] partStores) {
             this.idxStore = idxStore;
             this.partStores = partStores;
+        }
+
+        /** {@inheritDoc} */
+        @Override public PageStore get(int idx) {
+            return idx == partStores.length ? idxStore : partStores[idx];
+        }
+
+        /** {@inheritDoc} */
+        @Override public int size() {
+            return partStores.length + 1;
         }
     }
 }

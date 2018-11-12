@@ -103,7 +103,6 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionDestroyRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -2051,26 +2050,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param f Consumer.
      */
     public long forGroupPageStores(CacheGroupContext gctx, ToLongFunction<PageStore> f) {
-        GridAffinityAssignmentCache aff = gctx.affinity();
-        AffinityTopologyVersion topVer = aff.lastVersion();
-
-        UUID nodeId = cctx.localNodeId();
-
-        Set<Integer> parts = new HashSet<>();
-        parts.addAll(aff.primaryPartitions(nodeId, topVer));
-        parts.addAll(aff.backupPartitions(nodeId, topVer));
-
         int groupId = gctx.groupId();
 
         long res = 0;
 
-        for (int part: parts) {
-            try {
-                res += f.applyAsLong(storeMgr.getStore(groupId, part));
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
+        try {
+            for (PageStore store : storeMgr.getStores(groupId))
+                res += f.applyAsLong(store);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
 
         return res;

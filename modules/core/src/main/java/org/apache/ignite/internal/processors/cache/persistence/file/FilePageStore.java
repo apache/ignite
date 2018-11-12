@@ -129,7 +129,9 @@ public class FilePageStore implements PageStore {
     /** {@inheritDoc} */
     @Override public long size() {
         try {
-            return fileIO.size();
+            FileIO io = fileIO;
+
+            return io == null ? 0 : io.size();
         }
         catch (IOException e) {
             throw new IgniteException(e);
