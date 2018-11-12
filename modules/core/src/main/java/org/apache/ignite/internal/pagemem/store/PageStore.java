@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.pagemem.store;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
@@ -136,17 +135,21 @@ public interface PageStore {
 
     /**
      * @return Storage block size or negative value if unknown or not supported.
-     * @throws StorageException If failed.
      */
-    public int getBlockSize() throws StorageException;
+    public int getBlockSize();
 
     /**
-     * @return Approximate system dependent size of the storage or negative
-     *          value if not supported.
-     * @throws IOException If failed.
+     * @return Size of the storage in bytes. May differ from {@link #pages()} * {@link #getPageSize()}
+     *         due to delayed writes or due to other implementation specific details.
+     */
+    public long size();
+
+    /**
+     * @return Size of the storage adjusted for sparsity in bytes or negative
+     *         value if not supported. Should be less than or equal to {@link #size()}.
      * @see #punchHole
      */
-    public long getSparseSize() throws IOException;
+    public long getSparseSize();
 
     /**
      * Should free all the extra storage space after the given number of useful bytes in the given page.

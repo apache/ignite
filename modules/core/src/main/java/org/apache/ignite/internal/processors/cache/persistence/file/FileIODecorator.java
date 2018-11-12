@@ -42,7 +42,7 @@ public class FileIODecorator extends AbstractFileIO {
     }
 
     /** {@inheritDoc} */
-    @Override public long getSparseSize() throws IOException {
+    @Override public long getSparseSize() {
         return delegate.getSparseSize();
     }
 

@@ -27,6 +27,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -61,13 +62,10 @@ import static org.apache.ignite.internal.processors.compress.CompressionProcesso
  */
 public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
     /** */
-    protected PageCompression compression;
+    private PageCompression compression;
 
     /** */
-    protected Integer compressionLevel;
-
-    /** */
-    protected int pageSize = 16 * 1024;
+    private Integer compressionLevel;
 
     /** */
     private FileIOFactory factory;
@@ -103,7 +101,7 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
         factory = getFileIOFactory();
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
-            .setPageSize(pageSize)
+            .setPageSize(16 * 1024)
             .setDefaultDataRegionConfiguration(drCfg)
             .setFileIOFactory(U.isLinux() ? factory : new PunchFileIOFactory(factory));
 
@@ -333,12 +331,17 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public long getSparseSize() throws IOException {
+        @Override public long getSparseSize() {
             assertFalse(U.isLinux());
 
             long holesSize = holes.values().stream().mapToLong(x -> x).sum();
 
-            return size() - holesSize;
+            try {
+                return size() - holesSize;
+            }
+            catch (IOException e) {
+                throw new IgniteException(e);
+            }
         }
 
         /** {@inheritDoc} */

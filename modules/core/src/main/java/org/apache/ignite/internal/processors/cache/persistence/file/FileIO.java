@@ -269,8 +269,7 @@ public interface FileIO extends AutoCloseable {
     /**
      * @return Approximate system dependent size of the storage or negative
      *          value if not supported.
-     * @throws IOException If some I/O error occurs.
      * @see #punchHole
      */
-    long getSparseSize() throws IOException;
+    long getSparseSize();
 }
