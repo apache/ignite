@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {StateOrName} from '@uirouter/core/lib/state/interface';
+import {StateOrName, StateService} from '@uirouter/angularjs';
 import {RawParams} from '@uirouter/core/lib/params/interface';
 
 interface State {
@@ -34,7 +34,7 @@ export class TimedRedirectionCtrl implements ng.IComponentController, ng.IOnInit
 
     countDown: ng.IPromise<ng.IIntervalService>;
 
-    constructor(private $state, private $interval) {}
+    constructor(private $state: StateService, private $interval: ng.IIntervalService) {}
 
     $onInit() {
         this.startCountDown();

@@ -14,10 +14,9 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
+.timed-redirection--wrapper
+    h1 {{$ctrl.headerText}}
 
-h1 {{$ctrl.headerText}}
+    .sub-header {{$ctrl.subHeaderText}}
 
-.sub-header {{$ctrl.subHeaderText}}
-
-.redirection-text You’ll be redirected back automatically in {{$ctrl.secondsLeft}} seconds, or #[a(ng-click='$ctrl.go()') click here] to redirect now.
-
+    .redirection-text You’ll be redirected back automatically in {{$ctrl.secondsLeft}} seconds, or #[a(ng-click='$ctrl.go()') click here] to redirect now.

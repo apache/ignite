@@ -22,7 +22,11 @@ timed-redirection {
   align-items: center;
   display: flex;
   flex-direction: column;
-  height: 60vh;
+  flex: 1;
+
+  .timed-redirection--wrapper {
+      text-align: center;
+  }
 
   h1, .sub-header {
     color: $ignite-brand-primary;
