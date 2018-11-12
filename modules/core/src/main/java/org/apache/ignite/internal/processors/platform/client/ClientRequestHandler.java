@@ -61,6 +61,11 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
     }
 
     /** {@inheritDoc} */
+    @Override public ClientListenerResponse handleSynchronously(ClientListenerRequest req) {
+        throw new UnsupportedOperationException("Synchronous handling is not supported");
+    }
+
+    /** {@inheritDoc} */
     @Override public ClientListenerResponse handleException(Exception e, ClientListenerRequest req) {
         assert req != null;
         assert e != null;
@@ -74,5 +79,10 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
     /** {@inheritDoc} */
     @Override public void writeHandshake(BinaryWriterExImpl writer) {
         writer.writeBoolean(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isSynchronousHandlingExpected(int cmdId) {
+        return false;
     }
 }

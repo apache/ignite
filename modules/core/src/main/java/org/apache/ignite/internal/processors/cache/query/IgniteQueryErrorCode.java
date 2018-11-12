@@ -129,6 +129,9 @@ public final class IgniteQueryErrorCode {
     /** Transaction serialization error. */
     public static final int TRANSACTION_SERIALIZATION_ERROR = 5005;
 
+    /** Query canceled. */
+    public final static int QUERY_CANCELED = 57014;
+
     /** */
     private IgniteQueryErrorCode() {
         // No-op.

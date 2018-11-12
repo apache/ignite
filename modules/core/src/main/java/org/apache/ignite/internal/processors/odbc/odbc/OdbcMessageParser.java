@@ -409,6 +409,18 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
         return writer.array();
     }
 
+    /** {@inheritDoc} */
+    @Override public int decodeCommandId(byte[] msg) {
+        // TODO: 09.11.18 implement
+        assert msg != null;
+
+        BinaryInputStream stream = new BinaryHeapInputStream(msg);
+
+        BinaryReaderExImpl reader = new BinaryReaderExImpl(marsh.context(), stream, ctx.config().getClassLoader(), true);
+
+        return reader.readByte();
+    }
+
     /**
      * @param writer Writer to use.
      * @param affectedRows Affected rows.

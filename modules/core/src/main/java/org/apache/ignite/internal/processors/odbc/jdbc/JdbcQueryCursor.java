@@ -28,8 +28,8 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
  * SQL listener query fetch result.
  */
 class JdbcQueryCursor {
-    /** Query ID. */
-    private final long queryId;
+    /** Cursor ID. */
+    private final long cursorId;
 
     /** Fetch size. */
     private int pageSize;
@@ -47,13 +47,13 @@ class JdbcQueryCursor {
     private final Iterator<List<Object>> iter;
 
     /**
-     * @param queryId Query ID.
+     * @param cursorId Cursor ID.
      * @param pageSize Fetch size.
      * @param maxRows Max rows.
      * @param cur Query cursor.
      */
-    JdbcQueryCursor(long queryId, int pageSize, int maxRows, QueryCursorImpl<List<Object>> cur) {
-        this.queryId = queryId;
+    JdbcQueryCursor(long cursorId, int pageSize, int maxRows, QueryCursorImpl<List<Object>> cur) {
+        this.cursorId = cursorId;
         this.pageSize = pageSize;
         this.maxRows = maxRows;
         this.cur = cur;
@@ -105,10 +105,10 @@ class JdbcQueryCursor {
     }
 
     /**
-     * @return Query ID.
+     * @return Cursor ID.
      */
-    public long queryId() {
-        return queryId;
+    public long cursorId() {
+        return cursorId;
     }
 
     /**

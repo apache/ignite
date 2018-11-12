@@ -176,7 +176,7 @@ public class JdbcThinConnection implements Connection {
      * @param cmd Parsed form of {@code sql}.
      * @throws SQLException if failed.
      */
-    void executeNative(String sql, SqlCommand cmd) throws SQLException {
+    void executeNative(String sql, SqlCommand cmd, long reqId) throws SQLException {
         if (cmd instanceof SqlSetStreamingCommand) {
             SqlSetStreamingCommand cmd0 = (SqlSetStreamingCommand)cmd;
 
@@ -197,7 +197,7 @@ public class JdbcThinConnection implements Connection {
                 }
 
                 sendRequest(new JdbcQueryExecuteRequest(JdbcStatementType.ANY_STATEMENT_TYPE,
-                    schema, 1, 1, autoCommit, sql, null));
+                    schema, 1, 1, autoCommit, sql, null, reqId));
 
                 streamState = new StreamState((SqlSetStreamingCommand)cmd);
             }

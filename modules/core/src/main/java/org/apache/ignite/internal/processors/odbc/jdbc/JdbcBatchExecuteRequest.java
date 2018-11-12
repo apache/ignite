@@ -30,6 +30,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_4_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_7_0;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_8_0;
 
 /**
  * JDBC batch execute request.
@@ -51,6 +52,9 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
      */
     private boolean lastStreamBatch;
 
+    /** Request id. */
+    private long reqId;
+
     /**
      * Default constructor.
      */
@@ -71,8 +75,10 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
      * @param queries Queries.
      * @param autoCommit Client auto commit flag state.
      * @param lastStreamBatch {@code true} in case the request is the last batch at the stream.
+     * @param reqId Request Id
      */
-    public JdbcBatchExecuteRequest(String schemaName, List<JdbcQuery> queries, boolean autoCommit, boolean lastStreamBatch) {
+    public JdbcBatchExecuteRequest(String schemaName, List<JdbcQuery> queries, boolean autoCommit,
+        boolean lastStreamBatch, long reqId) {
         super(BATCH_EXEC);
 
         assert lastStreamBatch || !F.isEmpty(queries);
@@ -81,6 +87,7 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
         this.queries = queries;
         this.autoCommit = autoCommit;
         this.lastStreamBatch = lastStreamBatch;
+        this.reqId = reqId;
     }
 
     /**
@@ -91,8 +98,10 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
      * @param queries Queries.
      * @param autoCommit Client auto commit flag state.
      * @param lastStreamBatch {@code true} in case the request is the last batch at the stream.
+     * @param reqId Request Id
      */
-    protected JdbcBatchExecuteRequest(byte type, String schemaName, List<JdbcQuery> queries, boolean autoCommit, boolean lastStreamBatch) {
+    protected JdbcBatchExecuteRequest(byte type, String schemaName, List<JdbcQuery> queries, boolean autoCommit,
+        boolean lastStreamBatch, long reqId) {
         super(type);
 
         assert lastStreamBatch || !F.isEmpty(queries);
@@ -101,6 +110,7 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
         this.queries = queries;
         this.autoCommit = autoCommit;
         this.lastStreamBatch = lastStreamBatch;
+        this.reqId = reqId;
     }
 
     /**
@@ -131,6 +141,13 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
         return lastStreamBatch;
     }
 
+    /**
+     * @return Request Id.
+     */
+    public long reqId() {
+        return reqId;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver) throws BinaryObjectException {
         super.writeBinary(writer, ver);
@@ -152,6 +169,9 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
 
         if (ver.compareTo(VER_2_7_0) >= 0)
             writer.writeBoolean(autoCommit);
+
+        if (ver.compareTo(VER_2_8_0) >= 0)
+            writer.writeLong(reqId);
     }
 
     /** {@inheritDoc} */
@@ -177,6 +197,9 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
 
         if (ver.compareTo(VER_2_7_0) >= 0)
             autoCommit = reader.readBoolean();
+
+        if (ver.compareTo(VER_2_8_0) >= 0)
+            reqId = reader.readLong();
     }
 
     /** {@inheritDoc} */

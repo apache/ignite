@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
@@ -40,6 +41,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadAckResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCancelRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteMultipleStatementsResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
@@ -64,6 +66,12 @@ import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 public class JdbcThinStatement implements Statement {
     /** Default queryPage size. */
     private static final int DFLT_PAGE_SIZE = SqlQuery.DFLT_PAGE_SIZE;
+
+    /** Cursor Id if there's no cursor. */
+    public static final int EMPTY_CURSOR_ID = -1;
+
+    /** Request ID sequence. */
+    private static final AtomicLong REQ_ID_GEN = new AtomicLong(1);
 
     /** JDBC Connection implementation. */
     protected JdbcThinConnection conn;
@@ -185,7 +193,7 @@ public class JdbcThinStatement implements Statement {
             nativeCmd = tryParseNative(sql);
 
         if (nativeCmd != null) {
-            conn.executeNative(sql, nativeCmd);
+            conn.executeNative(sql, nativeCmd, REQ_ID_GEN.getAndIncrement());
 
             resultSets = Collections.singletonList(resultSetForUpdate(0));
 
@@ -208,7 +216,8 @@ public class JdbcThinStatement implements Statement {
         }
 
         JdbcResult res0 = conn.sendRequest(new JdbcQueryExecuteRequest(stmtType, schema, pageSize,
-            maxRows, conn.getAutoCommit(), sql, args == null ? null : args.toArray(new Object[args.size()])));
+            maxRows, conn.getAutoCommit(), sql, args == null ? null : args.toArray(new Object[args.size()]),
+            REQ_ID_GEN.getAndIncrement()));
 
         assert res0 != null;
 
@@ -218,7 +227,7 @@ public class JdbcThinStatement implements Statement {
         if (res0 instanceof JdbcQueryExecuteResult) {
             JdbcQueryExecuteResult res = (JdbcQueryExecuteResult)res0;
 
-            resultSets = Collections.singletonList(new JdbcThinResultSet(this, res.getQueryId(), pageSize,
+            resultSets = Collections.singletonList(new JdbcThinResultSet(this, res.cursorId(), pageSize,
                 res.last(), res.items(), res.isQuery(), conn.autoCloseServerCursor(), res.updateCount(),
                 closeOnCompletion));
         }
@@ -238,12 +247,12 @@ public class JdbcThinStatement implements Statement {
                     if (firstRes) {
                         firstRes = false;
 
-                        resultSets.add(new JdbcThinResultSet(this, rsInfo.queryId(), pageSize,
+                        resultSets.add(new JdbcThinResultSet(this, rsInfo.cursorId(), pageSize,
                             res.isLast(), res.items(), true,
                             conn.autoCloseServerCursor(), -1, closeOnCompletion));
                     }
                     else {
-                        resultSets.add(new JdbcThinResultSet(this, rsInfo.queryId(), pageSize,
+                        resultSets.add(new JdbcThinResultSet(this, rsInfo.cursorId(), pageSize,
                             false, null, true,
                             conn.autoCloseServerCursor(), -1, closeOnCompletion));
                     }
@@ -351,7 +360,7 @@ public class JdbcThinStatement implements Statement {
             return;
 
         try {
-            closeResults();
+            cancel();
         }
         finally {
             closed = true;
@@ -445,6 +454,18 @@ public class JdbcThinStatement implements Statement {
     /** {@inheritDoc} */
     @Override public void cancel() throws SQLException {
         ensureNotClosed();
+
+        closeResults();
+
+        if (conn.isStream()) {
+            throw new SQLException("cancel() method is not allowed in streaming mode.",
+                SqlStateCode.INTERNAL_ERROR,
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        }
+
+        JdbcResult res0 = conn.sendRequest(new JdbcQueryCancelRequest(REQ_ID_GEN.get()));
+
+        assert res0 != null;
     }
 
     /** {@inheritDoc} */
@@ -646,8 +667,8 @@ public class JdbcThinStatement implements Statement {
             return new int[0];
 
         try {
-            JdbcBatchExecuteResult res = conn.sendRequest(new JdbcBatchExecuteRequest(conn.getSchema(), batch,
-                conn.getAutoCommit(), false));
+            JdbcBatchExecuteResult res = conn.sendRequest(new JdbcBatchExecuteRequest( conn.getSchema(), batch,
+                conn.getAutoCommit(), false, REQ_ID_GEN.getAndIncrement()));
 
             if (res.errorCode() != ClientListenerResponse.STATUS_SUCCESS) {
                 throw new BatchUpdateException(res.errorMessage(), IgniteQueryErrorCode.codeToSqlState(res.errorCode()),

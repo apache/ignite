@@ -29,7 +29,7 @@ public interface ClientListenerRequestHandler {
      * @param req Request.
      * @return Response.
      */
-    public ClientListenerResponse handle(ClientListenerRequest req);
+    ClientListenerResponse handle(ClientListenerRequest req);
 
     /**
      * Handle exception.
@@ -38,12 +38,28 @@ public interface ClientListenerRequestHandler {
      * @param req Request.
      * @return Error response.
      */
-    public ClientListenerResponse handleException(Exception e, ClientListenerRequest req);
+    ClientListenerResponse handleException(Exception e, ClientListenerRequest req);
 
     /**
      * Write successful handshake response.
      *
      * @param writer Binary writer.
      */
-    public void writeHandshake(BinaryWriterExImpl writer);
+    void writeHandshake(BinaryWriterExImpl writer);
+
+    /**
+     * Detect whether synchronous handling is expected for a request with given command Id.
+     *
+     * @param cmdId Command Id
+     * @return true if synchronous handling expected, false otherwise;
+     */
+    boolean isSynchronousHandlingExpected(int cmdId);
+
+    /**
+     * Handle request synchronously
+     *
+     * @param req Request
+     * @return Response
+     */
+    ClientListenerResponse handleSynchronously(ClientListenerRequest req);
 }

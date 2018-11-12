@@ -91,4 +91,13 @@ public class JdbcMessageParser implements ClientListenerMessageParser {
         res.writeBinary(writer, ver);
 
         return writer.array();
-    }}
+    }
+
+    // TODO: 09.11.18 implement
+    /** {@inheritDoc} */
+    @Override public int decodeCommandId(byte[] msg) {
+        assert msg != null;
+
+        return msg[4]; //createReader(msg).readByte();
+    }
+}
