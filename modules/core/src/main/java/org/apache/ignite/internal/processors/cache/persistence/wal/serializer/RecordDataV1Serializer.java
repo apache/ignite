@@ -1902,8 +1902,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                     writeVer,
                     expireTime,
                     partId,
-                    partCntr,
-                    null);
+                    partCntr);
     }
 
     /**

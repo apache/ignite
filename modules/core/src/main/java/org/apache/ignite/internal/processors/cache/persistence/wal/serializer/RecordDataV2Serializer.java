@@ -32,7 +32,7 @@ import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.ExchangeRecord;
-import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.LazyMvccDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MvccDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MvccDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MvccTxRecord;
@@ -360,7 +360,7 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer implements Re
             );
         }
         else
-            return new LazyDataEntry(
+            return new LazyMvccDataEntry(
                 cctx,
                 cacheId,
                 keyType,
