@@ -2224,7 +2224,6 @@ public class ZookeeperDiscoveryImpl {
      * @param prevEvts Events from previous cluster.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void newClusterStarted(@Nullable ZkDiscoveryEventsData prevEvts) throws Exception {
         assert !locNode.isClient() : locNode;
 
@@ -2614,7 +2613,6 @@ public class ZookeeperDiscoveryImpl {
      * @param evtsData Events.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void processNewEvents(final ZkDiscoveryEventsData evtsData) throws Exception {
         TreeMap<Long, ZkDiscoveryEventData> evts = evtsData.evts;
 
@@ -2897,7 +2895,6 @@ public class ZookeeperDiscoveryImpl {
      * @param evtData Local join event data.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void processLocalJoin(ZkDiscoveryEventsData evtsData,
         ZkJoinedNodeEvtData joinedEvtData,
         ZkDiscoveryNodeJoinEventData evtData)
@@ -3410,7 +3407,6 @@ public class ZookeeperDiscoveryImpl {
      * @param evtData Event data.
      * @param msg Custom message.
      */
-    @SuppressWarnings("unchecked")
     private void notifyCustomEvent(final ZkDiscoveryCustomEventData evtData, final DiscoverySpiCustomMessage msg) {
         assert !(msg instanceof ZkInternalMessage) : msg;
 
@@ -3440,7 +3436,6 @@ public class ZookeeperDiscoveryImpl {
      * @param joinedEvtData Event data.
      * @param joiningData Joining node data.
      */
-    @SuppressWarnings("unchecked")
     private void notifyNodeJoin(ZkJoinedNodeEvtData joinedEvtData, ZkJoiningNodeData joiningData) {
         final ZookeeperClusterNode joinedNode = joiningData.node();
 

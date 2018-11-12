@@ -52,7 +52,6 @@ public class BinaryTreeSet implements Binarylizable {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
         BinaryRawWriter rawWriter = writer.rawWriter();
 

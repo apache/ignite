@@ -46,7 +46,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 /**
  *
  */
-@SuppressWarnings("TooBroadScope")
 public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
     /** Entry count. */
     public static final int ENTRY_CNT = 5000;

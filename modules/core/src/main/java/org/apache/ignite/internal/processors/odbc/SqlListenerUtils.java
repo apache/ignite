@@ -31,7 +31,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Binary reader with marshaling non-primitive and non-embedded objects with JDK marshaller.
  */
-@SuppressWarnings("unchecked")
 public abstract class SqlListenerUtils {
     /**
      * @param reader Reader.

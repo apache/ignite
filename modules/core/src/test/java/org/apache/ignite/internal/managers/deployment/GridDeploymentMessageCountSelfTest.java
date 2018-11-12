@@ -85,7 +85,6 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     public void testTaskDeployment() throws Exception {
         ClassLoader ldr = getExternalClassLoader();
 
