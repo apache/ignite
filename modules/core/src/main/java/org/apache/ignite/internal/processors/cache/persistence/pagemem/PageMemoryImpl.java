@@ -967,10 +967,10 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public int realPageSize(int grpId) {
-        //if (encMgr.groupKey(grpId) == null)
+        if (encMgr.groupKey(grpId) == null)
             return pageSize();
 
-        //return encPageSize;
+        return encPageSize;
     }
 
     /** {@inheritDoc} */

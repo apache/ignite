@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.record.CacheState;
@@ -140,6 +141,9 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     /** Encryption SPI instance. */
     private final EncryptionSpi encSpi;
 
+    /** Encryption manager. */
+    private final GridEncryptionManager encMgr;
+
     /** */
     private static final byte ENCRYPTED = 1;
 
@@ -155,6 +159,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         this.co = cctx.kernalContext().cacheObjects();
         this.pageSize = cctx.database().pageSize();
         this.encSpi = cctx.gridConfig().getEncryptionSpi();
+        this.encMgr = cctx.kernalContext().encryption();
 
         //This happen on offline WAL iteration(we don't have encryption keys available).
         if (encSpi != null)
@@ -232,7 +237,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @return {@code True} if this record should be encrypted.
      */
     private boolean needEncryption(int grpId) {
-        return cctx.kernalContext().encryption().groupKey(grpId) != null;
+        return encMgr.groupKey(grpId) != null;
     }
 
     /**
@@ -258,7 +263,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
         in.readFully(encData);
 
-        Serializable key = cctx.kernalContext().encryption().groupKey(grpId);
+        Serializable key = encMgr.groupKey(grpId);
 
         if (key == null)
             return new T3<>(null, grpId, plainRecType);
@@ -309,7 +314,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         if (plainRecType != null)
             putRecordType(dst, plainRecType);
 
-        Serializable key = cctx.kernalContext().encryption().groupKey(grpId);
+        Serializable key = encMgr.groupKey(grpId);
 
         assert key != null;
 
