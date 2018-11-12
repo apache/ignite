@@ -95,7 +95,7 @@ public final class UpdatePlanBuilder {
      */
     public static UpdatePlan planForStatement(Prepared prepared, boolean loc, IgniteH2Indexing idx,
         @Nullable Connection conn, @Nullable SqlFieldsQuery fieldsQry, @Nullable Integer errKeysPos,
-        boolean dmlAllowedForNonMVCC)
+        boolean dmlInsideTxAllowed)
         throws IgniteCheckedException {
         assert !prepared.isQuery();
 
@@ -105,11 +105,8 @@ public final class UpdatePlanBuilder {
 
         boolean mvccEnabled = false;
 
-        GridCacheContext cctx = null;
+        GridCacheContext prevCctx = null;
 
-        List<String> cacheNames= new ArrayList<>();
-
-        // check all involved caches
         for (Object o : parser.objectsMap().values()) {
             if (o instanceof GridSqlInsert)
                 o = ((GridSqlInsert)o).into();
@@ -129,24 +126,26 @@ public final class UpdatePlanBuilder {
                         ((GridSqlTable)o).tableName() + "'", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
                 }
 
-                if (cctx == null) {
-                    mvccEnabled = (cctx = (((GridSqlTable)o).dataTable()).cache()).mvccEnabled();
+                if (prevCctx == null) {
+                    prevCctx = (((GridSqlTable)o).dataTable()).cache();
 
-                    cacheNames.add(cctx.name());
+                    mvccEnabled = prevCctx.mvccEnabled();
+
+                    if (!mvccEnabled && !dmlInsideTxAllowed && prevCctx.cache().context().tm().inUserTx()) {
+                        throw new IgniteSQLException("DML statements are not allowed inside a transaction over " +
+                            "cache(s) with TRANSACTIONAL atomicity mode (change atomicity mode to " +
+                            "TRANSACTIONAL_SNAPSHOT or disable this error message with system property " +
+                            "\"IGNITE_ALLOW_DML_INSIDE_TRANSACTION\" [cacheName=" + prevCctx.name() + ']');
+                    }
                 }
                 else {
-                    GridCacheContext cache = ((GridSqlTable)o).dataTable().cache();
+                    GridCacheContext cctx = ((GridSqlTable)o).dataTable().cache();
 
-                    cacheNames.add(cache.name());
-
-                    if (cache.mvccEnabled() != mvccEnabled)
-                        MvccUtils.throwAtomicityModesMismatchException(cctx, cache);
+                    if (cctx.mvccEnabled() != mvccEnabled)
+                        MvccUtils.throwAtomicityModesMismatchException(prevCctx, cctx);
                 }
-
             }
         }
-
-        checkDmlOperationIsAllowed(mvccEnabled, cacheNames, dmlAllowedForNonMVCC, cctx);
 
         if (stmt instanceof GridSqlMerge || stmt instanceof GridSqlInsert)
             return planForInsert(stmt, loc, idx, mvccEnabled, conn, fieldsQry);
@@ -155,29 +154,6 @@ public final class UpdatePlanBuilder {
         else
             throw new IgniteSQLException("Unsupported operation: " + prepared.getSQL(),
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-    }
-
-    /**
-     * Check that DML operation allowed.
-     *
-     * @param mvccEnabled {@code true} in case mvccEnabled.
-     * @param cacheNames Cache names participating in DML.
-     * @param dmlAllowedForNonMVCC {@code true} in case DML allowed for non MVCC mode.
-     * @param ctx Context.
-     * @throws IgniteSQLException In case DML not allowed.
-     */
-    private static void checkDmlOperationIsAllowed(boolean mvccEnabled, List<String> cacheNames,
-        boolean dmlAllowedForNonMVCC, GridCacheContext ctx) throws IgniteSQLException {
-        //For MVCC DML operation is always allowed.
-        if (mvccEnabled)
-            return;
-
-        if (ctx != null && ctx.cache().context().tm().inUserTx() && !dmlAllowedForNonMVCC) {
-            String errMsg= "DML statements are not allowed inside a transaction over cache(s) with TRANSACTIONAL atomicity " +
-                "mode (change atomicity mode to TRANSACTIONAL_SNAPSHOT or disable this error message with system " +
-                "property \"-DIGNITE_ALLOW_DML_INSIDE_TRANSACTION=true\") cacheName(s)=" + cacheNames;
-            throw new IgniteSQLException(errMsg);
-        }
     }
 
     /**

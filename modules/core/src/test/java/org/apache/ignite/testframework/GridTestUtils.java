@@ -2070,6 +2070,7 @@ public final class GridTestUtils {
         /** {@inheritDoc} */
         @Override public void close() {
             Properties props = System.getProperties();
+
             if (originalValue != null)
                 props.put(name, originalValue);
             else
