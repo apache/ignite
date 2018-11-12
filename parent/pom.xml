@@ -80,7 +80,7 @@
         <javax.cache.bundle.version>1.0.0_1</javax.cache.bundle.version>
         <javax.cache.tck.version>1.0.1</javax.cache.tck.version>
         <javax.cache.version>1.0.0</javax.cache.version>
-        <jetbrains.annotations.version>13.0</jetbrains.annotations.version>
+        <jetbrains.annotations.version>16.0.3</jetbrains.annotations.version>
         <jetty.version>9.4.11.v20180605</jetty.version>
         <jmh.version>1.13</jmh.version>
         <jms.spec.version>1.1.1</jms.spec.version>
@@ -107,6 +107,7 @@
         <scala210.jline.version>2.10.7</scala210.jline.version>
         <scala210.library.version>2.10.7</scala210.library.version>
         <scala.library.version>2.11.12</scala.library.version>
+        <scala.test.version>2.2.6</scala.test.version>
         <slf4j.version>1.7.7</slf4j.version>
         <slf4j16.version>1.6.4</slf4j16.version>
         <spark.hadoop.version>2.6.5</spark.hadoop.version>
@@ -853,6 +854,7 @@
                                         <!--special excludes-->
                                         <exclude>idea/ignite_codeStyle.xml</exclude>
                                         <exclude>idea/ignite_inspections.xml</exclude>
+                                        <exclude>idea/ignite_inspections_teamcity.xml</exclude>
                                         <exclude>**/DEVNOTES*.txt</exclude>
                                         <exclude>**/NOTICE*</exclude>
                                         <exclude>**/LICENSE*</exclude>
@@ -870,7 +872,8 @@
                                         <exclude>**/books/*.txt</exclude><!--books examples-->
                                         <exclude>src/main/java/org/apache/ignite/examples/streaming/wordcount/*.txt</exclude><!--books examples-->
                                         <exclude>examples/src/main/java/org/apache/ignite/examples/streaming/wordcount/*.txt</exclude><!--books examples-->
-                                        <exclude>**/resources/datasets/**/*</exclude><!--KNN Datasets in ml module-->
+                                        <exclude>**/resources/datasets/**/*</exclude><!--Datasets in ml module-->
+                                        <exclude>**/ml/util/datasets/**/*</exclude><!--Datasets in ml examples-->
                                         <exclude>src/main/java/org/jetbrains/annotations/*.java</exclude><!--copyright-->
                                         <exclude>dev-tools/IGNITE-*.patch</exclude>
                                         <exclude>dev-tools/.gradle/**/*</exclude>

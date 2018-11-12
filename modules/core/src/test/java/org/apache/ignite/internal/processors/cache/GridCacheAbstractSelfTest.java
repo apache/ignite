@@ -256,7 +256,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
             cfg.setIndexedTypes(idxTypes);
 
         if (cacheMode() == PARTITIONED)
-            cfg.setBackups(1);
+            cfg.setBackups(backups());
 
         return cfg;
     }
@@ -359,6 +359,13 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      */
     protected IgniteTransactions transactions() {
         return grid(0).transactions();
+    }
+
+    /**
+     * @return Backups.
+     */
+    protected int backups() {
+        return 1;
     }
 
     /**
@@ -480,7 +487,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * {@link org.apache.ignite.lang.IgniteInClosure} for calculating sum.
      */
-    @SuppressWarnings({"PublicConstructorInNonPublicClass"})
     protected static final class SumVisitor implements CI1<Cache.Entry<String, Integer>> {
         /** */
         private final AtomicInteger sum;
@@ -507,7 +513,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * {@link org.apache.ignite.lang.IgniteReducer} for calculating sum.
      */
-    @SuppressWarnings({"PublicConstructorInNonPublicClass"})
     protected static final class SumReducer implements R1<Cache.Entry<String, Integer>, Integer> {
         /** */
         private int sum;

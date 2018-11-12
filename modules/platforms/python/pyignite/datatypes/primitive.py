@@ -66,7 +66,7 @@ class Int(Primitive):
 
 
 class Long(Primitive):
-    c_type = ctypes.c_long
+    c_type = ctypes.c_longlong
 
 
 class Float(Primitive):

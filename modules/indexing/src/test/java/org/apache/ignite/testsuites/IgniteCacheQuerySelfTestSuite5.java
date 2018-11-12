@@ -46,7 +46,7 @@ public class IgniteCacheQuerySelfTestSuite5 extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Cache Queries Test Suite 5");
+        TestSuite suite = new TestSuite("Ignite Cache Continuous Queries Test Suite 2");
 
         // Continuous queries 2.
         suite.addTestSuite(IgniteCacheContinuousQueryImmutableEntryTest.class);

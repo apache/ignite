@@ -21,10 +21,11 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
+
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /**
@@ -260,7 +261,7 @@ public class EncryptedFileIO implements FileIO {
      * @param res Destination buffer.
      */
     private void storeCRC(ByteBuffer res) {
-        int crc = PureJavaCrc32.calcCrc32(res, encryptedDataSize());
+        int crc = FastCrc.calcCrc(res, encryptedDataSize());
 
         res.put((byte) (crc >> 24));
         res.put((byte) (crc >> 16));
@@ -274,7 +275,7 @@ public class EncryptedFileIO implements FileIO {
      * @param encrypted Encrypted data buffer.
      */
     private void checkCRC(ByteBuffer encrypted) throws IOException {
-        int crc = PureJavaCrc32.calcCrc32(encrypted, encryptedDataSize());
+        int crc = FastCrc.calcCrc(encrypted, encryptedDataSize());
 
         int storedCrc = 0;
 

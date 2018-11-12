@@ -35,6 +35,9 @@ public class VisorCacheLostPartitionsTaskArg extends VisorDataTransferObject {
     /** List of cache names. */
     private List<String> cacheNames;
 
+    /** Created for toString method because Collection can't be printed. */
+    private String modifiedCaches;
+
     /**
      * Default constructor.
      */
@@ -47,6 +50,9 @@ public class VisorCacheLostPartitionsTaskArg extends VisorDataTransferObject {
      */
     public VisorCacheLostPartitionsTaskArg(List<String> cacheNames) {
         this.cacheNames = cacheNames;
+
+        if (cacheNames != null)
+            modifiedCaches = cacheNames.toString();
     }
 
     /**
@@ -59,11 +65,13 @@ public class VisorCacheLostPartitionsTaskArg extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeCollection(out, cacheNames);
+        U.writeString(out, modifiedCaches);
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException   {
         cacheNames = U.readList(in);
+        modifiedCaches = U.readString(in);
     }
 
     /** {@inheritDoc} */

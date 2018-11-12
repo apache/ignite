@@ -1141,4 +1141,12 @@ public class GridCacheSharedContext<K, V> {
     public void readOnlyMode(boolean readOnlyMode) {
         this.readOnlyMode = readOnlyMode;
     }
+
+    /**
+     * For test purposes.
+     * @param txMgr Tx manager.
+     */
+    public void setTxManager(IgniteTxManager txMgr) {
+        this.txMgr = txMgr;
+    }
 }

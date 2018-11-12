@@ -46,7 +46,7 @@ public class IgniteCacheQuerySelfTestSuite6 extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Cache Queries Test Suite 6");
+        TestSuite suite = new TestSuite("Ignite Cache Continuous Queries Test Suite 3");
 
         // Continuous queries 3.
         suite.addTestSuite(GridCacheContinuousQueryPartitionAtomicOneNodeTest.class);
