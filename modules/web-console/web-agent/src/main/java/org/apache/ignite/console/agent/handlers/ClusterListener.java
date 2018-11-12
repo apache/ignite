@@ -435,6 +435,7 @@ public class ClusterListener implements AutoCloseable {
             params.put("cmd", "top");
             params.put("attr", true);
             params.put("mtr", full);
+            params.put("caches", false);
 
             return restCommand(params);
         }

@@ -212,7 +212,7 @@ public class WorkersRegistry implements GridWorkerListener {
                         // That is, if worker is dead, but still resides in registeredWorkers
                         // then something went wrong, the only extra thing is to test
                         // whether the iterator refers to actual state of registeredWorkers.
-                        GridWorker worker0 = registeredWorkers.get(worker.runner().getName());
+                        GridWorker worker0 = registeredWorkers.get(runner.getName());
 
                         if (worker0 != null && worker0 == worker)
                             workerFailedHnd.apply(worker, SYSTEM_WORKER_TERMINATION);

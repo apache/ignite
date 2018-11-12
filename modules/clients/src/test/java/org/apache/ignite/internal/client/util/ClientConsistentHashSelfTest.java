@@ -167,7 +167,6 @@ public class ClientConsistentHashSelfTest extends GridCommonAbstractTest {
     /**
      * Test mapping to nodes.
      */
-    @SuppressWarnings("UnaryPlus")
     public void testMappingToNodes() {
         String n1 = "node #1";
         String n2 = "node #2";

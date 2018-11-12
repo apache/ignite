@@ -67,6 +67,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TOO_LONG_VALUE;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.VALUE_SCALE_OUT_OF_RANGE;
 
 /**
  * Utility methods for queries.
@@ -825,17 +827,10 @@ public class QueryUtils {
     public static QueryClassProperty buildClassProperty(Class<?> keyCls, Class<?> valCls, String pathStr,
         Class<?> resType, Map<String,String> aliases, boolean notNull, CacheObjectContext coCtx)
         throws IgniteCheckedException {
-        QueryClassProperty res = buildClassProperty(
-            true,
-            keyCls,
-            pathStr,
-            resType,
-            aliases,
-            notNull,
-            coCtx);
+        QueryClassProperty res = buildClassProperty(false, valCls, pathStr, resType, aliases, notNull, coCtx);
 
-        if (res == null) // We check key before value consistently with BinaryProperty.
-            res = buildClassProperty(false, valCls, pathStr, resType, aliases, notNull, coCtx);
+        if (res == null) // We check value before key consistently with BinaryProperty.
+            res = buildClassProperty(true, keyCls, pathStr, resType, aliases, notNull, coCtx);
 
         if (res == null)
             throw new IgniteCheckedException(propertyInitializationExceptionMessage(keyCls, valCls, pathStr, resType));
@@ -1271,6 +1266,7 @@ public class QueryUtils {
 
         Map<String, Object> dfltVals = entity.getDefaultFieldValues();
         Map<String, Integer> precision = entity.getFieldsPrecision();
+        Map<String, Integer> scale = entity.getFieldsScale();
 
         if (!F.isEmpty(precision)) {
             for (String fld : precision.keySet()) {
@@ -1282,9 +1278,23 @@ public class QueryUtils {
                 if (dfltVal == null)
                     continue;
 
-                if (dfltVal.toString().length() > precision.get(fld)) {
+                if (dfltVal.getClass() == String.class && dfltVal.toString().length() > precision.get(fld)) {
                     throw new IgniteSQLException("Default value '" + dfltVal +
-                        "' is longer than maximum length " + precision.get(fld));
+                        "' is longer than maximum length " + precision.get(fld), TOO_LONG_VALUE);
+                }
+                else if (dfltVal.getClass() == BigDecimal.class) {
+                    BigDecimal dec = (BigDecimal)dfltVal;
+
+                    if (dec.precision() > precision.get(fld)) {
+                        throw new IgniteSQLException("Default value: '" + dfltVal + "' for a column " + fld +
+                            " is out of range. Maximum precision: " + precision.get(fld) +
+                            ", actual precision: " + dec.precision(), TOO_LONG_VALUE);
+                    }
+                    else if (!F.isEmpty(scale) && scale.containsKey(fld) && dec.scale() > scale.get(fld)) {
+                        throw new IgniteSQLException("Default value:: '" + dfltVal + "' for a column " + fld +
+                            " is out of range. Maximum scale: " + scale.get(fld) +
+                            ", actual scale: " + dec.scale(), VALUE_SCALE_OUT_OF_RANGE);
+                    }
                 }
             }
         }

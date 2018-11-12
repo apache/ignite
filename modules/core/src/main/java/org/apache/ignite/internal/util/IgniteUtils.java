@@ -17,6 +17,113 @@
 
 package org.apache.ignite.internal.util;
 
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteClientDisconnectedException;
+import org.apache.ignite.IgniteDeploymentException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.cluster.ClusterGroupEmptyException;
+import org.apache.ignite.cluster.ClusterMetrics;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterTopologyException;
+import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.compute.ComputeTaskCancelledException;
+import org.apache.ignite.compute.ComputeTaskName;
+import org.apache.ignite.compute.ComputeTaskTimeoutException;
+import org.apache.ignite.configuration.AddressResolver;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
+import org.apache.ignite.internal.IgniteDeploymentCheckedException;
+import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
+import org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException;
+import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.managers.communication.GridIoManager;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
+import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
+import org.apache.ignite.internal.processors.cache.CacheClassLoaderMarker;
+import org.apache.ignite.internal.processors.cache.GridCacheAttributes;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cluster.BaselineTopology;
+import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
+import org.apache.ignite.internal.util.io.GridFilenameUtils;
+import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryNativeLoader;
+import org.apache.ignite.internal.util.lang.GridClosureException;
+import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
+import org.apache.ignite.internal.util.lang.GridTuple;
+import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
+import org.apache.ignite.internal.util.typedef.C1;
+import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteFutureCancelledException;
+import org.apache.ignite.lang.IgniteFutureTimeoutException;
+import org.apache.ignite.lang.IgniteOutClosure;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.lifecycle.LifecycleAware;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.PluginProvider;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.spi.IgniteSpi;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
+import org.apache.ignite.transactions.TransactionDeadlockException;
+import org.apache.ignite.transactions.TransactionHeuristicException;
+import org.apache.ignite.transactions.TransactionOptimisticException;
+import org.apache.ignite.transactions.TransactionRollbackException;
+import org.apache.ignite.transactions.TransactionTimeoutException;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import sun.misc.Unsafe;
+
+import javax.management.DynamicMBean;
+import javax.management.JMException;
+import javax.management.MBeanRegistrationException;
+import javax.management.MBeanServer;
+import javax.management.MalformedObjectNameException;
+import javax.management.ObjectName;
+import javax.naming.Context;
+import javax.naming.NamingException;
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
@@ -142,116 +249,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.zip.Deflater;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
-import javax.management.DynamicMBean;
-import javax.management.JMException;
-import javax.management.MBeanRegistrationException;
-import javax.management.MBeanServer;
-import javax.management.MalformedObjectNameException;
-import javax.management.ObjectName;
-import javax.naming.Context;
-import javax.naming.NamingException;
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteClientDisconnectedException;
-import org.apache.ignite.IgniteDeploymentException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteIllegalStateException;
-import org.apache.ignite.IgniteInterruptedException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.cluster.ClusterGroupEmptyException;
-import org.apache.ignite.cluster.ClusterMetrics;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.cluster.ClusterTopologyException;
-import org.apache.ignite.compute.ComputeTask;
-import org.apache.ignite.compute.ComputeTaskCancelledException;
-import org.apache.ignite.compute.ComputeTaskName;
-import org.apache.ignite.compute.ComputeTaskTimeoutException;
-import org.apache.ignite.configuration.AddressResolver;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
-import org.apache.ignite.internal.IgniteDeploymentCheckedException;
-import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
-import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
-import org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException;
-import org.apache.ignite.internal.events.DiscoveryCustomEvent;
-import org.apache.ignite.internal.managers.communication.GridIoManager;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
-import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
-import org.apache.ignite.internal.processors.cache.CacheClassLoaderMarker;
-import org.apache.ignite.internal.processors.cache.GridCacheAttributes;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cluster.BaselineTopology;
-import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
-import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
-import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
-import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.future.IgniteFutureImpl;
-import org.apache.ignite.internal.util.io.GridFilenameUtils;
-import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryNativeLoader;
-import org.apache.ignite.internal.util.lang.GridClosureException;
-import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
-import org.apache.ignite.internal.util.lang.GridTuple;
-import org.apache.ignite.internal.util.lang.IgniteInClosureX;
-import org.apache.ignite.internal.util.typedef.C1;
-import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.P1;
-import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.lang.IgniteFutureCancelledException;
-import org.apache.ignite.lang.IgniteFutureTimeoutException;
-import org.apache.ignite.lang.IgniteOutClosure;
-import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.lifecycle.LifecycleAware;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.PluginProvider;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.apache.ignite.spi.IgniteSpi;
-import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
-import org.apache.ignite.transactions.TransactionDeadlockException;
-import org.apache.ignite.transactions.TransactionHeuristicException;
-import org.apache.ignite.transactions.TransactionOptimisticException;
-import org.apache.ignite.transactions.TransactionRollbackException;
-import org.apache.ignite.transactions.TransactionTimeoutException;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import sun.misc.Unsafe;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_HOSTNAME_VERIFIER;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_HOME;
@@ -279,8 +282,17 @@ import static org.apache.ignite.internal.util.GridUnsafe.staticFieldOffset;
 /**
  * Collection of utility methods used throughout the system.
  */
-@SuppressWarnings({"UnusedReturnValue", "UnnecessaryFullyQualifiedName", "RedundantStringConstructorCall"})
+@SuppressWarnings({"UnusedReturnValue", "RedundantStringConstructorCall"})
 public abstract class IgniteUtils {
+    /** */
+    private static final long GB = 1024L * 1024 * 1024;
+
+    /** Minimum checkpointing page buffer size (may be adjusted by Ignite). */
+    public static final Long DFLT_MIN_CHECKPOINTING_PAGE_BUFFER_SIZE = GB / 4;
+
+    /** Default minimum checkpointing page buffer size (may be adjusted by Ignite). */
+    public static final Long DFLT_MAX_CHECKPOINTING_PAGE_BUFFER_SIZE = 2 * GB;
+
     /** {@code True} if {@code unsafe} should be used for array copy. */
     private static final boolean UNSAFE_BYTE_ARR_CP = unsafeByteArrayCopyAvailable();
 
@@ -2801,7 +2813,6 @@ public abstract class IgniteUtils {
      * @return Byte value.
      * @throws IllegalArgumentException If input character differ from certain hex characters.
      */
-    @SuppressWarnings({"UnnecessaryFullyQualifiedName", "fallthrough"})
     private static byte hexCharToByte(char ch) throws IllegalArgumentException {
         switch (ch) {
             case '0':
@@ -3238,7 +3249,6 @@ public abstract class IgniteUtils {
                         return e.hasMoreElements();
                     }
 
-                    @SuppressWarnings({"IteratorNextCanNotThrowNoSuchElementException"})
                     @Override public T next() {
                         return e.nextElement();
                     }
@@ -3363,7 +3373,7 @@ public abstract class IgniteUtils {
                 assert timer == null;
 
                 timer = new Thread(new Runnable() {
-                    @SuppressWarnings({"BusyWait", "InfiniteLoopStatement"})
+                    @SuppressWarnings({"BusyWait"})
                     @Override public void run() {
                         while (true) {
                             curTimeMillis = System.currentTimeMillis();
@@ -3894,7 +3904,6 @@ public abstract class IgniteUtils {
      * @return Resolved path as URL, or {@code null} if path cannot be resolved.
      * @see #getIgniteHome()
      */
-    @SuppressWarnings({"UnusedCatchParameter"})
     @Nullable public static URL resolveIgniteUrl(String path, boolean metaInf) {
         File f = resolveIgnitePath(path);
 
@@ -4059,7 +4068,7 @@ public abstract class IgniteUtils {
                 rsrc.close();
             }
             catch (Exception e) {
-                warn(log, "Failed to close resource: " + e.getMessage(), e);
+                warn(log, "Failed to close resource: " + e.getMessage());
             }
     }
 
@@ -5667,7 +5676,6 @@ public abstract class IgniteUtils {
      * @return {@code True} if all entries within map are contained in base map,
      *      {@code false} otherwise.
      */
-    @SuppressWarnings({"SuspiciousMethodCalls"})
     public static boolean containsAll(Map<?, ?> base, Map<?, ?> map) {
         assert base != null;
         assert map != null;
@@ -6276,7 +6284,7 @@ public abstract class IgniteUtils {
      * @param mux Mux to wait on.
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
-    @SuppressWarnings({"WaitNotInLoop", "WaitWhileNotSynced"})
+    @SuppressWarnings({"WaitNotInLoop"})
     public static void wait(Object mux) throws IgniteInterruptedCheckedException {
         try {
             mux.wait();
@@ -6802,7 +6810,6 @@ public abstract class IgniteUtils {
         // Get original context class loader.
         ClassLoader ctxLdr = curThread.getContextClassLoader();
 
-        //noinspection CatchGenericClass
         try {
             curThread.setContextClassLoader(ldr);
 
@@ -7003,7 +7010,6 @@ public abstract class IgniteUtils {
      * @param <T> Element type.
      * @return Passed in array.
      */
-    @SuppressWarnings({"MismatchedReadAndWriteOfArray"})
     public static <T> T[] toArray(Collection<? extends T> c, T[] arr) {
         T[] a = c.toArray(arr);
 
@@ -8158,23 +8164,15 @@ public abstract class IgniteUtils {
             for (Class cls = obj.getClass(); cls != Object.class; cls = cls.getSuperclass()) {
                 for (Field field : cls.getDeclaredFields()) {
                     if (field.getName().equals(fieldName)) {
-                        boolean accessible = field.isAccessible();
-
                         field.setAccessible(true);
 
-                        T val = (T)field.get(obj);
-
-                        if (!accessible)
-                            field.setAccessible(false);
-
-                        return val;
+                        return (T)field.get(obj);
                     }
                 }
             }
         }
         catch (Exception e) {
-            throw new IgniteException("Failed to get field value [fieldName=" + fieldName + ", obj=" + obj + ']',
-                e);
+            throw new IgniteException("Failed to get field value [fieldName=" + fieldName + ", obj=" + obj + ']', e);
         }
 
         throw new IgniteException("Failed to get field value [fieldName=" + fieldName + ", obj=" + obj + ']');
@@ -10328,11 +10326,23 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Zip binary payload using default compression.
+     *
      * @param bytes Byte array to compress.
      * @return Compressed bytes.
      * @throws IgniteCheckedException If failed.
      */
     public static byte[] zip(@Nullable byte[] bytes) throws IgniteCheckedException {
+        return zip(bytes, Deflater.DEFAULT_COMPRESSION);
+    }
+
+    /**
+     * @param bytes Byte array to compress.
+     * @param compressionLevel Level of compression to encode.
+     * @return Compressed bytes.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static byte[] zip(@Nullable byte[] bytes, int compressionLevel) throws IgniteCheckedException {
         try {
             if (bytes == null)
                 return null;
@@ -10340,6 +10350,8 @@ public abstract class IgniteUtils {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
             try (ZipOutputStream zos = new ZipOutputStream(bos)) {
+                zos.setLevel(compressionLevel);
+
                 ZipEntry entry = new ZipEntry("");
 
                 try {
@@ -10396,6 +10408,81 @@ public abstract class IgniteUtils {
         catch (IOException | ClassNotFoundException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /**
+     * Get checkpoint buffer size for the given configuration.
+     *
+     * @param regCfg Configuration.
+     * @return Checkpoint buffer size.
+     */
+    public static long checkpointBufferSize(DataRegionConfiguration regCfg) {
+        if (!regCfg.isPersistenceEnabled())
+            return 0L;
+
+        long res = regCfg.getCheckpointPageBufferSize();
+
+        if (res == 0L) {
+            if (regCfg.getMaxSize() < GB)
+                res = Math.min(DFLT_MIN_CHECKPOINTING_PAGE_BUFFER_SIZE, regCfg.getMaxSize());
+            else if (regCfg.getMaxSize() < 8 * GB)
+                res = regCfg.getMaxSize() / 4;
+            else
+                res = DFLT_MAX_CHECKPOINTING_PAGE_BUFFER_SIZE;
+        }
+
+        return res;
+    }
+
+    /**
+     * Calculates maximum WAL archive size based on maximum checkpoint buffer size, if the default value of
+     * {@link DataStorageConfiguration#getMaxWalArchiveSize()} is not overridden.
+     *
+     * @return User-set max WAL archive size of triple size of the maximum checkpoint buffer.
+     */
+    public static long adjustedWalHistorySize(DataStorageConfiguration dsCfg, @Nullable IgniteLogger log) {
+        if (dsCfg.getMaxWalArchiveSize() != DataStorageConfiguration.DFLT_WAL_ARCHIVE_MAX_SIZE)
+            return dsCfg.getMaxWalArchiveSize();
+
+        // Find out the maximum checkpoint buffer size.
+        long maxCpBufSize = 0;
+
+        if (dsCfg.getDataRegionConfigurations() != null) {
+            for (DataRegionConfiguration regCfg : dsCfg.getDataRegionConfigurations()) {
+                long cpBufSize = checkpointBufferSize(regCfg);
+
+                if (cpBufSize > regCfg.getMaxSize())
+                    cpBufSize = regCfg.getMaxSize();
+
+                if (cpBufSize > maxCpBufSize)
+                    maxCpBufSize = cpBufSize;
+            }
+        }
+
+        {
+            DataRegionConfiguration regCfg = dsCfg.getDefaultDataRegionConfiguration();
+
+            long cpBufSize = checkpointBufferSize(regCfg);
+
+            if (cpBufSize > regCfg.getMaxSize())
+                cpBufSize = regCfg.getMaxSize();
+
+            if (cpBufSize > maxCpBufSize)
+                maxCpBufSize = cpBufSize;
+        }
+
+        long adjustedWalArchiveSize = maxCpBufSize * 4;
+
+        if (adjustedWalArchiveSize > dsCfg.getMaxWalArchiveSize()) {
+            if (log != null)
+                U.quietAndInfo(log, "Automatically adjusted max WAL archive size to " +
+                    U.readableSize(adjustedWalArchiveSize, false) +
+                    " (to override, use DataStorageConfiguration.setMaxWalArhiveSize)");
+
+            return adjustedWalArchiveSize;
+        }
+
+        return dsCfg.getMaxWalArchiveSize();
     }
 
     /**
@@ -10661,54 +10748,116 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Execute operation on data in parallel.
+     *
      * @param executorSvc Service for parallel execution.
      * @param srcDatas List of data for parallelization.
-     * @param consumer Logic for execution of on each item of data.
-     * @param errHnd Optionan error handler. If not {@code null}, an error of each item execution will be passed to
-     *      this handler. If error handler is not {@code null}, the exception will not be thrown from this method.
+     * @param operation Logic for execution of on each item of data.
      * @param <T> Type of data.
-     * @return List of (item, execution future) tuples.
-     * @throws IgniteCheckedException If parallel execution failed and {@code errHnd} is {@code null}.
+     * @throws IgniteCheckedException if parallel execution was failed.
      */
-    public static <T> List<T2<T, Future<Object>>> doInParallel(
+    public static <T, R> Collection<R> doInParallel(
         ExecutorService executorSvc,
         Collection<T> srcDatas,
-        IgniteInClosureX<T> consumer,
-        @Nullable IgniteBiInClosure<T, Throwable> errHnd
-    ) throws IgniteCheckedException {
-        List<T2<T, Future<Object>>> consumerFutures = srcDatas.stream()
-            .map(item -> new T2<>(
-                item,
-                executorSvc.submit(() -> {
-                    consumer.apply(item);
+        IgniteThrowableConsumer<T, R> operation
+    ) throws IgniteCheckedException, IgniteInterruptedCheckedException {
+        return doInParallel(srcDatas.size(), executorSvc, srcDatas, operation);
+    }
 
-                    return null;
-                })))
+    /**
+     * Execute operation on data in parallel.
+     *
+     * @param parallelismLvl Number of threads on which it should be executed.
+     * @param executorSvc Service for parallel execution.
+     * @param srcDatas List of data for parallelization.
+     * @param operation Logic for execution of on each item of data.
+     * @param <T> Type of data.
+     * @param <R> Type of return value.
+     * @throws IgniteCheckedException if parallel execution was failed.
+     */
+    public static <T, R> Collection<R> doInParallel(
+        int parallelismLvl,
+        ExecutorService executorSvc,
+        Collection<T> srcDatas,
+        IgniteThrowableConsumer<T, R> operation
+    ) throws IgniteCheckedException, IgniteInterruptedCheckedException {
+        if(srcDatas.isEmpty())
+            return Collections.emptyList();
+
+        int batchSize = srcDatas.size() / parallelismLvl;
+
+        final int finalBatchSize = batchSize == 0 ? srcDatas.size() : batchSize;
+
+        List<List<T>> batches = IntStream.range(0, parallelismLvl)
+            .mapToObj(i -> new ArrayList<T>(finalBatchSize))
             .collect(Collectors.toList());
 
-        IgniteCheckedException composite = null;
+        int batchIndex = 0;
 
-        for (T2<T, Future<Object>> tup : consumerFutures) {
+        final int maxBatchIndex = batches.size() -1;
+
+        List<T> currentBatch = batches.get(batchIndex);
+
+        for (T src : srcDatas) {
+            currentBatch.add(src);
+
+            if(currentBatch.size() >= batchSize && batchIndex < maxBatchIndex)
+                currentBatch = batches.get(++batchIndex);
+        }
+
+        List<Future<Collection<R>>> consumerFutures = batches.stream()
+            .filter(batch -> !batch.isEmpty())
+            .map(batch -> executorSvc.submit(() -> {
+                Collection<R> results = new ArrayList<>(batch.size());
+
+                for (T item : batch)
+                    results.add(operation.accept(item));
+
+                return results;
+            }))
+            .collect(Collectors.toList());
+
+        Throwable error =null;
+
+        Collection<R> results = new ArrayList<>(srcDatas.size());
+
+        for (Future<Collection<R>> future : consumerFutures) {
             try {
-                getUninterruptibly(tup.get2());
+                results.addAll(future.get());
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+
+                throw new IgniteInterruptedCheckedException(e);
             }
             catch (ExecutionException e) {
-                if (errHnd != null)
-                    errHnd.apply(tup.get1(), e.getCause());
-                else {
-                    if (composite == null)
-                        composite = new IgniteCheckedException("Failed to execute one of the tasks " +
-                            "(see suppressed exception for details)");
-
-                    composite.addSuppressed(e.getCause());
-                }
+                if(error == null)
+                    error = e.getCause();
+                else
+                    error.addSuppressed(e.getCause());
+            }
+            catch (CancellationException e) {
+                if(error == null)
+                    error = e;
+                else
+                    error.addSuppressed(e);
             }
         }
 
-        if (composite != null)
-            throw composite;
+        if (error != null) {
+            if (error instanceof IgniteCheckedException)
+                throw (IgniteCheckedException)error;
 
-        return consumerFutures;
+            if (error instanceof RuntimeException)
+                throw (RuntimeException)error;
+
+            if (error instanceof Error)
+                throw (Error)error;
+
+            throw new IgniteCheckedException(error);
+        }
+
+        return results;
     }
 
     /**
