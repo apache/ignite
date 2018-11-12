@@ -34,13 +34,13 @@ import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MvccDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MvccDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrapDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.UnwrapMvccDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.AbstractWalRecordsIterator;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
@@ -431,7 +431,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      * @return post precessed entry
      * @throws IgniteCheckedException if failed
      */
-    @NotNull private DataEntry postProcessDataEntry(
+    private @NotNull DataEntry postProcessDataEntry(
         final IgniteCacheObjectProcessor processor,
         final CacheObjectContext fakeCacheObjCtx,
         final DataEntry dataEntry) throws IgniteCheckedException {
@@ -462,24 +462,47 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             val = dataEntry.value();
         }
 
-        MvccVersion mvccVer = null;
+        return unwrapDataEntry(fakeCacheObjCtx, dataEntry, key, val, marshallerMappingFileStoreDir);
+    }
 
-        if(dataEntry instanceof MvccDataEntry)
-            mvccVer = ((MvccDataEntry)dataEntry).mvccVer();
-
-        return new UnwrapDataEntry(
-            dataEntry.cacheId(),
-            key,
-            val,
-            dataEntry.op(),
-            dataEntry.nearXidVersion(),
-            dataEntry.writeVersion(),
-            dataEntry.expireTime(),
-            dataEntry.partitionId(),
-            dataEntry.partitionCounter(),
-            mvccVer,
-            fakeCacheObjCtx,
-            keepBinary || marshallerMappingFileStoreDir == null);
+    /**
+     * Unwrap data entry.
+     * @param coCtx CacheObject context.
+     * @param dataEntry Data entry.
+     * @param key Entry key.
+     * @param val Entry value.
+     * @param marshallerMappingFileStoreDir Marshaller directory.
+     * @return Unwrapped entry.
+     */
+    private @NotNull DataEntry unwrapDataEntry(CacheObjectContext coCtx, DataEntry dataEntry,
+        KeyCacheObject key, CacheObject val, File marshallerMappingFileStoreDir) {
+        if (dataEntry instanceof MvccDataEntry)
+            return new UnwrapMvccDataEntry(
+                dataEntry.cacheId(),
+                key,
+                val,
+                dataEntry.op(),
+                dataEntry.nearXidVersion(),
+                dataEntry.writeVersion(),
+                dataEntry.expireTime(),
+                dataEntry.partitionId(),
+                dataEntry.partitionCounter(),
+                ((MvccDataEntry)dataEntry).mvccVer(),
+                coCtx,
+                keepBinary || marshallerMappingFileStoreDir == null);
+        else
+            return new UnwrapDataEntry(
+                dataEntry.cacheId(),
+                key,
+                val,
+                dataEntry.op(),
+                dataEntry.nearXidVersion(),
+                dataEntry.writeVersion(),
+                dataEntry.expireTime(),
+                dataEntry.partitionId(),
+                dataEntry.partitionCounter(),
+                coCtx,
+                keepBinary || marshallerMappingFileStoreDir == null);
     }
 
     /** {@inheritDoc} */

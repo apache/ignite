@@ -22,12 +22,13 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
- * Data Entry for automatic unwrapping key and value from Data Entry
+ * Data Entry for automatic unwrapping key and value from Mvcc Data Entry
  */
-public class UnwrapDataEntry extends DataEntry {
+public class UnwrapMvccDataEntry extends MvccDataEntry {
     /** Cache object value context. Context is used for unwrapping objects. */
     private final CacheObjectValueContext cacheObjValCtx;
 
@@ -44,10 +45,11 @@ public class UnwrapDataEntry extends DataEntry {
      * @param expireTime Expire time.
      * @param partId Partition ID.
      * @param partCnt Partition counter.
+     * @param mvccVer Mvcc version.
      * @param cacheObjValCtx cache object value context for unwrapping objects.
      * @param keepBinary disable unwrapping for non primitive objects, Binary Objects would be returned instead.
      */
-    public UnwrapDataEntry(
+    public UnwrapMvccDataEntry(
         final int cacheId,
         final KeyCacheObject key,
         final CacheObject val,
@@ -57,9 +59,11 @@ public class UnwrapDataEntry extends DataEntry {
         final long expireTime,
         final int partId,
         final long partCnt,
+        MvccVersion mvccVer,
         final CacheObjectValueContext cacheObjValCtx,
         final boolean keepBinary) {
-        super(cacheId, key, val, op, nearXidVer, writeVer, expireTime, partId, partCnt);
+        super(cacheId, key, val, op, nearXidVer, writeVer, expireTime, partId, partCnt, mvccVer);
+
         this.cacheObjValCtx = cacheObjValCtx;
         this.keepBinary = keepBinary;
     }
@@ -86,7 +90,7 @@ public class UnwrapDataEntry extends DataEntry {
             return unwrapped;
         }
         catch (Exception e) {
-            cacheObjValCtx.kernalContext().log(UnwrapDataEntry.class)
+            cacheObjValCtx.kernalContext().log(UnwrapMvccDataEntry.class)
                 .error("Unable to convert key [" + key + "]", e);
 
             return null;
@@ -110,7 +114,7 @@ public class UnwrapDataEntry extends DataEntry {
             return val.value(cacheObjValCtx, false);
         }
         catch (Exception e) {
-            cacheObjValCtx.kernalContext().log(UnwrapDataEntry.class)
+            cacheObjValCtx.kernalContext().log(UnwrapMvccDataEntry.class)
                 .error("Unable to convert value [" + value() + "]", e);
             return null;
         }
