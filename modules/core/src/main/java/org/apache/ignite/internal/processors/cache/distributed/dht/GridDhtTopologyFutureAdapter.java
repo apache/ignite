@@ -43,7 +43,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 public abstract class GridDhtTopologyFutureAdapter extends GridFutureAdapter<AffinityTopologyVersion>
     implements GridDhtTopologyFuture {
     /** Cache groups validation results. */
-    protected volatile Map<Integer, CacheGroupValidation> grpValidRes;
+    protected volatile Map<Integer, CacheGroupValidation> grpValidRes = Collections.emptyMap();
 
     /** Whether or not cluster is active. */
     protected volatile boolean clusterIsActive = true;
