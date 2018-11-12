@@ -1312,15 +1312,12 @@ public final class GridTestUtils {
      * @return Field value.
      * @throws IgniteException In case of error.
      */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public static <T> T getFieldValue(Object obj, Class cls, String fieldName) throws IgniteException {
         assert obj != null;
         assert fieldName != null;
 
         try {
-            obj = findField(cls, obj, fieldName);
-
-            return (T)obj;
+            return (T)findField(cls, obj, fieldName);
         }
         catch (NoSuchFieldException | IllegalAccessException e) {
             throw new IgniteException("Failed to get object field [obj=" + obj +
@@ -1337,7 +1334,6 @@ public final class GridTestUtils {
      * @return Field value.
      * @throws IgniteException In case of error.
      */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public static <T> T getFieldValue(Object obj, String... fieldNames) throws IgniteException {
         assert obj != null;
         assert fieldNames != null;
@@ -1379,7 +1375,6 @@ public final class GridTestUtils {
      * @return Field value.
      * @throws IgniteException In case of error.
      */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public static <T> T getFieldValueHierarchy(Object obj, String... fieldNames) throws IgniteException {
         assert obj != null;
         assert fieldNames != null;
@@ -1420,22 +1415,12 @@ public final class GridTestUtils {
         // Resolve inner field.
         Field field = cls.getDeclaredField(fieldName);
 
-        synchronized (field) {
-            // Backup accessible field state.
-            boolean accessible = field.isAccessible();
+        boolean accessible = field.isAccessible();
 
-            try {
-                if (!accessible)
-                    field.setAccessible(true);
+        if (!accessible)
+            field.setAccessible(true);
 
-                return field.get(obj);
-            }
-            finally {
-                // Recover accessible field state.
-                if (!accessible)
-                    field.setAccessible(false);
-            }
-        }
+        return field.get(obj);
     }
 
     /**
@@ -1461,7 +1446,6 @@ public final class GridTestUtils {
      * @param val New field value.
      * @throws IgniteException In case of error.
      */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public static void setFieldValue(Object obj, String fieldName, Object val) throws IgniteException {
         assert obj != null;
         assert fieldName != null;
@@ -1471,22 +1455,12 @@ public final class GridTestUtils {
 
             Field field = cls.getDeclaredField(fieldName);
 
-            synchronized (field) {
-                // Backup accessible field state.
-                boolean accessible = field.isAccessible();
+            boolean accessible = field.isAccessible();
 
-                try {
-                    if (!accessible)
-                        field.setAccessible(true);
+            if (!accessible)
+                field.setAccessible(true);
 
-                    field.set(obj, val);
-                }
-                finally {
-                    // Recover accessible field state.
-                    if (!accessible)
-                        field.setAccessible(false);
-                }
-            }
+            field.set(obj, val);
         }
         catch (NoSuchFieldException | IllegalAccessException e) {
             throw new IgniteException("Failed to set object field [obj=" + obj + ", field=" + fieldName + ']', e);
@@ -1502,46 +1476,28 @@ public final class GridTestUtils {
      * @param val New field value.
      * @throws IgniteException In case of error.
      */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public static void setFieldValue(Object obj, Class cls, String fieldName, Object val) throws IgniteException {
         assert fieldName != null;
 
         try {
             Field field = cls.getDeclaredField(fieldName);
 
-            synchronized (field) {
-                // Backup accessible field state.
-                boolean accessible = field.isAccessible();
+            boolean accessible = field.isAccessible();
 
-                boolean isFinal = (field.getModifiers() & Modifier.FINAL) > 0;
+            if (!accessible)
+                field.setAccessible(true);
 
-                Field modifiersField = null;
+            boolean isFinal = (field.getModifiers() & Modifier.FINAL) != 0;
 
-                if (isFinal)
-                    modifiersField = Field.class.getDeclaredField("modifiers");
+            if (isFinal) {
+                Field modifiersField = Field.class.getDeclaredField("modifiers");
 
-                try {
-                    if (!accessible)
-                        field.setAccessible(true);
+                modifiersField.setAccessible(true);
 
-                    if (isFinal) {
-                        modifiersField.setAccessible(true);
-                        modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-                    }
-
-                    field.set(obj, val);
-                }
-                finally {
-                    // Recover accessible field state.
-                    if (!accessible)
-                        field.setAccessible(false);
-
-                    if (isFinal) {
-                        modifiersField.setInt(field, field.getModifiers() | Modifier.FINAL);
-                        modifiersField.setAccessible(false);
-                    }
-                }
+                modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
             }
+
+            field.set(obj, val);
         }
         catch (NoSuchFieldException | IllegalAccessException e) {
             throw new IgniteException("Failed to set object field [obj=" + obj + ", field=" + fieldName + ']', e);
@@ -1557,7 +1513,6 @@ public final class GridTestUtils {
      * @return Method invocation result.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     @Nullable public static <T> T invoke(Object obj, String mtd, Object... params) throws Exception {
         Class<?> cls = obj.getClass();
 
@@ -1573,22 +1528,12 @@ public final class GridTestUtils {
                     continue;
 
                 try {
-                    synchronized (m) {
-                        // Backup accessible field state.
-                        boolean accessible = m.isAccessible();
+                    boolean accessible = m.isAccessible();
 
-                        try {
-                            if (!accessible)
-                                m.setAccessible(true);
+                    if (!accessible)
+                        m.setAccessible(true);
 
-                            return (T)m.invoke(obj, params);
-                        }
-                        finally {
-                            // Recover accessible field state.
-                            if (!accessible)
-                                m.setAccessible(false);
-                        }
-                    }
+                    return (T)m.invoke(obj, params);
                 }
                 catch (IllegalAccessException e) {
                     throw new RuntimeException("Failed to access method" +
