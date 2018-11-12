@@ -2659,7 +2659,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param sndPrevVal If {@code true} sends previous value to backups.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    @Nullable private void updatePartialBatch(
+    private void updatePartialBatch(
         final boolean hasNear,
         final int firstEntryIdx,
         final List<GridDhtCacheEntry> entries,
