@@ -39,7 +39,7 @@ public enum TransactionConcurrency {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static TransactionConcurrency fromOrdinal(int ord) {
+    public static @Nullable TransactionConcurrency fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

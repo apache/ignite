@@ -66,9 +66,9 @@ public class PredicateSetView<K, V> extends GridSerializableMap<K, V> {
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Set<Entry<K, V>> entrySet() {
+    @Override public @NotNull Set<Entry<K, V>> entrySet() {
         return new GridSerializableSet<Entry<K, V>>() {
-            @NotNull @Override public Iterator<Entry<K, V>> iterator() {
+            @Override public @NotNull Iterator<Entry<K, V>> iterator() {
                 return new Iterator<Entry<K, V>>() {
 
                     private Iterator<K> it = GridFunc.iterator0(set, true, entryPred);
@@ -123,7 +123,7 @@ public class PredicateSetView<K, V> extends GridSerializableMap<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V get(Object key) {
+    @Override public @Nullable V get(Object key) {
         if (containsKey(key))
             return clo.apply((K)key);
 
@@ -131,7 +131,7 @@ public class PredicateSetView<K, V> extends GridSerializableMap<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V put(K key, V val) {
+    @Override public @Nullable V put(K key, V val) {
         throw new UnsupportedOperationException("Put is not supported for readonly collection view.");
     }
 

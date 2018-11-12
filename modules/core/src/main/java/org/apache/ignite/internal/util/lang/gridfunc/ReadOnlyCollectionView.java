@@ -52,8 +52,7 @@ public class ReadOnlyCollectionView<T> extends GridSerializableCollection<T> {
     }
 
     /** {@inheritDoc} */
-    @NotNull
-    @Override public Iterator<T> iterator() {
+    @Override public @NotNull Iterator<T> iterator() {
         return new GridSerializableIterator<T>() {
             private Iterator<T> it;
 
@@ -61,7 +60,7 @@ public class ReadOnlyCollectionView<T> extends GridSerializableCollection<T> {
                 return it == null || it.hasNext();
             }
 
-            @Nullable @Override public T next() {
+            @Override public @Nullable T next() {
                 if (it == null) {
                     it = col.iterator();
 

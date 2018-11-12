@@ -374,7 +374,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @throws IgniteCheckedException If loading failed.
      */
     public final IgniteAtomicSequence sequence(final String name,
-        @Nullable final AtomicConfiguration cfg,
+        final @Nullable AtomicConfiguration cfg,
         final long initVal,
         final boolean create)
         throws IgniteCheckedException
@@ -493,7 +493,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @return Data structure instance.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable private <T extends GridCacheRemovable> T getAtomic(final AtomicAccessor<T> c,
+    private @Nullable <T extends GridCacheRemovable> T getAtomic(final AtomicAccessor<T> c,
         @Nullable AtomicConfiguration cfg,
         final String name,
         final DataStructureType type,
@@ -621,7 +621,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @param grpName Group name.
      * @throws IgniteCheckedException If removing failed.
      */
-    final void removeAtomicLong(final String name, @Nullable final String grpName) throws IgniteCheckedException {
+    final void removeAtomicLong(final String name, final @Nullable String grpName) throws IgniteCheckedException {
         removeDataStructure(null, name, grpName, ATOMIC_LONG, null);
     }
 
@@ -634,11 +634,11 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @throws IgniteCheckedException If failed.
      */
     private <T> void removeDataStructure(
-        @Nullable final IgnitePredicateX<AtomicDataStructureValue> pred,
+        final @Nullable IgnitePredicateX<AtomicDataStructureValue> pred,
         final String name,
         String grpName,
         final DataStructureType type,
-        @Nullable final IgniteInClosureX<T> afterRmv
+        final @Nullable IgniteInClosureX<T> afterRmv
     ) throws IgniteCheckedException {
         assert name != null;
         assert grpName != null;
@@ -772,7 +772,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @param grpName Group name.
      * @throws IgniteCheckedException If removing failed.
      */
-    final void removeAtomicReference(final String name, @Nullable final String grpName) throws IgniteCheckedException {
+    final void removeAtomicReference(final String name, final @Nullable String grpName) throws IgniteCheckedException {
         removeDataStructure(null, name, grpName, ATOMIC_REF, null);
     }
 
@@ -838,8 +838,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    public final <T> IgniteQueue<T> queue(final String name, @Nullable final String grpName, int cap,
-        @Nullable final CollectionConfiguration cfg)
+    public final <T> IgniteQueue<T> queue(final String name, final @Nullable String grpName, int cap,
+        final @Nullable CollectionConfiguration cfg)
         throws IgniteCheckedException {
         A.notNull(name, "name");
 
@@ -1027,7 +1027,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @return Collection instance.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable private <T> T getCollection(final IgniteClosureX<GridCacheContext, T> c,
+    private @Nullable <T> T getCollection(final IgniteClosureX<GridCacheContext, T> c,
         @Nullable CollectionConfiguration cfg,
         String name,
         @Nullable String grpName,
@@ -1550,8 +1550,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @return Set instance.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
-    @Nullable public <T> IgniteSet<T> set(final String name, @Nullable final String grpName, @Nullable final CollectionConfiguration cfg)
+    @SuppressWarnings("unchecked") public @Nullable <T> IgniteSet<T> set(final String name, final @Nullable String grpName, final @Nullable CollectionConfiguration cfg)
         throws IgniteCheckedException {
         A.notNull(name, "name");
 
@@ -1615,8 +1614,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @return Object has casted to expected type.
      * @throws IgniteCheckedException If {@code obj} has different to {@code cls} type.
      */
-    @SuppressWarnings("unchecked")
-    @Nullable private <R> R cast(@Nullable Object obj, Class<R> cls) throws IgniteCheckedException {
+    @SuppressWarnings("unchecked") private @Nullable <R> R cast(@Nullable Object obj, Class<R> cls) throws IgniteCheckedException {
         if (obj == null)
             return null;
 

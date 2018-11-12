@@ -262,7 +262,7 @@ public class GridCacheTxFinishSync<K, V> {
          *
          * @return {@code null} if ack has been received, or future that will be completed when ack is received.
          */
-        @Nullable public IgniteInternalFuture<?> awaitAckAsync() {
+        public @Nullable IgniteInternalFuture<?> awaitAckAsync() {
             synchronized (this) {
                 if (cnt == 0)
                     return null;

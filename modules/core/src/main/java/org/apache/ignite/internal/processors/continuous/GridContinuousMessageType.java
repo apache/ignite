@@ -38,7 +38,7 @@ enum GridContinuousMessageType {
      * @param ord Ordinal value.
      * @return Enumerated value.
      */
-    @Nullable public static GridContinuousMessageType fromOrdinal(byte ord) {
+    public static @Nullable GridContinuousMessageType fromOrdinal(byte ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

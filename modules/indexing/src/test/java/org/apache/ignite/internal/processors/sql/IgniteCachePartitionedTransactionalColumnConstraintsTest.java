@@ -24,7 +24,7 @@ import org.jetbrains.annotations.NotNull;
 public class IgniteCachePartitionedTransactionalColumnConstraintsTest 
     extends IgniteCachePartitionedAtomicColumnConstraintsTest {
     /** {@inheritDoc} */
-    @NotNull protected CacheAtomicityMode atomicityMode() {
+    protected @NotNull CacheAtomicityMode atomicityMode() {
         return CacheAtomicityMode.TRANSACTIONAL;
     }
 }

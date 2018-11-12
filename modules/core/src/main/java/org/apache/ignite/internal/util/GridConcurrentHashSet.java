@@ -105,7 +105,7 @@ public class GridConcurrentHashSet<E> extends GridSetWrapper<E> {
      * @param e Element to add.
      * @return Value previously present in set or {@code null} if set didn't have this value.
      */
-    @Nullable public E addx(E e) {
+    public @Nullable E addx(E e) {
         ConcurrentMap<E, E> m = (ConcurrentMap<E, E>)map;
 
         return m.putIfAbsent(e, e);

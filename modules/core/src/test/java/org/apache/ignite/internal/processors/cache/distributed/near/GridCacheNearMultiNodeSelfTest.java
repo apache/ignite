@@ -272,7 +272,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @param key Key.
      * @return Primary node for the key.
      */
-    @Nullable private ClusterNode primaryNode(Integer key) {
+    private @Nullable ClusterNode primaryNode(Integer key) {
         return affinity(0).mapKeyToNode(key);
     }
 
@@ -280,7 +280,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @param key Key.
      * @return Primary node for the key.
      */
-    @Nullable private Ignite primaryGrid(Integer key) {
+    private @Nullable Ignite primaryGrid(Integer key) {
         ClusterNode n = affinity(0).mapKeyToNode(key);
 
         assert n != null;
@@ -292,7 +292,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @param key Key.
      * @return Primary node for the key.
      */
-    @Nullable private Collection<Ignite> backupGrids(Integer key) {
+    private @Nullable Collection<Ignite> backupGrids(Integer key) {
         Collection<ClusterNode> nodes = affinity(0).mapKeyToPrimaryAndBackups(key);
 
         Collection<ClusterNode> backups = CU.backups(nodes);
@@ -622,7 +622,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @param key Key.
      * @return Near entry.
      */
-    @Nullable private GridNearCacheEntry nearEntry(int idx, int key) {
+    private @Nullable GridNearCacheEntry nearEntry(int idx, int key) {
         return (GridNearCacheEntry)near(idx).peekEx(key);
     }
 

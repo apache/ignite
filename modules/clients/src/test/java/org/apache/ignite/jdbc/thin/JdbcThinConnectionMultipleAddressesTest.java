@@ -307,7 +307,7 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
      *
      * @return clients.
      */
-    @NotNull private List<String> getActiveClients() {
+    private @NotNull List<String> getActiveClients() {
         List<String> activeClients = new ArrayList<>(1);
 
         for (int i = 0; i < NODES_CNT; i++) {

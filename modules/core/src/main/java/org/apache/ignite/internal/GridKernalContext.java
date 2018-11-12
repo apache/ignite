@@ -589,7 +589,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *
      * @return Indexing executor service.
      */
-    @Nullable public ExecutorService getIndexingExecutorService();
+    public @Nullable ExecutorService getIndexingExecutorService();
 
     /**
      * Executor service that is in charge of processing query messages.
@@ -604,7 +604,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *
      * @return Map of custom thread pool executors.
      */
-    @Nullable public Map<String, ? extends ExecutorService> customExecutors();
+    public @Nullable Map<String, ? extends ExecutorService> customExecutors();
 
     /**
      * Executor service that is in charge of processing schema change messages.

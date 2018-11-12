@@ -148,7 +148,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public ClusterNode node(UUID nodeId) {
+    @Override public @Nullable ClusterNode node(UUID nodeId) {
         if (locNode != null && locNode.id().equals(nodeId))
             return locNode;
 
@@ -529,12 +529,12 @@ public class GridSpiTestContext implements IgniteSpiContext {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
+    @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag discoData) {
+    @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag discoData) {
         return null;
     }
 

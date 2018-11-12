@@ -109,7 +109,7 @@ public class ModelTrace {
      * @param kv Field name and value.
      * @param pretty Use pretty mode.
      */
-    @NotNull private String fieldToString(IgniteBiTuple<String, Object> kv, boolean pretty) {
+    private @NotNull String fieldToString(IgniteBiTuple<String, Object> kv, boolean pretty) {
         StringBuilder builder = new StringBuilder(pretty ? "\t" : "")
             .append(kv.getKey()).append(" = [");
         if (kv.getValue() instanceof List) {

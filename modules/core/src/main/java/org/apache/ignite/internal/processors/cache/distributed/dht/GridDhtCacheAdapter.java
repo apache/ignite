@@ -423,7 +423,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     /**
      * @return Topology version future registered for multi-update.
      */
-    @Nullable public GridDhtTopologyFuture multiUpdateTopologyFuture() {
+    public @Nullable GridDhtTopologyFuture multiUpdateTopologyFuture() {
         IgniteBiTuple<IgniteUuid, GridDhtTopologyFuture> tup = multiTxHolder.get();
 
         return tup == null ? null : tup.get2();
@@ -508,7 +508,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param topVer Topology version.
      * @return Finish future.
      */
-    @Nullable public IgniteInternalFuture<?> multiUpdateFinishFuture(AffinityTopologyVersion topVer) {
+    public @Nullable IgniteInternalFuture<?> multiUpdateFinishFuture(AffinityTopologyVersion topVer) {
         GridCompoundFuture<IgniteUuid, Object> fut = null;
 
         for (MultiUpdateFuture multiFut : multiTxFuts.values()) {
@@ -530,7 +530,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param key Key.
      * @return DHT entry.
      */
-    @Nullable public GridDhtCacheEntry peekExx(KeyCacheObject key) {
+    public @Nullable GridDhtCacheEntry peekExx(KeyCacheObject key) {
         return (GridDhtCacheEntry)peekEx(key);
     }
 
@@ -793,7 +793,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      */
     IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> getDhtAllAsync(
         Collection<KeyCacheObject> keys,
-        @Nullable final ReaderArguments readerArgs,
+        final @Nullable ReaderArguments readerArgs,
         boolean readThrough,
         @Nullable UUID subjId,
         String taskName,
@@ -1083,7 +1083,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     /**
      * @param expiryPlc Expiry policy.
      */
-    public void sendTtlUpdateRequest(@Nullable final IgniteCacheExpiryPolicy expiryPlc) {
+    public void sendTtlUpdateRequest(final @Nullable IgniteCacheExpiryPolicy expiryPlc) {
         if (expiryPlc != null && expiryPlc.entries() != null) {
             ctx.closures().runLocalSafe(new Runnable() {
                 @SuppressWarnings({"unchecked", "ForLoopReplaceableByForEach"})

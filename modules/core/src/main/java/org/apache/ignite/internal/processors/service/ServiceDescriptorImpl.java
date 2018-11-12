@@ -83,13 +83,12 @@ public class ServiceDescriptorImpl implements ServiceDescriptor {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String cacheName() {
+    @Override public @Nullable String cacheName() {
         return dep.configuration().getCacheName();
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Nullable @Override public <K> K affinityKey() {
+    @Override @SuppressWarnings("unchecked") public @Nullable <K> K affinityKey() {
         return (K)dep.configuration().getAffinityKey();
     }
 

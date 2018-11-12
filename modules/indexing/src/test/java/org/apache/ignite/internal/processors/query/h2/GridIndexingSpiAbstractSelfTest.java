@@ -656,12 +656,12 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public String keyFieldAlias() {
+        @Override public @Nullable String keyFieldAlias() {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public String valueFieldAlias() {
+        @Override public @Nullable String valueFieldAlias() {
             return null;
         }
 
@@ -698,7 +698,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy) {
+        @Override public @Nullable <T> T value(CacheObjectValueContext ctx, boolean cpy) {
             return (T)val;
         }
 

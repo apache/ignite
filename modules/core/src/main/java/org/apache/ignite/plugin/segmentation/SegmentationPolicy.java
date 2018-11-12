@@ -57,7 +57,7 @@ public enum SegmentationPolicy {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static SegmentationPolicy fromOrdinal(int ord) {
+    public static @Nullable SegmentationPolicy fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

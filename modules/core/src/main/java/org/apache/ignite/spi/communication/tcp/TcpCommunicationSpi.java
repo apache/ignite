@@ -2295,7 +2295,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 MessageFactory msgFactory = new MessageFactory() {
                     private MessageFactory impl;
 
-                    @Nullable @Override public Message create(short type) {
+                    @Override public @Nullable Message create(short type) {
                         if (impl == null)
                             impl = getSpiContext().messageFactory();
 
@@ -2456,7 +2456,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * @return Server.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable private IpcSharedMemoryServerEndpoint resetShmemServer() throws IgniteCheckedException {
+    private @Nullable IpcSharedMemoryServerEndpoint resetShmemServer() throws IgniteCheckedException {
         if (boundTcpShmemPort >= 0)
             throw new IgniteCheckedException("Shared memory server was already created on port " + boundTcpShmemPort);
 
@@ -2940,7 +2940,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * @return Client.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable private GridCommunicationClient createNioClient(ClusterNode node, int connIdx)
+    private @Nullable GridCommunicationClient createNioClient(ClusterNode node, int connIdx)
         throws IgniteCheckedException {
         assert node != null;
 
@@ -3002,7 +3002,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * @return Client.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable private GridCommunicationClient createShmemClient(ClusterNode node,
+    private @Nullable GridCommunicationClient createShmemClient(ClusterNode node,
         int connIdx,
         Integer port) throws IgniteCheckedException {
         int attempt = 1;
@@ -4171,7 +4171,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 MessageFactory msgFactory = new MessageFactory() {
                     private MessageFactory impl;
 
-                    @Nullable @Override public Message create(short type) {
+                    @Override public @Nullable Message create(short type) {
                         if (impl == null)
                             impl = getSpiContext().messageFactory();
 

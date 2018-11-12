@@ -38,7 +38,7 @@ public class VisorNopTask implements ComputeTask<Integer, Void> {
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable Integer arg) {
 
         Map<ComputeJob, ClusterNode> map = new GridLeanMap<>(subgrid.size());
@@ -56,7 +56,7 @@ public class VisorNopTask implements ComputeTask<Integer, Void> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Void reduce(List<ComputeJobResult> results) {
+    @Override public @Nullable Void reduce(List<ComputeJobResult> results) {
         return null;
     }
 
@@ -75,8 +75,7 @@ public class VisorNopTask implements ComputeTask<Integer, Void> {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("ConstantConditions")
-        @Nullable @Override public Object execute() {
+        @Override @SuppressWarnings("ConstantConditions") public @Nullable Object execute() {
             try {
                 Integer maxTimeout = argument(0);
 

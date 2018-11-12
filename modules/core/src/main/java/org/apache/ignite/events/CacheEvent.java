@@ -121,8 +121,7 @@ public class CacheEvent extends EventAdapter {
     private final boolean hasNewVal;
 
     /** Event node. */
-    @GridToStringExclude
-    @Nullable private final ClusterNode evtNode;
+    @GridToStringExclude private final @Nullable ClusterNode evtNode;
 
     /** Flag indicating whether event happened on {@code near} or {@code partitioned} cache. */
     @GridToStringInclude

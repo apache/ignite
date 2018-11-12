@@ -49,7 +49,7 @@ public class SchemaFinishDiscoveryMessage extends SchemaAbstractDiscoveryMessage
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
+    @Override public @Nullable DiscoveryCustomMessage ackMessage() {
         return null;
     }
 
@@ -78,7 +78,7 @@ public class SchemaFinishDiscoveryMessage extends SchemaAbstractDiscoveryMessage
     /**
      * @return Error message (if any).
      */
-    @Nullable public SchemaOperationException error() {
+    public @Nullable SchemaOperationException error() {
         return err;
     }
 

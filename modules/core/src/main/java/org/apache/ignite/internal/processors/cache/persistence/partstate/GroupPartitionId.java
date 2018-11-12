@@ -132,14 +132,14 @@ public class GroupPartitionId implements Comparable<GroupPartitionId> {
      * @param pageIdx Page Index, monotonically growing number within each partition
      * @return FullPageId consists of cache ID (32 bits) and page ID (64 bits).
      */
-    @NotNull private FullPageId createFullPageId(final int pageIdx) {
+    private @NotNull FullPageId createFullPageId(final int pageIdx) {
         return new FullPageId(createPageId(pageIdx), getGroupId());
     }
 
     /**
      * @return will return super-page (metapage) of this partition
      */
-    @NotNull public FullPageId createFirstPageFullId() {
+    public @NotNull FullPageId createFirstPageFullId() {
         return createFullPageId(METAPAGE_IDX);
     }
 }

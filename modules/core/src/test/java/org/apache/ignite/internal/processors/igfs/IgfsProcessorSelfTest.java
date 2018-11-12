@@ -912,8 +912,8 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
      * @param props File properties to set.
      * @param msg Failure message if expected exception was not thrown.
      */
-    private void assertUpdatePropertiesFails(@Nullable final IgfsPath path,
-        @Nullable final Map<String, String> props,
+    private void assertUpdatePropertiesFails(final @Nullable IgfsPath path,
+        final @Nullable Map<String, String> props,
         Class<? extends Throwable> cls, @Nullable String msg) {
         GridTestUtils.assertThrows(log, new Callable() {
             @Override public Object call() throws Exception {

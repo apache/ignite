@@ -85,7 +85,7 @@ public interface DiscoveryCustomMessage extends Serializable {
      *
      * @return Ack message or {@code null} if ack is not required.
      */
-    @Nullable public DiscoveryCustomMessage ackMessage();
+    public @Nullable DiscoveryCustomMessage ackMessage();
 
     /**
      * @return {@code True} if message can be modified during listener notification. Changes will be sent to next nodes.

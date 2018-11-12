@@ -35,7 +35,7 @@ import org.jetbrains.annotations.NotNull;
 public class CacheContinuousQueryFactoryAsyncFilterRandomOperationTest
     extends CacheContinuousQueryFactoryFilterRandomOperationTest {
     /** {@inheritDoc} */
-    @NotNull @Override protected Factory<? extends CacheEntryEventFilter<QueryTestKey, QueryTestValue>>
+    @Override protected @NotNull Factory<? extends CacheEntryEventFilter<QueryTestKey, QueryTestValue>>
         createFilterFactory() {
         return new AsyncFilterFactory();
     }

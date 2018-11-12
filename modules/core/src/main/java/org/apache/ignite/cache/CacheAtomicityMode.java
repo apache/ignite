@@ -130,7 +130,7 @@ public enum CacheAtomicityMode {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static CacheAtomicityMode fromOrdinal(int ord) {
+    public static @Nullable CacheAtomicityMode fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

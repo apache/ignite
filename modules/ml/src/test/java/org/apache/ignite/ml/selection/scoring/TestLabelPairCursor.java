@@ -51,7 +51,7 @@ public class TestLabelPairCursor<L> implements LabelPairCursor<L> {
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Iterator<LabelPair<L>> iterator() {
+    @Override public @NotNull Iterator<LabelPair<L>> iterator() {
         return new TestTruthWithPredictionIterator<>(truth.iterator(), predicted.iterator());
     }
 

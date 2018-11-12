@@ -105,7 +105,7 @@ public class LongIndexNameTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @NotNull private IgniteCache insertSomeData(Ignite ignite) {
+    private @NotNull IgniteCache insertSomeData(Ignite ignite) {
         if (!ignite.active())
             ignite.active(true);
 

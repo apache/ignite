@@ -49,7 +49,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class LinuxNativeIoPluginProvider implements PluginProvider {
     /** Managed buffers map from address to thread requested buffer. */
-    @Nullable private ConcurrentHashMap<Long, Thread> managedBuffers;
+    private @Nullable ConcurrentHashMap<Long, Thread> managedBuffers;
 
     /** Logger. */
     private IgniteLogger log;
@@ -131,7 +131,7 @@ public class LinuxNativeIoPluginProvider implements PluginProvider {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Serializable provideDiscoveryData(UUID nodeId) {
+    @Override public @Nullable Serializable provideDiscoveryData(UUID nodeId) {
         return null;
     }
 
@@ -146,7 +146,7 @@ public class LinuxNativeIoPluginProvider implements PluginProvider {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object createComponent(PluginContext ctx, Class cls) {
+    @Override public @Nullable Object createComponent(PluginContext ctx, Class cls) {
         return null;
     }
 
@@ -160,7 +160,7 @@ public class LinuxNativeIoPluginProvider implements PluginProvider {
      * @return Managed aligned buffers and its associated threads. This collection is used to free buffers. May return
      * {@code null}.
      */
-    @Nullable private ConcurrentHashMap<Long, Thread> setupDirect(IgniteEx ignite) {
+    private @Nullable ConcurrentHashMap<Long, Thread> setupDirect(IgniteEx ignite) {
         GridCacheSharedContext<Object, Object> cacheCtx = ignite.context().cache().context();
         IgnitePageStoreManager ignitePageStoreMgr = cacheCtx.pageStore();
 

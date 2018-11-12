@@ -969,8 +969,7 @@ public class BinaryClassDescriptor {
      * @return Constructor.
      * @throws BinaryObjectException If constructor doesn't exist.
      */
-    @SuppressWarnings("ConstantConditions")
-    @Nullable private static Constructor<?> constructor(Class<?> cls) throws BinaryObjectException {
+    @SuppressWarnings("ConstantConditions") private static @Nullable Constructor<?> constructor(Class<?> cls) throws BinaryObjectException {
         assert cls != null;
 
         try {

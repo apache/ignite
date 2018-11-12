@@ -52,6 +52,6 @@ public interface IgfsRecordResolver extends Serializable {
      * @throws IgniteException If resolve failed.
      * @throws IOException If resolve failed.
      */
-    @Nullable public IgfsFileRange resolveRecords(IgniteFileSystem fs, IgfsInputStream stream,
+    public @Nullable IgfsFileRange resolveRecords(IgniteFileSystem fs, IgfsInputStream stream,
         IgfsFileRange suggestedRecord) throws IgniteException, IOException;
 }

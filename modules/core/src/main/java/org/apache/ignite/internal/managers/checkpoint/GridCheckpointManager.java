@@ -333,7 +333,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
      * @return Loaded checkpoint.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    @Nullable public Serializable loadCheckpoint(GridTaskSessionInternal ses, String key) throws IgniteCheckedException {
+    public @Nullable Serializable loadCheckpoint(GridTaskSessionInternal ses, String key) throws IgniteCheckedException {
         if (!enabled())
             return null;
 

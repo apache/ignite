@@ -156,7 +156,7 @@ public interface GridDhtPartitionTopology {
      * @throws GridDhtInvalidPartitionException If partition is evicted or absent and
      *      does not belong to this node.
      */
-    @Nullable public GridDhtLocalPartition localPartition(int p, AffinityTopologyVersion topVer, boolean create)
+    public @Nullable GridDhtLocalPartition localPartition(int p, AffinityTopologyVersion topVer, boolean create)
         throws GridDhtInvalidPartitionException;
 
     /**
@@ -176,7 +176,7 @@ public interface GridDhtPartitionTopology {
      * @throws GridDhtInvalidPartitionException If partition is evicted or absent and
      *      does not belong to this node.
      */
-    @Nullable public GridDhtLocalPartition localPartition(int p, AffinityTopologyVersion topVer, boolean create,
+    public @Nullable GridDhtLocalPartition localPartition(int p, AffinityTopologyVersion topVer, boolean create,
         boolean showRenting)
         throws GridDhtInvalidPartitionException;
 
@@ -191,7 +191,7 @@ public interface GridDhtPartitionTopology {
      * @throws GridDhtInvalidPartitionException If partition is evicted or absent and
      *      does not belong to this node.
      */
-    @Nullable public GridDhtLocalPartition localPartition(int part)
+    public @Nullable GridDhtLocalPartition localPartition(int part)
         throws GridDhtInvalidPartitionException;
 
     /**
@@ -237,7 +237,7 @@ public interface GridDhtPartitionTopology {
      *      elements of this collection (with N being 1 + backups) are actual DHT affinity nodes, other nodes
      *      are current additional owners of the partition after topology change.
      */
-    @Nullable public List<ClusterNode> nodes(int p, AffinityAssignment affAssignment, List<ClusterNode> affNodes);
+    public @Nullable List<ClusterNode> nodes(int p, AffinityAssignment affAssignment, List<ClusterNode> affNodes);
 
     /**
      * @param p Partition ID.
@@ -385,7 +385,7 @@ public interface GridDhtPartitionTopology {
      * @param nodeId Node to get partitions for.
      * @return Partitions for node.
      */
-    @Nullable public GridDhtPartitionMap partitions(UUID nodeId);
+    public @Nullable GridDhtPartitionMap partitions(UUID nodeId);
 
     /**
      * Prints memory stats.

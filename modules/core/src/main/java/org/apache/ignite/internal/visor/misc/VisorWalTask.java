@@ -103,7 +103,7 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected VisorWalTaskResult reduce0(List<ComputeJobResult> results) throws IgniteException {
+    @Override protected @Nullable VisorWalTaskResult reduce0(List<ComputeJobResult> results) throws IgniteException {
         Map<String, Exception> exRes = U.newHashMap(0);
         Map<String, Collection<String>> res = U.newHashMap(results.size());
         Map<String, VisorClusterNode> nodesInfo = U.newHashMap(results.size());
@@ -148,7 +148,7 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override protected Collection<String> run(@Nullable VisorWalTaskArg arg) throws IgniteException {
+        @Override protected @Nullable Collection<String> run(@Nullable VisorWalTaskArg arg) throws IgniteException {
             try {
                 GridKernalContext cctx = ignite.context();
 

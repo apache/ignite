@@ -59,7 +59,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
      * @param ord Event type ordinal value.
      * @return Event type.
      */
-    @Nullable public static EventType eventTypeFromOrdinal(int ord) {
+    public static @Nullable EventType eventTypeFromOrdinal(int ord) {
         return ord >= 0 && ord < EVT_TYPE_VALS.length ? EVT_TYPE_VALS[ord] : null;
     }
 

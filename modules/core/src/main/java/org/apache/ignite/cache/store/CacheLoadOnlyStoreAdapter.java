@@ -126,7 +126,7 @@ public abstract class CacheLoadOnlyStoreAdapter<K, V, I> implements CacheStore<K
      * @param args Arguments passed into {@link IgniteCache#loadCache(IgniteBiPredicate, Object...)} method.
      * @return Cache entry to be saved in cache or {@code null} if no entry could be produced from this record.
      */
-    @Nullable protected abstract IgniteBiTuple<K, V> parse(I rec, @Nullable Object... args);
+    protected abstract @Nullable IgniteBiTuple<K, V> parse(I rec, @Nullable Object... args);
 
     /** {@inheritDoc} */
     @Override public void loadCache(IgniteBiInClosure<K, V> c, @Nullable Object... args) {

@@ -189,7 +189,7 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Object[]
      * @param row Feature vector.
      * @return The array contains not null values for handled indices.
      */
-    @NotNull private Map<String, Integer>[] initializeCategoryFrequencies(Object[] row) {
+    private @NotNull Map<String, Integer>[] initializeCategoryFrequencies(Object[] row) {
         Map<String, Integer>[] categoryFrequencies = new HashMap[row.length];
 
         for (int i = 0; i < categoryFrequencies.length; i++)

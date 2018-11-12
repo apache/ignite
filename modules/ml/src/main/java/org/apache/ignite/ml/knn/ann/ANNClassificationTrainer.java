@@ -106,7 +106,7 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
     }
 
     /** */
-    @NotNull private LabeledVectorSet<ProbableLabel, LabeledVector> buildLabelsForCandidates(List<Vector> centers,
+    private @NotNull LabeledVectorSet<ProbableLabel, LabeledVector> buildLabelsForCandidates(List<Vector> centers,
         CentroidStat centroidStat) {
         // init
         final LabeledVector<Vector, ProbableLabel>[] arr = new LabeledVector[centers.size()];

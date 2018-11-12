@@ -247,7 +247,7 @@ public class CacheContinuousQueryFactoryFilterRandomOperationTest extends CacheC
     /**
      * @return Filter factory.
      */
-    @NotNull protected Factory<? extends CacheEntryEventFilter<QueryTestKey, QueryTestValue>> createFilterFactory() {
+    protected @NotNull Factory<? extends CacheEntryEventFilter<QueryTestKey, QueryTestValue>> createFilterFactory() {
         return new FilterFactory();
     }
 

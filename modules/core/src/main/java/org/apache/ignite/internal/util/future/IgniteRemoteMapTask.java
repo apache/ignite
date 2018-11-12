@@ -61,7 +61,7 @@ import org.jetbrains.annotations.Nullable;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable T arg) throws IgniteException {
 
         for (ClusterNode node : subgrid) {
@@ -73,7 +73,7 @@ import org.jetbrains.annotations.Nullable;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public R reduce(List<ComputeJobResult> results) throws IgniteException {
+    @Override public @Nullable R reduce(List<ComputeJobResult> results) throws IgniteException {
         assert results.size() == 1;
 
         return results.get(0).getData();
@@ -98,10 +98,10 @@ import org.jetbrains.annotations.Nullable;
         private final ComputeTask<T, R> remoteTask;
 
         /** */
-        @Nullable private final T arg;
+        private final @Nullable T arg;
 
         /** */
-        @Nullable private ComputeTaskFuture<R> future;
+        private @Nullable ComputeTaskFuture<R> future;
 
         /**
          * @param remoteTask Remote task.

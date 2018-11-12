@@ -134,7 +134,7 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
 
     /** Runnable object to schedule with cron scheduler. */
     private final Runnable run = new Runnable() {
-        @Nullable private CountDownLatch onStart() {
+        private @Nullable CountDownLatch onStart() {
             synchronized (mux) {
                 if (done || cancelled)
                     return null;
@@ -682,7 +682,7 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
      * @return Latch or {@code null} if future has been finished.
      * @throws IgniteFutureCancelledException If was cancelled.
      */
-    @Nullable private CountDownLatch ensureGet() throws IgniteFutureCancelledException {
+    private @Nullable CountDownLatch ensureGet() throws IgniteFutureCancelledException {
         synchronized (mux) {
             if (cancelled)
                 throw new IgniteFutureCancelledException("Scheduling has been cancelled: " + this);
@@ -695,7 +695,7 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public R get() {
+    @Override public @Nullable R get() {
         CountDownLatch latch = ensureGet();
 
         if (latch != null) {
@@ -724,7 +724,7 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public R get(long timeout, TimeUnit unit) throws IgniteException {
+    @Override public @Nullable R get(long timeout, TimeUnit unit) throws IgniteException {
         CountDownLatch latch = ensureGet();
 
         if (latch != null) {
@@ -860,7 +860,7 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public R get() {
+        @Override public @Nullable R get() {
             return ref.get();
         }
 
@@ -870,7 +870,7 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public R get(long timeout, TimeUnit unit) {
+        @Override public @Nullable R get(long timeout, TimeUnit unit) {
             return ref.get(timeout, unit);
         }
 

@@ -440,7 +440,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      *
      * @return Future that will be completed when client reconnected.
      */
-    @Nullable public IgniteFuture<?> clientReconnectFuture();
+    public @Nullable IgniteFuture<?> clientReconnectFuture();
 
     /**
      * Checks Ignite grid is active or not active.
@@ -462,7 +462,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      *
      * @return Collection of nodes included to the current baseline topology.
      */
-    @Nullable public Collection<BaselineNode> currentBaselineTopology();
+    public @Nullable Collection<BaselineNode> currentBaselineTopology();
 
     /**
      * Sets baseline topology. The cluster must be activated for this method to be called.

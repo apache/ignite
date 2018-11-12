@@ -86,7 +86,7 @@ abstract class GridDeploymentStoreAdapter implements GridDeploymentStore {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridDeployment explicitDeploy(Class<?> cls, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public @Nullable GridDeployment explicitDeploy(Class<?> cls, ClassLoader clsLdr) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Ignoring explicit deploy [cls=" + cls + ", clsLdr=" + clsLdr + ']');
 

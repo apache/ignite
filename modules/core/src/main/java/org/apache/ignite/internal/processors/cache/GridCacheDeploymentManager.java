@@ -499,7 +499,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
      * @param locDepOwner {@code True} if local deployment owner.
      * @return Added participants.
      */
-    @Nullable private Map<UUID, IgniteUuid> addGlobalParticipants(UUID sndNodeId, IgniteUuid sndLdrId,
+    private @Nullable Map<UUID, IgniteUuid> addGlobalParticipants(UUID sndNodeId, IgniteUuid sndLdrId,
         Map<UUID, IgniteUuid> participants, boolean locDepOwner) {
         Map<UUID, IgniteUuid> added = null;
 
@@ -683,7 +683,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     /**
      * @return First global deployment.
      */
-    @Nullable public GridDeploymentInfoBean globalDeploymentInfo() {
+    public @Nullable GridDeploymentInfoBean globalDeploymentInfo() {
         assert depEnabled;
 
         // Do not return info if mode is CONTINUOUS.
@@ -731,7 +731,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
      * @return ID for given class loader or {@code null} if given loader is not
      *      grid deployment class loader.
      */
-    @Nullable public IgniteUuid getClassLoaderId(@Nullable ClassLoader ldr) {
+    public @Nullable IgniteUuid getClassLoaderId(@Nullable ClassLoader ldr) {
         if (ldr == null)
             return null;
 
@@ -742,7 +742,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
      * @param ldrId Class loader ID.
      * @return Class loader ID or {@code null} if loader not found.
      */
-    @Nullable public ClassLoader getClassLoader(IgniteUuid ldrId) {
+    public @Nullable ClassLoader getClassLoader(IgniteUuid ldrId) {
         assert ldrId != null;
 
         GridDeployment dep = cctx.gridDeploy().getDeployment(ldrId);

@@ -37,7 +37,7 @@ public class StopRoutineDiscoveryMessage extends AbstractContinuousMessage {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
+    @Override public @Nullable DiscoveryCustomMessage ackMessage() {
         return new StopRoutineAckDiscoveryMessage(routineId);
     }
 

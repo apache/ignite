@@ -256,7 +256,7 @@ public class GridCacheQueueProxy<T> implements IgniteQueue<T>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public T poll() {
+    @Override public @Nullable T poll() {
         gate.enter();
 
         try {
@@ -268,7 +268,7 @@ public class GridCacheQueueProxy<T> implements IgniteQueue<T>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public T peek() {
+    @Override public @Nullable T peek() {
         gate.enter();
 
         try {
@@ -376,7 +376,7 @@ public class GridCacheQueueProxy<T> implements IgniteQueue<T>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public T take() {
+    @Override public @Nullable T take() {
         gate.enter();
 
         try {
@@ -388,7 +388,7 @@ public class GridCacheQueueProxy<T> implements IgniteQueue<T>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public T poll(final long timeout, final TimeUnit unit) {
+    @Override public @Nullable T poll(final long timeout, final TimeUnit unit) {
         gate.enter();
 
         try {

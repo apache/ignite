@@ -113,7 +113,7 @@ public class IgniteTxRemoteSingleStateImpl extends IgniteTxRemoteStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteTxEntry singleWrite() {
+    @Override public @Nullable IgniteTxEntry singleWrite() {
         return entry;
     }
 

@@ -214,7 +214,7 @@ public enum GridRestCommand {
      * @param ord Byte to convert to enum.
      * @return Enum.
      */
-    @Nullable public static GridRestCommand fromOrdinal(int ord) {
+    public static @Nullable GridRestCommand fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 
@@ -222,7 +222,7 @@ public enum GridRestCommand {
      * @param key Key.
      * @return Command.
      */
-    @Nullable public static GridRestCommand fromKey(String key) {
+    public static @Nullable GridRestCommand fromKey(String key) {
         return cmds.get(key);
     }
 

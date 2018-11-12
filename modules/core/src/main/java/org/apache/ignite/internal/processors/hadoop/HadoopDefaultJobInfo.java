@@ -82,7 +82,7 @@ public class HadoopDefaultJobInfo implements HadoopJobInfo, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String property(String name) {
+    @Override public @Nullable String property(String name) {
         return props.get(name);
     }
 

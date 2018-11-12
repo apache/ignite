@@ -212,21 +212,21 @@ public class VisorBasicConfiguration extends VisorDataTransferObject {
     /**
      * @return Ignite instance name.
      */
-    @Nullable public String getIgniteInstanceName() {
+    public @Nullable String getIgniteInstanceName() {
         return igniteInstanceName;
     }
 
     /**
      * @return IGNITE_HOME determined at startup.
      */
-    @Nullable public String getGgHome() {
+    public @Nullable String getGgHome() {
         return ggHome;
     }
 
     /**
      * @return Local host value used.
      */
-    @Nullable public String getLocalHost() {
+    public @Nullable String getLocalHost() {
         return locHost;
     }
 
@@ -296,7 +296,7 @@ public class VisorBasicConfiguration extends VisorDataTransferObject {
     /**
      * @return MBean server name
      */
-    @Nullable public String getMBeanServer() {
+    public @Nullable String getMBeanServer() {
         return mBeanSrv;
     }
 

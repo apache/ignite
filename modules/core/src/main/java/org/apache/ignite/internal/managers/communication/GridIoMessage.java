@@ -346,7 +346,7 @@ public class GridIoMessage implements Message {
     /**
      * @return Executor name (if available).
      */
-    @Nullable public String executorName() {
+    public @Nullable String executorName() {
         if (msg instanceof ExecutorAwareMessage)
             return ((ExecutorAwareMessage)msg).executorName();
 

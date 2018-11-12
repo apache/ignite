@@ -287,7 +287,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
      * @param msg Request message.
      * @return REST request object.
      */
-    @Nullable private GridRestRequest createRestRequest(GridNioSession ses, GridClientMessage msg) {
+    private @Nullable GridRestRequest createRestRequest(GridNioSession ses, GridClientMessage msg) {
         GridRestRequest restReq = null;
 
         if (msg instanceof GridClientAuthenticationRequest) {

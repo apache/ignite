@@ -809,7 +809,7 @@ final class TestMemcacheClient {
         /**
          * @return Bytes.
          */
-        @Nullable public byte[] getBytes() {
+        public @Nullable byte[] getBytes() {
             return bytes;
         }
 

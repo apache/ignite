@@ -1295,12 +1295,12 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
      */
     private static class TestInterceptor implements CacheInterceptor<Integer, Person> {
         /** {@inheritDoc} */
-        @Nullable @Override public Person onGet(Integer key, @Nullable Person val) {
+        @Override public @Nullable Person onGet(Integer key, @Nullable Person val) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Person onBeforePut(Cache.Entry<Integer, Person> entry, Person newVal) {
+        @Override public @Nullable Person onBeforePut(Cache.Entry<Integer, Person> entry, Person newVal) {
             return null;
         }
 
@@ -1310,7 +1310,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public IgniteBiTuple<Boolean, Person> onBeforeRemove(Cache.Entry<Integer, Person> entry) {
+        @Override public @Nullable IgniteBiTuple<Boolean, Person> onBeforeRemove(Cache.Entry<Integer, Person> entry) {
             return null;
         }
 

@@ -442,7 +442,7 @@ public class GridLongList implements Message, Externalizable {
      * @return Grid long list.
      * @throws IOException If failed.
      */
-    @Nullable public static GridLongList readFrom(DataInput in) throws IOException {
+    public static @Nullable GridLongList readFrom(DataInput in) throws IOException {
         int idx = in.readInt();
 
         if (idx == -1)

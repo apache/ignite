@@ -368,7 +368,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheVersion mappedVersion() {
+    @Override public @Nullable GridCacheVersion mappedVersion() {
         return tx == null ? nearLockVer : null;
     }
 
@@ -396,7 +396,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     /**
      * @return Transaction isolation or {@code null} if no transaction.
      */
-    @Nullable private TransactionIsolation isolation() {
+    private @Nullable TransactionIsolation isolation() {
         return tx == null ? null : tx.isolation();
     }
 
@@ -408,7 +408,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
      * @throws GridCacheEntryRemovedException If entry was removed.
      * @throws GridDistributedLockCancelledException If lock is canceled.
      */
-    @Nullable public GridCacheMvccCandidate addEntry(GridDhtCacheEntry entry)
+    public @Nullable GridCacheMvccCandidate addEntry(GridDhtCacheEntry entry)
         throws GridCacheEntryRemovedException, GridDistributedLockCancelledException {
         if (log.isDebugEnabled())
             log.debug("Adding entry: " + entry);

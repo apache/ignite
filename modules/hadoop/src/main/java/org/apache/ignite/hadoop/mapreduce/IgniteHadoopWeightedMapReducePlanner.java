@@ -205,7 +205,7 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
      * @return IGFS affinity or {@code null} if IGFS is not available.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable private Collection<UUID> igfsAffinityNodesForSplit(HadoopInputSplit split) throws IgniteCheckedException {
+    private @Nullable Collection<UUID> igfsAffinityNodesForSplit(HadoopInputSplit split) throws IgniteCheckedException {
         if (split instanceof HadoopFileBlock) {
             HadoopFileBlock split0 = (HadoopFileBlock)split;
 

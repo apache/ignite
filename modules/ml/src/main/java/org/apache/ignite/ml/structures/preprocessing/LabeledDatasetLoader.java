@@ -91,7 +91,7 @@ public class LabeledDatasetLoader {
     }
 
     /** */
-    @NotNull private static Vector parseFeatures(Path pathToFile, boolean isDistributed, boolean isFallOnBadData,
+    private static @NotNull Vector parseFeatures(Path pathToFile, boolean isDistributed, boolean isFallOnBadData,
         int colSize, int rowIdx, String[] rowData) {
         final Vector vec = LabeledVectorSet.emptyVector(colSize, isDistributed);
 

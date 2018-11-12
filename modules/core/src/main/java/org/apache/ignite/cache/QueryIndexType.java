@@ -47,7 +47,7 @@ public enum QueryIndexType {
      * @param ord Ordinal value.
      * @return Enumerated value.
      */
-    @Nullable public static QueryIndexType fromOrdinal(int ord) {
+    public static @Nullable QueryIndexType fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

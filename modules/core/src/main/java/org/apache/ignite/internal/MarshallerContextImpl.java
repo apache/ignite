@@ -97,7 +97,7 @@ public class MarshallerContextImpl implements MarshallerContext {
      * Marshaller mapping file store directory. {@code null} used for standard folder, in this case folder is calculated
      * from work directory. Non null value may be used to setup custom directory from outside
      */
-    @Nullable private File marshallerMappingFileStoreDir;
+    private @Nullable File marshallerMappingFileStoreDir;
 
     /**
      * Initializes context.
@@ -578,7 +578,7 @@ public class MarshallerContextImpl implements MarshallerContext {
     /**
      * @return custom marshaller mapping files directory. Used for standalone WAL iteration
      */
-    @Nullable public File getMarshallerMappingFileStoreDir() {
+    public @Nullable File getMarshallerMappingFileStoreDir() {
         return marshallerMappingFileStoreDir;
     }
 
@@ -587,7 +587,7 @@ public class MarshallerContextImpl implements MarshallerContext {
      *
      * @param marshallerMappingFileStoreDir directory with type name mappings
      */
-    public void setMarshallerMappingFileStoreDir(@Nullable final File marshallerMappingFileStoreDir) {
+    public void setMarshallerMappingFileStoreDir(final @Nullable File marshallerMappingFileStoreDir) {
         this.marshallerMappingFileStoreDir = marshallerMappingFileStoreDir;
     }
 

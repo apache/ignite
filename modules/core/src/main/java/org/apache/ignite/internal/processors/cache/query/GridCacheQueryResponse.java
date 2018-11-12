@@ -169,7 +169,7 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
      * @return Unmarshalled collection.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable protected <T> List<T> unmarshalCollection0(@Nullable Collection<byte[]> byteCol,
+    protected @Nullable <T> List<T> unmarshalCollection0(@Nullable Collection<byte[]> byteCol,
         GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         assert ldr != null;
         assert ctx != null;

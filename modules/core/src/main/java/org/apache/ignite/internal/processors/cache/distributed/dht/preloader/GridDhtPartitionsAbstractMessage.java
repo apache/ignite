@@ -97,7 +97,7 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
     /**
      * @return Exchange ID. {@code Null} if message doesn't belong to exchange process.
      */
-    @Nullable public GridDhtPartitionExchangeId exchangeId() {
+    public @Nullable GridDhtPartitionExchangeId exchangeId() {
         return exchId;
     }
 
@@ -111,7 +111,7 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
     /**
      * @return Last used version among all nodes.
      */
-    @Nullable public GridCacheVersion lastVersion() {
+    public @Nullable GridCacheVersion lastVersion() {
         return lastVer;
     }
 

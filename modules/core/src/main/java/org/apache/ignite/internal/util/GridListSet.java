@@ -123,7 +123,7 @@ public class GridListSet<V> extends GridSerializableSet<V> implements Cloneable 
      *
      * @return Optional comparator for this set.
      */
-    @Nullable public Comparator<V> comparator() {
+    public @Nullable Comparator<V> comparator() {
         return comp;
     }
 
@@ -138,7 +138,7 @@ public class GridListSet<V> extends GridSerializableSet<V> implements Cloneable 
      * @param val Value to add.
      * @return The instance of value from this set or {@code null} if value was added.
      */
-    @Nullable public V addx(V val) {
+    public @Nullable V addx(V val) {
         A.notNull(val, "val");
 
         if (comp == null) {
@@ -210,7 +210,7 @@ public class GridListSet<V> extends GridSerializableSet<V> implements Cloneable 
      *
      * @return Removed element or {@code null} if list is empty.
      */
-    @Nullable public V removeFirst() {
+    public @Nullable V removeFirst() {
         return vals.isEmpty() ? null : vals.removeFirst();
     }
 
@@ -219,7 +219,7 @@ public class GridListSet<V> extends GridSerializableSet<V> implements Cloneable 
      *
      * @return Removed element or {@code null} if list is empty.
      */
-    @Nullable public V removeLast() {
+    public @Nullable V removeLast() {
         return vals.isEmpty() ? null : vals.removeLast();
     }
 
@@ -228,7 +228,7 @@ public class GridListSet<V> extends GridSerializableSet<V> implements Cloneable 
      *
      * @return First element or {@code null} if list is empty.
      */
-    @Nullable public V first() {
+    public @Nullable V first() {
         return vals.isEmpty() ? null : vals.getFirst();
     }
 
@@ -237,7 +237,7 @@ public class GridListSet<V> extends GridSerializableSet<V> implements Cloneable 
      *
      * @return Last element or {@code null} if list is empty.
      */
-    @Nullable public V last() {
+    public @Nullable V last() {
         return vals.isEmpty() ? null : vals.getLast();
     }
 
@@ -256,7 +256,7 @@ public class GridListSet<V> extends GridSerializableSet<V> implements Cloneable 
      * @param val Value to remove.
      * @return The instance that was stored in the set or {@code null}.
      */
-    @Nullable public V removex(V val) {
+    public @Nullable V removex(V val) {
         A.notNull(val, "val");
 
         if (comp == null || !strict) {
@@ -300,7 +300,7 @@ public class GridListSet<V> extends GridSerializableSet<V> implements Cloneable 
      * @return Instance stored in this set for which {@code e.equals(val)}
      *      returns {@code true}.
      */
-    @Nullable public V get(V val) {
+    public @Nullable V get(V val) {
         A.notNull(val, "val");
 
         if (comp == null || !strict) {

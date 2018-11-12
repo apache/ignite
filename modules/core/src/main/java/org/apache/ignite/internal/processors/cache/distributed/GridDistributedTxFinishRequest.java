@@ -203,7 +203,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     /**
      * @return Subject ID.
      */
-    @Nullable public final UUID subjectId() {
+    public final @Nullable UUID subjectId() {
         return subjId;
     }
 

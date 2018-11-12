@@ -114,7 +114,7 @@ public class CacheInvokeDirectResult implements Message {
     /**
      * @return Error.
      */
-    @Nullable public Exception error() {
+    public @Nullable Exception error() {
         return err;
     }
 

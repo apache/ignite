@@ -66,7 +66,7 @@ public class ComputeClientTask extends ComputeTaskSplitAdapter<Collection<Binary
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Long reduce(List<ComputeJobResult> results) {
+    @Override public @Nullable Long reduce(List<ComputeJobResult> results) {
         long sum = 0;
         int cnt = 0;
 
@@ -95,7 +95,7 @@ public class ComputeClientTask extends ComputeTaskSplitAdapter<Collection<Binary
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object execute() {
+        @Override public @Nullable Object execute() {
             long sum = 0;
             int cnt = 0;
 

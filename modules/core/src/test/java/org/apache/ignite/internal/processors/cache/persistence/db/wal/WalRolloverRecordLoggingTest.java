@@ -76,7 +76,7 @@ public abstract class WalRolloverRecordLoggingTest extends GridCommonAbstractTes
     /**
      * @return Wal mode.
      */
-    @NotNull public abstract WALMode walMode();
+    public abstract @NotNull WALMode walMode();
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {

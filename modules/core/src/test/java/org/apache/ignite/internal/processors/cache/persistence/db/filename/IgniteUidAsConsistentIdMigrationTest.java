@@ -320,7 +320,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      * @return Started and activated grid.
      * @throws Exception If failed.
      */
-    @NotNull private Ignite startActivateFillDataGrid(int idx) throws Exception {
+    private @NotNull Ignite startActivateFillDataGrid(int idx) throws Exception {
         final Ignite ignite = startActivateGrid(idx);
 
         ignite.getOrCreateCache(CACHE_NAME).put("hi", "there!");
@@ -335,7 +335,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      * @return Started and activated grid.
      * @throws Exception If anything failed.
      */
-    @NotNull private Ignite startActivateGrid(int idx) throws Exception {
+    private @NotNull Ignite startActivateGrid(int idx) throws Exception {
         final Ignite ignite = startGrid(idx);
 
         ignite.active(true);
@@ -350,7 +350,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      * @param ignite ignite instance
      * @return name of storage related subfolders
      */
-    @NotNull private String genNewStyleSubfolderName(final int nodeIdx, final Ignite ignite) {
+    private @NotNull String genNewStyleSubfolderName(final int nodeIdx, final Ignite ignite) {
         final Object consistentId = ignite.cluster().localNode().consistentId();
 
         assertTrue("For new style folders consistent ID should be UUID," +
@@ -639,7 +639,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      * @return set of all indexes of nodes found in work folder
      * @throws IgniteCheckedException if failed.
      */
-    @NotNull private Set<Integer> getAllNodeIndexesInFolder() throws IgniteCheckedException {
+    private @NotNull Set<Integer> getAllNodeIndexesInFolder() throws IgniteCheckedException {
         final File curFolder = new File(U.defaultWorkDirectory(), PdsConsistentIdProcessor.DB_DEFAULT_FOLDER);
         final Set<Integer> indexes = new TreeSet<>();
         final File[] files = curFolder.listFiles(PdsConsistentIdProcessor.DB_SUBFOLDERS_NEW_STYLE_FILTER);

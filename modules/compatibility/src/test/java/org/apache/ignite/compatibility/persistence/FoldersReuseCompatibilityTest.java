@@ -192,7 +192,7 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
      * @return set of all indexes of nodes found in work folder
      * @throws IgniteCheckedException if failed.
      */
-    @NotNull private Set<Integer> getAllNodeIndexesInFolder() throws IgniteCheckedException {
+    private @NotNull Set<Integer> getAllNodeIndexesInFolder() throws IgniteCheckedException {
         final File curFolder = new File(U.defaultWorkDirectory(), PdsConsistentIdProcessor.DB_DEFAULT_FOLDER);
         final Set<Integer> indexes = new TreeSet<>();
         final File[] files = curFolder.listFiles(PdsConsistentIdProcessor.DB_SUBFOLDERS_NEW_STYLE_FILTER);

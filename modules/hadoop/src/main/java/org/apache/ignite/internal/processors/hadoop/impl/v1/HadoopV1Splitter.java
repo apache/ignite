@@ -81,7 +81,7 @@ public class HadoopV1Splitter {
      * @return File block or {@code null} if it is not a {@link FileSplit} instance.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public static HadoopFileBlock readFileBlock(String clsName, FSDataInputStream in,
+    public static @Nullable HadoopFileBlock readFileBlock(String clsName, FSDataInputStream in,
         @Nullable String[] hosts) throws IgniteCheckedException {
         if (!FileSplit.class.getName().equals(clsName))
             return null;

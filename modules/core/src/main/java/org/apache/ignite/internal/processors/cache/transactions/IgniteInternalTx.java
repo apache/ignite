@@ -184,7 +184,7 @@ public interface IgniteInternalTx {
      * @param <T> Type of the value.
      * @return Value of removed metadata or {@code null}.
      */
-    @Nullable public <T> T removeMeta(int key);
+    public @Nullable <T> T removeMeta(int key);
 
     /**
      * Gets metadata by key.
@@ -193,7 +193,7 @@ public interface IgniteInternalTx {
      * @param <T> Type of the value.
      * @return Metadata value or {@code null}.
      */
-    @Nullable public <T> T meta(int key);
+    public @Nullable <T> T meta(int key);
 
     /**
      * Adds a new metadata.
@@ -204,7 +204,7 @@ public interface IgniteInternalTx {
      * @return Metadata previously associated with given name, or
      *      {@code null} if there was none.
      */
-    @Nullable public <T> T addMeta(int key, T val);
+    public @Nullable <T> T addMeta(int key, T val);
 
     /**
      * @return Size of the transaction.
@@ -305,7 +305,7 @@ public interface IgniteInternalTx {
      * @param key Key to get version for.
      * @return Owned version, if any.
      */
-    @Nullable public GridCacheVersion ownedVersion(IgniteTxKey key);
+    public @Nullable GridCacheVersion ownedVersion(IgniteTxKey key);
 
     /**
      * Gets ID of additional node involved. For example, in DHT case, other node is
@@ -313,7 +313,7 @@ public interface IgniteInternalTx {
      *
      * @return Parent node IDs.
      */
-    @Nullable public UUID otherNodeId();
+    public @Nullable UUID otherNodeId();
 
     /**
      * @return Event node ID.
@@ -336,12 +336,12 @@ public interface IgniteInternalTx {
     /**
      * @return Near transaction ID.
      */
-    @Nullable public GridCacheVersion nearXidVersion();
+    public @Nullable GridCacheVersion nearXidVersion();
 
     /**
      * @return Transaction nodes mapping (primary node -> related backup nodes).
      */
-    @Nullable public Map<UUID, Collection<UUID>> transactionNodes();
+    public @Nullable Map<UUID, Collection<UUID>> transactionNodes();
 
     /**
      * @param entry Entry to check.
@@ -456,7 +456,7 @@ public interface IgniteInternalTx {
      * @param key Key for the entry.
      * @return Entry for the key (either from write set or read set).
      */
-    @Nullable public IgniteTxEntry entry(IgniteTxKey key);
+    public @Nullable IgniteTxEntry entry(IgniteTxKey key);
 
     /**
      * @param ctx Cache context.
@@ -465,7 +465,7 @@ public interface IgniteInternalTx {
      * @return Current value for the key within transaction.
      * @throws GridCacheFilterFailedException If filter failed and failFast is {@code true}.
      */
-     @Nullable public GridTuple<CacheObject> peek(
+    public @Nullable GridTuple<CacheObject> peek(
          GridCacheContext ctx,
          boolean failFast,
          KeyCacheObject key) throws GridCacheFilterFailedException;
@@ -488,7 +488,7 @@ public interface IgniteInternalTx {
     /**
      * @return Future.
      */
-    @Nullable public IgniteInternalFuture<?> salvageTx();
+    public @Nullable IgniteInternalFuture<?> salvageTx();
 
     /**
      * @param endVer End version (a.k.a. <tt>'tnc'</tt> or <tt>'transaction number counter'</tt>)
@@ -517,7 +517,7 @@ public interface IgniteInternalTx {
     /**
      * @return Future for transaction prepare if prepare is in progress.
      */
-    @Nullable public IgniteInternalFuture<?> currentPrepareFuture();
+    public @Nullable IgniteInternalFuture<?> currentPrepareFuture();
 
     /**
      * @param state Transaction state.
@@ -655,5 +655,5 @@ public interface IgniteInternalTx {
      * @return Transaction counters.
      * @param createIfAbsent {@code True} if non-null instance is needed.
      */
-    @Nullable public TxCounters txCounters(boolean createIfAbsent);
+    public @Nullable TxCounters txCounters(boolean createIfAbsent);
 }

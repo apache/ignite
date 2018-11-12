@@ -29,5 +29,5 @@ public interface BinaryRawReaderEx extends BinaryRawReader {
      * @return Object.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    @Nullable public Object readObjectDetached() throws BinaryObjectException;
+    public @Nullable Object readObjectDetached() throws BinaryObjectException;
 }

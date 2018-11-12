@@ -150,7 +150,7 @@ public class CacheQueryExecutedEvent<K, V> extends EventAdapter {
      *
      * @return Cache name.
      */
-    @Nullable public String cacheName() {
+    public @Nullable String cacheName() {
         return cacheName;
     }
 
@@ -161,7 +161,7 @@ public class CacheQueryExecutedEvent<K, V> extends EventAdapter {
      *
      * @return Queried class name.
      */
-    @Nullable public String className() {
+    public @Nullable String className() {
         return clsName;
     }
 
@@ -172,7 +172,7 @@ public class CacheQueryExecutedEvent<K, V> extends EventAdapter {
      *
      * @return Query clause.
      */
-    @Nullable public String clause() {
+    public @Nullable String clause() {
         return clause;
     }
 
@@ -183,7 +183,7 @@ public class CacheQueryExecutedEvent<K, V> extends EventAdapter {
      *
      * @return Scan query filter.
      */
-    @Nullable public IgniteBiPredicate<K, V> scanQueryFilter() {
+    public @Nullable IgniteBiPredicate<K, V> scanQueryFilter() {
         return scanQryFilter;
     }
 
@@ -194,7 +194,7 @@ public class CacheQueryExecutedEvent<K, V> extends EventAdapter {
      *
      * @return Continuous query filter.
      */
-    @Nullable public CacheEntryEventSerializableFilter<K, V> continuousQueryFilter() {
+    public @Nullable CacheEntryEventSerializableFilter<K, V> continuousQueryFilter() {
         return contQryFilter;
     }
 
@@ -205,7 +205,7 @@ public class CacheQueryExecutedEvent<K, V> extends EventAdapter {
      *
      * @return Query arguments.
      */
-    @Nullable public Object[] arguments() {
+    public @Nullable Object[] arguments() {
         return args;
     }
 
@@ -214,7 +214,7 @@ public class CacheQueryExecutedEvent<K, V> extends EventAdapter {
      *
      * @return Security subject ID.
      */
-    @Nullable public UUID subjectId() {
+    public @Nullable UUID subjectId() {
         return subjId;
     }
 
@@ -223,7 +223,7 @@ public class CacheQueryExecutedEvent<K, V> extends EventAdapter {
      *
      * @return Task name.
      */
-    @Nullable public String taskName() {
+    public @Nullable String taskName() {
         return taskName;
     }
 

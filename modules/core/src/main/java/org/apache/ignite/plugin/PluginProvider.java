@@ -72,7 +72,7 @@ public interface PluginProvider<C extends PluginConfiguration> {
      * @param cls Ignite component class.
      * @return Ignite component or {@code null} if component is not supported.
      */
-    @Nullable public <T> T createComponent(PluginContext ctx, Class<T> cls);
+    public @Nullable <T> T createComponent(PluginContext ctx, Class<T> cls);
 
     /**
      * Creates cache plugin provider.
@@ -122,7 +122,7 @@ public interface PluginProvider<C extends PluginConfiguration> {
      * @return Discovery data object or {@code null} if there is nothing
      *      to send for this component.
      */
-    @Nullable public Serializable provideDiscoveryData(UUID nodeId);
+    public @Nullable Serializable provideDiscoveryData(UUID nodeId);
 
     /**
      * Receives plugin discovery data object from remote nodes (called

@@ -72,5 +72,5 @@ public interface FailoverContext {
      *
      * @return Cache name.
      */
-    @Nullable public String affinityCacheName();
+    public @Nullable String affinityCacheName();
 }

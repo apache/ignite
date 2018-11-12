@@ -62,7 +62,7 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @return Heap-based object.
      * @throws IgniteException In case of error.
      */
-    @Nullable public Object unwrapTemporary(GridCacheContext ctx, @Nullable Object obj) throws IgniteException;
+    public @Nullable Object unwrapTemporary(GridCacheContext ctx, @Nullable Object obj) throws IgniteException;
 
     /**
      * Prepares cache object for cache (e.g. copies user-provided object if needed).
@@ -71,7 +71,7 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @param cctx Cache context.
      * @return Object to be store in cache.
      */
-    @Nullable public CacheObject prepareForCache(@Nullable CacheObject obj, GridCacheContext cctx);
+    public @Nullable CacheObject prepareForCache(@Nullable CacheObject obj, GridCacheContext cctx);
 
     /**
      * Checks whether object is binary object.
@@ -149,7 +149,7 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      *        before stored in cache.
      * @return Cache object.
      */
-    @Nullable public CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj, boolean userObj);
+    public @Nullable CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj, boolean userObj);
 
     /**
      * @param ctx Cache context.
@@ -159,7 +159,7 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @param failIfUnregistered Throw exception if class isn't registered.
      * @return Cache object.
      */
-    @Nullable public CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj, boolean userObj,
+    public @Nullable CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj, boolean userObj,
         boolean failIfUnregistered);
 
     /**

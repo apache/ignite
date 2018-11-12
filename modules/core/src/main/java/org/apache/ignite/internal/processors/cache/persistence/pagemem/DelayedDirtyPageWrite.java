@@ -42,10 +42,10 @@ public class DelayedDirtyPageWrite implements ReplacedPageWriter {
     private final DelayedPageReplacementTracker tracker;
 
     /** Full page id to be written on {@link #finishReplacement()} or null if nothing to write. */
-    @Nullable private FullPageId fullPageId;
+    private @Nullable FullPageId fullPageId;
 
     /** Byte buffer with page data to be written on {@link #finishReplacement()} or null if nothing to write. */
-    @Nullable private ByteBuffer byteBuf;
+    private @Nullable ByteBuffer byteBuf;
 
     /** Partition update tag to be used in{@link #finishReplacement()} or null if -1 to write. */
     private int tag = -1;

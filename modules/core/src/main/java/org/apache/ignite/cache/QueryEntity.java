@@ -167,7 +167,7 @@ public class QueryEntity implements Serializable {
      * @param target Query entity to which this entity should be expanded.
      * @return Patch which contains operations for expanding this entity.
      */
-    @NotNull public QueryEntityPatch makePatch(QueryEntity target) {
+    public @NotNull QueryEntityPatch makePatch(QueryEntity target) {
         if (target == null)
             return QueryEntityPatch.empty();
 
@@ -223,7 +223,7 @@ public class QueryEntity implements Serializable {
      * @param conflicts Storage of conflicts.
      * @return Indexes which exist in target and not exist in local.
      */
-    @NotNull private Collection<QueryIndex> checkIndexes(QueryEntity target, StringBuilder conflicts) {
+    private @NotNull Collection<QueryIndex> checkIndexes(QueryEntity target, StringBuilder conflicts) {
         HashSet<QueryIndex> indexesToAdd = new HashSet<>();
 
         Map<String, QueryIndex> currentIndexes = new HashMap<>();
@@ -509,7 +509,7 @@ public class QueryEntity implements Serializable {
      *
      * @return Collection of index entities.
      */
-    @NotNull public Collection<QueryIndex> getIndexes() {
+    public @NotNull Collection<QueryIndex> getIndexes() {
         return idxs == null ? Collections.<QueryIndex>emptyList() : idxs;
     }
 
@@ -573,7 +573,7 @@ public class QueryEntity implements Serializable {
      *
      * @return Set of names of fields that must have non-null values.
      */
-    @Nullable public Set<String> getNotNullFields() {
+    public @Nullable Set<String> getNotNullFields() {
         return _notNullFields;
     }
 

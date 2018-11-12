@@ -427,7 +427,7 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void globalSampling(@Nullable final Boolean val) throws IgniteCheckedException {
+    @Override public void globalSampling(final @Nullable Boolean val) throws IgniteCheckedException {
         safeOp(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 if (meta.sampling(val)) {
@@ -448,7 +448,7 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public Boolean globalSampling() {
+    @Override public @Nullable Boolean globalSampling() {
         return safeOp(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
                 return meta.sampling();
@@ -511,7 +511,7 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public IgfsFile info(final IgfsPath path) {
+    @Override public @Nullable IgfsFile info(final IgfsPath path) {
         A.notNull(path, "path");
 
         if (meta.isClient())
@@ -723,7 +723,7 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void mkdirs(final IgfsPath path, @Nullable final Map<String, String> props)  {
+    @Override public void mkdirs(final IgfsPath path, final @Nullable Map<String, String> props)  {
         A.notNull(path, "path");
 
         if (meta.isClient()) {
@@ -1033,9 +1033,9 @@ public final class IgfsImpl implements IgfsEx {
         final IgfsPath path,
         final int bufSize,
         final boolean overwrite,
-        @Nullable final IgniteUuid affKey,
+        final @Nullable IgniteUuid affKey,
         final int replication,
-        @Nullable final Map<String, String> props,
+        final @Nullable Map<String, String> props,
         final boolean simpleCreate
     ) {
         A.notNull(path, "path");
@@ -1114,7 +1114,7 @@ public final class IgfsImpl implements IgfsEx {
 
     /** {@inheritDoc} */
     @Override public IgfsOutputStream append(final IgfsPath path, final int bufSize, final boolean create,
-        @Nullable final Map<String, String> props) {
+        final @Nullable Map<String, String> props) {
         A.notNull(path, "path");
         A.ensure(bufSize >= 0, "bufSize >= 0");
 
@@ -1673,7 +1673,7 @@ public final class IgfsImpl implements IgfsEx {
                     @IgniteInstanceResource
                     private Ignite g;
 
-                    @Nullable @Override public IgniteBiTuple<Long, Long> execute() {
+                    @Override public @Nullable IgniteBiTuple<Long, Long> execute() {
                         IgniteFileSystem igfs = ((IgniteKernal)g).context().igfs().igfs(igfsName);
 
                         if (igfs == null)
@@ -1692,7 +1692,7 @@ public final class IgfsImpl implements IgfsEx {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public IgniteBiTuple<Long, Long> reduce(List<ComputeJobResult> results) {
+        @Override public @Nullable IgniteBiTuple<Long, Long> reduce(List<ComputeJobResult> results) {
             long used = 0;
             long max = 0;
 

@@ -71,7 +71,7 @@ public abstract class PlatformAbstractJob implements PlatformJob, Externalizable
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object execute() {
+    @Override public @Nullable Object execute() {
         try {
             PlatformProcessor interopProc = PlatformUtils.platformProcessor(ignite);
 

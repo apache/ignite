@@ -126,7 +126,7 @@ public class ExchangeContext {
     /**
      * @return Groups to request affinity for.
      */
-    @Nullable public Set<Integer> groupsAffinityRequestOnJoin() {
+    public @Nullable Set<Integer> groupsAffinityRequestOnJoin() {
         return requestGrpsAffOnJoin;
     }
 

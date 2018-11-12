@@ -51,7 +51,7 @@ public class MvccFirstRowTreeClosure implements MvccTreeClosure {
     /**
      * @return Found row.
      */
-    @Nullable public CacheDataRow row() {
+    public @Nullable CacheDataRow row() {
         return res;
     }
 

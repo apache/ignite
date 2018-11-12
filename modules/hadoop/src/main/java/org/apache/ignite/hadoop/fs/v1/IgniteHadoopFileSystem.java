@@ -805,7 +805,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
      * @param path Hadoop path.
      * @return IGFS path.
      */
-    @Nullable private IgfsPath convert(@Nullable Path path) {
+    private @Nullable IgfsPath convert(@Nullable Path path) {
         if (path == null)
             return null;
 

@@ -140,7 +140,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     /**
      * @return Mvcc snapshot if mvcc is enabled for cache.
      */
-    @Nullable private MvccSnapshot mvccSnapshot() {
+    private @Nullable MvccSnapshot mvccSnapshot() {
         if (!cctx.mvccEnabled())
             return null;
 

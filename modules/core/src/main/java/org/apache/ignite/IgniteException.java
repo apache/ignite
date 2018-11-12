@@ -82,7 +82,7 @@ public class IgniteException extends RuntimeException {
      * @param cls Cause class to get cause (if {@code null}, {@code null} is returned).
      * @return First causing exception of passed in class, {@code null} otherwise.
      */
-    @Nullable public <T extends Throwable> T getCause(@Nullable Class<T> cls) {
+    public @Nullable <T extends Throwable> T getCause(@Nullable Class<T> cls) {
         return X.cause(this, cls);
     }
 

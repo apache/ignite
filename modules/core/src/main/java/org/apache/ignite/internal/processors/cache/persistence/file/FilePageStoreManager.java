@@ -649,7 +649,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @param cacheWorkDir Cache work directory.
      * @param partId Partition id.
      */
-    @NotNull private File getPartitionFile(File cacheWorkDir, int partId) {
+    private @NotNull File getPartitionFile(File cacheWorkDir, int partId) {
         return new File(cacheWorkDir, String.format(PART_FILE_TEMPLATE, partId));
     }
 

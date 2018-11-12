@@ -1202,7 +1202,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param topic Topic.
      * @return Listener.
      */
-    @Nullable private GridMessageListener listenerGet0(Object topic) {
+    private @Nullable GridMessageListener listenerGet0(Object topic) {
         if (topic instanceof GridTopic)
             return sysLsnrs[systemListenerIndex(topic)];
         else
@@ -1216,7 +1216,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param lsnr Listener.
      * @return Old listener (if any).
      */
-    @Nullable private GridMessageListener listenerPutIfAbsent0(Object topic, GridMessageListener lsnr) {
+    private @Nullable GridMessageListener listenerPutIfAbsent0(Object topic, GridMessageListener lsnr) {
         if (topic instanceof GridTopic) {
             synchronized (sysLsnrsMux) {
                 int idx = systemListenerIndex(topic);
@@ -1239,7 +1239,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param topic Topic.
      * @return Removed listener (if any).
      */
-    @Nullable private GridMessageListener listenerRemove0(Object topic) {
+    private @Nullable GridMessageListener listenerRemove0(Object topic) {
         if (topic instanceof GridTopic) {
             synchronized (sysLsnrsMux) {
                 int idx = systemListenerIndex(topic);
@@ -1358,7 +1358,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         final UUID nodeId,
         final GridIoMessage msg,
         final byte plc,
-        @Nullable final IgniteRunnable msgC
+        final @Nullable IgniteRunnable msgC
     ) throws IgniteCheckedException {
         assert msg != null;
 
@@ -1576,7 +1576,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /**
      * @return Current IO policy
      */
-    @Nullable public static Byte currentPolicy() {
+    public static @Nullable Byte currentPolicy() {
         return CUR_PLC.get();
     }
 
@@ -1983,7 +1983,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param p Message predicate.
      */
     @SuppressWarnings("unchecked")
-    public void addUserMessageListener(@Nullable final Object topic, @Nullable final IgniteBiPredicate<UUID, ?> p) {
+    public void addUserMessageListener(final @Nullable Object topic, final @Nullable IgniteBiPredicate<UUID, ?> p) {
         if (p != null) {
             try {
                 if (p instanceof PlatformMessageFilter)

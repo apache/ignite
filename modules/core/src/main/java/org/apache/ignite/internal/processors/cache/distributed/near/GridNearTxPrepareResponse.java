@@ -159,7 +159,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     /**
      * @return Mvcc info.
      */
-    @Nullable public MvccSnapshot mvccSnapshot() {
+    public @Nullable MvccSnapshot mvccSnapshot() {
         return mvccSnapshot;
     }
 

@@ -84,7 +84,7 @@ public abstract class GridProcessorAdapter implements GridProcessor {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
+    @Override public @Nullable DiscoveryDataExchangeType discoveryDataType() {
         return null;
     }
 
@@ -146,12 +146,12 @@ public abstract class GridProcessorAdapter implements GridProcessor {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
+    @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag.JoiningNodeDiscoveryData discoData) {
+    @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag.JoiningNodeDiscoveryData discoData) {
         return null;
     }
 

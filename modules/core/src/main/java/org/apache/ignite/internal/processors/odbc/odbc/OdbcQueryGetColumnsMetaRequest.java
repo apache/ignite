@@ -49,7 +49,7 @@ public class OdbcQueryGetColumnsMetaRequest extends OdbcRequest {
     /**
      * @return Schema pattern.
      */
-    @Nullable public String schemaPattern() {
+    public @Nullable String schemaPattern() {
         return schemaPattern;
     }
 

@@ -265,7 +265,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable protected IgniteInternalFuture<Boolean> addReader(long msgId, GridDhtCacheEntry cached,
+    @Override protected @Nullable IgniteInternalFuture<Boolean> addReader(long msgId, GridDhtCacheEntry cached,
         IgniteTxEntry entry, AffinityTopologyVersion topVer) {
         // Don't add local node as reader.
         if (entry.addReader() && !cctx.localNodeId().equals(nearNodeId)) {
@@ -646,8 +646,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Nullable @Override public IgniteInternalFuture<?> currentPrepareFuture() {
+    @Override @SuppressWarnings("unchecked") public @Nullable IgniteInternalFuture<?> currentPrepareFuture() {
         return prepFut;
     }
 

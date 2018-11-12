@@ -170,12 +170,12 @@ public class GridNioSessionImpl implements GridNioSession {
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public InetSocketAddress localAddress() {
+    @Override public @Nullable InetSocketAddress localAddress() {
         return locAddr;
     }
 
     /** {@inheritDoc} */
-    @Override  @Nullable public InetSocketAddress remoteAddress() {
+    @Override public @Nullable InetSocketAddress remoteAddress() {
         return rmtAddr;
     }
 
@@ -351,7 +351,7 @@ public class GridNioSessionImpl implements GridNioSession {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridNioRecoveryDescriptor outRecoveryDescriptor() {
+    @Override public @Nullable GridNioRecoveryDescriptor outRecoveryDescriptor() {
         return null;
     }
 
@@ -361,7 +361,7 @@ public class GridNioSessionImpl implements GridNioSession {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridNioRecoveryDescriptor inRecoveryDescriptor() {
+    @Override public @Nullable GridNioRecoveryDescriptor inRecoveryDescriptor() {
         return null;
     }
 

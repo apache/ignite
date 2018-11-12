@@ -55,8 +55,7 @@ public class HadoopProtocolTaskArguments implements Externalizable {
      * @param idx Argument index.
      * @return Argument.
      */
-    @SuppressWarnings("unchecked")
-    @Nullable public <T> T get(int idx) {
+    @SuppressWarnings("unchecked") public @Nullable <T> T get(int idx) {
         return (args != null && args.length > idx) ? (T)args[idx] : null;
     }
 

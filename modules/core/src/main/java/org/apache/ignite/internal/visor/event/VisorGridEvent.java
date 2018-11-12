@@ -122,7 +122,7 @@ public class VisorGridEvent extends VisorDataTransferObject {
     /**
      * @return Event message.
      */
-    @Nullable public String getMessage() {
+    public @Nullable String getMessage() {
         return msg;
     }
 

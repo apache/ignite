@@ -262,8 +262,7 @@ public class GridBinaryMarshaller {
      * @return Binary object.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    @SuppressWarnings("unchecked")
-    @Nullable public <T> T unmarshal(byte[] bytes, @Nullable ClassLoader clsLdr) throws BinaryObjectException {
+    @SuppressWarnings("unchecked") public @Nullable <T> T unmarshal(byte[] bytes, @Nullable ClassLoader clsLdr) throws BinaryObjectException {
         assert bytes != null;
 
         BinaryContext oldCtx = pushContext(ctx);
@@ -281,8 +280,7 @@ public class GridBinaryMarshaller {
      * @return Binary object.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    @SuppressWarnings("unchecked")
-    @Nullable public <T> T unmarshal(BinaryInputStream in) throws BinaryObjectException {
+    @SuppressWarnings("unchecked") public @Nullable <T> T unmarshal(BinaryInputStream in) throws BinaryObjectException {
         BinaryContext oldCtx = pushContext(ctx);
 
         try {
@@ -299,8 +297,7 @@ public class GridBinaryMarshaller {
      * @return Deserialized object.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    @SuppressWarnings("unchecked")
-    @Nullable public <T> T deserialize(byte[] arr, @Nullable ClassLoader ldr) throws BinaryObjectException {
+    @SuppressWarnings("unchecked") public @Nullable <T> T deserialize(byte[] arr, @Nullable ClassLoader ldr) throws BinaryObjectException {
         assert arr != null;
         assert arr.length > 0;
 
@@ -332,7 +329,7 @@ public class GridBinaryMarshaller {
      * @param ctx Binary context.
      * @return Old binary context.
      */
-    @Nullable private static BinaryContext pushContext(BinaryContext ctx) {
+    private static @Nullable BinaryContext pushContext(BinaryContext ctx) {
         BinaryContext old = BINARY_CTX.get();
 
         BINARY_CTX.set(ctx);

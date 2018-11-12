@@ -172,7 +172,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     /**
      * @return MVCC snapshot.
      */
-    @Nullable public MvccSnapshot mvccSnapshot() {
+    public @Nullable MvccSnapshot mvccSnapshot() {
         return mvccSnapshot;
     }
 

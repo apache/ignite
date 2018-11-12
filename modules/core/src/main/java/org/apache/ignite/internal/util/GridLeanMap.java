@@ -156,14 +156,14 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V get(Object key) {
+    @Override public @Nullable V get(Object key) {
         A.notNull(key, "key");
 
         return map != null ? map.get(key) : null;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V put(K key, V val) throws NullPointerException {
+    @Override public @Nullable V put(K key, V val) throws NullPointerException {
         A.notNull(key, "key");
 
         if (map == null) {
@@ -214,7 +214,7 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V remove(Object key) {
+    @Override public @Nullable V remove(Object key) {
         A.notNull(key, "key");
 
         V old;
@@ -397,7 +397,7 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public V remove(Object key) {
+        @Override public @Nullable V remove(Object key) {
             V res = null;
 
             if (F.eq(key, k1)) {
@@ -431,7 +431,7 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public V get(Object key) {
+        @Override public @Nullable V get(Object key) {
             return k1 != null && F.eq(key, k1) ? v1 : null;
         }
 
@@ -445,7 +445,7 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
          * @param val Value.
          * @return Previous value associated with given key.
          */
-        @Nullable @Override public V put(K key, V val) {
+        @Override public @Nullable V put(K key, V val) {
             V oldVal = get(key);
 
             if (k1 == null || F.eq(k1, key)) {
@@ -539,7 +539,7 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public V remove(Object key) {
+        @Override public @Nullable V remove(Object key) {
             if (F.eq(key, k2)) {
                 V res = v2;
 
@@ -584,7 +584,7 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
          * @param val Value.
          * @return Previous value associated with given key.
          */
-        @Nullable @Override public V put(K key, V val) throws NullPointerException {
+        @Override public @Nullable V put(K key, V val) throws NullPointerException {
             V oldVal = get(key);
 
             if (k1 == null || F.eq(k1, key)) {
@@ -695,7 +695,7 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public V remove(Object key) {
+        @Override public @Nullable V remove(Object key) {
             if (F.eq(key, k3)) {
                 V res = v3;
 
@@ -724,7 +724,7 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public V get(Object k) {
+        @Override public @Nullable V get(Object k) {
             V v = super.get(k);
 
             return v != null ? v : (k3 != null && F.eq(k, k3)) ? v3 : null;
@@ -740,7 +740,7 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
          * @param val Value.
          * @return Previous value associated with given key.
          */
-        @Nullable @Override public V put(K key, V val) throws NullPointerException {
+        @Override public @Nullable V put(K key, V val) throws NullPointerException {
             V oldVal = get(key);
 
             if (k1 == null || F.eq(k1, key)) {
@@ -875,7 +875,7 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public V remove(Object key) {
+        @Override public @Nullable V remove(Object key) {
             if (F.eq(key, k4)) {
                 V res = v4;
 
@@ -904,7 +904,7 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public V get(Object k) {
+        @Override public @Nullable V get(Object k) {
             V v = super.get(k);
 
             return v != null ? v : (k4 != null && F.eq(k, k4)) ? v4 : null;
@@ -920,7 +920,7 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
          * @param val Value.
          * @return Previous value associated with given key.
          */
-        @Nullable @Override public V put(K key, V val) throws NullPointerException {
+        @Override public @Nullable V put(K key, V val) throws NullPointerException {
             V oldVal = get(key);
 
             if (k1 == null || F.eq(k1, key)) {
@@ -1073,7 +1073,7 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public V remove(Object key) {
+        @Override public @Nullable V remove(Object key) {
             if (F.eq(key, k5)) {
                 V res = v5;
 
@@ -1102,7 +1102,7 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public V get(Object k) {
+        @Override public @Nullable V get(Object k) {
             V v = super.get(k);
 
             return v != null ? v : (k5 != null && F.eq(k, k5)) ? v5 : null;
@@ -1118,7 +1118,7 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
          * @param val Value.
          * @return Previous value associated with given key.
          */
-        @Nullable @Override public V put(K key, V val) throws NullPointerException {
+        @Override public @Nullable V put(K key, V val) throws NullPointerException {
             V oldVal = get(key);
 
             if (k1 == null || F.eq(k1, key)) {

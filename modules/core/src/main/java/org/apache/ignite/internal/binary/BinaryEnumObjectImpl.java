@@ -139,7 +139,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     /**
      * @return Class name.
      */
-    @Nullable public String className() {
+    public @Nullable String className() {
         return clsName;
     }
 
@@ -154,7 +154,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public BinaryType rawType() throws BinaryObjectException {
+    @Override public @Nullable BinaryType rawType() throws BinaryObjectException {
         return BinaryUtils.type(ctx, this);
     }
 
@@ -281,7 +281,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy) {
+    @Override public @Nullable <T> T value(CacheObjectValueContext ctx, boolean cpy) {
         return deserialize();
     }
 

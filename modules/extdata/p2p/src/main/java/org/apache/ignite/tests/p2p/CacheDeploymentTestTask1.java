@@ -63,7 +63,7 @@ public class CacheDeploymentTestTask1 extends ComputeTaskAdapter<ClusterNode, Ob
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object reduce(List<ComputeJobResult> results) {
+    @Override public @Nullable Object reduce(List<ComputeJobResult> results) {
         return null;
     }
 }

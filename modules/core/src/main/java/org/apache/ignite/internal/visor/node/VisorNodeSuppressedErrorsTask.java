@@ -46,7 +46,7 @@ public class VisorNodeSuppressedErrorsTask extends VisorMultiNodeTask<VisorNodeS
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Map<UUID, VisorNodeSuppressedErrors>
+    @Override protected @Nullable Map<UUID, VisorNodeSuppressedErrors>
         reduce0(List<ComputeJobResult> results) {
         Map<UUID, VisorNodeSuppressedErrors> taskRes =
             new HashMap<>(results.size());

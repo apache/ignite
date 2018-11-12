@@ -280,7 +280,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
      * @return DHT version for this entry.
      * @throws GridCacheEntryRemovedException If obsolete.
      */
-    @Nullable public GridCacheVersion dhtVersion() throws GridCacheEntryRemovedException {
+    public @Nullable GridCacheVersion dhtVersion() throws GridCacheEntryRemovedException {
         lockEntry();
 
         try {
@@ -297,7 +297,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
      * @return Tuple with version and value of this entry.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    @Nullable public IgniteBiTuple<GridCacheVersion, CacheObject> versionedValue()
+    public @Nullable IgniteBiTuple<GridCacheVersion, CacheObject> versionedValue()
         throws GridCacheEntryRemovedException {
         lockEntry();
 
@@ -479,7 +479,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheDataRow unswap(CacheDataRow row, boolean checkExpire) {
+    @Override public @Nullable CacheDataRow unswap(CacheDataRow row, boolean checkExpire) {
         return null;
     }
 
@@ -606,7 +606,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
      * @return {@code true} if candidate was found.
      * @throws GridCacheEntryRemovedException If entry is removed.
      */
-    @Nullable public GridCacheMvccCandidate dhtNodeId(GridCacheVersion ver, UUID dhtNodeId)
+    public @Nullable GridCacheMvccCandidate dhtNodeId(GridCacheVersion ver, UUID dhtNodeId)
         throws GridCacheEntryRemovedException {
         lockEntry();
 
@@ -634,7 +634,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
      *
      * @return Removed candidate, or <tt>null</tt> if thread still holds the lock.
      */
-    @Nullable @Override public GridCacheMvccCandidate removeLock() {
+    @Override public @Nullable GridCacheMvccCandidate removeLock() {
         CacheLockCandidates prev = null;
         CacheLockCandidates owner = null;
 

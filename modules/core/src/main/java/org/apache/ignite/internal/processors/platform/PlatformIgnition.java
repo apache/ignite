@@ -88,7 +88,7 @@ public class PlatformIgnition {
      * @param igniteInstanceName Ignite instance name.
      * @return Instance or {@code null} if it doesn't exist (never started or stopped).
      */
-    @Nullable public static synchronized PlatformProcessor instance(@Nullable String igniteInstanceName) {
+    public static synchronized @Nullable PlatformProcessor instance(@Nullable String igniteInstanceName) {
         return instances.get(igniteInstanceName);
     }
 

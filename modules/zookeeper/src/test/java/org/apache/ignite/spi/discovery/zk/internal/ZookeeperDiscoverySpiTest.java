@@ -5429,7 +5429,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public DiscoveryCustomMessage ackMessage() {
+        @Override public @Nullable DiscoveryCustomMessage ackMessage() {
             return createAck ? new TestFastStopProcessCustomMessageAck(payload) : null;
         }
 
@@ -5500,7 +5500,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public DiscoveryCustomMessage ackMessage() {
+        @Override public @Nullable DiscoveryCustomMessage ackMessage() {
             return null;
         }
 

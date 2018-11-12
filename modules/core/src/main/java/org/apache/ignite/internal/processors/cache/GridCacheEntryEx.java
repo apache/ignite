@@ -157,7 +157,7 @@ public interface GridCacheEntryEx {
      *
      * @return Value.
      */
-    @Nullable public CacheObject peekVisibleValue();
+    public @Nullable CacheObject peekVisibleValue();
 
     /**
      * @return Entry which is safe to pass into eviction policy.
@@ -196,12 +196,12 @@ public interface GridCacheEntryEx {
     /**
      * @return Entry info.
      */
-    @Nullable public GridCacheEntryInfo info();
+    public @Nullable GridCacheEntryInfo info();
 
     /**
      * @return Entry info for each MVCC version.
      */
-    @Nullable public List<GridCacheEntryInfo> allVersionsInfo() throws IgniteCheckedException;
+    public @Nullable List<GridCacheEntryInfo> allVersionsInfo() throws IgniteCheckedException;
 
     /**
      * Invalidates this entry.
@@ -272,7 +272,7 @@ public interface GridCacheEntryEx {
      * @throws IgniteCheckedException If loading value failed.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @Nullable public CacheObject innerGet(@Nullable GridCacheVersion ver,
+    public @Nullable CacheObject innerGet(@Nullable GridCacheVersion ver,
         @Nullable IgniteInternalTx tx,
         boolean readThrough,
         boolean updateMetrics,
@@ -347,7 +347,7 @@ public interface GridCacheEntryEx {
      * @throws IgniteCheckedException If reload failed.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    @Nullable public CacheObject innerReload() throws IgniteCheckedException, GridCacheEntryRemovedException;
+    public @Nullable CacheObject innerReload() throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * @param tx Cache transaction.
@@ -723,7 +723,7 @@ public interface GridCacheEntryEx {
      * @throws GridCacheEntryRemovedException If entry has been removed.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public CacheObject peek(boolean heap,
+    public @Nullable CacheObject peek(boolean heap,
         boolean offheap,
         AffinityTopologyVersion topVer,
         @Nullable IgniteCacheExpiryPolicy plc)
@@ -737,7 +737,7 @@ public interface GridCacheEntryEx {
      * @throws GridCacheEntryRemovedException If entry has been removed.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public CacheObject peek(@Nullable IgniteCacheExpiryPolicy plc)
+    public @Nullable CacheObject peek(@Nullable IgniteCacheExpiryPolicy plc)
         throws GridCacheEntryRemovedException, IgniteCheckedException;
 
     /**
@@ -932,7 +932,7 @@ public interface GridCacheEntryEx {
      * @return Local candidate.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @Nullable public GridCacheMvccCandidate localCandidate(long threadId) throws GridCacheEntryRemovedException;
+    public @Nullable GridCacheMvccCandidate localCandidate(long threadId) throws GridCacheEntryRemovedException;
 
     /**
      * Gets all local candidates.
@@ -959,7 +959,7 @@ public interface GridCacheEntryEx {
      * @return Lock candidate for given ID.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @Nullable public GridCacheMvccCandidate candidate(GridCacheVersion ver) throws GridCacheEntryRemovedException;
+    public @Nullable GridCacheMvccCandidate candidate(GridCacheVersion ver) throws GridCacheEntryRemovedException;
 
     /**
      * @param nodeId Node ID.
@@ -967,14 +967,14 @@ public interface GridCacheEntryEx {
      * @return Candidate.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @Nullable public GridCacheMvccCandidate candidate(UUID nodeId, long threadId)
+    public @Nullable GridCacheMvccCandidate candidate(UUID nodeId, long threadId)
         throws GridCacheEntryRemovedException;
 
     /**
      * @return Local owner.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @Nullable public GridCacheMvccCandidate localOwner() throws GridCacheEntryRemovedException;
+    public @Nullable GridCacheMvccCandidate localOwner() throws GridCacheEntryRemovedException;
 
     /**
      * @return Value bytes.
@@ -990,7 +990,7 @@ public interface GridCacheEntryEx {
      * @throws IgniteCheckedException If serialization failed.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @Nullable public CacheObject valueBytes(@Nullable GridCacheVersion ver)
+    public @Nullable CacheObject valueBytes(@Nullable GridCacheVersion ver)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
@@ -1051,7 +1051,7 @@ public interface GridCacheEntryEx {
      * @throws IgniteCheckedException If failed to read from swap storage.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @Nullable public CacheObject unswap()
+    public @Nullable CacheObject unswap()
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
@@ -1060,7 +1060,7 @@ public interface GridCacheEntryEx {
      * @throws IgniteCheckedException If failed to read from swap storage.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @Nullable public CacheObject unswap(CacheDataRow row)
+    public @Nullable CacheObject unswap(CacheDataRow row)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
@@ -1071,7 +1071,7 @@ public interface GridCacheEntryEx {
      * @throws IgniteCheckedException If failed.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @Nullable public CacheObject unswap(boolean needVal)
+    public @Nullable CacheObject unswap(boolean needVal)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
@@ -1089,7 +1089,7 @@ public interface GridCacheEntryEx {
      * @param <V> Type of the value.
      * @return Metadata value or {@code null}.
      */
-    @Nullable public <V> V meta(int key);
+    public @Nullable <V> V meta(int key);
 
     /**
      * Adds a new metadata.
@@ -1100,7 +1100,7 @@ public interface GridCacheEntryEx {
      * @return Metadata previously associated with given name, or
      *      {@code null} if there was none.
      */
-    @Nullable public <V> V addMeta(int key, V val);
+    public @Nullable <V> V addMeta(int key, V val);
 
     /**
      * Adds given metadata value only if it was absent.
@@ -1110,7 +1110,7 @@ public interface GridCacheEntryEx {
      * @param <V> Type of the value.
      * @return {@code null} if new value was put, or current value if put didn't happen.
      */
-    @Nullable public <V> V putMetaIfAbsent(int key, V val);
+    public @Nullable <V> V putMetaIfAbsent(int key, V val);
 
     /**
      * Replaces given metadata with new {@code newVal} value only if its current value
@@ -1130,7 +1130,7 @@ public interface GridCacheEntryEx {
      * @param <V> Type of the value.
      * @return Value of removed metadata or {@code null}.
      */
-    @Nullable public <V> V removeMeta(int key);
+    public @Nullable <V> V removeMeta(int key);
 
     /**
      * Removes metadata only if its current value is equal to {@code val} passed in.

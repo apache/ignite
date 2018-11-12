@@ -118,7 +118,7 @@ public abstract class BaggingModelTrainer extends DatasetTrainer<ModelsCompositi
      * @param featureExtractor Feature extractor.
      * @param lbExtractor Label extractor.
      */
-    @NotNull private <K, V> ModelOnFeaturesSubspace learnModel(
+    private @NotNull <K, V> ModelOnFeaturesSubspace learnModel(
         DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {

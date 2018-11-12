@@ -61,7 +61,7 @@ public class GridNioDelimitedBuffer {
      * @param buf Buffer.
      * @return Message bytes or {@code null} if message is not fully read yet.
      */
-    @Nullable public byte[] read(ByteBuffer buf) {
+    public @Nullable byte[] read(ByteBuffer buf) {
         while(buf.hasRemaining()) {
             if (cnt == data.length)
                 data = Arrays.copyOf(data, data.length * 2);

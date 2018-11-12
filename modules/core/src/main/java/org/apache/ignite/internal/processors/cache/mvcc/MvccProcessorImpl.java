@@ -275,7 +275,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
+    @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node) {
         if (mvccEnabled && node.version().compareToIgnoreTimestamp(MVCC_SUPPORTED_SINCE) < 0) {
             String errMsg = "Failed to add node to topology. MVCC is enabled on the cluster, but " +
                 "the node doesn't support MVCC [nodeId=" + node.id() + ']';
@@ -438,12 +438,12 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public MvccCoordinator currentCoordinator() {
+    @Override public @Nullable MvccCoordinator currentCoordinator() {
         return currentCoordinator(AffinityTopologyVersion.NONE);
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public MvccCoordinator currentCoordinator(AffinityTopologyVersion topVer) {
+    @Override public @Nullable MvccCoordinator currentCoordinator(AffinityTopologyVersion topVer) {
         MvccCoordinator crd = curCrd;
 
         // Assert coordinator did not already change.
@@ -455,7 +455,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public MvccCoordinator assignedCoordinator() {
+    @Override public @Nullable MvccCoordinator assignedCoordinator() {
         return assignedCrd;
     }
 
@@ -1293,7 +1293,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** */
-    @NotNull private IgniteCheckedException vacuumCancelledException() {
+    private @NotNull IgniteCheckedException vacuumCancelledException() {
         return new NodeStoppingException("Operation has been cancelled (node is stopping).");
     }
 
@@ -1315,7 +1315,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** */
-    @NotNull private IgniteInternalFuture<Void> sendTxCommit(MvccCoordinator crd, MvccAckRequestTx msg) {
+    private @NotNull IgniteInternalFuture<Void> sendTxCommit(MvccCoordinator crd, MvccAckRequestTx msg) {
         WaitAckFuture fut = new WaitAckFuture(msg.futureId(), crd.nodeId(), true);
 
         ackFuts.put(fut.id, fut);
@@ -2311,8 +2311,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         }
 
         /** */
-        @SuppressWarnings("unchecked")
-        @NotNull private Object addRest(@Nullable Object rest, MvccDataRow row) {
+        @SuppressWarnings("unchecked") private @NotNull Object addRest(@Nullable Object rest, MvccDataRow row) {
             if (rest == null)
                 rest = row;
             else if (rest.getClass() == ArrayList.class)
@@ -2334,7 +2333,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
          * @param row Row to add.
          * @return Collection of rows.
          */
-        @NotNull private List<MvccLinkAwareSearchRow> addRow(@Nullable List<MvccLinkAwareSearchRow> rows, MvccDataRow row) {
+        private @NotNull List<MvccLinkAwareSearchRow> addRow(@Nullable List<MvccLinkAwareSearchRow> rows, MvccDataRow row) {
             if (rows == null)
                 rows = new ArrayList<>();
 

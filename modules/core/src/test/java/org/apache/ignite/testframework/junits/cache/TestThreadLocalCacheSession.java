@@ -41,7 +41,7 @@ public class TestThreadLocalCacheSession implements CacheStoreSession {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Transaction transaction() {
+    @Override public @Nullable Transaction transaction() {
         TestCacheSession ses = sesHolder.get();
 
         return ses != null ? ses.transaction() : null;
@@ -60,8 +60,7 @@ public class TestThreadLocalCacheSession implements CacheStoreSession {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Nullable @Override public <T> T attachment() {
+    @Override @SuppressWarnings("unchecked") public @Nullable <T> T attachment() {
         TestCacheSession ses = sesHolder.get();
 
         return ses!= null ? (T)ses.attachment() : null;
@@ -76,7 +75,7 @@ public class TestThreadLocalCacheSession implements CacheStoreSession {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String cacheName() {
+    @Override public @Nullable String cacheName() {
         TestCacheSession ses = sesHolder.get();
 
         return ses != null ? ses.cacheName() : null;

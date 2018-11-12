@@ -53,7 +53,7 @@ public interface DiscoverySpi extends IgniteSpi {
      * @return Consistent ID of this Ignite instance or {@code null} if not applicable.
      * @throws IgniteSpiException If failed.
      */
-    @Nullable public Serializable consistentId() throws IgniteSpiException;
+    public @Nullable Serializable consistentId() throws IgniteSpiException;
 
     /**
      * Gets collection of remote nodes in grid or empty collection if no remote nodes found.
@@ -75,7 +75,7 @@ public interface DiscoverySpi extends IgniteSpi {
      * @param nodeId Node ID.
      * @return Node with given ID or {@code null} if node is not found.
      */
-    @Nullable public ClusterNode getNode(UUID nodeId);
+    public @Nullable ClusterNode getNode(UUID nodeId);
 
     /**
      * Pings the remote node to see if it's alive.

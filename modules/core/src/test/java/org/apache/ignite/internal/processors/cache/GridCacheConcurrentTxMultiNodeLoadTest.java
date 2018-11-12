@@ -819,7 +819,7 @@ public class GridCacheConcurrentTxMultiNodeLoadTest extends GridCommonAbstractTe
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Void reduce(List<ComputeJobResult> results) {
+        @Override public @Nullable Void reduce(List<ComputeJobResult> results) {
             return null;
         }
     }
@@ -834,7 +834,7 @@ public class GridCacheConcurrentTxMultiNodeLoadTest extends GridCommonAbstractTe
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Void reduce(List<ComputeJobResult> results) {
+        @Override public @Nullable Void reduce(List<ComputeJobResult> results) {
             return null;
         }
     }

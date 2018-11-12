@@ -323,7 +323,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
+    @Override public @Nullable DiscoveryDataExchangeType discoveryDataType() {
         return DiscoveryDataExchangeType.QUERY_PROC;
     }
 
@@ -1779,8 +1779,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param desc Type descriptor.
      * @return Future that will be completed when rebuilding of all indexes is finished.
      */
-    private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final String cacheName,
-        @Nullable final QueryTypeDescriptorImpl desc) {
+    private IgniteInternalFuture<Object> rebuildIndexesFromHash(final @Nullable String cacheName,
+        final @Nullable QueryTypeDescriptorImpl desc) {
         if (idx == null)
             return new GridFinishedFuture<>(new IgniteCheckedException("Indexing is disabled."));
 
@@ -1951,8 +1951,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Type descriptor if found.
      * @throws IgniteCheckedException If type check failed.
      */
-    @SuppressWarnings("ConstantConditions")
-    @Nullable private QueryTypeDescriptorImpl typeByValue(String cacheName,
+    @SuppressWarnings("ConstantConditions") private @Nullable QueryTypeDescriptorImpl typeByValue(String cacheName,
         CacheObjectContext coctx,
         KeyCacheObject key,
         CacheObject val,
@@ -2099,7 +2098,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *      more then one SQL statement.
      * @return Cursor.
      */
-    public List<FieldsQueryCursor<List<?>>> querySqlFields(@Nullable final GridCacheContext<?, ?> cctx,
+    public List<FieldsQueryCursor<List<?>>> querySqlFields(final @Nullable GridCacheContext<?, ?> cctx,
         final SqlFieldsQuery qry, final SqlClientContext cliCtx, final boolean keepBinary,
         final boolean failOnMultipleStmts) {
         checkxEnabled();
@@ -2182,7 +2181,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param qry Query.
      * @return Update counter.
      */
-    public long streamUpdateQuery(@Nullable final String cacheName, final String schemaName,
+    public long streamUpdateQuery(final @Nullable String cacheName, final String schemaName,
         final IgniteDataStreamer<?, ?> streamer, final String qry, final Object[] args) {
         assert streamer != null;
 
@@ -2651,7 +2650,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param tblName Table name.
      * @return Type (if any).
      */
-    @Nullable private QueryTypeDescriptorImpl type(@Nullable String cacheName, String tblName) {
+    private @Nullable QueryTypeDescriptorImpl type(@Nullable String cacheName, String tblName) {
         for (QueryTypeDescriptorImpl type : types.values()) {
             if (F.eq(cacheName, type.cacheName()) && F.eq(tblName, type.tableName()))
                 return type;
@@ -2833,7 +2832,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param err Error.
      * @return Error bytes.
      */
-    @Nullable private byte[] marshalSchemaError(UUID opId, @Nullable SchemaOperationException err) {
+    private @Nullable byte[] marshalSchemaError(UUID opId, @Nullable SchemaOperationException err) {
         if (err == null)
             return null;
 
@@ -2862,7 +2861,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param errBytes Error bytes.
      * @return Error.
      */
-    @Nullable private SchemaOperationException unmarshalSchemaError(@Nullable byte[] errBytes) {
+    private @Nullable SchemaOperationException unmarshalSchemaError(@Nullable byte[] errBytes) {
         if (errBytes == null)
             return null;
 
@@ -2984,7 +2983,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /**
          * @return Next schema operation.
          */
-        @Nullable public SchemaOperation next() {
+        public @Nullable SchemaOperation next() {
             return next;
         }
 

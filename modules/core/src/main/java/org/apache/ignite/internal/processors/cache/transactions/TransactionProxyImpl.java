@@ -234,7 +234,7 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String label() {
+    @Override public @Nullable String label() {
         if (async)
             save(tx.label());
 

@@ -43,14 +43,14 @@ public interface IgniteTxState {
     /**
      * @return First tx cache id.
      */
-    @Nullable public Integer firstCacheId();
+    public @Nullable Integer firstCacheId();
 
     /**
      * Gets caches ids affected with current tx.
      *
      * @return tx cache ids.
      */
-    @Nullable public GridIntList cacheIds();
+    public @Nullable GridIntList cacheIds();
 
     /**
      * Unwind evicts for caches involved in this transaction.
@@ -62,7 +62,7 @@ public interface IgniteTxState {
      * @param cctx Context.
      * @return cctx Non-null cache context if tx has only one active cache.
      */
-    @Nullable public GridCacheContext singleCacheContext(GridCacheSharedContext cctx);
+    public @Nullable GridCacheContext singleCacheContext(GridCacheSharedContext cctx);
 
     /**
      * @param cctx Awaits for previous async operations on active caches to be completed.
@@ -136,7 +136,7 @@ public interface IgniteTxState {
      * @param key Key.
      * @return Entry.
      */
-    @Nullable public IgniteTxEntry entry(IgniteTxKey key);
+    public @Nullable IgniteTxEntry entry(IgniteTxKey key);
 
     /**
      * @param key Key.
@@ -182,7 +182,7 @@ public interface IgniteTxState {
     /**
      * @return Non-null entry if tx has only one write entry.
      */
-    @Nullable public IgniteTxEntry singleWrite();
+    public @Nullable IgniteTxEntry singleWrite();
 
     /**
      * @return {@code True} if transaction is empty.

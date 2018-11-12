@@ -43,7 +43,7 @@ public class VisorNodeDataCollectorTask extends VisorMultiNodeTask<VisorNodeData
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected VisorNodeDataCollectorTaskResult reduce0(List<ComputeJobResult> results) {
+    @Override protected @Nullable VisorNodeDataCollectorTaskResult reduce0(List<ComputeJobResult> results) {
         return reduce(new VisorNodeDataCollectorTaskResult(), results);
     }
 

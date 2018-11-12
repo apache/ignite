@@ -42,13 +42,13 @@ import java.util.Map;
  */
 public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object> {
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable String serviceName) throws IgniteException {
         return Collections.singletonMap(new PlatformDeployServiceJob(serviceName), F.first(subgrid));
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteException {
+    @Override public @Nullable Object reduce(List<ComputeJobResult> results) throws IgniteException {
         return results.get(0).getData();
     }
 

@@ -34,7 +34,7 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
     /**
      * @return Commit error.
      */
-    @Nullable public Throwable commitError();
+    public @Nullable Throwable commitError();
 
     /**
      * @throws IgniteCheckedException If commit failed.

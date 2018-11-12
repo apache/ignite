@@ -222,7 +222,7 @@ public class ExchangeActions {
     /**
      * @return Cluster state change request.
      */
-    @Nullable public StateChangeRequest stateChangeRequest() {
+    public @Nullable StateChangeRequest stateChangeRequest() {
         return stateChangeReq;
     }
 

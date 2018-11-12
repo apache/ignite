@@ -34,7 +34,7 @@ public class IgniteQueryGenerator {
      * @param mtd Method.
      * @param metadata Metadata.
      */
-    @NotNull public static IgniteQuery generateSql(Method mtd, RepositoryMetadata metadata) {
+    public static @NotNull IgniteQuery generateSql(Method mtd, RepositoryMetadata metadata) {
         PartTree parts = new PartTree(mtd.getName(), metadata.getDomainType());
 
         StringBuilder sql = new StringBuilder();

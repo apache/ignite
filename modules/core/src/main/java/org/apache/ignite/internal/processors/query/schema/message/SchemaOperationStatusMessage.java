@@ -72,7 +72,7 @@ public class SchemaOperationStatusMessage implements Message {
     /**
      * @return Error bytes.
      */
-    @Nullable public byte[] errorBytes() {
+    public @Nullable byte[] errorBytes() {
         return errBytes;
     }
 

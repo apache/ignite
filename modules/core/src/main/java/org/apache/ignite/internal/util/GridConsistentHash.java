@@ -317,7 +317,7 @@ public class GridConsistentHash<N> {
      *
      * @return Random node from consistent hash or {@code null} if there are no nodes.
      */
-    @Nullable public N random() {
+    public @Nullable N random() {
         return node(RAND.nextLong());
     }
 
@@ -327,7 +327,7 @@ public class GridConsistentHash<N> {
      * @param key Key.
      * @return Node.
      */
-    @Nullable public N node(@Nullable Object key) {
+    public @Nullable N node(@Nullable Object key) {
         int hash = hash(key);
 
         rw.readLock().lock();
@@ -356,7 +356,7 @@ public class GridConsistentHash<N> {
      *      If {@code null}, then all nodes may be included.
      * @return Node for key, or {@code null} if node was not found.
      */
-    @Nullable public N node(@Nullable Object key, @Nullable Collection<N> inc) {
+    public @Nullable N node(@Nullable Object key, @Nullable Collection<N> inc) {
         return node(key, inc, null);
     }
 
@@ -370,8 +370,8 @@ public class GridConsistentHash<N> {
      *      If {@code null}, then all nodes may be returned.
      * @return Node for key, or {@code null} if node was not found.
      */
-    @Nullable public N node(@Nullable Object key, @Nullable final Collection<N> inc,
-        @Nullable final Collection<N> exc) {
+    public @Nullable N node(@Nullable Object key, final @Nullable Collection<N> inc,
+        final @Nullable Collection<N> exc) {
         if (inc == null && exc == null)
             return node(key);
 
@@ -389,7 +389,7 @@ public class GridConsistentHash<N> {
      * @param p Optional predicate for node filtering.
      * @return Node for key, or {@code null} if node was not found.
      */
-    @Nullable public N node(@Nullable Object key, @Nullable IgnitePredicate<N>... p) {
+    public @Nullable N node(@Nullable Object key, @Nullable IgnitePredicate<N>... p) {
         if (p == null || p.length == 0)
             return node(key);
 
@@ -492,8 +492,8 @@ public class GridConsistentHash<N> {
      *      If {@code null}, then all nodes may be returned.
      * @return List containing adjacent nodes for given key.
      */
-    public List<N> nodes(@Nullable Object key, int cnt, @Nullable final Collection<N> inc,
-        @Nullable final Collection<N> exc) {
+    public List<N> nodes(@Nullable Object key, int cnt, final @Nullable Collection<N> inc,
+        final @Nullable Collection<N> exc) {
         A.ensure(cnt >= 0, "cnt >= 0");
 
         if (cnt == 0)

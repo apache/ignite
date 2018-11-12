@@ -84,7 +84,7 @@ public enum SecurityPermission {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static SecurityPermission fromOrdinal(int ord) {
+    public static @Nullable SecurityPermission fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

@@ -61,7 +61,7 @@ public class VisorLatestTextFilesTask extends VisorOneNodeTask<VisorLatestTextFi
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override protected Collection<VisorLogFile> run(final VisorLatestTextFilesTaskArg arg) {
+        @Override protected @Nullable Collection<VisorLogFile> run(final VisorLatestTextFilesTaskArg arg) {
             String path = arg.getPath();
             String regexp = arg.getRegexp();
 

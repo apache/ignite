@@ -351,7 +351,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
     /**
      * @param latch Latch.
      */
-    @NotNull private CI1<IgniteFuture<String>> createAsyncListener(
+    private @NotNull CI1<IgniteFuture<String>> createAsyncListener(
         final CountDownLatch latch,
         final String threadName,
         final Exception err
@@ -779,7 +779,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
     /**
      * @param name Name.
      */
-    @NotNull private ExecutorService createExecutor(final String name) {
+    private @NotNull ExecutorService createExecutor(final String name) {
         return Executors.newSingleThreadExecutor(new ThreadFactory() {
             @Override public Thread newThread(@NotNull Runnable r) {
                 Thread t = new Thread(r);

@@ -85,7 +85,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheObject prepareForCache(@Nullable CacheObject obj, GridCacheContext cctx) {
+    @Override public @Nullable CacheObject prepareForCache(@Nullable CacheObject obj, GridCacheContext cctx) {
         if (obj == null)
             return null;
 
@@ -221,14 +221,14 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheObject toCacheObject(CacheObjectContext ctx,
+    @Override public @Nullable CacheObject toCacheObject(CacheObjectContext ctx,
         @Nullable Object obj,
         boolean userObj) {
         return toCacheObject(ctx, obj, userObj, false);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj, boolean userObj,
+    @Override public @Nullable CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj, boolean userObj,
         boolean failIfUnregistered) {
         if (obj == null || obj instanceof CacheObject)
             return (CacheObject)obj;

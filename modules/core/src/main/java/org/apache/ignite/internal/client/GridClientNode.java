@@ -83,7 +83,7 @@ public interface GridClientNode {
      * @return Attribute value.
      * @see #attributes()
      */
-    @Nullable public <T> T attribute(String name);
+    public @Nullable <T> T attribute(String name);
 
     /**
      * Gets various dynamic metrics of remote node.

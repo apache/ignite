@@ -94,7 +94,7 @@ public enum EnlistOperation {
      * @param ord Ordinal value.
      * @return Enum value.
      */
-    @Nullable public static EnlistOperation fromOrdinal(int ord) {
+    public static @Nullable EnlistOperation fromOrdinal(int ord) {
         return ord < 0 || ord >= VALS.length ? null : VALS[ord];
     }
 }

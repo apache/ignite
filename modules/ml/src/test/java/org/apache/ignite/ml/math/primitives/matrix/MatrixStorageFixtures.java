@@ -71,8 +71,7 @@ class MatrixStorageFixtures {
         private int stoModeIdx = 0;
 
         /** {@inheritDoc} */
-        @NotNull
-        @Override public Iterator<MatrixStorage> iterator() {
+        @Override public @NotNull Iterator<MatrixStorage> iterator() {
             return new Iterator<MatrixStorage>() {
                 /** {@inheritDoc} */
                 @Override public boolean hasNext() {

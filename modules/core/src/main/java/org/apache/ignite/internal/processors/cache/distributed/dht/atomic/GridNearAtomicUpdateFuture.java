@@ -513,7 +513,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
     /**
      * @return Non null topology version if update should be remapped.
      */
-    @Nullable private AffinityTopologyVersion onAllReceived() {
+    private @Nullable AffinityTopologyVersion onAllReceived() {
         assert Thread.holdsLock(this);
         assert futureMapped() : this;
 

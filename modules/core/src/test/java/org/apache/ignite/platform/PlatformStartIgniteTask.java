@@ -37,13 +37,13 @@ import java.util.Map;
  */
 public class PlatformStartIgniteTask extends ComputeTaskAdapter<String, String> {
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable String arg) throws IgniteException {
         return Collections.singletonMap(new PlatformStartIgniteJob(arg), F.first(subgrid));
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String reduce(List<ComputeJobResult> results) throws IgniteException {
+    @Override public @Nullable String reduce(List<ComputeJobResult> results) throws IgniteException {
         ComputeJobResult res = results.get(0);
 
         if (res.getException() != null)

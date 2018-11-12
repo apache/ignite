@@ -373,7 +373,7 @@ public class GridNearTxSelectForUpdateFuture extends GridCacheCompoundIdentityFu
     /**
      * @return Timeout exception.
      */
-    @NotNull private IgniteTxTimeoutCheckedException timeoutException() {
+    private @NotNull IgniteTxTimeoutCheckedException timeoutException() {
         return new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout for " +
             "transaction [timeout=" + timeout + ", tx=" + tx + ']');
     }

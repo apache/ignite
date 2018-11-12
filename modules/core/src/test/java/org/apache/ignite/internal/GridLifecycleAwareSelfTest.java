@@ -48,12 +48,12 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object onReceive(@Nullable Object obj) {
+        @Override public @Nullable Object onReceive(@Nullable Object obj) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object onSend(Object obj) {
+        @Override public @Nullable Object onSend(Object obj) {
             return null;
         }
     }

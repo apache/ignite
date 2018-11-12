@@ -57,7 +57,7 @@ public class PlatformBalancingMultiClosureTask extends PlatformAbstractTask {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable Object arg) {
         assert !F.isEmpty(jobs) : "Jobs emptiness must be checked in native platform.";
 

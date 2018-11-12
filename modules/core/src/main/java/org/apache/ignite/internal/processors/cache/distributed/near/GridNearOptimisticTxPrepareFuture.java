@@ -540,7 +540,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
      * @param m Mapping.
      * @param mappings Queue of mappings.
      */
-    private void proceedPrepare(GridDistributedTxMapping m, @Nullable final Queue<GridDistributedTxMapping> mappings) {
+    private void proceedPrepare(GridDistributedTxMapping m, final @Nullable Queue<GridDistributedTxMapping> mappings) {
         if (isDone())
             return;
 

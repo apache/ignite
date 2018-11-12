@@ -75,7 +75,7 @@ public class HadoopCommonUtils {
      * @param newLdr New class loader.
      * @return Old class loader.
      */
-    @Nullable public static ClassLoader setContextClassLoader(@Nullable ClassLoader newLdr) {
+    public static @Nullable ClassLoader setContextClassLoader(@Nullable ClassLoader newLdr) {
         ClassLoader oldLdr = Thread.currentThread().getContextClassLoader();
 
         if (newLdr != oldLdr)

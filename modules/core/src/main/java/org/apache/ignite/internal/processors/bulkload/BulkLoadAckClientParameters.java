@@ -36,7 +36,7 @@ public class BulkLoadAckClientParameters {
     public static final int DFLT_PACKET_SIZE = 4 * 1024 * 1024;
 
     /** Local name of the file to send to server */
-    @NotNull private final String locFileName;
+    private final @NotNull String locFileName;
 
     /** File packet size in bytes. */
     private final int packetSize;
@@ -57,7 +57,7 @@ public class BulkLoadAckClientParameters {
      *
      * @return The local name of file to send.
      */
-    @NotNull public String localFileName() {
+    public @NotNull String localFileName() {
         return locFileName;
     }
 

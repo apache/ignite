@@ -57,7 +57,7 @@ public abstract class VisorJob<A, R> extends ComputeJobAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object execute() {
+    @Override public @Nullable Object execute() {
         start = U.currentTimeMillis();
 
         A arg = argument(0);

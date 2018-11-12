@@ -471,7 +471,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
      * @return Discovery SPI.
      * @throws Exception If failed.
      */
-    @Nullable protected final DiscoverySpi getDiscoverySpi() throws Exception {
+    protected final @Nullable DiscoverySpi getDiscoverySpi() throws Exception {
         if (getTestData() != null)
             return getTestData().getDiscoverySpi();
 
@@ -483,7 +483,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
      *
      * @return Always {@code null}.
      */
-    @Nullable protected Map<String, Serializable> getNodeAttributes() {
+    protected @Nullable Map<String, Serializable> getNodeAttributes() {
         return null;
     }
 
@@ -564,7 +564,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
      * @param name Method name.
      * @return Method.
      */
-    @Nullable private Method getMethod(Class<?> cls, String name) {
+    private @Nullable Method getMethod(Class<?> cls, String name) {
         for (; !cls.equals(Object.class); cls = cls.getSuperclass()) {
             for (Method m : cls.getMethods()) {
                 if (m.getName().equals(name))
@@ -726,7 +726,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Collection<SecurityPermission> systemPermissions() {
+        @Override public @Nullable Collection<SecurityPermission> systemPermissions() {
             return null;
         }
     }

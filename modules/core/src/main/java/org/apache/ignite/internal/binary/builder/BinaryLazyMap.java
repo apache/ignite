@@ -54,7 +54,7 @@ class BinaryLazyMap extends AbstractMap<Object, Object> implements BinaryBuilder
      * @param reader Reader.
      * @return BinaryLazyMap.
      */
-    @Nullable public static BinaryLazyMap parseMap(BinaryBuilderReader reader) {
+    public static @Nullable BinaryLazyMap parseMap(BinaryBuilderReader reader) {
         int off = reader.position() - 1;
 
         int size = reader.readInt();

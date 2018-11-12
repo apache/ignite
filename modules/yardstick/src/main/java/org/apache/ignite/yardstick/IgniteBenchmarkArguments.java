@@ -60,8 +60,7 @@ public class IgniteBenchmarkArguments {
     private CacheWriteSynchronizationMode syncMode = CacheWriteSynchronizationMode.PRIMARY_SYNC;
 
     /** */
-    @Parameter(names = {"--atomic-mode", "--atomicMode"})
-    @Nullable private CacheAtomicityMode atomicMode = null;
+    @Parameter(names = {"--atomic-mode", "--atomicMode"}) private @Nullable CacheAtomicityMode atomicMode = null;
 
     /** */
     @Parameter(names = {"-cl", "--client"}, description = "Client flag")
@@ -407,7 +406,7 @@ public class IgniteBenchmarkArguments {
     }
 
     /** With what cache atomicity mode to create tables. */
-    @Nullable public CacheAtomicityMode atomicMode() {
+    public @Nullable CacheAtomicityMode atomicMode() {
         return atomicMode;
     }
 
@@ -649,7 +648,7 @@ public class IgniteBenchmarkArguments {
     /**
      * @return Name of cache group to be set for caches.
      */
-    @Nullable public String cacheGroup() {
+    public @Nullable String cacheGroup() {
         return cacheGrp;
     }
 

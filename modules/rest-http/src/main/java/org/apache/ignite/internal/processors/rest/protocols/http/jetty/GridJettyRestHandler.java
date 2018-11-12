@@ -189,7 +189,7 @@ public class GridJettyRestHandler extends AbstractHandler {
      * @return Long value from parameters map or {@code dfltVal} if null or not exists.
      * @throws IgniteCheckedException If parsing failed.
      */
-    @Nullable private static Long longValue(String key, Map<String, Object> params,
+    private static @Nullable Long longValue(String key, Map<String, Object> params,
         Long dfltVal) throws IgniteCheckedException {
         assert key != null;
 
@@ -233,7 +233,7 @@ public class GridJettyRestHandler extends AbstractHandler {
      * @return UUID value from parameters map or {@code null} if null or not exists.
      * @throws IgniteCheckedException If parsing failed.
      */
-    @Nullable private static UUID uuidValue(String key, Map<String, Object> params) throws IgniteCheckedException {
+    private static @Nullable UUID uuidValue(String key, Map<String, Object> params) throws IgniteCheckedException {
         assert key != null;
 
         String val = (String)params.get(key);
@@ -529,7 +529,7 @@ public class GridJettyRestHandler extends AbstractHandler {
      * @return REST request.
      * @throws IgniteCheckedException If creation failed.
      */
-    @Nullable private GridRestRequest createRequest(GridRestCommand cmd,
+    private @Nullable GridRestRequest createRequest(GridRestCommand cmd,
         Map<String, Object> params, HttpServletRequest req) throws IgniteCheckedException {
         GridRestRequest restReq;
 
@@ -967,7 +967,7 @@ public class GridJettyRestHandler extends AbstractHandler {
      * @param req Request.
      * @return Command.
      */
-    @Nullable private GridRestCommand command(ServletRequest req) {
+    private @Nullable GridRestCommand command(ServletRequest req) {
         String cmd = req.getParameter("cmd");
 
         return cmd == null ? null : GridRestCommand.fromKey(cmd.toLowerCase());
@@ -997,7 +997,7 @@ public class GridJettyRestHandler extends AbstractHandler {
      * @param obj Parameter object.
      * @return Parameter value.
      */
-    @Nullable private String parameter(Object obj) {
+    private @Nullable String parameter(Object obj) {
         if (obj instanceof String)
             return (String)obj;
 

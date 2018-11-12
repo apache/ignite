@@ -88,7 +88,7 @@ public class GridTuple5<V1, V2, V3, V4, V5> implements Iterable<Object>, Externa
      *
      * @return First value.
      */
-    @Nullable public V1 get1() {
+    public @Nullable V1 get1() {
         return v1;
     }
 
@@ -97,7 +97,7 @@ public class GridTuple5<V1, V2, V3, V4, V5> implements Iterable<Object>, Externa
      *
      * @return Second value.
      */
-    @Nullable public V2 get2() {
+    public @Nullable V2 get2() {
         return v2;
     }
 
@@ -106,7 +106,7 @@ public class GridTuple5<V1, V2, V3, V4, V5> implements Iterable<Object>, Externa
      *
      * @return Third value.
      */
-    @Nullable public V3 get3() {
+    public @Nullable V3 get3() {
         return v3;
     }
 
@@ -115,7 +115,7 @@ public class GridTuple5<V1, V2, V3, V4, V5> implements Iterable<Object>, Externa
      *
      * @return Forth value.
      */
-    @Nullable public V4 get4() {
+    public @Nullable V4 get4() {
         return v4;
     }
 
@@ -124,7 +124,7 @@ public class GridTuple5<V1, V2, V3, V4, V5> implements Iterable<Object>, Externa
      *
      * @return Fifth value.
      */
-    @Nullable public V5 get5() {
+    public @Nullable V5 get5() {
         return v5;
     }
 
@@ -199,7 +199,7 @@ public class GridTuple5<V1, V2, V3, V4, V5> implements Iterable<Object>, Externa
                 return nextIdx < 6;
             }
 
-            @Nullable @Override public Object next() {
+            @Override public @Nullable Object next() {
                 if (!hasNext())
                     throw new NoSuchElementException();
 

@@ -172,7 +172,7 @@ public class GridRedisMessage implements GridClientMessage {
     /**
      * @return Cache name.
      */
-    @Nullable public String cacheName() {
+    public @Nullable String cacheName() {
         return cacheName;
     }
 

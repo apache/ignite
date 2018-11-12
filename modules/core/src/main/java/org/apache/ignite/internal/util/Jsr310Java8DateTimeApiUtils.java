@@ -45,7 +45,7 @@ public final class Jsr310Java8DateTimeApiUtils {
      *
      * @return Collection of the available JSR-310 classes.
      */
-    @NotNull private static Collection<Class<?>> createJsr310ApiClassesCollection() {
+    private static @NotNull Collection<Class<?>> createJsr310ApiClassesCollection() {
         Collection<Class<?>> res = new ArrayList<>(3);
 
         if (LOCAL_DATE_CLASS != null)
@@ -74,7 +74,7 @@ public final class Jsr310Java8DateTimeApiUtils {
      *
      * @return Available JSR-310 classes.
      */
-    @NotNull public static Collection<Class<?>> jsr310ApiClasses() {
+    public static @NotNull Collection<Class<?>> jsr310ApiClasses() {
         return JSR_310_API_CLASSES;
     }
 }

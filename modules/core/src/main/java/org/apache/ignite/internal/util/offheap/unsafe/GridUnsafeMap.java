@@ -326,7 +326,7 @@ public class GridUnsafeMap implements GridOffHeapMap {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteBiTuple<Long, Integer> valuePointer(int hash, byte[] keyBytes) {
+    @Override public @Nullable IgniteBiTuple<Long, Integer> valuePointer(int hash, byte[] keyBytes) {
         return segmentFor(hash).valuePointer(hash, keyBytes);
     }
 

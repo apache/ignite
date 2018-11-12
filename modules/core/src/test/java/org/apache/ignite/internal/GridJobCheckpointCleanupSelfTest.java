@@ -150,7 +150,7 @@ public class GridJobCheckpointCleanupSelfTest extends GridCommonAbstractTest {
                         @TaskSessionResource
                         private ComputeTaskSession ses;
 
-                        @Nullable @Override public Object execute() {
+                        @Override public @Nullable Object execute() {
                             ses.saveCheckpoint("checkpoint-key", "checkpoint-value");
 
                             return null;

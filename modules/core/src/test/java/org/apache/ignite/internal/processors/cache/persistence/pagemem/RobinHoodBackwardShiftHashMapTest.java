@@ -307,7 +307,7 @@ public class RobinHoodBackwardShiftHashMapTest {
      * @param fullId page ID.
      * @return Printable string for page ID.
      */
-    @NotNull private String getPageString(FullPageId fullId) {
+    private @NotNull String getPageString(FullPageId fullId) {
         return "(grp=" + fullId.groupId() + "," +
             "page=" + fullId.pageId() + ")";
     }

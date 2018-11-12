@@ -65,7 +65,7 @@ public abstract class HadoopCounterAdapter implements HadoopCounter, Externaliza
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public String group() {
+    @Override public @Nullable String group() {
         return grp;
     }
 

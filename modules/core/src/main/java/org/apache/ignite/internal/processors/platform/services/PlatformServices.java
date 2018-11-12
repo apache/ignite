@@ -477,7 +477,7 @@ public class PlatformServices extends PlatformAbstractTarget {
      * @param reader Binary reader,
      * @return Service configuration.
      */
-    @NotNull private ServiceConfiguration dotnetConfiguration(BinaryRawReaderEx reader) {
+    private @NotNull ServiceConfiguration dotnetConfiguration(BinaryRawReaderEx reader) {
         ServiceConfiguration cfg = new ServiceConfiguration();
 
         cfg.setName(reader.readString());
@@ -501,7 +501,7 @@ public class PlatformServices extends PlatformAbstractTarget {
      * @param reader Binary reader,
      * @return Service configuration.
      */
-    @NotNull private Collection<ServiceConfiguration> dotnetConfigurations(BinaryRawReaderEx reader) {
+    private @NotNull Collection<ServiceConfiguration> dotnetConfigurations(BinaryRawReaderEx reader) {
         int numServices = reader.readInt();
 
         List<ServiceConfiguration> cfgs = new ArrayList<>(numServices);

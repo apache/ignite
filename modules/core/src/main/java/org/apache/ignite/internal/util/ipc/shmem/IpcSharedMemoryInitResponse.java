@@ -91,7 +91,7 @@ public class IpcSharedMemoryInitResponse implements Externalizable {
     /**
      * @return In token file name or {@code null}, if this is an error response.
      */
-    @Nullable public String inTokenFileName() {
+    public @Nullable String inTokenFileName() {
         return inTokFileName;
     }
 
@@ -105,7 +105,7 @@ public class IpcSharedMemoryInitResponse implements Externalizable {
     /**
      * @return Out token file name or {@code null}, if this is an error response.
      */
-    @Nullable public String outTokenFileName() {
+    public @Nullable String outTokenFileName() {
         return outTokFileName;
     }
 
@@ -134,7 +134,7 @@ public class IpcSharedMemoryInitResponse implements Externalizable {
      * @return Error message or {@code null}, if this is
      *         a successful response.
      */
-    @Nullable public Exception error() {
+    public @Nullable Exception error() {
         return err;
     }
 

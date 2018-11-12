@@ -81,7 +81,7 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
     protected transient IgniteEx ignite;
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable Object[] args) throws IgniteException {
         assert args != null;
         assert args.length >= 2;
@@ -97,7 +97,7 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteException {
+    @Override public @Nullable Object reduce(List<ComputeJobResult> results) throws IgniteException {
         assert results.size() == 1;
 
         ComputeJobResult res = F.first(results);
@@ -155,7 +155,7 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
          * @param cls Class.
          * @param startIdx Index of first value argument.
          */
-        @Nullable private Object toJobArgument(Class cls, int startIdx) throws ClassNotFoundException {
+        private @Nullable Object toJobArgument(Class cls, int startIdx) throws ClassNotFoundException {
             String arg = argument(startIdx);
 
             boolean isList = cls == Collection.class || cls == List.class;
@@ -245,7 +245,7 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
          * @param cls Target class.
          * @return Object constructed from string.
          */
-        @Nullable private Object toObject(Class cls, String val) {
+        private @Nullable Object toObject(Class cls, String val) {
             if (val == null  || "null".equals(val) || "nil".equals(val))
                 return null;
 

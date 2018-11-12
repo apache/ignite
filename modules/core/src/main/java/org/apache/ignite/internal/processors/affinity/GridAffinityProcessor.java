@@ -211,7 +211,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @return Picked node.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public ClusterNode mapPartitionToNode(String cacheName, int partId, AffinityTopologyVersion topVer)
+    public @Nullable ClusterNode mapPartitionToNode(String cacheName, int partId, AffinityTopologyVersion topVer)
         throws IgniteCheckedException {
         assert cacheName != null;
 
@@ -272,7 +272,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @return Picked node.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public <K> ClusterNode mapKeyToNode(String cacheName, K key) throws IgniteCheckedException {
+    public @Nullable <K> ClusterNode mapKeyToNode(String cacheName, K key) throws IgniteCheckedException {
         assert cacheName != null;
 
         Map<ClusterNode, Collection<K>> map = keysToNodes(cacheName, F.asList(key));
@@ -288,7 +288,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @return Picked node.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public <K> ClusterNode mapKeyToNode(String cacheName, K key, AffinityTopologyVersion topVer)
+    public @Nullable <K> ClusterNode mapKeyToNode(String cacheName, K key, AffinityTopologyVersion topVer)
         throws IgniteCheckedException {
         assert cacheName != null;
 
@@ -332,7 +332,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @return Affinity key.
      * @throws IgniteCheckedException In case of error.
      */
-    @Nullable public Object affinityKey(String cacheName, @Nullable Object key) throws IgniteCheckedException {
+    public @Nullable Object affinityKey(String cacheName, @Nullable Object key) throws IgniteCheckedException {
         assert cacheName != null;
 
         if (key == null)
@@ -362,7 +362,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @return Affinity map.
      * @throws IgniteCheckedException If failed.
      */
-    private <K> Map<ClusterNode, Collection<K>> keysToNodes(@Nullable final String cacheName,
+    private <K> Map<ClusterNode, Collection<K>> keysToNodes(final @Nullable String cacheName,
         Collection<? extends K> keys) throws IgniteCheckedException {
         return keysToNodes(cacheName, keys, ctx.cache().context().exchange().readyAffinityVersion());
     }
@@ -374,7 +374,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @return Affinity map.
      * @throws IgniteCheckedException If failed.
      */
-    private <K> Map<ClusterNode, Collection<K>> keysToNodes(@Nullable final String cacheName,
+    private <K> Map<ClusterNode, Collection<K>> keysToNodes(final @Nullable String cacheName,
         Collection<? extends K> keys, AffinityTopologyVersion topVer) throws IgniteCheckedException {
         if (F.isEmpty(keys))
             return Collections.emptyMap();
@@ -390,8 +390,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @return Affinity cache.
      * @throws IgniteCheckedException In case of error.
      */
-    @SuppressWarnings("ErrorNotRethrown")
-    @Nullable private AffinityInfo affinityCache(final String cacheName, AffinityTopologyVersion topVer)
+    @SuppressWarnings("ErrorNotRethrown") private @Nullable AffinityInfo affinityCache(final String cacheName, AffinityTopologyVersion topVer)
         throws IgniteCheckedException {
 
         assert cacheName != null;
@@ -951,7 +950,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public ClusterNode mapKeyToNode(K key) {
+        @Override public @Nullable ClusterNode mapKeyToNode(K key) {
             A.notNull(key, "key");
 
             ctx.gateway().readLock();

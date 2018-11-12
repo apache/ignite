@@ -45,7 +45,7 @@ class WebSessionV2 implements HttpSession {
     /** Empty session context. */
     @SuppressWarnings("deprecation")
     private static final HttpSessionContext EMPTY_SES_CTX = new HttpSessionContext() {
-        @Nullable @Override public HttpSession getSession(String id) {
+        @Override public @Nullable HttpSession getSession(String id) {
             return null;
         }
 
@@ -98,7 +98,7 @@ class WebSessionV2 implements HttpSession {
      * @param entity Entity.
      * @param marsh Marshaller.
      */
-    WebSessionV2(final String id, @Nullable final HttpSession ses, final boolean isNew, final ServletContext ctx,
+    WebSessionV2(final String id, final @Nullable HttpSession ses, final boolean isNew, final ServletContext ctx,
         @Nullable WebSessionEntity entity, final Marshaller marsh) {
         assert id != null;
         assert marsh != null;
@@ -336,7 +336,7 @@ class WebSessionV2 implements HttpSession {
      * @return Unmarshaled object.
      * @throws IOException If unarshaling failed.
      */
-    @Nullable private <T> T unmarshal(final byte[] bytes) throws IOException {
+    private @Nullable <T> T unmarshal(final byte[] bytes) throws IOException {
         if (marsh != null) {
             try {
                 return U.unmarshal(marsh, bytes, getClass().getClassLoader());
@@ -356,7 +356,7 @@ class WebSessionV2 implements HttpSession {
      * @return Binary data.
      * @throws IOException If marshaling failed.
      */
-    @Nullable private byte[] marshal(final Object obj) throws IOException {
+    private @Nullable byte[] marshal(final Object obj) throws IOException {
         if (marsh != null) {
             try {
                 return U.marshal(marsh, obj);

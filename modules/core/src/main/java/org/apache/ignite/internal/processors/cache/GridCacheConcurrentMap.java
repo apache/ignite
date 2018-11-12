@@ -37,7 +37,7 @@ public interface GridCacheConcurrentMap {
      * @param key Key.
      * @return Entry.
      */
-    @Nullable public GridCacheMapEntry getEntry(GridCacheContext ctx, KeyCacheObject key);
+    public @Nullable GridCacheMapEntry getEntry(GridCacheContext ctx, KeyCacheObject key);
 
     /**
      * @param ctx Cache context.
@@ -48,7 +48,7 @@ public interface GridCacheConcurrentMap {
      * flag is set to {@code false}. Will also return {@code null} if create flag is set to {@code true}, but entry
      * couldn't be created.
      */
-    @Nullable public GridCacheMapEntry putEntryIfObsoleteOrAbsent(
+    public @Nullable GridCacheMapEntry putEntryIfObsoleteOrAbsent(
         GridCacheContext ctx,
         AffinityTopologyVersion topVer,
         KeyCacheObject key,

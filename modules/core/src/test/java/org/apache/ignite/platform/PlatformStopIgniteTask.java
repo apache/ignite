@@ -35,7 +35,7 @@ import java.util.Map;
  */
 public class PlatformStopIgniteTask extends ComputeTaskAdapter<String, Boolean> {
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable String arg) throws IgniteException {
         ClusterNode node = subgrid.get(0);
 
@@ -50,7 +50,7 @@ public class PlatformStopIgniteTask extends ComputeTaskAdapter<String, Boolean> 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Boolean reduce(List<ComputeJobResult> results) throws IgniteException {
+    @Override public @Nullable Boolean reduce(List<ComputeJobResult> results) throws IgniteException {
         ComputeJobResult res = results.get(0);
 
         if (res.getException() != null)

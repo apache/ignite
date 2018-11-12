@@ -42,5 +42,5 @@ public interface ClusterStartNodeResult {
      *
      * @return Error massage.
      */
-    @Nullable public String getError();
+    public @Nullable String getError();
 }

@@ -288,7 +288,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * File archiver moves segments from work directory to archive. Locked segments may be kept not moved until release.
      * For mode archive and work folders set to equal value, archiver is not created.
      */
-    @Nullable private volatile FileArchiver archiver;
+    private volatile @Nullable FileArchiver archiver;
 
     /** Compressor. */
     private volatile FileCompressor compressor;
@@ -325,18 +325,18 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * Cancellable task for {@link WALMode#BACKGROUND}, should be cancelled at shutdown.
      * Null for non background modes.
      */
-    @Nullable private volatile GridTimeoutProcessor.CancelableTask backgroundFlushSchedule;
+    private volatile @Nullable GridTimeoutProcessor.CancelableTask backgroundFlushSchedule;
 
     /**
      * Reference to the last added next archive timeout check object. Null if mode is not enabled. Should be cancelled
      * at shutdown
      */
-    @Nullable private volatile GridTimeoutObject nextAutoArchiveTimeoutObj;
+    private volatile @Nullable GridTimeoutObject nextAutoArchiveTimeoutObj;
 
     /**
      * Listener invoked for each segment file IO initializer.
      */
-    @Nullable private volatile IgniteInClosure<FileIO> createWalFileListener;
+    private volatile @Nullable IgniteInClosure<FileIO> createWalFileListener;
 
     /**
      * Manage of segment location.
@@ -351,7 +351,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /**
      * @param ctx Kernal context.
      */
-    public FileWriteAheadLogManager(@NotNull final GridKernalContext ctx) {
+    public FileWriteAheadLogManager(final @NotNull GridKernalContext ctx) {
         igCfg = ctx.config();
 
         DataStorageConfiguration dsCfg = igCfg.getDataStorageConfiguration();
@@ -2053,7 +2053,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * @param nextSegment Segment index.
          * @param ser Record Serializer.
          */
-        @NotNull private ByteBuffer prepareSwitchSegmentRecordBuffer(long nextSegment, RecordSerializer ser)
+        private @NotNull ByteBuffer prepareSwitchSegmentRecordBuffer(long nextSegment, RecordSerializer ser)
                 throws IgniteCheckedException {
             SwitchSegmentRecord switchRecord = new SwitchSegmentRecord();
 
@@ -2284,7 +2284,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @param ver Version.
      * @param compacted Compacted flag.
      */
-    @NotNull public static ByteBuffer prepareSerializerVersionBuffer(long idx, int ver, boolean compacted, ByteBuffer buf) {
+    public static @NotNull ByteBuffer prepareSerializerVersionBuffer(long idx, int ver, boolean compacted, ByteBuffer buf) {
         // Write record type.
         buf.put((byte) (WALRecord.RecordType.HEADER_RECORD.ordinal() + 1));
 
@@ -2397,7 +2397,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         private final File walWorkDir;
 
         /** See {@link FileWriteAheadLogManager#archiver}. */
-        @Nullable private final FileArchiver archiver;
+        private final @Nullable FileArchiver archiver;
 
         /** */
         private final FileDecompressor decompressor;
@@ -2406,12 +2406,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         private final DataStorageConfiguration dsCfg;
 
         /** Optional start pointer. */
-        @Nullable
-        private FileWALPointer start;
+        private @Nullable FileWALPointer start;
 
         /** Optional end pointer. */
-        @Nullable
-        private FileWALPointer end;
+        private @Nullable FileWALPointer end;
 
         /** Manager of segment location. */
         private SegmentRouter segmentRouter;
@@ -2558,7 +2556,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /** {@inheritDoc} */
         @Override protected AbstractReadFileHandle advanceSegment(
-            @Nullable final AbstractReadFileHandle curWalSegment
+            final @Nullable AbstractReadFileHandle curWalSegment
         ) throws IgniteCheckedException {
             if (curWalSegment != null)
                 curWalSegment.close();
@@ -2683,7 +2681,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @param walFilesDir directory to scan
      * @return found WAL file descriptors
      */
-    public static FileDescriptor[] loadFileDescriptors(@NotNull final File walFilesDir) throws IgniteCheckedException {
+    public static FileDescriptor[] loadFileDescriptors(final @NotNull File walFilesDir) throws IgniteCheckedException {
         final File[] files = walFilesDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER);
 
         if (files == null) {

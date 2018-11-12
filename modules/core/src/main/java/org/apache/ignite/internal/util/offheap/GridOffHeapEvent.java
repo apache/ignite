@@ -41,7 +41,7 @@ public enum GridOffHeapEvent {
      * @param ord Ordinal value.
      * @return Enumerated value.
      */
-    @Nullable public static GridOffHeapEvent fromOrdinal(int ord) {
+    public static @Nullable GridOffHeapEvent fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

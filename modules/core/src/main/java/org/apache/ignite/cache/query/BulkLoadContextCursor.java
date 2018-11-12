@@ -73,7 +73,7 @@ public class BulkLoadContextCursor implements FieldsQueryCursor<List<?>> {
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Iterator<List<?>> iterator() {
+    @Override public @NotNull Iterator<List<?>> iterator() {
         return getAll().iterator();
     }
 

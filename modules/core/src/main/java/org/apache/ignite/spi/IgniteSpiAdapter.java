@@ -752,7 +752,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
 
             if (msgFactory0 == null) {
                 msgFactory0 = new MessageFactory() {
-                    @Nullable @Override public Message create(short type) {
+                    @Override public @Nullable Message create(short type) {
                         throw new IgniteException("Failed to read message, node is not started.");
                     }
                 };
@@ -855,7 +855,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public ClusterNode node(UUID nodeId) {
+        @Override public @Nullable ClusterNode node(UUID nodeId) {
             return null;
         }
 
@@ -895,12 +895,12 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
+        @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag discoData) {
+        @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag discoData) {
             return null;
         }
 

@@ -36,7 +36,7 @@ public class GarHelloWorldBean {
      * @param key Message key.
      * @return Keyed message.
      */
-    @Nullable public String getMessage(String key) {
+    public @Nullable String getMessage(String key) {
         InputStream in = null;
 
         try {

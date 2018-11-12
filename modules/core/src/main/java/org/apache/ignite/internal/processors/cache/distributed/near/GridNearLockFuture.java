@@ -298,7 +298,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
     /**
      * @return Transaction isolation or {@code null} if no transaction.
      */
-    @Nullable private TransactionIsolation isolation() {
+    private @Nullable TransactionIsolation isolation() {
         return tx == null ? null : tx.isolation();
     }
 
@@ -328,7 +328,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
      * @return Lock candidate.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @Nullable private GridCacheMvccCandidate addEntry(
+    private @Nullable GridCacheMvccCandidate addEntry(
         AffinityTopologyVersion topVer,
         GridNearCacheEntry entry,
         UUID dhtNodeId

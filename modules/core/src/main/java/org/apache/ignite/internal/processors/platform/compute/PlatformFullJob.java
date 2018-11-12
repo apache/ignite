@@ -86,7 +86,7 @@ public class PlatformFullJob extends PlatformAbstractJob {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object execute0(PlatformContext ctx) throws IgniteCheckedException {
+    @Override public @Nullable Object execute0(PlatformContext ctx) throws IgniteCheckedException {
         boolean cancel = false;
 
         synchronized (this) {

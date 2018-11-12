@@ -122,7 +122,7 @@ public interface GridContinuousHandler extends Externalizable, Cloneable {
      * @return Topic for ordered notifications. If {@code null}, notifications
      * will be sent in non-ordered messages.
      */
-    @Nullable public Object orderedTopic();
+    public @Nullable Object orderedTopic();
 
     /**
      * Clones this handler.

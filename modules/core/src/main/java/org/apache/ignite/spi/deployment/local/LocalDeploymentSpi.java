@@ -109,7 +109,7 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSp
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DeploymentResource findResource(String rsrcName) {
+    @Override public @Nullable DeploymentResource findResource(String rsrcName) {
         assert rsrcName != null;
 
         // Last updated class loader has highest priority in search.
@@ -230,7 +230,7 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSp
      * if registered resources conflicts with rule when all task classes must be
      * annotated with different task names.
      */
-    @Nullable private Map<String, String> addResource(ClassLoader ldr, ConcurrentMap<String, String> ldrRsrcs,
+    private @Nullable Map<String, String> addResource(ClassLoader ldr, ConcurrentMap<String, String> ldrRsrcs,
         Class<?> cls) throws IgniteSpiException {
         assert ldr != null;
         assert ldrRsrcs != null;

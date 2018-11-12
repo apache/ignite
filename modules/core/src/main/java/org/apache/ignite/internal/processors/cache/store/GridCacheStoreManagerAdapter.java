@@ -288,7 +288,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public final Object load(@Nullable IgniteInternalTx tx, KeyCacheObject key)
+    @Override public final @Nullable Object load(@Nullable IgniteInternalTx tx, KeyCacheObject key)
         throws IgniteCheckedException {
         return loadFromStore(tx, key, true);
     }
@@ -302,7 +302,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
      * @return Loaded value, possibly <tt>null</tt>.
      * @throws IgniteCheckedException If data loading failed.
      */
-    @Nullable private Object loadFromStore(@Nullable IgniteInternalTx tx,
+    private @Nullable Object loadFromStore(@Nullable IgniteInternalTx tx,
         KeyCacheObject key,
         boolean convert)
         throws IgniteCheckedException {
@@ -418,8 +418,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
      */
     private void loadAllFromStore(@Nullable IgniteInternalTx tx,
         Collection<? extends KeyCacheObject> keys,
-        @Nullable final IgniteBiInClosure<KeyCacheObject, Object> vis,
-        @Nullable final GridInClosure3<KeyCacheObject, Object, GridCacheVersion> verVis)
+        final @Nullable IgniteBiInClosure<KeyCacheObject, Object> vis,
+        final @Nullable GridInClosure3<KeyCacheObject, Object, GridCacheVersion> verVis)
         throws IgniteCheckedException {
         assert vis != null ^ verVis != null;
         assert verVis == null || locStore;
@@ -983,7 +983,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
          * @param tx Current transaction.
          * @param cacheName Cache name.
          */
-        private SessionData(@Nullable final IgniteInternalTx tx, @Nullable String cacheName) {
+        private SessionData(final @Nullable IgniteInternalTx tx, @Nullable String cacheName) {
             this.tx = tx != null ? new TxProxy(tx) : null;
             this.cacheName = cacheName;
         }
@@ -991,7 +991,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         /**
          * @return Transaction.
          */
-        @Nullable private Transaction transaction() {
+        private @Nullable Transaction transaction() {
             return tx;
         }
 
@@ -1081,7 +1081,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Transaction transaction() {
+        @Override public @Nullable Transaction transaction() {
             SessionData ses0 = sesHolder.get();
 
             return ses0 != null ? ses0.transaction() : null;
@@ -1100,7 +1100,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public <T> T attachment() {
+        @Override public @Nullable <T> T attachment() {
             SessionData ses0 = sesHolder.get();
 
             return ses0 != null ? (T)ses0.attachment() : null;
@@ -1114,7 +1114,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public String cacheName() {
+        @Override public @Nullable String cacheName() {
             SessionData ses0 = sesHolder.get();
 
             return ses0 != null ? ses0.cacheName() : null;
@@ -1169,7 +1169,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         }
 
         /** {@inheritDoc} */
-        @NotNull @Override public Iterator<Cache.Entry<?, ?>> iterator() {
+        @Override public @NotNull Iterator<Cache.Entry<?, ?>> iterator() {
             if (cleared)
                 return new GridEmptyIterator<>();
 
@@ -1430,7 +1430,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public String label() {
+        @Override public @Nullable String label() {
             return null;
         }
 

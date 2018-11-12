@@ -116,7 +116,7 @@ public class GridDhtPartitionsStateValidator {
      * @param sizesMap Sizes map.
      * @return Set of partition ids should be excluded from validation.
      */
-    @Nullable private Set<Integer> shouldIgnore(
+    private @Nullable Set<Integer> shouldIgnore(
         GridDhtPartitionTopology top,
         UUID nodeId,
         CachePartitionPartialCountersMap countersMap,

@@ -230,7 +230,7 @@ public class GridCacheLoadOnlyStoreAdapterSelfTest extends GridCacheAbstractSelf
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override protected IgniteBiTuple<Integer, String> parse(String rec, @Nullable Object... args) {
+        @Override protected @Nullable IgniteBiTuple<Integer, String> parse(String rec, @Nullable Object... args) {
             String[] p = rec.split("=");
 
             return new T2<>(Integer.parseInt(p[0]), p[1]);

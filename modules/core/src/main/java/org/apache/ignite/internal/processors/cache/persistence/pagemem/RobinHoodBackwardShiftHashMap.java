@@ -651,7 +651,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
      * @param base bucket base address.
      * @return Key. Full page ID from bucket.
      */
-    @NotNull private FullPageId getFullPageId(long base) {
+    private @NotNull FullPageId getFullPageId(long base) {
         return new FullPageId(getPageId(base), getGrpId(base));
     }
 }

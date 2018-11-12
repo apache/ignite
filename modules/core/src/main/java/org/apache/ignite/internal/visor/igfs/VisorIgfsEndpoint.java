@@ -69,7 +69,7 @@ public class VisorIgfsEndpoint extends VisorDataTransferObject {
     /**
      * @return IGFS name.
      */
-    @Nullable public String getIgfsName() {
+    public @Nullable String getIgfsName() {
         return igfsName;
     }
 
@@ -83,7 +83,7 @@ public class VisorIgfsEndpoint extends VisorDataTransferObject {
     /**
      * @return Host address / name.
      */
-    @Nullable public String getHostName() {
+    public @Nullable String getHostName() {
         return hostName;
     }
 

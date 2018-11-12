@@ -293,7 +293,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private volatile WALPointer walTail;
 
     /** Checkpoint runner thread pool. If null tasks are to be run in single thread */
-    @Nullable private IgniteThreadPoolExecutor asyncRunner;
+    private @Nullable IgniteThreadPoolExecutor asyncRunner;
 
     /** Thread local with buffers for the checkpoint threads. Each buffer represent one page for durable memory. */
     private ThreadLocal<ByteBuffer> threadBuf;
@@ -305,7 +305,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * Lock holder for compatible folders mode. Null if lock holder was created at start node. <br>
      * In this case lock is held on PDS resover manager and it is not required to manage locking here
      */
-    @Nullable private FileLockHolder fileLockHolder;
+    private @Nullable FileLockHolder fileLockHolder;
 
     /** Lock wait time. */
     private final long lockWaitTime;
@@ -649,7 +649,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param buf Temporary byte buffer.
      * @param file Checkpoint file.
      */
-    @Nullable private CheckpointEntry parseFromFile(ByteBuffer buf, File file) throws IgniteCheckedException {
+    private @Nullable CheckpointEntry parseFromFile(ByteBuffer buf, File file) throws IgniteCheckedException {
         Matcher matcher = CP_FILE_NAME_PATTERN.matcher(file.getName());
 
         if (!matcher.matches())
@@ -1194,7 +1194,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * Resolves throttling policy according to the settings.
      */
-    @NotNull private PageMemoryImpl.ThrottlingPolicy resolveThrottlingPolicy() {
+    private @NotNull PageMemoryImpl.ThrottlingPolicy resolveThrottlingPolicy() {
         PageMemoryImpl.ThrottlingPolicy plc = persistenceCfg.isWriteThrottlingEnabled()
             ? PageMemoryImpl.ThrottlingPolicy.SPEED_BASED
             : PageMemoryImpl.ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY;
@@ -1449,7 +1449,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteInternalFuture indexRebuildFuture(int cacheId) {
+    @Override public @Nullable IgniteInternalFuture indexRebuildFuture(int cacheId) {
         return idxRebuildFuts.get(cacheId);
     }
 
@@ -1806,7 +1806,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      *
      */
-    @Nullable @Override public IgniteInternalFuture wakeupForCheckpoint(String reason) {
+    @Override public @Nullable IgniteInternalFuture wakeupForCheckpoint(String reason) {
         Checkpointer cp = checkpointer;
 
         if (cp != null)
@@ -2805,7 +2805,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * @return Checkpoint history.
      */
-    @Nullable public CheckpointHistory checkpointHistory() {
+    public @Nullable CheckpointHistory checkpointHistory() {
         return cpHistory;
     }
 
@@ -3004,7 +3004,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private volatile CheckpointProgress scheduledCp;
 
         /** Current checkpoint. This field is updated only by checkpoint thread. */
-        @Nullable private volatile CheckpointProgress curCpProgress;
+        private volatile @Nullable CheckpointProgress curCpProgress;
 
         /** Shutdown now. */
         private volatile boolean shutdownNow;
@@ -4080,7 +4080,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     public static class Checkpoint {
         /** Checkpoint entry. */
-        @Nullable private final CheckpointEntry cpEntry;
+        private final @Nullable CheckpointEntry cpEntry;
 
         /** Checkpoint pages. */
         private final GridMultiCollectionWrapper<FullPageId> cpPages;
@@ -4282,7 +4282,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private volatile FileLock lock;
 
         /** Kernal context to generate Id of locked node in file. */
-        @NotNull private GridKernalContext ctx;
+        private @NotNull GridKernalContext ctx;
 
         /** Logger. */
         private IgniteLogger log;

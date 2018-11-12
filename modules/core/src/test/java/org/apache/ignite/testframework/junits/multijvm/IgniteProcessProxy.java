@@ -464,7 +464,7 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <K, V> IgniteInternalCache<K, V> cachex(@Nullable String name) {
+    @Override public @Nullable <K, V> IgniteInternalCache<K, V> cachex(@Nullable String name) {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
@@ -495,7 +495,7 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFileSystem igfsx(String name) {
+    @Override public @Nullable IgniteFileSystem igfsx(String name) {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
@@ -510,7 +510,7 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String latestVersion() {
+    @Override public @Nullable String latestVersion() {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
@@ -677,7 +677,7 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteCache<K, V> cache(@Nullable final String name) {
+    @Override public <K, V> IgniteCache<K, V> cache(final @Nullable String name) {
         return new IgniteCacheProcessProxy<>(name, this);
     }
 
@@ -807,7 +807,7 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DataRegionMetrics dataRegionMetrics(String memPlcName) {
+    @Override public @Nullable DataRegionMetrics dataRegionMetrics(String memPlcName) {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
@@ -822,7 +822,7 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
+    @Override public @Nullable MemoryMetrics memoryMetrics(String memPlcName) {
         return DataRegionMetricsAdapter.valueOf(dataRegionMetrics(memPlcName));
     }
 

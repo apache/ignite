@@ -366,7 +366,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
             };
 
             return Collections.singleton(new ComputeJobAdapter() {
-                @Nullable @Override public Object execute() {
+                @Override public @Nullable Object execute() {
                     return callable.apply();
                 }
             });

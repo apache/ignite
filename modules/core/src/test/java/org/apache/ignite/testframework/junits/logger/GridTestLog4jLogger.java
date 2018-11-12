@@ -262,7 +262,7 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String fileName() {
+    @Override public @Nullable String fileName() {
         FileAppender fapp = F.first(fileAppenders);
 
         return fapp != null ? fapp.getFile() : null;

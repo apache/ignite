@@ -354,7 +354,7 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
      * @param beanCls Bean class.
      * @return Spring bean.
      */
-    @Nullable private static <T> T bean(ListableBeanFactory ctx, Class<T> beanCls) {
+    private static @Nullable <T> T bean(ListableBeanFactory ctx, Class<T> beanCls) {
         Map.Entry<String, T> entry = F.firstEntry(ctx.getBeansOfType(beanCls));
 
         return entry == null ? null : entry.getValue();

@@ -90,7 +90,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object load(Object key) {
+        @Override public @Nullable Object load(Object key) {
             return null;
         }
 
@@ -234,12 +234,12 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object onGet(Object key, @Nullable Object val) {
+        @Override public @Nullable Object onGet(Object key, @Nullable Object val) {
             return val;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object onBeforePut(Cache.Entry entry, Object newVal) {
+        @Override public @Nullable Object onBeforePut(Cache.Entry entry, Object newVal) {
             return newVal;
         }
 
@@ -249,7 +249,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked") @Nullable @Override public IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
+        @Override @SuppressWarnings("unchecked") public @Nullable IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
             return new IgniteBiTuple(false, entry.getValue());
         }
 

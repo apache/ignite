@@ -185,7 +185,7 @@ public class GridStringLogger implements IgniteLogger {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String fileName() {
+    @Override public @Nullable String fileName() {
         return null;
     }
 

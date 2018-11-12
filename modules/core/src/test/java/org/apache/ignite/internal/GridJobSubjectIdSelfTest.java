@@ -156,7 +156,7 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+        @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable Object arg) {
             taskSubjId = ((GridTaskSessionInternal)ses).subjectId();
 
@@ -176,7 +176,7 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object reduce(List<ComputeJobResult> results) {
+        @Override public @Nullable Object reduce(List<ComputeJobResult> results) {
             return null;
         }
     }
@@ -191,7 +191,7 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
         private ComputeTaskSession ses;
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object execute() {
+        @Override public @Nullable Object execute() {
             jobSubjId = ((GridTaskSessionInternal)ses).subjectId();
 
             return null;

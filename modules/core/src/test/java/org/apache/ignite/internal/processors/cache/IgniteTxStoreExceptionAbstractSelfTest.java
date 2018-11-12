@@ -627,7 +627,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object load(Object key) {
+        @Override public @Nullable Object load(Object key) {
             return null;
         }
 

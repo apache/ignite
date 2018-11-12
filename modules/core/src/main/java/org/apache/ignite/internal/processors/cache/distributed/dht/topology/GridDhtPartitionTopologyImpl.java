@@ -819,14 +819,14 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridDhtLocalPartition localPartition(int p, AffinityTopologyVersion topVer,
+    @Override public @Nullable GridDhtLocalPartition localPartition(int p, AffinityTopologyVersion topVer,
         boolean create)
         throws GridDhtInvalidPartitionException {
         return localPartition0(p, topVer, create, false);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridDhtLocalPartition localPartition(int p, AffinityTopologyVersion topVer,
+    @Override public @Nullable GridDhtLocalPartition localPartition(int p, AffinityTopologyVersion topVer,
         boolean create, boolean showRenting) throws GridDhtInvalidPartitionException {
         return localPartition0(p, topVer, create, showRenting);
     }
@@ -1091,7 +1091,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public List<ClusterNode> nodes(int p,
+    @Override public @Nullable List<ClusterNode> nodes(int p,
         AffinityAssignment affAssignment,
         List<ClusterNode> affNodes) {
         return nodes0(p, affAssignment, affNodes);
@@ -1114,7 +1114,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * @param affNodes Node assigned for given partition by affinity.
      * @return Nodes responsible for given partition (primary is first).
      */
-    @Nullable private List<ClusterNode> nodes0(int p, AffinityAssignment affAssignment, List<ClusterNode> affNodes) {
+    private @Nullable List<ClusterNode> nodes0(int p, AffinityAssignment affAssignment, List<ClusterNode> affNodes) {
         if (grp.isReplicated())
             return affNodes;
 
@@ -2635,7 +2635,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridDhtPartitionMap partitions(UUID nodeId) {
+    @Override public @Nullable GridDhtPartitionMap partitions(UUID nodeId) {
         lock.readLock().lock();
 
         try {

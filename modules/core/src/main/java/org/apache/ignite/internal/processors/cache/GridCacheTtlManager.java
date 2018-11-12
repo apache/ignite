@@ -381,7 +381,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public EntryWrapper pollFirst() {
+        @Override public @Nullable EntryWrapper pollFirst() {
             EntryWrapper e = super.pollFirst();
 
             if (e != null)

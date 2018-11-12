@@ -123,7 +123,7 @@ public class GridH2QueryContext {
     /**
      * @return Mvcc snapshot.
      */
-    @Nullable public MvccSnapshot mvccSnapshot() {
+    public @Nullable MvccSnapshot mvccSnapshot() {
         return mvccSnapshot;
     }
 
@@ -457,7 +457,7 @@ public class GridH2QueryContext {
      *
      * @return Current thread local query context or {@code null} if the query runs outside of Ignite context.
      */
-    @Nullable public static GridH2QueryContext get() {
+    public static @Nullable GridH2QueryContext get() {
         return qctx.get();
     }
 
@@ -471,7 +471,7 @@ public class GridH2QueryContext {
      * @param type Query type.
      * @return Query context.
      */
-    @Nullable public static GridH2QueryContext get(
+    public static @Nullable GridH2QueryContext get(
         UUID locNodeId,
         UUID nodeId,
         long qryId,

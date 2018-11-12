@@ -798,7 +798,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * Read operation tat is going to be executed during blocking operation.
      */
-    @NotNull protected abstract CacheReadBackgroundOperation getReadOperation();
+    protected abstract @NotNull CacheReadBackgroundOperation getReadOperation();
 
     /**
      * Checks that {@code block} closure doesn't block read operation.

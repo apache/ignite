@@ -269,7 +269,7 @@ public class DynamicCacheDescriptor {
     /**
      * @return ID of node provided cache configuration in discovery data.
      */
-    @Nullable public UUID receivedFrom() {
+    public @Nullable UUID receivedFrom() {
         return rcvdFrom;
     }
 
@@ -290,7 +290,7 @@ public class DynamicCacheDescriptor {
     /**
      * @return Start topology version or {@code null} if cache configured statically.
      */
-    @Nullable public AffinityTopologyVersion startTopologyVersion() {
+    public @Nullable AffinityTopologyVersion startTopologyVersion() {
         return startTopVer;
     }
 

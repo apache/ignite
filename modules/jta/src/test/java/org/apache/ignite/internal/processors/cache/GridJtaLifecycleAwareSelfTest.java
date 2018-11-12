@@ -64,7 +64,7 @@ public class GridJtaLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSel
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public TransactionManager getTm() {
+        @Override public @Nullable TransactionManager getTm() {
             return null;
         }
     }

@@ -45,13 +45,13 @@ import java.util.UUID;
  */
 public class PlatformEventsWriteEventTask extends ComputeTaskAdapter<Long, Object> {
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         Long ptr) {
         return Collections.singletonMap(new Job(ptr, F.first(subgrid)), F.first(subgrid));
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object reduce(List<ComputeJobResult> results) {
+    @Override public @Nullable Object reduce(List<ComputeJobResult> results) {
         return results.get(0).getData();
     }
 
@@ -79,7 +79,7 @@ public class PlatformEventsWriteEventTask extends ComputeTaskAdapter<Long, Objec
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object execute() {
+        @Override public @Nullable Object execute() {
             PlatformContext ctx = PlatformUtils.platformContext(ignite);
 
             try (PlatformMemory mem = ctx.memory().get(ptr)) {

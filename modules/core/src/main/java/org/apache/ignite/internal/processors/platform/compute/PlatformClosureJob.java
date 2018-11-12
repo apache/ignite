@@ -56,7 +56,7 @@ public class PlatformClosureJob extends PlatformAbstractJob {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object execute0(PlatformContext ctx) throws IgniteCheckedException {
+    @Override public @Nullable Object execute0(PlatformContext ctx) throws IgniteCheckedException {
         if (task == null) {
             // Remote job execution.
             assert ptr == 0;

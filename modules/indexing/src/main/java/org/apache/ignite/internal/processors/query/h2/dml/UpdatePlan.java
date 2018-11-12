@@ -541,7 +541,7 @@ public final class UpdatePlan {
     /**
      * @return Distributed plan info (for skip-reducer mode).
      */
-    @Nullable public DmlDistributedPlanInfo distributedPlan() {
+    public @Nullable DmlDistributedPlanInfo distributedPlan() {
         return distributed;
     }
 

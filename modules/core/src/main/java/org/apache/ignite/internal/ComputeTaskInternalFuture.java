@@ -126,14 +126,14 @@ public class ComputeTaskInternalFuture<R> extends GridFutureAdapter<R> {
                 return Collections.emptyList();
             }
 
-            @Nullable @Override public ComputeJobSibling getJobSibling(IgniteUuid jobId) throws IgniteException {
+            @Override public @Nullable ComputeJobSibling getJobSibling(IgniteUuid jobId) throws IgniteException {
                 return null;
             }
 
             @Override public void setAttribute(Object key, @Nullable Object val) throws IgniteException {
             }
 
-            @Nullable @Override public <K, V> V getAttribute(K key) {
+            @Override public @Nullable <K, V> V getAttribute(K key) {
                 return null;
             }
 
@@ -189,7 +189,7 @@ public class ComputeTaskInternalFuture<R> extends GridFutureAdapter<R> {
                 throw new IgniteException("Session was closed.");
             }
 
-            @Nullable @Override public <T> T loadCheckpoint(String key) throws IgniteException {
+            @Override public @Nullable <T> T loadCheckpoint(String key) throws IgniteException {
                 throw new IgniteException("Session was closed.");
             }
 

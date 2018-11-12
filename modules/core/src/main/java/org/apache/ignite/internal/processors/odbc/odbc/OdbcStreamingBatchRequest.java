@@ -65,7 +65,7 @@ public class OdbcStreamingBatchRequest extends OdbcRequest implements java.lang.
     /**
      * @return Schema name.
      */
-    @Nullable public String schemaName() {
+    public @Nullable String schemaName() {
         return schemaName;
     }
 

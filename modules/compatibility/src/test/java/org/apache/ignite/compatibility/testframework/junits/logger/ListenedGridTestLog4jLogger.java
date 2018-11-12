@@ -74,7 +74,7 @@ public class ListenedGridTestLog4jLogger extends GridTestLog4jLogger {
      * @param lsnr Listener.
      * @return The previous value associated with the specified key, or {@code null} if there was no mapping for the key.
      */
-    @Nullable public IgniteInClosure<String> addListener(@NotNull UUID key, @NotNull IgniteInClosure<String> lsnr) {
+    public @Nullable IgniteInClosure<String> addListener(@NotNull UUID key, @NotNull IgniteInClosure<String> lsnr) {
         return lsnrs.putIfAbsent(key, lsnr);
     }
 
@@ -85,7 +85,7 @@ public class ListenedGridTestLog4jLogger extends GridTestLog4jLogger {
      * @return Returns the value to which this map previously associated the key, or {@code null} if the map contained no
      * mapping for the key.
      */
-    @Nullable public IgniteInClosure<String> removeListener(@NotNull UUID key) {
+    public @Nullable IgniteInClosure<String> removeListener(@NotNull UUID key) {
         return lsnrs.remove(key);
     }
 }

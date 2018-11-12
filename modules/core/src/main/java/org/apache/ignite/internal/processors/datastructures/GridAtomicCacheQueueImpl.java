@@ -69,8 +69,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Nullable @Override public T poll() throws IgniteException {
+    @Override @SuppressWarnings("unchecked") public @Nullable T poll() throws IgniteException {
         try {
             while (true) {
                 Long idx = transformHeader(new PollProcessor(id));
@@ -164,8 +163,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
      * @return Value computed by the entry processor.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
-    @Nullable private Long transformHeader(EntryProcessor<GridCacheQueueHeaderKey, GridCacheQueueHeader, Long> c)
+    @SuppressWarnings("unchecked") private @Nullable Long transformHeader(EntryProcessor<GridCacheQueueHeaderKey, GridCacheQueueHeader, Long> c)
         throws IgniteCheckedException {
         return (Long)cache.invoke(queueKey, c).get();
     }

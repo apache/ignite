@@ -41,7 +41,7 @@ public enum VisorViewCacheCmd {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static VisorViewCacheCmd fromOrdinal(int ord) {
+    public static @Nullable VisorViewCacheCmd fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

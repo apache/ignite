@@ -61,7 +61,7 @@ public class TrackingPageIOTest extends TestCase {
     /**
      * @return byte buffer with right order.
      */
-    @NotNull private ByteBuffer createBuffer() {
+    private @NotNull ByteBuffer createBuffer() {
         ByteBuffer buf = ByteBuffer.allocateDirect(PAGE_SIZE);
 
         buf.order(ByteOrder.nativeOrder());

@@ -40,7 +40,7 @@ public interface IgniteTxMappings {
      * @param nodeId Node ID.
      * @return Node mapping.
      */
-    @Nullable public GridDistributedTxMapping get(UUID nodeId);
+    public @Nullable GridDistributedTxMapping get(UUID nodeId);
 
     /**
      * @param mapping Mapping.
@@ -51,17 +51,17 @@ public interface IgniteTxMappings {
      * @param nodeId Node ID.
      * @return Removed mapping.
      */
-    @Nullable public GridDistributedTxMapping remove(UUID nodeId);
+    public @Nullable GridDistributedTxMapping remove(UUID nodeId);
 
     /**
      * @return Mapping for local node.
      */
-    @Nullable public GridDistributedTxMapping localMapping();
+    public @Nullable GridDistributedTxMapping localMapping();
 
     /**
      * @return Non null instance if this mappings contain only one mapping.
      */
-    @Nullable public GridDistributedTxMapping singleMapping();
+    public @Nullable GridDistributedTxMapping singleMapping();
 
     /**
      * @return All mappings.

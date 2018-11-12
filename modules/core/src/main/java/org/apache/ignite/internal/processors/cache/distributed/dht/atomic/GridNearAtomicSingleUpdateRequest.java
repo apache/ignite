@@ -183,12 +183,12 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public List<GridCacheVersion> conflictVersions() {
+    @Override public @Nullable List<GridCacheVersion> conflictVersions() {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheVersion conflictVersion(int idx) {
+    @Override public @Nullable GridCacheVersion conflictVersion(int idx) {
         assert idx == 0 : idx;
 
         return null;

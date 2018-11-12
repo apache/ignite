@@ -89,12 +89,12 @@ public class StripedCompositeReadWriteLock implements ReadWriteLock {
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Lock readLock() {
+    @Override public @NotNull Lock readLock() {
         return locks[curIdx()].readLock();
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Lock writeLock() {
+    @Override public @NotNull Lock writeLock() {
         return writeLock;
     }
 
@@ -230,7 +230,7 @@ public class StripedCompositeReadWriteLock implements ReadWriteLock {
         }
 
         /** {@inheritDoc} */
-        @NotNull @Override public Condition newCondition() {
+        @Override public @NotNull Condition newCondition() {
             throw new UnsupportedOperationException();
         }
     }

@@ -117,7 +117,7 @@ public class VisorCacheAffinityConfiguration extends VisorDataTransferObject {
     /**
      * @return Cache partitioned affinity exclude neighbors.
      */
-    @Nullable public Boolean isExcludeNeighbors() {
+    public @Nullable Boolean isExcludeNeighbors() {
         return exclNeighbors;
     }
 

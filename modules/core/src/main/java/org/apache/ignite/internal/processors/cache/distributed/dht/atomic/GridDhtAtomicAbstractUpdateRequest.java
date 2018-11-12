@@ -401,37 +401,37 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
      * @param idx Key index.
      * @return Value.
      */
-    @Nullable public abstract CacheObject value(int idx);
+    public abstract @Nullable CacheObject value(int idx);
 
     /**
      * @param idx Key index.
      * @return Value.
      */
-    @Nullable public abstract CacheObject previousValue(int idx);
+    public abstract @Nullable CacheObject previousValue(int idx);
 
     /**
      * @param idx Key index.
      * @return Entry processor.
      */
-    @Nullable public abstract EntryProcessor<Object, Object, Object> entryProcessor(int idx);
+    public abstract @Nullable EntryProcessor<Object, Object, Object> entryProcessor(int idx);
 
     /**
      * @param idx Near key index.
      * @return Value.
      */
-    @Nullable public abstract CacheObject nearValue(int idx);
+    public abstract @Nullable CacheObject nearValue(int idx);
 
     /**
      * @param idx Key index.
      * @return Transform closure.
      */
-    @Nullable public abstract EntryProcessor<Object, Object, Object> nearEntryProcessor(int idx);
+    public abstract @Nullable EntryProcessor<Object, Object, Object> nearEntryProcessor(int idx);
 
     /**
      * @param idx Index.
      * @return Conflict version.
      */
-    @Nullable public abstract GridCacheVersion conflictVersion(int idx);
+    public abstract @Nullable GridCacheVersion conflictVersion(int idx);
 
     /**
      * @param idx Index.
@@ -460,7 +460,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     /**
      * @return Optional arguments for entry processor.
      */
-    @Nullable public abstract Object[] invokeArguments();
+    public abstract @Nullable Object[] invokeArguments();
 
     /**
      * Sets flag mask.

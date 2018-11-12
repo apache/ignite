@@ -523,7 +523,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param tx Created transaction.
      * @return Started transaction.
      */
-    @Nullable public <T extends IgniteInternalTx> T onCreated(@Nullable GridCacheContext cacheCtx, T tx) {
+    public @Nullable <T extends IgniteInternalTx> T onCreated(@Nullable GridCacheContext cacheCtx, T tx) {
         ConcurrentMap<GridCacheVersion, IgniteInternalTx> txIdMap = transactionMap(tx);
 
         // Start clean.
@@ -708,7 +708,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /**
      * @return Local transaction.
      */
-    @Nullable public IgniteTxLocalAdapter localTx() {
+    public @Nullable IgniteTxLocalAdapter localTx() {
         IgniteTxLocalAdapter tx = tx();
 
         return tx != null && tx.local() ? tx : null;
@@ -745,7 +745,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param ignore Transaction to ignore.
      * @return Not null topology version if current thread holds lock preventing topology change.
      */
-    @Nullable public AffinityTopologyVersion lockedTopologyVersion(long threadId, IgniteInternalTx ignore) {
+    public @Nullable AffinityTopologyVersion lockedTopologyVersion(long threadId, IgniteInternalTx ignore) {
         IgniteInternalTx tx = threadMap.get(threadId);
 
         if (tx != null) {
@@ -795,7 +795,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /**
      * @return User transaction for current thread.
      */
-    @Nullable public GridNearTxLocal userTx() {
+    public @Nullable GridNearTxLocal userTx() {
         IgniteInternalTx tx = txContext();
 
         if (activeUserTx(tx))
@@ -862,8 +862,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param txId Transaction ID.
      * @return Transaction with given ID.
      */
-    @SuppressWarnings({"unchecked"})
-    @Nullable public <T extends IgniteInternalTx> T tx(GridCacheVersion txId) {
+    @SuppressWarnings({"unchecked"}) public @Nullable <T extends IgniteInternalTx> T tx(GridCacheVersion txId) {
         return (T)idMap.get(txId);
     }
 
@@ -871,8 +870,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param txId Transaction ID.
      * @return Transaction with given ID.
      */
-    @SuppressWarnings({"unchecked"})
-    @Nullable public <T extends IgniteInternalTx> T nearTx(GridCacheVersion txId) {
+    @SuppressWarnings({"unchecked"}) public @Nullable <T extends IgniteInternalTx> T nearTx(GridCacheVersion txId) {
         return (T)nearIdMap.get(txId);
     }
 
@@ -1613,7 +1611,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param threadId Near tx thread ID.
      * @return {@code null} if ack was received or future that will be completed when ack is received.
      */
-    @Nullable public IgniteInternalFuture<?> awaitFinishAckAsync(UUID rmtNodeId, long threadId) {
+    public @Nullable IgniteInternalFuture<?> awaitFinishAckAsync(UUID rmtNodeId, long threadId) {
         if (finishSyncDisabled)
             return null;
 
@@ -1780,7 +1778,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      *
      * @return Transaction version from transaction context.
      */
-    @Nullable public GridCacheVersion txContextVersion() {
+    public @Nullable GridCacheVersion txContextVersion() {
         IgniteInternalTx tx = txContext();
 
         return tx == null ? null : tx.xidVersion();
@@ -1814,7 +1812,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param txNum Number of transactions.
      * @return Future for flag indicating if transactions were prepared or committed or {@code null} for success future.
      */
-    @Nullable public IgniteInternalFuture<Boolean> txsPreparedOrCommitted(GridCacheVersion nearVer, int txNum) {
+    public @Nullable IgniteInternalFuture<Boolean> txsPreparedOrCommitted(GridCacheVersion nearVer, int txNum) {
         return txsPreparedOrCommitted(nearVer, txNum, null, null);
     }
 
@@ -1894,7 +1892,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param processedVers Processed versions.
      * @return Future for flag indicating if transactions were prepared or committed or {@code null} for success future.
      */
-    @Nullable private IgniteInternalFuture<Boolean> txsPreparedOrCommitted(final GridCacheVersion nearVer,
+    private @Nullable IgniteInternalFuture<Boolean> txsPreparedOrCommitted(final GridCacheVersion nearVer,
         int txNum,
         @Nullable GridFutureAdapter<Boolean> fut,
         @Nullable Collection<GridCacheVersion> processedVers)
@@ -2306,7 +2304,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param futId Future ID.
      * @return Found future.
      */
-    @Nullable public TxDeadlockFuture future(long futId) {
+    public @Nullable TxDeadlockFuture future(long futId) {
         return deadlockDetectFuts.get(futId);
     }
 

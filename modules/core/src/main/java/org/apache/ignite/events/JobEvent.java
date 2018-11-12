@@ -237,7 +237,7 @@ public class JobEvent extends EventAdapter {
      *
      * @return Result policy.
      */
-    @Nullable public ComputeJobResultPolicy resultPolicy() {
+    public @Nullable ComputeJobResultPolicy resultPolicy() {
         return resPlc;
     }
 

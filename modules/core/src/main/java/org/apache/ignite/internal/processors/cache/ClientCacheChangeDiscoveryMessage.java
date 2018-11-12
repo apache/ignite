@@ -146,14 +146,14 @@ public class ClientCacheChangeDiscoveryMessage implements DiscoveryCustomMessage
     /**
      * @return Started caches map (cache ID to near enabled flag).
      */
-    @Nullable public Map<Integer, Boolean> startedCaches() {
+    public @Nullable Map<Integer, Boolean> startedCaches() {
         return startedCaches;
     }
 
     /**
      * @return Closed caches.
      */
-    @Nullable public Set<Integer> closedCaches() {
+    public @Nullable Set<Integer> closedCaches() {
         return closedCaches;
     }
 
@@ -163,7 +163,7 @@ public class ClientCacheChangeDiscoveryMessage implements DiscoveryCustomMessage
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
+    @Override public @Nullable DiscoveryCustomMessage ackMessage() {
         return null;
     }
 
@@ -178,7 +178,7 @@ public class ClientCacheChangeDiscoveryMessage implements DiscoveryCustomMessage
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr,
+    @Override public @Nullable DiscoCache createDiscoCache(GridDiscoveryManager mgr,
         AffinityTopologyVersion topVer, DiscoCache discoCache) {
         throw new UnsupportedOperationException();
     }

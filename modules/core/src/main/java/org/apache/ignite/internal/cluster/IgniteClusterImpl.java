@@ -332,7 +332,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Collection<BaselineNode> currentBaselineTopology() {
+    @Override public @Nullable Collection<BaselineNode> currentBaselineTopology() {
         guard();
 
         try {
@@ -419,7 +419,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /** */
-    @Nullable private Collection<Object> onlineBaselineNodesRequestedForRemoval(Collection<? extends BaselineNode> newBlt) {
+    private @Nullable Collection<Object> onlineBaselineNodesRequestedForRemoval(Collection<? extends BaselineNode> newBlt) {
         BaselineTopology blt = ctx.state().clusterState().baselineTopology();
         Set<Object> bltConsIds;
 
@@ -805,7 +805,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFuture<?> clientReconnectFuture() {
+    @Override public @Nullable IgniteFuture<?> clientReconnectFuture() {
         return reconnecFut;
     }
 

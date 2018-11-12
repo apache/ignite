@@ -56,7 +56,7 @@ public abstract class SchemaAbstractDiscoveryMessage implements DiscoveryCustomM
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr,
+    @Override public @Nullable DiscoCache createDiscoCache(GridDiscoveryManager mgr,
         AffinityTopologyVersion topVer, DiscoCache discoCache) {
         throw new UnsupportedOperationException();
     }

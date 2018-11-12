@@ -223,8 +223,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @return Queue header.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
-    @Nullable public <T> GridCacheQueueProxy<T> queue(final String name,
+    @SuppressWarnings("unchecked") public @Nullable <T> GridCacheQueueProxy<T> queue(final String name,
         final int cap,
         boolean colloc,
         final boolean create)
@@ -243,8 +242,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @return Queue header.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
-    @Nullable public <T> GridCacheQueueProxy<T> queue0(final String name,
+    @SuppressWarnings("unchecked") public @Nullable <T> GridCacheQueueProxy<T> queue0(final String name,
         final int cap,
         boolean colloc,
         final boolean create)
@@ -346,7 +344,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @return Set.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public <T> IgniteSet<T> set(final String name,
+    public @Nullable <T> IgniteSet<T> set(final String name,
         boolean colloc,
         boolean create,
         boolean separated) throws IgniteCheckedException
@@ -362,8 +360,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @return Set.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
-    @Nullable private <T> IgniteSet<T> set0(String name,
+    @SuppressWarnings("unchecked") private @Nullable <T> IgniteSet<T> set0(String name,
         boolean collocated,
         boolean create,
         boolean separated)

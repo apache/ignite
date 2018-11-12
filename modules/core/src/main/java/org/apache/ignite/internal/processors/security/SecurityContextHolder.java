@@ -31,7 +31,7 @@ public class SecurityContextHolder {
      *
      * @return Security context.
      */
-    @Nullable public static SecurityContext get() {
+    public static @Nullable SecurityContext get() {
         return CTX.get();
     }
 

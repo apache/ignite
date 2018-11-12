@@ -65,7 +65,7 @@ public class DiscoveryLocalJoinData {
     /**
      * @return Future if cluster state transition is in progress.
      */
-    @Nullable public IgniteInternalFuture<Boolean> transitionWaitFuture() {
+    public @Nullable IgniteInternalFuture<Boolean> transitionWaitFuture() {
         return transitionWaitFut;
     }
 

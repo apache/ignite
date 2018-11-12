@@ -64,7 +64,7 @@ public class GridJobExecutionLoadTestClientSemaphore implements Callable<Object>
     private static Semaphore tasksSem;
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object call() throws Exception {
+    @Override public @Nullable Object call() throws Exception {
         final IgniteInClosure<IgniteFuture<?>> lsnr = new CI1<IgniteFuture<?>>() {
             @Override public void apply(IgniteFuture<?> t) {
                 tasksSem.release();
@@ -214,7 +214,7 @@ public class GridJobExecutionLoadTestClientSemaphore implements Callable<Object>
         final IgniteCompute rmts = g.compute(g.cluster().forRemotes());
 
         GridLoadTestUtils.runMultithreadedInLoop(new Callable<Object>() {
-            @Nullable @Override public Object call() {
+            @Override public @Nullable Object call() {
                 try {
                     rmts.execute(GridJobExecutionLoadTestTask.class, null);
                 }

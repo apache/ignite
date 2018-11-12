@@ -351,7 +351,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+        @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable Object arg) throws IgniteException {
             Map<ComputeJob, ClusterNode> jobs = new HashMap<>();
 
@@ -376,7 +376,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Boolean reduce(List<ComputeJobResult> results) throws IgniteException {
+        @Override public @Nullable Boolean reduce(List<ComputeJobResult> results) throws IgniteException {
             for (ComputeJobResult locRes : results) {
                 if (locRes != null && (locRes.getException() != null || !locRes.<Boolean>getData()))
                     return false;
@@ -419,7 +419,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object localExecute(@Nullable IgniteInternalCache cache0) {
+        @Override public @Nullable Object localExecute(@Nullable IgniteInternalCache cache0) {
             GridCacheAdapter cache = ((IgniteKernal) ignite).context().cache().internalCache(cacheName);
 
             if (cache == null)

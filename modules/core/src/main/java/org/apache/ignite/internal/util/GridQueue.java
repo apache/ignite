@@ -170,7 +170,7 @@ public class GridQueue<E> extends AbstractCollection<E> implements Queue<E> {
      *
      * @return Polled element.
      */
-    @Nullable @Override public E poll() {
+    @Override public @Nullable E poll() {
         if (size == 0)
             return null;
 
@@ -198,7 +198,7 @@ public class GridQueue<E> extends AbstractCollection<E> implements Queue<E> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public E peek() {
+    @Override public @Nullable E peek() {
         return hdr.next.item;
     }
 

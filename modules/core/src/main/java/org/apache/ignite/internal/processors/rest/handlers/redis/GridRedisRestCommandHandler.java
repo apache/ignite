@@ -101,7 +101,7 @@ public abstract class GridRedisRestCommandHandler implements GridRedisCommandHan
      * @return Long value from parameters list or null if not exists.
      * @throws GridRedisGenericException If parsing failed.
      */
-    @Nullable protected Long longValue(String name, List<String> params) throws GridRedisGenericException {
+    protected @Nullable Long longValue(String name, List<String> params) throws GridRedisGenericException {
         assert name != null;
 
         Iterator<String> it = params.iterator();

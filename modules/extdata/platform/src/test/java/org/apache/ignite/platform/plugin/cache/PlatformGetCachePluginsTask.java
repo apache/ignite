@@ -38,13 +38,13 @@ import java.util.Map;
  */
 public class PlatformGetCachePluginsTask extends ComputeTaskAdapter<String, String[]> {
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable String arg) {
         return Collections.singletonMap(new GetCachePluginsJob(arg), F.first(subgrid));
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String[] reduce(List<ComputeJobResult> results) {
+    @Override public @Nullable String[] reduce(List<ComputeJobResult> results) {
         return results.get(0).getData();
     }
 
@@ -67,7 +67,7 @@ public class PlatformGetCachePluginsTask extends ComputeTaskAdapter<String, Stri
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public String[] execute() {
+        @Override public @Nullable String[] execute() {
             CachePluginConfiguration[] cfg =
                     ignite.cache(cacheName).getConfiguration(CacheConfiguration.class).getPluginConfigurations();
 

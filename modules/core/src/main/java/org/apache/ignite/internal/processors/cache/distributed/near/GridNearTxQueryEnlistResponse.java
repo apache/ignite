@@ -155,7 +155,7 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage implements
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Throwable error() {
+    @Override public @Nullable Throwable error() {
         return err;
     }
 

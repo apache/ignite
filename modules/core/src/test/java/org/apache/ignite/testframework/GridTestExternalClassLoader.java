@@ -152,7 +152,7 @@ public class GridTestExternalClassLoader extends URLClassLoader {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public URL findResource(String name) {
+    @Override public @Nullable URL findResource(String name) {
         if (excludeClassNames.contains(resNameToClassName(name)))
             return null;
 

@@ -156,7 +156,7 @@ public class CacheGroupDescriptor {
     /**
      * @return Next pending WAL change request or {@code null} if none available.
      */
-    @Nullable public WalStateProposeMessage nextWalChangeRequest() {
+    public @Nullable WalStateProposeMessage nextWalChangeRequest() {
         return walChangeReqs.isEmpty() ? null : walChangeReqs.getFirst();
     }
 
@@ -237,7 +237,7 @@ public class CacheGroupDescriptor {
     /**
      * @return Group name or {@code null} if group name was not specified for cache.
      */
-    @Nullable public String groupName() {
+    public @Nullable String groupName() {
         return grpName;
     }
 
@@ -297,7 +297,7 @@ public class CacheGroupDescriptor {
     /**
      * @return Start version for dynamically started group.
      */
-    @Nullable public AffinityTopologyVersion startTopologyVersion() {
+    public @Nullable AffinityTopologyVersion startTopologyVersion() {
         return startTopVer;
     }
 

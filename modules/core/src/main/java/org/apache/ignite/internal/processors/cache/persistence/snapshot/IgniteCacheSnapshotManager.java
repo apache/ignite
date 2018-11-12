@@ -53,7 +53,7 @@ public class IgniteCacheSnapshotManager<T extends SnapshotOperation> extends Gri
      *
      * @throws IgniteCheckedException if failed
      */
-    @Nullable public IgniteInternalFuture tryStartLocalSnapshotOperation(
+    public @Nullable IgniteInternalFuture tryStartLocalSnapshotOperation(
             @Nullable DiscoveryEvent discoveryEvent, AffinityTopologyVersion topVer
     ) throws IgniteCheckedException {
         return null;
@@ -63,7 +63,7 @@ public class IgniteCacheSnapshotManager<T extends SnapshotOperation> extends Gri
      * @param initiatorNodeId Initiator node id.
      * @param snapshotOperation Snapshot operation.
      */
-    @Nullable public IgniteInternalFuture startLocalSnapshotOperation(
+    public @Nullable IgniteInternalFuture startLocalSnapshotOperation(
         UUID initiatorNodeId,
         T snapshotOperation,
         AffinityTopologyVersion topVer

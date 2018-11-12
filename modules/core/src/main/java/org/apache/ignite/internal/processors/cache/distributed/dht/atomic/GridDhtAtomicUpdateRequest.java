@@ -379,7 +379,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public CacheObject value(int idx) {
+    @Override public @Nullable CacheObject value(int idx) {
         if (vals != null)
             return vals.get(idx);
 
@@ -387,7 +387,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public CacheObject previousValue(int idx) {
+    @Override public @Nullable CacheObject previousValue(int idx) {
         if (prevVals != null)
             return prevVals.get(idx);
 
@@ -395,12 +395,12 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public EntryProcessor<Object, Object, Object> entryProcessor(int idx) {
+    @Override public @Nullable EntryProcessor<Object, Object, Object> entryProcessor(int idx) {
         return entryProcessors == null ? null : entryProcessors.get(idx);
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public CacheObject nearValue(int idx) {
+    @Override public @Nullable CacheObject nearValue(int idx) {
         if (nearVals != null)
             return nearVals.get(idx);
 
@@ -408,12 +408,12 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public EntryProcessor<Object, Object, Object> nearEntryProcessor(int idx) {
+    @Override public @Nullable EntryProcessor<Object, Object, Object> nearEntryProcessor(int idx) {
         return nearEntryProcessors == null ? null : nearEntryProcessors.get(idx);
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public GridCacheVersion conflictVersion(int idx) {
+    @Override public @Nullable GridCacheVersion conflictVersion(int idx) {
         if (conflictVers != null) {
             assert idx >= 0 && idx < conflictVers.size();
 
@@ -479,7 +479,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public Object[] invokeArguments() {
+    @Override public @Nullable Object[] invokeArguments() {
         return invokeArgs;
     }
 

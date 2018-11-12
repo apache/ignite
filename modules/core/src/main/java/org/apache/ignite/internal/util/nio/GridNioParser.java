@@ -43,7 +43,7 @@ public interface GridNioParser {
      * @throws IOException If exception occurred while reading data.
      * @throws IgniteCheckedException If any user-specific error occurred.
      */
-    @Nullable public Object decode(GridNioSession ses, ByteBuffer buf) throws IOException, IgniteCheckedException;
+    public @Nullable Object decode(GridNioSession ses, ByteBuffer buf) throws IOException, IgniteCheckedException;
 
     /**
      * This method is called whenever a message should be sent to the network connection

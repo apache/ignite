@@ -226,7 +226,7 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
      * @throws StorageException If failed.
      * @throws IgniteCheckedException If failed.
      */
-    @Override @Nullable public WALPointer addRecord(WALRecord rec) throws StorageException, IgniteCheckedException {
+    @Override public @Nullable WALPointer addRecord(WALRecord rec) throws StorageException, IgniteCheckedException {
         assert rec.size() > 0 : rec;
 
         for (; ; ) {

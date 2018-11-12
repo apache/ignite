@@ -336,7 +336,7 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFuture<?> clientReconnectFuture() {
+    @Override public @Nullable IgniteFuture<?> clientReconnectFuture() {
         throw new UnsupportedOperationException("Operation is not supported yet.");
     }
 
@@ -351,7 +351,7 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Collection<BaselineNode> currentBaselineTopology() {
+    @Override public @Nullable Collection<BaselineNode> currentBaselineTopology() {
         throw new UnsupportedOperationException("Operation is not supported yet.");
     }
 

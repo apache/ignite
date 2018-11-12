@@ -680,7 +680,7 @@ public class CacheGroupContext {
     /**
      * @return Configured topology validator.
      */
-    @Nullable public TopologyValidator topologyValidator() {
+    public @Nullable TopologyValidator topologyValidator() {
         return ccfg.getTopologyValidator();
     }
 
@@ -701,7 +701,7 @@ public class CacheGroupContext {
     /**
      * @return Group name or {@code null} if group name was not specified for cache.
      */
-    @Nullable public String name() {
+    public @Nullable String name() {
         return ccfg.getGroupName();
     }
 

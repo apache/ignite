@@ -352,7 +352,7 @@ public class GridMemcachedMessage implements GridClientMessage {
     /**
      * @return Expiration.
      */
-    @Nullable public Long expiration() {
+    public @Nullable Long expiration() {
         return expiration;
     }
 
@@ -366,7 +366,7 @@ public class GridMemcachedMessage implements GridClientMessage {
     /**
      * @return Delta for increment and decrement commands.
      */
-    @Nullable public Long delta() {
+    public @Nullable Long delta() {
         return delta;
     }
 
@@ -380,7 +380,7 @@ public class GridMemcachedMessage implements GridClientMessage {
     /**
      * @return Initial value for increment and decrement commands.
      */
-    @Nullable public Long initial() {
+    public @Nullable Long initial() {
         return init;
     }
 
@@ -394,7 +394,7 @@ public class GridMemcachedMessage implements GridClientMessage {
     /**
      * @return Cache name.
      */
-    @Nullable public String cacheName() {
+    public @Nullable String cacheName() {
         return cacheName;
     }
 

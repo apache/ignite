@@ -96,7 +96,7 @@ public abstract class DatasetTrainer<M extends Model, L> {
      *
      * @param lastTrainedMdl Model.
      */
-    @NotNull protected M getLastTrainedModelOrThrowEmptyDatasetException(M lastTrainedMdl) {
+    protected @NotNull M getLastTrainedModelOrThrowEmptyDatasetException(M lastTrainedMdl) {
         String msg = "Cannot train model on empty dataset";
         if (lastTrainedMdl != null) {
             environment.logger(getClass()).log(MLLogger.VerboseLevel.HIGH, msg);

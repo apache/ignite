@@ -63,14 +63,14 @@ public interface CacheStoreSession {
      * @param attachment The object to be attached (or {@code null} to discard current attachment).
      * @return Previously attached object, if any.
      */
-    @Nullable public <T> T attach(@Nullable Object attachment);
+    public @Nullable <T> T attach(@Nullable Object attachment);
 
     /**
      * Retrieves the current attachment or {@code null} if there is no attachment.
      *
      * @return Currently attached object, if any.
      */
-    @Nullable public <T> T attachment();
+    public @Nullable <T> T attachment();
 
     /**
      * Gets current session properties. You can add properties directly to the

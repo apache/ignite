@@ -76,7 +76,7 @@ public class GridTuple3<V1, V2, V3> implements Iterable<Object>, Externalizable,
      *
      * @return First value.
      */
-    @Nullable public V1 get1() {
+    public @Nullable V1 get1() {
         return val1;
     }
 
@@ -85,7 +85,7 @@ public class GridTuple3<V1, V2, V3> implements Iterable<Object>, Externalizable,
      *
      * @return Second value.
      */
-    @Nullable public V2 get2() {
+    public @Nullable V2 get2() {
         return val2;
     }
 
@@ -94,7 +94,7 @@ public class GridTuple3<V1, V2, V3> implements Iterable<Object>, Externalizable,
      *
      * @return Third value.
      */
-    @Nullable public V3 get3() {
+    public @Nullable V3 get3() {
         return val3;
     }
 
@@ -147,7 +147,7 @@ public class GridTuple3<V1, V2, V3> implements Iterable<Object>, Externalizable,
                 return nextIdx < 4;
             }
 
-            @Nullable @Override public Object next() {
+            @Override public @Nullable Object next() {
                 if (!hasNext())
                     throw new NoSuchElementException();
 

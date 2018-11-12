@@ -67,7 +67,7 @@ public class GarHelloWorldTask extends ComputeTaskSplitAdapter<String, String> {
                 /*
                  * Simply prints the job's argument.
                  */
-                @Nullable @Override public Serializable execute() {
+                @Override public @Nullable Serializable execute() {
                     System.out.println(">>>");
                     System.out.println(">>> Printing '" + argument(0) + "' on this node from grid job.");
                     System.out.println(">>>");
@@ -81,7 +81,7 @@ public class GarHelloWorldTask extends ComputeTaskSplitAdapter<String, String> {
         return jobs;
     }
 
-    @Nullable @Override public String reduce(List<ComputeJobResult> results) throws IgniteException {
+    @Override public @Nullable String reduce(List<ComputeJobResult> results) throws IgniteException {
         return String.valueOf(results.size());
     }
 }

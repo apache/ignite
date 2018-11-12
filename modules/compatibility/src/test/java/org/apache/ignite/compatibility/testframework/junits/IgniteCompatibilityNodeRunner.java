@@ -176,7 +176,7 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
      * @throws IOException In case of an error.
      * @see #readClosureFromFileAndDelete(String)
      */
-    @Nullable public static String storeToFile(@Nullable IgniteInClosure clo) throws IOException {
+    public static @Nullable String storeToFile(@Nullable IgniteInClosure clo) throws IOException {
         if (clo == null)
             return null;
 

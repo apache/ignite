@@ -111,7 +111,7 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Map<ClusterNode, VisorTxTaskResult> reduce0(List<ComputeJobResult> results) throws IgniteException {
+    @Override protected @Nullable Map<ClusterNode, VisorTxTaskResult> reduce0(List<ComputeJobResult> results) throws IgniteException {
         Map<ClusterNode, VisorTxTaskResult> mapRes = new TreeMap<>();
 
         Map<UUID, ClusterNode> nodeMap = new HashMap<>();

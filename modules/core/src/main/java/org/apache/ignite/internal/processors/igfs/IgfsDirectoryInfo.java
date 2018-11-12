@@ -159,7 +159,7 @@ public class IgfsDirectoryInfo extends IgfsEntryInfo implements Binarylizable {
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public IgniteUuid affinityKey() {
+    @Override public @Nullable IgniteUuid affinityKey() {
         return null;
     }
 
@@ -169,7 +169,7 @@ public class IgfsDirectoryInfo extends IgfsEntryInfo implements Binarylizable {
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public IgniteUuid lockId() {
+    @Override public @Nullable IgniteUuid lockId() {
         return null;
     }
 

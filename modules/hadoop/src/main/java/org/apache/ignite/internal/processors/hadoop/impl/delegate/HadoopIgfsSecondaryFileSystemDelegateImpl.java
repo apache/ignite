@@ -105,7 +105,7 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgfsFile update(IgfsPath path, Map<String, String> props) {
+    @Override public @Nullable IgfsFile update(IgfsPath path, Map<String, String> props) {
         HadoopIgfsProperties props0 = new HadoopIgfsProperties(props);
 
         final FileSystem fileSys = fileSystemForUser();
@@ -339,7 +339,7 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
                     return val;
                 }
 
-                @Nullable @Override public String property(String name, @Nullable String dfltVal) {
+                @Override public @Nullable String property(String name, @Nullable String dfltVal) {
                     String val = props.get(name);
 
                     return val == null ? dfltVal : val;

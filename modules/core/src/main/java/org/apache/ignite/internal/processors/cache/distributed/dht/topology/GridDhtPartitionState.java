@@ -45,7 +45,7 @@ public enum GridDhtPartitionState {
      * @param ord Ordinal value.
      * @return Enum value.
      */
-    @Nullable public static GridDhtPartitionState fromOrdinal(int ord) {
+    public static @Nullable GridDhtPartitionState fromOrdinal(int ord) {
         return ord < 0 || ord >= VALS.length ? null : VALS[ord];
     }
 

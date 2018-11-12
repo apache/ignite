@@ -2112,7 +2112,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }
 
         assertThrows(log, new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
+            @Override public @Nullable Object call() throws Exception {
                 cache.put("key1", null);
 
                 return null;
@@ -2120,7 +2120,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }, NullPointerException.class, A.NULL_MSG_PREFIX);
 
         assertThrows(log, new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
+            @Override public @Nullable Object call() throws Exception {
                 cache.getAndPut("key1", null);
 
                 return null;
@@ -2128,7 +2128,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }, NullPointerException.class, A.NULL_MSG_PREFIX);
 
         assertThrows(log, new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
+            @Override public @Nullable Object call() throws Exception {
                 cache.put(null, 1);
 
                 return null;
@@ -2136,7 +2136,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }, NullPointerException.class, A.NULL_MSG_PREFIX);
 
         assertThrows(log, new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
+            @Override public @Nullable Object call() throws Exception {
                 cache.replace(null, 1);
 
                 return null;
@@ -2144,7 +2144,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }, NullPointerException.class, A.NULL_MSG_PREFIX);
 
         assertThrows(log, new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
+            @Override public @Nullable Object call() throws Exception {
                 cache.getAndReplace(null, 1);
 
                 return null;
@@ -2152,7 +2152,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }, NullPointerException.class, A.NULL_MSG_PREFIX);
 
         assertThrows(log, new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
+            @Override public @Nullable Object call() throws Exception {
                 cache.replace("key", null);
 
                 return null;
@@ -2160,7 +2160,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }, NullPointerException.class, A.NULL_MSG_PREFIX);
 
         assertThrows(log, new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
+            @Override public @Nullable Object call() throws Exception {
                 cache.getAndReplace("key", null);
 
                 return null;
@@ -2168,7 +2168,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }, NullPointerException.class, A.NULL_MSG_PREFIX);
 
         assertThrows(log, new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
+            @Override public @Nullable Object call() throws Exception {
                 cache.replace(null, 1, 2);
 
                 return null;
@@ -2176,7 +2176,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }, NullPointerException.class, A.NULL_MSG_PREFIX);
 
         assertThrows(log, new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
+            @Override public @Nullable Object call() throws Exception {
                 cache.replace("key", null, 2);
 
                 return null;
@@ -2184,7 +2184,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }, NullPointerException.class, A.NULL_MSG_PREFIX);
 
         assertThrows(log, new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
+            @Override public @Nullable Object call() throws Exception {
                 cache.replace("key", 1, null);
 
                 return null;

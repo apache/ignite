@@ -117,7 +117,7 @@ public class HadoopHelperImpl implements HadoopHelper {
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public InputStream loadClassBytes(ClassLoader ldr, String clsName) {
+    @Override public @Nullable InputStream loadClassBytes(ClassLoader ldr, String clsName) {
         return ldr.getResourceAsStream(clsName.replace('.', '/') + ".class");
     }
 

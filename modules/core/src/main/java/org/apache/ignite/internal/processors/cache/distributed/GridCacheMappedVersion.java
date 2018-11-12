@@ -29,5 +29,5 @@ public interface GridCacheMappedVersion {
      * 
      * @return Mapped version.
      */
-    @Nullable public GridCacheVersion mappedVersion();
+    public @Nullable GridCacheVersion mappedVersion();
 }

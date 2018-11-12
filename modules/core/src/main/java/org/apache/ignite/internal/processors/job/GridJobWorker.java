@@ -246,7 +246,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      *
      * @return Deployed job.
      */
-    @Nullable public ComputeJob getJob() {
+    public @Nullable ComputeJob getJob() {
         return job;
     }
 
@@ -560,7 +560,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                     sndRes = false;
                 else {
                     res = U.wrapThreadLoader(dep.classLoader(), new Callable<Object>() {
-                        @Nullable @Override public Object call() {
+                        @Override public @Nullable Object call() {
                             try {
                                 if (internal && ctx.config().isPeerClassLoadingEnabled())
                                     ctx.job().internal(true);

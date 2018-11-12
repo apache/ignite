@@ -152,7 +152,7 @@ public class GridContinuousMessage implements Message {
     /**
      * @return Future ID for synchronous event notification.
      */
-    @Nullable public IgniteUuid futureId() {
+    public @Nullable IgniteUuid futureId() {
         return futId;
     }
 

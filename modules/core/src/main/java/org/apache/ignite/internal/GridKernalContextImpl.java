@@ -667,7 +667,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** */
-    @Nullable private ClusterNode localNode() {
+    private @Nullable ClusterNode localNode() {
         if (locNode == null && discoMgr != null)
             locNode = discoMgr.localNode();
 
@@ -965,8 +965,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Nullable @Override public <T> T createComponent(Class<T> cls) {
+    @Override @SuppressWarnings("unchecked") public @Nullable <T> T createComponent(Class<T> cls) {
         T res = pluginProc.createComponent(cls);
 
         if (res != null)
@@ -1067,7 +1066,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public ExecutorService getIndexingExecutorService() {
+    @Override public @Nullable ExecutorService getIndexingExecutorService() {
         return idxExecSvc;
     }
 

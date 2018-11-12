@@ -1797,7 +1797,7 @@ public class BinaryUtils {
      * @return Object.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public static Object doReadObject(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
+    public static @Nullable Object doReadObject(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles) throws BinaryObjectException {
         return new BinaryReaderExImpl(ctx, in, ldr, handles.handles(), true).deserialize();
     }
@@ -1806,7 +1806,7 @@ public class BinaryUtils {
      * @return Unmarshalled value.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public static Object unmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr)
+    public static @Nullable Object unmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr)
         throws BinaryObjectException {
         return unmarshal(in, ctx, ldr, new BinaryReaderHandlesHolderImpl());
     }
@@ -1815,7 +1815,7 @@ public class BinaryUtils {
      * @return Unmarshalled value.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public static Object unmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
+    public static @Nullable Object unmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles) throws BinaryObjectException {
         return unmarshal(in, ctx, ldr, handles, false);
     }
@@ -1824,7 +1824,7 @@ public class BinaryUtils {
      * @return Unmarshalled value.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public static Object unmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
+    public static @Nullable Object unmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles, boolean detach) throws BinaryObjectException {
         int start = in.position();
 
@@ -2252,7 +2252,7 @@ public class BinaryUtils {
      * @param in Reader.
      * @return Value.
      */
-    @Nullable public static IgniteUuid readIgniteUuid(BinaryRawReader in) {
+    public static @Nullable IgniteUuid readIgniteUuid(BinaryRawReader in) {
         if (in.readBoolean()) {
             UUID globalId = new UUID(in.readLong(), in.readLong());
 

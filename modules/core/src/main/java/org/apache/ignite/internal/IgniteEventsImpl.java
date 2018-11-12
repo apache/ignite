@@ -363,7 +363,7 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
      * @return Compound predicate.
      */
     private static <T extends Event> IgnitePredicate<T> compoundPredicate(final IgnitePredicate<T> p,
-        @Nullable final int... types) {
+        final @Nullable int... types) {
 
         return F.isEmpty(types) ? p :
             new IgnitePredicate<T>() {

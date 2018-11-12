@@ -294,7 +294,7 @@ public class IgniteTestSuite extends TestSuite {
          * @param cls Class.
          * @return Descriptor or {@code null}.
          */
-        @Nullable public static IgnoreDescriptor forClass(Class cls) {
+        public static @Nullable IgnoreDescriptor forClass(Class cls) {
             Class cls0 = cls;
 
             while (Test.class.isAssignableFrom(cls0)) {
@@ -323,7 +323,7 @@ public class IgniteTestSuite extends TestSuite {
          * @param mthd Method.
          * @return Descriptor or {@code null}.
          */
-        @Nullable public static IgnoreDescriptor forMethod(Class cls, Method mthd) {
+        public static @Nullable IgnoreDescriptor forMethod(Class cls, Method mthd) {
             if (mthd.isAnnotationPresent(IgniteIgnore.class)) {
                 IgniteIgnore ignore = mthd.getAnnotation(IgniteIgnore.class);
 

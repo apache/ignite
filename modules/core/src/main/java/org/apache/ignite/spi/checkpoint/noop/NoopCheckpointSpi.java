@@ -51,7 +51,7 @@ public class NoopCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public byte[] loadCheckpoint(String key) throws IgniteSpiException {
+    @Override public @Nullable byte[] loadCheckpoint(String key) throws IgniteSpiException {
         return null;
     }
 

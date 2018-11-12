@@ -217,7 +217,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     /**
      * @return Caches affinity for joining nodes.
      */
-    @Nullable public Map<Integer, CacheGroupAffinityMessage> joinedNodeAffinity() {
+    public @Nullable Map<Integer, CacheGroupAffinityMessage> joinedNodeAffinity() {
         return joinedNodeAff;
     }
 
@@ -233,7 +233,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     /**
      * @return Difference with ideal affinity.
      */
-    @Nullable public Map<Integer, CacheGroupAffinityMessage> idealAffinityDiff() {
+    public @Nullable Map<Integer, CacheGroupAffinityMessage> idealAffinityDiff() {
         return idealAffDiff;
     }
 

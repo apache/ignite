@@ -669,7 +669,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             return Collections.singleton(new ComputeJobAdapter() {
-                @Nullable @Override public Object execute() {
+                @Override public @Nullable Object execute() {
                     assert taskSes != null;
 
                     assert startLatch != null;
@@ -752,7 +752,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Integer reduce(List<ComputeJobResult> results) {
+        @Override public @Nullable Integer reduce(List<ComputeJobResult> results) {
             int sum = 0;
 
             for (ComputeJobResult res : results)

@@ -85,7 +85,7 @@ public class PlatformAffinity extends PlatformAbstractTarget {
 
     /** */
     private static final C1<ClusterNode, UUID> TO_NODE_ID = new C1<ClusterNode, UUID>() {
-        @Nullable @Override public UUID apply(ClusterNode node) {
+        @Override public @Nullable UUID apply(ClusterNode node) {
             return node != null ? node.id() : null;
         }
     };

@@ -194,7 +194,7 @@ public class IgfsPerBlockLruEvictionPolicy implements EvictionPolicy<IgfsBlockKe
      * @param entry Entry.
      * @return Peeked value.
      */
-    @Nullable private byte[] peek(EvictableEntry<IgfsBlockKey, byte[]> entry) {
+    private @Nullable byte[] peek(EvictableEntry<IgfsBlockKey, byte[]> entry) {
         return (byte[])((CacheEvictableEntryImpl)entry).peek();
     }
 
@@ -457,7 +457,7 @@ public class IgfsPerBlockLruEvictionPolicy implements EvictionPolicy<IgfsBlockKe
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Collection<String> getExcludePaths() {
+        @Override public @Nullable Collection<String> getExcludePaths() {
             return IgfsPerBlockLruEvictionPolicy.this.getExcludePaths();
         }
 

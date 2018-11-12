@@ -206,7 +206,7 @@ public class GridH2Table extends TableBase {
     /**
      * @return Affinity key column or {@code null} if not available.
      */
-    @Nullable public IndexColumn getAffinityKeyColumn() {
+    public @Nullable IndexColumn getAffinityKeyColumn() {
         return affKeyCol;
     }
 

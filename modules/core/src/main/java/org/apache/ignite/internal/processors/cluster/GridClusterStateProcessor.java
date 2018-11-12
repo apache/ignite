@@ -329,7 +329,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public IgniteInternalFuture<Boolean> onLocalJoin(DiscoCache discoCache) {
+    @Override public @Nullable IgniteInternalFuture<Boolean> onLocalJoin(DiscoCache discoCache) {
         final DiscoveryDataClusterState state = globalState;
 
         if (state.active())
@@ -387,7 +387,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public ChangeGlobalStateFinishMessage onNodeLeft(ClusterNode node) {
+    @Override public @Nullable ChangeGlobalStateFinishMessage onNodeLeft(ClusterNode node) {
         if (globalState.transition()) {
             Set<UUID> nodes = globalState.transitionNodes();
 
@@ -590,7 +590,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
      * @param msg State change message.
      * @return Local future for state change process.
      */
-    @Nullable private GridChangeGlobalStateFuture changeStateFuture(ChangeGlobalStateMessage msg) {
+    private @Nullable GridChangeGlobalStateFuture changeStateFuture(ChangeGlobalStateMessage msg) {
         return changeStateFuture(msg.initiatorNodeId(), msg.requestId());
     }
 
@@ -599,7 +599,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
      * @param reqId State change request ID.
      * @return Local future for state change process.
      */
-    @Nullable private GridChangeGlobalStateFuture changeStateFuture(UUID initiatorNode, UUID reqId) {
+    private @Nullable GridChangeGlobalStateFuture changeStateFuture(UUID initiatorNode, UUID reqId) {
         assert initiatorNode != null;
         assert reqId != null;
 
@@ -655,7 +655,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
+    @Override public @Nullable DiscoveryDataExchangeType discoveryDataType() {
         return DiscoveryDataExchangeType.STATE_PROC;
     }
 
@@ -923,7 +923,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag.JoiningNodeDiscoveryData discoData) {
+    @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag.JoiningNodeDiscoveryData discoData) {
         if (node.isClient() || node.isDaemon())
             return null;
 

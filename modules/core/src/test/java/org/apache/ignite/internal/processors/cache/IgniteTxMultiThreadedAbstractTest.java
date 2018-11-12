@@ -58,7 +58,7 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
     protected void checkCommitMultithreaded(final TransactionConcurrency concurrency,
         final TransactionIsolation isolation) throws Exception {
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
+            @Override public @Nullable Object call() throws Exception {
                 Thread t = Thread.currentThread();
 
                 t.setName(t.getName() + "-id-" + t.getId());
@@ -87,7 +87,7 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
         final ConcurrentMap<Integer, String> map = new ConcurrentHashMap<>();
 
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
+            @Override public @Nullable Object call() throws Exception {
                 Thread t = Thread.currentThread();
 
                 t.setName(t.getName() + "-id-" + t.getId());

@@ -62,17 +62,14 @@ public interface DiscoverySpiMBean {
      * @return Gets current coordinator.
      * @deprecated Use {@link #getCoordinatorNodeFormatted()} instead.
      */
-    @Deprecated
-    @MXBeanDescription("Coordinator node ID.")
-    @Nullable public UUID getCoordinator();
+    @MXBeanDescription("Coordinator node ID.") @Deprecated public @Nullable UUID getCoordinator();
 
     /**
      * Gets current coordinator node formatted as a string.
      *
      * @return Current coordinator string representation.
      */
-    @MXBeanDescription("Coordinator node formatted as a string.")
-    @Nullable public String getCoordinatorNodeFormatted();
+    @MXBeanDescription("Coordinator node formatted as a string.") public @Nullable String getCoordinatorNodeFormatted();
 
     /**
      * Gets local node formatted as a string.

@@ -140,7 +140,7 @@ class GridUriDeploymentClassLoader extends URLClassLoader {
      * @return An input stream for reading the resource, or {@code null}
      *      if the resource could not be found.
      */
-    @Nullable public InputStream getResourceAsStreamGarOnly(String name) {
+    public @Nullable InputStream getResourceAsStreamGarOnly(String name) {
         URL url = findResource(name);
 
         try {

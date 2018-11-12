@@ -490,7 +490,7 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
     /**
      * @return Entry processor.
      */
-    @NotNull private EntryProcessor<Integer, Integer, Integer> createEntryProcessor() {
+    private @NotNull EntryProcessor<Integer, Integer, Integer> createEntryProcessor() {
         return failOnWrite ? new ExternalizableFailedWriteEntryProcessor() :
             new ExternalizableFailedReadEntryProcessor();
     }

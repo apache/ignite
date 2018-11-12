@@ -788,7 +788,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         IgniteStripedThreadPoolExecutor callbackExecSvc,
         ExecutorService qryExecSvc,
         ExecutorService schemaExecSvc,
-        @Nullable final Map<String, ? extends ExecutorService> customExecSvcs,
+        final @Nullable Map<String, ? extends ExecutorService> customExecSvcs,
         GridAbsClosure errHnd,
         WorkersRegistry workerRegistry,
         Thread.UncaughtExceptionHandler hnd
@@ -3480,7 +3480,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFileSystem igfsx(String name) {
+    @Override public @Nullable IgniteFileSystem igfsx(String name) {
         if (name == null)
             throw new IllegalArgumentException("IGFS name cannot be null");
 
@@ -3645,7 +3645,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DataRegionMetrics dataRegionMetrics(String memPlcName) {
+    @Override public @Nullable DataRegionMetrics dataRegionMetrics(String memPlcName) {
         guard();
 
         try {
@@ -3674,7 +3674,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
+    @Override public @Nullable MemoryMetrics memoryMetrics(String memPlcName) {
         return DataRegionMetricsAdapter.valueOf(dataRegionMetrics(memPlcName));
     }
 
@@ -3684,12 +3684,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create) {
+    @Override public @Nullable IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create) {
         return atomicSequence(name, null, initVal, create);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteAtomicSequence atomicSequence(String name, AtomicConfiguration cfg, long initVal,
+    @Override public @Nullable IgniteAtomicSequence atomicSequence(String name, AtomicConfiguration cfg, long initVal,
         boolean create) throws IgniteException {
         guard();
 
@@ -3707,12 +3707,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteAtomicLong atomicLong(String name, long initVal, boolean create) {
+    @Override public @Nullable IgniteAtomicLong atomicLong(String name, long initVal, boolean create) {
         return atomicLong(name, null, initVal, create);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteAtomicLong atomicLong(String name, AtomicConfiguration cfg, long initVal,
+    @Override public @Nullable IgniteAtomicLong atomicLong(String name, AtomicConfiguration cfg, long initVal,
         boolean create) throws IgniteException {
         guard();
 
@@ -3730,7 +3730,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> IgniteAtomicReference<T> atomicReference(
+    @Override public @Nullable <T> IgniteAtomicReference<T> atomicReference(
         String name,
         @Nullable T initVal,
         boolean create
@@ -3757,7 +3757,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name,
+    @Override public @Nullable <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name,
         @Nullable T initVal,
         @Nullable S initStamp,
         boolean create) {
@@ -3783,7 +3783,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteCountDownLatch countDownLatch(String name,
+    @Override public @Nullable IgniteCountDownLatch countDownLatch(String name,
         int cnt,
         boolean autoDel,
         boolean create) {
@@ -3803,7 +3803,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteSemaphore semaphore(
+    @Override public @Nullable IgniteSemaphore semaphore(
         String name,
         int cnt,
         boolean failoverSafe,
@@ -3825,7 +3825,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteLock reentrantLock(
+    @Override public @Nullable IgniteLock reentrantLock(
         String name,
         boolean failoverSafe,
         boolean fair,
@@ -3847,7 +3847,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> IgniteQueue<T> queue(String name,
+    @Override public @Nullable <T> IgniteQueue<T> queue(String name,
         int cap,
         CollectionConfiguration cfg) {
         guard();
@@ -3866,7 +3866,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> IgniteSet<T> set(String name,
+    @Override public @Nullable <T> IgniteSet<T> set(String name,
         CollectionConfiguration cfg) {
         guard();
 
@@ -4311,7 +4311,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             IgniteStripedThreadPoolExecutor callbackExecSvc,
             ExecutorService qryExecSvc,
             ExecutorService schemaExecSvc,
-            @Nullable final Map<String, ? extends ExecutorService> customExecSvcs,
+            final @Nullable Map<String, ? extends ExecutorService> customExecSvcs,
             WorkersRegistry workersRegistry
         ) throws IgniteCheckedException {
             if (U.IGNITE_MBEANS_DISABLED)

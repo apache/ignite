@@ -64,14 +64,14 @@ public class GridCacheQueryBean {
     /**
      * @return Reducer.
      */
-    @Nullable public IgniteReducer<Object, Object> reducer() {
+    public @Nullable IgniteReducer<Object, Object> reducer() {
         return rdc;
     }
 
     /**
      * @return Transformer.
      */
-    @Nullable public IgniteClosure<?, ?> transform() {
+    public @Nullable IgniteClosure<?, ?> transform() {
 
 
         return trans;
@@ -80,7 +80,7 @@ public class GridCacheQueryBean {
     /**
      * @return Arguments.
      */
-    @Nullable public Object[] arguments() {
+    public @Nullable Object[] arguments() {
         return args;
     }
 

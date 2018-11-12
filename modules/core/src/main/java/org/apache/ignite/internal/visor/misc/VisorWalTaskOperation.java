@@ -38,7 +38,7 @@ public enum VisorWalTaskOperation {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static VisorWalTaskOperation fromOrdinal(int ord) {
+    public static @Nullable VisorWalTaskOperation fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

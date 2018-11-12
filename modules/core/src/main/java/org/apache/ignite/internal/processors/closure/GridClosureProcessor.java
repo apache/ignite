@@ -804,7 +804,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Future.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public IgniteInternalFuture<?> runLocal(@Nullable final Runnable c, byte plc)
+    public IgniteInternalFuture<?> runLocal(final @Nullable Runnable c, byte plc)
         throws IgniteCheckedException {
         if (c == null)
             return new GridFinishedFuture();
@@ -933,7 +933,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Future.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    private <R> IgniteInternalFuture<R> callLocal(@Nullable final Callable<R> c, boolean sys) throws IgniteCheckedException {
+    private <R> IgniteInternalFuture<R> callLocal(final @Nullable Callable<R> c, boolean sys) throws IgniteCheckedException {
         return callLocal(c, sys ? GridIoPolicy.SYSTEM_POOL : GridIoPolicy.PUBLIC_POOL);
     }
 
@@ -944,7 +944,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Future.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public <R> IgniteInternalFuture<R> callLocal(@Nullable final Callable<R> c, byte plc)
+    public <R> IgniteInternalFuture<R> callLocal(final @Nullable Callable<R> c, byte plc)
         throws IgniteCheckedException {
         if (c == null)
             return new GridFinishedFuture<>();
@@ -1060,7 +1060,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param arg Optional argument.
      * @return Job.
      */
-    private static <T, R> ComputeJob job(final IgniteClosure<T, R> job, @Nullable final T arg) {
+    private static <T, R> ComputeJob job(final IgniteClosure<T, R> job, final @Nullable T arg) {
         A.notNull(job, "job");
 
         return job instanceof ComputeJobMasterLeaveAware ? new C1MLA<>(job, arg) : new C1<>(job, arg);
@@ -1168,7 +1168,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Void reduce(List<ComputeJobResult> results) {
+        @Override public @Nullable Void reduce(List<ComputeJobResult> results) {
             return null;
         }
     }
@@ -1345,12 +1345,12 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Collection<String> affinityCacheNames() {
+        @Override public @Nullable Collection<String> affinityCacheNames() {
             return affCacheNames;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public AffinityTopologyVersion topologyVersion() {
+        @Override public @Nullable AffinityTopologyVersion topologyVersion() {
             return topVer;
         }
     }
@@ -1419,12 +1419,12 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Collection<String> affinityCacheNames() {
+        @Override public @Nullable Collection<String> affinityCacheNames() {
             return affCacheNames;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public AffinityTopologyVersion topologyVersion() {
+        @Override public @Nullable AffinityTopologyVersion topologyVersion() {
             return topVer;
         }
     }
@@ -1756,7 +1756,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object execute() {
+        @Override public @Nullable Object execute() {
             return job.apply(arg);
         }
 
@@ -1940,7 +1940,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object execute() {
+        @Override public @Nullable Object execute() {
             r.run();
 
             return null;

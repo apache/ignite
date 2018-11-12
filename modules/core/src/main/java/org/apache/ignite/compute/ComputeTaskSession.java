@@ -185,7 +185,7 @@ public interface ComputeTaskSession {
      * @return Grid job sibling for a given ID.
      * @throws IgniteException If job sibling can not be received from task node.
      */
-    @Nullable public ComputeJobSibling getJobSibling(IgniteUuid jobId) throws IgniteException;
+    public @Nullable ComputeJobSibling getJobSibling(IgniteUuid jobId) throws IgniteException;
 
     /**
      * Sets session attributed. Note that task session is distributed and
@@ -214,7 +214,7 @@ public interface ComputeTaskSession {
      * @param <V> Attribute value type.
      * @return Gets task attribute for given name.
      */
-    @Nullable public <K, V> V getAttribute(K key);
+    public @Nullable <K, V> V getAttribute(K key);
 
     /**
      * Sets task attributes. This method exists so one distributed replication
@@ -408,7 +408,7 @@ public interface ComputeTaskSession {
      * @see #removeCheckpoint(String)
      * @see org.apache.ignite.spi.checkpoint.CheckpointSpi
      */
-    @Nullable public <T> T loadCheckpoint(String key) throws IgniteException;
+    public @Nullable <T> T loadCheckpoint(String key) throws IgniteException;
 
     /**
      * Removes previously saved job's state for a given {@code key} from an underlying storage.

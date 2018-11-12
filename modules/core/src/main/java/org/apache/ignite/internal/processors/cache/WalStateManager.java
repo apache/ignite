@@ -564,7 +564,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * @param msg Message.
      * @return Error message or {@code null} if everything is OK.
      */
-    @Nullable private String validate(WalStateProposeMessage msg) {
+    private @Nullable String validate(WalStateProposeMessage msg) {
         // Is group still there?
         CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
 
@@ -1018,7 +1018,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * @param msg Message.
      * @return Checkpoint future or {@code null} if failed to get checkpointer.
      */
-    @Nullable private CheckpointFuture triggerCheckpoint(String msg) {
+    private @Nullable CheckpointFuture triggerCheckpoint(String msg) {
         return cctx.database().forceCheckpoint(msg);
     }
 

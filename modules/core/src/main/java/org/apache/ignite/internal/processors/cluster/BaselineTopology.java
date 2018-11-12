@@ -402,7 +402,7 @@ public class BaselineTopology implements Serializable {
      * @param id ID of BaselineTopology to build.
      * @return Baseline topology consisting of given nodes.
      */
-    @Nullable public static BaselineTopology build(Collection<? extends BaselineNode> nodes, int id) {
+    public static @Nullable BaselineTopology build(Collection<? extends BaselineNode> nodes, int id) {
         if (nodes == null)
             return null;
 

@@ -55,7 +55,7 @@ public class IgfsCreateResult {
     /**
      * @return Output stream to the secondary file system.
      */
-    @Nullable public OutputStream secondaryOutputStream() {
+    public @Nullable OutputStream secondaryOutputStream() {
         return secondaryOut;
     }
 

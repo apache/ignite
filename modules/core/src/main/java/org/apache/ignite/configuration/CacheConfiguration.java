@@ -545,7 +545,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * @return {@link DataRegionConfiguration} name.
      */
-    @Nullable public String getDataRegionName() {
+    public @Nullable String getDataRegionName() {
         return memPlcName;
     }
 
@@ -588,9 +588,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @deprecated Use {@link #getEvictionPolicyFactory()} instead.
      */
-    @Deprecated
-    @SuppressWarnings({"unchecked"})
-    @Nullable public EvictionPolicy<K, V> getEvictionPolicy() {
+    @SuppressWarnings({"unchecked"}) @Deprecated public @Nullable EvictionPolicy<K, V> getEvictionPolicy() {
         return evictPlc;
     }
 
@@ -616,7 +614,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return Cache eviction policy factory or {@code null} if evictions should be disabled
      * or if {@link #getEvictionPolicy()} should be used instead.
      */
-    @Nullable public Factory<EvictionPolicy<? super K, ? super V>> getEvictionPolicyFactory() {
+    public @Nullable Factory<EvictionPolicy<? super K, ? super V>> getEvictionPolicyFactory() {
         return evictPlcFactory;
     }
 
@@ -1627,7 +1625,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @return Cache interceptor.
      */
-    @Nullable public CacheInterceptor<K, V> getInterceptor() {
+    public @Nullable CacheInterceptor<K, V> getInterceptor() {
         return interceptor;
     }
 
@@ -1715,7 +1713,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @return Classes with SQL functions.
      */
-    @Nullable public Class<?>[] getSqlFunctionClasses() {
+    public @Nullable Class<?>[] getSqlFunctionClasses() {
         return sqlFuncCls;
     }
 
@@ -1773,7 +1771,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @return Schema name for current cache according to SQL ANSI-99. Could be {@code null}.
      */
-    @Nullable public String getSqlSchema() {
+    public @Nullable String getSqlSchema() {
         return sqlSchema;
     }
 

@@ -121,7 +121,7 @@ public final class ComputeFibonacciContinuationExample {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public BigInteger apply(Long n) {
+        @Override public @Nullable BigInteger apply(Long n) {
             if (fut1 == null || fut2 == null) {
                 System.out.println();
                 System.out.println(">>> Starting fibonacci execution for number: " + n);

@@ -175,7 +175,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @param key Key.
      * @return Entry.
      */
-    @Nullable public GridNearCacheEntry peekExx(KeyCacheObject key) {
+    public @Nullable GridNearCacheEntry peekExx(KeyCacheObject key) {
         return (GridNearCacheEntry)peekEx(key);
     }
 
@@ -332,7 +332,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public Set<Cache.Entry<K, V>> entrySet(@Nullable final CacheEntryPredicate... filter) {
+    @Override public Set<Cache.Entry<K, V>> entrySet(final @Nullable CacheEntryPredicate... filter) {
         CacheEntryPredicate p = new CacheEntryPredicateAdapter() {
             @Override public boolean apply(GridCacheEntryEx ex) {
                 if (ex instanceof GridCacheMapEntry)
@@ -439,7 +439,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         }
 
         /** {@inheritDoc} */
-        @NotNull @Override public Iterator<Cache.Entry<K, V>> iterator() {
+        @Override public @NotNull Iterator<Cache.Entry<K, V>> iterator() {
             return new EntryIterator(nearSet.iterator(),
                 F.iterator0(dhtSet, false, new P1<Cache.Entry<K, V>>() {
                     @Override public boolean apply(Cache.Entry<K, V> e) {

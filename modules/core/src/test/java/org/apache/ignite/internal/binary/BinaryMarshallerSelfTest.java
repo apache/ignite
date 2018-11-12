@@ -1018,7 +1018,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @NotNull @Override public Iterator<Integer> iterator() {
+        @Override public @NotNull Iterator<Integer> iterator() {
             return Collections.emptyIterator();
         }
 

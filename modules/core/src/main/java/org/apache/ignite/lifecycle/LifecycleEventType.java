@@ -60,7 +60,7 @@ public enum LifecycleEventType {
      * @param ord Ordinal value.
      * @return Enumerated value.
      */
-    @Nullable public static LifecycleEventType fromOrdinal(byte ord) {
+    public static @Nullable LifecycleEventType fromOrdinal(byte ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

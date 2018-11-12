@@ -238,7 +238,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
         final Lock lock = cache1.lock(kv);
 
         GridTestThread t1 = new GridTestThread(new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
+            @Override public @Nullable Object call() throws Exception {
                 info("Before lock for key: " + kv);
 
                 lock.lock();
@@ -275,7 +275,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
         });
 
         GridTestThread t2 = new GridTestThread(new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
+            @Override public @Nullable Object call() throws Exception {
                 info("Waiting for latch1...");
 
                 l1.await();
@@ -324,7 +324,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
         final CountDownLatch l2 = new CountDownLatch(1);
 
         GridTestThread t1 = new GridTestThread(new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
+            @Override public @Nullable Object call() throws Exception {
                 Lock lock = cache1.lock(1);
 
                 lock.lock();
@@ -366,7 +366,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
         });
 
         GridTestThread t2 = new GridTestThread(new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
+            @Override public @Nullable Object call() throws Exception {
                 info("Beginning to await on latch 1");
 
                 l1.await();
@@ -416,7 +416,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
         final CountDownLatch l2 = new CountDownLatch(1);
 
         IgniteInternalFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
+                @Override public @Nullable Object call() throws Exception {
                     info("Before lock for keys.");
 
                     Lock lock = cache1.lockAll(keys);
@@ -461,7 +461,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
             }, 1, "TEST-THREAD-1");
 
         IgniteInternalFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
+                @Override public @Nullable Object call() throws Exception {
                     info("Waiting for latch1...");
 
                     try {

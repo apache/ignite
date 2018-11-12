@@ -48,5 +48,5 @@ public abstract class CacheJtaManagerAdapter extends GridCacheSharedManagerAdapt
      *
      * @return Transaction manager finder.
      */
-    @Nullable public abstract Object tmLookup();
+    public abstract @Nullable Object tmLookup();
 }

@@ -108,7 +108,7 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String fileName() {
+    @Override public @Nullable String fileName() {
         return impl.fileName();
     }
 

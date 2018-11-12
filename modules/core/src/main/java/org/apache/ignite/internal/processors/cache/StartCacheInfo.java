@@ -88,7 +88,7 @@ public class StartCacheInfo {
     /**
      * @return Near cache configuration for start.
      */
-    @Nullable public NearCacheConfiguration getReqNearCfg() {
+    public @Nullable NearCacheConfiguration getReqNearCfg() {
         return reqNearCfg;
     }
 

@@ -35,7 +35,7 @@ public class ChainedUserNameMapper implements UserNameMapper, LifecycleAware {
     private UserNameMapper[] mappers;
 
     /** {@inheritDoc} */
-    @Nullable @Override public String map(String name) {
+    @Override public @Nullable String map(String name) {
         for (UserNameMapper mapper : mappers)
             name = mapper.map(name);
 

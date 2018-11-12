@@ -81,12 +81,12 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Integer firstCacheId() {
+    @Override public @Nullable Integer firstCacheId() {
         return activeCacheIds.isEmpty() ? null : activeCacheIds.get(0);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridIntList cacheIds() {
+    @Override public @Nullable GridIntList cacheIds() {
         return activeCacheIds;
     }
 
@@ -103,7 +103,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheContext singleCacheContext(GridCacheSharedContext cctx) {
+    @Override public @Nullable GridCacheContext singleCacheContext(GridCacheSharedContext cctx) {
         if (activeCacheIds.size() == 1) {
             int cacheId = activeCacheIds.get(0);
 

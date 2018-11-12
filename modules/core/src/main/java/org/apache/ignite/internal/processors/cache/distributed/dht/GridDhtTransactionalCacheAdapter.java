@@ -270,7 +270,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @throws IgniteCheckedException If failed.
      * @throws GridDistributedLockCancelledException If lock has been cancelled.
      */
-    @Nullable private GridDhtTxRemote startRemoteTx(UUID nodeId,
+    private @Nullable GridDhtTxRemote startRemoteTx(UUID nodeId,
         GridDhtLockRequest req,
         GridDhtLockResponse res)
         throws IgniteCheckedException, GridDistributedLockCancelledException {
@@ -1038,7 +1038,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         final GridCacheContext<?, ?> cacheCtx,
         final ClusterNode nearNode,
         final GridNearLockRequest req,
-        @Nullable final CacheEntryPredicate[] filter0) {
+        final @Nullable CacheEntryPredicate[] filter0) {
         final List<KeyCacheObject> keys = req.keys();
 
         CacheEntryPredicate[] filter = filter0;

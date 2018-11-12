@@ -284,14 +284,14 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /**
      * @return Class name.
      */
-    @Nullable public String queryClassName() {
+    public @Nullable String queryClassName() {
         return clsName;
     }
 
     /**
      * @return Clause.
      */
-    @Nullable public String clause() {
+    public @Nullable String clause() {
         return clause;
     }
 
@@ -423,23 +423,21 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /**
      * @return Key-value filter.
      */
-    @SuppressWarnings("unchecked")
-    @Nullable public <K, V> IgniteBiPredicate<K, V> scanFilter() {
+    @SuppressWarnings("unchecked") public @Nullable <K, V> IgniteBiPredicate<K, V> scanFilter() {
         return (IgniteBiPredicate<K, V>)filter;
     }
 
     /**
      * @return Transformer.
      */
-    @SuppressWarnings("unchecked")
-    @Nullable public <K, V> IgniteClosure<Map.Entry<K, V>, Object> transform() {
+    @SuppressWarnings("unchecked") public @Nullable <K, V> IgniteClosure<Map.Entry<K, V>, Object> transform() {
         return (IgniteClosure<Map.Entry<K, V>, Object>)transform;
     }
 
     /**
      * @return Partition.
      */
-    @Nullable public Integer partition() {
+    public @Nullable Integer partition() {
         return part;
     }
 
@@ -633,7 +631,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @throws IgniteCheckedException If partition number is invalid.
      */
     private static Collection<ClusterNode> nodes(final GridCacheContext<?, ?> cctx,
-        @Nullable final ClusterGroup prj, @Nullable final Integer part) throws IgniteCheckedException {
+        final @Nullable ClusterGroup prj, final @Nullable Integer part) throws IgniteCheckedException {
         assert cctx != null;
 
         final AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
@@ -994,7 +992,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         }
 
         /** {@inheritDoc} */
-        @NotNull @Override public Iterator iterator() {
+        @Override public @NotNull Iterator iterator() {
             return this;
         }
 

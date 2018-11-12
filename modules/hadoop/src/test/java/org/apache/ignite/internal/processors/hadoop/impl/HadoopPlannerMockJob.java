@@ -137,7 +137,7 @@ public class HadoopPlannerMockJob extends HadoopJobEx {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public String property(String name) {
+        @Override public @Nullable String property(String name) {
             throwUnsupported();
 
             return null;

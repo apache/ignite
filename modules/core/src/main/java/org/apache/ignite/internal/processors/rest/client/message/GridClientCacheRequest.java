@@ -80,7 +80,7 @@ public class GridClientCacheRequest extends GridClientAbstractMessage {
          * @param ord Ordinal value.
          * @return Enumerated value or {@code null} if ordinal out of range.
          */
-        @Nullable public static GridCacheOperation fromOrdinal(int ord) {
+        public static @Nullable GridCacheOperation fromOrdinal(int ord) {
             return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
         }
     }

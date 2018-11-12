@@ -68,7 +68,7 @@ public class ServerSocketMultiThreadedTest extends TestCase {
 
         GridTestUtils.runMultiThreaded(
             new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
+                @Override public @Nullable Object call() throws Exception {
                     ServerSocket srvSock = null;
 
                     for (int i = 0; i < ITER_CNT; i++) {

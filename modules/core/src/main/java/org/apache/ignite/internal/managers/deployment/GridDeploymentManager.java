@@ -248,7 +248,7 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
      * @throws IgniteCheckedException If deployment failed.
      * @return Grid deployment.
      */
-    @Nullable public GridDeployment deploy(Class<?> cls, ClassLoader clsLdr) throws IgniteCheckedException {
+    public @Nullable GridDeployment deploy(Class<?> cls, ClassLoader clsLdr) throws IgniteCheckedException {
         if (clsLdr == null)
             clsLdr = getClass().getClassLoader();
 
@@ -318,7 +318,7 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
      * @param ldrId Loader ID.
      * @return Deployment for given ID.
      */
-    @Nullable public GridDeployment getDeployment(IgniteUuid ldrId) {
+    public @Nullable GridDeployment getDeployment(IgniteUuid ldrId) {
         if (locDep != null)
            return locDep.classLoaderId().equals(ldrId) ? locDep : null;
 
@@ -338,7 +338,7 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
      * @param rsrcName Resource to find deployment for.
      * @return Found deployment or {@code null} if one was not found.
      */
-    @Nullable public GridDeployment getDeployment(String rsrcName) {
+    public @Nullable GridDeployment getDeployment(String rsrcName) {
         if (locDep != null)
             return locDep;
 
@@ -364,7 +364,7 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
      * @param rsrcName Class name.
      * @return Grid cached task.
      */
-    @Nullable public GridDeployment getLocalDeployment(String rsrcName) {
+    public @Nullable GridDeployment getLocalDeployment(String rsrcName) {
         if (locDep != null)
             return locDep;
 
@@ -394,7 +394,7 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
      * @param nodeFilter Node filter for class loader.
      * @return Deployment class if found.
      */
-    @Nullable public GridDeployment getGlobalDeployment(
+    public @Nullable GridDeployment getGlobalDeployment(
         DeploymentMode depMode,
         String rsrcName,
         String clsName,
@@ -537,7 +537,7 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
      * @return ID for given class loader or {@code null} if given loader is not
      *      grid deployment class loader.
      */
-    @Nullable public IgniteUuid getClassLoaderId(ClassLoader ldr) {
+    public @Nullable IgniteUuid getClassLoaderId(ClassLoader ldr) {
         assert ldr != null;
 
         return ldr instanceof GridDeploymentClassLoader ? ((GridDeploymentInfo)ldr).classLoaderId() : null;
@@ -654,7 +654,7 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Map<UUID, IgniteUuid> participants() {
+        @Override public @Nullable Map<UUID, IgniteUuid> participants() {
             return null;
         }
 

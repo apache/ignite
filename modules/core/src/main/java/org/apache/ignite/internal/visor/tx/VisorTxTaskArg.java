@@ -38,31 +38,31 @@ public class VisorTxTaskArg extends VisorDataTransferObject {
     private VisorTxOperation op;
 
     /** */
-    @Nullable private Integer limit;
+    private @Nullable Integer limit;
 
     /** */
-    @Nullable private Long minDuration;
+    private @Nullable Long minDuration;
 
     /** */
-    @Nullable private Integer minSize;
+    private @Nullable Integer minSize;
 
     /** */
-    @Nullable private TransactionState state;
+    private @Nullable TransactionState state;
 
     /** */
-    @Nullable private VisorTxProjection proj;
+    private @Nullable VisorTxProjection proj;
 
     /** */
-    @Nullable private List<String> consistentIds;
+    private @Nullable List<String> consistentIds;
 
     /** */
-    @Nullable private String xid;
+    private @Nullable String xid;
 
     /** */
-    @Nullable private String lbRegex;
+    private @Nullable String lbRegex;
 
     /** */
-    @Nullable private VisorTxSortOrder sortOrder;
+    private @Nullable VisorTxSortOrder sortOrder;
 
     /**
      * Default constructor.
@@ -103,22 +103,22 @@ public class VisorTxTaskArg extends VisorDataTransferObject {
     }
 
     /** */
-    @Nullable public Integer getLimit() {
+    public @Nullable Integer getLimit() {
         return limit;
     }
 
     /** */
-    @Nullable public Long getMinDuration() {
+    public @Nullable Long getMinDuration() {
         return minDuration;
     }
 
     /** */
-    @Nullable public Integer getMinSize() {
+    public @Nullable Integer getMinSize() {
         return minSize;
     }
 
     /** */
-    @Nullable public TransactionState getState() {
+    public @Nullable TransactionState getState() {
         return state;
     }
 
@@ -128,22 +128,22 @@ public class VisorTxTaskArg extends VisorDataTransferObject {
     }
 
     /** */
-    @Nullable public List<String> getConsistentIds() {
+    public @Nullable List<String> getConsistentIds() {
         return consistentIds;
     }
 
     /** */
-    @Nullable public String getLabelRegex() {
+    public @Nullable String getLabelRegex() {
         return lbRegex;
     }
 
     /** */
-    @Nullable public String getXid() {
+    public @Nullable String getXid() {
         return xid;
     }
 
     /** */
-    @Nullable public VisorTxSortOrder getSortOrder() {
+    public @Nullable VisorTxSortOrder getSortOrder() {
         return sortOrder;
     }
 

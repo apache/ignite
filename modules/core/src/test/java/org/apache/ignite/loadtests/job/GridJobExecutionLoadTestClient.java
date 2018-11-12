@@ -56,7 +56,7 @@ public class GridJobExecutionLoadTestClient implements Callable<Object> {
     private static volatile boolean finish;
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object call() throws Exception {
+    @Override public @Nullable Object call() throws Exception {
         IgniteCompute rmts = g.compute(g.cluster().forRemotes());
 
         while (!finish) {
@@ -198,7 +198,7 @@ public class GridJobExecutionLoadTestClient implements Callable<Object> {
         final IgniteCompute rmts = g.compute(g.cluster().forRemotes());
 
         GridLoadTestUtils.runMultithreadedInLoop(new Callable<Object>() {
-            @Nullable @Override public Object call() {
+            @Override public @Nullable Object call() {
                 try {
                     rmts.execute(GridJobExecutionLoadTestTask.class, null);
                 }

@@ -539,7 +539,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      * @param nodeIdx node index.
      * @return folder file name.
      */
-    @NotNull private String genDbSubfolderName(Ignite ignite, int nodeIdx) {
+    private @NotNull String genDbSubfolderName(Ignite ignite, int nodeIdx) {
         return genNewStyleSubfolderName(nodeIdx, (UUID)ignite.cluster().localNode().consistentId());
     }
 
@@ -1240,7 +1240,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      * @return WAL iterator factory.
      * @throws IgniteCheckedException If failed.
      */
-    @NotNull private IteratorParametersBuilder createIteratorParametersBuilder(
+    private @NotNull IteratorParametersBuilder createIteratorParametersBuilder(
         String workDir,
         String subfolderName
     ) throws IgniteCheckedException {

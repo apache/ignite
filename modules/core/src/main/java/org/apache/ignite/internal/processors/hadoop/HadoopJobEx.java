@@ -109,7 +109,7 @@ public abstract class HadoopJobEx implements HadoopJob {
     public abstract String igniteWorkDirectory();
 
     /** {@inheritDoc} */
-    @Nullable @Override public String property(String name) {
+    @Override public @Nullable String property(String name) {
         return info().property(name);
     }
 

@@ -102,7 +102,7 @@ public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest 
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public <T> T value(final CacheObjectValueContext ctx, final boolean cpy) {
+        @Override public @Nullable <T> T value(final CacheObjectValueContext ctx, final boolean cpy) {
             return null;
         }
 

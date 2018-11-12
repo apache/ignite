@@ -143,11 +143,11 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
             @LoggerResource
             private IgniteLogger log;
 
-            @Nullable @Override public Object call() throws Exception {
+            @Override public @Nullable Object call() throws Exception {
                 // Test latch in multiple threads on each node.
                 IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(
                     new Callable<Object>() {
-                        @Nullable @Override public Object call() throws Exception {
+                        @Override public @Nullable Object call() throws Exception {
                             IgniteCountDownLatch latch = ignite.countDownLatch("latch", 2, false, true);
 
                             assert latch != null && latch.count() == 2;

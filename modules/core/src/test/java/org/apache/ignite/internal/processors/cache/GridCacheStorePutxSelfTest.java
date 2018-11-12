@@ -115,7 +115,7 @@ public class GridCacheStorePutxSelfTest extends GridCommonAbstractTest {
     /** */
     private static class TestStore implements CacheStore<Integer, Integer> {
         /** {@inheritDoc} */
-        @Nullable @Override public Integer load(Integer key) {
+        @Override public @Nullable Integer load(Integer key) {
             loads.incrementAndGet();
 
             return null;

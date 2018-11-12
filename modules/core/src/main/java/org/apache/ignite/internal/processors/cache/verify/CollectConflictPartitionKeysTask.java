@@ -61,7 +61,7 @@ public class CollectConflictPartitionKeysTask extends ComputeTaskAdapter<Partiti
     private IgniteLogger log;
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(
+    @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(
         List<ClusterNode> subgrid, PartitionKey partKey) throws IgniteException {
         Map<ComputeJob, ClusterNode> jobs = new HashMap<>();
 
@@ -72,7 +72,7 @@ public class CollectConflictPartitionKeysTask extends ComputeTaskAdapter<Partiti
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<PartitionHashRecord, List<PartitionEntryHashRecord>> reduce(List<ComputeJobResult> results)
+    @Override public @Nullable Map<PartitionHashRecord, List<PartitionEntryHashRecord>> reduce(List<ComputeJobResult> results)
         throws IgniteException {
         Map<PartitionHashRecord, List<PartitionEntryHashRecord>> totalRes = new HashMap<>();
 

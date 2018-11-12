@@ -33,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridH2ValueMessageFactory implements MessageFactory {
     /** {@inheritDoc} */
-    @Nullable @Override public Message create(short type) {
+    @Override public @Nullable Message create(short type) {
         switch (type) {
             case -4:
                 return GridH2Null.INSTANCE;

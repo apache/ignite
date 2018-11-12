@@ -37,7 +37,7 @@ public interface BinaryObjectEx extends BinaryObject {
      * @return Raw type
      * @throws BinaryObjectException If failed.
      */
-    @Nullable public BinaryType rawType() throws BinaryObjectException;
+    public @Nullable BinaryType rawType() throws BinaryObjectException;
 
     /**
      * Check if flag set.

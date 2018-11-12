@@ -333,7 +333,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * @param topVer Topology version.
      * @return Primary node or {@code null} if future was completed.
      */
-    @Nullable private ClusterNode mapKeyToNode(AffinityTopologyVersion topVer) {
+    private @Nullable ClusterNode mapKeyToNode(AffinityTopologyVersion topVer) {
         int part = cctx.affinity().partition(key);
 
         List<ClusterNode> affNodes = cctx.affinity().nodesByPartition(part, topVer);

@@ -122,7 +122,7 @@ public class LogisticRegressionSGDTrainer<P extends Serializable> extends Single
      * @param mdl Model.
      * @return state of MLP from last learning.
      */
-    @NotNull private MultilayerPerceptron restoreMLPState(LogisticRegressionModel mdl) {
+    private @NotNull MultilayerPerceptron restoreMLPState(LogisticRegressionModel mdl) {
         Vector weights = mdl.weights();
         double intercept = mdl.intercept();
 

@@ -692,12 +692,12 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     }
 
     /** */
-    @NotNull protected CacheAtomicityMode atomicityMode() {
+    protected @NotNull CacheAtomicityMode atomicityMode() {
         return ATOMIC;
     }
 
     /** */
-    @NotNull protected CacheMode cacheMode() {
+    protected @NotNull CacheMode cacheMode() {
         return PARTITIONED;
     }
 

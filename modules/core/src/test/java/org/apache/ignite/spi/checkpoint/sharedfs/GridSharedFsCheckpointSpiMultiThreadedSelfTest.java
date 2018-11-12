@@ -72,7 +72,7 @@ public class GridSharedFsCheckpointSpiMultiThreadedSelfTest extends
 
         IgniteInternalFuture fut1 = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
+                @Override public @Nullable Object call() throws Exception {
                     try {
                         byte[] state = createTestArray((byte)1);
 
@@ -92,7 +92,7 @@ public class GridSharedFsCheckpointSpiMultiThreadedSelfTest extends
 
         IgniteInternalFuture fut2 = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
+                @Override public @Nullable Object call() throws Exception {
                     try{
                         byte[] state = createTestArray((byte)2);
 
@@ -112,7 +112,7 @@ public class GridSharedFsCheckpointSpiMultiThreadedSelfTest extends
 
         IgniteInternalFuture fut3 = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
+                @Override public @Nullable Object call() throws Exception {
                     while (writeFinished.get() < THREAD_CNT * 2) {
                         try {
                             byte[] state = getSpi().loadCheckpoint(CHECK_POINT_KEY);

@@ -334,7 +334,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param waitInfo Cache rebalance information.
      * @return Message.
      */
-    @Nullable private CacheAffinityChangeMessage affinityChangeMessage(WaitRebalanceInfo waitInfo) {
+    private @Nullable CacheAffinityChangeMessage affinityChangeMessage(WaitRebalanceInfo waitInfo) {
         if (waitInfo.assignments.isEmpty()) // Possible if all awaited caches were destroyed.
             return null;
 
@@ -371,7 +371,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param startReqs Client cache start request.
      * @return Descriptors for caches to start.
      */
-    @Nullable private List<DynamicCacheDescriptor> clientCachesToStart(UUID reqId,
+    private @Nullable List<DynamicCacheDescriptor> clientCachesToStart(UUID reqId,
         Map<String, DynamicCacheChangeRequest> startReqs) {
         List<DynamicCacheDescriptor> startDescs = new ArrayList<>(startReqs.size());
 
@@ -403,7 +403,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param discoCache Discovery data cache.
      * @return Map of started caches (cache ID to near enabled flag).
      */
-    @Nullable private Map<Integer, Boolean> processClientCacheStartRequests(
+    private @Nullable Map<Integer, Boolean> processClientCacheStartRequests(
         ClientCacheChangeDummyDiscoveryMessage msg,
         boolean crd,
         AffinityTopologyVersion topVer,
@@ -733,7 +733,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     public void onCustomMessageNoAffinityChange(
         GridDhtPartitionsExchangeFuture fut,
         boolean crd,
-        @Nullable final ExchangeActions exchActions
+        final @Nullable ExchangeActions exchActions
     ) {
         final ExchangeDiscoveryEvents evts = fut.context().events();
 
@@ -2120,7 +2120,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param crd Coordinator flag.
      * @return Rabalance info.
      */
-    @Nullable private WaitRebalanceInfo initAffinityOnNodeJoin(final GridDhtPartitionsExchangeFuture fut, boolean crd) {
+    private @Nullable WaitRebalanceInfo initAffinityOnNodeJoin(final GridDhtPartitionsExchangeFuture fut, boolean crd) {
         final ExchangeDiscoveryEvents evts = fut.context().events();
 
         final Map<Object, List<List<ClusterNode>>> affCache = new ConcurrentHashMap<>();
@@ -2558,7 +2558,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param grpId Cache group ID
      * @return Cache affinity cache.
      */
-    @Nullable public GridAffinityAssignmentCache groupAffinity(int grpId) {
+    public @Nullable GridAffinityAssignmentCache groupAffinity(int grpId) {
         CacheGroupHolder grpHolder = grpHolders.get(grpId);
 
         return grpHolder != null ? grpHolder.affinity() : null;

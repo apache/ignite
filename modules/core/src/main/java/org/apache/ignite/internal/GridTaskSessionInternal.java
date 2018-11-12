@@ -34,7 +34,7 @@ public interface GridTaskSessionInternal extends ComputeTaskSession {
     /**
      * @return Job ID (possibly <tt>null</tt>).
      */
-    @Nullable public IgniteUuid getJobId();
+    public @Nullable IgniteUuid getJobId();
 
     /**
      * @return {@code True} if task node.

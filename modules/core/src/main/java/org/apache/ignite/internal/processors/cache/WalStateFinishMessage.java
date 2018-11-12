@@ -62,7 +62,7 @@ public class WalStateFinishMessage extends WalStateAbstractMessage {
     /**
      * @return Error message.
      */
-    @Nullable public String errorMessage() {
+    public @Nullable String errorMessage() {
         return errMsg;
     }
 

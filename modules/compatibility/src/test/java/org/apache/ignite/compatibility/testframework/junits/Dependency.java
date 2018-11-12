@@ -27,15 +27,13 @@ public class Dependency {
     private String locModuleName;
 
     /** Group name. Null means ignite default group name. */
-    @Nullable
-    private String groupName;
+    private @Nullable String groupName;
 
     /** Artifact name (artifact ID) without group name. */
     private String artifactName;
 
     /** Version. Null means default Ignite version is to be used. May be used for 3rd party dependencies. */
-    @Nullable
-    private String version;
+    private @Nullable String version;
 
     /** Test flag. Test jar should have {@code true} value. Default is {@code false}. */
     private boolean test;
@@ -97,21 +95,21 @@ public class Dependency {
     /**
      * @return classifier or {@code} null depending on {@link #test} flag
      */
-    @Nullable public String classifier() {
+    public @Nullable String classifier() {
         return test ? "tests" : null;
     }
 
     /**
      * @return {@link #version}
      */
-    @Nullable public String version() {
+    public @Nullable String version() {
         return version;
     }
 
     /**
      * @return {@link #groupName}
      */
-    @Nullable public String groupName() {
+    public @Nullable String groupName() {
         return groupName;
     }
 }

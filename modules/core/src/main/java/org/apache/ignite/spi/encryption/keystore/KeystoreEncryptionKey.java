@@ -41,7 +41,7 @@ public final class KeystoreEncryptionKey implements Serializable {
     /**
      * Key digest.
      */
-    @Nullable final byte[] digest;
+    final @Nullable byte[] digest;
 
     /**
      * @param k Encryption key.

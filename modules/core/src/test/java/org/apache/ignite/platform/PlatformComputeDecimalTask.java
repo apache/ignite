@@ -38,12 +38,12 @@ import java.util.Map;
 @SuppressWarnings({"ConstantConditions"})
 public class PlatformComputeDecimalTask extends ComputeTaskAdapter<Object[], BigDecimal> {
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object[] arg) {
+    @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object[] arg) {
         return Collections.singletonMap(new DecimalJob((BigDecimal)arg[0], (String)arg[1]), F.first(subgrid));
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public BigDecimal reduce(List<ComputeJobResult> results) {
+    @Override public @Nullable BigDecimal reduce(List<ComputeJobResult> results) {
         ComputeJobResult res = results.get(0);
 
         if (res.getException() != null)
@@ -81,7 +81,7 @@ public class PlatformComputeDecimalTask extends ComputeTaskAdapter<Object[], Big
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object execute() {
+        @Override public @Nullable Object execute() {
             BigDecimal exp = new BigDecimal(valStr.replace(',', '.'));
 
             if (val != null && !exp.equals(val))

@@ -37,7 +37,7 @@ public class VisorNodeRestartTask extends VisorMultiNodeTask<Void, Void, Void> {
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Void reduce0(List<ComputeJobResult> results) {
+    @Override protected @Nullable Void reduce0(List<ComputeJobResult> results) {
         return null;
     }
 

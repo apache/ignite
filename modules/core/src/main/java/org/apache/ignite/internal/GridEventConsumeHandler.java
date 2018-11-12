@@ -412,7 +412,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object orderedTopic() {
+    @Override public @Nullable Object orderedTopic() {
         return null;
     }
 

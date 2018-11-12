@@ -150,7 +150,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
     /**
      * @return SSL context factory to use if SSL or {@code null} to disable SSL usage.
      */
-    @Nullable protected GridSslContextFactory sslContextFactory() {
+    protected @Nullable GridSslContextFactory sslContextFactory() {
         return null;
     }
 

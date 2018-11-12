@@ -87,7 +87,7 @@ public interface CacheContinuousQueryListener<K, V> {
      * @param topVer Topology version.
      * @return Context.
      */
-    @Nullable public CounterSkipContext skipUpdateCounter(
+    public @Nullable CounterSkipContext skipUpdateCounter(
         GridCacheContext cctx,
         @Nullable CounterSkipContext skipCtx,
         int part,

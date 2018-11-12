@@ -35,13 +35,13 @@ import java.util.Map;
  */
 public class PlatformMaxMemoryTask extends ComputeTaskAdapter<Object, Long> {
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable Object arg) {
         return Collections.singletonMap(new MaxMemoryJob(), F.first(subgrid));
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Long reduce(List<ComputeJobResult> results) {
+    @Override public @Nullable Long reduce(List<ComputeJobResult> results) {
         return results.get(0).getData();
     }
 
@@ -50,7 +50,7 @@ public class PlatformMaxMemoryTask extends ComputeTaskAdapter<Object, Long> {
      */
     private static class MaxMemoryJob extends ComputeJobAdapter {
         /** {@inheritDoc} */
-        @Nullable @Override public Object execute() {
+        @Override public @Nullable Object execute() {
             return ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax();
         }
     }

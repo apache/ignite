@@ -90,7 +90,7 @@ public interface IgniteSpiContext {
      * @return Node for a given ID or {@code null} is such not has not been discovered.
      * @see org.apache.ignite.spi.discovery.DiscoverySpi
      */
-    @Nullable public ClusterNode node(UUID nodeId);
+    public @Nullable ClusterNode node(UUID nodeId);
 
     /**
      * Pings a remote node. The underlying communication is provided via
@@ -225,7 +225,7 @@ public interface IgniteSpiContext {
      * @return Cached object.
      * @throws CacheException Thrown if any exception occurs.
      */
-    @Nullable public <K, V> V get(String cacheName, K key) throws CacheException;
+    public @Nullable <K, V> V get(String cacheName, K key) throws CacheException;
 
     /**
      * Puts object in cache.
@@ -239,7 +239,7 @@ public interface IgniteSpiContext {
      * @return Previous value associated with specified key, possibly {@code null}.
      * @throws CacheException Thrown if any exception occurs.
      */
-    @Nullable public <K, V> V put(String cacheName, K key, V val, long ttl) throws CacheException;
+    public @Nullable <K, V> V put(String cacheName, K key, V val, long ttl) throws CacheException;
 
     /**
      * Puts object into cache if there was no previous object associated with
@@ -254,7 +254,7 @@ public interface IgniteSpiContext {
      * @return Either existing value or {@code null} if there was no value for given key.
      * @throws CacheException If put failed.
      */
-    @Nullable public <K, V> V putIfAbsent(String cacheName, K key, V val, long ttl) throws CacheException;
+    public @Nullable <K, V> V putIfAbsent(String cacheName, K key, V val, long ttl) throws CacheException;
 
     /**
      * Removes object from cache.
@@ -266,7 +266,7 @@ public interface IgniteSpiContext {
      * @return Previous value associated with specified key, possibly {@code null}.
      * @throws CacheException Thrown if any exception occurs.
      */
-    @Nullable public <K, V> V remove(String cacheName, K key) throws CacheException;
+    public @Nullable <K, V> V remove(String cacheName, K key) throws CacheException;
 
     /**
      * Returns {@code true} if this cache contains a mapping for the specified key.
@@ -294,13 +294,13 @@ public interface IgniteSpiContext {
      * @param node Joining node.
      * @return Validation result or {@code null} in case of success.
      */
-    @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node);
+    public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node);
 
     /**
      * @param node Node.
      * @param discoData Disco data.
      */
-    @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag discoData);
+    public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag discoData);
 
     /**
      * Gets collection of authenticated subjects together with their permissions.

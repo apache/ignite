@@ -107,7 +107,7 @@ public class GridCacheSharedContext<K, V> {
     private GridCacheDeploymentManager<K, V> depMgr;
 
     /** Write ahead log manager. {@code Null} if persistence is not enabled. */
-    @Nullable private IgniteWriteAheadLogManager walMgr;
+    private @Nullable IgniteWriteAheadLogManager walMgr;
 
     /** Write ahead log state manager. */
     private WalStateManager walStateMgr;
@@ -119,7 +119,7 @@ public class GridCacheSharedContext<K, V> {
     private IgniteCacheSnapshotManager snpMgr;
 
     /** Page store manager. {@code Null} if persistence is not enabled. */
-    @Nullable private IgnitePageStoreManager pageStoreMgr;
+    private @Nullable IgnitePageStoreManager pageStoreMgr;
 
     /** Affinity manager. */
     private CacheAffinitySharedManager affMgr;
@@ -584,7 +584,7 @@ public class GridCacheSharedContext<K, V> {
      *
      * @param cacheId Cache id.
      */
-    @Nullable public CacheObjectContext cacheObjectContext(int cacheId) throws IgniteCheckedException {
+    public @Nullable CacheObjectContext cacheObjectContext(int cacheId) throws IgniteCheckedException {
         GridCacheContext<K, V> ctx = ctxMap.get(cacheId);
 
         if (ctx != null)
@@ -714,7 +714,7 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return Page store manager. {@code Null} if persistence is not enabled.
      */
-    @Nullable public IgnitePageStoreManager pageStore() {
+    public @Nullable IgnitePageStoreManager pageStore() {
         return pageStoreMgr;
     }
 
@@ -855,7 +855,7 @@ public class GridCacheSharedContext<K, V> {
      * @param nodeId Node ID.
      * @return Node or {@code null}.
      */
-    @Nullable public ClusterNode node(UUID nodeId) {
+    public @Nullable ClusterNode node(UUID nodeId) {
         return kernalCtx.discovery().node(nodeId);
     }
 
@@ -941,7 +941,7 @@ public class GridCacheSharedContext<K, V> {
      * @param cacheCtx Cache context.
      * @return Error message if transactions are incompatible.
      */
-    @Nullable public String verifyTxCompatibility(IgniteInternalTx tx, GridIntList activeCacheIds,
+    public @Nullable String verifyTxCompatibility(IgniteInternalTx tx, GridIntList activeCacheIds,
         GridCacheContext<K, V> cacheCtx) {
         if (cacheCtx.systemTx() && !tx.system())
             return "system cache can be enlisted only in system transaction";
@@ -982,7 +982,7 @@ public class GridCacheSharedContext<K, V> {
      * @param ignore Transaction to ignore.
      * @return Not null topology version if current thread holds lock preventing topology change.
      */
-    @Nullable public AffinityTopologyVersion lockedTopologyVersion(IgniteInternalTx ignore) {
+    public @Nullable AffinityTopologyVersion lockedTopologyVersion(IgniteInternalTx ignore) {
         long threadId = Thread.currentThread().getId();
 
         AffinityTopologyVersion topVer = txMgr.lockedTopologyVersion(threadId, ignore);
@@ -1077,7 +1077,7 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return Store session listeners.
      */
-    @Nullable public Collection<CacheStoreSessionListener> storeSessionListeners() {
+    public @Nullable Collection<CacheStoreSessionListener> storeSessionListeners() {
         return storeSesLsnrs;
     }
 
@@ -1086,7 +1086,7 @@ public class GridCacheSharedContext<K, V> {
      * @param mgr Manager to add.
      * @return Added manager.
      */
-    @Nullable private <T extends GridCacheSharedManager<K, V>> T add(List<GridCacheSharedManager<K, V>> mgrs,
+    private @Nullable <T extends GridCacheSharedManager<K, V>> T add(List<GridCacheSharedManager<K, V>> mgrs,
         @Nullable T mgr) {
         if (mgr != null)
             mgrs.add(mgr);

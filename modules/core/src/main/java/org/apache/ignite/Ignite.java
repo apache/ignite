@@ -687,8 +687,7 @@ public interface Ignite extends AutoCloseable {
      * @return {@link MemoryMetrics} snapshot or {@code null} if no memory region is configured under specified name.
      * @deprecated Use {@link #dataRegionMetrics(String)} instead.
      */
-    @Deprecated
-    @Nullable public MemoryMetrics memoryMetrics(String memPlcName);
+    @Deprecated public @Nullable MemoryMetrics memoryMetrics(String memPlcName);
 
     /**
      * @return {@link PersistenceMetrics} snapshot.
@@ -717,7 +716,7 @@ public interface Ignite extends AutoCloseable {
      * @param memPlcName Name of memory region configured with {@link DataRegionConfiguration config}.
      * @return {@link DataRegionMetrics} snapshot or {@code null} if no memory region is configured under specified name.
      */
-    @Nullable public DataRegionMetrics dataRegionMetrics(String memPlcName);
+    public @Nullable DataRegionMetrics dataRegionMetrics(String memPlcName);
 
     /**
      * @return {@link DataStorageMetrics} snapshot.

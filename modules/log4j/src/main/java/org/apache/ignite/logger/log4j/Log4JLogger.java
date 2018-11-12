@@ -352,7 +352,7 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String fileName() {
+    @Override public @Nullable String fileName() {
         FileAppender fapp = F.first(fileAppenders);
 
         return fapp != null ? fapp.getFile() : null;

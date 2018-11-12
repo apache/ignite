@@ -143,7 +143,7 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
     }
 
     /** */
-    @NotNull private Vector initializeWeightsWithZeros(int vectorSize) {
+    private @NotNull Vector initializeWeightsWithZeros(int vectorSize) {
         return new DenseVector(vectorSize);
     }
 

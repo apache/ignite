@@ -56,7 +56,7 @@ public class IgniteScheduleProcessor extends IgniteScheduleProcessorAdapter {
         ScheduleFutureImpl<Object> fut = new ScheduleFutureImpl<>(sched, ctx, ptrn);
 
         fut.schedule(new IgniteCallable<Object>() {
-            @Nullable @Override public Object call() {
+            @Override public @Nullable Object call() {
                 c.run();
 
                 return null;

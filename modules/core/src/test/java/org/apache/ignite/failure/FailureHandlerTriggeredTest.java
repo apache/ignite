@@ -78,7 +78,7 @@ public class FailureHandlerTriggeredTest extends GridCommonAbstractTest {
                     return false;
                 }
 
-                @Nullable @Override public DiscoveryCustomMessage ackMessage() {
+                @Override public @Nullable DiscoveryCustomMessage ackMessage() {
                     return null;
                 }
 

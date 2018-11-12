@@ -91,8 +91,7 @@ public class PlatformAffinityUtils {
      * @param ctx Platform context.
      * @return Partitions.
      */
-    @NotNull
-    public static List<List<ClusterNode>> readPartitionAssignment(BinaryRawReader reader, PlatformContext ctx) {
+    public static @NotNull List<List<ClusterNode>> readPartitionAssignment(BinaryRawReader reader, PlatformContext ctx) {
         assert reader != null;
         assert ctx != null;
 

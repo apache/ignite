@@ -232,7 +232,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
      * @param paramNum Number of parameters in a row
      * @return Parameters array.
      */
-    @NotNull private static Object[] readParameterRow(BinaryReaderExImpl reader, int paramNum) {
+    private static @NotNull Object[] readParameterRow(BinaryReaderExImpl reader, int paramNum) {
         Object[] params = new Object[paramNum];
 
         for (int i = 0; i < paramNum; ++i)

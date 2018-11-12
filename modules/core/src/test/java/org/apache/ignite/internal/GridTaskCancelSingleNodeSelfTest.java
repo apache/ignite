@@ -199,7 +199,7 @@ public class GridTaskCancelSingleNodeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Void reduce(List<ComputeJobResult> results) {
+        @Override public @Nullable Void reduce(List<ComputeJobResult> results) {
             return null;
         }
     }

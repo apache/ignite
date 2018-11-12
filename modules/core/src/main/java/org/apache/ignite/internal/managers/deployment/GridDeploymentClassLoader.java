@@ -470,7 +470,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
      * @return The resulting {@code Class} object.
      * @throws ClassNotFoundException If the class could not be found
      */
-    @Nullable private Class<?> p2pLoadClass(String name, boolean resolve) throws ClassNotFoundException {
+    private @Nullable Class<?> p2pLoadClass(String name, boolean resolve) throws ClassNotFoundException {
         assert !Thread.holdsLock(mux);
 
         // First, check if the class has already been loaded.
@@ -486,7 +486,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Class<?> findClass(String name) throws ClassNotFoundException {
+    @Override protected @Nullable Class<?> findClass(String name) throws ClassNotFoundException {
         assert !Thread.holdsLock(mux);
 
         if (!isLocallyExcluded(name)) {
@@ -662,7 +662,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public InputStream getResourceAsStream(String name) {
+    @Override public @Nullable InputStream getResourceAsStream(String name) {
         assert !Thread.holdsLock(mux);
 
         if (byteMap != null && name.endsWith(".class")) {
@@ -702,7 +702,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
      * @param name Resource name.
      * @return InputStream for resource or {@code null} if resource could not be found.
      */
-    @Nullable private InputStream sendResourceRequest(String name) {
+    private @Nullable InputStream sendResourceRequest(String name) {
         assert !Thread.holdsLock(mux);
 
         long endTime = computeEndTime(p2pTimeout);

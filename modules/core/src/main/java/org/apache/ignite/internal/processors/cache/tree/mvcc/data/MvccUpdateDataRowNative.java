@@ -198,7 +198,7 @@ public class MvccUpdateDataRowNative extends MvccDataRow implements BPlusTree.Tr
     /**
      * @return Active transactions to wait for.
      */
-    @Nullable public GridLongList activeTransactions() {
+    public @Nullable GridLongList activeTransactions() {
         return activeTxs;
     }
 

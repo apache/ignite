@@ -198,7 +198,7 @@ public final class X {
      * @return Value of the system property or environment variable. Returns
      *      {@code null} if neither can be found for given name.
      */
-    @Nullable public static String getSystemOrEnv(String name) {
+    public static @Nullable String getSystemOrEnv(String name) {
         assert name != null;
 
         String v = System.getProperty(name);
@@ -291,8 +291,7 @@ public final class X {
      * @param <T> Type of cloning object.
      * @return Copy of a passed in object.
      */
-    @SuppressWarnings({"unchecked"})
-    @Nullable public static <T> T cloneObject(@Nullable T obj, boolean deep, boolean honorCloneable) {
+    @SuppressWarnings({"unchecked"}) public static @Nullable <T> T cloneObject(@Nullable T obj, boolean deep, boolean honorCloneable) {
         if (obj == null)
             return null;
 
@@ -310,8 +309,7 @@ public final class X {
      * @param <T> Type of cloning object.
      * @return Copy of a passed in object.
      */
-    @SuppressWarnings({"unchecked"})
-    @Nullable private static <T> T shallowClone(@Nullable T obj) {
+    @SuppressWarnings({"unchecked"}) private static @Nullable <T> T shallowClone(@Nullable T obj) {
         if (obj == null)
             return null;
 
@@ -360,7 +358,7 @@ public final class X {
      * @return Clone of the input object.
      * @throws Exception If deep-cloning fails.
      */
-    @Nullable private static Object deepClone(Map<Integer, Integer> identityIdxs, List<Object> clones, @Nullable Object obj,
+    private static @Nullable Object deepClone(Map<Integer, Integer> identityIdxs, List<Object> clones, @Nullable Object obj,
         boolean honorCloneable) throws Exception {
         if (obj == null)
             return null;
@@ -524,8 +522,7 @@ public final class X {
      * @param cls Cause class to get cause (if {@code null}, {@code null} is returned).
      * @return First causing exception of passed in class, {@code null} otherwise.
      */
-    @SuppressWarnings({"unchecked"})
-    @Nullable public static <T extends Throwable> T cause(@Nullable Throwable t, @Nullable Class<T> cls) {
+    @SuppressWarnings({"unchecked"}) public static @Nullable <T extends Throwable> T cause(@Nullable Throwable t, @Nullable Class<T> cls) {
         if (t == null || cls == null)
             return null;
 

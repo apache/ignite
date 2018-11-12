@@ -83,7 +83,7 @@ public class VisorQueryCleanupTask extends VisorMultiNodeTask<VisorQueryCleanupT
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Void reduce0(List list) {
+    @Override protected @Nullable Void reduce0(List list) {
         return null;
     }
 

@@ -337,7 +337,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V getAndPutIfAbsent(K key, V val) throws CacheException {
+    @Override public @Nullable V getAndPutIfAbsent(K key, V val) throws CacheException {
         try {
             if (isAsync()) {
                 setFuture(delegate.getAndPutIfAbsentAsync(key, val));
@@ -385,7 +385,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     @SuppressWarnings("unchecked")
     private <T, R> QueryCursor<R> query(
         final ScanQuery scanQry,
-        @Nullable final IgniteClosure<T, R> transformer,
+        final @Nullable IgniteClosure<T, R> transformer,
         @Nullable ClusterGroup grp)
         throws IgniteCheckedException {
 
@@ -814,7 +814,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V localPeek(K key, CachePeekMode... peekModes) {
+    @Override public @Nullable V localPeek(K key, CachePeekMode... peekModes) {
         try {
             return delegate.localPeek(key, peekModes, null);
         }
@@ -1076,7 +1076,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     @Override public void loadAll(
         Set<? extends K> keys,
         boolean replaceExisting,
-        @Nullable final CompletionListener completionLsnr
+        final @Nullable CompletionListener completionLsnr
     ) {
         IgniteInternalFuture<?> fut = ctx.cache().loadAll(keys, replaceExisting);
 

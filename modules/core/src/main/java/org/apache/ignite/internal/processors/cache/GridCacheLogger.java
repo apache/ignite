@@ -150,7 +150,7 @@ class GridCacheLogger implements IgniteLogger, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String fileName() {
+    @Override public @Nullable String fileName() {
         return log.fileName();
     }
 

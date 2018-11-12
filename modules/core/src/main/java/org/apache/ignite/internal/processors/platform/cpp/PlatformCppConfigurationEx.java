@@ -82,7 +82,7 @@ public class PlatformCppConfigurationEx extends PlatformCppConfiguration impleme
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public Collection<PlatformCacheExtension> cacheExtensions() {
+    @Override public @Nullable Collection<PlatformCacheExtension> cacheExtensions() {
         return null;
     }
 

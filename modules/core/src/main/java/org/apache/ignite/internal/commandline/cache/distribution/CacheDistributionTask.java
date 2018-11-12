@@ -49,7 +49,7 @@ public class CacheDistributionTask extends VisorMultiNodeTask<CacheDistributionT
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Nullable @Override protected CacheDistributionTaskResult reduce0(
+    @Override protected @Nullable CacheDistributionTaskResult reduce0(
         List<ComputeJobResult> list) throws IgniteException {
         Map<UUID, Exception> exceptions = new HashMap<>();
         List<CacheDistributionNode> infos = new ArrayList<>();

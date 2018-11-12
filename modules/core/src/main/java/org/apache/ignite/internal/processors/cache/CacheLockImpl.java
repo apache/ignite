@@ -200,7 +200,7 @@ class CacheLockImpl<K, V> implements Lock {
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Condition newCondition() {
+    @Override public @NotNull Condition newCondition() {
         throw new UnsupportedOperationException();
     }
 

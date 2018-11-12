@@ -51,7 +51,7 @@ public interface HadoopHelper {
      * @param clsName Class.
      * @return Input stream.
      */
-    @Nullable public InputStream loadClassBytes(ClassLoader ldr, String clsName);
+    public @Nullable InputStream loadClassBytes(ClassLoader ldr, String clsName);
 
     /**
      * Get work directory.

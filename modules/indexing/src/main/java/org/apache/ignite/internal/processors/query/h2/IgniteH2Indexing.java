@@ -456,8 +456,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param sql SQL.
      * @return <b>Cached</b> prepared statement.
      */
-    @SuppressWarnings("ConstantConditions")
-    @Nullable private PreparedStatement cachedStatement(Connection c, String sql) {
+    @SuppressWarnings("ConstantConditions") private @Nullable PreparedStatement cachedStatement(Connection c, String sql) {
         try {
             return prepareStatement(c, sql, true, true);
         }
@@ -474,8 +473,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Prepared statement.
      * @throws SQLException If failed.
      */
-    @SuppressWarnings("ConstantConditions")
-    @NotNull public PreparedStatement prepareStatement(Connection c, String sql, boolean useStmtCache)
+    @SuppressWarnings("ConstantConditions") public @NotNull PreparedStatement prepareStatement(Connection c, String sql, boolean useStmtCache)
         throws SQLException {
         return prepareStatement(c, sql, useStmtCache, false);
     }
@@ -488,7 +486,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Prepared statement.
      * @throws SQLException If failed.
      */
-    @Nullable private PreparedStatement prepareStatement(Connection c, String sql, boolean useStmtCache,
+    private @Nullable PreparedStatement prepareStatement(Connection c, String sql, boolean useStmtCache,
         boolean cachedOnly) throws SQLException {
         // We can't avoid parsing and avoid using cache at the same time.
         assert useStmtCache || !cachedOnly;
@@ -546,7 +544,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * @return {@link H2StatementCache} associated with current thread.
      */
-    @NotNull private H2StatementCache getStatementsCacheForCurrentThread() {
+    private @NotNull H2StatementCache getStatementsCacheForCurrentThread() {
         H2StatementCache statementCache = connCache.get().object().statementCache();
 
         statementCache.updateLastUsage();
@@ -1075,7 +1073,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     GridQueryFieldsResult queryLocalSqlFields(final String schemaName, String qry,
-        @Nullable final Collection<Object> params, final IndexingQueryFilter filter, boolean enforceJoinOrder,
+        final @Nullable Collection<Object> params, final IndexingQueryFilter filter, boolean enforceJoinOrder,
         boolean startTx, int qryTimeout, final GridQueryCancel cancel,
         MvccQueryTracker mvccTracker) throws IgniteCheckedException {
 
@@ -1627,7 +1625,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     @SuppressWarnings("unchecked")
     <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalSql(String schemaName, String cacheName,
-        final String qry, String alias, @Nullable final Collection<Object> params, String type,
+        final String qry, String alias, final @Nullable Collection<Object> params, String type,
         final IndexingQueryFilter filter, GridQueryCancel cancel) throws IgniteCheckedException {
         final H2TableDescriptor tbl = tableDescriptor(schemaName, cacheName, type);
 
@@ -1921,7 +1919,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param qry Query.
      * @return Command or {@code null} if cannot parse this query.
      */
-     @Nullable private SqlCommand parseQueryNative(String schemaName, SqlFieldsQuery qry) {
+    private @Nullable SqlCommand parseQueryNative(String schemaName, SqlFieldsQuery qry) {
         // Heuristic check for fast return.
         if (!INTERNAL_CMD_RE.matcher(qry.getSql().trim()).find())
             return null;
@@ -3022,7 +3020,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param type Type name.
      * @return Descriptor.
      */
-    @Nullable private H2TableDescriptor tableDescriptor(String schemaName, String cacheName, String type) {
+    private @Nullable H2TableDescriptor tableDescriptor(String schemaName, String cacheName, String type) {
         H2Schema schema = schemas.get(schemaName);
 
         if (schema == null)
@@ -3362,7 +3360,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Collection<ClusterNode> nodes,
         Message msg,
         @Nullable IgniteBiClosure<ClusterNode, Message, Message> specialize,
-        @Nullable final IgniteInClosure2X<ClusterNode, Message> locNodeHnd,
+        final @Nullable IgniteInClosure2X<ClusterNode, Message> locNodeHnd,
         byte plc,
         boolean runLocParallel
     ) {
@@ -3638,8 +3636,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public IndexingQueryFilter backupFilter(@Nullable final AffinityTopologyVersion topVer,
-        @Nullable final int[] parts) {
+    @Override public IndexingQueryFilter backupFilter(final @Nullable AffinityTopologyVersion topVer,
+        final @Nullable int[] parts) {
         return new IndexingQueryFilterImpl(ctx, topVer, parts);
     }
 
@@ -3787,7 +3785,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param twoStepQry Two-step query.
      * @return Result.
      */
-    @Nullable public List<Integer> collectCacheIds(@Nullable Integer mainCacheId, GridCacheTwoStepQuery twoStepQry) {
+    public @Nullable List<Integer> collectCacheIds(@Nullable Integer mainCacheId, GridCacheTwoStepQuery twoStepQry) {
         LinkedHashSet<Integer> caches0 = new LinkedHashSet<>();
 
         int tblCnt = twoStepQry.tablesCount();

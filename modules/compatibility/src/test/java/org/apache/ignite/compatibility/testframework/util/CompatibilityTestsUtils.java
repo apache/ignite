@@ -71,7 +71,7 @@ public class CompatibilityTestsUtils {
     }
 
     /** */
-    @Nullable private static Class defaultClassLoaderClass() {
+    private static @Nullable Class defaultClassLoaderClass() {
         try {
             return Class.forName("jdk.internal.loader.BuiltinClassLoader");
         }
@@ -81,7 +81,7 @@ public class CompatibilityTestsUtils {
     }
 
     /** */
-    @Nullable private static Field urlClassLoaderField() {
+    private static @Nullable Field urlClassLoaderField() {
         try {
             Class cls = defaultClassLoaderClass();
 

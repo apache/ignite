@@ -569,7 +569,7 @@ public class IgfsInputStreamImpl extends IgfsInputStream implements IgfsSecondar
      * @return Requested data block or {@code null} if nothing found.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable protected IgniteInternalFuture<byte[]> dataBlock(final long blockIdx)
+    protected @Nullable IgniteInternalFuture<byte[]> dataBlock(final long blockIdx)
         throws IgniteCheckedException {
         if (proxy) {
             assert secReader != null;

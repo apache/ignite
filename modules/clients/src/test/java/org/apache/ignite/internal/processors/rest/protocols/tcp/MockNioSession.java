@@ -150,12 +150,12 @@ public class MockNioSession extends GridMetadataAwareAdapter implements GridNioS
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridNioRecoveryDescriptor outRecoveryDescriptor() {
+    @Override public @Nullable GridNioRecoveryDescriptor outRecoveryDescriptor() {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridNioRecoveryDescriptor inRecoveryDescriptor() {
+    @Override public @Nullable GridNioRecoveryDescriptor inRecoveryDescriptor() {
         return null;
     }
 

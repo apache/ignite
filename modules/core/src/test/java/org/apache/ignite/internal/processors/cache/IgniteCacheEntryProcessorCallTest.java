@@ -312,7 +312,7 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
      * @param isolation Transaction isolation.
      * @return Started transaction.
      */
-    @Nullable private Transaction startTx(IgniteCache<Integer, TestValue> cache,
+    private @Nullable Transaction startTx(IgniteCache<Integer, TestValue> cache,
         @Nullable TransactionConcurrency concurrency,
         @Nullable TransactionIsolation isolation) {
         if (concurrency != null) {

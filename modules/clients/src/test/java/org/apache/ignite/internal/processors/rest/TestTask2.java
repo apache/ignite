@@ -40,7 +40,7 @@ class TestTask2 extends ComputeTaskSplitAdapter<String, String> {
 
         for (int i = 0; i < gridSize; i++)
             jobs.add(new ComputeJobAdapter() {
-                @Nullable @Override public Object execute() {
+                @Override public @Nullable Object execute() {
                     X.println("Test task2.");
 
                     return null;

@@ -95,7 +95,7 @@ public class LocalFileSystemUtils {
      * @param file File.
      * @return PosixFileAttributes.
      */
-    @Nullable public static PosixFileAttributes posixAttributes(File file) {
+    public static @Nullable PosixFileAttributes posixAttributes(File file) {
         PosixFileAttributes attrs = null;
 
         try {
@@ -117,7 +117,7 @@ public class LocalFileSystemUtils {
      * @param file File.
      * @return BasicFileAttributes.
      */
-    @Nullable public static BasicFileAttributes basicAttributes(File file) {
+    public static @Nullable BasicFileAttributes basicAttributes(File file) {
         BasicFileAttributes attrs = null;
 
         try {

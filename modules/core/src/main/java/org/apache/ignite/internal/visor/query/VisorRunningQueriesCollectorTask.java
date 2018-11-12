@@ -46,7 +46,7 @@ public class VisorRunningQueriesCollectorTask extends VisorMultiNodeTask<VisorRu
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Map<UUID, Collection<VisorRunningQuery>> reduce0(List<ComputeJobResult> results) throws IgniteException {
+    @Override protected @Nullable Map<UUID, Collection<VisorRunningQuery>> reduce0(List<ComputeJobResult> results) throws IgniteException {
         Map<UUID, Collection<VisorRunningQuery>> map = new HashMap<>();
 
         for (ComputeJobResult res : results)

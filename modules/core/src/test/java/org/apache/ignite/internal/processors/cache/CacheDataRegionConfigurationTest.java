@@ -67,7 +67,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
     /** */
     private void checkStartGridException(Class<? extends Throwable> ex, String message) {
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
+            @Override public @Nullable Object call() throws Exception {
                 startGrid(0);
                 return null;
             }

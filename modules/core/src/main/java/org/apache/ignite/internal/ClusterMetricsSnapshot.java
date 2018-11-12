@@ -1254,7 +1254,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      * @param nodes Nodes.
      * @return Oldest node or {@code null} if collection is empty.
      */
-    @Nullable private static ClusterNode oldest(Collection<ClusterNode> nodes) {
+    private static @Nullable ClusterNode oldest(Collection<ClusterNode> nodes) {
         long min = Long.MAX_VALUE;
 
         ClusterNode oldest = null;

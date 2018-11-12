@@ -52,7 +52,7 @@ public interface IgniteEx extends Ignite {
      * @param name Cache name.
      * @return Cache instance for given name or <tt>null</tt> if one does not exist.
      */
-    @Nullable public <K, V> IgniteInternalCache<K, V> cachex(String name);
+    public @Nullable <K, V> IgniteInternalCache<K, V> cachex(String name);
 
     /**
      * Gets configured cache instance that satisfy all provided predicates including non-public caches. If no
@@ -128,7 +128,7 @@ public interface IgniteEx extends Ignite {
      * @param name IGFS name.
      * @return IGFS.
      */
-    @Nullable public IgniteFileSystem igfsx(String name);
+    public @Nullable IgniteFileSystem igfsx(String name);
 
     /**
      * Get Hadoop facade.
@@ -145,7 +145,7 @@ public interface IgniteEx extends Ignite {
      *
      * @return Latest version.
      */
-    @Nullable public String latestVersion();
+    public @Nullable String latestVersion();
 
     /**
      * Gets local grid node.

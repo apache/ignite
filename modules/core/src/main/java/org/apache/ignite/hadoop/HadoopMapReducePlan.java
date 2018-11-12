@@ -32,7 +32,7 @@ public interface HadoopMapReducePlan extends Serializable {
      * @param nodeId Node ID to check.
      * @return Collection of file blocks or {@code null} if no mappers should be executed on given node.
      */
-    @Nullable public Collection<HadoopInputSplit> mappers(UUID nodeId);
+    public @Nullable Collection<HadoopInputSplit> mappers(UUID nodeId);
 
     /**
      * Gets reducer IDs that should be started on given node.
@@ -40,7 +40,7 @@ public interface HadoopMapReducePlan extends Serializable {
      * @param nodeId Node ID to check.
      * @return Array of reducer IDs.
      */
-    @Nullable public int[] reducers(UUID nodeId);
+    public @Nullable int[] reducers(UUID nodeId);
 
     /**
      * Gets collection of all node IDs involved in map part of job execution.

@@ -169,7 +169,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V load(final K key) {
+    @Override public @Nullable V load(final K key) {
         try {
             final GridTuple<V> val = new GridTuple<>();
 
@@ -228,7 +228,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     }
 
     /** {@inheritDoc} */
-    @Override public void loadCache(final IgniteBiInClosure<K, V> clo, @Nullable final Object... args) {
+    @Override public void loadCache(final IgniteBiInClosure<K, V> clo, final @Nullable Object... args) {
         try {
             doInvoke(new IgniteInClosureX<BinaryRawWriterEx>() {
                 @Override public void applyx(BinaryRawWriterEx writer) throws IgniteCheckedException {

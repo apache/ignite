@@ -3078,7 +3078,7 @@ public class IgniteConfiguration {
      *
      * @return Client connector configuration.
      */
-    @Nullable public ClientConnectorConfiguration getClientConnectorConfiguration() {
+    public @Nullable ClientConnectorConfiguration getClientConnectorConfiguration() {
         return cliConnCfg;
     }
 

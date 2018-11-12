@@ -42,7 +42,7 @@ public enum IgnitePortProtocol {
      * @param ord Ordinal value.
      * @return Enumerated value.
      */
-    @Nullable public static IgnitePortProtocol fromOrdinal(byte ord) {
+    public static @Nullable IgnitePortProtocol fromOrdinal(byte ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

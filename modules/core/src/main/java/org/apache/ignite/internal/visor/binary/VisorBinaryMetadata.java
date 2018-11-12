@@ -111,7 +111,7 @@ public class VisorBinaryMetadata extends VisorDataTransferObject {
     /**
      * @return Affinity key field name.
      */
-    @Nullable public String getAffinityKeyFieldName() {
+    public @Nullable String getAffinityKeyFieldName() {
         return affinityKeyFieldName;
     }
 

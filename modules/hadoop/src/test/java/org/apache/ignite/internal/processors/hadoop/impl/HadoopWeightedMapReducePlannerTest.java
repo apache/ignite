@@ -344,8 +344,7 @@ public class HadoopWeightedMapReducePlannerTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
-        @Nullable @Override public <T> T attribute(String name) {
+        @Override @SuppressWarnings("unchecked") public @Nullable <T> T attribute(String name) {
             if (F.eq(name, IgniteNodeAttributes.ATTR_MACS))
                 return (T)macs;
 

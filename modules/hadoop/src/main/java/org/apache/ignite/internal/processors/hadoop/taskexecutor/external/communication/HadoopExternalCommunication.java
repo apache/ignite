@@ -679,7 +679,7 @@ public class HadoopExternalCommunication {
      * @return Server.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable private IpcSharedMemoryServerEndpoint resetShmemServer() throws IgniteCheckedException {
+    private @Nullable IpcSharedMemoryServerEndpoint resetShmemServer() throws IgniteCheckedException {
         if (boundTcpShmemPort >= 0)
             throw new IgniteCheckedException("Shared memory server was already created on port " + boundTcpShmemPort);
 
@@ -843,7 +843,7 @@ public class HadoopExternalCommunication {
      * @return Client.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable protected HadoopCommunicationClient createNioClient(HadoopProcessDescriptor desc)
+    protected @Nullable HadoopCommunicationClient createNioClient(HadoopProcessDescriptor desc)
         throws  IgniteCheckedException {
         assert desc != null;
 
@@ -874,7 +874,7 @@ public class HadoopExternalCommunication {
      * @return Client.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable protected HadoopCommunicationClient createShmemClient(HadoopProcessDescriptor desc, int port)
+    protected @Nullable HadoopCommunicationClient createShmemClient(HadoopProcessDescriptor desc, int port)
         throws IgniteCheckedException {
         int attempt = 1;
 

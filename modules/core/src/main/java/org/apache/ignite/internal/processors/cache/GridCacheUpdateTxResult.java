@@ -146,21 +146,21 @@ public class GridCacheUpdateTxResult {
     /**
      * @return Update future.
      */
-    @Nullable public IgniteInternalFuture<GridCacheUpdateTxResult> updateFuture() {
+    public @Nullable IgniteInternalFuture<GridCacheUpdateTxResult> updateFuture() {
         return fut;
     }
 
     /**
      * @return List of transactions to wait for completion.
      */
-    @Nullable public GridLongList mvccWaitTransactions() {
+    public @Nullable GridLongList mvccWaitTransactions() {
         return mvccWaitTxs;
     }
 
     /**
      * @return Mvcc history rows.
      */
-    @Nullable public List<MvccLinkAwareSearchRow> mvccHistory() {
+    public @Nullable List<MvccLinkAwareSearchRow> mvccHistory() {
         return mvccHistory;
     }
 
@@ -174,7 +174,7 @@ public class GridCacheUpdateTxResult {
     /**
      * @return Previous value.
      */
-    @Nullable public CacheObject prevValue() {
+    public @Nullable CacheObject prevValue() {
         return prevVal;
     }
 

@@ -170,7 +170,7 @@ public class IgniteTxMap extends AbstractMap<IgniteTxKey, IgniteTxEntry> impleme
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteTxEntry get(Object key) {
+    @Override public @Nullable IgniteTxEntry get(Object key) {
         IgniteTxEntry e = txMap.get(key);
 
         return e == null ? null : filter.apply(e) ? e : null;

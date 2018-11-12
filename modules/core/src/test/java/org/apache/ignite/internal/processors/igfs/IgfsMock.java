@@ -103,7 +103,7 @@ public class IgfsMock implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Boolean globalSampling() {
+    @Override public @Nullable Boolean globalSampling() {
         throwUnsupported();
 
         return null;
@@ -117,7 +117,7 @@ public class IgfsMock implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String clientLogDirectory() {
+    @Override public @Nullable String clientLogDirectory() {
         throwUnsupported();
 
         return null;
@@ -384,7 +384,7 @@ public class IgfsMock implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgfsFile info(IgfsPath path) throws IgniteException {
+    @Override public @Nullable IgfsFile info(IgfsPath path) throws IgniteException {
         throwUnsupported();
 
         return null;

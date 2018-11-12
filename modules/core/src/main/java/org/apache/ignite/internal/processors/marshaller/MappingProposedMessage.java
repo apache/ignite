@@ -85,7 +85,7 @@ public class MappingProposedMessage implements DiscoveryCustomMessage {
     /**
      * {@inheritDoc}
      */
-    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
+    @Override public @Nullable DiscoveryCustomMessage ackMessage() {
         if (status == ProposalStatus.SUCCESSFUL)
             return new MappingAcceptedMessage(mappingItem);
         else
@@ -103,7 +103,7 @@ public class MappingProposedMessage implements DiscoveryCustomMessage {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr,
+    @Override public @Nullable DiscoCache createDiscoCache(GridDiscoveryManager mgr,
         AffinityTopologyVersion topVer, DiscoCache discoCache) {
         throw new UnsupportedOperationException();
     }

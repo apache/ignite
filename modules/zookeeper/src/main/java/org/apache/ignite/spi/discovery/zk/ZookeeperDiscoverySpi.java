@@ -260,7 +260,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Serializable consistentId() throws IgniteSpiException {
+    @Override public @Nullable Serializable consistentId() throws IgniteSpiException {
         if (consistentId == null) {
             consistentId = ignite.configuration().getConsistentId();
 
@@ -342,7 +342,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public ClusterNode getNode(UUID nodeId) {
+    @Override public @Nullable ClusterNode getNode(UUID nodeId) {
         return impl.node(nodeId);
     }
 
@@ -588,12 +588,12 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public UUID getCoordinator() {
+        @Override public @Nullable UUID getCoordinator() {
             return impl.getCoordinator();
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public String getCoordinatorNodeFormatted() {
+        @Override public @Nullable String getCoordinatorNodeFormatted() {
             return String.valueOf(impl.node(impl.getCoordinator()));
         }
 

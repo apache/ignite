@@ -28,7 +28,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public class IgniteReplayWalIteratorInvalidCrcTest extends IgniteAbstractWalIteratorInvalidCrcTest {
     /** {@inheritDoc} */
-    @NotNull @Override protected WALMode getWalMode() {
+    @Override protected @NotNull WALMode getWalMode() {
         return WALMode.LOG_ONLY;
     }
 

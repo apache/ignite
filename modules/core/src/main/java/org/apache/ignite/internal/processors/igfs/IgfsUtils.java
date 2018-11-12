@@ -644,7 +644,7 @@ public class IgfsUtils {
      * @param in Reader.
      * @return Entry.
      */
-    @Nullable public static IgfsListingEntry readListingEntry(BinaryRawReader in) {
+    public static @Nullable IgfsListingEntry readListingEntry(BinaryRawReader in) {
         if (in.readBoolean()) {
             IgniteUuid id = BinaryUtils.readIgniteUuid(in);
             boolean dir = in.readBoolean();
@@ -681,7 +681,7 @@ public class IgfsUtils {
      * @return Entry.
      * @throws IOException If failed.
      */
-    @Nullable public static IgfsListingEntry readListingEntry(DataInput in) throws IOException {
+    public static @Nullable IgfsListingEntry readListingEntry(DataInput in) throws IOException {
         if (in.readBoolean()) {
             IgniteUuid id = IgniteUtils.readGridUuid(in);
             boolean dir = in.readBoolean();
@@ -732,7 +732,7 @@ public class IgfsUtils {
      * @param in Reader.
      * @return Properties.
      */
-    @Nullable public static Map<String, String> readProperties(BinaryRawReader in) {
+    public static @Nullable Map<String, String> readProperties(BinaryRawReader in) {
         int size = in.readInt();
 
         if (size >= 0) {
@@ -819,7 +819,7 @@ public class IgfsUtils {
      * @return Properties.
      * @throws IOException If failed.
      */
-    @Nullable public static Map<String, String> readProperties(DataInput in) throws IOException {
+    public static @Nullable Map<String, String> readProperties(DataInput in) throws IOException {
         int size = in.readInt();
 
         if (size >= 0) {
@@ -886,7 +886,7 @@ public class IgfsUtils {
      * @param reader Reader.
      * @return Path.
      */
-    @Nullable public static IgfsPath readPath(BinaryRawReader reader) {
+    public static @Nullable IgfsPath readPath(BinaryRawReader reader) {
         if (reader.readBoolean()) {
             IgfsPath path = new IgfsPath();
 

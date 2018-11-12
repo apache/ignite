@@ -134,7 +134,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
         final Lock lock = cache.lock(1);
 
         GridTestThread t1 = new GridTestThread(new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
+            @Override public @Nullable Object call() throws Exception {
                 info("Before lock for.key 1");
 
                 lock.lock();
@@ -170,7 +170,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
         });
 
         GridTestThread t2 = new GridTestThread(new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
+            @Override public @Nullable Object call() throws Exception {
                 info("Waiting for latch1...");
 
                 latch1.await();
@@ -246,7 +246,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
         final CountDownLatch latch1 = new CountDownLatch(1);
 
         GridTestThread t1 = new GridTestThread(new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
+            @Override public @Nullable Object call() throws Exception {
                 Lock lock = cache.lock(1);
 
                 lock.lock();
@@ -283,7 +283,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
         });
 
         GridTestThread t2 = new GridTestThread(new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
+            @Override public @Nullable Object call() throws Exception {
                 info("Beginning to await on latch 1");
 
                 latch1.await();

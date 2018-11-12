@@ -283,7 +283,7 @@ public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommon
         // Producer thread.
         IgniteInternalFuture<?> fut = multithreadedAsync(
             new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
+                @Override public @Nullable Object call() throws Exception {
                     String thNm = Thread.currentThread().getName();
 
                     LinkedList<Integer> keys = new LinkedList<>();
@@ -345,7 +345,7 @@ public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommon
         // Updater threads.
         IgniteInternalFuture<?> fut = multithreadedAsync(
             new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
+                @Override public @Nullable Object call() throws Exception {
                     Random rnd = new Random();
 
                     while (run.get()) {
@@ -430,7 +430,7 @@ public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommon
         // Updater threads.
         IgniteInternalFuture<?> fut = multithreadedAsync(
             new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
+                @Override public @Nullable Object call() throws Exception {
                     Random rnd = new Random();
 
                     int iterCnt = 100000;
@@ -504,7 +504,7 @@ public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommon
         // Updater threads.
         IgniteInternalFuture<?> fut = multithreadedAsync(
             new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
+                @Override public @Nullable Object call() throws Exception {
                     Random rnd = new Random();
 
                     while (run.get()) {

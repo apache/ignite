@@ -53,7 +53,7 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     private List<StoredCacheData> storedCfgs;
 
     /** */
-    @Nullable private BaselineTopology baselineTopology;
+    private @Nullable BaselineTopology baselineTopology;
 
     /** */
     private boolean forceChangeBaselineTopology;
@@ -97,14 +97,14 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     /**
      * @return Configurations read from persistent store..
      */
-    @Nullable public List<StoredCacheData> storedCacheConfigurations() {
+    public @Nullable List<StoredCacheData> storedCacheConfigurations() {
         return storedCfgs;
     }
 
     /**
      * @return Cache updates to be executed on exchange. If {@code null} exchange is not needed.
      */
-    @Nullable public ExchangeActions exchangeActions() {
+    public @Nullable ExchangeActions exchangeActions() {
         return exchangeActions;
     }
 
@@ -123,7 +123,7 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
+    @Override public @Nullable DiscoveryCustomMessage ackMessage() {
         return null;
     }
 
@@ -167,7 +167,7 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     /**
      * @return Baseline topology.
      */
-    @Nullable public BaselineTopology baselineTopology() {
+    public @Nullable BaselineTopology baselineTopology() {
         return baselineTopology;
     }
 

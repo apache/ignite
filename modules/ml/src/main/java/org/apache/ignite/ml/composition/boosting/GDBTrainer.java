@@ -154,8 +154,7 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
     /**
      * Returns regressor model trainer for one step of GDB.
      */
-    @NotNull
-    protected abstract DatasetTrainer<? extends Model<Vector, Double>, Double> buildBaseModelTrainer();
+    protected abstract @NotNull DatasetTrainer<? extends Model<Vector, Double>, Double> buildBaseModelTrainer();
 
     /**
      * Maps external representation of label to internal.

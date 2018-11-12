@@ -607,14 +607,14 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     /**
      * @return Cache entry event transformer.
      */
-    @Nullable protected IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> getTransformer() {
+    protected @Nullable IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> getTransformer() {
         return null;
     }
 
     /**
      * @return Local listener of transformed events.
      */
-    @Nullable protected EventListener<?> localTransformedEventListener() {
+    protected @Nullable EventListener<?> localTransformedEventListener() {
         return null;
     }
 
@@ -971,7 +971,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
      * @param topVer Topology version for current operation.
      * @return Partition recovery.
      */
-    @NotNull private CacheContinuousQueryPartitionRecovery getOrCreatePartitionRecovery(GridKernalContext ctx,
+    private @NotNull CacheContinuousQueryPartitionRecovery getOrCreatePartitionRecovery(GridKernalContext ctx,
         int partId,
         AffinityTopologyVersion topVer) {
         assert topVer != null && topVer.topologyVersion() > 0 : topVer;
@@ -1168,7 +1168,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object orderedTopic() {
+    @Override public @Nullable Object orderedTopic() {
         return topic;
     }
 
@@ -1329,7 +1329,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         final Iterator<CacheEntryEvent<? extends K, ? extends V>> iter = evts.iterator();
 
         return new Iterable() {
-            @NotNull @Override public Iterator iterator() {
+            @Override public @NotNull Iterator iterator() {
                 return new Iterator() {
                     @Override public boolean hasNext() {
                         return iter.hasNext();

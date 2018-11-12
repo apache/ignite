@@ -419,7 +419,7 @@ public class SortedEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imp
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Holder<K, V> pollFirst() {
+        @Override public @Nullable Holder<K, V> pollFirst() {
             Holder<K, V> e = super.pollFirst();
 
             if (e != null)

@@ -103,7 +103,7 @@ public class User implements Serializable {
      * @param passwd Plain text password.
      * @return Hashed password.
      */
-    @Nullable public static String password(String passwd) {
+    public static @Nullable String password(String passwd) {
         return password_bcrypt(passwd);
     }
 
@@ -111,7 +111,7 @@ public class User implements Serializable {
      * @param passwd Plain text password.
      * @return Hashed password.
      */
-    @Nullable private static String password_bcrypt(String passwd) {
+    private static @Nullable String password_bcrypt(String passwd) {
         return BCrypt.hashpw(passwd, BCrypt.gensalt(bCryptGensaltLog2Rounds));
     }
 

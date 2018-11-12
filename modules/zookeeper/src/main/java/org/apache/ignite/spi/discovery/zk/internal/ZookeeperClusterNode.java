@@ -169,7 +169,7 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> T attribute(String name) {
+    @Override public @Nullable <T> T attribute(String name) {
         // Even though discovery SPI removes this attribute after authentication, keep this check for safety.
         if (IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS.equals(name))
             return null;

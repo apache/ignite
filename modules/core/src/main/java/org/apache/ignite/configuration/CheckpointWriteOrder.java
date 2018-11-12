@@ -44,8 +44,7 @@ public enum CheckpointWriteOrder {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable
-    public static CheckpointWriteOrder fromOrdinal(int ord) {
+    public static @Nullable CheckpointWriteOrder fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

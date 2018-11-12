@@ -196,7 +196,7 @@ public class FilterDataForClientNodeDiscoveryTest extends GridCommonAbstractTest
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public DiscoveryCustomMessage ackMessage() {
+        @Override public @Nullable DiscoveryCustomMessage ackMessage() {
             return null;
         }
 

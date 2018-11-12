@@ -449,7 +449,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
      */
     public static void assertEqualsToStringRepresentation(
         final Object originalObj,
-        @Nullable final IgniteBinary binary,
+        final @Nullable IgniteBinary binary,
         final Object resSetObj) {
         if (binary != null) {
             final BinaryObject origObjAsBinary = binary.toBinary(originalObj);

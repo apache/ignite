@@ -376,7 +376,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
+    @Override public @Nullable DiscoveryDataExchangeType discoveryDataType() {
         return CONTINUOUS_PROC;
     }
 
@@ -1594,7 +1594,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     private void sendMessageStartResult(final ClusterNode node,
         final UUID routineId,
         byte[] cntrsMapBytes,
-        @Nullable final Exception err)
+        final @Nullable Exception err)
     {
         byte[] errBytes = null;
 

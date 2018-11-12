@@ -215,7 +215,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
     @GridInternal
     public static class NestedHoldccTask extends ComputeTaskAdapter<String, String> {
         /** {@inheritDoc} */
-        @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+        @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable String arg) throws IgniteException {
             Map<ComputeJob, ClusterNode> map = new HashMap<>();
 
@@ -227,7 +227,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public String reduce(List<ComputeJobResult> results) throws IgniteException {
+        @Override public @Nullable String reduce(List<ComputeJobResult> results) throws IgniteException {
             return results.get(0).getData();
         }
     }

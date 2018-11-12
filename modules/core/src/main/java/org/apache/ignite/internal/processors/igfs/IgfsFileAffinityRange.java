@@ -225,7 +225,7 @@ public class IgfsFileAffinityRange implements Message, Externalizable, Binaryliz
      * @param range Range to concatenate with.
      * @return Concatenation result or {@code null} if ranges are not adjacent.
      */
-    @Nullable public IgfsFileAffinityRange concat(IgfsFileAffinityRange range) {
+    public @Nullable IgfsFileAffinityRange concat(IgfsFileAffinityRange range) {
         if (endOff + 1 != range.startOff || !F.eq(affKey, range.affKey) || status != RANGE_STATUS_INITIAL)
             return null;
 

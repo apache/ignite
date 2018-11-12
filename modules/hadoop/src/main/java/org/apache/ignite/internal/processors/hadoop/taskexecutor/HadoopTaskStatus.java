@@ -84,14 +84,14 @@ public class HadoopTaskStatus implements Externalizable {
     /**
      * @return Fail cause.
      */
-    @Nullable public Throwable failCause() {
+    public @Nullable Throwable failCause() {
         return failCause;
     }
 
     /**
      * @return Counters.
      */
-    @Nullable public HadoopCounters counters() {
+    public @Nullable HadoopCounters counters() {
         return cntrs;
     }
 

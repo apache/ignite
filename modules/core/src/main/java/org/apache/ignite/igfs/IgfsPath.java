@@ -173,7 +173,7 @@ public final class IgfsPath implements Comparable<IgfsPath>, Externalizable, Bin
      *
      * @return The parent of a path or {@code null} if at root.
      */
-    @Nullable public IgfsPath parent() {
+    public @Nullable IgfsPath parent() {
         String path = this.path;
 
         if (path.length() == 1)

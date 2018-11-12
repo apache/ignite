@@ -131,7 +131,7 @@ public abstract class HadoopAbstractMapTest extends GridCommonAbstractTest {
      */
     protected static class JobInfo implements HadoopJobInfo {
         /** {@inheritDoc} */
-        @Nullable @Override public String property(String name) {
+        @Override public @Nullable String property(String name) {
             return null;
         }
 

@@ -61,7 +61,7 @@ public interface IpcServerEndpoint extends Closeable {
      *
      * @return Host.
      */
-    @Nullable public String getHost();
+    public @Nullable String getHost();
 
     /**
      * Indicates if this endpoint is a management endpoint.

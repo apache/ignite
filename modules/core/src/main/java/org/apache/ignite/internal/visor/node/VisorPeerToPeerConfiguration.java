@@ -79,7 +79,7 @@ public class VisorPeerToPeerConfiguration extends VisorDataTransferObject {
     /**
      * @return List of packages from the system classpath that need to be loaded from task originating node.
      */
-    @Nullable public List<String> getPeerClassLoadingLocalClassPathExclude() {
+    public @Nullable List<String> getPeerClassLoadingLocalClassPathExclude() {
         return p2pLocClsPathExcl;
     }
 

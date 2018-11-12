@@ -270,7 +270,7 @@ public class CacheTxNotAllowReadFromBackupTest extends GridCommonAbstractTest {
     /**
      * @return Batches.
      */
-    @NotNull private List<Set<Integer>> createBatches() {
+    private @NotNull List<Set<Integer>> createBatches() {
         List<Set<Integer>> batches = new ArrayList<>(KEYS / BATCH_SIZE + 1);
 
         int size = BATCH_SIZE;

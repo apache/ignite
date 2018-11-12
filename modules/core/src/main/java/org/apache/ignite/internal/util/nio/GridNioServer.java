@@ -2670,7 +2670,7 @@ public class GridNioServer<T> {
          * @param e Exception to be passed to the listener, if any.
          * @return {@code True} if this call closed the ses.
          */
-        protected boolean close(final GridSelectorNioSessionImpl ses, @Nullable final IgniteCheckedException e) {
+        protected boolean close(final GridSelectorNioSessionImpl ses, final @Nullable IgniteCheckedException e) {
             if (e != null) {
                 // Print stack trace only if has runtime exception in it's cause.
                 if (e.hasCause(IOException.class))

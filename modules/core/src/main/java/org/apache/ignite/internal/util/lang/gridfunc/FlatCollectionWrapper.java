@@ -45,7 +45,7 @@ public class FlatCollectionWrapper<T> extends GridSerializableCollection<T> {
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Iterator<T> iterator() {
+    @Override public @NotNull Iterator<T> iterator() {
         return GridFunc.flat((Iterable<? extends Iterable<T>>)cols);
     }
 

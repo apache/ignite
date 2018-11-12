@@ -112,21 +112,21 @@ public class UploadBenchmarkArguments implements StreamerParams {
     }
 
     /** @return packet_size value for copy command or {@code null} for default value. */
-    @Nullable public Long copyPacketSize() {
+    public @Nullable Long copyPacketSize() {
         return copyPacketSize;
     }
 
     /**
      * @return Value for {@link IgniteDataStreamer#perNodeBufferSize(int)}.
      */
-    @Override @Nullable public Integer streamerPerNodeBufferSize() {
+    @Override public @Nullable Integer streamerPerNodeBufferSize() {
         return streamerNodeBufSize;
     }
 
     /**
      * @return Value for {@link IgniteDataStreamer#perNodeParallelOperations(int)}.
      */
-    @Override @Nullable public Integer streamerPerNodeParallelOperations() {
+    @Override public @Nullable Integer streamerPerNodeParallelOperations() {
         return streamerNodeParOps;
     }
 
@@ -135,14 +135,14 @@ public class UploadBenchmarkArguments implements StreamerParams {
      * IgniteDataStreamer#addData(Map)}, or set STREAMING sql command parameter. <br/> If set to 1, {@link
      * IgniteDataStreamer#addData(Object, Object)} method will be used.
      */
-    @Override @Nullable public Integer streamerLocalBatchSize() {
+    @Override public @Nullable Integer streamerLocalBatchSize() {
         return streamerLocBatchSize;
     }
 
     /**
      * Bypass corresponding parameter to streamer.
      */
-    @Override @Nullable public Boolean streamerAllowOverwrite() {
+    @Override public @Nullable Boolean streamerAllowOverwrite() {
         return streamerAllowOverwrite;
     }
 

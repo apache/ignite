@@ -29,5 +29,5 @@ public interface IndexingQueryFilter {
      * @param cacheName Cache name.
      * @return Predicate or {@code null} if no filtering is needed.
      */
-    @Nullable public IndexingQueryCacheFilter forCache(String cacheName);
+    public @Nullable IndexingQueryCacheFilter forCache(String cacheName);
 }

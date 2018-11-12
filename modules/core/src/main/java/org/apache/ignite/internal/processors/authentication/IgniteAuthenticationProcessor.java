@@ -407,12 +407,12 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
+    @Override public @Nullable DiscoveryDataExchangeType discoveryDataType() {
         return DiscoveryDataExchangeType.AUTH_PROC;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
+    @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node) {
         Boolean rmtEnabled = node.attribute(IgniteNodeAttributes.ATTR_AUTHENTICATION_ENABLED);
 
         if (isEnabled && rmtEnabled == null) {

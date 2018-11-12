@@ -294,8 +294,7 @@ public final class GridifyUtils {
      * @param arg Method parameter object.
      * @return Collection of parameters or {@code null} for unknown object.
      */
-    @SuppressWarnings({"unchecked"})
-    @Nullable public static Collection parameterToCollection(Object arg) {
+    @SuppressWarnings({"unchecked"}) public static @Nullable Collection parameterToCollection(Object arg) {
         if (arg instanceof Collection)
             return (Collection)arg;
         else if (arg instanceof Iterator) {
@@ -354,8 +353,7 @@ public final class GridifyUtils {
      * @param data Collection of data elements.
      * @return Object applied for method.
      */
-    @SuppressWarnings({"unchecked"})
-    @Nullable public static Object collectionToParameter(Class<?> paramCls, Collection data) {
+    @SuppressWarnings({"unchecked"}) public static @Nullable Object collectionToParameter(Class<?> paramCls, Collection data) {
         if (Collection.class.equals(paramCls))
             return data;
         else if (Iterable.class.equals(paramCls))

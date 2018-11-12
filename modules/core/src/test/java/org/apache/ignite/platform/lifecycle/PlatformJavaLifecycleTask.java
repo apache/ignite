@@ -34,7 +34,7 @@ import java.util.Map;
  */
 public class PlatformJavaLifecycleTask extends ComputeTaskAdapter<Object, List<Integer>> {
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable Object arg) {
         Map<ComputeJob, ClusterNode> jobs = new HashMap<>();
 
@@ -44,7 +44,7 @@ public class PlatformJavaLifecycleTask extends ComputeTaskAdapter<Object, List<I
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public List<Integer> reduce(List<ComputeJobResult> results) {
+    @Override public @Nullable List<Integer> reduce(List<ComputeJobResult> results) {
         return results.get(0).getData();
     }
 
@@ -53,7 +53,7 @@ public class PlatformJavaLifecycleTask extends ComputeTaskAdapter<Object, List<I
      */
     private static class LifecycleJob extends ComputeJobAdapter {
         /** {@inheritDoc} */
-        @Nullable @Override public Object execute() {
+        @Override public @Nullable Object execute() {
             List<Integer> res = new ArrayList<Integer>();
 
             res.add(PlatformJavaLifecycleBean.beforeStartCnt);

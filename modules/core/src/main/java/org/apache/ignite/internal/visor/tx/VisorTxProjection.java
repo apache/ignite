@@ -36,7 +36,7 @@ public enum     VisorTxProjection {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static VisorTxProjection fromOrdinal(int ord) {
+    public static @Nullable VisorTxProjection fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

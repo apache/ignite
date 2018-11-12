@@ -166,7 +166,7 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
      * @param cmd Command.
      * @return Future or {@code null} if processed immediately.
      */
-    @Nullable private IgniteInternalFuture<GridRestResponse> handleRequest0(
+    private @Nullable IgniteInternalFuture<GridRestResponse> handleRequest0(
         final GridNioSession ses,
         final GridMemcachedMessage req,
         final GridTuple3<GridRestCommand, Boolean, Boolean> cmd
@@ -321,7 +321,7 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
      * @param opCode Operation code.
      * @return Command.
      */
-    @Nullable private GridTuple3<GridRestCommand, Boolean, Boolean> command(int opCode) {
+    private @Nullable GridTuple3<GridRestCommand, Boolean, Boolean> command(int opCode) {
         GridRestCommand cmd;
         boolean quiet = false;
         boolean retKey = false;

@@ -54,7 +54,7 @@ public class IgniteLocalCountDownLatchSelfTest extends IgniteCountDownLatchAbstr
 
         IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
+                @Override public @Nullable Object call() throws Exception {
                     IgniteCountDownLatch latch = grid(0).countDownLatch("latch", 2, false, true);
 
                     assert latch != null && latch.count() == 2;

@@ -160,7 +160,7 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
      * @param sesId Session ID.
      * @return Session for a given session ID.
      */
-    @Nullable public GridTaskSessionImpl getSession(IgniteUuid sesId) {
+    public @Nullable GridTaskSessionImpl getSession(IgniteUuid sesId) {
         return sesMap.get(sesId);
     }
 

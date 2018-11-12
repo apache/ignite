@@ -210,8 +210,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
      * @param pageSize page size
      * @return implementation for test
      */
-    @NotNull
-    private PageMemoryImpl createPageMemory(IgniteConfiguration cfg, ReplacedPageWriter pageWriter, int pageSize) {
+    private @NotNull PageMemoryImpl createPageMemory(IgniteConfiguration cfg, ReplacedPageWriter pageWriter, int pageSize) {
         IgniteCacheDatabaseSharedManager db = mock(GridCacheDatabaseSharedManager.class);
 
         when(db.checkpointLockIsHeldByThread()).thenReturn(true);
@@ -259,7 +258,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
      * @param overallSize default region size in bytes
      * @return configuration for test.
      */
-    @NotNull private IgniteConfiguration getConfiguration(long overallSize) {
+    private @NotNull IgniteConfiguration getConfiguration(long overallSize) {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setEncryptionSpi(new NoopEncryptionSpi());
@@ -292,7 +291,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
     /**
      * @return delayed write tracked from page memory.
      */
-    @NotNull private Object delayedReplacementTracker() {
+    private @NotNull Object delayedReplacementTracker() {
         Object tracker = U.field(pageMemory, "delayedPageReplacementTracker");
 
         if (tracker == null)

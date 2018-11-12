@@ -419,7 +419,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
     /**
      * @return Listener for get future.
      */
-    @NotNull private IgniteInClosure<IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>>>
+    private @NotNull IgniteInClosure<IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>>>
     createGetFutureListener() {
         return new IgniteInClosure<IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>>>() {
             @Override public void apply(

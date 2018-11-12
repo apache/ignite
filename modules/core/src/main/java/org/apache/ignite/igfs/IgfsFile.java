@@ -108,7 +108,7 @@ public interface IgfsFile {
      * @param dfltVal Default value if requested property was not found.
      * @return File's property for specified name.
      */
-    @Nullable public String property(String name, @Nullable String dfltVal);
+    public @Nullable String property(String name, @Nullable String dfltVal);
 
     /**
      * Get properties of the file.

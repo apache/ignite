@@ -54,7 +54,7 @@ public class TestEventTransformer implements EventTransformer<Event, String, Int
      * @param events Flume events to transform.
      * @return Map of cacheable entries.
      */
-    @Nullable @Override public Map<String, Integer> transform(List<Event> events) {
+    @Override public @Nullable Map<String, Integer> transform(List<Event> events) {
         final Map<String, Integer> map = new HashMap<>();
 
         for (Event event : events) {

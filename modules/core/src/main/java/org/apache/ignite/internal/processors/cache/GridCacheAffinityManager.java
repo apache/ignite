@@ -110,7 +110,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
      * @param topVer Topology version to wait.
      * @return Affinity ready future or {@code null}.
      */
-    @Nullable public IgniteInternalFuture<AffinityTopologyVersion> affinityReadyFuturex(AffinityTopologyVersion topVer) {
+    public @Nullable IgniteInternalFuture<AffinityTopologyVersion> affinityReadyFuturex(AffinityTopologyVersion topVer) {
         assert !cctx.isLocal();
 
         return aff.readyFuture(topVer);
@@ -253,7 +253,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
      * @param topVer Topology version.
      * @return Primary node for given key.
      */
-    @Nullable public ClusterNode primaryByKey(Object key, AffinityTopologyVersion topVer) {
+    public @Nullable ClusterNode primaryByKey(Object key, AffinityTopologyVersion topVer) {
         return primaryByPartition(partition(key), topVer);
     }
 
@@ -262,7 +262,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
      * @param topVer Topology version.
      * @return Primary node for given key.
      */
-    @Nullable public ClusterNode primaryByPartition(int part, AffinityTopologyVersion topVer) {
+    public @Nullable ClusterNode primaryByPartition(int part, AffinityTopologyVersion topVer) {
         List<ClusterNode> nodes = nodesByPartition(part, topVer);
 
         if (nodes.isEmpty())

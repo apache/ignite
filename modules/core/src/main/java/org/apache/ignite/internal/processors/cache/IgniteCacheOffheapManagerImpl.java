@@ -344,7 +344,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
      * @param p Partition.
      * @return Partition data.
      */
-    @Nullable private CacheDataStore partitionData(int p) {
+    private @Nullable CacheDataStore partitionData(int p) {
         if (grp.isLocal())
             return locCacheDataStore;
         else {
@@ -615,7 +615,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public MvccUpdateResult mvccLock(GridCacheMapEntry entry,
+    @Override public @Nullable MvccUpdateResult mvccLock(GridCacheMapEntry entry,
         MvccSnapshot mvccSnapshot) throws IgniteCheckedException {
         if (entry.detached() || entry.isNear())
             return null;
@@ -636,8 +636,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override @Nullable public CacheDataRow read(GridCacheMapEntry entry)
+    @Override @SuppressWarnings("unchecked") public @Nullable CacheDataRow read(GridCacheMapEntry entry)
         throws IgniteCheckedException {
         KeyCacheObject key = entry.key();
 
@@ -647,7 +646,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheDataRow read(GridCacheContext cctx, KeyCacheObject key)
+    @Override public @Nullable CacheDataRow read(GridCacheContext cctx, KeyCacheObject key)
         throws IgniteCheckedException {
         CacheDataStore dataStore = dataStore(cctx, key);
 
@@ -659,7 +658,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheDataRow mvccRead(GridCacheContext cctx, KeyCacheObject key, MvccSnapshot ver)
+    @Override public @Nullable CacheDataRow mvccRead(GridCacheContext cctx, KeyCacheObject key, MvccSnapshot ver)
         throws IgniteCheckedException {
         assert ver != null;
 
@@ -694,7 +693,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
      * @param key Key.
      * @return Data store.
      */
-    @Nullable private CacheDataStore dataStore(GridCacheContext cctx, KeyCacheObject key) {
+    private @Nullable CacheDataStore dataStore(GridCacheContext cctx, KeyCacheObject key) {
         if (grp.isLocal())
             return locCacheDataStore;
 
@@ -1217,7 +1216,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
      * @param missing Set of partitions need to populate if partition is missing or failed to reserve.
      * @return Historical iterator.
      */
-    @Nullable protected IgniteHistoricalIterator historicalIterator(CachePartitionPartialCountersMap partCntrs, Set<Integer> missing)
+    protected @Nullable IgniteHistoricalIterator historicalIterator(CachePartitionPartialCountersMap partCntrs, Set<Integer> missing)
         throws IgniteCheckedException {
         return null;
     }
@@ -1691,7 +1690,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @param cacheId Cache id.
          * @return Made data row.
          */
-        @NotNull private DataRow makeDataRow(KeyCacheObject key, CacheObject val, GridCacheVersion ver, long expireTime,
+        private @NotNull DataRow makeDataRow(KeyCacheObject key, CacheObject val, GridCacheVersion ver, long expireTime,
             int cacheId) {
             if (key.partition() == -1)
                 key.partition(partId);
@@ -3107,7 +3106,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             }
 
             /** {@inheritDoc} */
-            @Nullable @Override public CacheDataRow oldRow() {
+            @Override public @Nullable CacheDataRow oldRow() {
                 return oldRow;
             }
 

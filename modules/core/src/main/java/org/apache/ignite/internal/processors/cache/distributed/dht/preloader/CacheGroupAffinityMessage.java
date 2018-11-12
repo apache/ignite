@@ -208,7 +208,7 @@ public class CacheGroupAffinityMessage implements Message {
      * @param discoCache Discovery data cache.
      * @return Nodes list.
      */
-    @Nullable public List<List<ClusterNode>> createIdealAssignments(Map<Long, ClusterNode> nodesByOrder,
+    public @Nullable List<List<ClusterNode>> createIdealAssignments(Map<Long, ClusterNode> nodesByOrder,
         DiscoCache discoCache) {
         if (idealAssigns == null)
             return null;

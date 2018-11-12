@@ -59,10 +59,9 @@ public class PredicateMapView<K, V> extends GridSerializableMap<K, V> {
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Set<Entry<K, V>> entrySet() {
+    @Override public @NotNull Set<Entry<K, V>> entrySet() {
         return new GridSerializableSet<Entry<K, V>>() {
-            @NotNull
-            @Override public Iterator<Entry<K, V>> iterator() {
+            @Override public @NotNull Iterator<Entry<K, V>> iterator() {
                 return GridFunc.iterator0(map.entrySet(), false, entryPred);
             }
 
@@ -92,13 +91,12 @@ public class PredicateMapView<K, V> extends GridSerializableMap<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
-    @Nullable @Override public V get(Object key) {
+    @Override @SuppressWarnings({"unchecked"}) public @Nullable V get(Object key) {
         return GridFunc.isAll((K)key, preds) ? map.get(key) : null;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V put(K key, V val) {
+    @Override public @Nullable V put(K key, V val) {
         V oldVal = get(key);
 
         if (GridFunc.isAll(key, preds))

@@ -70,7 +70,7 @@ public interface IgniteCacheExpiryPolicy {
     /**
      * @return Entries with TTL updated on access.
      */
-    @Nullable public Map<KeyCacheObject, GridCacheVersion> entries();
+    public @Nullable Map<KeyCacheObject, GridCacheVersion> entries();
 
     /**
      * @return Readers for updated entries.

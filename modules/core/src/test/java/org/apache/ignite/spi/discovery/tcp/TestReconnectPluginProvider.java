@@ -84,7 +84,7 @@ public class TestReconnectPluginProvider implements PluginProvider {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Serializable provideDiscoveryData(UUID nodeId) {
+    @Override public @Nullable Serializable provideDiscoveryData(UUID nodeId) {
         return null;
     }
 
@@ -99,7 +99,7 @@ public class TestReconnectPluginProvider implements PluginProvider {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object createComponent(PluginContext ctx, Class cls) {
+    @Override public @Nullable Object createComponent(PluginContext ctx, Class cls) {
         if (enabled && GridSecurityProcessor.class.equals(cls))
             return new TestReconnectProcessor(igniteCtx);
 

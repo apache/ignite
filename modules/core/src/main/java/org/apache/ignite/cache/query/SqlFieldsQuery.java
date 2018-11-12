@@ -325,7 +325,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /**
      * Gets partitions for query, in ascending order.
      */
-    @Nullable public int[] getPartitions() {
+    public @Nullable int[] getPartitions() {
         return parts;
     }
 
@@ -351,7 +351,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
      *
      * @return Schema. Null if schema is not set.
      */
-    @Nullable public String getSchema() {
+    public @Nullable String getSchema() {
         return schema;
     }
 

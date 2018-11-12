@@ -101,7 +101,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgfsFile update(IgfsPath path, Map<String, String> props) {
+    @Override public @Nullable IgfsFile update(IgfsPath path, Map<String, String> props) {
         File f = fileForPath(path);
 
         if (!f.exists())
@@ -264,7 +264,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
      * @param path IGFS path.
      * @return Array of File objects.
      */
-    @Nullable private File[] listFiles0(IgfsPath path) {
+    private @Nullable File[] listFiles0(IgfsPath path) {
         File f = fileForPath(path);
 
         if (!f.exists())
@@ -501,7 +501,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
      *
      * @return Work directory.
      */
-    @Nullable public String getWorkDirectory() {
+    public @Nullable String getWorkDirectory() {
         return workDir;
     }
 

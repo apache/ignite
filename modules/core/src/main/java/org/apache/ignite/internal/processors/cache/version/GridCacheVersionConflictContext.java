@@ -171,7 +171,7 @@ public class GridCacheVersionConflictContext<K, V> {
     /**
      * @return Value to merge (if any).
      */
-    @Nullable public V mergeValue() {
+    public @Nullable V mergeValue() {
         return mergeVal;
     }
 

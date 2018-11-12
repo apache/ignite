@@ -118,7 +118,7 @@ public final class DeploymentExample {
 
             for (int i = 0; i < clusterSize; i++) {
                 jobs.add(new ComputeJobAdapter() {
-                    @Nullable @Override public Serializable execute() {
+                    @Override public @Nullable Serializable execute() {
                         System.out.println(">>> Executing deployment example job on this node.");
 
                         // This job does not return any result.

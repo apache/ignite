@@ -68,7 +68,7 @@ public class IgniteTxMappingsSingleImpl implements IgniteTxMappings {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridDistributedTxMapping localMapping() {
+    @Override public @Nullable GridDistributedTxMapping localMapping() {
         GridDistributedTxMapping mapping0 = mapping;
 
         if (mapping0 != null && mapping0.primary().isLocal())
@@ -83,7 +83,7 @@ public class IgniteTxMappingsSingleImpl implements IgniteTxMappings {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridDistributedTxMapping singleMapping() {
+    @Override public @Nullable GridDistributedTxMapping singleMapping() {
         return mapping;
     }
 

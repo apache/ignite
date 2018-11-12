@@ -46,7 +46,7 @@ public class F0 {
      * @return Negated predicate (not peer-deployable).
      */
     @SuppressWarnings("unchecked")
-    public static <T> IgnitePredicate<T> not(@Nullable final IgnitePredicate<? super T>... p) {
+    public static <T> IgnitePredicate<T> not(final @Nullable IgnitePredicate<? super T>... p) {
         return F.isAlwaysFalse(p) ? F.<T>alwaysTrue() : F.isAlwaysTrue(p) ? F.<T>alwaysFalse() : new P1<T>() {
             @Override public boolean apply(T t) {
                 return !F.isAll(t, p);
@@ -63,7 +63,7 @@ public class F0 {
      * @return Predicate (not peer-deployable) that evaluates to {@code true} if its free variable is not equal
      *      to {@code target} or both are {@code null}.
      */
-    public static <T> IgnitePredicate<T> notEqualTo(@Nullable final T target) {
+    public static <T> IgnitePredicate<T> notEqualTo(final @Nullable T target) {
         return new P1<T>() {
             @Override public boolean apply(T t) {
                 return !F.eq(t, target);
@@ -81,7 +81,7 @@ public class F0 {
      * @return Predicate (not peer-deployable) that returns {@code true} if its free variable is not
      *      contained in given collection.
      */
-    public static <T> IgnitePredicate<T> notIn(@Nullable final Collection<? extends T> c) {
+    public static <T> IgnitePredicate<T> notIn(final @Nullable Collection<? extends T> c) {
         return F.isEmpty(c) ? GridFunc.<T>alwaysTrue() : new P1<T>() {
             @Override public boolean apply(T t) {
                 return !c.contains(t);
@@ -98,7 +98,7 @@ public class F0 {
      * @return Predicate that evaluates to {@code true} if its free variable is equal to
      *      {@code target} or both are {@code null}.
      */
-    public static <T> IgnitePredicate<T> equalTo(@Nullable final T target) {
+    public static <T> IgnitePredicate<T> equalTo(final @Nullable T target) {
         return new P1<T>() {
             @Override public boolean apply(T t) {
                 return F.eq(t, target);
@@ -120,8 +120,8 @@ public class F0 {
      *      evaluates to {@code true}.
      */
     @SuppressWarnings({"unchecked"})
-    public static <T> IgnitePredicate<T> and(@Nullable final IgnitePredicate<? super T>[] p1,
-        @Nullable final IgnitePredicate<? super T>... p2) {
+    public static <T> IgnitePredicate<T> and(final @Nullable IgnitePredicate<? super T>[] p1,
+        final @Nullable IgnitePredicate<? super T>... p2) {
         if (F.isAlwaysFalse(p1) || F.isAlwaysFalse(p2))
             return F.alwaysFalse();
 
@@ -196,8 +196,8 @@ public class F0 {
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
     public static <T> IgnitePredicate<T> and(
-        @Nullable final IgnitePredicate<? super T> p,
-        @Nullable final IgnitePredicate<? super T>... ps
+        final @Nullable IgnitePredicate<? super T> p,
+        final @Nullable IgnitePredicate<? super T>... ps
     ) {
         if (p == null && F.isEmptyOrNulls(ps))
             return F.alwaysTrue();
@@ -260,7 +260,7 @@ public class F0 {
      * @return Predicate (not peer-deployable) that returns {@code true} if its free variable is
      *      contained in given collection.
      */
-    public static <T> IgnitePredicate<T> in(@Nullable final Collection<? extends T> c) {
+    public static <T> IgnitePredicate<T> in(final @Nullable Collection<? extends T> c) {
         return F.isEmpty(c) ? GridFunc.<T>alwaysFalse() : new P1<T>() {
             @Override public boolean apply(T t) {
                 return c.contains(t);
@@ -277,7 +277,7 @@ public class F0 {
      * @return Predicate which returns {@code true} if it receives an element
      *  that is contained in the passed in collection.
      */
-    public static <T> IgnitePredicate<T> contains(@Nullable final Collection<T> c) {
+    public static <T> IgnitePredicate<T> contains(final @Nullable Collection<T> c) {
         return c == null || c.isEmpty() ? GridFunc.<T>alwaysFalse() : new P1<T>() {
             @Override public boolean apply(T t) {
                 return c.contains(t);
@@ -294,7 +294,7 @@ public class F0 {
      * @return Predicate which returns {@code true} if it receives an element
      *  that is not contained in the passed in collection.
      */
-    public static <T> IgnitePredicate<T> notContains(@Nullable final Collection<T> c) {
+    public static <T> IgnitePredicate<T> notContains(final @Nullable Collection<T> c) {
         return c == null || c.isEmpty() ? GridFunc.<T>alwaysTrue() : new P1<T>() {
             @Override public boolean apply(T t) {
                 return !c.contains(t);

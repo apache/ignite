@@ -137,7 +137,7 @@ public class GridDhtPartitionSupplyMessageV2 extends GridDhtPartitionSupplyMessa
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Throwable error() {
+    @Override public @Nullable Throwable error() {
         return err;
     }
 

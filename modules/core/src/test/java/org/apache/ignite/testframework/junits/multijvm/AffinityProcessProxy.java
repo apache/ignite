@@ -98,7 +98,7 @@ public class AffinityProcessProxy<K> implements Affinity<K> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public ClusterNode mapKeyToNode(K key) {
+    @Override public @Nullable ClusterNode mapKeyToNode(K key) {
         return compute.call(new MapKeyToNodeTask<>(cacheName, key));
     }
 

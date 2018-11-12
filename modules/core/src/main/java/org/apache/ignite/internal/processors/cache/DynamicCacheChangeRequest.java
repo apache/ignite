@@ -96,7 +96,7 @@ public class DynamicCacheChangeRequest implements Serializable {
     private transient boolean locallyConfigured;
 
     /** Encryption key. */
-    @Nullable private byte[] encKey;
+    private @Nullable byte[] encKey;
 
     /**
      * @param reqId Unique request ID.
@@ -381,7 +381,7 @@ public class DynamicCacheChangeRequest implements Serializable {
     /**
      * @return ID of node provided cache configuration in discovery data.
      */
-    @Nullable public UUID receivedFrom() {
+    public @Nullable UUID receivedFrom() {
         return rcvdFrom;
     }
 
@@ -437,7 +437,7 @@ public class DynamicCacheChangeRequest implements Serializable {
     /**
      * @return Encryption key.
      */
-    @Nullable public byte[] encryptionKey() {
+    public @Nullable byte[] encryptionKey() {
         return encKey;
     }
 

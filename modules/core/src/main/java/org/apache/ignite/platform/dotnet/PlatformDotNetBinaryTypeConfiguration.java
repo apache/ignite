@@ -157,8 +157,7 @@ public class PlatformDotNetBinaryTypeConfiguration {
      * @return Flag indicates whether to cache deserialized value.
      * @deprecated Use {@link #getKeepDeserialized()} instead.
      */
-    @Deprecated
-    @Nullable public Boolean isKeepDeserialized() {
+    @Deprecated public @Nullable Boolean isKeepDeserialized() {
         return keepDeserialized;
     }
 
@@ -167,7 +166,7 @@ public class PlatformDotNetBinaryTypeConfiguration {
      *
      * @return Flag indicates whether to cache deserialized value.
      */
-    @Nullable public Boolean getKeepDeserialized() {
+    public @Nullable Boolean getKeepDeserialized() {
         return keepDeserialized;
     }
 

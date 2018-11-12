@@ -66,7 +66,7 @@ public class HibernateTransactionalAccessStrategy extends HibernateAccessStrateg
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object get(Object key) {
+    @Override public @Nullable Object get(Object key) {
         try {
             return cache.get(key);
         }

@@ -55,14 +55,14 @@ public class PartitionAllocationMap {
      * @param key to get
      * @return value or null
      */
-    @Nullable public PagesAllocationRange get(GroupPartitionId key) {
+    public @Nullable PagesAllocationRange get(GroupPartitionId key) {
         return readMap.get(key);
     }
 
     /**
      * @param fullPageId Full page id.
      */
-    @Nullable public PagesAllocationRange get(FullPageId fullPageId) {
+    public @Nullable PagesAllocationRange get(FullPageId fullPageId) {
         return readMap.get(createCachePartId(fullPageId));
     }
 
@@ -72,7 +72,7 @@ public class PartitionAllocationMap {
      * @param fullId page related to some cache
      * @return pair of cache ID and partition ID
      */
-    @NotNull public static GroupPartitionId createCachePartId(@NotNull final FullPageId fullId) {
+    public static @NotNull GroupPartitionId createCachePartId(final @NotNull FullPageId fullId) {
         return new GroupPartitionId(fullId.groupId(), PageIdUtils.partId(fullId.pageId()));
     }
 
@@ -117,7 +117,7 @@ public class PartitionAllocationMap {
      * @param key cache and partition to search
      * @return first found key which is greater than provided
      */
-    @Nullable public GroupPartitionId nextKey(@NotNull final GroupPartitionId key) {
+    public @Nullable GroupPartitionId nextKey(final @NotNull GroupPartitionId key) {
         return readMap.navigableKeySet().higher(key);
     }
 

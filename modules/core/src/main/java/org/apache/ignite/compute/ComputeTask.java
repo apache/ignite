@@ -244,7 +244,7 @@ public interface ComputeTask<T, R> extends Serializable {
      * @throws IgniteException If mapping could not complete successfully. This exception will be
      *      thrown out of {@link ComputeTaskFuture#get()} method.
      */
-    @Nullable public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable T arg) throws IgniteException;
+    public @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable T arg) throws IgniteException;
 
     /**
      * Asynchronous callback invoked every time a result from remote execution is
@@ -277,5 +277,5 @@ public interface ComputeTask<T, R> extends Serializable {
      * @throws IgniteException If reduction or results caused an error. This exception will
      *      be thrown out of {@link ComputeTaskFuture#get()} method.
      */
-    @Nullable public R reduce(List<ComputeJobResult> results) throws IgniteException;
+    public @Nullable R reduce(List<ComputeJobResult> results) throws IgniteException;
 }

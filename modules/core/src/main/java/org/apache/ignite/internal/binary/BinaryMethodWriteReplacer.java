@@ -42,7 +42,7 @@ public class BinaryMethodWriteReplacer implements BinaryWriteReplacer {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object replace(Object target) {
+    @Override public @Nullable Object replace(Object target) {
         try {
             return mthd.invoke(target);
         }

@@ -62,7 +62,7 @@ public class GridDirectParser implements GridNioParser {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object decode(GridNioSession ses, ByteBuffer buf)
+    @Override public @Nullable Object decode(GridNioSession ses, ByteBuffer buf)
         throws IOException, IgniteCheckedException {
         MessageReader reader = ses.meta(READER_META_KEY);
 

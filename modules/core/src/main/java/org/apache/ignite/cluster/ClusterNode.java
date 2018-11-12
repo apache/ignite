@@ -133,7 +133,7 @@ public interface ClusterNode extends BaselineNode {
      *      {@code org.apache.ignite} are reserved for internal use.
      * @return Attribute value or {@code null}.
      */
-    @Override @Nullable public <T> T attribute(String name);
+    @Override public @Nullable <T> T attribute(String name);
 
     /**
      * Gets metrics snapshot for this node. Note that node metrics are constantly updated

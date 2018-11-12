@@ -67,7 +67,7 @@ public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTaskArg
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected VisorLogSearchTaskResult reduce0(List<ComputeJobResult> results) {
+    @Override protected @Nullable VisorLogSearchTaskResult reduce0(List<ComputeJobResult> results) {
         List<VisorLogSearchResult> searchRes = new ArrayList<>();
         Map<Exception, UUID> exRes = U.newHashMap(0);
 

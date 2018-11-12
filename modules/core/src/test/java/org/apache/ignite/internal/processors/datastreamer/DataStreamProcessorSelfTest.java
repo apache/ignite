@@ -678,7 +678,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      * @param i Value to wrap.
      * @return Callable.
      */
-    private static Callable<Integer> callable(@Nullable final Integer i) {
+    private static Callable<Integer> callable(final @Nullable Integer i) {
         return new Callable<Integer>() {
             @Override public Integer call() throws Exception {
                 return i;
@@ -692,7 +692,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      * @param i Value to wrap.
      * @return Closure.
      */
-    private static IgniteClosure<Integer, Integer> closure(@Nullable final Integer i) {
+    private static IgniteClosure<Integer, Integer> closure(final @Nullable Integer i) {
         return new IgniteClosure<Integer, Integer>() {
             @Override public Integer apply(Integer e) {
                 return e == null ? i : e + i;
@@ -706,7 +706,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      * @param obj Value to wrap.
      * @return Closure.
      */
-    private static <T> IgniteClosure<T, T> fixedClosure(@Nullable final T obj) {
+    private static <T> IgniteClosure<T, T> fixedClosure(final @Nullable T obj) {
         return new IgniteClosure<T, T>() {
             @Override public T apply(T e) {
                 assert e == null || obj == null || e.getClass() == obj.getClass() :
@@ -723,7 +723,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      * @param exp Expected closure value.
      * @return Remove expected cache value closure.
      */
-    private static <T> IgniteClosure<T, T> removeClosure(@Nullable final T exp) {
+    private static <T> IgniteClosure<T, T> removeClosure(final @Nullable T exp) {
         return new IgniteClosure<T, T>() {
             @Override public T apply(T act) {
                 if (exp == null ? act == null : exp.equals(act))
@@ -1105,7 +1105,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("PublicInnerClass")
     public static class TestStore extends CacheStoreAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Nullable @Override public Object load(Object key) {
+        @Override public @Nullable Object load(Object key) {
             return storeMap.get(key);
         }
 

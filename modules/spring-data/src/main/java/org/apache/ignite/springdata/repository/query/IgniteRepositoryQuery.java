@@ -188,7 +188,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
      * @param prmtrs Prmtrs.
      * @param qryCursor Query cursor.
      */
-    @Nullable private Object transformQueryCursor(Object[] prmtrs, QueryCursor qryCursor) {
+    private @Nullable Object transformQueryCursor(Object[] prmtrs, QueryCursor qryCursor) {
         if (this.qry.isFieldQuery()) {
             Iterable<ArrayList> qryIter = (Iterable<ArrayList>)qryCursor;
 
@@ -268,7 +268,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
      * @param prmtrs Prmtrs.
      * @return prepared query for execution
      */
-    @NotNull private Query prepareQuery(Object[] prmtrs) {
+    private @NotNull Query prepareQuery(Object[] prmtrs) {
         Object[] parameters = prmtrs;
         String sql = qry.sql();
 

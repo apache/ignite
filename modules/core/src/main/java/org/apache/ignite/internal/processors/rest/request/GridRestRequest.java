@@ -150,7 +150,7 @@ public class GridRestRequest {
     /**
      * @return Authorization context.
      */
-    @Nullable public AuthorizationContext authorizationContext() {
+    public @Nullable AuthorizationContext authorizationContext() {
         return authCtx;
     }
 

@@ -85,7 +85,7 @@ public class VisorSegmentationConfiguration extends VisorDataTransferObject {
     /**
      * @return Segmentation resolvers.
      */
-    @Nullable public String getResolvers() {
+    public @Nullable String getResolvers() {
         return resolvers;
     }
 

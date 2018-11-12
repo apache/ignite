@@ -106,7 +106,7 @@ public class VisorNodeEventsCollectorTaskArg extends VisorDataTransferObject {
     /**
      * @return Node local storage key.
      */
-    @Nullable public String getKeyOrder() {
+    public @Nullable String getKeyOrder() {
         return keyOrder;
     }
 

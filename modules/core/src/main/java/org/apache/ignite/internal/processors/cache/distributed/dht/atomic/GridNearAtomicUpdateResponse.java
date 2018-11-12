@@ -135,7 +135,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
     /**
      * @return DHT nodes.
      */
-    @Nullable public List<UUID> mapping() {
+    public @Nullable List<UUID> mapping() {
         return mapping;
     }
 
@@ -292,14 +292,14 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
     /**
      * @return Indexes of keys for which update was skipped
      */
-    @Nullable public List<Integer> skippedIndexes() {
+    public @Nullable List<Integer> skippedIndexes() {
         return nearUpdates != null ? nearUpdates.skippedIndexes() : null;
     }
 
     /**
      * @return Indexes of keys for which values were generated on primary node.
      */
-   @Nullable public List<Integer> nearValuesIndexes() {
+    public @Nullable List<Integer> nearValuesIndexes() {
         return nearUpdates != null ? nearUpdates.nearValuesIndexes() : null;
    }
 
@@ -307,7 +307,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
      * @param idx Index.
      * @return Value generated on primary node which should be put to originating node's near cache.
      */
-    @Nullable public CacheObject nearValue(int idx) {
+    public @Nullable CacheObject nearValue(int idx) {
         return nearUpdates != null ? nearUpdates.nearValue(idx) : null;
     }
 

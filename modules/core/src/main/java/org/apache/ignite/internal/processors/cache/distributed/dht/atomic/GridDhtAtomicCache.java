@@ -502,7 +502,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Map<K, V>> getAllAsync(
-        @Nullable final Collection<? extends K> keys,
+        final @Nullable Collection<? extends K> keys,
         final boolean forcePrimary,
         boolean skipTx,
         @Nullable UUID subjId,
@@ -535,7 +535,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @return Future.
      */
     private IgniteInternalFuture<Map<K, V>> getAllAsyncInternal(
-        @Nullable final Collection<? extends K> keys,
+        final @Nullable Collection<? extends K> keys,
         final boolean forcePrimary,
         @Nullable UUID subjId,
         final String taskName,
@@ -1123,7 +1123,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         @Nullable EntryProcessor proc,
         @Nullable Object[] invokeArgs,
         final boolean retval,
-        @Nullable final CacheEntryPredicate filter,
+        final @Nullable CacheEntryPredicate filter,
         boolean async
     ) {
         assert val == null || proc == null;
@@ -2019,7 +2019,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final GridCacheVersion ver,
         final boolean replicate,
         final String taskName,
-        @Nullable final IgniteCacheExpiryPolicy expiry,
+        final @Nullable IgniteCacheExpiryPolicy expiry,
         final boolean sndPrevVal,
         final DhtAtomicUpdateResult dhtUpdRes
     ) throws GridCacheEntryRemovedException {
@@ -2665,16 +2665,16 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final List<GridDhtCacheEntry> entries,
         final GridCacheVersion ver,
         final ClusterNode nearNode,
-        @Nullable final List<CacheObject> writeVals,
-        @Nullable final Map<KeyCacheObject, CacheObject> putMap,
-        @Nullable final Collection<KeyCacheObject> rmvKeys,
-        @Nullable final Map<KeyCacheObject, EntryProcessor<Object, Object, Object>> entryProcessorMap,
+        final @Nullable List<CacheObject> writeVals,
+        final @Nullable Map<KeyCacheObject, CacheObject> putMap,
+        final @Nullable Collection<KeyCacheObject> rmvKeys,
+        final @Nullable Map<KeyCacheObject, EntryProcessor<Object, Object, Object>> entryProcessorMap,
         final GridNearAtomicAbstractUpdateRequest req,
         final GridNearAtomicUpdateResponse res,
         final boolean replicate,
         final DhtAtomicUpdateResult dhtUpdRes,
         final String taskName,
-        @Nullable final IgniteCacheExpiryPolicy expiry,
+        final @Nullable IgniteCacheExpiryPolicy expiry,
         final boolean sndPrevVal
     ) {
         assert putMap == null ^ rmvKeys == null;

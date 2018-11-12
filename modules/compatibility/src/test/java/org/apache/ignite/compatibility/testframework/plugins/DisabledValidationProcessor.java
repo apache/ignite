@@ -36,7 +36,7 @@ public class DisabledValidationProcessor extends GridProcessorAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
+    @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node) {
         return null;
     }
 }

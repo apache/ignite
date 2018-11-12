@@ -63,8 +63,7 @@ public interface IgfsPerBlockLruEvictionPolicyMXBean {
      *
      * @return Collection of regex for paths whose blocks must not be evicted.
      */
-    @MXBeanDescription("Collection of regex for paths whose blocks must not be evicted.")
-    @Nullable public Collection<String> getExcludePaths();
+    @MXBeanDescription("Collection of regex for paths whose blocks must not be evicted.") public @Nullable Collection<String> getExcludePaths();
 
     /**
      * Sets collection of regex for paths whose blocks must not be evicted.

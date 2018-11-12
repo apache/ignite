@@ -90,7 +90,7 @@ public class CacheBasedLabelPairCursor<L, K, V> implements LabelPairCursor<L> {
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Iterator<LabelPair<L>> iterator() {
+    @Override public @NotNull Iterator<LabelPair<L>> iterator() {
         return new TruthWithPredictionIterator(cursor.iterator());
     }
 

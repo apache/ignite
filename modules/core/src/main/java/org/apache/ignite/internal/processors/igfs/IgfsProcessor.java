@@ -257,7 +257,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public IgniteFileSystem igfs(String name) {
+    @Override public @Nullable IgniteFileSystem igfs(String name) {
         if (name == null)
             throw new IllegalArgumentException("IGFS name cannot be null");
 
@@ -267,7 +267,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public Collection<IpcServerEndpoint> endpoints(String name) {
+    @Override public @Nullable Collection<IpcServerEndpoint> endpoints(String name) {
         if (name == null)
             throw new IllegalArgumentException("IGFS name cannot be null");
 
@@ -277,7 +277,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public ComputeJob createJob(IgfsJob job, @Nullable String igfsName, IgfsPath path,
+    @Override public @Nullable ComputeJob createJob(IgfsJob job, @Nullable String igfsName, IgfsPath path,
         long start, long len, IgfsRecordResolver recRslv) {
         return new IgfsJobImpl(job, igfsName, path, start, len, recRslv);
     }

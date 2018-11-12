@@ -238,7 +238,7 @@ public class IgniteComputeCustomExecutorSelfTest extends GridCommonAbstractTest 
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteException {
+        @Override public @Nullable Object reduce(List<ComputeJobResult> results) throws IgniteException {
             return null;
         }
     }

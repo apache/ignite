@@ -42,7 +42,7 @@ public class WalSegmentArchivedEvent extends EventAdapter {
      * @param archiveFile Archive file.
      */
     public WalSegmentArchivedEvent(
-        @NotNull final ClusterNode node,
+        final @NotNull ClusterNode node,
         final long absWalSegmentIdx,
         final File archiveFile) {
         this(node, absWalSegmentIdx, archiveFile, EventType.EVT_WAL_SEGMENT_ARCHIVED);
@@ -50,7 +50,7 @@ public class WalSegmentArchivedEvent extends EventAdapter {
 
     /** */
     protected WalSegmentArchivedEvent(
-        @NotNull final ClusterNode node,
+        final @NotNull ClusterNode node,
         final long absWalSegmentIdx,
         final File archiveFile,
         int evtType) {

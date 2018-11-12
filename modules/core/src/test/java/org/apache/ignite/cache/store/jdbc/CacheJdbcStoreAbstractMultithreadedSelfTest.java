@@ -199,7 +199,7 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
         IgniteInternalFuture<?> fut1 = runMultiThreadedAsync(new Callable<Object>() {
             private final Random rnd = new Random();
 
-            @Nullable @Override public Object call() throws Exception {
+            @Override public @Nullable Object call() throws Exception {
                 for (int i = 0; i < TX_CNT; i++) {
                     IgniteCache<Object, Object> cache = jcache();
 
@@ -219,7 +219,7 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
         IgniteInternalFuture<?> fut2 = runMultiThreadedAsync(new Callable<Object>() {
             private final Random rnd = new Random();
 
-            @Nullable @Override public Object call() throws Exception {
+            @Override public @Nullable Object call() throws Exception {
                 for (int i = 0; i < TX_CNT; i++) {
                     IgniteCache<Object, Object> cache = jcache();
 
@@ -247,7 +247,7 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
         multithreaded(new Callable<Object>() {
             private final Random rnd = new Random();
 
-            @Nullable @Override public Object call() throws Exception {
+            @Override public @Nullable Object call() throws Exception {
                 for (int i = 0; i < TX_CNT; i++) {
                     int cnt = rnd.nextInt(BATCH_CNT);
 
@@ -289,7 +289,7 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
         runMultiThreaded(new Callable<Object>() {
             private final Random rnd = new Random();
 
-            @Nullable @Override public Object call() throws Exception {
+            @Override public @Nullable Object call() throws Exception {
                 for (int i = 0; i < TX_CNT; i++) {
                     IgniteCache<PersonKey, Person> cache = jcache();
 

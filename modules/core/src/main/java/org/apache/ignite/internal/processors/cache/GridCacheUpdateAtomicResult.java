@@ -111,7 +111,7 @@ public class GridCacheUpdateAtomicResult {
     /**
      * @return Value computed by the {@link EntryProcessor}.
      */
-    @Nullable public IgniteBiTuple<Object, Exception> computedResult() {
+    public @Nullable IgniteBiTuple<Object, Exception> computedResult() {
         return res;
     }
 
@@ -125,14 +125,14 @@ public class GridCacheUpdateAtomicResult {
     /**
      * @return Old value.
      */
-    @Nullable public CacheObject oldValue() {
+    public @Nullable CacheObject oldValue() {
         return oldVal;
     }
 
     /**
      * @return New value.
      */
-    @Nullable public CacheObject newValue() {
+    public @Nullable CacheObject newValue() {
         return newVal;
     }
 
@@ -161,14 +161,14 @@ public class GridCacheUpdateAtomicResult {
     /**
      * @return Version for deferred delete.
      */
-    @Nullable public GridCacheVersion removeVersion() {
+    public @Nullable GridCacheVersion removeVersion() {
         return rmvVer;
     }
 
     /**
      * @return DR conflict resolution context.
      */
-    @Nullable public GridCacheVersionConflictContext<?, ?> conflictResolveResult() {
+    public @Nullable GridCacheVersionConflictContext<?, ?> conflictResolveResult() {
         return conflictRes;
     }
 

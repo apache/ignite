@@ -56,7 +56,7 @@ public class VisorCachePartitionsTask extends VisorMultiNodeTask<VisorCacheParti
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Map<UUID, VisorCachePartitions> reduce0(List<ComputeJobResult> results) {
+    @Override protected @Nullable Map<UUID, VisorCachePartitions> reduce0(List<ComputeJobResult> results) {
         Map<UUID, VisorCachePartitions> parts = new HashMap<>();
 
         for (ComputeJobResult res : results) {

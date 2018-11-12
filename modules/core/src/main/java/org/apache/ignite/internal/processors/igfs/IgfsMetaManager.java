@@ -303,7 +303,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return File ID for specified path or {@code null} if such file doesn't exist.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgniteUuid fileId(IgfsPath path) throws IgniteCheckedException {
+    public @Nullable IgniteUuid fileId(IgfsPath path) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 validTxState(false);
@@ -326,7 +326,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return File ID for specified path or {@code null} if such file doesn't exist.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable private IgniteUuid fileId(IgfsPath path, boolean skipTx) throws IgniteCheckedException {
+    private @Nullable IgniteUuid fileId(IgfsPath path, boolean skipTx) throws IgniteCheckedException {
         List<IgniteUuid> ids = fileIds(path, skipTx);
 
         assert ids != null && !ids.isEmpty() : "Invalid file IDs [path=" + path + ", ids=" + ids + ']';
@@ -342,7 +342,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return File ID.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgniteUuid fileId(IgniteUuid parentId, String fileName) throws IgniteCheckedException {
+    public @Nullable IgniteUuid fileId(IgniteUuid parentId, String fileName) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 return fileId(parentId, fileName, false);
@@ -365,7 +365,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return File ID.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable private IgniteUuid fileId(IgniteUuid parentId, String fileName, boolean skipTx)
+    private @Nullable IgniteUuid fileId(IgniteUuid parentId, String fileName, boolean skipTx)
         throws IgniteCheckedException {
         IgfsListingEntry entry = directoryListing(parentId, skipTx).get(fileName);
 
@@ -522,7 +522,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return File info.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgfsEntryInfo info(@Nullable IgniteUuid fileId) throws IgniteCheckedException {
+    public @Nullable IgfsEntryInfo info(@Nullable IgniteUuid fileId) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 if (fileId == null)
@@ -588,7 +588,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Locked file info or {@code null} if file cannot be locked or doesn't exist.
      * @throws IgniteCheckedException If the file with such id does not exist, or on another failure.
      */
-    @Nullable public IgfsEntryInfo lock(IgniteUuid fileId, boolean del) throws IgniteCheckedException {
+    public @Nullable IgfsEntryInfo lock(IgniteUuid fileId, boolean del) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 validTxState(false);
@@ -661,7 +661,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @throws IgniteCheckedException If failed.
      */
     public void unlock(final IgniteUuid fileId, final IgniteUuid lockId, final long modificationTime,
-        final boolean updateSpace, final long space, @Nullable final IgfsFileAffinityRange affRange)
+        final boolean updateSpace, final long space, final @Nullable IgfsFileAffinityRange affRange)
         throws IgniteCheckedException {
 
         if(client) {
@@ -1471,7 +1471,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Updated file info or {@code null} if such file ID not found.
      * @throws IgniteCheckedException If operation failed.
      */
-    @Nullable private IgfsEntryInfo updatePropertiesNonTx(final IgniteUuid fileId, Map<String, String> props)
+    private @Nullable IgfsEntryInfo updatePropertiesNonTx(final IgniteUuid fileId, Map<String, String> props)
         throws IgniteCheckedException {
         assert fileId != null;
         assert !F.isEmpty(props) : "Expects not-empty file's properties";
@@ -1502,7 +1502,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Updated file info or {@code null} if such file ID not found.
      * @throws IgniteCheckedException If operation failed.
      */
-    @Nullable public IgfsEntryInfo updateProperties(IgniteUuid fileId, Map<String, String> props)
+    public @Nullable IgfsEntryInfo updateProperties(IgniteUuid fileId, Map<String, String> props)
         throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
@@ -1576,7 +1576,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Updated file info or {@code null} if such file ID not found.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgfsEntryInfo updateInfo(IgniteUuid fileId,
+    public @Nullable IgfsEntryInfo updateInfo(IgniteUuid fileId,
         EntryProcessor<IgniteUuid, IgfsEntryInfo, IgfsEntryInfo> proc) throws IgniteCheckedException {
         validTxState(false);
         assert fileId != null;
@@ -1823,7 +1823,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Info.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable private IgfsEntryInfo getInfo(IgniteUuid id) throws IgniteCheckedException {
+    private @Nullable IgfsEntryInfo getInfo(IgniteUuid id) throws IgniteCheckedException {
         return id2InfoPrj.get(id);
     }
 
@@ -1857,7 +1857,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @throws Exception On error.
      */
     IgfsCreateResult onSuccessCreate(IgfsSecondaryFileSystem fs, IgfsPath path,
-        boolean simpleCreate, @Nullable final Map<String, String> props, boolean overwrite,
+        boolean simpleCreate, final @Nullable Map<String, String> props, boolean overwrite,
         int bufSize, short replication, long blockSize, IgniteUuid affKey, Map<IgfsPath, IgfsEntryInfo> infos,
         final Deque<IgfsEvent> pendingEvts, final T1<OutputStream> t1) throws Exception {
         validTxState(true);
@@ -2070,7 +2070,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Info.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgfsEntryInfo infoForPath(IgfsPath path) throws IgniteCheckedException {
+    public @Nullable IgfsEntryInfo infoForPath(IgfsPath path) throws IgniteCheckedException {
         return client ? runClientTask(new IgfsClientMetaInfoForPathCallable(cfg.getName(),
             IgfsUserContext.currentUser(), path)) : info(fileId(path));
     }
@@ -2172,7 +2172,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return File info or {@code null} if file not found.
      * @throws IgniteCheckedException If sync task failed.
      */
-    @Nullable public IgfsEntryInfo synchronizeFileDual(final IgfsSecondaryFileSystem fs, final IgfsPath path)
+    public @Nullable IgfsEntryInfo synchronizeFileDual(final IgfsSecondaryFileSystem fs, final IgfsPath path)
         throws IgniteCheckedException {
         assert fs != null;
         assert path != null;
@@ -2896,7 +2896,7 @@ public class IgfsMetaManager extends IgfsManager {
         Map<String, String> dirProps,
         final boolean create,
         final int blockSize,
-        @Nullable final IgniteUuid affKey,
+        final @Nullable IgniteUuid affKey,
         final boolean evictExclude,
         @Nullable Map<String, String> fileProps) throws IgniteCheckedException {
         validTxState(false);
@@ -2992,7 +2992,7 @@ public class IgfsMetaManager extends IgfsManager {
         Map<String, String> dirProps,
         final boolean overwrite,
         final int blockSize,
-        @Nullable final IgniteUuid affKey,
+        final @Nullable IgniteUuid affKey,
         final boolean evictExclude,
         @Nullable Map<String, String> fileProps,
         @Nullable IgfsSecondaryFileSystemCreateContext secondaryCtx) throws IgniteCheckedException {
@@ -3185,7 +3185,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Result or {@code} if the first parent already contained child with the same name.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable private IgfsPathsCreateResult createFile(IgfsPathIds pathIds, Map<IgniteUuid, IgfsEntryInfo> lockInfos,
+    private @Nullable IgfsPathsCreateResult createFile(IgfsPathIds pathIds, Map<IgniteUuid, IgfsEntryInfo> lockInfos,
         Map<String, String> dirProps, Map<String, String> fileProps, int blockSize, @Nullable IgniteUuid affKey,
         boolean evictExclude, @Nullable IgfsSecondaryFileSystemCreateContext secondaryCtx,
         @Nullable T1<OutputStream> secondaryOutHolder)

@@ -69,7 +69,7 @@ public class MvccSnapshotSearchRow extends MvccSearchRow implements MvccTreeClos
     /**
      * @return Found row.
      */
-    @Nullable public CacheDataRow row() {
+    public @Nullable CacheDataRow row() {
         return res;
     }
 

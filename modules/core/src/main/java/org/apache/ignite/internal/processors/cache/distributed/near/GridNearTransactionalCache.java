@@ -114,7 +114,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Map<K, V>> getAllAsync(
-        @Nullable final Collection<? extends K> keys,
+        final @Nullable Collection<? extends K> keys,
         boolean forcePrimary,
         boolean skipTx,
         @Nullable UUID subjId,
@@ -278,7 +278,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @throws IgniteCheckedException If failed.
      * @throws GridDistributedLockCancelledException If lock has been cancelled.
      */
-    @Nullable public GridNearTxRemote startRemoteTx(UUID nodeId, GridDhtLockRequest req)
+    public @Nullable GridNearTxRemote startRemoteTx(UUID nodeId, GridDhtLockRequest req)
         throws IgniteCheckedException, GridDistributedLockCancelledException {
         List<KeyCacheObject> nearKeys = req.nearKeys();
 

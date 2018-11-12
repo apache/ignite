@@ -106,7 +106,7 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
      * @param spaceName Space name.
      * @return Offheap swap space.
      */
-    @Nullable private GridOffHeapPartitionedMap offheap(@Nullable String spaceName) {
+    private @Nullable GridOffHeapPartitionedMap offheap(@Nullable String spaceName) {
         return offheap.get(maskNull(spaceName));
     }
 
@@ -164,7 +164,7 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
      * @return Value bytes.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public byte[] get(@Nullable String spaceName, int part, KeyCacheObject key, byte[] keyBytes)
+    public @Nullable byte[] get(@Nullable String spaceName, int part, KeyCacheObject key, byte[] keyBytes)
         throws IgniteCheckedException {
         GridOffHeapPartitionedMap m = offheap(spaceName);
 
@@ -183,7 +183,7 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
      * @return Tuple where first value is pointer and second is value size.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgniteBiTuple<Long, Integer> valuePointer(@Nullable String spaceName, int part, KeyCacheObject key,
+    public @Nullable IgniteBiTuple<Long, Integer> valuePointer(@Nullable String spaceName, int part, KeyCacheObject key,
         byte[] keyBytes) throws IgniteCheckedException {
         GridOffHeapPartitionedMap m = offheap(spaceName);
 
@@ -218,7 +218,7 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
      * @return Value bytes.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public <T> T getValue(@Nullable String spaceName, int part, KeyCacheObject key, byte[] keyBytes,
+    public @Nullable <T> T getValue(@Nullable String spaceName, int part, KeyCacheObject key, byte[] keyBytes,
         @Nullable ClassLoader ldr) throws IgniteCheckedException {
         byte[] valBytes = get(spaceName, part, key, keyBytes);
 
@@ -238,7 +238,7 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
      * @return Value bytes.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public byte[] remove(@Nullable String spaceName, int part, KeyCacheObject key, byte[] keyBytes) throws IgniteCheckedException {
+    public @Nullable byte[] remove(@Nullable String spaceName, int part, KeyCacheObject key, byte[] keyBytes) throws IgniteCheckedException {
         GridOffHeapPartitionedMap m = offheap(spaceName);
 
         if (log.isTraceEnabled())

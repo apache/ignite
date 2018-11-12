@@ -132,7 +132,7 @@ public abstract class IgniteAbstractWalIteratorInvalidCrcTest extends GridCommon
     /**
      * @return WAL mode that will be used in {@link IgniteConfiguration}.
      */
-    @NotNull protected abstract WALMode getWalMode();
+    protected abstract @NotNull WALMode getWalMode();
 
     /**
      * Instantiate WAL iterator according to the iterator type of specific implementation.
@@ -141,7 +141,7 @@ public abstract class IgniteAbstractWalIteratorInvalidCrcTest extends GridCommon
      * @return WAL iterator instance.
      * @throws IgniteCheckedException If iterator creation failed for some reason.
      */
-    @NotNull protected abstract WALIterator getWalIterator(
+    protected abstract @NotNull WALIterator getWalIterator(
         IgniteWriteAheadLogManager walMgr,
         boolean ignoreArchiveDir
     ) throws IgniteCheckedException;

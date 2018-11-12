@@ -55,7 +55,7 @@ public enum GridClosureCallMode {
      * @param ord Ordinal value.
      * @return Enumerated value.
      */
-    @Nullable public static GridClosureCallMode fromOrdinal(byte ord) {
+    public static @Nullable GridClosureCallMode fromOrdinal(byte ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

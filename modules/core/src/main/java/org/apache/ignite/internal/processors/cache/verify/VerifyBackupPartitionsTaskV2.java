@@ -75,7 +75,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(
+    @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(
         List<ClusterNode> subgrid, VisorIdleVerifyTaskArg arg) throws IgniteException {
         Map<ComputeJob, ClusterNode> jobs = new HashMap<>();
 
@@ -86,7 +86,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IdleVerifyResultV2 reduce(List<ComputeJobResult> results)
+    @Override public @Nullable IdleVerifyResultV2 reduce(List<ComputeJobResult> results)
         throws IgniteException {
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes = new HashMap<>();
 

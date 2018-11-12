@@ -70,7 +70,7 @@ class GridCachePutAllTask extends ComputeTaskAdapter<Collection<Integer>, Void> 
 
     /** {@inheritDoc} */
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-        @Nullable final Collection<Integer> data) {
+        final @Nullable Collection<Integer> data) {
         assert !subgrid.isEmpty();
 
         // Give preference to wanted node. Otherwise, take the first one.
@@ -180,7 +180,7 @@ class GridCachePutAllTask extends ComputeTaskAdapter<Collection<Integer>, Void> 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Void reduce(List<ComputeJobResult> results) {
+    @Override public @Nullable Void reduce(List<ComputeJobResult> results) {
         return null;
     }
 }

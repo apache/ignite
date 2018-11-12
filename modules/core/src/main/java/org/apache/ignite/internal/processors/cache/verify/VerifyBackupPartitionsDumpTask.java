@@ -69,7 +69,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
     private Ignite ignite;
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(
+    @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(
         List<ClusterNode> subgrid, VisorIdleVerifyTaskArg arg) throws IgniteException {
         if (arg instanceof VisorIdleVerifyDumpTaskArg)
             taskArg = (VisorIdleVerifyDumpTaskArg)arg;
@@ -78,7 +78,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String reduce(List<ComputeJobResult> results)
+    @Override public @Nullable String reduce(List<ComputeJobResult> results)
         throws IgniteException {
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes = new TreeMap<>(buildPartitionKeyComparator());
 
@@ -203,7 +203,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
     /**
      * @return Comparator for {@link PartitionHashRecordV2}.
      */
-    @NotNull private Comparator<PartitionHashRecordV2> buildRecordComparator() {
+    private @NotNull Comparator<PartitionHashRecordV2> buildRecordComparator() {
         return (o1, o2) -> {
             int compare = Boolean.compare(o1.isPrimary(), o2.isPrimary());
 
@@ -217,7 +217,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
     /**
      * @return Comparator for {@link PartitionKeyV2}.
      */
-    @NotNull private Comparator<PartitionKeyV2> buildPartitionKeyComparator() {
+    private @NotNull Comparator<PartitionKeyV2> buildPartitionKeyComparator() {
         return (o1, o2) -> {
             int compare = Integer.compare(o1.groupId(), o2.groupId());
 

@@ -75,7 +75,7 @@ public class LocalLabelPairCursor<L, K, V, T> implements LabelPairCursor<L> {
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Iterator<LabelPair<L>> iterator() {
+    @Override public @NotNull Iterator<LabelPair<L>> iterator() {
         return new TruthWithPredictionIterator(upstreamMap.entrySet().iterator());
     }
 

@@ -1045,7 +1045,7 @@ public final class IgniteSystemProperties {
      * @return Value of the system property or environment variable.
      *         Returns {@code null} if neither can be found for given name.
      */
-    @Nullable public static String getString(String name) {
+    public static @Nullable String getString(String name) {
         assert name != null;
 
         String v = System.getProperty(name);
@@ -1064,7 +1064,7 @@ public final class IgniteSystemProperties {
      * @return Value of the system property or environment variable.
      *         Returns {@code null} if neither can be found for given name.
      */
-    @Nullable public static String getString(String name, String dflt) {
+    public static @Nullable String getString(String name, String dflt) {
         String val = getString(name);
 
         return val == null ? dflt : val;

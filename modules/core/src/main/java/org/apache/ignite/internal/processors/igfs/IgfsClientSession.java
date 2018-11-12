@@ -49,7 +49,7 @@ public class IgfsClientSession {
      * @param rsrcId Resource ID.
      * @return Resource or {@code null} if resource was not found.
      */
-    @Nullable public <T> T resource(Long rsrcId) {
+    public @Nullable <T> T resource(Long rsrcId) {
         return (T)rsrcMap.get(rsrcId);
     }
 

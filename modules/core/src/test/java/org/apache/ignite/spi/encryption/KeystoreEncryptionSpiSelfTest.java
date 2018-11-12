@@ -108,7 +108,7 @@ public class KeystoreEncryptionSpiSelfTest extends TestCase {
     }
 
     /** */
-    @NotNull private EncryptionSpi spi() throws Exception {
+    private @NotNull EncryptionSpi spi() throws Exception {
         KeystoreEncryptionSpi encSpi = new KeystoreEncryptionSpi();
 
         encSpi.setKeyStorePath(KEYSTORE_PATH);

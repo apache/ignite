@@ -68,7 +68,7 @@ public interface GridOffHeapPartitionedMap {
      * @param keyBytes Key bytes.
      * @return Value bytes.
      */
-    @Nullable public byte[] get(int p, int hash, byte[] keyBytes);
+    public @Nullable byte[] get(int p, int hash, byte[] keyBytes);
 
     /**
      * Gets value pointer for given key. While pointer is in use eviction is
@@ -80,7 +80,7 @@ public interface GridOffHeapPartitionedMap {
      * @param keyBytes Key bytes.
      * @return Value pointer.
      */
-    @Nullable public IgniteBiTuple<Long, Integer> valuePointer(int p, int hash, byte[] keyBytes);
+    public @Nullable IgniteBiTuple<Long, Integer> valuePointer(int p, int hash, byte[] keyBytes);
 
     /**
      * Enables eviction for entry.
@@ -99,7 +99,7 @@ public interface GridOffHeapPartitionedMap {
      * @param keyBytes Key bytes.
      * @return Removed value bytes.
      */
-    @Nullable public byte[] remove(int p, int hash, byte[] keyBytes);
+    public @Nullable byte[] remove(int p, int hash, byte[] keyBytes);
 
     /**
      * Removes value from off-heap map without returning it.

@@ -363,7 +363,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      * @return Tuple with version and value of this entry, or {@code null} if entry is new.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    @Nullable public IgniteBiTuple<GridCacheVersion, CacheObject> versionedValue(
+    public @Nullable IgniteBiTuple<GridCacheVersion, CacheObject> versionedValue(
         AffinityTopologyVersion topVer)
         throws GridCacheEntryRemovedException {
         lockEntry();
@@ -394,7 +394,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      * @param nodeId Node ID.
      * @return reader ID.
      */
-    @Nullable public ReaderId readerId(UUID nodeId) {
+    public @Nullable ReaderId readerId(UUID nodeId) {
         ReaderId[] rdrs = this.rdrs;
 
         for (ReaderId reader : rdrs) {
@@ -413,8 +413,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      *      or {@code null} if reader was added
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @SuppressWarnings("unchecked")
-    @Nullable public IgniteInternalFuture<Boolean> addReader(UUID nodeId, long msgId, AffinityTopologyVersion topVer)
+    @SuppressWarnings("unchecked") public @Nullable IgniteInternalFuture<Boolean> addReader(UUID nodeId, long msgId, AffinityTopologyVersion topVer)
         throws GridCacheEntryRemovedException {
         // Don't add local node as reader.
         if (cctx.nodeId().equals(nodeId))
@@ -689,7 +688,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     /**
      * @return Readers.
      */
-    @Nullable public ReaderId[] readersLocked() {
+    public @Nullable ReaderId[] readersLocked() {
         assert lockedByCurrentThread();
 
         return this.rdrs;
@@ -762,7 +761,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      * @return Candidate, if one existed for the version, or {@code null} if candidate was not found.
      * @throws GridCacheEntryRemovedException If removed.
      */
-    @Nullable public GridCacheMvccCandidate mappings(
+    public @Nullable GridCacheMvccCandidate mappings(
         GridCacheVersion ver,
         Collection<ClusterNode> dhtNodeIds,
         Collection<ClusterNode> nearNodeIds

@@ -50,7 +50,7 @@ public class GridTaskResultResponse implements Message {
     /**
      * @return Task result.
      */
-    @Nullable public Object result() {
+    public @Nullable Object result() {
         return res;
     }
 

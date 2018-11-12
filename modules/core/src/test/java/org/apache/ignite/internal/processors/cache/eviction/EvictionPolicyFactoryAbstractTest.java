@@ -836,7 +836,7 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
             final AtomicInteger cntr = new AtomicInteger();
 
             multithreaded(new Callable() {
-                @Nullable @Override public Object call() throws Exception {
+                @Override public @Nullable Object call() throws Exception {
                     int cnt = 100;
 
                     for (int i = 0; i < cnt && !Thread.currentThread().isInterrupted(); i++) {

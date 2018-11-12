@@ -192,7 +192,7 @@ public abstract class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      * @param tblName Table name.
      * @return Type.
      */
-    @Nullable protected static QueryTypeDescriptorImpl type(IgniteEx node, String cacheName, String tblName) {
+    protected static @Nullable QueryTypeDescriptorImpl type(IgniteEx node, String cacheName, String tblName) {
         return types(node, cacheName).get(tblName);
     }
 

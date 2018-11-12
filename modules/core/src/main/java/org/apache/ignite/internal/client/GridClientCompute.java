@@ -337,7 +337,7 @@ public interface GridClientCompute {
      * @throws GridServerUnreachableException If none of the servers can be reached.
      * @throws GridClientClosedException If client was closed manually.
      */
-    @Nullable public GridClientNode refreshNode(String ip, boolean includeAttrs, boolean includeMetrics)
+    public @Nullable GridClientNode refreshNode(String ip, boolean includeAttrs, boolean includeMetrics)
         throws GridClientException;
 
     /**

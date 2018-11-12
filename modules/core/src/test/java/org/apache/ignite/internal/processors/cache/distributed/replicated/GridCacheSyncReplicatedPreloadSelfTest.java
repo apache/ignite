@@ -134,7 +134,7 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
 
         multithreaded(
             new Callable() {
-                @Nullable @Override public Object call() throws Exception {
+                @Override public @Nullable Object call() throws Exception {
                     while (true) {
                         int c = cnt.incrementAndGet();
 

@@ -246,7 +246,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
      * @return Array of filters, suitable for the configuration.
      * @throws IgniteCheckedException if provided SslContextFactory is null.
      */
-    @NotNull private GridNioFilter[] makeFilters(@NotNull ClientConnectorConfiguration cliConnCfg)
+    private @NotNull GridNioFilter[] makeFilters(@NotNull ClientConnectorConfiguration cliConnCfg)
         throws IgniteCheckedException {
         GridNioFilter openSesFilter = new GridNioAsyncNotifyFilter(ctx.igniteInstanceName(), execSvc, log) {
             @Override public void onSessionOpened(GridNioSession ses)
@@ -325,8 +325,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
      * @return Connector configuration.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("deprecation")
-    @Nullable private ClientConnectorConfiguration prepareConfiguration(IgniteConfiguration cfg)
+    @SuppressWarnings("deprecation") private @Nullable ClientConnectorConfiguration prepareConfiguration(IgniteConfiguration cfg)
         throws IgniteCheckedException {
         OdbcConfiguration odbcCfg = cfg.getOdbcConfiguration();
         SqlConnectorConfiguration sqlConnCfg = cfg.getSqlConnectorConfiguration();

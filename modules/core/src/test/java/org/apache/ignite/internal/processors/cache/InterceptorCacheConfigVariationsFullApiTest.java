@@ -64,7 +64,7 @@ public class InterceptorCacheConfigVariationsFullApiTest extends IgniteCacheConf
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Nullable @Override public V onGet(K key, V val) {
+        @Override public @Nullable V onGet(K key, V val) {
             if (validate && val != null)
                 assertFalse("Val: " + val, val instanceof BinaryObject);
 
@@ -72,7 +72,7 @@ public class InterceptorCacheConfigVariationsFullApiTest extends IgniteCacheConf
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public V onBeforePut(Cache.Entry<K, V> e, V newVal) {
+        @Override public @Nullable V onBeforePut(Cache.Entry<K, V> e, V newVal) {
             if (validate) {
                 validateEntry(e);
 
@@ -89,7 +89,7 @@ public class InterceptorCacheConfigVariationsFullApiTest extends IgniteCacheConf
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public IgniteBiTuple<Boolean, V> onBeforeRemove(Cache.Entry<K, V> entry) {
+        @Override public @Nullable IgniteBiTuple<Boolean, V> onBeforeRemove(Cache.Entry<K, V> entry) {
             validateEntry(entry);
 
             return new IgniteBiTuple<>(false, entry.getValue());

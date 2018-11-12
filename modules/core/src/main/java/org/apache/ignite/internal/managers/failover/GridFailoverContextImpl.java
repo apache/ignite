@@ -96,7 +96,7 @@ public class GridFailoverContextImpl implements FailoverContext {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String affinityCacheName() {
+    @Override public @Nullable String affinityCacheName() {
         return affCacheName;
     }
 
@@ -108,7 +108,7 @@ public class GridFailoverContextImpl implements FailoverContext {
     /**
      * @return Affinity topology version.
      */
-    @Nullable public AffinityTopologyVersion affinityTopologyVersion() {
+    public @Nullable AffinityTopologyVersion affinityTopologyVersion() {
         return topVer;
     }
 

@@ -70,5 +70,5 @@ public interface SecurityPermissionSet extends Serializable {
      *
      * @return Collection of system-wide permissions.
      */
-    @Nullable public Collection<SecurityPermission> systemPermissions();
+    public @Nullable Collection<SecurityPermission> systemPermissions();
 }

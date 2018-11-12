@@ -105,7 +105,7 @@ public class OsConfigurationSuggestions {
      * @param name Parameter name.
      * @return Value (possibly null).
      */
-    @Nullable private static String readVmParam(@NotNull String name) {
+    private static @Nullable String readVmParam(@NotNull String name) {
         try {
             Path path = Paths.get(VM_PARAMS_BASE_PATH + name);
 
@@ -124,7 +124,7 @@ public class OsConfigurationSuggestions {
      * @return Read line.
      * @throws IOException If failed.
      */
-    @Nullable private static String readLine(@NotNull Path path) throws IOException {
+    private static @Nullable String readLine(@NotNull Path path) throws IOException {
         try (BufferedReader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
             return reader.readLine();
         }

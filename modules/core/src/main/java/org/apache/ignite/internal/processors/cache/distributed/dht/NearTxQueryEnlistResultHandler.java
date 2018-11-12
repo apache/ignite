@@ -74,7 +74,7 @@ public final class NearTxQueryEnlistResultHandler implements CI1<IgniteInternalF
      * @param future Enlist future.
      * @return Enlist response.
      */
-    @NotNull private static GridNearTxQueryEnlistResponse createResponse(GridDhtTxQueryEnlistFuture future) {
+    private static @NotNull GridNearTxQueryEnlistResponse createResponse(GridDhtTxQueryEnlistFuture future) {
         try {
             future.get();
 
@@ -92,7 +92,7 @@ public final class NearTxQueryEnlistResultHandler implements CI1<IgniteInternalF
      * @param fut Enlist future.
      * @return Enlist response.
      */
-    @NotNull private static GridNearTxQueryResultsEnlistResponse createResponse(GridDhtTxQueryResultsEnlistFuture fut) {
+    private static @NotNull GridNearTxQueryResultsEnlistResponse createResponse(GridDhtTxQueryResultsEnlistFuture fut) {
         try {
             fut.get();
 

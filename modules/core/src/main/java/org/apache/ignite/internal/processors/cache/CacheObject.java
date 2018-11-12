@@ -43,7 +43,7 @@ public interface CacheObject extends Message {
      * @param cpy If {@code true} need to copy value.
      * @return Value.
      */
-    @Nullable public <T> T value(CacheObjectValueContext ctx, boolean cpy);
+    public @Nullable <T> T value(CacheObjectValueContext ctx, boolean cpy);
 
     /**
      * @param ctx Context.

@@ -197,7 +197,7 @@ public class CacheContinuousQueryEventBuffer {
      * @param topVer Current event topology version.
      * @return Current batch.
      */
-    @Nullable private Batch initBatch(AffinityTopologyVersion topVer) {
+    private @Nullable Batch initBatch(AffinityTopologyVersion topVer) {
         Batch batch = curBatch.get();
 
         if (batch != null)
@@ -227,7 +227,7 @@ public class CacheContinuousQueryEventBuffer {
      * @param backup Backup entry flag.
      * @return New result.
      */
-    @Nullable private Object processPending(@Nullable Object res, Batch batch, boolean backup) {
+    private @Nullable Object processPending(@Nullable Object res, Batch batch, boolean backup) {
         if (pending.floorKey(batch.endCntr) != null) {
             for (Map.Entry<Long, CacheContinuousQueryEntry> p : pending.headMap(batch.endCntr, true).entrySet()) {
                 long cntr = p.getKey();
@@ -252,7 +252,7 @@ public class CacheContinuousQueryEventBuffer {
      * @param backup Backup entry flag.
      * @return Updated result.
      */
-    @Nullable private Object addResult(@Nullable Object res, CacheContinuousQueryEntry entry, boolean backup) {
+    private @Nullable Object addResult(@Nullable Object res, CacheContinuousQueryEntry entry, boolean backup) {
         if (res == null) {
             if (backup)
                 backupQ.add(entry);
@@ -327,7 +327,7 @@ public class CacheContinuousQueryEventBuffer {
          * @param res Current entries.
          * @return Entries to send as part of backup queue.
          */
-        @Nullable synchronized TreeMap<Long, CacheContinuousQueryEntry> flushCurrentEntries(
+        synchronized @Nullable TreeMap<Long, CacheContinuousQueryEntry> flushCurrentEntries(
             @Nullable TreeMap<Long, CacheContinuousQueryEntry> res) {
             if (entries == null)
                 return res;
@@ -421,8 +421,7 @@ public class CacheContinuousQueryEventBuffer {
          * @param backup Backup entry flag.
          * @return New result.
          */
-        @SuppressWarnings("unchecked")
-        @Nullable private Object processEntry0(
+        @SuppressWarnings("unchecked") private @Nullable Object processEntry0(
             @Nullable Object res,
             long cntr,
             CacheContinuousQueryEntry entry,

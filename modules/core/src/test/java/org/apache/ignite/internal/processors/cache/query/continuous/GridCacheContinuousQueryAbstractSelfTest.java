@@ -1204,7 +1204,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object load(Object key) {
+        @Override public @Nullable Object load(Object key) {
             return null;
         }
 

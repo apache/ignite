@@ -421,7 +421,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         try {
             multithreaded(
                 new Callable<Object>() {
-                    @Nullable @Override public Object call() throws Exception {
+                    @Override public @Nullable Object call() throws Exception {
                         try {
                             IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -458,7 +458,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         try {
             multithreaded(
                 new Callable<Object>() {
-                    @Nullable @Override public Object call() throws Exception {
+                    @Override public @Nullable Object call() throws Exception {
                         try {
                             IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -507,7 +507,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
      * @param igniteInstanceName Ignite instance name ({@code null} for default grid).
      * @throws Exception If failed.
      */
-    private void checkConcurrentStartStop(@Nullable final String igniteInstanceName) throws Exception {
+    private void checkConcurrentStartStop(final @Nullable String igniteInstanceName) throws Exception {
         final AtomicInteger startedCnt = new AtomicInteger();
         final AtomicInteger stoppedCnt = new AtomicInteger();
 
@@ -535,7 +535,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
             multithreaded(
                 new Callable<Object>() {
-                    @Nullable @Override public Object call() throws Exception {
+                    @Override public @Nullable Object call() throws Exception {
                         for (int i = 0; i < iterCnt; i++) {
                             try {
                                 IgniteConfiguration cfg = getConfiguration(igniteInstanceName);
@@ -585,7 +585,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         GridTestUtils.assertThrows(
             log,
             new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
+                @Override public @Nullable Object call() throws Exception {
                     IgniteConfiguration cfg = new IgniteConfiguration();
 
                     cfg.setConnectorConfiguration(null);
@@ -1014,7 +1014,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Void reduce(List<ComputeJobResult> results) {
+        @Override public @Nullable Void reduce(List<ComputeJobResult> results) {
             return null;
         }
     }

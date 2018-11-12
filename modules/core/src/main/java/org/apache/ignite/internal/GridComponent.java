@@ -153,10 +153,10 @@ public interface GridComponent {
      * @param node Joining node.
      * @return Validation result or {@code null} in case of success.
      */
-    @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node);
+    public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node);
 
     /** */
-    @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node, JoiningNodeDiscoveryData discoData);
+    public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node, JoiningNodeDiscoveryData discoData);
 
     /**
      * Gets unique component type to distinguish components providing discovery data. Must return non-null value
@@ -165,7 +165,7 @@ public interface GridComponent {
      *
      * @return Unique component type for discovery data exchange.
      */
-    @Nullable public DiscoveryDataExchangeType discoveryDataType();
+    public @Nullable DiscoveryDataExchangeType discoveryDataType();
 
     /**
      * Client disconnected callback.
@@ -182,5 +182,5 @@ public interface GridComponent {
      * @throws IgniteCheckedException If failed.
      * @return Future to wait before completing reconnect future.
      */
-    @Nullable public IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) throws IgniteCheckedException;
+    public @Nullable IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) throws IgniteCheckedException;
 }

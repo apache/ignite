@@ -48,7 +48,7 @@ public enum GridKernalState {
      * @param ord Byte to convert to enum.
      * @return Enum.
      */
-    @Nullable public static GridKernalState fromOrdinal(int ord) {
+    public static @Nullable GridKernalState fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

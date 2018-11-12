@@ -519,7 +519,7 @@ public interface IgniteFileSystem extends IgniteAsyncSupport {
      * @return File information for specified path or {@code null} if such path does not exist.
      * @throws IgniteException In case of error.
      */
-    @Nullable public IgfsFile info(IgfsPath path) throws IgniteException;
+    public @Nullable IgfsFile info(IgfsPath path) throws IgniteException;
 
     /**
      * Get mode for the given path.

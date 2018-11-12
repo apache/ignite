@@ -122,8 +122,7 @@ public class GridCacheReturn implements Externalizable, Message {
     /**
      * @return Value.
      */
-    @SuppressWarnings("unchecked")
-    @Nullable public <V> V value() {
+    @SuppressWarnings("unchecked") public @Nullable <V> V value() {
         return (V)v;
     }
 

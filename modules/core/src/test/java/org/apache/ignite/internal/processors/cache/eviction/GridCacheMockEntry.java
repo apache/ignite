@@ -92,17 +92,17 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> T addMeta(T val) {
+    @Override public @Nullable <T> T addMeta(T val) {
         return addMeta(META_KEY, val);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> T meta() {
+    @Override public @Nullable <T> T meta() {
         return meta(META_KEY);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> T removeMeta() {
+    @Override public @Nullable <T> T removeMeta() {
         return removeMeta(META_KEY);
     }
 
@@ -112,7 +112,7 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> T putMetaIfAbsent(T val) {
+    @Override public @Nullable <T> T putMetaIfAbsent(T val) {
         return putMetaIfAbsent(META_KEY, val);
     }
 

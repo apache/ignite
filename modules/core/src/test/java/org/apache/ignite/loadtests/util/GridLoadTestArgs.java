@@ -79,7 +79,7 @@ public class GridLoadTestArgs {
      *         JVM property is undefined. Returns {@code null} if
      *         both JVM property and environment variable are not set.
      */
-    @Nullable public static String getStringProperty(String name) {
+    public static @Nullable String getStringProperty(String name) {
         return saveProperty(name, getStringProperty0(name));
     }
 
@@ -91,7 +91,7 @@ public class GridLoadTestArgs {
      *         JVM property is undefined. Returns {@code null} if
      *         both JVM property and environment variable are not set.
      */
-    @Nullable private static String getStringProperty0(String name) {
+    private static @Nullable String getStringProperty0(String name) {
         String ret = System.getProperty(name);
 
         return ret != null ? ret : System.getenv(name);
@@ -106,7 +106,7 @@ public class GridLoadTestArgs {
      *         JVM property is {@code null} or {@code null} if both
      *         are {@code null}.
      */
-    @Nullable public static Integer getIntProperty(String name) {
+    public static @Nullable Integer getIntProperty(String name) {
         return saveProperty(name, getIntProperty0(name));
     }
 
@@ -134,7 +134,7 @@ public class GridLoadTestArgs {
      *         JVM property is {@code null} or {@code null} if both
      *         are {@code null}.
      */
-    @Nullable private static Integer getIntProperty0(String name) {
+    private static @Nullable Integer getIntProperty0(String name) {
         Integer ret = Integer.getInteger(name);
 
         if (ret == null) {
@@ -180,7 +180,7 @@ public class GridLoadTestArgs {
      *         JVM property is undefined. Returns {@code null} if
      *         both JVM property and environment variable are not set.
      */
-    @Nullable public static Long getLongProperty(String name) {
+    public static @Nullable Long getLongProperty(String name) {
         return saveProperty(name, getLongProperty0(name));
     }
 
@@ -208,7 +208,7 @@ public class GridLoadTestArgs {
      *         JVM property is undefined. Returns {@code null} if
      *         both JVM property and environment variable are not set.
      */
-    @Nullable private static Long getLongProperty0(String name) {
+    private static @Nullable Long getLongProperty0(String name) {
         Long ret = Long.getLong(name);
 
         if (ret == null) {
@@ -273,7 +273,7 @@ public class GridLoadTestArgs {
      * @param val Property value.
      * @return Property value.
      */
-    @Nullable private static <T> T saveProperty(String name, @Nullable T val) {
+    private static @Nullable <T> T saveProperty(String name, @Nullable T val) {
         props.get().put(name, val != null ? val.toString() : null);
 
         return val;

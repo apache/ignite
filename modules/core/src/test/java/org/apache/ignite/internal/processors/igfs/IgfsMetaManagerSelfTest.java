@@ -388,7 +388,7 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
      * @param props File properties to set.
      * @param msg Failure message if expected exception was not thrown.
      */
-    private void expectsUpdatePropertiesFail(@Nullable final IgniteUuid fileId, @Nullable final Map<String, String> props,
+    private void expectsUpdatePropertiesFail(final @Nullable IgniteUuid fileId, final @Nullable Map<String, String> props,
         Class<? extends Throwable> cls, @Nullable String msg) {
         assertThrows(log, new Callable() {
             @Override public Object call() throws Exception {

@@ -154,7 +154,7 @@ public class GridCacheGateway<K, V> {
      * @param opCtx Cache operation context to guard.
      * @return Previous operation context set on this thread.
      */
-    @Nullable public CacheOperationContext enter(@Nullable CacheOperationContext opCtx) {
+    public @Nullable CacheOperationContext enter(@Nullable CacheOperationContext opCtx) {
         try {
             GridCacheAdapter<K, V> cache = ctx.cache();
 
@@ -194,7 +194,7 @@ public class GridCacheGateway<K, V> {
      * @param opCtx Operation context to guard.
      * @return Previous operation context set on this thread.
      */
-    @Nullable public CacheOperationContext enterNoLock(@Nullable CacheOperationContext opCtx) {
+    public @Nullable CacheOperationContext enterNoLock(@Nullable CacheOperationContext opCtx) {
         onEnter(opCtx);
 
         checkState(false, false);

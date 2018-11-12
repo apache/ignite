@@ -29,5 +29,5 @@ public interface BinaryWriteReplacer {
      * @param target Original object.
      * @return Replaced object.
      */
-    @Nullable public Object replace(Object target);
+    public @Nullable Object replace(Object target);
 }

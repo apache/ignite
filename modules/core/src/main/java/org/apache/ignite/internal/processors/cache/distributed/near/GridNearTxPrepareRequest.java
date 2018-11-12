@@ -212,7 +212,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /**
      * @return Subject ID.
      */
-    @Nullable public UUID subjectId() {
+    public @Nullable UUID subjectId() {
         return subjId;
     }
 

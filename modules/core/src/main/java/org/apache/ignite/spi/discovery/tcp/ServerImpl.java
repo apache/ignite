@@ -283,14 +283,14 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public UUID getCoordinator() {
+    @Override public @Nullable UUID getCoordinator() {
         TcpDiscoveryNode crd = resolveCoordinator();
 
         return crd != null ? crd.id() : null;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public ClusterNode getNode(UUID nodeId) {
+    @Override public @Nullable ClusterNode getNode(UUID nodeId) {
         assert nodeId != null;
 
         UUID locNodeId0 = getLocalNodeId();
@@ -649,7 +649,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      *         left a topology during the ping process.
      * @throws IgniteCheckedException If an error occurs.
      */
-    @Nullable private IgniteBiTuple<UUID, Boolean> pingNode(InetSocketAddress addr, @Nullable UUID nodeId,
+    private @Nullable IgniteBiTuple<UUID, Boolean> pingNode(InetSocketAddress addr, @Nullable UUID nodeId,
         @Nullable UUID clientNodeId) throws IgniteCheckedException {
         assert addr != null;
 
@@ -1183,7 +1183,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @return Response read from the recipient or {@code null} if no response is supposed.
      * @throws IgniteSpiException If an error occurs.
      */
-    @Nullable private Integer sendMessageDirectly(TcpDiscoveryAbstractMessage msg, InetSocketAddress addr,
+    private @Nullable Integer sendMessageDirectly(TcpDiscoveryAbstractMessage msg, InetSocketAddress addr,
         IgniteSpiOperationTimeoutHelper timeoutHelper)
         throws IgniteSpiException {
         assert msg != null;
@@ -1469,7 +1469,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @param top Topology snapshot.
      * @return Copy of updated topology history.
      */
-    @Nullable private Map<Long, Collection<ClusterNode>> updateTopologyHistory(long topVer, Collection<ClusterNode> top) {
+    private @Nullable Map<Long, Collection<ClusterNode>> updateTopologyHistory(long topVer, Collection<ClusterNode> top) {
         synchronized (mux) {
             if (topHist.containsKey(topVer))
                 return null;
@@ -1523,7 +1523,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @return Coordinator node or {@code null} if there are no coordinator
      * (i.e. local node is the last one and is currently stopping).
      */
-    @Nullable private TcpDiscoveryNode resolveCoordinator() {
+    private @Nullable TcpDiscoveryNode resolveCoordinator() {
         return resolveCoordinator(null);
     }
 
@@ -1535,7 +1535,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @return Coordinator node or {@code null} if there are no coordinator
      * (i.e. local node is the last one and is currently stopping).
      */
-    @Nullable private TcpDiscoveryNode resolveCoordinator(
+    private @Nullable TcpDiscoveryNode resolveCoordinator(
         @Nullable Collection<TcpDiscoveryNode> filter) {
         synchronized (mux) {
             Collection<TcpDiscoveryNode> excluded = F.concat(false, failedNodes.keySet(), leavingNodes);
@@ -5599,7 +5599,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         /**
          * @return Pending custom message.
          */
-        @Nullable private TcpDiscoveryCustomEventMessage pollPendingCustomeMessage() {
+        private @Nullable TcpDiscoveryCustomEventMessage pollPendingCustomeMessage() {
             synchronized (mux) {
                 return pendingCustomMsgs.poll();
             }

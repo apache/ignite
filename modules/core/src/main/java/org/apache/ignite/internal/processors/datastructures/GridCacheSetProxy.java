@@ -165,7 +165,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Object[] toArray() {
+    @Override public @NotNull Object[] toArray() {
         enterBusy();
 
         try {
@@ -184,7 +184,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public <T1> T1[] toArray(final T1[] a) {
+    @Override public @NotNull <T1> T1[] toArray(final T1[] a) {
         enterBusy();
 
         try {

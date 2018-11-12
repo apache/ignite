@@ -305,7 +305,7 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Nullable @Override public Integer onBeforePut(
+        @Override public @Nullable Integer onBeforePut(
             final Cache.Entry entry,
             final Integer newVal
         ) {
@@ -340,7 +340,7 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Nullable @Override public IgniteBiTuple<Boolean, Integer> onBeforeRemove(
+        @Override public @Nullable IgniteBiTuple<Boolean, Integer> onBeforeRemove(
             final Cache.Entry<Integer, Integer> entry
         ) {
             try {

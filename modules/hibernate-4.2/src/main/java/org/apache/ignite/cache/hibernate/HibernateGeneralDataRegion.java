@@ -42,7 +42,7 @@ public class HibernateGeneralDataRegion extends HibernateRegion implements Gener
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object get(Object key) throws CacheException {
+    @Override public @Nullable Object get(Object key) throws CacheException {
         try {
             return cache.get(key);
         } catch (IgniteCheckedException e) {

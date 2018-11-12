@@ -97,7 +97,7 @@ public abstract class GridCacheMessage implements Message {
     /**
      * @return Error, if any.
      */
-    @Nullable public Throwable error() {
+    public @Nullable Throwable error() {
         return null;
     }
 
@@ -428,7 +428,7 @@ public abstract class GridCacheMessage implements Message {
      * @return Marshalled collection.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable protected final byte[][] marshalInvokeArguments(@Nullable Object[] args, GridCacheContext ctx)
+    protected final @Nullable byte[][] marshalInvokeArguments(@Nullable Object[] args, GridCacheContext ctx)
         throws IgniteCheckedException {
         assert ctx != null;
 
@@ -457,7 +457,7 @@ public abstract class GridCacheMessage implements Message {
      * @return Unmarshalled collection.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable protected final Object[] unmarshalInvokeArguments(@Nullable byte[][] byteCol,
+    protected final @Nullable Object[] unmarshalInvokeArguments(@Nullable byte[][] byteCol,
         GridCacheSharedContext ctx,
         ClassLoader ldr) throws IgniteCheckedException {
         assert ldr != null;
@@ -482,7 +482,7 @@ public abstract class GridCacheMessage implements Message {
      * @return Marshalled collection.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable protected List<byte[]> marshalCollection(@Nullable Collection<?> col,
+    protected @Nullable List<byte[]> marshalCollection(@Nullable Collection<?> col,
         GridCacheContext ctx) throws IgniteCheckedException {
         assert ctx != null;
 
@@ -609,7 +609,7 @@ public abstract class GridCacheMessage implements Message {
      * @return Unmarshalled collection.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable protected <T> List<T> unmarshalCollection(@Nullable Collection<byte[]> byteCol,
+    protected @Nullable <T> List<T> unmarshalCollection(@Nullable Collection<byte[]> byteCol,
         GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         assert ldr != null;
         assert ctx != null;

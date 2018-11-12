@@ -56,7 +56,7 @@ public class NoopTask implements ComputeTask<Object, Object> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(
+    @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(
         List<ClusterNode> subgrid,
         @Nullable Object arg)
     {
@@ -72,7 +72,7 @@ public class NoopTask implements ComputeTask<Object, Object> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object reduce(List<ComputeJobResult> results) {
+    @Override public @Nullable Object reduce(List<ComputeJobResult> results) {
         return null;
     }
 
@@ -81,7 +81,7 @@ public class NoopTask implements ComputeTask<Object, Object> {
      */
     public static class NoopJob implements ComputeJob, Externalizable {
         /** {@inheritDoc} */
-        @Nullable @Override public Object execute() {
+        @Override public @Nullable Object execute() {
             return null;
         }
 

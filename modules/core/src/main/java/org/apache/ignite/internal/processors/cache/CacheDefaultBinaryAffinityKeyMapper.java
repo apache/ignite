@@ -96,7 +96,7 @@ public class CacheDefaultBinaryAffinityKeyMapper extends GridCacheDefaultAffinit
      * @param typeName Type name.
      * @return Affinity field override if any.
      */
-    @Nullable public BinaryField affinityKeyField(String typeName) {
+    public @Nullable BinaryField affinityKeyField(String typeName) {
         int typeId = proc.typeId(typeName);
 
         return affinityKeyField(typeId);
@@ -108,7 +108,7 @@ public class CacheDefaultBinaryAffinityKeyMapper extends GridCacheDefaultAffinit
      * @param typeId Type ID.
      * @return Affinity field override if any.
      */
-    @Nullable public BinaryField affinityKeyField(int typeId) {
+    public @Nullable BinaryField affinityKeyField(int typeId) {
         Map<Integer, BinaryField> typeIdAffFields0 = typeIdAffFields;
 
         if (typeIdAffFields0 == null) {

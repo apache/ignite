@@ -418,7 +418,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public String load(Integer i) throws CacheLoaderException {
+        @Override public @Nullable String load(Integer i) throws CacheLoaderException {
             return null;
         }
 

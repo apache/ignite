@@ -852,7 +852,7 @@ public class BinaryContext {
      * @param cls Class.
      * @return Serializer for class or {@code null} if none exists.
      */
-    @Nullable private BinarySerializer serializerForClass(Class cls) {
+    private @Nullable BinarySerializer serializerForClass(Class cls) {
         BinarySerializer serializer = defaultSerializer();
 
         if (serializer == null && canUseReflectiveSerializer(cls))
@@ -1262,7 +1262,7 @@ public class BinaryContext {
      * @return Meta data.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public BinaryType metadata(int typeId) throws BinaryObjectException {
+    public @Nullable BinaryType metadata(int typeId) throws BinaryObjectException {
         return metaHnd != null ? metaHnd.metadata(typeId) : null;
     }
 
@@ -1272,7 +1272,7 @@ public class BinaryContext {
      * @return Meta data.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public BinaryMetadata metadata0(int typeId) throws BinaryObjectException {
+    public @Nullable BinaryMetadata metadata0(int typeId) throws BinaryObjectException {
         return metaHnd != null ? metaHnd.metadata0(typeId) : null;
     }
 

@@ -62,7 +62,7 @@ public enum DataPageEvictionMode {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static DataPageEvictionMode fromOrdinal(int ord) {
+    public static @Nullable DataPageEvictionMode fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

@@ -383,7 +383,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      */
     private static ComputeJob job(final Runnable r) {
         return new ComputeJobAdapter() {
-            @Nullable @Override public Object execute() {
+            @Override public @Nullable Object execute() {
                 r.run();
 
                 return null;

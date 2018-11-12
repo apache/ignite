@@ -98,7 +98,7 @@ class GridCacheLoaderWriterStore<K, V> implements CacheStore<K, V>, LifecycleAwa
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V load(K key) {
+    @Override public @Nullable V load(K key) {
         if (ldr == null)
             return null;
 

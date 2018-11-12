@@ -281,7 +281,7 @@ public abstract class GridCacheBinaryStoreAbstractSelfTest extends GridCommonAbs
         private final Map<Object, Object> map = new ConcurrentHashMap<>();
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object load(Object key) {
+        @Override public @Nullable Object load(Object key) {
             return map.get(key);
         }
 

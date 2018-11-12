@@ -27,5 +27,5 @@ public interface ExecutorAwareMessage extends Message {
     /**
      * @return Custom executor name. {@code null} In case the custom executor is not provided.
      */
-    @Nullable public String executorName();
+    public @Nullable String executorName();
 }

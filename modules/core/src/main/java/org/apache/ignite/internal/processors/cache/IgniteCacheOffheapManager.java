@@ -110,7 +110,7 @@ public interface IgniteCacheOffheapManager {
      * @return Cached row, if available, null otherwise.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public CacheDataRow read(GridCacheMapEntry entry) throws IgniteCheckedException;
+    public @Nullable CacheDataRow read(GridCacheMapEntry entry) throws IgniteCheckedException;
 
     /**
      * @param cctx Cache context.
@@ -118,7 +118,7 @@ public interface IgniteCacheOffheapManager {
      * @return Cached row, if available, null otherwise.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public CacheDataRow read(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException;
+    public @Nullable CacheDataRow read(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException;
 
     /**
      * @param p Partition.
@@ -183,7 +183,7 @@ public interface IgniteCacheOffheapManager {
      * @return Cached row, if available, null otherwise.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public CacheDataRow mvccRead(GridCacheContext cctx, KeyCacheObject key, MvccSnapshot ver)
+    public @Nullable CacheDataRow mvccRead(GridCacheContext cctx, KeyCacheObject key, MvccSnapshot ver)
         throws IgniteCheckedException;
 
     /**
@@ -285,7 +285,7 @@ public interface IgniteCacheOffheapManager {
      * @return Update result.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public MvccUpdateResult mvccUpdate(
+    public @Nullable MvccUpdateResult mvccUpdate(
         GridCacheMapEntry entry,
         CacheObject val,
         GridCacheVersion ver,
@@ -311,7 +311,7 @@ public interface IgniteCacheOffheapManager {
      * @return Update result.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public MvccUpdateResult mvccRemove(
+    public @Nullable MvccUpdateResult mvccRemove(
         GridCacheMapEntry entry,
         MvccSnapshot mvccSnapshot,
         boolean primary,
@@ -326,7 +326,7 @@ public interface IgniteCacheOffheapManager {
      * @return Update result.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public MvccUpdateResult mvccLock(
+    public @Nullable MvccUpdateResult mvccLock(
         GridCacheMapEntry entry,
         MvccSnapshot mvccSnapshot
     ) throws IgniteCheckedException;
@@ -604,7 +604,7 @@ public interface IgniteCacheOffheapManager {
         /**
          * @return Old row.
          */
-        @Nullable public CacheDataRow oldRow();
+        public @Nullable CacheDataRow oldRow();
     }
 
     /**

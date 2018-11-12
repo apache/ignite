@@ -89,8 +89,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Nullable @Override public T poll() throws IgniteException {
+    @Override @SuppressWarnings("unchecked") public @Nullable T poll() throws IgniteException {
         try {
             return retryTopologySafe(new Callable<T>() {
                 @Override public T call() throws Exception {

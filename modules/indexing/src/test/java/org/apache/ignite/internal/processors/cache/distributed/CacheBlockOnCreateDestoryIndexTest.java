@@ -50,25 +50,25 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
     private final List<? extends CacheBlockOnReadAbstractTest> tests = Arrays.asList(
         new CacheBlockOnSingleGetTest() {
             /** {@inheritDoc} */
-            @Nullable @Override protected <A extends Annotation> A currentTestAnnotation(Class<A> annotationCls) {
+            @Override protected @Nullable <A extends Annotation> A currentTestAnnotation(Class<A> annotationCls) {
                 return CacheBlockOnCreateDestoryIndexTest.this.currentTestAnnotation(annotationCls);
             }
         },
         new CacheBlockOnGetAllTest() {
             /** {@inheritDoc} */
-            @Nullable @Override protected <A extends Annotation> A currentTestAnnotation(Class<A> annotationCls) {
+            @Override protected @Nullable <A extends Annotation> A currentTestAnnotation(Class<A> annotationCls) {
                 return CacheBlockOnCreateDestoryIndexTest.this.currentTestAnnotation(annotationCls);
             }
         },
         new CacheBlockOnScanTest() {
             /** {@inheritDoc} */
-            @Nullable @Override protected <A extends Annotation> A currentTestAnnotation(Class<A> annotationCls) {
+            @Override protected @Nullable <A extends Annotation> A currentTestAnnotation(Class<A> annotationCls) {
                 return CacheBlockOnCreateDestoryIndexTest.this.currentTestAnnotation(annotationCls);
             }
         },
         new CacheBlockOnSqlQueryTest() {
             /** {@inheritDoc} */
-            @Nullable @Override protected <A extends Annotation> A currentTestAnnotation(Class<A> annotationCls) {
+            @Override protected @Nullable <A extends Annotation> A currentTestAnnotation(Class<A> annotationCls) {
                 return CacheBlockOnCreateDestoryIndexTest.this.currentTestAnnotation(annotationCls);
             }
         }
@@ -407,7 +407,7 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
      * @param ignite Ignite instance.
      * @return 3 pairs {@code {cacheName, tableName, indexName}} for further sql operations.
      */
-    @NotNull private List<T3<String, String, String>> createCaches(IgniteEx ignite) {
+    private @NotNull List<T3<String, String, String>> createCaches(IgniteEx ignite) {
         List<T3<String, String, String>> caches = new ArrayList<>();
 
         for (int i = 0; i < 3; i++) {

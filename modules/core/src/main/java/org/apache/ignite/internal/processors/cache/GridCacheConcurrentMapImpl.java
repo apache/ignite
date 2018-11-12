@@ -53,14 +53,14 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheMapEntry getEntry(GridCacheContext ctx, KeyCacheObject key) {
+    @Override public @Nullable GridCacheMapEntry getEntry(GridCacheContext ctx, KeyCacheObject key) {
         CacheMapHolder hld = entriesMapIfExists(ctx.cacheIdBoxed());
 
         return hld != null ? hld.map.get(key) : null;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheMapEntry putEntryIfObsoleteOrAbsent(
+    @Override public @Nullable GridCacheMapEntry putEntryIfObsoleteOrAbsent(
         GridCacheContext ctx,
         final AffinityTopologyVersion topVer,
         KeyCacheObject key,
@@ -226,13 +226,13 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
      * @param cctx Cache context.
      * @return Map for given cache ID.
      */
-    @Nullable protected abstract CacheMapHolder entriesMap(GridCacheContext cctx);
+    protected abstract @Nullable CacheMapHolder entriesMap(GridCacheContext cctx);
 
     /**
      * @param cacheId Cache ID.
      * @return Map for given cache ID.
      */
-    @Nullable protected abstract CacheMapHolder entriesMapIfExists(Integer cacheId);
+    protected abstract @Nullable CacheMapHolder entriesMapIfExists(Integer cacheId);
 
     /**
      *

@@ -183,7 +183,7 @@ public abstract class DiscoveryMessageResultsCollector<M, R>  {
         /**
          * @return Message or {@code null} if node failed.
          */
-        @Nullable public M message() {
+        public @Nullable M message() {
             return msg;
         }
 

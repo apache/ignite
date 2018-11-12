@@ -62,7 +62,7 @@ public class KerberosHadoopFileSystemFactory extends BasicHadoopFileSystemFactor
      *
      * @return The key tab principal.
      */
-    @Nullable public String getKeyTabPrincipal() {
+    public @Nullable String getKeyTabPrincipal() {
         return keyTabPrincipal;
     }
 
@@ -80,7 +80,7 @@ public class KerberosHadoopFileSystemFactory extends BasicHadoopFileSystemFactor
      *
      * @return The key tab file name.
      */
-    @Nullable public String getKeyTab() {
+    public @Nullable String getKeyTab() {
         return keyTab;
     }
 

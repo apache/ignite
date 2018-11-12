@@ -291,12 +291,12 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public List<GridCacheVersion> conflictVersions() {
+    @Override public @Nullable List<GridCacheVersion> conflictVersions() {
         return conflictVers;
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public GridCacheVersion conflictVersion(int idx) {
+    @Override public @Nullable GridCacheVersion conflictVersion(int idx) {
         if (conflictVers != null) {
             assert idx >= 0 && idx < conflictVers.size();
 
@@ -329,12 +329,12 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public Object[] invokeArguments() {
+    @Override public @Nullable Object[] invokeArguments() {
         return invokeArgs;
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public CacheEntryPredicate[] filter() {
+    @Override public @Nullable CacheEntryPredicate[] filter() {
         return filter;
     }
 

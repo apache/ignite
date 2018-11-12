@@ -381,7 +381,7 @@ public class TrackingPageIO extends PageIO {
      * @return Passed pageId if it was changed or next closest one, if there is no changed page {@code null} will be returned.
      * @throws TrackingPageIsCorruptedException if this tracking page was marked as corrupted.
      */
-    @Nullable public Long findNextChangedPage(ByteBuffer buf, long start, long curSnapshotTag,
+    public @Nullable Long findNextChangedPage(ByteBuffer buf, long start, long curSnapshotTag,
         long lastSuccessfulSnapshotTag, int pageSize) throws TrackingPageIsCorruptedException {
         if (isCorrupted(buf))
             throw TrackingPageIsCorruptedException.INSTANCE;

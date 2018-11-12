@@ -26,7 +26,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public abstract class VisorOneNodeTask<A, R> extends VisorMultiNodeTask<A, R, R> {
     /** {@inheritDoc} */
-    @Nullable @Override protected R reduce0(List<ComputeJobResult> results) {
+    @Override protected @Nullable R reduce0(List<ComputeJobResult> results) {
         assert results.size() == 1;
 
         ComputeJobResult res = results.get(0);

@@ -46,7 +46,7 @@ public class VisorNodeGcTask extends VisorMultiNodeTask<Void, Map<UUID, VisorNod
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Map<UUID, VisorNodeGcTaskResult> reduce0(List<ComputeJobResult> results) {
+    @Override protected @Nullable Map<UUID, VisorNodeGcTaskResult> reduce0(List<ComputeJobResult> results) {
         Map<UUID, VisorNodeGcTaskResult> total = new HashMap<>();
 
         for (ComputeJobResult res : results) {

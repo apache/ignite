@@ -344,8 +344,7 @@ public abstract class AbstractVector implements Vector {
             private int idx = 0;
 
             /** {@inheritDoc} */
-            @NotNull
-            @Override public Iterator<Element> iterator() {
+            @Override public @NotNull Iterator<Element> iterator() {
                 return new Iterator<Element>() {
                     /** {@inheritDoc} */
                     @Override public boolean hasNext() {
@@ -407,8 +406,7 @@ public abstract class AbstractVector implements Vector {
             private int idxNext = -1;
 
             /** {@inheritDoc} */
-            @NotNull
-            @Override public Iterator<Element> iterator() {
+            @Override public @NotNull Iterator<Element> iterator() {
                 return new Iterator<Element>() {
                     @Override public boolean hasNext() {
                         findNext();

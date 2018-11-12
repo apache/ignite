@@ -187,24 +187,22 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public BinaryType type() throws BinaryObjectException {
+    @Override public @Nullable BinaryType type() throws BinaryObjectException {
         return BinaryUtils.typeProxy(ctx, this);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public BinaryType rawType() throws BinaryObjectException {
+    @Override public @Nullable BinaryType rawType() throws BinaryObjectException {
         return BinaryUtils.type(ctx, this);
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Nullable @Override public <F> F field(String fieldName) throws BinaryObjectException {
+    @Override @SuppressWarnings("unchecked") public @Nullable <F> F field(String fieldName) throws BinaryObjectException {
         return (F) reader(null, false).unmarshalField(fieldName);
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Nullable @Override public <F> F field(int fieldId) throws BinaryObjectException {
+    @Override @SuppressWarnings("unchecked") public @Nullable <F> F field(int fieldId) throws BinaryObjectException {
         return (F) reader(null, false).unmarshalField(fieldId);
     }
 
@@ -246,8 +244,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Nullable @Override public <F> F fieldByOrder(int order) {
+    @Override @SuppressWarnings("unchecked") public @Nullable <F> F fieldByOrder(int order) {
         if (order == BinarySchema.ORDER_NOT_FOUND)
             return null;
 
@@ -408,8 +405,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Nullable @Override protected <F> F field(BinaryReaderHandles rCtx, String fieldName) {
+    @Override @SuppressWarnings("unchecked") protected @Nullable <F> F field(BinaryReaderHandles rCtx, String fieldName) {
         return (F)reader(rCtx, false).unmarshalField(fieldName);
     }
 
@@ -419,8 +415,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Nullable @Override public <T> T deserialize() throws BinaryObjectException {
+    @Override @SuppressWarnings("unchecked") public @Nullable <T> T deserialize() throws BinaryObjectException {
         return (T)deserializeValue();
     }
 
@@ -445,8 +440,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy) {
+    @Override @SuppressWarnings("unchecked") public @Nullable <T> T value(CacheObjectValueContext ctx, boolean cpy) {
         return (T)deserializeValue();
     }
 

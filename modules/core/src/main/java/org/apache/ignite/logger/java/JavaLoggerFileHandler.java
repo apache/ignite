@@ -125,7 +125,7 @@ public final class JavaLoggerFileHandler extends StreamHandler {
      *
      * @return Pattern or {@code null} if node id has not been set yet.
      */
-    @Nullable public String fileName() {
+    public @Nullable String fileName() {
         return JavaLogger.fileName(delegate);
     }
 

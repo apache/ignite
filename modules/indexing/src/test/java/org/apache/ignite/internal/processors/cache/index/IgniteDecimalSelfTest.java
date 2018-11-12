@@ -95,7 +95,7 @@ public class IgniteDecimalSelfTest extends AbstractSchemaSelfTest {
     }
 
     /** */
-    @NotNull private CacheConfiguration<Integer, Salary> cacheCfg(String tabName, String cacheName) {
+    private @NotNull CacheConfiguration<Integer, Salary> cacheCfg(String tabName, String cacheName) {
         CacheConfiguration<Integer, Salary> ccfg = new CacheConfiguration<>(cacheName);
 
         QueryEntity queryEntity = new QueryEntity(Integer.class.getName(), Salary.class.getName());

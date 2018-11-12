@@ -169,7 +169,7 @@ public class MapQueryLazyWorker extends GridWorker {
     /**
      * @return Current worker or {@code null} if call is performed not from lazy worker thread.
      */
-    @Nullable public static MapQueryLazyWorker currentWorker() {
+    public static @Nullable MapQueryLazyWorker currentWorker() {
         return LAZY_WORKER.get();
     }
 

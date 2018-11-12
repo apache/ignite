@@ -135,7 +135,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
      * @param idx Index of node to remove.
      * @return Discovery event.
      */
-    @NotNull private DiscoveryEvent removeNode(List<ClusterNode> nodes, int idx) {
+    private @NotNull DiscoveryEvent removeNode(List<ClusterNode> nodes, int idx) {
         return new DiscoveryEvent(nodes.get(0), "", EventType.EVT_NODE_LEFT, nodes.remove(idx));
     }
 
@@ -163,7 +163,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
      * @param iter Iteration count.
      * @return Discovery event.
      */
-    @NotNull private DiscoveryEvent addNode(List<ClusterNode> nodes, int iter) {
+    private @NotNull DiscoveryEvent addNode(List<ClusterNode> nodes, int iter) {
         GridTestNode node = new GridTestNode(UUID.randomUUID());
 
         // two neighbours nodes
@@ -763,7 +763,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
          *
          * @return Optional backup filter.
          */
-        @Nullable public IgniteBiPredicate<ClusterNode, ClusterNode> getBackupFilter() {
+        public @Nullable IgniteBiPredicate<ClusterNode, ClusterNode> getBackupFilter() {
             return backupFilter;
         }
 
@@ -792,7 +792,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
          *
          * @return Optional backup filter.
          */
-        @Nullable public IgniteBiPredicate<ClusterNode, List<ClusterNode>> getAffinityBackupFilter() {
+        public @Nullable IgniteBiPredicate<ClusterNode, List<ClusterNode>> getAffinityBackupFilter() {
             return affinityBackupFilter;
         }
 

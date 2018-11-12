@@ -54,7 +54,7 @@ public enum GridCacheOperation {
      * @param ord Ordinal value.
      * @return Enum value.
      */
-    @Nullable public static GridCacheOperation fromOrdinal(int ord) {
+    public static @Nullable GridCacheOperation fromOrdinal(int ord) {
         return ord < 0 || ord >= VALS.length ? null : VALS[ord];
     }
 }

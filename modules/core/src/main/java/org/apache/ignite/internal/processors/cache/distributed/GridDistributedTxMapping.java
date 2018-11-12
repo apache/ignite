@@ -141,7 +141,7 @@ public class GridDistributedTxMapping {
     /**
      * @return Near cache entries.
      */
-    @Nullable public Collection<IgniteTxEntry> nearCacheEntries() {
+    public @Nullable Collection<IgniteTxEntry> nearCacheEntries() {
         assert nearEntries > 0;
 
         return F.view(entries, CU.FILTER_NEAR_CACHE_ENTRY);

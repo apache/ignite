@@ -247,7 +247,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteUuid getJobId() {
+    @Override public @Nullable IgniteUuid getJobId() {
         return null;
     }
 
@@ -783,7 +783,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     /**
      * @return Topology predicate.
      */
-    @Nullable public IgnitePredicate<ClusterNode> getTopologyPredicate() {
+    public @Nullable IgnitePredicate<ClusterNode> getTopologyPredicate() {
         return topPred;
     }
 
@@ -900,7 +900,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     /**
      * @return Custom executor name.
      */
-    @Nullable public String executorName() {
+    public @Nullable String executorName() {
         return execName;
     }
 

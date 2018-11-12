@@ -957,7 +957,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param grpId Group ID.
      * @return Cache group.
      */
-    @Nullable public CacheGroupContext cacheGroup(int grpId) {
+    public @Nullable CacheGroupContext cacheGroup(int grpId) {
         return cacheGrps.get(grpId);
     }
 
@@ -1938,7 +1938,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @return Caches to be started when this node starts.
      */
-    @Nullable public LocalJoinCachesContext localJoinCachesContext() {
+    public @Nullable LocalJoinCachesContext localJoinCachesContext() {
         return cachesInfo.localJoinCachesContext();
     }
 
@@ -3103,7 +3103,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
+    @Override public @Nullable DiscoveryDataExchangeType discoveryDataType() {
         return CACHE_PROC;
     }
 
@@ -3130,7 +3130,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteNodeValidationResult validateNode(
+    @Override public @Nullable IgniteNodeValidationResult validateNode(
         ClusterNode node, JoiningNodeDiscoveryData discoData
     ) {
         if(!cachesInfo.isMergeConfigSupports(node))
@@ -3815,7 +3815,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /** Resolve cache type for input cacheType */
-    @NotNull private CacheType resolveCacheType(CacheConfiguration ccfg) {
+    private @NotNull CacheType resolveCacheType(CacheConfiguration ccfg) {
         if (CU.isUtilityCache(ccfg.getName()))
             return CacheType.UTILITY;
         else if (internalCaches.contains(ccfg.getName()))
@@ -3890,7 +3890,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param destroy Cache data destroy flag. Setting to {@code true} will cause removing all cache data from store.
      * @return Future that will be completed when cache is destroyed.
      */
-    @NotNull public DynamicCacheChangeRequest createStopRequest(String cacheName, boolean restart, boolean destroy) {
+    public @NotNull DynamicCacheChangeRequest createStopRequest(String cacheName, boolean restart, boolean destroy) {
         DynamicCacheChangeRequest req = DynamicCacheChangeRequest.stopRequest(ctx, cacheName, false, true);
 
         req.stop(true);
@@ -3906,7 +3906,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param reqs cache stop requests.
      * @return compound future.
      */
-    @NotNull public IgniteInternalFuture<?> dynamicChangeCaches(List<DynamicCacheChangeRequest> reqs) {
+    public @NotNull IgniteInternalFuture<?> dynamicChangeCaches(List<DynamicCacheChangeRequest> reqs) {
         GridCompoundFuture<?, ?> compoundFut = new GridCompoundFuture<>();
 
         for (DynamicCacheStartFuture fut : initiateCacheChanges(reqs))
@@ -4152,7 +4152,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @return Non null exception if node is stopping or disconnected.
      */
-    @Nullable private IgniteCheckedException checkNodeState() {
+    private @Nullable IgniteCheckedException checkNodeState() {
         if (ctx.isStopping()) {
             return new IgniteCheckedException("Failed to execute dynamic cache change request, " +
                 "node is stopping.");
@@ -4270,7 +4270,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
+    @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node) {
         IgniteNodeValidationResult res = validateHashIdResolvers(node);
 
         if (res == null)
@@ -4305,7 +4305,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param node Joining node.
      * @return Validation result or {@code null} in case of success.
      */
-    @Nullable private IgniteNodeValidationResult validateHashIdResolvers(ClusterNode node) {
+    private @Nullable IgniteNodeValidationResult validateHashIdResolvers(ClusterNode node) {
         if (!node.isClient()) {
             for (DynamicCacheDescriptor desc : cacheDescriptors().values()) {
                 CacheConfiguration cfg = desc.cacheConfiguration();
@@ -4662,8 +4662,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Cache instance for given name.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings({"unchecked", "ConstantConditions"})
-    @Nullable public <K, V> IgniteCacheProxy<K, V> publicJCache(String cacheName,
+    @SuppressWarnings({"unchecked", "ConstantConditions"}) public @Nullable <K, V> IgniteCacheProxy<K, V> publicJCache(String cacheName,
         boolean failIfNotStarted,
         boolean checkThreadTx) throws IgniteCheckedException {
         assert cacheName != null;
@@ -4753,7 +4752,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param cacheId Cache ID.
      * @return Cache descriptor.
      */
-    @Nullable public DynamicCacheDescriptor cacheDescriptor(int cacheId) {
+    public @Nullable DynamicCacheDescriptor cacheDescriptor(int cacheId) {
         for (DynamicCacheDescriptor cacheDesc : cacheDescriptors().values()) {
             CacheConfiguration ccfg = cacheDesc.cacheConfiguration();
 
@@ -4850,7 +4849,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param awaitInit Await proxy initialization.
      * @return Cache proxy.
      */
-    @Nullable public IgniteCacheProxyImpl<?, ?> jcacheProxy(String name, boolean awaitInit) {
+    public @Nullable IgniteCacheProxyImpl<?, ?> jcacheProxy(String name, boolean awaitInit) {
         IgniteCacheProxyImpl<?, ?> cache = jCacheProxies.get(name);
 
         if (awaitInit)
@@ -4864,7 +4863,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param proxy Cache proxy.
      * @return Previous cache proxy.
      */
-    @Nullable public IgniteCacheProxyImpl<?, ?> addjCacheProxy(String name, IgniteCacheProxyImpl<?, ?> proxy) {
+    public @Nullable IgniteCacheProxyImpl<?, ?> addjCacheProxy(String name, IgniteCacheProxyImpl<?, ?> proxy) {
         return jCacheProxies.putIfAbsent(name, proxy);
     }
 

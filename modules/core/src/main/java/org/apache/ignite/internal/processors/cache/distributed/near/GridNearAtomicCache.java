@@ -299,7 +299,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
      * @param res Dht atomic update response.
      * @return Evicted near keys (if any).
      */
-    @Nullable public List<KeyCacheObject> processDhtAtomicUpdateRequest(
+    public @Nullable List<KeyCacheObject> processDhtAtomicUpdateRequest(
         UUID nodeId,
         GridDhtAtomicAbstractUpdateRequest req,
         GridDhtAtomicNearResponse res

@@ -83,7 +83,7 @@ public class LabeledVectorSetTestTrainPair implements Serializable {
     }
 
     /** This method generates "random double, integer" pairs, sort them, gets first "testSize" elements and returns appropriate indices */
-    @NotNull private TreeSet<Integer> getSortedIndices(int datasetSize, int testSize) {
+    private @NotNull TreeSet<Integer> getSortedIndices(int datasetSize, int testSize) {
         Random rnd = new Random();
         TreeMap<Double, Integer> randomIdxPairs = new TreeMap<>();
         for (int i = 0; i < datasetSize; i++)

@@ -105,7 +105,7 @@ public class GridCacheQueryInternalKeysSelfTest extends GridCacheAbstractSelfTes
      * @return A grid instance or {@code null}, if the grid
      * is not found.
      */
-    @Nullable private Ignite findGridForNodeId(final UUID nodeId) {
+    private @Nullable Ignite findGridForNodeId(final UUID nodeId) {
         return F.find(G.allGrids(), null, new P1<Ignite>() {
             @Override public boolean apply(Ignite e) {
                 return nodeId.equals(e.cluster().localNode().id());

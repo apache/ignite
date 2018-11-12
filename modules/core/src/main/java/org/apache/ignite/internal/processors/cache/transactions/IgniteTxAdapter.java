@@ -405,7 +405,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /**
      * @return Mvcc info.
      */
-    @Override @Nullable public MvccSnapshot mvccSnapshot() {
+    @Override public @Nullable MvccSnapshot mvccSnapshot() {
         return mvccSnapshot;
     }
 
@@ -1066,7 +1066,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteInternalFuture<?> currentPrepareFuture() {
+    @Override public @Nullable IgniteInternalFuture<?> currentPrepareFuture() {
         return null;
     }
 
@@ -1340,7 +1340,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<UUID, Collection<UUID>> transactionNodes() {
+    @Override public @Nullable Map<UUID, Collection<UUID>> transactionNodes() {
         return txNodes;
     }
 
@@ -1352,7 +1352,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheVersion nearXidVersion() {
+    @Override public @Nullable GridCacheVersion nearXidVersion() {
         return null;
     }
 
@@ -1984,7 +1984,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     public abstract void addActiveCache(GridCacheContext cacheCtx, boolean recovery) throws IgniteCheckedException;
 
     /** {@inheritDoc} */
-    @Nullable @Override public TxCounters txCounters(boolean createIfAbsent) {
+    @Override public @Nullable TxCounters txCounters(boolean createIfAbsent) {
         if (createIfAbsent && txCounters == null)
             TX_COUNTERS_UPD.compareAndSet(this, null, new TxCounters());
 
@@ -2192,17 +2192,17 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object addMeta(int key, Object val) {
+        @Override public @Nullable Object addMeta(int key, Object val) {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object removeMeta(int key) {
+        @Override public @Nullable Object removeMeta(int key) {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object meta(int key) {
+        @Override public @Nullable Object meta(int key) {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 
@@ -2276,12 +2276,12 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public GridCacheVersion ownedVersion(IgniteTxKey key) {
+        @Override public @Nullable GridCacheVersion ownedVersion(IgniteTxKey key) {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public UUID otherNodeId() {
+        @Override public @Nullable UUID otherNodeId() {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 
@@ -2296,7 +2296,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public TxCounters txCounters(boolean createIfAbsent) {
+        @Override public @Nullable TxCounters txCounters(boolean createIfAbsent) {
             return null;
         }
 
@@ -2311,12 +2311,12 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public GridCacheVersion nearXidVersion() {
+        @Override public @Nullable GridCacheVersion nearXidVersion() {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Map<UUID, Collection<UUID>> transactionNodes() {
+        @Override public @Nullable Map<UUID, Collection<UUID>> transactionNodes() {
             return null;
         }
 
@@ -2416,12 +2416,12 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public IgniteTxEntry entry(IgniteTxKey key) {
+        @Override public @Nullable IgniteTxEntry entry(IgniteTxKey key) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public GridTuple<CacheObject> peek(GridCacheContext ctx,
+        @Override public @Nullable GridTuple<CacheObject> peek(GridCacheContext ctx,
             boolean failFast,
             KeyCacheObject key) {
             return null;
@@ -2468,7 +2468,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public IgniteInternalFuture<IgniteInternalTx> currentPrepareFuture() {
+        @Override public @Nullable IgniteInternalFuture<IgniteInternalTx> currentPrepareFuture() {
             return null;
         }
 

@@ -86,7 +86,7 @@ public class GDBOnTreesRegressionTrainerExample {
     /**
      * Create cache configuration.
      */
-    @NotNull private static CacheConfiguration<Integer, double[]> createCacheConfiguration() {
+    private static @NotNull CacheConfiguration<Integer, double[]> createCacheConfiguration() {
         CacheConfiguration<Integer, double[]> trainingSetCfg = new CacheConfiguration<>();
         trainingSetCfg.setName("TRAINING_SET");
         trainingSetCfg.setAffinity(new RendezvousAffinityFunction(false, 10));
@@ -99,7 +99,7 @@ public class GDBOnTreesRegressionTrainerExample {
      * @param ignite Ignite instance.
      * @param trainingSetCfg Training set config.
      */
-    @NotNull private static IgniteCache<Integer, double[]> fillTrainingData(Ignite ignite,
+    private static @NotNull IgniteCache<Integer, double[]> fillTrainingData(Ignite ignite,
         CacheConfiguration<Integer, double[]> trainingSetCfg) {
         IgniteCache<Integer, double[]> trainingSet = ignite.createCache(trainingSetCfg);
         for(int i = -50; i <= 50; i++) {

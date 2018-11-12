@@ -170,7 +170,7 @@ public class HadoopDataStreamSelfTest extends GridCommonAbstractTest {
      * @return List of strings are returned by readLine().
      * @throws IOException On error.
      */
-    @NotNull private List<String> readLineStrings(DataInput in) throws IOException {
+    private @NotNull List<String> readLineStrings(DataInput in) throws IOException {
         List<String> strs = new ArrayList<>();
 
         for (String str = in.readLine(); str != null; str = in.readLine())

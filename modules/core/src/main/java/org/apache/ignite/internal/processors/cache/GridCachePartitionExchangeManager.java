@@ -174,7 +174,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private final ConcurrentMap<Integer, GridClientPartitionTopology> clientTops = new ConcurrentHashMap<>();
 
     /** */
-    @Nullable private volatile GridDhtPartitionsExchangeFuture lastInitializedFut;
+    private volatile @Nullable GridDhtPartitionsExchangeFuture lastInitializedFut;
 
     /** */
     private final AtomicReference<GridDhtTopologyFuture> lastFinishedFut = new AtomicReference<>();
@@ -820,7 +820,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param grpId Cache group ID.
      * @return Topology.
      */
-    @Nullable public GridDhtPartitionTopology clientTopologyIfExists(int grpId) {
+    public @Nullable GridDhtPartitionTopology clientTopologyIfExists(int grpId) {
         return clientTops.get(grpId);
     }
 
@@ -893,7 +893,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /**
      * @return Last finished topology future.
      */
-    @Nullable public GridDhtTopologyFuture lastFinishedFuture() {
+    public @Nullable GridDhtTopologyFuture lastFinishedFuture() {
         return lastFinishedFut.get();
     }
 
@@ -919,7 +919,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param ver Topology version.
      * @return Future or {@code null} is future is already completed.
      */
-    @Nullable public IgniteInternalFuture<AffinityTopologyVersion> affinityReadyFuture(AffinityTopologyVersion ver) {
+    public @Nullable IgniteInternalFuture<AffinityTopologyVersion> affinityReadyFuture(AffinityTopologyVersion ver) {
         AffinityTopologyVersion topVer = exchFuts.readyTopVer();
 
         if (topVer.compareTo(ver) >= 0) {
@@ -1191,7 +1191,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     public GridDhtPartitionsFullMessage createPartitionsFullMessage(
         boolean compress,
         boolean newCntrMap,
-        @Nullable final GridDhtPartitionExchangeId exchId,
+        final @Nullable GridDhtPartitionExchangeId exchId,
         @Nullable GridCacheVersion lastVer,
         @Nullable IgniteDhtPartitionHistorySuppliersMap partHistSuppliers,
         @Nullable IgniteDhtPartitionsToReloadMap partsToReload
@@ -1217,7 +1217,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     public GridDhtPartitionsFullMessage createPartitionsFullMessage(
         boolean compress,
         boolean newCntrMap,
-        @Nullable final GridDhtPartitionExchangeId exchId,
+        final @Nullable GridDhtPartitionExchangeId exchId,
         @Nullable GridCacheVersion lastVer,
         @Nullable IgniteDhtPartitionHistorySuppliersMap partHistSuppliers,
         @Nullable IgniteDhtPartitionsToReloadMap partsToReload,
@@ -3148,7 +3148,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public synchronized GridDhtPartitionsExchangeFuture removex(
+        @Override public synchronized @Nullable GridDhtPartitionsExchangeFuture removex(
             GridDhtPartitionsExchangeFuture val) {
 
             return super.removex(val);

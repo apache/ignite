@@ -134,7 +134,7 @@ public class ClientConnectorConfiguration {
      *
      * @return Host.
      */
-    @Nullable public String getHost() {
+    public @Nullable String getHost() {
         return host;
     }
 

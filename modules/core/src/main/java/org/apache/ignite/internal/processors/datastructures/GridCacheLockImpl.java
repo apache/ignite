@@ -113,8 +113,7 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
         private Map<String, Integer> outgoingSignals;
 
         /** Last condition waited on. */
-        @Nullable
-        private volatile String lastCondition;
+        private volatile @Nullable String lastCondition;
 
         /** True if any node owning the lock had failed. */
         private volatile boolean isBroken;
@@ -680,7 +679,7 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
          * @param outgoingSignals Map containing signal calls on this node since the last acquisition of the lock.
          */
         protected boolean setGlobalState(final int newVal,
-            @Nullable final String lastCond,
+            final @Nullable String lastCond,
             final Map<String, Integer> outgoingSignals) {
             try {
                 return retryTopologySafe(new Callable<Boolean>() {
@@ -1265,7 +1264,7 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
         }
     }
 
-    @NotNull @Override public Condition newCondition() {
+    @Override public @NotNull Condition newCondition() {
         throw new UnsupportedOperationException("IgniteLock does not allow creation of nameless conditions. ");
     }
 

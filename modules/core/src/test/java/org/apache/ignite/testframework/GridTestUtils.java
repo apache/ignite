@@ -385,7 +385,7 @@ public final class GridTestUtils {
      *      and this message should be equal.
      * @return Thrown throwable.
      */
-    @Nullable public static Throwable assertThrowsInherited(@Nullable IgniteLogger log, Callable<?> call,
+    public static @Nullable Throwable assertThrowsInherited(@Nullable IgniteLogger log, Callable<?> call,
         Class<? extends Throwable> cls, @Nullable String msg) {
         assert call != null;
         assert cls != null;
@@ -421,7 +421,7 @@ public final class GridTestUtils {
      * @param cls Expected class.
      * @return Thrown throwable.
      */
-    @Nullable public static Throwable assertThrowsWithCause(Runnable runnable, Class<? extends Throwable> cls) {
+    public static @Nullable Throwable assertThrowsWithCause(Runnable runnable, Class<? extends Throwable> cls) {
         return assertThrowsWithCause(new Callable<Integer>() {
             @Override public Integer call() throws Exception {
                 runnable.run();
@@ -439,7 +439,7 @@ public final class GridTestUtils {
      * @param cls Expected class.
      * @return Thrown throwable.
      */
-    @Nullable public static Throwable assertThrowsWithCause(Callable<?> call, Class<? extends Throwable> cls) {
+    public static @Nullable Throwable assertThrowsWithCause(Callable<?> call, Class<? extends Throwable> cls) {
         assert call != null;
         assert cls != null;
 
@@ -546,7 +546,7 @@ public final class GridTestUtils {
      * @param params Method parameters.
      * @return Thrown throwable.
      */
-    @Nullable public static Throwable assertThrows(@Nullable IgniteLogger log, Class<? extends Throwable> cls,
+    public static @Nullable Throwable assertThrows(@Nullable IgniteLogger log, Class<? extends Throwable> cls,
         @Nullable String msg, final Object obj, final String mtd, final Object... params) {
         return assertThrows(log, new Callable() {
             @Override public Object call() throws Exception {
@@ -1067,7 +1067,7 @@ public final class GridTestUtils {
      * @param annCls Annotation class.
      * @return Annotation.
      */
-    @Nullable public static <T extends Annotation> T getAnnotation(Class<?> cls, Class<T> annCls) {
+    public static @Nullable <T extends Annotation> T getAnnotation(Class<?> cls, Class<T> annCls) {
         for (Class<?> cls0 = cls; cls0 != null; cls0 = cls0.getSuperclass()) {
             T ann = cls0.getAnnotation(annCls);
 
@@ -1112,8 +1112,8 @@ public final class GridTestUtils {
      * @return List of JARs that corresponds to the filters.
      * @throws IOException If failed.
      */
-    private static Collection<String> getFiles(String path, @Nullable final String startFilter,
-        @Nullable final String endFilter) throws IOException {
+    private static Collection<String> getFiles(String path, final @Nullable String startFilter,
+        final @Nullable String endFilter) throws IOException {
         Collection<String> res = new ArrayList<>();
 
         File file = new File(path);
@@ -1197,7 +1197,7 @@ public final class GridTestUtils {
      * @return Resolved path, or {@code null} if file cannot be resolved.
      * @see #getIgniteHome()
      */
-    @Nullable public static File resolveIgnitePath(String path) {
+    public static @Nullable File resolveIgnitePath(String path) {
         return resolvePath(null, path);
     }
 
@@ -1206,7 +1206,7 @@ public final class GridTestUtils {
      * @param path Path to resolve.
      * @return Resolved path, or {@code null} if file cannot be resolved.
      */
-    @Nullable private static File resolvePath(@Nullable String igniteHome, String path) {
+    private static @Nullable File resolvePath(@Nullable String igniteHome, String path) {
         File file = new File(path).getAbsoluteFile();
 
         if (!file.exists()) {
@@ -1293,7 +1293,7 @@ public final class GridTestUtils {
      * @param <T> The result type of method <tt>call</tt>, always {@code null}.
      * @return Callable task around the specified runnable one.
      */
-    public static <T> Callable<T> makeCallable(final Runnable run, @Nullable final T res) {
+    public static <T> Callable<T> makeCallable(final Runnable run, final @Nullable T res) {
         return new Callable<T>() {
             @Override public T call() throws Exception {
                 run.run();
@@ -1430,7 +1430,7 @@ public final class GridTestUtils {
      * @param innerClsName Name of the inner class.
      * @return Inner class.
      */
-    @Nullable public static <T> Class<T> getInnerClass(Class<?> parentCls, String innerClsName) {
+    public static @Nullable <T> Class<T> getInnerClass(Class<?> parentCls, String innerClsName) {
         for (Class<?> cls : parentCls.getDeclaredClasses())
             if (innerClsName.equals(cls.getSimpleName()))
                 return (Class<T>)cls;
@@ -1513,7 +1513,7 @@ public final class GridTestUtils {
      * @return Method invocation result.
      * @throws Exception If failed.
      */
-    @Nullable public static <T> T invoke(Object obj, String mtd, Object... params) throws Exception {
+    public static @Nullable <T> T invoke(Object obj, String mtd, Object... params) throws Exception {
         Class<?> cls = obj.getClass();
 
         do {
@@ -1768,7 +1768,7 @@ public final class GridTestUtils {
         return GridTestProperties.getProperty("ssl.keystore.password");
     }
 
-    @NotNull public static String keyStorePath(String keyStore) {
+    public static @NotNull String keyStorePath(String keyStore) {
         return U.resolveIgnitePath(GridTestProperties.getProperty(
             "ssl.keystore." + keyStore + ".path")).getAbsolutePath();
     }
@@ -1953,8 +1953,8 @@ public final class GridTestUtils {
      * @param test Test.
      * @param ignoredTests Tests to ignore. If test contained in the collection it is not included in suite
      */
-    public static void addTestIfNeeded(@NotNull final TestSuite suite, @NotNull final Class<? extends TestCase> test,
-        @Nullable final Collection<Class> ignoredTests) {
+    public static void addTestIfNeeded(final @NotNull TestSuite suite, final @NotNull Class<? extends TestCase> test,
+        final @Nullable Collection<Class> ignoredTests) {
         if (ignoredTests != null && ignoredTests.contains(test))
             return;
 

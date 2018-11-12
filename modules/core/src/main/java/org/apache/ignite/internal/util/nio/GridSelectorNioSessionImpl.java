@@ -137,7 +137,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl implements GridNioKe
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridSelectorNioSessionImpl session() {
+    @Override public @Nullable GridSelectorNioSessionImpl session() {
         return this;
     }
 
@@ -383,7 +383,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl implements GridNioKe
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridNioRecoveryDescriptor outRecoveryDescriptor() {
+    @Override public @Nullable GridNioRecoveryDescriptor outRecoveryDescriptor() {
         return outRecovery;
     }
 
@@ -395,7 +395,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl implements GridNioKe
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridNioRecoveryDescriptor inRecoveryDescriptor() {
+    @Override public @Nullable GridNioRecoveryDescriptor inRecoveryDescriptor() {
         return inRecovery;
     }
 

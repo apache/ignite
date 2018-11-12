@@ -40,7 +40,7 @@ public class DemoCancellableTask implements ComputeTask<Void, Void> {
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable Void arg) throws IgniteException {
         HashMap<ComputeJob, ClusterNode> map = U.newHashMap(1);
 
@@ -55,7 +55,7 @@ public class DemoCancellableTask implements ComputeTask<Void, Void> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws IgniteException {
+    @Override public @Nullable Void reduce(List<ComputeJobResult> results) throws IgniteException {
         return null;
     }
 

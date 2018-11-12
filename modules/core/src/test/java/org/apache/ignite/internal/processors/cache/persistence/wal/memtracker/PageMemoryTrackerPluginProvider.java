@@ -117,8 +117,7 @@ public class PageMemoryTrackerPluginProvider implements PluginProvider<PageMemor
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Nullable @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
+    @Override @SuppressWarnings("unchecked") public @Nullable <T> T createComponent(PluginContext ctx, Class<T> cls) {
         if (plugin != null) {
             if (IgniteWriteAheadLogManager.class.equals(cls))
                 return (T)plugin.createWalManager();
@@ -156,7 +155,7 @@ public class PageMemoryTrackerPluginProvider implements PluginProvider<PageMemor
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Serializable provideDiscoveryData(UUID nodeId) {
+    @Override public @Nullable Serializable provideDiscoveryData(UUID nodeId) {
         return null;
     }
 

@@ -213,7 +213,7 @@ class GridUriDeploymentUnitDescriptor {
      * @return Resource class or {@code null}, if there is no resource
      *         for this alias.
      */
-    @Nullable public Class<?> getResourceByAlias(String alias) {
+    public @Nullable Class<?> getResourceByAlias(String alias) {
         return rsrcsByAlias.get(alias);
     }
 
@@ -243,7 +243,7 @@ class GridUriDeploymentUnitDescriptor {
      *         resource is not found. The second tuple member is
      *         {@code null} if the resource has no alias.
      */
-    @Nullable public IgniteBiTuple<Class<?>, String> findResource(final String rsrcName) {
+    public @Nullable IgniteBiTuple<Class<?>, String> findResource(final String rsrcName) {
         // Find by alias.
         Class<?> cls = rsrcsByAlias.get(rsrcName);
 

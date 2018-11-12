@@ -270,7 +270,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of error.
      */
     @SuppressWarnings("unchecked")
-    private  static CacheConfiguration cacheConfiguration(@NotNull final String cacheName) throws Exception {
+    private  static CacheConfiguration cacheConfiguration(final @NotNull String cacheName) throws Exception {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setCacheMode(DEFAULT_CACHE_NAME.equals(cacheName) || CACHE_NAME.equals(cacheName) ? LOCAL : "replicated".equals(cacheName) ?

@@ -29,7 +29,7 @@ class ZkNoServersMessage implements DiscoverySpiCustomMessage, ZkInternalMessage
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoverySpiCustomMessage ackMessage() {
+    @Override public @Nullable DiscoverySpiCustomMessage ackMessage() {
         return null;
     }
 

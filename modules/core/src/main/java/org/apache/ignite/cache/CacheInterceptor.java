@@ -51,7 +51,7 @@ public interface CacheInterceptor<K, V> extends Serializable {
      * @return The new value to be returned as result of {@code get()} operation.
      * @see Cache#get(Object)
      */
-    @Nullable public V onGet(K key, @Nullable V val);
+    public @Nullable V onGet(K key, @Nullable V val);
 
     /**
      * This method is called within {@link IgniteCache#put(Object, Object)}
@@ -74,7 +74,7 @@ public interface CacheInterceptor<K, V> extends Serializable {
      * @return Value to be put to cache. Returning {@code null} cancels the update.
      * @see IgniteCache#put(Object, Object)
      */
-    @Nullable public V onBeforePut(Cache.Entry<K, V> entry, V newVal);
+    public @Nullable V onBeforePut(Cache.Entry<K, V> entry, V newVal);
 
     /**
      * This method is called after new value has been stored.
@@ -109,7 +109,7 @@ public interface CacheInterceptor<K, V> extends Serializable {
      *      may be {@code null}.
      * @see IgniteCache#remove(Object)
      */
-    @Nullable public IgniteBiTuple<Boolean, V> onBeforeRemove(Cache.Entry<K, V> entry);
+    public @Nullable IgniteBiTuple<Boolean, V> onBeforeRemove(Cache.Entry<K, V> entry);
 
     /**
      * This method is called after value has been removed.

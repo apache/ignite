@@ -84,7 +84,7 @@ public class CacheEvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
     /**
      * @return Peeks value.
      */
-    @Nullable public V peek() {
+    public @Nullable V peek() {
         try {
             CacheObject val = cached.peek(null);
 
@@ -167,17 +167,17 @@ public class CacheEvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> T addMeta(T val) {
+    @Override public @Nullable <T> T addMeta(T val) {
         return cached.addMeta(META_KEY, val);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> T meta() {
+    @Override public @Nullable <T> T meta() {
         return cached.meta(META_KEY);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> T removeMeta() {
+    @Override public @Nullable <T> T removeMeta() {
         return cached.removeMeta(META_KEY);
     }
 
@@ -187,7 +187,7 @@ public class CacheEvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> T putMetaIfAbsent(T val) {
+    @Override public @Nullable <T> T putMetaIfAbsent(T val) {
         return cached.putMetaIfAbsent(META_KEY, val);
     }
 

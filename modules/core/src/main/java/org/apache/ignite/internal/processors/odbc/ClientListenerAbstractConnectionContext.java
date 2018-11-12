@@ -66,12 +66,12 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public SecurityContext securityContext() {
+    @Override public @Nullable SecurityContext securityContext() {
         return secCtx;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public AuthorizationContext authorizationContext() {
+    @Override public @Nullable AuthorizationContext authorizationContext() {
         return authCtx;
     }
 

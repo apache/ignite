@@ -72,7 +72,7 @@ public class PlatformTestPluginProvider implements PluginProvider<PlatformTestPl
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Serializable provideDiscoveryData(UUID nodeId) {
+    @Override public @Nullable Serializable provideDiscoveryData(UUID nodeId) {
         return null;
     }
 
@@ -87,7 +87,7 @@ public class PlatformTestPluginProvider implements PluginProvider<PlatformTestPl
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
+    @Override public @Nullable <T> T createComponent(PluginContext ctx, Class<T> cls) {
         return null;
     }
 

@@ -207,7 +207,7 @@ public class HadoopConfiguration {
      *
      * @return Native library names.
      */
-    @Nullable public String[] getNativeLibraryNames() {
+    public @Nullable String[] getNativeLibraryNames() {
         return libNames;
     }
 

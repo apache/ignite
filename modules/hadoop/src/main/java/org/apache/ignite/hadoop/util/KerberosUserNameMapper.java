@@ -42,7 +42,7 @@ public class KerberosUserNameMapper implements UserNameMapper, LifecycleAware {
     private volatile State state;
 
     /** {@inheritDoc} */
-    @Nullable @Override public String map(String name) {
+    @Override public @Nullable String map(String name) {
         assert state != null;
 
         name = IgfsUtils.fixUserName(name);
@@ -82,7 +82,7 @@ public class KerberosUserNameMapper implements UserNameMapper, LifecycleAware {
      *
      * @return Instance.
      */
-    @Nullable public String getInstance() {
+    public @Nullable String getInstance() {
         return instance;
     }
 
@@ -100,7 +100,7 @@ public class KerberosUserNameMapper implements UserNameMapper, LifecycleAware {
      *
      * @return Kerberos realm.
      */
-    @Nullable public String getRealm() {
+    public @Nullable String getRealm() {
         return realm;
     }
 

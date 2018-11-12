@@ -224,7 +224,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String fileName() {
+    @Override public @Nullable String fileName() {
         for (Logger log = impl; log != null; log = log.getParent()) {
             for (Appender a : log.getAppenders().values()) {
                 if (a instanceof FileAppender)

@@ -64,7 +64,7 @@ public interface IgfsEx extends IgniteFileSystem {
      * @return {@code True} in case sampling is enabled, {@code false} otherwise, or {@code null} in case sampling
      * flag is not set.
      */
-    @Nullable public Boolean globalSampling();
+    public @Nullable Boolean globalSampling();
 
     /**
      * Gets group block size, i.e. block size multiplied by group size in affinity mapper.
@@ -78,7 +78,7 @@ public interface IgfsEx extends IgniteFileSystem {
      *
      * @return Client file system log directory or {@code null} in case no client connections have been created yet.
      */
-    @Nullable public String clientLogDirectory();
+    public @Nullable String clientLogDirectory();
 
     /**
      * Sets client file system log directory.

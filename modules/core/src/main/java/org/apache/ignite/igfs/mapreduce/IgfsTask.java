@@ -91,7 +91,7 @@ public abstract class IgfsTask<T, R> extends ComputeTaskAdapter<IgfsTaskArgs<T>,
     private Ignite ignite;
 
     /** {@inheritDoc} */
-    @Nullable @Override public final Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @Override public final @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable IgfsTaskArgs<T> args) {
         assert ignite != null;
         assert args != null;
@@ -160,7 +160,7 @@ public abstract class IgfsTask<T, R> extends ComputeTaskAdapter<IgfsTaskArgs<T>,
      * @return IGFS job. If {@code null} is returned, the passed in file range will be skipped.
      * @throws IgniteException If job creation failed.
      */
-    @Nullable public abstract IgfsJob createJob(IgfsPath path, IgfsFileRange range,
+    public abstract @Nullable IgfsJob createJob(IgfsPath path, IgfsFileRange range,
         IgfsTaskArgs<T> args) throws IgniteException;
 
     /**

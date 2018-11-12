@@ -1823,7 +1823,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
 
             // However, the streams, opened before disconnect, should not be valid.
             GridTestUtils.assertThrows(log, new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
+                @Override public @Nullable Object call() throws Exception {
                     s.write("test".getBytes());
 
                     s.flush();

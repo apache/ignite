@@ -94,14 +94,14 @@ public class StateChangeRequest {
     /**
      * @return Previous baseline topology.
      */
-    @Nullable public BaselineTopologyHistoryItem prevBaselineTopologyHistoryItem() {
+    public @Nullable BaselineTopologyHistoryItem prevBaselineTopologyHistoryItem() {
         return prevBltHistItem;
     }
 
     /**
      * @return Baseline topology.
      */
-    @Nullable public BaselineTopology baselineTopology() {
+    public @Nullable BaselineTopology baselineTopology() {
         return msg.baselineTopology();
     }
 

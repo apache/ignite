@@ -30,12 +30,12 @@ public class CacheInterceptorAdapter<K, V> implements CacheInterceptor<K, V> {
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Nullable @Override public V onGet(K key, V val) {
+    @Override public @Nullable V onGet(K key, V val) {
         return val;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V onBeforePut(Cache.Entry<K, V> entry, V newVal) {
+    @Override public @Nullable V onBeforePut(Cache.Entry<K, V> entry, V newVal) {
         return newVal;
     }
 
@@ -45,7 +45,7 @@ public class CacheInterceptorAdapter<K, V> implements CacheInterceptor<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteBiTuple<Boolean, V> onBeforeRemove(Cache.Entry<K, V> entry) {
+    @Override public @Nullable IgniteBiTuple<Boolean, V> onBeforeRemove(Cache.Entry<K, V> entry) {
         return new IgniteBiTuple<>(false, entry.getValue());
     }
 

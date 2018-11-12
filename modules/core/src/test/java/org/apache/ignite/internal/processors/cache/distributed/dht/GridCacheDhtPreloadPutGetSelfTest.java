@@ -192,7 +192,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
 
             IgniteInternalFuture fut1 = GridTestUtils.runMultiThreadedAsync(
                 new Callable<Object>() {
-                    @Nullable @Override public Object call() throws Exception {
+                    @Override public @Nullable Object call() throws Exception {
                         Ignite g2 = startGrid(2);
 
                         for (int i = 0; i < ITER_CNT; i++) {
@@ -224,7 +224,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
 
             IgniteInternalFuture fut2 = GridTestUtils.runMultiThreadedAsync(
                 new Callable<Object>() {
-                    @Nullable @Override public Object call() throws Exception {
+                    @Override public @Nullable Object call() throws Exception {
                         try {
                             writeLatch.await(10, TimeUnit.SECONDS);
 

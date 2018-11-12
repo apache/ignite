@@ -528,7 +528,7 @@ public class CacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     /**
      * @return Current transaction.
      */
-    @Nullable private Transaction transaction() {
+    private @Nullable Transaction transaction() {
         CacheStoreSession ses = session();
 
         return ses != null ? ses.transaction() : null;

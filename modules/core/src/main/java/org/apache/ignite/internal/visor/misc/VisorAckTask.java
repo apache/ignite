@@ -39,7 +39,7 @@ public class VisorAckTask extends VisorMultiNodeTask<VisorAckTaskArg, Void, Void
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Void reduce0(List<ComputeJobResult> results) {
+    @Override protected @Nullable Void reduce0(List<ComputeJobResult> results) {
         return null;
     }
 

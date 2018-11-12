@@ -216,7 +216,7 @@ public class ConnectorConfiguration {
      * @see IgniteSystemProperties#IGNITE_JETTY_HOST
      * @see IgniteSystemProperties#IGNITE_JETTY_PORT
      */
-    @Nullable public String getSecretKey() {
+    public @Nullable String getSecretKey() {
         return secretKey;
     }
 
@@ -600,7 +600,7 @@ public class ConnectorConfiguration {
      * @see ConnectorMessageInterceptor
      * @return Interceptor.
      */
-    @Nullable public ConnectorMessageInterceptor getMessageInterceptor() {
+    public @Nullable ConnectorMessageInterceptor getMessageInterceptor() {
         return msgInterceptor;
     }
 

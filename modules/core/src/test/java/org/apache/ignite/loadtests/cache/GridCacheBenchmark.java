@@ -83,7 +83,7 @@ public class GridCacheBenchmark {
                 X.println("Warming up (putx)...");
 
                 GridLoadTestUtils.runMultithreadedInLoop(new Callable<Object>() {
-                    @Nullable @Override public Object call() throws Exception {
+                    @Override public @Nullable Object call() throws Exception {
                         long keyVal = cntr.incrementAndGet();
 
                         cache.put(keyVal % 100000, keyVal);
@@ -104,7 +104,7 @@ public class GridCacheBenchmark {
                 X.println("Warming up (get)...");
 
                 GridLoadTestUtils.runMultithreadedInLoop(new Callable<Object>() {
-                    @Nullable @Override public Object call() throws Exception {
+                    @Override public @Nullable Object call() throws Exception {
                         long keyVal = cntr.incrementAndGet();
 
                         Long old = cache.get(keyVal % 100000);
@@ -129,7 +129,7 @@ public class GridCacheBenchmark {
                 X.println("Starting Ignite cache putx() benchmark...");
 
                 long durPutx = GridLoadTestUtils.measureTime(new Callable<Object>() {
-                    @Nullable @Override public Object call() throws Exception {
+                    @Override public @Nullable Object call() throws Exception {
                         while (true) {
                             long keyVal = cntr.incrementAndGet();
 
@@ -162,7 +162,7 @@ public class GridCacheBenchmark {
                 X.println("Starting Ignite cache get() benchmark...");
 
                 long durGet = GridLoadTestUtils.measureTime(new Callable<Object>() {
-                    @Nullable @Override public Object call() throws Exception {
+                    @Override public @Nullable Object call() throws Exception {
                         while (true) {
                             long keyVal = cntr.incrementAndGet();
 

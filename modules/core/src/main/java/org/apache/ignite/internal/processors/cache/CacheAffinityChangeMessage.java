@@ -122,14 +122,14 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
     /**
      * @return Affinity assignments.
      */
-    @Nullable public Map<Integer, Map<Integer, List<UUID>>> assignmentChange() {
+    public @Nullable Map<Integer, Map<Integer, List<UUID>>> assignmentChange() {
         return assignmentChange;
     }
 
     /**
      * @return Exchange version.
      */
-    @Nullable public GridDhtPartitionExchangeId exchangeId() {
+    public @Nullable GridDhtPartitionExchangeId exchangeId() {
         return exchId;
     }
 
@@ -146,7 +146,7 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
+    @Override public @Nullable DiscoveryCustomMessage ackMessage() {
         return null;
     }
 
@@ -161,7 +161,7 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr,
+    @Override public @Nullable DiscoCache createDiscoCache(GridDiscoveryManager mgr,
         AffinityTopologyVersion topVer, DiscoCache discoCache) {
         return discoCache.copy(topVer, null);
     }

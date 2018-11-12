@@ -2897,7 +2897,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @param cacheId Cache ID.
      * @return Previous assignment.
      */
-    @Nullable private List<List<ClusterNode>> previousAssignment(long topVer, Integer cacheId) {
+    private @Nullable List<List<ClusterNode>> previousAssignment(long topVer, Integer cacheId) {
         if (topVer == 1)
             return null;
 

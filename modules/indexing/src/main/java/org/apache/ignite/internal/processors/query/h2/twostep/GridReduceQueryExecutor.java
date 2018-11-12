@@ -409,7 +409,7 @@ public class GridReduceQueryExecutor {
      * @param parts Partitions.
      */
     private Map<ClusterNode, IntArray> stableDataNodesMap(AffinityTopologyVersion topVer,
-        final GridCacheContext<?, ?> cctx, @Nullable final int[] parts) {
+        final GridCacheContext<?, ?> cctx, final @Nullable int[] parts) {
 
         Map<ClusterNode, IntArray> mapping = new HashMap<>();
 

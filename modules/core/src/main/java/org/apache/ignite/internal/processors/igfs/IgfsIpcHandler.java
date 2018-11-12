@@ -197,7 +197,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
      * @return Result.
      * @throws Exception If failed.
      */
-    @Nullable private IgniteInternalFuture<IgfsMessage> executeSynchronously(IgfsClientSession ses,
+    private @Nullable IgniteInternalFuture<IgfsMessage> executeSynchronously(IgfsClientSession ses,
         IgfsIpcCommand cmd, IgfsMessage msg, DataInput in) throws Exception {
         IgfsMessage res = execute(ses, cmd, msg, in);
 
@@ -591,7 +591,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
      * @return Affinity key that maps on local node by the time this method is called if replication factor
      *      is {@code 0}, {@code null} otherwise.
      */
-    @Nullable private IgniteUuid affinityKey(IgfsPathControlRequest req) {
+    private @Nullable IgniteUuid affinityKey(IgfsPathControlRequest req) {
         // Do not generate affinity key for replicated or near-only cache.
         if (!req.colocate()) {
             if (log.isDebugEnabled())
@@ -634,7 +634,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
      * @param rsrcId Resource ID.
      * @return Registered resource or {@code null} if not found.
      */
-    @Nullable private Closeable resource(IgfsClientSession ses, Long rsrcId) {
+    private @Nullable Closeable resource(IgfsClientSession ses, Long rsrcId) {
         return ses.resource(rsrcId);
     }
 }

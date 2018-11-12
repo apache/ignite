@@ -328,8 +328,8 @@ public class IgfsDataManager extends IgfsManager {
      * @return Requested data block or {@code null} if nothing found.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgniteInternalFuture<byte[]> dataBlock(final IgfsEntryInfo fileInfo, final IgfsPath path,
-        final long blockIdx, @Nullable final IgfsSecondaryFileSystemPositionedReadable secReader)
+    public @Nullable IgniteInternalFuture<byte[]> dataBlock(final IgfsEntryInfo fileInfo, final IgfsPath path,
+        final long blockIdx, final @Nullable IgfsSecondaryFileSystemPositionedReadable secReader)
         throws IgniteCheckedException {
         assert fileInfo != null;
         assert blockIdx >= 0;
@@ -406,7 +406,7 @@ public class IgfsDataManager extends IgfsManager {
      * @return Requested data block or {@code null} if nothing found.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public byte[] secondaryDataBlock(IgfsPath path, long blockIdx,
+    public @Nullable byte[] secondaryDataBlock(IgfsPath path, long blockIdx,
         IgfsSecondaryFileSystemPositionedReadable secReader, int blockSize) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Reading non-local data block in the secondary file system [path=" +
@@ -515,7 +515,7 @@ public class IgfsDataManager extends IgfsManager {
      * @return Remainder if data did not fill full block.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public byte[] storeDataBlocks(
+    public @Nullable byte[] storeDataBlocks(
         IgfsEntryInfo fileInfo,
         long reservedLen,
         @Nullable byte[] remainder,
@@ -548,7 +548,7 @@ public class IgfsDataManager extends IgfsManager {
      * @return Remainder of data that did not fit the block if {@code flush} flag is {@code false}.
      * @throws IOException If store failed.
      */
-    @Nullable public byte[] storeDataBlocks(
+    public @Nullable byte[] storeDataBlocks(
         IgfsEntryInfo fileInfo,
         long reservedLen,
         @Nullable byte[] remainder,
@@ -1199,8 +1199,7 @@ public class IgfsDataManager extends IgfsManager {
          * @throws IgniteCheckedException If failed.
          * @return Data remainder if {@code flush} flag is {@code false}.
          */
-        @SuppressWarnings("ConstantConditions")
-        @Nullable public byte[] storeDataBlocks(
+        @SuppressWarnings("ConstantConditions") public @Nullable byte[] storeDataBlocks(
             IgfsEntryInfo fileInfo,
             long reservedLen,
             @Nullable byte[] remainder,

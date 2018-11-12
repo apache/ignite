@@ -176,7 +176,7 @@ public class CacheQueryReadEvent<K, V> extends EventAdapter {
      *
      * @return Cache name.
      */
-    @Nullable public String cacheName() {
+    public @Nullable String cacheName() {
         return cacheName;
     }
 
@@ -187,7 +187,7 @@ public class CacheQueryReadEvent<K, V> extends EventAdapter {
      *
      * @return Queried class name.
      */
-    @Nullable public String className() {
+    public @Nullable String className() {
         return clsName;
     }
 
@@ -198,7 +198,7 @@ public class CacheQueryReadEvent<K, V> extends EventAdapter {
      *
      * @return Query clause.
      */
-    @Nullable public String clause() {
+    public @Nullable String clause() {
         return clause;
     }
 
@@ -209,7 +209,7 @@ public class CacheQueryReadEvent<K, V> extends EventAdapter {
      *
      * @return Scan query filter.
      */
-    @Nullable public IgniteBiPredicate<K, V> scanQueryFilter() {
+    public @Nullable IgniteBiPredicate<K, V> scanQueryFilter() {
         return scanQryFilter;
     }
 
@@ -220,7 +220,7 @@ public class CacheQueryReadEvent<K, V> extends EventAdapter {
      *
      * @return Continuous query filter.
      */
-    @Nullable public CacheEntryEventSerializableFilter<K, V> continuousQueryFilter() {
+    public @Nullable CacheEntryEventSerializableFilter<K, V> continuousQueryFilter() {
         return contQryFilter;
     }
 
@@ -231,7 +231,7 @@ public class CacheQueryReadEvent<K, V> extends EventAdapter {
      *
      * @return Query arguments.
      */
-    @Nullable public Object[] arguments() {
+    public @Nullable Object[] arguments() {
         return args;
     }
 
@@ -240,7 +240,7 @@ public class CacheQueryReadEvent<K, V> extends EventAdapter {
      *
      * @return Security subject ID.
      */
-    @Nullable public UUID subjectId() {
+    public @Nullable UUID subjectId() {
         return subjId;
     }
 
@@ -249,7 +249,7 @@ public class CacheQueryReadEvent<K, V> extends EventAdapter {
      *
      * @return Task name.
      */
-    @Nullable public String taskName() {
+    public @Nullable String taskName() {
         return taskName;
     }
 
@@ -258,7 +258,7 @@ public class CacheQueryReadEvent<K, V> extends EventAdapter {
      *
      * @return Key.
      */
-    @Nullable public K key() {
+    public @Nullable K key() {
         return key;
     }
 
@@ -267,7 +267,7 @@ public class CacheQueryReadEvent<K, V> extends EventAdapter {
      *
      * @return Value.
      */
-    @Nullable public V value() {
+    public @Nullable V value() {
         return val;
     }
 
@@ -276,7 +276,7 @@ public class CacheQueryReadEvent<K, V> extends EventAdapter {
      *
      * @return Old value.
      */
-    @Nullable public V oldValue() {
+    public @Nullable V oldValue() {
         return oldVal;
     }
 
@@ -285,7 +285,7 @@ public class CacheQueryReadEvent<K, V> extends EventAdapter {
      *
      * @return Result row.
      */
-    @Nullable public Object row() {
+    public @Nullable Object row() {
         return row;
     }
 

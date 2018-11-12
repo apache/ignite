@@ -98,7 +98,7 @@ public class IgniteBinaryImpl implements IgniteBinary {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public BinaryType type(Class<?> cls) throws BinaryObjectException {
+    @Override public @Nullable BinaryType type(Class<?> cls) throws BinaryObjectException {
         guard();
 
         try {
@@ -110,7 +110,7 @@ public class IgniteBinaryImpl implements IgniteBinary {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public BinaryType type(String typeName) throws BinaryObjectException {
+    @Override public @Nullable BinaryType type(String typeName) throws BinaryObjectException {
         guard();
 
         try {
@@ -122,7 +122,7 @@ public class IgniteBinaryImpl implements IgniteBinary {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public BinaryType type(int typeId) throws BinaryObjectException {
+    @Override public @Nullable BinaryType type(int typeId) throws BinaryObjectException {
         guard();
 
         try {

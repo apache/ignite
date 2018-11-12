@@ -169,8 +169,7 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
      *
      * @return Array of entry values.
      */
-    @NotNull
-    private static Values[] getMockData() {
+    private static @NotNull Values[] getMockData() {
         final int SIZE = 10;
 
         ArrayList<Values> mockData = new ArrayList<>();

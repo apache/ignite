@@ -120,12 +120,12 @@ public abstract class ComputeJobContinuationAdapter extends ComputeJobAdapter im
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> T holdcc() {
+    @Override public @Nullable <T> T holdcc() {
         return jobCtx == null ? null : jobCtx.<T>holdcc();
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> T holdcc(long timeout) {
+    @Override public @Nullable <T> T holdcc(long timeout) {
         return jobCtx == null ? null : jobCtx.<T>holdcc(timeout);
     }
 }

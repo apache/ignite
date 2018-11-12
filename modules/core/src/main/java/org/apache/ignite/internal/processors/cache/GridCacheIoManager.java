@@ -482,7 +482,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     /**
      * @return Lock or {@code null} if node is stopping.
      */
-    @Nullable public Lock readLock() {
+    public @Nullable Lock readLock() {
         Lock lock = rw.readLock();
 
         if (!lock.tryLock())
@@ -638,7 +638,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param cacheMsg Cache message.
      * @return Transaction ID if applicable for message.
      */
-    @Nullable private GridCacheVersion txId(GridCacheMessage cacheMsg) {
+    private @Nullable GridCacheVersion txId(GridCacheMessage cacheMsg) {
         if (cacheMsg instanceof GridDhtTxPrepareRequest)
             return ((GridDhtTxPrepareRequest)cacheMsg).nearXidVersion();
         else if (cacheMsg instanceof GridNearTxPrepareRequest)
@@ -657,7 +657,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param cacheMsg Cache message.
      * @return Transaction ID if applicable for message.
      */
-    @Nullable private GridCacheVersion dhtTxId(GridCacheMessage cacheMsg) {
+    private @Nullable GridCacheVersion dhtTxId(GridCacheMessage cacheMsg) {
         if (cacheMsg instanceof GridDhtTxPrepareRequest)
             return ((GridDhtTxPrepareRequest)cacheMsg).version();
         else if (cacheMsg instanceof GridDhtTxPrepareResponse)
@@ -674,7 +674,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param cacheMsg Cache message.
      * @return Atomic future ID if applicable for message.
      */
-    @Nullable private Long atomicFututeId(GridCacheMessage cacheMsg) {
+    private @Nullable Long atomicFututeId(GridCacheMessage cacheMsg) {
         if (cacheMsg instanceof GridNearAtomicAbstractUpdateRequest)
             return ((GridNearAtomicAbstractUpdateRequest)cacheMsg).futureId();
         else if (cacheMsg instanceof GridNearAtomicUpdateResponse)
@@ -694,7 +694,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param cacheMsg Cache message.
      * @return Atomic future ID if applicable for message.
      */
-    @Nullable private GridCacheVersion atomicWriteVersion(GridCacheMessage cacheMsg) {
+    private @Nullable GridCacheVersion atomicWriteVersion(GridCacheMessage cacheMsg) {
         if (cacheMsg instanceof GridDhtAtomicAbstractUpdateRequest)
             return ((GridDhtAtomicAbstractUpdateRequest)cacheMsg).writeVersion();
 

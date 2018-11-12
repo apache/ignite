@@ -125,7 +125,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
         final CountDownLatch l1 = new CountDownLatch(1);
 
         Thread t1 = new GridTestThread(new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
+            @Override public @Nullable Object call() throws Exception {
                 info("Before lock for key: " + kv);
 
                 Lock lock = cache1.lock(kv);
@@ -161,7 +161,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
         });
 
         Thread t2 = new GridTestThread(new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
+            @Override public @Nullable Object call() throws Exception {
                 info("Waiting for latch1...");
 
                 l1.await();

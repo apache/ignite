@@ -146,42 +146,42 @@ public class GridJobExecuteResponse implements Message {
     /**
      * @return Serialized job result.
      */
-    @Nullable public byte[] getJobResultBytes() {
+    public @Nullable byte[] getJobResultBytes() {
         return resBytes;
     }
 
     /**
      * @return Job result.
      */
-    @Nullable public Object getJobResult() {
+    public @Nullable Object getJobResult() {
         return res;
     }
 
     /**
      * @return Serialized job exception.
      */
-    @Nullable public byte[] getExceptionBytes() {
+    public @Nullable byte[] getExceptionBytes() {
         return gridExBytes;
     }
 
     /**
      * @return Job exception.
      */
-    @Nullable public IgniteException getException() {
+    public @Nullable IgniteException getException() {
         return gridEx;
     }
 
     /**
      * @return Serialized job attributes.
      */
-    @Nullable public byte[] getJobAttributesBytes() {
+    public @Nullable byte[] getJobAttributesBytes() {
         return jobAttrsBytes;
     }
 
     /**
      * @return Job attributes.
      */
-    @Nullable public Map<Object, Object> getJobAttributes() {
+    public @Nullable Map<Object, Object> getJobAttributes() {
         return jobAttrs;
     }
 

@@ -37,7 +37,7 @@ public class IgfsStringDelimiterRecordResolver extends IgfsByteDelimiterRecordRe
      * @param delims String delimiters.
      * @return Byte delimiters.
      */
-    @Nullable private static byte[][] toBytes(Charset charset, @Nullable String... delims) {
+    private static @Nullable byte[][] toBytes(Charset charset, @Nullable String... delims) {
         byte[][] res = null;
 
         if (delims != null) {

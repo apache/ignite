@@ -206,7 +206,7 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
     /**
      * @return Random node and its index.
      */
-    @Nullable private T2<Ignite, Integer> randomNode() {
+    private @Nullable T2<Ignite, Integer> randomNode() {
         while (!done) {
             int idx = ThreadLocalRandom.current().nextInt(GRID_CNT);
 

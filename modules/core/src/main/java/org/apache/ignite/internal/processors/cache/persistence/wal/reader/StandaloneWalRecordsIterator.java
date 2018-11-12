@@ -82,8 +82,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      * File descriptors remained to scan.
      * <code>null</code> value means directory scan mode
      */
-    @Nullable
-    private final List<FileDescriptor> walFileDescriptors;
+    private final @Nullable List<FileDescriptor> walFileDescriptors;
 
     /** */
     private int curIdx = -1;
@@ -230,7 +229,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
     /** {@inheritDoc} */
     @Override protected AbstractReadFileHandle advanceSegment(
-        @Nullable final AbstractReadFileHandle curWalSegment
+        final @Nullable AbstractReadFileHandle curWalSegment
     ) throws IgniteCheckedException {
 
         if (curWalSegment != null)
@@ -350,7 +349,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override protected WALRecord postProcessRecord(@NotNull final WALRecord rec) {
+    @Override protected @NotNull WALRecord postProcessRecord(final @NotNull WALRecord rec) {
         GridKernalContext kernalCtx = sharedCtx.kernalContext();
         IgniteCacheObjectProcessor processor = kernalCtx.cacheObjects();
 
@@ -392,7 +391,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      * @return post-processed record.
      * @throws IgniteCheckedException if failed.
      */
-    @NotNull private WALRecord postProcessDataRecord(
+    private @NotNull WALRecord postProcessDataRecord(
         @NotNull DataRecord dataRec,
         GridKernalContext kernalCtx,
         IgniteCacheObjectProcessor processor
@@ -426,7 +425,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      * @return post precessed entry
      * @throws IgniteCheckedException if failed
      */
-    @NotNull private DataEntry postProcessDataEntry(
+    private @NotNull DataEntry postProcessDataEntry(
         final IgniteCacheObjectProcessor processor,
         final CacheObjectContext fakeCacheObjCtx,
         final DataEntry dataEntry) throws IgniteCheckedException {

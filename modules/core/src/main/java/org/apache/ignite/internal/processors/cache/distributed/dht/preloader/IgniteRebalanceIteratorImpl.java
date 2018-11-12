@@ -39,10 +39,10 @@ public class IgniteRebalanceIteratorImpl implements IgniteRebalanceIterator {
     private static final long serialVersionUID = 0L;
 
     /** Iterators for full preloading, ordered by partition ID. */
-    @Nullable private final NavigableMap<Integer, GridCloseableIterator<CacheDataRow>> fullIterators;
+    private final @Nullable NavigableMap<Integer, GridCloseableIterator<CacheDataRow>> fullIterators;
 
     /** Iterator for historical preloading. */
-    @Nullable private final IgniteHistoricalIterator historicalIterator;
+    private final @Nullable IgniteHistoricalIterator historicalIterator;
 
     /** Partitions marked as missing. */
     private final Set<Integer> missingParts = new HashSet<>();

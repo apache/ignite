@@ -248,13 +248,13 @@ public class PageMemoryImpl implements PageMemoryEx {
      * reads are protected by locking.
      * {@code Null} if delayed write functionality is disabled.
      */
-    @Nullable private final DelayedPageReplacementTracker delayedPageReplacementTracker;
+    private final @Nullable DelayedPageReplacementTracker delayedPageReplacementTracker;
 
     /**
      * Callback invoked to track changes in pages.
      * {@code Null} if page tracking functionality is disabled
      * */
-    @Nullable private final GridInClosure3X<Long, FullPageId, PageMemoryEx> changeTracker;
+    private final @Nullable GridInClosure3X<Long, FullPageId, PageMemoryEx> changeTracker;
 
     /** Pages write throttle. */
     private PagesWriteThrottlePolicy writeThrottle;
@@ -263,7 +263,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     private ThrottlingPolicy throttlingPlc;
 
     /** Checkpoint progress provider. Null disables throttling. */
-    @Nullable private final CheckpointWriteProgressSupplier cpProgressProvider;
+    private final @Nullable CheckpointWriteProgressSupplier cpProgressProvider;
 
     /** Flag indicating page replacement started (rotation with disk), allocating new page requires freeing old one. */
     private volatile boolean pageReplacementWarned;

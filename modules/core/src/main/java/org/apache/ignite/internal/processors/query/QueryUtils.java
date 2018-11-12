@@ -109,7 +109,7 @@ public class QueryUtils {
      *
      * @return SQL types set.
      */
-    @NotNull private static Set<Class<?>> createSqlTypes() {
+    private static @NotNull Set<Class<?>> createSqlTypes() {
         Set<Class<?>> sqlClasses = new HashSet<>(Arrays.<Class<?>>asList(
             Integer.class,
             Boolean.class,
@@ -379,7 +379,7 @@ public class QueryUtils {
      * @param replace Whether to perform replace of special characters.
      * @return Escaped string.
      */
-    @Nullable public static String normalizeObjectName(@Nullable String str, boolean replace) {
+    public static @Nullable String normalizeObjectName(@Nullable String str, boolean replace) {
         if (str == null)
             return null;
 
@@ -938,7 +938,7 @@ public class QueryUtils {
      * @param cls Class to search for a member in.
      * @return Member for given name.
      */
-    @Nullable private static QueryPropertyAccessor findProperty(String prop, Class<?> cls) {
+    private static @Nullable QueryPropertyAccessor findProperty(String prop, Class<?> cls) {
         StringBuilder getBldr = new StringBuilder("get");
         getBldr.append(prop);
         getBldr.setCharAt(3, Character.toUpperCase(getBldr.charAt(3)));
@@ -1162,7 +1162,7 @@ public class QueryUtils {
      * @param e Original exception.
      * @return Schema exception.
      */
-    @Nullable public static SchemaOperationException wrapIfNeeded(@Nullable Exception e) {
+    public static @Nullable SchemaOperationException wrapIfNeeded(@Nullable Exception e) {
         if (e == null)
             return null;
 

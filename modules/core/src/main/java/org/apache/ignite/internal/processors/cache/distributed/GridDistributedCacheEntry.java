@@ -80,7 +80,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
      * @return New candidate.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    @Nullable public GridCacheMvccCandidate addLocal(
+    public @Nullable GridCacheMvccCandidate addLocal(
         long threadId,
         GridCacheVersion ver,
         AffinityTopologyVersion topVer,
@@ -305,7 +305,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
      *
      * @return Removed candidate, or <tt>null</tt> if thread still holds the lock.
      */
-    @Nullable public GridCacheMvccCandidate removeLock() {
+    public @Nullable GridCacheMvccCandidate removeLock() {
         GridCacheMvccCandidate rmvd = null;
         CacheLockCandidates prev = null;
         CacheLockCandidates owner = null;
@@ -471,7 +471,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
      * @return Owner.
      * @throws GridCacheEntryRemovedException If entry is removed.
      */
-    @Nullable public CacheLockCandidates readyLock(GridCacheVersion ver)
+    public @Nullable CacheLockCandidates readyLock(GridCacheVersion ver)
         throws GridCacheEntryRemovedException {
         CacheLockCandidates prev = null;
         CacheLockCandidates owner = null;

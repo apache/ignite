@@ -101,7 +101,7 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
     /**
      * @return Cache configuration.
      */
-    @NotNull private CacheConfiguration cacheConfiguration() {
+    private @NotNull CacheConfiguration cacheConfiguration() {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setName(CACHE_NAME);
@@ -590,7 +590,7 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object load(Object key) {
+        @Override public @Nullable Object load(Object key) {
             return null;
         }
 

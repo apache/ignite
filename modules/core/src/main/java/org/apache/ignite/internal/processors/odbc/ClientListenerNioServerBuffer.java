@@ -68,7 +68,7 @@ public class ClientListenerNioServerBuffer {
      * @return Message bytes or {@code null} if message is not fully read yet.
      * @throws IgniteCheckedException If failed to parse message.
      */
-    @Nullable public byte[] read(ByteBuffer buf, boolean checkHandshake) throws IgniteCheckedException {
+    public @Nullable byte[] read(ByteBuffer buf, boolean checkHandshake) throws IgniteCheckedException {
         if (cnt < 0) {
             for (; cnt < 0 && buf.hasRemaining(); cnt++)
                 msgSize |= (buf.get() & 0xFF) << (8*(4 + cnt));

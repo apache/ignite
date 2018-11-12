@@ -83,7 +83,7 @@ public class WalStateResult {
     /**
      * @return Error message (if any).
      */
-    @Nullable public String errorMessage() {
+    public @Nullable String errorMessage() {
         return errMsg;
     }
 

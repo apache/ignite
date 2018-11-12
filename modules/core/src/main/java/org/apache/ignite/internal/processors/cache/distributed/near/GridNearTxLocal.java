@@ -188,7 +188,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     private TransactionProxyImpl rollbackOnlyProxy;
 
     /** Tx label. */
-    @Nullable private String lb;
+    private @Nullable String lb;
 
     /** */
     private MvccQueryTracker mvccTracker;
@@ -570,9 +570,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         K key,
         @Nullable V val,
         @Nullable EntryProcessor<K, V, Object> entryProcessor,
-        @Nullable final Object[] invokeArgs,
+        final @Nullable Object[] invokeArgs,
         final boolean retval,
-        @Nullable final CacheEntryPredicate filter
+        final @Nullable CacheEntryPredicate filter
     ) {
         assert key != null;
 
@@ -730,9 +730,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final GridCacheContext cacheCtx,
         @Nullable Map<? extends K, ? extends V> map,
         @Nullable Map<? extends K, ? extends EntryProcessor<K, V, Object>> invokeMap,
-        @Nullable final Object[] invokeArgs,
+        final @Nullable Object[] invokeArgs,
         final boolean retval,
-        @Nullable final CacheEntryPredicate filter
+        final @Nullable CacheEntryPredicate filter
     ) {
         try {
             validateTxMode(cacheCtx);
@@ -844,7 +844,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         @Nullable AffinityTopologyVersion entryTopVer,
         @Nullable Map<? extends K, ? extends V> map,
         @Nullable Map<? extends K, ? extends EntryProcessor<K, V, Object>> invokeMap,
-        @Nullable final Object[] invokeArgs,
+        final @Nullable Object[] invokeArgs,
         @Nullable Map<KeyCacheObject, GridCacheDrInfo> drMap,
         final boolean retval
     ) {
@@ -1347,10 +1347,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     private boolean enlistWriteEntry(GridCacheContext cacheCtx,
         @Nullable AffinityTopologyVersion entryTopVer,
         final KeyCacheObject cacheKey,
-        @Nullable final Object val,
-        @Nullable final EntryProcessor<?, ?, ?> entryProcessor,
-        @Nullable final Object[] invokeArgs,
-        @Nullable final ExpiryPolicy expiryPlc,
+        final @Nullable Object val,
+        final @Nullable EntryProcessor<?, ?, ?> entryProcessor,
+        final @Nullable Object[] invokeArgs,
+        final @Nullable ExpiryPolicy expiryPlc,
         final boolean retval,
         final boolean lockOnly,
         final CacheEntryPredicate[] filter,
@@ -1358,7 +1358,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final long drTtl,
         long drExpireTime,
         final GridCacheReturn ret,
-        @Nullable final Collection<KeyCacheObject> enlisted,
+        final @Nullable Collection<KeyCacheObject> enlisted,
         boolean skipStore,
         boolean singleRmv,
         boolean hasFilters,
@@ -1678,10 +1678,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     private <K, V> IgniteInternalFuture<GridCacheReturn> removeAllAsync0(
         final GridCacheContext cacheCtx,
         @Nullable AffinityTopologyVersion entryTopVer,
-        @Nullable final Collection<? extends K> keys,
+        final @Nullable Collection<? extends K> keys,
         @Nullable Map<KeyCacheObject, GridCacheVersion> drMap,
         final boolean retval,
-        @Nullable final CacheEntryPredicate filter,
+        final @Nullable CacheEntryPredicate filter,
         boolean singleRmv) {
         if(cacheCtx.mvccEnabled())
             return mvccRemoveAllAsync0(cacheCtx, keys, retval, filter);
@@ -1914,9 +1914,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     @SuppressWarnings("unchecked")
     private <K, V> IgniteInternalFuture<GridCacheReturn> mvccRemoveAllAsync0(
         final GridCacheContext cacheCtx,
-        @Nullable final Collection<? extends K> keys,
+        final @Nullable Collection<? extends K> keys,
         final boolean retval,
-        @Nullable final CacheEntryPredicate filter
+        final @Nullable CacheEntryPredicate filter
     ) {
         try {
             validateTxMode(cacheCtx);
@@ -2175,7 +2175,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     @SuppressWarnings("unchecked")
     public <K, V> IgniteInternalFuture<Map<K, V>> getAllAsync(
         final GridCacheContext cacheCtx,
-        @Nullable final AffinityTopologyVersion entryTopVer,
+        final @Nullable AffinityTopologyVersion entryTopVer,
         final Collection<KeyCacheObject> keys,
         final boolean deserializeBinary,
         final boolean skipVals,
@@ -4421,7 +4421,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteInternalFuture<?> currentPrepareFuture() {
+    @Override public @Nullable IgniteInternalFuture<?> currentPrepareFuture() {
         return prepFut;
     }
 
@@ -4658,7 +4658,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final CacheObject val0,
         CacheEntryPredicate[] filter) {
         GridCacheEntryEx e = new GridDhtDetachedCacheEntry(cctx, key) {
-            @Nullable @Override public CacheObject peekVisibleValue() {
+            @Override public @Nullable CacheObject peekVisibleValue() {
                 return val0;
             }
         };

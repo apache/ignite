@@ -1129,7 +1129,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    private void update(int grid, Operation op, String key, final Integer val, @Nullable final Integer expOld)
+    private void update(int grid, Operation op, String key, final Integer val, final @Nullable Integer expOld)
         throws Exception {
         cacheUpdate(grid, false, op, key, val, expOld, null);
     }
@@ -1143,8 +1143,8 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    private void remove(int grid, Operation op, String key, @Nullable final Integer expOld,
-        @Nullable final Integer expRmvRet) throws Exception {
+    private void remove(int grid, Operation op, String key, final @Nullable Integer expOld,
+        final @Nullable Integer expRmvRet) throws Exception {
         cacheUpdate(grid, true, op, key, null, expOld, expRmvRet);
     }
 
@@ -1160,7 +1160,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      */
     @SuppressWarnings("unchecked")
     private void cacheUpdate(int grid, boolean rmv, Operation op, String key, final Integer val,
-        @Nullable final Integer expOld, @Nullable final Integer expRmvRet)
+        final @Nullable Integer expOld, final @Nullable Integer expRmvRet)
         throws Exception {
         IgniteCache<String, Integer> cache = jcache(grid);
 
@@ -1453,14 +1453,14 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      */
     private static class InterceptorAdapter implements CacheInterceptor {
         /** */
-        @Nullable @Override public Object onGet(Object key, Object val) {
+        @Override public @Nullable Object onGet(Object key, Object val) {
             fail("onGet not expected");
 
             return null;
         }
 
         /** */
-        @Nullable @Override public Object onBeforePut(Cache.Entry entry, Object newVal) {
+        @Override public @Nullable Object onBeforePut(Cache.Entry entry, Object newVal) {
             fail("onBeforePut not expected");
 
             return null;
@@ -1472,7 +1472,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         }
 
         /** */
-        @Nullable @Override public IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
+        @Override public @Nullable IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
             fail("onBeforeRemove not expected");
 
             return null;
@@ -1501,7 +1501,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
+        @Override public @Nullable IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
             return ret;
         }
     }
@@ -1535,8 +1535,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         private volatile CacheInterceptor retInterceptor;
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
-        @Nullable @Override public Object onGet(Object key, Object val) {
+        @Override @SuppressWarnings("unchecked") public @Nullable Object onGet(Object key, Object val) {
             if (disabled)
                 return val;
 
@@ -1558,8 +1557,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
-        @Nullable @Override public Object onBeforePut(Cache.Entry entry, Object newVal) {
+        @Override @SuppressWarnings("unchecked") public @Nullable Object onBeforePut(Cache.Entry entry, Object newVal) {
             if (disabled)
                 return newVal;
 
@@ -1600,8 +1598,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
-        @Override @Nullable public IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
+        @Override @SuppressWarnings("unchecked") public @Nullable IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
             if (disabled)
                 return new IgniteBiTuple(false, entry.getValue());
 
@@ -1671,7 +1668,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
+        @Override public @Nullable IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
             return new IgniteBiTuple(entry.getKey().equals(key1), 999);
         }
     }
@@ -1681,7 +1678,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      */
     private static class PutIncrementInterceptor extends InterceptorAdapter {
         /** {@inheritDoc} */
-        @Nullable @Override public Object onBeforePut(Cache.Entry entry, Object newVal) {
+        @Override public @Nullable Object onBeforePut(Cache.Entry entry, Object newVal) {
             return (Integer)newVal + 1;
         }
     }
@@ -1691,7 +1688,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      */
     private static class NullPutInterceptor extends InterceptorAdapter {
         /** {@inheritDoc} */
-        @Nullable @Override public Object onBeforePut(Cache.Entry entry, Object newVal) {
+        @Override public @Nullable Object onBeforePut(Cache.Entry entry, Object newVal) {
             return null;
         }
     }
@@ -1701,7 +1698,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      */
     private static class NullGetInterceptor extends InterceptorAdapter {
         /** {@inheritDoc} */
-        @Nullable @Override public Object onGet(Object key, Object val) {
+        @Override public @Nullable Object onGet(Object key, Object val) {
             return null;
         }
     }
@@ -1711,7 +1708,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      */
     private static class GetAllInterceptor1 extends InterceptorAdapter {
         /** {@inheritDoc} */
-        @Nullable @Override public Object onGet(Object key, Object val) {
+        @Override public @Nullable Object onGet(Object key, Object val) {
             int k = Integer.valueOf((String)key);
 
             return k % 2 == 0 ? null : (k * 2);
@@ -1723,7 +1720,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      */
     private static class GetAllInterceptor2 extends InterceptorAdapter {
         /** {@inheritDoc} */
-        @Nullable @Override public Object onGet(Object key, Object val) {
+        @Override public @Nullable Object onGet(Object key, Object val) {
             int k = Integer.valueOf((String)key);
 
             switch (k % 3) {
@@ -1759,7 +1756,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object onBeforePut(Cache.Entry entry, Object newVal) {
+        @Override public @Nullable Object onBeforePut(Cache.Entry entry, Object newVal) {
             if (entry.getKey().equals(key1))
                 return null;
 
@@ -1772,7 +1769,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      */
     private static class GetIncrementInterceptor extends InterceptorAdapter {
         /** {@inheritDoc} */
-        @Nullable @Override public Object onGet(Object key, Object val) {
+        @Override public @Nullable Object onGet(Object key, Object val) {
             return (Integer)val + 1;
         }
     }
@@ -1782,7 +1779,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      */
     private static class OneGetInterceptor extends InterceptorAdapter {
         /** {@inheritDoc} */
-        @Nullable @Override public Object onGet(Object key, Object val) {
+        @Override public @Nullable Object onGet(Object key, Object val) {
             return 1;
         }
     }

@@ -120,8 +120,8 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
      * @return PDS folder settings compatible with previous versions.
      */
     private PdsFolderSettings compatibleResolve(
-        @Nullable final File pstStoreBasePath,
-        @NotNull final Serializable consistentId) {
+        final @Nullable File pstStoreBasePath,
+        final @NotNull Serializable consistentId) {
 
         if (cfg.getConsistentId() != null) {
             // compatible mode from configuration is used fot this case, no locking, no consitent id change
@@ -254,7 +254,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
      * @param folder folder to scan.
      * @return folder displayable information.
      */
-    @NotNull private String getPathDisplayableInfo(final File folder) {
+    private @NotNull String getPathDisplayableInfo(final File folder) {
         final SB res = new SB();
 
         res.a(getCanonicalPath(folder));
@@ -277,7 +277,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
      * @param file path to convert.
      * @return canonical pathname or at leas absolute if convert to canonical failed.
      */
-    @NotNull private String getCanonicalPath(final File file) {
+    private @NotNull String getCanonicalPath(final File file) {
         try {
             return file.getCanonicalPath();
         }
@@ -318,7 +318,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
      * @return new settings to be used in this node.
      * @throws IgniteCheckedException if failed.
      */
-    @NotNull private PdsFolderSettings generateAndLockNewDbStorage(final File pstStoreBasePath,
+    private @NotNull PdsFolderSettings generateAndLockNewDbStorage(final File pstStoreBasePath,
         final int nodeIdx) throws IgniteCheckedException {
 
         final UUID uuid = UUID.randomUUID();
@@ -342,7 +342,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
      * @param uuid consistent ID.
      * @return folder file name
      */
-    @NotNull public static String genNewStyleSubfolderName(final int nodeIdx, final UUID uuid) {
+    public static @NotNull String genNewStyleSubfolderName(final int nodeIdx, final UUID uuid) {
         final String uuidAsStr = uuid.toString();
 
         assert uuidAsStr.matches(UUID_STR_PATTERN);
@@ -359,7 +359,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
      * @return locked directory, should be released and closed later
      * @throws IgniteCheckedException if failed
      */
-    @NotNull private GridCacheDatabaseSharedManager.FileLockHolder lockRootDirectory(File pstStoreBasePath)
+    private @NotNull GridCacheDatabaseSharedManager.FileLockHolder lockRootDirectory(File pstStoreBasePath)
         throws IgniteCheckedException {
 
         GridCacheDatabaseSharedManager.FileLockHolder rootDirLock;
@@ -380,7 +380,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
      * @return empty list if there is no files in folder to test. Non null value is returned for folder having
      * applicable new style files. Collection is sorted ascending according to node ID, 0 node index is coming first.
      */
-    @Nullable private List<FolderCandidate> getNodeIndexSortedCandidates(File pstStoreBasePath) {
+    private @Nullable List<FolderCandidate> getNodeIndexSortedCandidates(File pstStoreBasePath) {
         final File[] files = pstStoreBasePath.listFiles(DB_SUBFOLDERS_NEW_STYLE_FILTER);
 
         if (files == null)
@@ -439,7 +439,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
      * store configuration. Null if persistence is not enabled. Returned folder is created automatically.
      * @throws IgniteCheckedException if I/O failed.
      */
-    @Nullable private File resolvePersistentStoreBasePath() throws IgniteCheckedException {
+    private @Nullable File resolvePersistentStoreBasePath() throws IgniteCheckedException {
         final DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
 
         if (dsCfg == null)
@@ -459,7 +459,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
      * @param subFolderFile new style folder name to parse
      * @return Pair of UUID and node index
      */
-    private FolderCandidate parseFileName(@NotNull final File subFolderFile) {
+    private FolderCandidate parseFileName(final @NotNull File subFolderFile) {
         return parseSubFolderName(subFolderFile, log);
     }
 
@@ -468,9 +468,9 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
      * @param log Logger.
      * @return Pair of UUID and node index.
      */
-    @Nullable public static FolderCandidate parseSubFolderName(
-        @NotNull final File subFolderFile,
-        @NotNull final IgniteLogger log) {
+    public static @Nullable FolderCandidate parseSubFolderName(
+        final @NotNull File subFolderFile,
+        final @NotNull IgniteLogger log) {
 
         final String fileName = subFolderFile.getName();
         final Matcher matcher = Pattern.compile(NODE_PATTERN).matcher(fileName);

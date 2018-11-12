@@ -32,14 +32,14 @@ public interface GridNioSession {
      *
      * @return Local network address or {@code null} if non-socket communication is used.
      */
-    @Nullable public InetSocketAddress localAddress();
+    public @Nullable InetSocketAddress localAddress();
 
     /**
      * Gets address of remote peer on this session.
      *
      * @return Address of remote peer or {@code null} if non-socket communication is used.
      */
-    @Nullable public InetSocketAddress remoteAddress();
+    public @Nullable InetSocketAddress remoteAddress();
 
     /**
      * Gets the total count of bytes sent since the session was created.
@@ -121,7 +121,7 @@ public interface GridNioSession {
      * @param key Key to look up.
      * @return Associated meta object or {@code null} if meta was not found.
      */
-    @Nullable public <T> T meta(int key);
+    public @Nullable <T> T meta(int key);
 
     /**
      * Adds metadata associated with specified key.
@@ -130,7 +130,7 @@ public interface GridNioSession {
      * @param val Metadata value.
      * @return Previously associated object or {@code null} if no objects were associated.
      */
-    @Nullable public <T> T addMeta(int key, @Nullable T val);
+    public @Nullable <T> T addMeta(int key, @Nullable T val);
 
     /**
      * Removes metadata with the specified key.
@@ -138,7 +138,7 @@ public interface GridNioSession {
      * @param key Metadata key.
      * @return Object that was associated with the key or {@code null}.
      */
-    @Nullable public <T> T removeMeta(int key);
+    public @Nullable <T> T removeMeta(int key);
 
     /**
      * @return {@code True} if this connection was initiated from remote node.
@@ -179,12 +179,12 @@ public interface GridNioSession {
     /**
      * @return Recovery descriptor if recovery is supported, {@code null otherwise.}
      */
-    @Nullable public GridNioRecoveryDescriptor outRecoveryDescriptor();
+    public @Nullable GridNioRecoveryDescriptor outRecoveryDescriptor();
 
     /**
      * @return Recovery descriptor if recovery is supported, {@code null otherwise.}
      */
-    @Nullable public GridNioRecoveryDescriptor inRecoveryDescriptor();
+    public @Nullable GridNioRecoveryDescriptor inRecoveryDescriptor();
 
     /**
      * @param msg System message to send.

@@ -63,7 +63,7 @@ public class DefaultCommunicationFailureResolver implements CommunicationFailure
      * @param ctx Communication failure context.
      * @return Largest part of the cluster nodes to keep.
      */
-    @Nullable private ClusterPart findLargestConnectedCluster(CommunicationFailureContext ctx) {
+    private @Nullable ClusterPart findLargestConnectedCluster(CommunicationFailureContext ctx) {
         List<ClusterNode> srvNodes = ctx.topologySnapshot()
             .stream()
             .filter(node -> !node.isClient())

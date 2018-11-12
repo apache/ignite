@@ -101,7 +101,7 @@ public class NearCacheConfiguration<K, V> implements Serializable {
      *
      * @return Cache eviction policy or {@code null} if evictions should be disabled.
      */
-    @Nullable public Factory<EvictionPolicy<? super K, ? super V>> getNearEvictionPolicyFactory() {
+    public @Nullable Factory<EvictionPolicy<? super K, ? super V>> getNearEvictionPolicyFactory() {
         return nearEvictPlcFactory;
     }
 

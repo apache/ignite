@@ -134,7 +134,7 @@ public class CachesRegistry {
      * @param cacheId Cache ID.
      * @return Cache descriptor if cache found.
      */
-    @Nullable public DynamicCacheDescriptor cache(int cacheId) {
+    public @Nullable DynamicCacheDescriptor cache(int cacheId) {
         return registeredCaches.get(cacheId);
     }
 
@@ -144,7 +144,7 @@ public class CachesRegistry {
      * @param cacheId Cache id.
      * @return Unregistered cache or {@code null} if cache doesn't exist.
      */
-    @Nullable public DynamicCacheDescriptor unregisterCache(int cacheId) {
+    public @Nullable DynamicCacheDescriptor unregisterCache(int cacheId) {
         return registeredCaches.remove(cacheId);
     }
 

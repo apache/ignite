@@ -183,7 +183,7 @@ public class GridJobExecutionSingleNodeSemaphoreLoadTest {
         };
 
         GridLoadTestUtils.runMultithreadedInLoop(new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
+            @Override public @Nullable Object call() throws Exception {
                 sem.acquire();
 
                 g.compute().executeAsync(GridJobExecutionLoadTestTask.class, null).listen(lsnr);
@@ -200,7 +200,7 @@ public class GridJobExecutionSingleNodeSemaphoreLoadTest {
      */
     private static class GridJobExecutionLoadTestTask implements ComputeTask<Object, Object> {
         /** {@inheritDoc} */
-        @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) {
+        @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) {
             return F.asMap(new GridJobExecutionLoadTestJob(), subgrid.get(0));
         }
 
@@ -210,7 +210,7 @@ public class GridJobExecutionSingleNodeSemaphoreLoadTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object reduce(List<ComputeJobResult> results) {
+        @Override public @Nullable Object reduce(List<ComputeJobResult> results) {
             return null;
         }
     }

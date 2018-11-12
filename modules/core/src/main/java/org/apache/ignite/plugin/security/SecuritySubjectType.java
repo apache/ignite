@@ -43,7 +43,7 @@ public enum SecuritySubjectType {
      * @param ord Ordinal value.
      * @return Enumerated value.
      */
-    @Nullable public static SecuritySubjectType fromOrdinal(byte ord) {
+    public static @Nullable SecuritySubjectType fromOrdinal(byte ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

@@ -1306,7 +1306,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object load(Integer key) {
+        @Override public @Nullable Object load(Integer key) {
             return null;
         }
 

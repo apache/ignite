@@ -37,7 +37,7 @@ public class DataEntry {
     protected KeyCacheObject key;
 
     /** Cache object value. May be {@code} null for {@link GridCacheOperation#DELETE} */
-    @Nullable protected CacheObject val;
+    protected @Nullable CacheObject val;
 
     /** Entry operation performed. */
     @GridToStringInclude

@@ -144,7 +144,7 @@ public class LinearRegressionSGDTrainer<P extends Serializable> extends SingleLa
      * @param mdl Model.
      * @return state of MLP from last learning.
      */
-    @NotNull private MultilayerPerceptron restoreMLPState(LinearRegressionModel mdl) {
+    private @NotNull MultilayerPerceptron restoreMLPState(LinearRegressionModel mdl) {
         Vector weights = mdl.getWeights();
         double intercept = mdl.getIntercept();
         MLPArchitecture architecture1 = new MLPArchitecture(weights.size());

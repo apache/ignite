@@ -98,7 +98,7 @@ public enum DataStructureType {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static DataStructureType fromOrdinal(int ord) {
+    public static @Nullable DataStructureType fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

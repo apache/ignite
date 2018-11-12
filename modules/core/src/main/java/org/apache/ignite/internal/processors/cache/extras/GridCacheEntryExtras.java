@@ -28,7 +28,7 @@ public interface GridCacheEntryExtras {
     /**
      * @return MVCC.
      */
-    @Nullable public GridCacheMvcc mvcc();
+    public @Nullable GridCacheMvcc mvcc();
 
     /**
      * @param mvcc NVCC.
@@ -39,7 +39,7 @@ public interface GridCacheEntryExtras {
     /**
      * @return Obsolete version.
      */
-    @Nullable public GridCacheVersion obsoleteVersion();
+    public @Nullable GridCacheVersion obsoleteVersion();
 
     /**
      * @param obsoleteVer Obsolete version.

@@ -328,7 +328,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     /**
      * @return Response.
      */
-    @Nullable public GridNearAtomicUpdateResponse response() {
+    public @Nullable GridNearAtomicUpdateResponse response() {
         return res;
     }
 
@@ -437,12 +437,12 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     /**
      * @return Filter.
      */
-    @Nullable public abstract CacheEntryPredicate[] filter();
+    public abstract @Nullable CacheEntryPredicate[] filter();
 
     /**
      * @return Optional arguments for entry processor.
      */
-    @Nullable public abstract Object[] invokeArguments();
+    public abstract @Nullable Object[] invokeArguments();
 
     /**
      * @param key Key to add.
@@ -488,13 +488,13 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     /**
      * @return Conflict versions.
      */
-    @Nullable public abstract List<GridCacheVersion> conflictVersions();
+    public abstract @Nullable List<GridCacheVersion> conflictVersions();
 
     /**
      * @param idx Index.
      * @return Conflict version.
      */
-    @Nullable public abstract GridCacheVersion conflictVersion(int idx);
+    public abstract @Nullable GridCacheVersion conflictVersion(int idx);
 
     /**
      * @param idx Index.

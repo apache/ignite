@@ -46,7 +46,7 @@ public class DiscoveryDataClusterState implements Serializable {
     private final boolean active;
 
     /** Current cluster baseline topology. */
-    @Nullable private final BaselineTopology baselineTopology;
+    private final @Nullable BaselineTopology baselineTopology;
 
     /**
      * Transition request ID. Set to a non-null value if the cluster is changing it's state.
@@ -142,7 +142,7 @@ public class DiscoveryDataClusterState implements Serializable {
     /**
      * @return Local flag for state transition result (global state is updated asynchronously by custom message).
      */
-    @Nullable public Boolean transitionResult() {
+    public @Nullable Boolean transitionResult() {
         return transitionRes;
     }
 
@@ -189,14 +189,14 @@ public class DiscoveryDataClusterState implements Serializable {
     /**
      * @return Baseline topology.
      */
-    @Nullable public BaselineTopology baselineTopology() {
+    public @Nullable BaselineTopology baselineTopology() {
         return baselineTopology;
     }
 
     /**
      * @return Previous Baseline topology.
      */
-    @Nullable public BaselineTopology previousBaselineTopology() {
+    public @Nullable BaselineTopology previousBaselineTopology() {
         return prevState != null ? prevState.baselineTopology() : null;
     }
 
@@ -234,7 +234,7 @@ public class DiscoveryDataClusterState implements Serializable {
     /**
      * @return Transition error.
      */
-    @Nullable public Exception transitionError() {
+    public @Nullable Exception transitionError() {
         return transitionError;
     }
 

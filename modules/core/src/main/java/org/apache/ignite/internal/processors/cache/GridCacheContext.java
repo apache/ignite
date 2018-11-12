@@ -537,7 +537,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Cache default {@link ExpiryPolicy}.
      */
-    @Nullable public ExpiryPolicy expiry() {
+    public @Nullable ExpiryPolicy expiry() {
         return expiryPlc;
     }
 
@@ -545,7 +545,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param txEntry TX entry.
      * @return Expiry policy for the given TX entry.
      */
-    @Nullable public ExpiryPolicy expiryForTxEntry(IgniteTxEntry txEntry) {
+    public @Nullable ExpiryPolicy expiryForTxEntry(IgniteTxEntry txEntry) {
         ExpiryPolicy plc = txEntry.expiry();
 
         return plc != null ? plc : expiryPlc;
@@ -555,7 +555,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param mgr Manager to add.
      * @return Added manager.
      */
-    @Nullable private <T extends GridCacheManager<K, V>> T add(@Nullable T mgr) {
+    private @Nullable <T extends GridCacheManager<K, V>> T add(@Nullable T mgr) {
         if (mgr != null)
             mgrs.add(mgr);
 
@@ -907,7 +907,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param nodeId Node id.
      * @return Node.
      */
-    @Nullable public ClusterNode node(UUID nodeId) {
+    public @Nullable ClusterNode node(UUID nodeId) {
         assert nodeId != null;
 
         return ctx.discovery().node(nodeId);
@@ -1772,7 +1772,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param obj Object.
      * @return Heap-based object.
      */
-    @Nullable public <T> T unwrapTemporary(@Nullable Object obj) {
+    public @Nullable <T> T unwrapTemporary(@Nullable Object obj) {
         return (T)cacheObjects().unwrapTemporary(this, obj);
     }
 
@@ -1842,7 +1842,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param obj Object.
      * @return Cache object.
      */
-    @Nullable public CacheObject toCacheObject(@Nullable Object obj) {
+    public @Nullable CacheObject toCacheObject(@Nullable Object obj) {
         assert validObjectForCache(obj) : obj;
 
         return cacheObjects().toCacheObject(cacheObjCtx, obj, true, grp.isTopologyLocked());
@@ -2019,7 +2019,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         final long expireTime,
         final long ttl,
         final Object val,
-        @Nullable final EntryGetResult getRes,
+        final @Nullable EntryGetResult getRes,
         final boolean needVer) {
         final V1 v;
 
@@ -2243,7 +2243,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param canRemap Flag indicating that 'get' should be done on a locked topology version.
      * @return Affinity node to get key from or {@code null} if there is no suitable alive node.
      */
-    @Nullable public ClusterNode selectAffinityNodeBalanced(List<ClusterNode> affNodes, boolean canRemap) {
+    public @Nullable ClusterNode selectAffinityNodeBalanced(List<ClusterNode> affNodes, boolean canRemap) {
         if (!readLoadBalancingEnabled) {
             if (!canRemap) {
                 for (ClusterNode node : affNodes) {

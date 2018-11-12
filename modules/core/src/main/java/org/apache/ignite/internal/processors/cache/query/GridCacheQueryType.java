@@ -64,7 +64,7 @@ public enum GridCacheQueryType {
      * @param ord Ordinal value.
      * @return Enumerated value.
      */
-    @Nullable public static GridCacheQueryType fromOrdinal(byte ord) {
+    public static @Nullable GridCacheQueryType fromOrdinal(byte ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

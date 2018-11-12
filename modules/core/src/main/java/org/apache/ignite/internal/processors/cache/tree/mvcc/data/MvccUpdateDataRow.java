@@ -486,7 +486,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
      */
     private boolean applyFilter(final CacheObject val0) {
         GridCacheEntryEx e = new GridDhtDetachedCacheEntry(cctx, key) {
-            @Nullable @Override public CacheObject peekVisibleValue() {
+            @Override public @Nullable CacheObject peekVisibleValue() {
                 return val0;
             }
         };
@@ -509,7 +509,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
     /**
      * @return Result type.
      */
-    @NotNull @Override public ResultType resultType() {
+    @Override public @NotNull ResultType resultType() {
         return res == null ? defaultResult() : res;
     }
 
@@ -518,7 +518,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
      *
      * @return Result type.
      */
-    @NotNull private ResultType defaultResult() {
+    private @NotNull ResultType defaultResult() {
         assert res == null;
 
         if (filter != null && !applyFilter(null))

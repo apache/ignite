@@ -65,7 +65,7 @@ public class DetachedClusterNode implements ClusterNode {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> T attribute(String name) {
+    @Override public @Nullable <T> T attribute(String name) {
         return (T)attributes.get(name);
     }
 

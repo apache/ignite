@@ -364,7 +364,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V get(K key) throws IgniteCheckedException {
+    @Override public @Nullable V get(K key) throws IgniteCheckedException {
         CacheOperationContext prev = gate.enter(opCtx);
 
         try {
@@ -376,7 +376,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheEntry<K, V> getEntry(K key) throws IgniteCheckedException {
+    @Override public @Nullable CacheEntry<K, V> getEntry(K key) throws IgniteCheckedException {
         CacheOperationContext prev = gate.enter(opCtx);
 
         try {
@@ -436,7 +436,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<K, V> getAllOutTx(Set<? extends K> keys) throws IgniteCheckedException {
+    @Override public @Nullable Map<K, V> getAllOutTx(Set<? extends K> keys) throws IgniteCheckedException {
         CacheOperationContext prev = gate.enter(opCtx);
 
         try {
@@ -448,7 +448,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteInternalFuture<Map<K, V>> getAllOutTxAsync(Set<? extends K> keys) {
+    @Override public @Nullable IgniteInternalFuture<Map<K, V>> getAllOutTxAsync(Set<? extends K> keys) {
         CacheOperationContext prev = gate.enter(opCtx);
 
         try {
@@ -534,7 +534,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V getAndPut(K key, V val)
+    @Override public @Nullable V getAndPut(K key, V val)
         throws IgniteCheckedException {
         CacheOperationContext prev = gate.enter(opCtx);
 
@@ -694,7 +694,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V getAndPutIfAbsent(K key, V val) throws IgniteCheckedException {
+    @Override public @Nullable V getAndPutIfAbsent(K key, V val) throws IgniteCheckedException {
         CacheOperationContext prev = gate.enter(opCtx);
 
         try {
@@ -742,7 +742,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V getAndReplace(K key, V val) throws IgniteCheckedException {
+    @Override public @Nullable V getAndReplace(K key, V val) throws IgniteCheckedException {
         CacheOperationContext prev = gate.enter(opCtx);
 
         try {
@@ -925,7 +925,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V localPeek(K key,
+    @Override public @Nullable V localPeek(K key,
         CachePeekMode[] peekModes,
         @Nullable IgniteCacheExpiryPolicy plc)
         throws IgniteCheckedException {
@@ -1084,7 +1084,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V getAndRemove(K key)
+    @Override public @Nullable V getAndRemove(K key)
         throws IgniteCheckedException {
         CacheOperationContext prev = gate.enter(opCtx);
 
@@ -1208,7 +1208,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> EntryProcessorResult<T> invoke(
+    @Override public @Nullable <T> EntryProcessorResult<T> invoke(
         AffinityTopologyVersion topVer,
         K key,
         EntryProcessor<K, V, T> entryProcessor,
@@ -1563,7 +1563,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public ExpiryPolicy expiry() {
+    @Override public @Nullable ExpiryPolicy expiry() {
         return opCtx != null ? opCtx.expiry() : null;
     }
 

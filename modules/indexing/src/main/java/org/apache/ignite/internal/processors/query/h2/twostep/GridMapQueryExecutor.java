@@ -760,11 +760,11 @@ public class GridMapQueryExecutor {
         final int timeout,
         final Object[] params,
         boolean lazy,
-        @Nullable final MvccSnapshot mvccSnapshot,
-        @Nullable final GridDhtTxLocalAdapter tx,
-        @Nullable final GridH2SelectForUpdateTxDetails txDetails,
-        @Nullable final CompoundLockFuture lockFut,
-        @Nullable final AtomicInteger runCntr) {
+        final @Nullable MvccSnapshot mvccSnapshot,
+        final @Nullable GridDhtTxLocalAdapter tx,
+        final @Nullable GridH2SelectForUpdateTxDetails txDetails,
+        final @Nullable CompoundLockFuture lockFut,
+        final @Nullable AtomicInteger runCntr) {
         MapQueryLazyWorker worker = MapQueryLazyWorker.currentWorker();
 
         // In presence of TX, we also must always have matching details.

@@ -68,10 +68,9 @@ public class TransformMapView2<K, V, V1> extends GridSerializableMap<K, V1> {
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Set<Entry<K, V1>> entrySet() {
+    @Override public @NotNull Set<Entry<K, V1>> entrySet() {
         return new GridSerializableSet<Entry<K, V1>>() {
-            @NotNull
-            @Override public Iterator<Entry<K, V1>> iterator() {
+            @Override public @NotNull Iterator<Entry<K, V1>> iterator() {
                 return new Iterator<Entry<K, V1>>() {
                     private Iterator<Entry<K, V>> it = GridFunc.iterator0(map.entrySet(), true, entryPred);
 
@@ -130,8 +129,7 @@ public class TransformMapView2<K, V, V1> extends GridSerializableMap<K, V1> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
-    @Nullable @Override public V1 get(Object key) {
+    @Override @SuppressWarnings({"unchecked"}) public @Nullable V1 get(Object key) {
         if (GridFunc.isAll((K)key, preds)) {
             V v = map.get(key);
 
@@ -143,7 +141,7 @@ public class TransformMapView2<K, V, V1> extends GridSerializableMap<K, V1> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V1 put(K key, V1 val) {
+    @Override public @Nullable V1 put(K key, V1 val) {
         throw new UnsupportedOperationException("Put is not supported for readonly map view.");
     }
 

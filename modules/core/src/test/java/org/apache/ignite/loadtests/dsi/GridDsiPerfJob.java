@@ -82,14 +82,14 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
     /**
      * @return Message.
      */
-    @Nullable private GridDsiMessage message() {
+    private @Nullable GridDsiMessage message() {
         return argument(0);
     }
 
     /**
      * @return Terminal ID.
      */
-    @Nullable public String terminalId() {
+    public @Nullable String terminalId() {
         GridDsiMessage msg = message();
 
         return msg != null ? msg.getTerminalId() : null;

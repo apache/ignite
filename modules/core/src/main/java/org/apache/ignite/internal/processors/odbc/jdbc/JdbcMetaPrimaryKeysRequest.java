@@ -55,7 +55,7 @@ public class JdbcMetaPrimaryKeysRequest extends JdbcRequest {
     /**
      * @return Schema name pattern.
      */
-    @Nullable public String schemaName() {
+    public @Nullable String schemaName() {
         return schemaName;
     }
 

@@ -95,7 +95,7 @@ public class GridCacheDefaultAffinityKeyMapper implements AffinityKeyMapper {
      * @param cls Key class.
      * @return Name of
      */
-    @Nullable public String affinityKeyPropertyName(Class<?> cls) {
+    public @Nullable String affinityKeyPropertyName(Class<?> cls) {
         Field field = reflectCache.firstField(cls);
 
         if (field != null)

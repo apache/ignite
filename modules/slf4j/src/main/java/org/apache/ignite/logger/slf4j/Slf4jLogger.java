@@ -163,7 +163,7 @@ public class Slf4jLogger implements IgniteLogger {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String fileName() {
+    @Override public @Nullable String fileName() {
         return null;
     }
 

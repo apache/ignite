@@ -327,7 +327,7 @@ abstract class GridClientAbstractProjection<T extends GridClientAbstractProjecti
      * @return Balanced node.
      * @throws GridServerUnreachableException If topology is empty.
      */
-    private GridClientNode balancedNode(@Nullable final GridClientNode exclude) throws GridClientException {
+    private GridClientNode balancedNode(final @Nullable GridClientNode exclude) throws GridClientException {
         GridClientPredicate<GridClientNode> excludeFilter = exclude == null ?
             new GridClientPredicate<GridClientNode>() {
                 @Override public boolean apply(GridClientNode e) {
@@ -416,7 +416,7 @@ abstract class GridClientAbstractProjection<T extends GridClientAbstractProjecti
      * @param second Second collection to intersect.
      * @return Intersection or {@code null} if both collections are {@code null}.
      */
-    @Nullable private Collection<GridClientNode> intersection(@Nullable Collection<? extends GridClientNode> first,
+    private @Nullable Collection<GridClientNode> intersection(@Nullable Collection<? extends GridClientNode> first,
         @Nullable Collection<? extends GridClientNode> second) {
         if (first == null && second == null)
             return null;

@@ -145,8 +145,7 @@ public class GridClientNodeImpl implements GridClientNode {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Nullable @Override public <T> T attribute(String name) {
+    @Override @SuppressWarnings("unchecked") public @Nullable <T> T attribute(String name) {
         return (T)attrs.get(name);
     }
 

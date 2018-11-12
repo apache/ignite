@@ -282,7 +282,7 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
      * @return File object represented shared directory.
      * @throws org.apache.ignite.spi.IgniteSpiException Throws if initializing has filed.
      */
-    @Nullable private File getNextSharedPath() throws IgniteSpiException {
+    private @Nullable File getNextSharedPath() throws IgniteSpiException {
         if (folder != null) {
             folder = null;
 

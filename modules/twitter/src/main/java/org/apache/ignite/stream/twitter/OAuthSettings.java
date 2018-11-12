@@ -55,32 +55,28 @@ public class OAuthSettings {
     /**
      * @return Consumer key.
      */
-    @NotNull
-    public String getConsumerKey() {
+    public @NotNull String getConsumerKey() {
         return consumerKey;
     }
 
     /**
      * @return Consumer secret.
      */
-    @NotNull
-    public String getConsumerSecret() {
+    public @NotNull String getConsumerSecret() {
         return consumerSecret;
     }
 
     /**
      * @return Access token.
      */
-    @NotNull
-    public String getAccessToken() {
+    public @NotNull String getAccessToken() {
         return accessToken;
     }
 
     /**
      * @return Access token secret.
      */
-    @NotNull
-    public String getAccessTokenSecret() {
+    public @NotNull String getAccessTokenSecret() {
         return accessTokenSecret;
     }
 }

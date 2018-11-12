@@ -232,14 +232,14 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     /**
      * @return Cache name.
      */
-    @Nullable public String getName() {
+    public @Nullable String getName() {
         return name;
     }
 
     /**
      * @return Cache group name.
      */
-    @Nullable public String getGroupName() {
+    public @Nullable String getGroupName() {
         return grpName;
     }
 
@@ -288,7 +288,7 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     /**
      * @return Cache interceptor.
      */
-    @Nullable public String getInterceptor() {
+    public @Nullable String getInterceptor() {
         return interceptor;
     }
 

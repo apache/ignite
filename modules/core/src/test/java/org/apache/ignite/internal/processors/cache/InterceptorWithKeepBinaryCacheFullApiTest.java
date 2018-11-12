@@ -64,7 +64,7 @@ public class InterceptorWithKeepBinaryCacheFullApiTest extends WithKeepBinaryCac
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Nullable @Override public V onGet(K key, V val) {
+        @Override public @Nullable V onGet(K key, V val) {
             // TODO IGNITE-2973: should always validate key here, but cannot due to the bug.
             validate(key, val, false, true);
 
@@ -72,7 +72,7 @@ public class InterceptorWithKeepBinaryCacheFullApiTest extends WithKeepBinaryCac
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public V onBeforePut(Cache.Entry<K, V> e, V newVal) {
+        @Override public @Nullable V onBeforePut(Cache.Entry<K, V> e, V newVal) {
             if (validate) {
                 validate(e.getKey(), e.getValue(), true, true);
 
@@ -89,7 +89,7 @@ public class InterceptorWithKeepBinaryCacheFullApiTest extends WithKeepBinaryCac
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public IgniteBiTuple<Boolean, V> onBeforeRemove(Cache.Entry<K, V> entry) {
+        @Override public @Nullable IgniteBiTuple<Boolean, V> onBeforeRemove(Cache.Entry<K, V> entry) {
             validate(entry.getKey(), entry.getValue(), true, true);
 
             return new IgniteBiTuple<>(false, entry.getValue());

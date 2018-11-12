@@ -363,7 +363,7 @@ public class GridCacheAttributes implements Serializable {
      * @param obj Object to get class of.
      * @return Class name or {@code null}.
      */
-    @Nullable private static String className(@Nullable Object obj) {
+    private static @Nullable String className(@Nullable Object obj) {
         return obj != null ? obj.getClass().getName() : null;
     }
 

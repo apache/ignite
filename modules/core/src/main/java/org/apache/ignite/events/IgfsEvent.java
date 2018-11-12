@@ -157,7 +157,7 @@ public class IgfsEvent extends EventAdapter {
      * @return New file or directory path or {@code null},
      *         if not relevant for this event.
      */
-    @Nullable public IgfsPath newPath() {
+    public @Nullable IgfsPath newPath() {
         return newPath;
     }
 
@@ -176,7 +176,7 @@ public class IgfsEvent extends EventAdapter {
      * @return Updated metadata properties or {@code null},
      *         if not relevant for this event.
      */
-    @Nullable public Map<String, String> updatedMeta() {
+    public @Nullable Map<String, String> updatedMeta() {
         return meta;
     }
 

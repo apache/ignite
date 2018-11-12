@@ -167,21 +167,21 @@ public class VisorIgfsConfiguration extends VisorDataTransferObject {
     /**
      * @return IGFS instance name.
      */
-    @Nullable public String getName() {
+    public @Nullable String getName() {
         return name;
     }
 
     /**
      * @return Cache name to store IGFS meta information.
      */
-    @Nullable public String getMetaCacheName() {
+    public @Nullable String getMetaCacheName() {
         return metaCacheName;
     }
 
     /**
      * @return Cache name to store IGFS data.
      */
-    @Nullable public String getDataCacheName() {
+    public @Nullable String getDataCacheName() {
         return dataCacheName;
     }
 
@@ -230,7 +230,7 @@ public class VisorIgfsConfiguration extends VisorDataTransferObject {
     /**
      * @return Map of paths to IGFS modes.
      */
-    @Nullable public Map<String, IgfsMode> getPathModes() {
+    public @Nullable Map<String, IgfsMode> getPathModes() {
         return pathModes;
     }
 
@@ -272,7 +272,7 @@ public class VisorIgfsConfiguration extends VisorDataTransferObject {
     /**
      * @return IPC endpoint config to publish IGFS over.
      */
-    @Nullable public String getIpcEndpointConfiguration() {
+    public @Nullable String getIpcEndpointConfiguration() {
         return ipcEndpointCfg;
     }
 

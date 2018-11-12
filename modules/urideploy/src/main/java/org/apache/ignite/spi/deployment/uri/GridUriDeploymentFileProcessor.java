@@ -69,7 +69,7 @@ final class GridUriDeploymentFileProcessor {
      * @throws org.apache.ignite.spi.IgniteSpiException Thrown if file could not be read.
      * @return List of tasks from given file.
      */
-    @Nullable static GridUriDeploymentFileProcessorResult processFile(File file, String uri, File deployDir,
+    static @Nullable GridUriDeploymentFileProcessorResult processFile(File file, String uri, File deployDir,
         IgniteLogger log) throws IgniteSpiException {
         File gar = file;
 
@@ -143,7 +143,7 @@ final class GridUriDeploymentFileProcessor {
      * @param log logger to log all failures.
      * @return string representation of the calculated checksum or {@code null} if calculation failed.
      */
-    @Nullable public static String md5(@Nullable File file, @Nullable IgniteLogger log) {
+    public static @Nullable String md5(@Nullable File file, @Nullable IgniteLogger log) {
         if (file != null)
             return file.isFile() ? fileMd5(file, log) : directoryMd5(file, log);
 
@@ -157,7 +157,7 @@ final class GridUriDeploymentFileProcessor {
      * @param log logger to log all failures.
      * @return string representation of the calculated checksum or {@code null} if calculation failed.
      */
-    @Nullable public static String fileMd5(@Nullable File file, @Nullable IgniteLogger log) {
+    public static @Nullable String fileMd5(@Nullable File file, @Nullable IgniteLogger log) {
         String md5 = null;
 
         if (file != null) {
@@ -192,7 +192,7 @@ final class GridUriDeploymentFileProcessor {
      * @param log logger to log all failures.
      * @return string representation of the calculated checksum or {@code null} if calculation failed.
      */
-    @Nullable public static String directoryMd5(@Nullable File dir, @Nullable IgniteLogger log) {
+    public static @Nullable String directoryMd5(@Nullable File dir, @Nullable IgniteLogger log) {
         if (dir != null) {
             if (!dir.isDirectory()) {
                 U.warn(log, "Failed to find directory for md5 calculation: " + dir);

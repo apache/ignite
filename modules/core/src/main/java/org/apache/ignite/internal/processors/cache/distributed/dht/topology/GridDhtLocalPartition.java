@@ -266,7 +266,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected CacheMapHolder entriesMapIfExists(Integer cacheId) {
+    @Override protected @Nullable CacheMapHolder entriesMapIfExists(Integer cacheId) {
         return grp.sharedGroup() ? cacheMaps.get(cacheId) : singleCacheEntryMap;
     }
 

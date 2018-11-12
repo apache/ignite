@@ -157,7 +157,7 @@ public class GridCacheQueueHeader implements GridCacheInternal, Externalizable {
     /**
      * @return Indexes of removed items.
      */
-    @Nullable public Set<Long> removedIndexes() {
+    public @Nullable Set<Long> removedIndexes() {
         return rmvIdxs;
     }
 

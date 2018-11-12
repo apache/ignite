@@ -290,7 +290,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      */
     public DataStreamerImpl(
         final GridKernalContext ctx,
-        @Nullable final String cacheName,
+        final @Nullable String cacheName,
         DelayQueue<DataStreamerImpl<K, V>> flushQ
     ) {
         assert ctx != null;
@@ -518,7 +518,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public String cacheName() {
+    @Override public @Nullable String cacheName() {
         return cacheName;
     }
 
@@ -700,7 +700,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      * Creates data load future and register its as active future.
      * @return Data load future.
      */
-    @NotNull protected IgniteCacheFutureImpl createDataLoadFuture() {
+    protected @NotNull IgniteCacheFutureImpl createDataLoadFuture() {
         GridFutureAdapter internalFut0 = new GridFutureAdapter();
 
         IgniteCacheFutureImpl fut = new IgniteCacheFutureImpl(internalFut0);
@@ -805,7 +805,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     private void load0(
         Collection<? extends DataStreamerEntry> entries,
         final GridFutureAdapter<Object> resFut,
-        @Nullable final Collection<KeyCacheObjectWrapper> activeKeys,
+        final @Nullable Collection<KeyCacheObjectWrapper> activeKeys,
         final int remaps,
         ClusterNode remapNode,
         AffinityTopologyVersion remapTopVer

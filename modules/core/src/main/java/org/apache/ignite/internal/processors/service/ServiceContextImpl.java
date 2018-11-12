@@ -101,13 +101,12 @@ public class ServiceContextImpl implements ServiceContext {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String cacheName() {
+    @Override public @Nullable String cacheName() {
         return cacheName;
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Nullable @Override public <K> K affinityKey() {
+    @Override @SuppressWarnings("unchecked") public @Nullable <K> K affinityKey() {
         return (K)affKey;
     }
 

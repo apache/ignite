@@ -165,8 +165,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Nullable @Override public T peek() throws IgniteException {
+    @Override @SuppressWarnings("unchecked") public @Nullable T peek() throws IgniteException {
         try {
             while (true) {
                 GridCacheQueueHeader hdr = (GridCacheQueueHeader)cache.get(queueKey);
@@ -293,7 +292,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public T take() throws IgniteException {
+    @Override public @Nullable T take() throws IgniteException {
         while (true) {
             try {
                 readSem.acquire();
@@ -314,7 +313,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public T poll(long timeout, TimeUnit unit) throws IgniteException {
+    @Override public @Nullable T poll(long timeout, TimeUnit unit) throws IgniteException {
         A.ensure(timeout >= 0, "Timeout cannot be negative: " + timeout);
 
         long end = U.currentTimeMillis() + MILLISECONDS.convert(timeout, unit);

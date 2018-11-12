@@ -179,8 +179,8 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @param isolation Isolation level.
      * @throws Exception If failed.
      */
-    protected void testConstantTopologyChange(@Nullable final TransactionConcurrency concurrency,
-        @Nullable final TransactionIsolation isolation) throws Exception {
+    protected void testConstantTopologyChange(final @Nullable TransactionConcurrency concurrency,
+        final @Nullable TransactionIsolation isolation) throws Exception {
         final boolean tx = concurrency != null && isolation != null;
 
         if (tx)

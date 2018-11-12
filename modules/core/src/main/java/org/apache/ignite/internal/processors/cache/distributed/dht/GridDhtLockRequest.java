@@ -283,7 +283,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
      * @param key Key.
      * @return Owner and its mapped versions.
      */
-    @Nullable public GridCacheVersion owned(KeyCacheObject key) {
+    public @Nullable GridCacheVersion owned(KeyCacheObject key) {
         return owned == null ? null : owned.get(key);
     }
 

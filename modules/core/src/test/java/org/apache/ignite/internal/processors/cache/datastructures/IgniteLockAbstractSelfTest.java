@@ -249,11 +249,11 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
             @LoggerResource
             private IgniteLogger log;
 
-            @Nullable @Override public Object call() throws Exception {
+            @Override public @Nullable Object call() throws Exception {
                 // Test reentrant lock in multiple threads on each node.
                 IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(
                     new Callable<Object>() {
-                        @Nullable @Override public Object call() throws Exception {
+                        @Override public @Nullable Object call() throws Exception {
                             IgniteLock lock = ignite.reentrantLock("lock", true, fair, true);
 
                             assert lock != null;
@@ -423,7 +423,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
         lock.isFair();
 
         grid(ThreadLocalRandom.current().nextInt(G.allGrids().size())).compute().broadcast(new IgniteCallable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
+            @Override public @Nullable Object call() throws Exception {
                 Thread.sleep(1000);
 
                 lock.lock();

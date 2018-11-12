@@ -46,13 +46,13 @@ import java.util.Map;
  */
 public class PlatformSqlQueryTask extends ComputeTaskAdapter<String, Object> {
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable String arg) throws IgniteException {
         return Collections.singletonMap(new SqlQueryJob(arg), F.first(subgrid));
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteException {
+    @Override public @Nullable Object reduce(List<ComputeJobResult> results) throws IgniteException {
         ComputeJobResult res = results.get(0);
 
         if (res.getException() != null)
@@ -89,7 +89,7 @@ public class PlatformSqlQueryTask extends ComputeTaskAdapter<String, Object> {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object execute() {
+        @Override public @Nullable Object execute() {
             IgniteCache<Integer, PlatformComputeBinarizable> cache = ignite.cache("default");
 
             SqlQuery<Integer, PlatformComputeBinarizable> qry = new SqlQuery<>("PlatformComputeBinarizable", arg);

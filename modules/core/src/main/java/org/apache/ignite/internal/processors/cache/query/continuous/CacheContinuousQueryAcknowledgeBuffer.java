@@ -47,8 +47,7 @@ class CacheContinuousQueryAcknowledgeBuffer {
      * @param batch Batch.
      * @return Non-null tuple if acknowledge should be sent to backups.
      */
-    @SuppressWarnings("unchecked")
-    @Nullable synchronized IgniteBiTuple<Map<Integer, Long>, Set<AffinityTopologyVersion>>onAcknowledged(
+    @SuppressWarnings("unchecked") synchronized @Nullable IgniteBiTuple<Map<Integer, Long>, Set<AffinityTopologyVersion>>onAcknowledged(
         GridContinuousBatch batch) {
         assert batch instanceof GridContinuousQueryBatch;
 
@@ -66,7 +65,7 @@ class CacheContinuousQueryAcknowledgeBuffer {
      * @param e Entry.
      * @return Non-null tuple if acknowledge should be sent to backups.
      */
-    @Nullable synchronized IgniteBiTuple<Map<Integer, Long>, Set<AffinityTopologyVersion>>
+    synchronized @Nullable IgniteBiTuple<Map<Integer, Long>, Set<AffinityTopologyVersion>>
     onAcknowledged(CacheContinuousQueryEntry e) {
         size++;
 
@@ -90,7 +89,7 @@ class CacheContinuousQueryAcknowledgeBuffer {
     /**
      * @return Non-null tuple if acknowledge should be sent to backups.
      */
-    @Nullable synchronized IgniteBiTuple<Map<Integer, Long>, Set<AffinityTopologyVersion>>
+    synchronized @Nullable IgniteBiTuple<Map<Integer, Long>, Set<AffinityTopologyVersion>>
         acknowledgeOnTimeout() {
         return size > 0 ? acknowledgeData() : null;
     }

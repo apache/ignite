@@ -426,7 +426,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      *
      * @return Exchange actions.
      */
-    @Nullable public ExchangeActions exchangeActions() {
+    public @Nullable ExchangeActions exchangeActions() {
         return exchActions;
     }
 
@@ -469,7 +469,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param cntrSince Partition update counter since history supplying is requested.
      * @return ID of history supplier node or null if it doesn't exist.
      */
-    @Nullable public UUID partitionHistorySupplier(int grpId, int partId, long cntrSince) {
+    public @Nullable UUID partitionHistorySupplier(int grpId, int partId, long cntrSince) {
         return partHistSuppliers.getSupplier(grpId, partId, cntrSince);
     }
 
@@ -1520,7 +1520,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      *
      * @return WAL message or {@code null}.
      */
-    @Nullable private WalStateAbstractMessage firstWalMessage() {
+    private @Nullable WalStateAbstractMessage firstWalMessage() {
         if (firstDiscoEvt != null && firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
             DiscoveryCustomMessage customMsg = ((DiscoveryCustomEvent)firstDiscoEvt).customMessage();
 
@@ -2405,7 +2405,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param fut Current future.
      * @return Pending join request if any.
      */
-    @Nullable public GridDhtPartitionsSingleMessage mergeJoinExchangeOnDone(GridDhtPartitionsExchangeFuture fut) {
+    public @Nullable GridDhtPartitionsSingleMessage mergeJoinExchangeOnDone(GridDhtPartitionsExchangeFuture fut) {
         synchronized (mux) {
             assert !isDone();
             assert !initFut.isDone();

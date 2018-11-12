@@ -53,7 +53,7 @@ public enum ComputeTaskSessionScope {
      * @param ord Ordinal value.
      * @return Enumerated value.
      */
-    @Nullable public static ComputeTaskSessionScope fromOrdinal(byte ord) {
+    public static @Nullable ComputeTaskSessionScope fromOrdinal(byte ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

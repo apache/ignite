@@ -33,7 +33,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 public class CacheBlockOnGetAllTest extends CacheBlockOnReadAbstractTest {
 
     /** {@inheritDoc} */
-    @Override @NotNull protected CacheReadBackgroundOperation<?, ?> getReadOperation() {
+    @Override protected @NotNull CacheReadBackgroundOperation<?, ?> getReadOperation() {
         return new IntCacheReadBackgroundOperation() {
             /** Random. */
             private Random random = new Random();

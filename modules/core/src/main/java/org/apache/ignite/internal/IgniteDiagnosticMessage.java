@@ -127,7 +127,7 @@ public class IgniteDiagnosticMessage implements Message {
      * @return Unmarshalled payload.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public <T> T unmarshal(Marshaller marsh)
+    public @Nullable <T> T unmarshal(Marshaller marsh)
         throws IgniteCheckedException {
         if (bytes == null)
             return null;

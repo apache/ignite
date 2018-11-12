@@ -173,7 +173,7 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public byte[] readByteArray(String name) {
+    @Override public @Nullable byte[] readByteArray(String name) {
         DirectByteBufferStream stream = state.item().stream;
 
         byte[] arr = stream.readByteArray();
@@ -184,7 +184,7 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public short[] readShortArray(String name) {
+    @Override public @Nullable short[] readShortArray(String name) {
         DirectByteBufferStream stream = state.item().stream;
 
         short[] arr = stream.readShortArray();
@@ -195,7 +195,7 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public int[] readIntArray(String name) {
+    @Override public @Nullable int[] readIntArray(String name) {
         DirectByteBufferStream stream = state.item().stream;
 
         int[] arr = stream.readIntArray();
@@ -206,7 +206,7 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public long[] readLongArray(String name) {
+    @Override public @Nullable long[] readLongArray(String name) {
         DirectByteBufferStream stream = state.item().stream;
 
         long[] arr = stream.readLongArray();
@@ -217,7 +217,7 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public float[] readFloatArray(String name) {
+    @Override public @Nullable float[] readFloatArray(String name) {
         DirectByteBufferStream stream = state.item().stream;
 
         float[] arr = stream.readFloatArray();
@@ -228,7 +228,7 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public double[] readDoubleArray(String name) {
+    @Override public @Nullable double[] readDoubleArray(String name) {
         DirectByteBufferStream stream = state.item().stream;
 
         double[] arr = stream.readDoubleArray();
@@ -239,7 +239,7 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public char[] readCharArray(String name) {
+    @Override public @Nullable char[] readCharArray(String name) {
         DirectByteBufferStream stream = state.item().stream;
 
         char[] arr = stream.readCharArray();
@@ -250,7 +250,7 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public boolean[] readBooleanArray(String name) {
+    @Override public @Nullable boolean[] readBooleanArray(String name) {
         DirectByteBufferStream stream = state.item().stream;
 
         boolean[] arr = stream.readBooleanArray();
@@ -305,7 +305,7 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T extends Message> T readMessage(String name) {
+    @Override public @Nullable <T extends Message> T readMessage(String name) {
         DirectByteBufferStream stream = state.item().stream;
 
         T msg = stream.readMessage(this);

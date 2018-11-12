@@ -24,7 +24,7 @@ import org.jetbrains.annotations.NotNull;
 public class IgniteCacheReplicatedTransactionalSnapshotColumnConstraintTest
     extends IgniteCacheReplicatedAtomicColumnConstraintsTest {
     /** {@inheritDoc} */
-    @NotNull @Override protected CacheAtomicityMode atomicityMode() {
+    @Override protected @NotNull CacheAtomicityMode atomicityMode() {
         return CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
     }
 

@@ -54,7 +54,7 @@ public class CacheArguments {
     private int checkThrough = -1;
 
     /** Cache view command. */
-    @Nullable private VisorViewCacheCmd cacheCmd;
+    private @Nullable VisorViewCacheCmd cacheCmd;
 
     /** Calculate partition hash and print into standard output. */
     private boolean dump;
@@ -91,7 +91,7 @@ public class CacheArguments {
     /**
      * @return Cache view command.
      */
-    @Nullable public VisorViewCacheCmd cacheCommand() {
+    public @Nullable VisorViewCacheCmd cacheCommand() {
         return cacheCmd;
     }
 

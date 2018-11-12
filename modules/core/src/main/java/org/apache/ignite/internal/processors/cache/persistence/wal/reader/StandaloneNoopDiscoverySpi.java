@@ -41,7 +41,7 @@ import org.jetbrains.annotations.Nullable;
 @IgniteSpiNoop
 public class StandaloneNoopDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     /** {@inheritDoc} */
-    @Nullable @Override public Serializable consistentId() throws IgniteSpiException {
+    @Override public @Nullable Serializable consistentId() throws IgniteSpiException {
         return null;
     }
 
@@ -56,7 +56,7 @@ public class StandaloneNoopDiscoverySpi extends IgniteSpiAdapter implements Disc
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public ClusterNode getNode(UUID nodeId) {
+    @Override public @Nullable ClusterNode getNode(UUID nodeId) {
         return null;
     }
 

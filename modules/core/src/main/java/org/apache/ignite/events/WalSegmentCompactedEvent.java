@@ -38,7 +38,7 @@ public class WalSegmentCompactedEvent extends WalSegmentArchivedEvent {
      * @param archiveFile Compacted archive file.
      */
     public WalSegmentCompactedEvent(
-        @NotNull final ClusterNode node,
+        final @NotNull ClusterNode node,
         final long absWalSegmentIdx,
         final File archiveFile) {
         super(node, absWalSegmentIdx, archiveFile, EventType.EVT_WAL_SEGMENT_COMPACTED);

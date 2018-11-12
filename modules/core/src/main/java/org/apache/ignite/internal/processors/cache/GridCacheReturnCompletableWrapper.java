@@ -48,7 +48,7 @@ public class GridCacheReturnCompletableWrapper {
     /**
      * @return ID of node initiated tx or {@code null} if this node is local.
      */
-    @Nullable public UUID nodeId() {
+    public @Nullable UUID nodeId() {
         return nodeId;
     }
 

@@ -116,7 +116,7 @@ class ZkCommunicationErrorProcessFuture extends GridFutureAdapter<Void> implemen
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteLogger logger() {
+    @Override public @Nullable IgniteLogger logger() {
         return log;
     }
 

@@ -94,14 +94,14 @@ public class VisorCacheNearConfiguration extends VisorDataTransferObject {
     /**
      * @return Near cache eviction policy.
      */
-    @Nullable public String getNearEvictPolicy() {
+    public @Nullable String getNearEvictPolicy() {
         return nearEvictPlc;
     }
 
     /**
      * @return Near cache eviction policy max size.
      */
-    @Nullable public Integer getNearEvictMaxSize() {
+    public @Nullable Integer getNearEvictMaxSize() {
         return nearEvictMaxSize;
     }
 

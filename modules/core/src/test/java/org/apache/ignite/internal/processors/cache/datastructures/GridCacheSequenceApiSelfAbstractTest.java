@@ -552,7 +552,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
         // Work with sequences in many threads.
         multithreaded(
             new Callable() {
-                @Nullable @Override public Object call() throws Exception {
+                @Override public @Nullable Object call() throws Exception {
                     // Get sequence value and try to put it result set.
                     for (int i = 0; i < MAX_LOOPS_NUM; i++) {
                         Long val = locSeq.getAndIncrement();

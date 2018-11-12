@@ -153,7 +153,7 @@ public class TaskEvent extends EventAdapter {
      *
      * @return Subject ID.
      */
-    @Nullable public UUID subjectId() {
+    public @Nullable UUID subjectId() {
         return subjId;
     }
 

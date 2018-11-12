@@ -347,7 +347,7 @@ public class IgfsMarshaller {
      * @param in Data input.
      * @return Written path or {@code null}.
      */
-    @Nullable private IgfsPath readPath(ObjectInput in) throws IOException {
+    private @Nullable IgfsPath readPath(ObjectInput in) throws IOException {
         return in.readBoolean() ? IgfsUtils.readPath(in) : null;
     }
 }

@@ -114,7 +114,7 @@ public class CacheGroupData implements Serializable {
     /**
      * @return Start version for dynamically started group.
      */
-    @Nullable public AffinityTopologyVersion startTopologyVersion() {
+    public @Nullable AffinityTopologyVersion startTopologyVersion() {
         return startTopVer;
     }
 
@@ -128,7 +128,7 @@ public class CacheGroupData implements Serializable {
     /**
      * @return Group name.
      */
-    @Nullable public String groupName() {
+    public @Nullable String groupName() {
         return grpName;
     }
 

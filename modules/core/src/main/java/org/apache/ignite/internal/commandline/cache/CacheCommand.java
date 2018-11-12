@@ -97,7 +97,7 @@ public enum CacheCommand {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static CacheCommand fromOrdinal(int ord) {
+    public static @Nullable CacheCommand fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

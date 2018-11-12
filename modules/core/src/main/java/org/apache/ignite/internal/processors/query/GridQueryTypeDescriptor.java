@@ -159,14 +159,14 @@ public interface GridQueryTypeDescriptor {
      *
      * @return Key field alias.
      */
-    @Nullable public String keyFieldAlias();
+    public @Nullable String keyFieldAlias();
 
     /**
      * Gets value field alias.
      *
      * @return value field alias.
      */
-    @Nullable public String valueFieldAlias();
+    public @Nullable String valueFieldAlias();
 
     /**
      * Performs validation of given key and value against configured constraints.

@@ -39,7 +39,7 @@ public class VisorValidateIndexesTask extends VisorMultiNodeTask<VisorValidateIn
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Nullable @Override protected VisorValidateIndexesTaskResult reduce0(List<ComputeJobResult> list) throws IgniteException {
+    @Override protected @Nullable VisorValidateIndexesTaskResult reduce0(List<ComputeJobResult> list) throws IgniteException {
         Map<UUID, Exception> exceptions = new HashMap<>();
         Map<UUID, VisorValidateIndexesJobResult> jobResults = new HashMap<>();
 

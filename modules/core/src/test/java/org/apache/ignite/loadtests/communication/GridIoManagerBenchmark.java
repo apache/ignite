@@ -149,7 +149,7 @@ public class GridIoManagerBenchmark {
      * @param duration Test duration.
      * @param outputFilename Output file name.
      */
-    private static void sendMessages(IgniteKernal g, int threads, int duration, @Nullable final String outputFilename) {
+    private static void sendMessages(IgniteKernal g, int threads, int duration, final @Nullable String outputFilename) {
         X.println(">>> Sending messages.");
 
         g.context().io().addMessageListener(TEST_TOPIC, new SenderMessageListener());

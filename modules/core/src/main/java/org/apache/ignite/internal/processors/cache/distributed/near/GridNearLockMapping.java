@@ -84,7 +84,7 @@ public class GridNearLockMapping {
     /**
      * @return Near lock request.
      */
-    @Nullable public GridNearLockRequest request() {
+    public @Nullable GridNearLockRequest request() {
         return req;
     }
 

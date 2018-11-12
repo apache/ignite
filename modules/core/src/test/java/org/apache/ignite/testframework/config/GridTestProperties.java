@@ -280,7 +280,7 @@ public final class GridTestProperties {
      * @param fileName File name.
      * @return Configuration file for given user.
      */
-    @Nullable private static File getTestConfigurationFile(@Nullable String user, String fileName) {
+    private static @Nullable File getTestConfigurationFile(@Nullable String user, String fileName) {
         String path = TESTS_CFG_PATH;
 
         if (user != null)

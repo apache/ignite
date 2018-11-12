@@ -74,7 +74,7 @@ public class TxTimeoutOnPartitionMapExchangeChangeMessage implements DiscoveryCu
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
+    @Override public @Nullable DiscoveryCustomMessage ackMessage() {
         return isInit() ? new TxTimeoutOnPartitionMapExchangeChangeMessage(this) : null;
     }
 

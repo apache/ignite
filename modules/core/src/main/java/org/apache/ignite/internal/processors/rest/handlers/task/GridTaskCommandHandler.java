@@ -585,14 +585,14 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
         /**
          * @return Task result.
          */
-        @Nullable public Object result() {
+        public @Nullable Object result() {
             return res;
         }
 
         /**
          * @return Error.
          */
-        @Nullable public Throwable error() {
+        public @Nullable Throwable error() {
             return err;
         }
     }

@@ -329,7 +329,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
 
         GridTestThread t1 = new GridTestThread(new Callable<Object>() {
             /** {@inheritDoc} */
-            @Nullable @Override public Object call() throws Exception {
+            @Override public @Nullable Object call() throws Exception {
                 info("Before lock for.key 1");
 
                 lock.lock();
@@ -375,7 +375,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
 
         GridTestThread t2 = new GridTestThread(new Callable<Object>() {
             /** {@inheritDoc} */
-            @Nullable @Override public Object call() throws Exception {
+            @Override public @Nullable Object call() throws Exception {
                 info("Waiting for latch1...");
 
                 l1.await();

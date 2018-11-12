@@ -46,7 +46,7 @@ public class VisorComputeCancelSessionsTask extends VisorOneNodeTask<VisorComput
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Void reduce0(List<ComputeJobResult> results) {
+    @Override protected @Nullable Void reduce0(List<ComputeJobResult> results) {
         // No-op, just awaiting all jobs done.
         return null;
     }

@@ -326,7 +326,7 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String fileName() {
+    @Override public @Nullable String fileName() {
         JavaLoggerFileHandler gridFileHnd = findHandler(impl, JavaLoggerFileHandler.class);
 
         if (gridFileHnd != null)
@@ -341,7 +341,7 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
      * @param fileHnd File handler.
      * @return Current log file or {@code null} if it can not be retrieved from file handler.
      */
-    @Nullable static String fileName(FileHandler fileHnd) {
+    static @Nullable String fileName(FileHandler fileHnd) {
         if (fileHnd == null)
             return null;
 

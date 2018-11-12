@@ -845,7 +845,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      * @param reader Binary reader.
      * @return created object.
      */
-    @Nullable private PlatformCacheEntryFilter createPlatformCacheEntryFilter(BinaryRawReaderEx reader) {
+    private @Nullable PlatformCacheEntryFilter createPlatformCacheEntryFilter(BinaryRawReaderEx reader) {
         PlatformCacheEntryFilter filter = null;
 
         Object pred = reader.readObjectDetached();
@@ -860,7 +860,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      * @param reader Binary reader.
      * @return Arguments array.
      */
-    @Nullable private Object[] readLoadCacheArgs(BinaryRawReaderEx reader) {
+    private @Nullable Object[] readLoadCacheArgs(BinaryRawReaderEx reader) {
         Object[] args = null;
 
         int argCnt = reader.readInt();
@@ -939,7 +939,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      * @param reader Reader.
      * @return Arguments.
      */
-    @Nullable public static Object[] readQueryArgs(BinaryRawReaderEx reader) {
+    public static @Nullable Object[] readQueryArgs(BinaryRawReaderEx reader) {
         int cnt = reader.readInt();
 
         if (cnt > 0) {

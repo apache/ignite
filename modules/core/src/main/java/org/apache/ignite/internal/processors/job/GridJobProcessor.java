@@ -326,7 +326,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      * @param jobId Job ID.
      * @return Active job.
      */
-    @Nullable public GridJobWorker activeJob(IgniteUuid jobId) {
+    public @Nullable GridJobWorker activeJob(IgniteUuid jobId) {
         assert jobId != null;
 
         return activeJobs.get(jobId);
@@ -589,7 +589,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      * @param jobId Job ID.
      * @param sys System flag.
      */
-    public void cancelJob(@Nullable final IgniteUuid sesId, @Nullable final IgniteUuid jobId, final boolean sys) {
+    public void cancelJob(final @Nullable IgniteUuid sesId, final @Nullable IgniteUuid jobId, final boolean sys) {
         assert sesId != null || jobId != null;
 
         rwLock.readLock();
@@ -714,7 +714,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
             ctx.collision().onCollision(
                 // Passive jobs view.
                 new AbstractCollection<org.apache.ignite.spi.collision.CollisionJobContext>() {
-                    @NotNull @Override public Iterator<org.apache.ignite.spi.collision.CollisionJobContext> iterator() {
+                    @Override public @NotNull Iterator<org.apache.ignite.spi.collision.CollisionJobContext> iterator() {
                         final Iterator<GridJobWorker> iter = passiveJobs.values().iterator();
 
                         return new Iterator<org.apache.ignite.spi.collision.CollisionJobContext>() {
@@ -739,7 +739,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
                 // Active jobs view.
                 new AbstractCollection<org.apache.ignite.spi.collision.CollisionJobContext>() {
-                    @NotNull @Override public Iterator<org.apache.ignite.spi.collision.CollisionJobContext> iterator() {
+                    @Override public @NotNull Iterator<org.apache.ignite.spi.collision.CollisionJobContext> iterator() {
                         final Iterator<GridJobWorker> iter = activeJobs.values().iterator();
 
                         return new Iterator<org.apache.ignite.spi.collision.CollisionJobContext>() {
@@ -800,7 +800,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
                 // Held jobs view.
                 new AbstractCollection<org.apache.ignite.spi.collision.CollisionJobContext>() {
-                    @NotNull @Override public Iterator<org.apache.ignite.spi.collision.CollisionJobContext> iterator() {
+                    @Override public @NotNull Iterator<org.apache.ignite.spi.collision.CollisionJobContext> iterator() {
                         final Iterator<GridJobWorker> iter = activeJobs.values().iterator();
 
                         return new Iterator<org.apache.ignite.spi.collision.CollisionJobContext>() {

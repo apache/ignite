@@ -92,7 +92,7 @@ public class ComputeTaskMapExample {
                 ClusterNode node = it.next();
 
                 map.put(new ComputeJobAdapter() {
-                    @Nullable @Override public Object execute() {
+                    @Override public @Nullable Object execute() {
                         System.out.println();
                         System.out.println(">>> Printing '" + word + "' on this node from ignite job.");
 
@@ -106,7 +106,7 @@ public class ComputeTaskMapExample {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Integer reduce(List<ComputeJobResult> results) {
+        @Override public @Nullable Integer reduce(List<ComputeJobResult> results) {
             int sum = 0;
 
             for (ComputeJobResult res : results)

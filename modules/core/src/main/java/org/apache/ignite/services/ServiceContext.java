@@ -55,7 +55,7 @@ public interface ServiceContext extends Serializable {
      *
      * @return Cache name, possibly {@code null}.
      */
-    @Nullable public String cacheName();
+    public @Nullable String cacheName();
 
     /**
      * Gets affinity key used for key-to-node affinity calculation. This parameter is optional
@@ -63,5 +63,5 @@ public interface ServiceContext extends Serializable {
      *
      * @return Affinity key, possibly {@code null}.
      */
-    @Nullable public <K> K affinityKey();
+    public @Nullable <K> K affinityKey();
 }

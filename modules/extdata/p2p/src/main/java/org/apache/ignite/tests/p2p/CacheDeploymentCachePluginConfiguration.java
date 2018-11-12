@@ -32,12 +32,12 @@ import javax.cache.Cache;
 public class CacheDeploymentCachePluginConfiguration<K, V> implements CachePluginConfiguration<K, V> {
     private static class CacheDeploymentCachePluginProvider implements CachePluginProvider {
         /** {@inheritDoc} */
-        @Nullable @Override public Object createComponent(Class cls) {
+        @Override public @Nullable Object createComponent(Class cls) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object unwrapCacheEntry(final Cache.Entry mutableEntry, final Class cls) {
+        @Override public @Nullable Object unwrapCacheEntry(final Cache.Entry mutableEntry, final Class cls) {
             return null;
         }
 

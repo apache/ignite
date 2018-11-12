@@ -37,5 +37,5 @@ public interface MessageFactory extends Extension {
      * @param type Message type.
      * @return Message instance.
      */
-    @Nullable public Message create(short type);
+    public @Nullable Message create(short type);
 }

@@ -109,7 +109,7 @@ public class TransformFilteringIterator<T2, T1> extends GridIteratorAdapter<T2> 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public T2 nextX() {
+    @Override public @Nullable T2 nextX() {
         if (GridFunc.isEmpty(preds))
             return clos.apply(iter.next());
         else {

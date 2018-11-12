@@ -67,7 +67,7 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Ex
      *
      * @return File system URI.
      */
-    @Nullable public String getUri() {
+    public @Nullable String getUri() {
         return uri;
     }
 
@@ -90,7 +90,7 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Ex
      *
      * @return Paths to file system configuration files.
      */
-    @Nullable public String[] getConfigPaths() {
+    public @Nullable String[] getConfigPaths() {
         return cfgPaths;
     }
 
@@ -117,7 +117,7 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Ex
      *
      * @return User name mapper.
      */
-    @Nullable public UserNameMapper getUserNameMapper() {
+    public @Nullable UserNameMapper getUserNameMapper() {
         return usrNameMapper;
     }
 

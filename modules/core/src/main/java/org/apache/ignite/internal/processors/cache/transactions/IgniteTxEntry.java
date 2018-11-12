@@ -602,14 +602,14 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /**
      * @return Entry value.
      */
-    @Nullable public CacheObject value() {
+    public @Nullable CacheObject value() {
         return val.value();
     }
 
     /**
      * @return Old value.
      */
-    @Nullable public CacheObject oldValue() {
+    public @Nullable CacheObject oldValue() {
         return oldVal != null ? oldVal.value() : null;
     }
 
@@ -654,7 +654,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /**
      * @return Value visible for peek.
      */
-    @Nullable public CacheObject previousValue() {
+    public @Nullable CacheObject previousValue() {
         return prevVal.value();
     }
 
@@ -668,7 +668,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /**
      * @return Previous operation to revert entry in case of filter failure.
      */
-    @Nullable public GridCacheOperation previousOperation() {
+    public @Nullable GridCacheOperation previousOperation() {
         return prevVal.op();
     }
 
@@ -836,7 +836,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /**
      * @return Conflict version.
      */
-    @Nullable public GridCacheVersion conflictVersion() {
+    public @Nullable GridCacheVersion conflictVersion() {
         return conflictVer;
     }
 
@@ -976,7 +976,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /**
      * @return Expiry policy.
      */
-    @Nullable public ExpiryPolicy expiry() {
+    public @Nullable ExpiryPolicy expiry() {
         return expiryPlc;
     }
 
@@ -1002,7 +1002,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      *
      * @return Entry version.
      */
-    @Nullable public GridCacheVersion entryReadVersion() {
+    public @Nullable GridCacheVersion entryReadVersion() {
         return serReadVer;
     }
 

@@ -98,7 +98,7 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
      * @param extensionItf Extension interface class.
      * @return Returns implementation for provided extension from all plugins.
      */
-    @Nullable public <T extends Extension> T[] extensions(Class<T> extensionItf) {
+    public @Nullable <T extends Extension> T[] extensions(Class<T> extensionItf) {
         Map<Class<?>, Object[]> extensions = this.extensions;
 
         return (T[])extensions.get(extensionItf);
@@ -108,8 +108,7 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
      * @param name Plugin name.
      * @return Plugin provider.
      */
-    @SuppressWarnings("unchecked")
-    @Nullable public <T extends PluginProvider> T pluginProvider(String name) {
+    @SuppressWarnings("unchecked") public @Nullable <T extends PluginProvider> T pluginProvider(String name) {
         return (T)plugins.get(name);
     }
 
@@ -153,7 +152,7 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
+    @Override public @Nullable DiscoveryDataExchangeType discoveryDataType() {
         return PLUGIN;
     }
 

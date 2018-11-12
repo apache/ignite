@@ -350,7 +350,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
      * @param nodeId Node ID.
      * @return Found node or {@code null} if history doesn't contain this node.
      */
-    @Nullable private ClusterNode findNodeInHistory(UUID nodeId) {
+    private @Nullable ClusterNode findNodeInHistory(UUID nodeId) {
         for (long topVer = cctx.discovery().topologyVersion() - 1; topVer > 0; topVer--) {
             Collection<ClusterNode> top = cctx.discovery().topology(topVer);
 

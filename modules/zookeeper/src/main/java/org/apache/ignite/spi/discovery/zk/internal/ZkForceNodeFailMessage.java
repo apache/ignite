@@ -44,7 +44,7 @@ public class ZkForceNodeFailMessage implements DiscoverySpiCustomMessage, ZkInte
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoverySpiCustomMessage ackMessage() {
+    @Override public @Nullable DiscoverySpiCustomMessage ackMessage() {
         return null;
     }
 

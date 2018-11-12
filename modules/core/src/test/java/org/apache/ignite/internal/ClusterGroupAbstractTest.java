@@ -103,7 +103,7 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
             return true;
         }
 
-        @Nullable @Override public Object reduce() {
+        @Override public @Nullable Object reduce() {
             return null;
         }
 
@@ -141,7 +141,7 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
     /**
      * @return Local node ID.
      */
-    @Nullable protected abstract UUID localNodeId();
+    protected abstract @Nullable UUID localNodeId();
 
     /**
      * @return Remote nodes IDs.
@@ -696,7 +696,7 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
      */
     private static class TestCallable<T> implements IgniteCallable<T> {
         /** {@inheritDoc} */
-        @Nullable @Override public T call() throws Exception {
+        @Override public @Nullable T call() throws Exception {
             return null;
         }
     }
@@ -706,7 +706,7 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
      */
     private static class TestWaitCallable<T> implements IgniteCallable<T> {
         /** {@inheritDoc} */
-        @Nullable @Override public T call() throws Exception {
+        @Override public @Nullable T call() throws Exception {
             synchronized (mux) {
                 while (cnt.get() == 0)
                     mux.wait();
@@ -732,7 +732,7 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Void reduce(List<ComputeJobResult> results) {
+        @Override public @Nullable Void reduce(List<ComputeJobResult> results) {
             return null;
         }
     }
@@ -743,7 +743,7 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
     @SuppressWarnings({"PublicInnerClass"})
     public static class TestJob extends ComputeJobAdapter {
         /** {@inheritDoc} */
-        @Nullable @Override public Object execute() {
+        @Override public @Nullable Object execute() {
             return null;
         }
     }

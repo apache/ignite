@@ -52,7 +52,7 @@ public class HadoopNoopHelper implements HadoopHelper {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public InputStream loadClassBytes(ClassLoader ldr, String clsName) {
+    @Override public @Nullable InputStream loadClassBytes(ClassLoader ldr, String clsName) {
         throw unsupported();
     }
 

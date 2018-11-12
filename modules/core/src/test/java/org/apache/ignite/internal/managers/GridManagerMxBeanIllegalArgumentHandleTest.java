@@ -66,7 +66,7 @@ public class GridManagerMxBeanIllegalArgumentHandleTest extends TestCase {
     }
 
     /** MX bean which is always failing to respond with metrics */
-    @NotNull private MemoryMXBean createAlwaysFailingMxBean() {
+    private @NotNull MemoryMXBean createAlwaysFailingMxBean() {
         final Answer<MemoryUsage> failingAnswer = new Answer<MemoryUsage>() {
             @Override public MemoryUsage answer(InvocationOnMock invocationOnMock) throws Throwable {
                 throw new IllegalArgumentException("java.lang.IllegalArgumentException: committed = 5274103808 should be < max = 5274095616");
@@ -80,7 +80,7 @@ public class GridManagerMxBeanIllegalArgumentHandleTest extends TestCase {
 
 
     /** Reflections {@link GridDiscoveryManager#mem} field which was made accessible and mutable */
-    @NotNull private Field createAccessibleMemField() throws NoSuchFieldException, IllegalAccessException {
+    private @NotNull Field createAccessibleMemField() throws NoSuchFieldException, IllegalAccessException {
         final Field memField = GridDiscoveryManager.class.getDeclaredField("mem");
         memField.setAccessible(true);
 

@@ -65,7 +65,7 @@ public interface GridOffHeapMap {
      * @param keyBytes Key bytes.
      * @return Value bytes.
      */
-    @Nullable public byte[] get(int hash, byte[] keyBytes);
+    public @Nullable byte[] get(int hash, byte[] keyBytes);
 
     /**
      * Gets value pointer for given key.
@@ -74,7 +74,7 @@ public interface GridOffHeapMap {
      * @param keyBytes Key bytes.
      * @return Value pointer.
      */
-    @Nullable public IgniteBiTuple<Long, Integer> valuePointer(int hash, byte[] keyBytes);
+    public @Nullable IgniteBiTuple<Long, Integer> valuePointer(int hash, byte[] keyBytes);
 
     /**
      * Enables eviction for given key.
@@ -91,7 +91,7 @@ public interface GridOffHeapMap {
      * @param keyBytes Key bytes.
      * @return Removed value bytes.
      */
-    @Nullable public byte[] remove(int hash, byte[] keyBytes);
+    public @Nullable byte[] remove(int hash, byte[] keyBytes);
 
     /**
      * Removes value from off-heap map without returning it.

@@ -268,7 +268,7 @@ public class CheckpointHistory {
      *
      * @return Checkpoint mark until which checkpoints can be deleted(not including this pointer).
      */
-    @Nullable private WALPointer checkpointMarkUntilDeleteByArchiveSize() {
+    private @Nullable WALPointer checkpointMarkUntilDeleteByArchiveSize() {
         long absFileIdxToDel = cctx.wal().maxArchivedSegmentToDelete();
 
         if (absFileIdxToDel < 0)
@@ -340,7 +340,7 @@ public class CheckpointHistory {
      * @param partCntrSince Partition counter or {@code null} to search for minimal counter.
      * @return Checkpoint entry or {@code null} if failed to search.
      */
-    @Nullable public WALPointer searchPartitionCounter(int grpId, int part, long partCntrSince) {
+    public @Nullable WALPointer searchPartitionCounter(int grpId, int part, long partCntrSince) {
         CheckpointEntry entry = searchCheckpointEntry(grpId, part, partCntrSince);
 
         if (entry == null)
@@ -357,7 +357,7 @@ public class CheckpointHistory {
      * @param partCntrSince Partition counter or {@code null} to search for minimal counter.
      * @return Checkpoint entry or {@code null} if failed to search.
      */
-    @Nullable public CheckpointEntry searchCheckpointEntry(int grpId, int part, long partCntrSince) {
+    public @Nullable CheckpointEntry searchCheckpointEntry(int grpId, int part, long partCntrSince) {
         for (Long cpTs : checkpoints(true)) {
             try {
                 CheckpointEntry entry = entry(cpTs);

@@ -57,5 +57,5 @@ public interface PlatformConfigurationEx {
     /**
      * @return Available cache extensions.
      */
-    @Nullable public Collection<PlatformCacheExtension> cacheExtensions();
+    public @Nullable Collection<PlatformCacheExtension> cacheExtensions();
 }

@@ -1706,7 +1706,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param nodeId Node ID.
      * @return Node if node is alive.
      */
-    @Nullable public ClusterNode getAlive(UUID nodeId) {
+    public @Nullable ClusterNode getAlive(UUID nodeId) {
         assert nodeId != null;
 
         return getSpi().getNode(nodeId); // Go directly to SPI without checking disco cache.
@@ -1777,7 +1777,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param nodeId ID of the node.
      * @return Node for ID.
      */
-    @Nullable public ClusterNode node(UUID nodeId) {
+    public @Nullable ClusterNode node(UUID nodeId) {
         assert nodeId != null;
 
         return discoCache().node(nodeId);
@@ -1891,7 +1891,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return All baseline nodes for given topology version or {@code null} if baseline was not set for the
      *      given topology version.
      */
-    @Nullable public List<? extends BaselineNode> baselineNodes(AffinityTopologyVersion topVer) {
+    public @Nullable List<? extends BaselineNode> baselineNodes(AffinityTopologyVersion topVer) {
         return resolveDiscoCache(CU.cacheId(null), topVer).baselineNodes();
     }
 
@@ -1951,7 +1951,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param topVer Topology version (maximum allowed node order).
      * @return Oldest alive server nodes with at least one cache configured.
      */
-    @Nullable public ClusterNode oldestAliveServerNode(AffinityTopologyVersion topVer) {
+    public @Nullable ClusterNode oldestAliveServerNode(AffinityTopologyVersion topVer) {
         return resolveDiscoCache(CU.cacheId(null), topVer).oldestAliveServerNode();
     }
 
@@ -2078,7 +2078,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param topVer Topology version.
      * @return Topology nodes or {@code null} if there are no nodes for passed in version.
      */
-    @Nullable public Collection<ClusterNode> topology(long topVer) {
+    public @Nullable Collection<ClusterNode> topology(long topVer) {
         if (!histSupported)
             throw new UnsupportedOperationException("Current discovery SPI does not support " +
                 "topology snapshots history (consider using TCP discovery SPI).");
@@ -2331,7 +2331,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param topSnapshot Topology snapshot.
      * @return Newly created discovery cache.
      */
-    @NotNull private DiscoCache createDiscoCache(
+    private @NotNull DiscoCache createDiscoCache(
         AffinityTopologyVersion topVer,
         DiscoveryDataClusterState state,
         ClusterNode loc,

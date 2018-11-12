@@ -26,7 +26,7 @@ import java.util.TreeMap;
  */
 public class BinaryTreeMapWriteReplacer implements BinaryWriteReplacer {
     /** {@inheritDoc} */
-    @Nullable @Override public Object replace(Object target) {
+    @Override public @Nullable Object replace(Object target) {
         assert target instanceof TreeMap;
 
         return new BinaryTreeMap((TreeMap)target);

@@ -58,7 +58,7 @@ public class TransformCollectionView<T1, T2> extends GridSerializableCollection<
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Iterator<T1> iterator() {
+    @Override public @NotNull Iterator<T1> iterator() {
         return F.<T2, T1>iterator(col, clos, true, preds);
     }
 

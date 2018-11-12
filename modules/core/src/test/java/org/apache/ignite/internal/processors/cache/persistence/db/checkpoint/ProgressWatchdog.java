@@ -133,7 +133,7 @@ class ProgressWatchdog {
      * @return temp dir to place watchdog report.
      * @throws IgniteCheckedException if failed.
      */
-    @NotNull private static File getTempDirFile() throws IgniteCheckedException {
+    private static @NotNull File getTempDirFile() throws IgniteCheckedException {
         File tempDir = new File(U.defaultWorkDirectory(), "temp");
 
         if (!tempDir.exists())

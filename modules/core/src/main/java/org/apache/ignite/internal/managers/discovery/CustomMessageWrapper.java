@@ -38,7 +38,7 @@ public class CustomMessageWrapper implements DiscoverySpiCustomMessage {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoverySpiCustomMessage ackMessage() {
+    @Override public @Nullable DiscoverySpiCustomMessage ackMessage() {
         DiscoveryCustomMessage res = delegate.ackMessage();
 
         return res == null ? null : new CustomMessageWrapper(res);

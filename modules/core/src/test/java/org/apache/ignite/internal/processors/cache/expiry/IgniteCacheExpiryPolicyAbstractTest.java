@@ -828,7 +828,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @param txMode Transaction concurrency mode.
      * @return Transaction.
      */
-    @Nullable private Transaction startTx(@Nullable TransactionConcurrency txMode) {
+    private @Nullable Transaction startTx(@Nullable TransactionConcurrency txMode) {
         return txMode == null ? null : ignite(0).transactions().txStart(txMode, REPEATABLE_READ);
     }
 

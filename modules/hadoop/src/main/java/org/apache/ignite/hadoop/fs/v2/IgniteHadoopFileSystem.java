@@ -687,7 +687,7 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
      * @param path Hadoop path.
      * @return IGFS path.
      */
-    @Nullable private IgfsPath convert(Path path) {
+    private @Nullable IgfsPath convert(Path path) {
         if (path == null)
             return null;
 

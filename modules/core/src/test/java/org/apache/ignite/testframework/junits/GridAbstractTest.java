@@ -268,7 +268,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param cls Class to create.
      * @return Instance of class.
      */
-    @Nullable protected <T> T allocateInstance0(Class<T> cls) {
+    protected @Nullable <T> T allocateInstance0(Class<T> cls) {
         try {
             return (T)GridUnsafe.allocateInstance(cls);
         }
@@ -676,7 +676,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Current test method.
      * @throws NoSuchMethodError If method wasn't found for some reason.
      */
-    @NotNull protected Method currentTestMethod() {
+    protected @NotNull Method currentTestMethod() {
         if (currTestMtd == null) {
             try {
                 currTestMtd = getClass().getMethod(getName());
@@ -696,7 +696,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param <A> Annotation type.
      * @return Instance of annotation if it is present in test method.
      */
-    @Nullable protected <A extends Annotation> A currentTestAnnotation(Class<A> annotationCls) {
+    protected @Nullable <A extends Annotation> A currentTestAnnotation(Class<A> annotationCls) {
         return currentTestMethod().getAnnotation(annotationCls);
     }
 
@@ -778,7 +778,7 @@ public abstract class GridAbstractTest extends TestCase {
 
         GridTestUtils.runMultiThreaded(
             new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
+                @Override public @Nullable Object call() throws Exception {
                     startGrid(gridIdx.getAndIncrement());
 
                     return null;

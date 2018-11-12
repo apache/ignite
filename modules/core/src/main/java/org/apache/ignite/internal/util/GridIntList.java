@@ -434,7 +434,7 @@ public class GridIntList implements Message, Externalizable {
      * @return Grid int list.
      * @throws IOException If failed.
      */
-    @Nullable public static GridIntList readFrom(DataInput in) throws IOException {
+    public static @Nullable GridIntList readFrom(DataInput in) throws IOException {
         int idx = in.readInt();
 
         if (idx == -1)

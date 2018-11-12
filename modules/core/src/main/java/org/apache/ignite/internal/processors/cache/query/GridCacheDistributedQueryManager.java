@@ -255,7 +255,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      * @param req Query request.
      * @return Query info.
      */
-    @Nullable private GridCacheQueryInfo distributedQueryInfo(UUID sndId, GridCacheQueryRequest req) {
+    private @Nullable GridCacheQueryInfo distributedQueryInfo(UUID sndId, GridCacheQueryRequest req) {
         IgniteReducer<Object, Object> rdc = req.reducer();
         IgniteClosure<Object, Object> trans = (IgniteClosure<Object, Object>)req.transformer();
 

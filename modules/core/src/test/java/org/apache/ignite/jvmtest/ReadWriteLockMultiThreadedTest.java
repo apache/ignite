@@ -64,7 +64,7 @@ public class ReadWriteLockMultiThreadedTest extends TestCase {
 
         IgniteInternalFuture fut1 = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
+                @Override public @Nullable Object call() throws Exception {
                     X.println("Attempting to acquire write lock: " + lock);
 
                     lock.writeLock().lock();
@@ -87,7 +87,7 @@ public class ReadWriteLockMultiThreadedTest extends TestCase {
 
         IgniteInternalFuture fut2 = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
+                @Override public @Nullable Object call() throws Exception {
                     X.println("Attempting to acquire read lock: " + lock);
 
                     lock.readLock().lock();
@@ -133,7 +133,7 @@ public class ReadWriteLockMultiThreadedTest extends TestCase {
 
         IgniteInternalFuture fut = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
+                @Override public @Nullable Object call() throws Exception {
                     X.println("Attempting to acquire read lock: " + lock);
 
                     lock.readLock().lock();
@@ -178,7 +178,7 @@ public class ReadWriteLockMultiThreadedTest extends TestCase {
 
         IgniteInternalFuture fut = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
+                @Override public @Nullable Object call() throws Exception {
                     boolean res = lock.writeLock().tryLock();
 
                     X.println("Attempting to try write lock: " + res);

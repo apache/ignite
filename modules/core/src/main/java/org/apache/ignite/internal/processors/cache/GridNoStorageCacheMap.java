@@ -29,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridNoStorageCacheMap implements GridCacheConcurrentMap {
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheMapEntry getEntry(GridCacheContext ctx, KeyCacheObject key) {
+    @Override public @Nullable GridCacheMapEntry getEntry(GridCacheContext ctx, KeyCacheObject key) {
         return null;
     }
 

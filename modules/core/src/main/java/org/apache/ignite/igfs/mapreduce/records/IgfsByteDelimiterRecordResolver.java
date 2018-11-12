@@ -152,7 +152,7 @@ public class IgfsByteDelimiterRecordResolver implements IgfsRecordResolver, Exte
      * @return The first found delimiter.
      * @throws IOException In case of IO exception.
      */
-    @Nullable private IgniteBiTuple<State, Delimiter> findFirstDelimiter(IgfsInputStream stream, long startPos)
+    private @Nullable IgniteBiTuple<State, Delimiter> findFirstDelimiter(IgfsInputStream stream, long startPos)
         throws IOException {
         State state;
         Delimiter delim;

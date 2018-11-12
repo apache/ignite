@@ -109,7 +109,7 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<G
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable protected GridCacheReturn result0() {
+    @Override protected @Nullable GridCacheReturn result0() {
         return res;
     }
 

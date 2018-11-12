@@ -164,7 +164,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     /**
      * @return Key to find caches with similar affinity.
      */
-    @Nullable public Object similarAffinityKey() {
+    public @Nullable Object similarAffinityKey() {
         return similarAffKey;
     }
 
@@ -433,7 +433,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridDhtLocalPartition localPartition(
+    @Override public @Nullable GridDhtLocalPartition localPartition(
         int p,
         AffinityTopologyVersion topVer,
         boolean create
@@ -448,7 +448,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridDhtLocalPartition localPartition(int p, AffinityTopologyVersion topVer,
+    @Override public @Nullable GridDhtLocalPartition localPartition(int p, AffinityTopologyVersion topVer,
         boolean create, boolean showRenting) throws GridDhtInvalidPartitionException {
         return localPartition(p, topVer, create);
     }
@@ -517,7 +517,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public List<ClusterNode> nodes(int p,
+    @Override public @Nullable List<ClusterNode> nodes(int p,
         AffinityAssignment affAssignment,
         List<ClusterNode> affNodes) {
         throw new UnsupportedOperationException();
@@ -1145,7 +1145,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridDhtPartitionMap partitions(UUID nodeId) {
+    @Override public @Nullable GridDhtPartitionMap partitions(UUID nodeId) {
         lock.readLock().lock();
 
         try {
@@ -1243,7 +1243,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public Map<Integer, Long> globalPartSizes() {
+    @Override public @Nullable Map<Integer, Long> globalPartSizes() {
         lock.readLock().lock();
 
         try {

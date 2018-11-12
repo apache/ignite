@@ -65,7 +65,7 @@ public class HadoopAttributes implements Externalizable {
      * @param node Node.
      * @return Attributes or {@code null} if Hadoop Accelerator is not enabled for node.
      */
-    @Nullable public static HadoopAttributes forNode(ClusterNode node) {
+    public static @Nullable HadoopAttributes forNode(ClusterNode node) {
         return node.attribute(NAME);
     }
 

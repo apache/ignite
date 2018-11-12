@@ -52,7 +52,7 @@ public class GDBRegressionOnTreesTrainer extends GDBRegressionTrainer {
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override protected DecisionTreeRegressionTrainer buildBaseModelTrainer() {
+    @Override protected @NotNull DecisionTreeRegressionTrainer buildBaseModelTrainer() {
         return new DecisionTreeRegressionTrainer(maxDepth, minImpurityDecrease).withUsingIdx(usingIdx);
     }
 

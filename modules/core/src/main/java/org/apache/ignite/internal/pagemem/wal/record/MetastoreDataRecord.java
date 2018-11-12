@@ -30,7 +30,7 @@ public class MetastoreDataRecord extends WALRecord implements WalRecordCacheGrou
     private final String key;
 
     /** */
-    @Nullable private final byte[] value;
+    private final @Nullable byte[] value;
 
     /**
      * @param key Key.
@@ -47,7 +47,7 @@ public class MetastoreDataRecord extends WALRecord implements WalRecordCacheGrou
     }
 
     /** */
-    @Nullable public byte[] value() {
+    public @Nullable byte[] value() {
         return value;
     }
 

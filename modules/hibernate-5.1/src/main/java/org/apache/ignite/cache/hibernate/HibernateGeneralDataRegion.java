@@ -43,7 +43,7 @@ public class HibernateGeneralDataRegion extends HibernateRegion implements Gener
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object get(SessionImplementor ses, Object key) throws CacheException {
+    @Override public @Nullable Object get(SessionImplementor ses, Object key) throws CacheException {
         try {
             return cache.get(key);
         }

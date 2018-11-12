@@ -99,7 +99,7 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public CacheEntryPredicate[] filter() {
+    @Override public @Nullable CacheEntryPredicate[] filter() {
         return filter;
     }
 

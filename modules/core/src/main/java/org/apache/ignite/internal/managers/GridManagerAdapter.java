@@ -394,7 +394,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                             });
                     }
 
-                    @Nullable @Override public ClusterNode node(UUID nodeId) {
+                    @Override public @Nullable ClusterNode node(UUID nodeId) {
                         A.notNull(nodeId, "nodeId");
 
                         return ctx.discovery().node(nodeId);
@@ -495,11 +495,11 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         ctx.ports().deregisterPorts(spi.getClass());
                     }
 
-                    @Nullable @Override public <K, V> V get(String cacheName, K key) {
+                    @Override public @Nullable <K, V> V get(String cacheName, K key) {
                         return ctx.cache().<K, V>jcache(cacheName).get(key);
                     }
 
-                    @Nullable @Override public <K, V> V put(String cacheName, K key, V val, long ttl) {
+                    @Override public @Nullable <K, V> V put(String cacheName, K key, V val, long ttl) {
                         try {
                             if (ttl > 0) {
                                 ExpiryPolicy plc = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
@@ -516,7 +516,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         }
                     }
 
-                    @Nullable @Override public <K, V> V putIfAbsent(String cacheName, K key, V val, long ttl) {
+                    @Override public @Nullable <K, V> V putIfAbsent(String cacheName, K key, V val, long ttl) {
                         try {
                             if (ttl > 0) {
                                 ExpiryPolicy plc = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
@@ -533,7 +533,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         }
                     }
 
-                    @Nullable @Override public <K, V> V remove(String cacheName, K key) {
+                    @Override public @Nullable <K, V> V remove(String cacheName, K key) {
                         return ctx.cache().<K, V>jcache(cacheName).getAndRemove(key);
                     }
 
@@ -556,7 +556,8 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         return null;
                     }
 
-                    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag discoData) {
+                    @Override
+                    public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag discoData) {
                         for (GridComponent comp : ctx) {
                             if (comp.discoveryDataType() == null)
                                 continue;
@@ -654,7 +655,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
+    @Override public @Nullable DiscoveryDataExchangeType discoveryDataType() {
         return null;
     }
 
@@ -720,12 +721,12 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
+    @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag.JoiningNodeDiscoveryData discoData) {
+    @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag.JoiningNodeDiscoveryData discoData) {
         return null;
     }
 

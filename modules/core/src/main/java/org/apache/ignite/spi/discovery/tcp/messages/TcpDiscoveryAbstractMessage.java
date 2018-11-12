@@ -306,7 +306,7 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
     /**
      * @return Failed nodes IDs.
      */
-    @Nullable public Collection<UUID> failedNodes() {
+    public @Nullable Collection<UUID> failedNodes() {
         return failedNodes;
     }
 

@@ -89,12 +89,12 @@ public class HadoopDefaultMapReducePlan implements HadoopMapReducePlan {
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public Collection<HadoopInputSplit> mappers(UUID nodeId) {
+    @Override public @Nullable Collection<HadoopInputSplit> mappers(UUID nodeId) {
         return mappers.get(nodeId);
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public int[] reducers(UUID nodeId) {
+    @Override public @Nullable int[] reducers(UUID nodeId) {
         return reducers.get(nodeId);
     }
 

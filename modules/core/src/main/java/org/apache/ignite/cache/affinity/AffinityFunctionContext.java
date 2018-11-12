@@ -36,7 +36,7 @@ public interface AffinityFunctionContext {
      * @return List of nodes assigned to given partition on previous topology version or {@code null}
      *      if this information is not available.
      */
-    @Nullable public List<ClusterNode> previousAssignment(int part);
+    public @Nullable List<ClusterNode> previousAssignment(int part);
 
     /**
      * Gets number of backups for new assignment.
@@ -67,5 +67,5 @@ public interface AffinityFunctionContext {
      * @return Discovery event caused latest topology change or {@code null} if this information is
      *      not available.
      */
-    @Nullable public DiscoveryEvent discoveryEvent();
+    public @Nullable DiscoveryEvent discoveryEvent();
 }

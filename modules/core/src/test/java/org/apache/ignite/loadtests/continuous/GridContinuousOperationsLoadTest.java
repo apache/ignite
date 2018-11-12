@@ -73,7 +73,7 @@ public class GridContinuousOperationsLoadTest {
         final Integer testDurSec = getIntProperty(TEST_DUR_SEC, 180);
 
         final Integer filterSkipProb = getIntProperty("FILTER_SKIP_PROBABILITY", 10, new C1<Integer, String>() {
-            @Nullable @Override public String apply(Integer val) {
+            @Override public @Nullable String apply(Integer val) {
                 if (val < 0 || val > 100)
                     return "The value should be between 1 and 100.";
 

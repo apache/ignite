@@ -90,7 +90,7 @@ public interface MvccQueryTracker {
      * @param commit Commit flag.
      * @return Acknowledge future.
      */
-    @Nullable public IgniteInternalFuture<Void> onDone(@NotNull GridNearTxLocal tx, boolean commit);
+    public @Nullable IgniteInternalFuture<Void> onDone(@NotNull GridNearTxLocal tx, boolean commit);
 
     /**
      * Mvcc coordinator change callback.

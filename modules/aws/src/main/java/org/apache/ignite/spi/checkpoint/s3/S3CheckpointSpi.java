@@ -158,10 +158,10 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
     private String bucketName;
 
     /** Bucket endpoint (set by user). */
-    @Nullable private String bucketEndpoint;
+    private @Nullable String bucketEndpoint;
 
     /** Server side encryption algorithm */
-    @Nullable private String sseAlg;
+    private @Nullable String sseAlg;
 
     /** Amazon client configuration. */
     private ClientConfiguration cfg;
@@ -187,7 +187,7 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
      *
      * @return S3 bucket endpoint to use.
      */
-    @Nullable public String getBucketEndpoint() {
+    public @Nullable String getBucketEndpoint() {
         return bucketEndpoint;
     }
 
@@ -196,7 +196,7 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
      *
      * @return S3 server-side encryption algorithm to use.
      */
-    @Nullable public String getSSEAlgorithm() {
+    public @Nullable String getSSEAlgorithm() {
         return sseAlg;
     }
 
@@ -539,7 +539,7 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
      * @throws IgniteCheckedException Thrown if an error occurs while unmarshalling.
      * @throws AmazonClientException If an error occurs while querying Amazon S3.
      */
-    @Nullable private S3CheckpointData read(String key) throws IgniteCheckedException, AmazonClientException {
+    private @Nullable S3CheckpointData read(String key) throws IgniteCheckedException, AmazonClientException {
         assert !F.isEmpty(key);
 
         if (log.isDebugEnabled())

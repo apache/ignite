@@ -359,7 +359,7 @@ public class IgniteTxHandler {
      * @param req Near prepare request.
      * @return Prepare future or {@code null} if need retry operation.
      */
-    @Nullable private IgniteInternalFuture<GridNearTxPrepareResponse> prepareNearTx(
+    private @Nullable IgniteInternalFuture<GridNearTxPrepareResponse> prepareNearTx(
         final ClusterNode nearNode,
         final GridNearTxPrepareRequest req
     ) {
@@ -856,7 +856,7 @@ public class IgniteTxHandler {
      * @param req Request.
      * @return Future.
      */
-    @Nullable private IgniteInternalFuture<IgniteInternalTx> processNearTxFinishRequest(
+    private @Nullable IgniteInternalFuture<IgniteInternalTx> processNearTxFinishRequest(
         UUID nodeId,
         GridNearTxFinishRequest req
     ) {
@@ -878,7 +878,7 @@ public class IgniteTxHandler {
      * @param req Request.
      * @return Future.
      */
-    @Nullable public IgniteInternalFuture<IgniteInternalTx> finish(UUID nodeId,
+    public @Nullable IgniteInternalFuture<IgniteInternalTx> finish(UUID nodeId,
         @Nullable GridNearTxLocal locTx,
         GridNearTxFinishRequest req)
     {
@@ -2007,7 +2007,7 @@ public class IgniteTxHandler {
      * @return Remote transaction.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable private GridNearTxRemote startNearRemoteTx(ClassLoader ldr, UUID nodeId,
+    private @Nullable GridNearTxRemote startNearRemoteTx(ClassLoader ldr, UUID nodeId,
         GridDhtTxPrepareRequest req) throws IgniteCheckedException {
 
         if (!F.isEmpty(req.nearWrites())) {
@@ -2247,7 +2247,7 @@ public class IgniteTxHandler {
      * @param node Backup node.
      * @return Partition counters for the given backup node.
      */
-    @Nullable public List<PartitionUpdateCountersMessage> filterUpdateCountersForBackupNode(
+    public @Nullable List<PartitionUpdateCountersMessage> filterUpdateCountersForBackupNode(
         IgniteInternalTx tx, ClusterNode node) {
         TxCounters txCntrs = tx.txCounters(false);
 

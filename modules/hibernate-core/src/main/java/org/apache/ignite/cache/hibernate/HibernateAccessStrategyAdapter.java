@@ -122,7 +122,7 @@ public abstract class HibernateAccessStrategyAdapter {
      * @param key Key.
      * @return Cached value.
      */
-    @Nullable public Object get(Object key) {
+    public @Nullable Object get(Object key) {
         try {
             return cache.get(key);
         }

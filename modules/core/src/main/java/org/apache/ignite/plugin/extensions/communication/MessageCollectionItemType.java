@@ -95,7 +95,7 @@ public enum MessageCollectionItemType {
      * @param ord Ordinal value.
      * @return Enumerated value.
      */
-    @Nullable public static MessageCollectionItemType fromOrdinal(int ord) {
+    public static @Nullable MessageCollectionItemType fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

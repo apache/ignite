@@ -38,7 +38,7 @@ class JdkMarshallerObjectOutputStream extends ObjectOutputStream {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Object replaceObject(Object o) throws IOException {
+    @Override protected @Nullable Object replaceObject(Object o) throws IOException {
         return o == null || MarshallerExclusions.isExcluded(o.getClass()) ? null :
             o.getClass().equals(Object.class) ? new JdkMarshallerDummySerializable() : super.replaceObject(o);
     }

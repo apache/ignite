@@ -50,7 +50,7 @@ public class IgfsFileInfoSelfTest extends IgfsCommonAbstractTest {
         multithreaded(new Callable<Object>() {
             private final Random rnd = new Random();
 
-            @Nullable @Override public Object call() throws IgniteCheckedException {
+            @Override public @Nullable Object call() throws IgniteCheckedException {
                 testSerialization(IgfsUtils.createDirectory(IgniteUuid.randomUuid()));
 
                 return null;

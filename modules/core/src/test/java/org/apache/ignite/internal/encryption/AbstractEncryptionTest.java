@@ -207,7 +207,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @NotNull protected String cacheName() {
+    protected @NotNull String cacheName() {
         return ENCRYPTED_CACHE;
     }
 

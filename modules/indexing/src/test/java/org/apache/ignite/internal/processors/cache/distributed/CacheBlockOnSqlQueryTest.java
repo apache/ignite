@@ -33,7 +33,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 public class CacheBlockOnSqlQueryTest extends CacheBlockOnReadAbstractTest {
 
     /** {@inheritDoc} */
-    @Override @NotNull protected CacheReadBackgroundOperation<?, ?> getReadOperation() {
+    @Override protected @NotNull CacheReadBackgroundOperation<?, ?> getReadOperation() {
         return new CacheReadBackgroundOperation<Integer, TestingEntity>() {
             /** Random. */
             private Random random = new Random();

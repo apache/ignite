@@ -228,7 +228,7 @@ class ReduceQueryRun {
     /**
      * @return {@code SELECT FOR UPDATE} future, if any.
      */
-    @Nullable public GridNearTxSelectForUpdateFuture selectForUpdateFuture() {
+    public @Nullable GridNearTxSelectForUpdateFuture selectForUpdateFuture() {
         return selectForUpdateFut;
     }
 

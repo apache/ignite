@@ -58,7 +58,7 @@ class ClientQueryCursor<T> implements QueryCursor<T> {
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Iterator<T> iterator() {
+    @Override public @NotNull Iterator<T> iterator() {
         return new Iterator<T>() {
             private Iterator<T> currPageIt = null;
 

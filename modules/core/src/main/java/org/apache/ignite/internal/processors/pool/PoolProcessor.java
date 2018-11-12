@@ -180,7 +180,7 @@ public class PoolProcessor extends GridProcessorAdapter {
      * @param name Executor name.
      * @return Executor service.
      */
-    @Nullable public Executor customExecutor(String name) {
+    public @Nullable Executor customExecutor(String name) {
         assert name != null;
 
         Executor exec = null;

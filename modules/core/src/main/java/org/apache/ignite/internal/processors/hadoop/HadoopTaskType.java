@@ -50,7 +50,7 @@ public enum HadoopTaskType {
      * @param ord Ordinal value.
      * @return Enumerated value.
      */
-    @Nullable public static HadoopTaskType fromOrdinal(byte ord) {
+    public static @Nullable HadoopTaskType fromOrdinal(byte ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

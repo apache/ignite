@@ -936,7 +936,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
      * @param nodeBean Node bean message.
      * @return Created node.
      */
-    @Nullable private GridClientNodeImpl nodeBeanToNode(@Nullable GridClientNodeBean nodeBean) {
+    private @Nullable GridClientNodeImpl nodeBeanToNode(@Nullable GridClientNodeBean nodeBean) {
         if (nodeBean == null)
             return null;
 

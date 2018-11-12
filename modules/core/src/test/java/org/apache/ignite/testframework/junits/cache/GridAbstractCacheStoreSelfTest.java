@@ -479,12 +479,12 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
         private final IgniteUuid xid = IgniteUuid.randomUuid();
 
         /** {@inheritDoc} */
-        @Nullable @Override public IgniteUuid xid() {
+        @Override public @Nullable IgniteUuid xid() {
             return xid;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public UUID nodeId() {
+        @Override public @Nullable UUID nodeId() {
             return null;
         }
 
@@ -499,12 +499,12 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public TransactionIsolation isolation() {
+        @Override public @Nullable TransactionIsolation isolation() {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public TransactionConcurrency concurrency() {
+        @Override public @Nullable TransactionConcurrency concurrency() {
             return null;
         }
 
@@ -519,7 +519,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public TransactionState state() {
+        @Override public @Nullable TransactionState state() {
             return null;
         }
 
@@ -584,7 +584,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public String label() {
+        @Override public @Nullable String label() {
             return null;
         }
 

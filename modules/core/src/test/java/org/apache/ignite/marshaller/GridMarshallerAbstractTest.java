@@ -107,7 +107,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
 
     /** Argument producer. */
     protected IgniteOutClosure<String> c3 = new IgniteOutClosure<String>() {
-        @Nullable @Override public String apply() {
+        @Override public @Nullable String apply() {
             return null;
         }
     };
@@ -118,7 +118,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
             return true;
         }
 
-        @Nullable @Override public Object reduce() {
+        @Override public @Nullable Object reduce() {
             return null;
         }
     };

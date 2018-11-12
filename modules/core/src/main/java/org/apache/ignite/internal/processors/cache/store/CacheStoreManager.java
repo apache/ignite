@@ -88,7 +88,7 @@ public interface CacheStoreManager extends GridCacheManager {
      * @return Loaded value, possibly <tt>null</tt>.
      * @throws IgniteCheckedException If data loading failed.
      */
-    @Nullable public Object load(@Nullable IgniteInternalTx tx, KeyCacheObject key) throws IgniteCheckedException;
+    public @Nullable Object load(@Nullable IgniteInternalTx tx, KeyCacheObject key) throws IgniteCheckedException;
 
     /**
      * Loads data from persistent store.

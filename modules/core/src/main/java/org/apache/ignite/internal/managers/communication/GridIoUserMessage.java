@@ -119,49 +119,49 @@ public class GridIoUserMessage implements Message {
     /**
      * @return Serialized message body.
      */
-    @Nullable public byte[] bodyBytes() {
+    public @Nullable byte[] bodyBytes() {
         return bodyBytes;
     }
 
     /**
      * @return the Class loader ID.
      */
-    @Nullable public IgniteUuid classLoaderId() {
+    public @Nullable IgniteUuid classLoaderId() {
         return clsLdrId;
     }
 
     /**
      * @return Deployment mode.
      */
-    @Nullable public DeploymentMode deploymentMode() {
+    public @Nullable DeploymentMode deploymentMode() {
         return depMode;
     }
 
     /**
      * @return Message body class name.
      */
-    @Nullable public String deploymentClassName() {
+    public @Nullable String deploymentClassName() {
         return depClsName;
     }
 
     /**
      * @return User version.
      */
-    @Nullable public String userVersion() {
+    public @Nullable String userVersion() {
         return userVer;
     }
 
     /**
      * @return Node class loader participant map.
      */
-    @Nullable public Map<UUID, IgniteUuid> loaderParticipants() {
+    public @Nullable Map<UUID, IgniteUuid> loaderParticipants() {
         return ldrParties != null ? Collections.unmodifiableMap(ldrParties) : null;
     }
 
     /**
      * @return Serialized message topic.
      */
-    @Nullable public byte[] topicBytes() {
+    public @Nullable byte[] topicBytes() {
         return topicBytes;
     }
 
@@ -175,7 +175,7 @@ public class GridIoUserMessage implements Message {
     /**
      * @return Message topic.
      */
-    @Nullable public Object topic() {
+    public @Nullable Object topic() {
         return topic;
     }
 
@@ -189,7 +189,7 @@ public class GridIoUserMessage implements Message {
     /**
      * @return Message body.
      */
-    @Nullable public Object body() {
+    public @Nullable Object body() {
         return body;
     }
 
@@ -203,7 +203,7 @@ public class GridIoUserMessage implements Message {
     /**
      * @return Message deployment.
      */
-    @Nullable public GridDeployment deployment() {
+    public @Nullable GridDeployment deployment() {
         return dep;
     }
 

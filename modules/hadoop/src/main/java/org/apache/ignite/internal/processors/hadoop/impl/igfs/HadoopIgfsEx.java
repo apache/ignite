@@ -58,7 +58,7 @@ public interface HadoopIgfsEx extends HadoopIgfs {
      * @return Read data.
      */
     public IgniteInternalFuture<byte[]> readData(HadoopIgfsStreamDelegate delegate, long pos, int len,
-        @Nullable final byte[] outBuf, final int outOff, final int outLen);
+        final @Nullable byte[] outBuf, final int outOff, final int outLen);
 
     /**
      * Writes data to the stream with given streamId. This method does not return any future since

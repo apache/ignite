@@ -133,7 +133,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
      * {@code null} means no specific folder is configured. <br>
      * In this case folder for metadata is composed from work directory and consistentId <br>
      */
-    @Nullable private File binaryMetadataFileStoreDir;
+    private @Nullable File binaryMetadataFileStoreDir;
 
     /** How long to wait for schema if no updates in progress. */
     private long waitSchemaTimeout = IgniteSystemProperties.getLong(IGNITE_WAIT_SCHEMA_UPDATE, 30_000);
@@ -544,7 +544,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public BinaryType metadata(final int typeId) {
+    @Override public @Nullable BinaryType metadata(final int typeId) {
         BinaryMetadata meta = metadata0(typeId);
 
         return meta != null ? meta.wrap(binaryCtx) : null;
@@ -555,7 +555,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
      * @return Meta data.
      * @throws IgniteException In case of error.
      */
-    @Nullable public BinaryMetadata metadata0(final int typeId) {
+    public @Nullable BinaryMetadata metadata0(final int typeId) {
         BinaryMetadataHolder holder = metadataLocCache.get(typeId);
 
         IgniteThread curThread = IgniteThread.current();
@@ -601,7 +601,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public BinaryType metadata(final int typeId, final int schemaId) {
+    @Override public @Nullable BinaryType metadata(final int typeId, final int schemaId) {
         BinaryMetadataHolder holder = metadataLocCache.get(typeId);
 
         if (ctx.clientNode()) {
@@ -935,7 +935,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj,
+    @Override public @Nullable CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj,
         boolean userObj, boolean failIfUnregistered) {
         if (!ctx.binaryEnabled())
             return super.toCacheObject(ctx, obj, userObj, failIfUnregistered);
@@ -986,7 +986,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
      * @return Binary object.
      * @throws IgniteException In case of error.
      */
-    @Nullable public Object toBinary(@Nullable Object obj, boolean failIfUnregistered) throws IgniteException {
+    public @Nullable Object toBinary(@Nullable Object obj, boolean failIfUnregistered) throws IgniteException {
         if (obj == null)
             return null;
 
@@ -997,7 +997,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode rmtNode,
+    @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode rmtNode,
         DiscoveryDataBag.JoiningNodeDiscoveryData discoData
     ) {
         IgniteNodeValidationResult res;
@@ -1064,7 +1064,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
+    @Override public @Nullable DiscoveryDataExchangeType discoveryDataType() {
         return BINARY_PROC;
     }
 
@@ -1192,7 +1192,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
+        @Override public @Nullable BinaryType metadata(int typeId) throws BinaryObjectException {
             BinaryType metadata = super.metadata(typeId);
 
             if (listeners != null) {

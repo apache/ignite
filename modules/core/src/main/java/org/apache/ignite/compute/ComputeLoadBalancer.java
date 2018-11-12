@@ -110,6 +110,6 @@ public interface ComputeLoadBalancer {
      * @return Next balanced node.
      * @throws IgniteException If any error occurred when finding next balanced node.
      */
-    @Nullable public ClusterNode getBalancedNode(ComputeJob job, @Nullable Collection<ClusterNode> exclNodes)
+    public @Nullable ClusterNode getBalancedNode(ComputeJob job, @Nullable Collection<ClusterNode> exclNodes)
         throws IgniteException;
 }

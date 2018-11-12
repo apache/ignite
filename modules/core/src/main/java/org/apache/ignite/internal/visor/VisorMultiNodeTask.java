@@ -131,10 +131,10 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
      * @return Task result.
      * @throws IgniteException If reduction or results caused an error.
      */
-    @Nullable protected abstract R reduce0(List<ComputeJobResult> results) throws IgniteException;
+    protected abstract @Nullable R reduce0(List<ComputeJobResult> results) throws IgniteException;
 
     /** {@inheritDoc} */
-    @Nullable @Override public final R reduce(List<ComputeJobResult> results) {
+    @Override public final @Nullable R reduce(List<ComputeJobResult> results) {
         try {
             return reduce0(results);
         }

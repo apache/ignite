@@ -301,7 +301,7 @@ class GridUpdateNotifier {
          * @param  metaName Name for extract.
          * @return Version or {@code null} if one's not found.
          */
-        @Nullable private String obtainMeta(String metaName, String line) {
+        private @Nullable String obtainMeta(String metaName, String line) {
             assert line.contains(metaName);
 
             return line.substring(line.indexOf(metaName) + metaName.length()).trim();
@@ -314,7 +314,7 @@ class GridUpdateNotifier {
          * @param  line Line which contains value for extract.
          * @return Version or {@code null} if one's not found.
          */
-        @Nullable private String obtainVersionFrom(String line) {
+        private @Nullable String obtainVersionFrom(String line) {
             return obtainMeta("version=", line);
         }
 
@@ -324,7 +324,7 @@ class GridUpdateNotifier {
          * @param line Which contains value for extract.
          * @return download url or {@code null} if one's not found.
          */
-        @Nullable private String obtainDownloadUrlFrom(String line) {
+        private @Nullable String obtainDownloadUrlFrom(String line) {
             return obtainMeta("downloadUrl=", line);
         }
     }

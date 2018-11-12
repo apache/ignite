@@ -76,7 +76,7 @@ public class CacheStoreBalancingWrapper<K, V> implements CacheStore<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V load(K key) {
+    @Override public @Nullable V load(K key) {
         LoadFuture fut = pendingLoads.get(key);
 
         try {

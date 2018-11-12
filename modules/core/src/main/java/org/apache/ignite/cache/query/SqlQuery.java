@@ -257,7 +257,7 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /**
      * Gets partitions for query, in ascending order.
      */
-    @Nullable public int[] getPartitions() {
+    public @Nullable int[] getPartitions() {
         return parts;
     }
 

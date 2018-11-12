@@ -142,7 +142,7 @@ class IntervalBasedMeasurement {
      * @param curNanoTime Current time in nanoseconds.
      * @return {@code True} if measurement is outdated.
      */
-    private boolean isOutdated(@Nullable final MeasurementInterval interval, long curNanoTime) {
+    private boolean isOutdated(final @Nullable MeasurementInterval interval, long curNanoTime) {
         if (interval == null)
             return true;
 
@@ -160,7 +160,7 @@ class IntervalBasedMeasurement {
      * @param curNanoTime current nano time.
      * @return interval to use.
      */
-    @NotNull private MeasurementInterval interval(long curNanoTime) {
+    private @NotNull MeasurementInterval interval(long curNanoTime) {
         MeasurementInterval interval;
 
         do {

@@ -59,7 +59,7 @@ public class IgniteTxMappingsImpl implements IgniteTxMappings {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridDistributedTxMapping localMapping() {
+    @Override public @Nullable GridDistributedTxMapping localMapping() {
         for (GridDistributedTxMapping m : mappings.values()) {
             if (m.primary().isLocal())
                 return m;
@@ -74,7 +74,7 @@ public class IgniteTxMappingsImpl implements IgniteTxMappings {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridDistributedTxMapping singleMapping() {
+    @Override public @Nullable GridDistributedTxMapping singleMapping() {
         assert mappings.size() == 1 : mappings;
 
         return F.firstValue(mappings);

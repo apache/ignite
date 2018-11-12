@@ -94,7 +94,7 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Collection<ClusterNode> topology(long topVer) {
+    @Override public @Nullable Collection<ClusterNode> topology(long topVer) {
         return cluster.topology(topVer);
     }
 
@@ -292,7 +292,7 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public ClusterNode node(UUID id) {
+    @Override public @Nullable ClusterNode node(UUID id) {
         return cluster.node(id);
     }
 
@@ -302,7 +302,7 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public ClusterNode node() {
+    @Override public @Nullable ClusterNode node() {
         return cluster.node();
     }
 
@@ -327,7 +327,7 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Collection<BaselineNode> currentBaselineTopology() {
+    @Override public @Nullable Collection<BaselineNode> currentBaselineTopology() {
         return null;
     }
 
@@ -342,7 +342,7 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFuture<?> clientReconnectFuture() {
+    @Override public @Nullable IgniteFuture<?> clientReconnectFuture() {
         return cluster.clientReconnectFuture();
     }
 

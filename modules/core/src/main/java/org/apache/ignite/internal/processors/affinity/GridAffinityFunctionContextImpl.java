@@ -57,7 +57,7 @@ public class GridAffinityFunctionContextImpl implements AffinityFunctionContext 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public List<ClusterNode> previousAssignment(int part) {
+    @Override public @Nullable List<ClusterNode> previousAssignment(int part) {
         return prevAssignment == null ? null : prevAssignment.get(part);
     }
 
@@ -72,7 +72,7 @@ public class GridAffinityFunctionContextImpl implements AffinityFunctionContext 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryEvent discoveryEvent() {
+    @Override public @Nullable DiscoveryEvent discoveryEvent() {
         return discoEvt;
     }
 

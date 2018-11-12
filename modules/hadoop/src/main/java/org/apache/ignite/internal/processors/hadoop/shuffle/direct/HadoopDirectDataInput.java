@@ -209,7 +209,7 @@ public class HadoopDirectDataInput extends InputStream implements DataInput {
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public String readUTF() throws IOException {
+    @Override public @NotNull String readUTF() throws IOException {
         byte[] bytes = new byte[readShort()];
 
         if (bytes.length != 0)

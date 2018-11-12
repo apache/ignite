@@ -150,7 +150,7 @@ public enum GridTopic {
      * @param ord Ordinal value.
      * @return Enumerated value.
      */
-    @Nullable public static GridTopic fromOrdinal(int ord) {
+    public static @Nullable GridTopic fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 

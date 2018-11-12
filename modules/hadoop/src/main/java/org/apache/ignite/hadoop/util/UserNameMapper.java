@@ -31,5 +31,5 @@ public interface UserNameMapper extends Serializable {
      * @param name User name.
      * @return Mapped user name.
      */
-    @Nullable public String map(String name);
+    public @Nullable String map(String name);
 }

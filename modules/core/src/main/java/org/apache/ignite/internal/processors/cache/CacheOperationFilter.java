@@ -41,7 +41,7 @@ public enum CacheOperationFilter {
      * @param val Optional value.
      * @return Predicate.
      */
-    @Nullable public CacheEntryPredicate createPredicate(@Nullable CacheObject val) {
+    public @Nullable CacheEntryPredicate createPredicate(@Nullable CacheObject val) {
         switch (this) {
             case ALWAYS:
                 return null;

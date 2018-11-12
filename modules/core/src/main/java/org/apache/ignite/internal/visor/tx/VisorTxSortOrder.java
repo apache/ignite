@@ -39,7 +39,7 @@ public enum VisorTxSortOrder {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static VisorTxSortOrder fromOrdinal(int ord) {
+    public static @Nullable VisorTxSortOrder fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 

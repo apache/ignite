@@ -241,7 +241,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends IgniteCol
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Integer call() {
+        @Override public @Nullable Integer call() {
             assertNotNull(ignite);
 
             log.info("Running job [node=" + ignite.cluster().localNode().id() +

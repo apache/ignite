@@ -116,8 +116,7 @@ class VectorImplementationsFixtures {
         }
 
         /** {@inheritDoc} */
-        @NotNull
-        @Override public Iterator<Vector> iterator() {
+        @Override public @NotNull Iterator<Vector> iterator() {
             return iter.get();
         }
 
@@ -142,8 +141,7 @@ class VectorImplementationsFixtures {
         }
 
         /** {@inheritDoc} */
-        @NotNull
-        @Override public Iterator<Vector> iterator() {
+        @Override public @NotNull Iterator<Vector> iterator() {
             return iter.get();
         }
 
@@ -410,8 +408,7 @@ class VectorImplementationsFixtures {
         }
 
         /** {@inheritDoc} */
-        @NotNull
-        @Override public Iterator<Vector> iterator() {
+        @Override public @NotNull Iterator<Vector> iterator() {
             return iter.get();
         }
 

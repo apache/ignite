@@ -36,7 +36,7 @@ public class GridCacheQueryErrorFuture<T> extends GridFinishedFuture<Collection<
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public T next() throws IgniteCheckedException {
+    @Override public @Nullable T next() throws IgniteCheckedException {
         get();
 
         return null;

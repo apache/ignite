@@ -133,12 +133,12 @@ public class GridTestTaskSession implements ComputeTaskSession {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Collection<ComputeJobSibling> getJobSiblings() {
+    @Override public @Nullable Collection<ComputeJobSibling> getJobSiblings() {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Collection<ComputeJobSibling> refreshJobSiblings() {
+    @Override public @Nullable Collection<ComputeJobSibling> refreshJobSiblings() {
         return getJobSiblings();
     }
 
@@ -209,7 +209,7 @@ public class GridTestTaskSession implements ComputeTaskSession {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Collection<UUID> getTopology() {
+    @Override public @Nullable Collection<UUID> getTopology() {
         return null;
     }
 

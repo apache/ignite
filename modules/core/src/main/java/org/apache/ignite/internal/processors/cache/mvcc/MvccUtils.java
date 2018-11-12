@@ -660,7 +660,7 @@ public class MvccUtils {
      * @param ctx Grid kernal context.
      * @return Currently started user transaction, or {@code null} if none started.
      */
-    @Nullable public static GridNearTxLocal tx(GridKernalContext ctx) {
+    public static @Nullable GridNearTxLocal tx(GridKernalContext ctx) {
         return tx(ctx, null);
     }
 
@@ -669,7 +669,7 @@ public class MvccUtils {
      * @param txId Transaction ID.
      * @return Currently started user transaction, or {@code null} if none started.
      */
-    @Nullable public static GridNearTxLocal tx(GridKernalContext ctx, @Nullable GridCacheVersion txId) {
+    public static @Nullable GridNearTxLocal tx(GridKernalContext ctx, @Nullable GridCacheVersion txId) {
         IgniteTxManager tm = ctx.cache().context().tm();
 
         IgniteInternalTx tx0 = txId == null ? tm.tx() : tm.tx(txId);
@@ -762,7 +762,7 @@ public class MvccUtils {
      * @return MVCC query tracker.
      * @throws IgniteCheckedException If failed.
      */
-    @NotNull public static MvccQueryTracker mvccTracker(GridCacheContext cctx, boolean startTx) throws IgniteCheckedException {
+    public static @NotNull MvccQueryTracker mvccTracker(GridCacheContext cctx, boolean startTx) throws IgniteCheckedException {
         assert cctx != null && cctx.mvccEnabled();
 
         GridNearTxLocal tx = tx(cctx.kernalContext());
@@ -780,7 +780,7 @@ public class MvccUtils {
      * @return MVCC query tracker.
      * @throws IgniteCheckedException If failed.
      */
-    @NotNull public static MvccQueryTracker mvccTracker(GridCacheContext cctx,
+    public static @NotNull MvccQueryTracker mvccTracker(GridCacheContext cctx,
         GridNearTxLocal tx) throws IgniteCheckedException {
         MvccQueryTracker tracker;
 

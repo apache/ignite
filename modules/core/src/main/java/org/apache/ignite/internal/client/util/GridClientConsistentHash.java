@@ -316,7 +316,7 @@ public class GridClientConsistentHash<N> {
      *      If {@code null}, then all nodes may be returned.
      * @return Node for key, or {@code null} if node was not found.
      */
-    public N node(Object key, @Nullable final Collection<N> inc, @Nullable final Collection<N> exc) {
+    public N node(Object key, final @Nullable Collection<N> inc, final @Nullable Collection<N> exc) {
         if (inc == null && exc == null)
             return node(key);
 

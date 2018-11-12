@@ -198,7 +198,7 @@ public class GridCacheAffinityProxy<K, V> implements Affinity<K>, Externalizable
 
 
     /** {@inheritDoc} */
-    @Override @Nullable public ClusterNode mapKeyToNode(K key) {
+    @Override public @Nullable ClusterNode mapKeyToNode(K key) {
         CacheOperationContext old = gate.enter(null);
 
         try {

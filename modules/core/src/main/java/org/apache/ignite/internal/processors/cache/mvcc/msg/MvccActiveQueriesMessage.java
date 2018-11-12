@@ -52,7 +52,7 @@ public class MvccActiveQueriesMessage implements MvccMessage {
     /**
      * @return Active queries.
      */
-    @Nullable public GridLongList activeQueries() {
+    public @Nullable GridLongList activeQueries() {
         return activeQrys;
     }
 

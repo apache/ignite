@@ -27,22 +27,22 @@ public interface StreamerParams {
     /**
      * @return Per-node buffer size.
      */
-    @Nullable public Integer streamerPerNodeBufferSize();
+    public @Nullable Integer streamerPerNodeBufferSize();
 
     /**
      * @return Per-node parallel operations.
      */
-    @Nullable public Integer streamerPerNodeParallelOperations();
+    public @Nullable Integer streamerPerNodeParallelOperations();
 
     /**
      * @return Local batch size.
      */
-    @Nullable public Integer streamerLocalBatchSize();
+    public @Nullable Integer streamerLocalBatchSize();
 
     /**
      * @return Allow overwrite flag.
      */
-    @Nullable public Boolean streamerAllowOverwrite();
+    public @Nullable Boolean streamerAllowOverwrite();
 
     /**
      * @return Ordered flag.

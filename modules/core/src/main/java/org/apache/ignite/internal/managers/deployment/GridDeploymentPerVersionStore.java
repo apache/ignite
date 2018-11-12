@@ -278,7 +278,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public GridDeployment getDeployment(GridDeploymentMetadata meta) {
+    @Override public @Nullable GridDeployment getDeployment(GridDeploymentMetadata meta) {
         assert meta != null;
 
         assert ctx.config().isPeerClassLoadingEnabled();

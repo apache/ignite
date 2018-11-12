@@ -405,7 +405,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * @param key Key.
      * @return Value.
      */
-    @Nullable protected <K, V> V peek(IgniteCache<K, V> cache, K key) {
+    protected @Nullable <K, V> V peek(IgniteCache<K, V> cache, K key) {
         return cache.localPeek(key);
     }
 

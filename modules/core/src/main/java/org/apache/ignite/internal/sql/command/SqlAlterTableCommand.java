@@ -61,7 +61,7 @@ public class SqlAlterTableCommand implements SqlCommand  {
     /**
      * @return Logging status or {@code null} if no changes to logging is requested.
      */
-    @Nullable public Boolean logging() {
+    public @Nullable Boolean logging() {
         return logging;
     }
 

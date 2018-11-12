@@ -177,7 +177,7 @@ public interface Affinity<K> {
      * @return Primary node for the key.
      * @throws IgniteException If there are no alive nodes for this cache.
      */
-    @Nullable public ClusterNode mapKeyToNode(K key);
+    public @Nullable ClusterNode mapKeyToNode(K key);
 
     /**
      * Gets primary and backup nodes for the key. Note that primary node is always

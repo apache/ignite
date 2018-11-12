@@ -124,12 +124,12 @@ public class IgniteBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V1 getKey() {
+    @Override public @Nullable V1 getKey() {
         return val1;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V2 getValue() {
+    @Override public @Nullable V2 getValue() {
         return val2;
     }
 
@@ -152,7 +152,7 @@ public class IgniteBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
                 return nextIdx < 3;
             }
 
-            @Nullable @Override public Object next() {
+            @Override public @Nullable Object next() {
                 if (!hasNext())
                     throw new NoSuchElementException();
 
@@ -195,13 +195,12 @@ public class IgniteBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V2 get(Object key) {
+    @Override public @Nullable V2 get(Object key) {
         return containsKey(key) ? val2 : null;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override
-    public V2 put(V1 key, V2 val) {
+    @Override public @Nullable V2 put(V1 key, V2 val) {
         V2 old = containsKey(key) ? val2 : null;
 
         set(key, val);
@@ -210,7 +209,7 @@ public class IgniteBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V2 remove(Object key) {
+    @Override public @Nullable V2 remove(Object key) {
         if (containsKey(key)) {
             V2 v2 = val2;
 

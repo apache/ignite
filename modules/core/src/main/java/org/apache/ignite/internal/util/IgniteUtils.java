@@ -1069,7 +1069,7 @@ public abstract class IgniteUtils {
      *
      * @return SUN specific constructor factory.
      */
-    @Nullable public static Method ctorFactory() {
+    public static @Nullable Method ctorFactory() {
         return CTOR_FACTORY;
     }
 
@@ -1085,7 +1085,7 @@ public abstract class IgniteUtils {
      *
      * @return Reflection factory for objects without public constructor.
      */
-    @Nullable public static Object sunReflectionFactory() {
+    public static @Nullable Object sunReflectionFactory() {
         return SUN_REFLECT_FACTORY;
     }
 
@@ -1514,7 +1514,7 @@ public abstract class IgniteUtils {
      * @return Empty constructor if one could be found or {@code null} otherwise.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public static Constructor<?> forceEmptyConstructor(Class<?> cls) throws IgniteCheckedException {
+    public static @Nullable Constructor<?> forceEmptyConstructor(Class<?> cls) throws IgniteCheckedException {
         Constructor<?> ctor = null;
 
         try {
@@ -1543,7 +1543,7 @@ public abstract class IgniteUtils {
      * @param dflt Default class to return.
      * @return Class or default given class if it can't be found.
      */
-    @Nullable public static Class<?> classForName(@Nullable String cls, @Nullable Class<?> dflt) {
+    public static @Nullable Class<?> classForName(@Nullable String cls, @Nullable Class<?> dflt) {
         return classForName(cls, dflt, false);
     }
 
@@ -1555,7 +1555,7 @@ public abstract class IgniteUtils {
      * @param includePrimitiveTypes Whether class resolution should include primitive types (i.e. "int" will resolve to int.class if flag is set)
      * @return Class or default given class if it can't be found.
      */
-    @Nullable public static Class<?> classForName(
+    public static @Nullable Class<?> classForName(
         @Nullable String cls,
         @Nullable Class<?> dflt,
         boolean includePrimitiveTypes
@@ -1581,7 +1581,7 @@ public abstract class IgniteUtils {
      * @return Instance.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public static <T> T newInstance(String cls) throws IgniteCheckedException {
+    public static @Nullable <T> T newInstance(String cls) throws IgniteCheckedException {
         Class<?> cls0;
 
         try {
@@ -1601,7 +1601,7 @@ public abstract class IgniteUtils {
      * @return New instance of the class or {@code null} if empty constructor could not be assigned.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public static <T> T newInstance(Class<T> cls) throws IgniteCheckedException {
+    public static @Nullable <T> T newInstance(Class<T> cls) throws IgniteCheckedException {
         boolean set = false;
 
         Constructor<T> ctor = null;
@@ -1639,8 +1639,7 @@ public abstract class IgniteUtils {
      * @return New instance of the class or {@code null} if empty constructor could not be assigned.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings({"unchecked"})
-    @Nullable public static <T> T forceNewInstance(Class<?> cls) throws IgniteCheckedException {
+    @SuppressWarnings({"unchecked"}) public static @Nullable <T> T forceNewInstance(Class<?> cls) throws IgniteCheckedException {
         Constructor ctor = forceEmptyConstructor(cls);
 
         if (ctor == null)
@@ -1768,7 +1767,7 @@ public abstract class IgniteUtils {
      * @throws IOException If failed.
      * @throws ClassNotFoundException If class not found.
      */
-    @Nullable public static Object[] readArray(ObjectInput in) throws IOException, ClassNotFoundException {
+    public static @Nullable Object[] readArray(ObjectInput in) throws IOException, ClassNotFoundException {
         int len = in.readInt();
 
         Object[] arr = null;
@@ -1791,7 +1790,7 @@ public abstract class IgniteUtils {
      * @throws IOException If failed.
      * @throws ClassNotFoundException If class not found.
      */
-    @Nullable public static Class<?>[] readClassArray(ObjectInput in) throws IOException, ClassNotFoundException {
+    public static @Nullable Class<?>[] readClassArray(ObjectInput in) throws IOException, ClassNotFoundException {
         int len = in.readInt();
 
         Class<?>[] arr = null;
@@ -1846,7 +1845,7 @@ public abstract class IgniteUtils {
      * @throws IOException If deserialization failed.
      * @throws ClassNotFoundException If deserialized class could not be found.
      */
-    @Nullable public static <E> Collection<E> readCollection(ObjectInput in)
+    public static @Nullable <E> Collection<E> readCollection(ObjectInput in)
         throws IOException, ClassNotFoundException {
         return readList(in);
     }
@@ -1856,7 +1855,7 @@ public abstract class IgniteUtils {
      * @return Deserialized set.
      * @throws IOException If deserialization failed.
      */
-    @Nullable public static Collection<Integer> readIntCollection(DataInput in) throws IOException {
+    public static @Nullable Collection<Integer> readIntCollection(DataInput in) throws IOException {
         int size = in.readInt();
 
         // Check null flag.
@@ -1923,7 +1922,7 @@ public abstract class IgniteUtils {
      * @param addr IP address for which to find network interface name.
      * @return Network interface name or {@code null} if can't be found.
      */
-    @Nullable public static String getNetworkInterfaceName(String addr) {
+    public static @Nullable String getNetworkInterfaceName(String addr) {
         assert addr != null;
 
         try {
@@ -2404,7 +2403,7 @@ public abstract class IgniteUtils {
     private static TrustManager[] getTrustManagers() {
         return new TrustManager[] {
             new X509TrustManager() {
-                @Nullable @Override public X509Certificate[] getAcceptedIssuers() {
+                @Override public @Nullable X509Certificate[] getAcceptedIssuers() {
                     return null;
                 }
 
@@ -2429,7 +2428,7 @@ public abstract class IgniteUtils {
      * @param uri URI which password should be replaced.
      * @return Converted URI string
      */
-    @Nullable public static String hidePassword(@Nullable String uri) {
+    public static @Nullable String hidePassword(@Nullable String uri) {
         if (uri == null)
             return null;
 
@@ -2597,7 +2596,7 @@ public abstract class IgniteUtils {
      * @return Read byte array, possibly <tt>null</tt>.
      * @throws java.io.IOException If read failed.
      */
-    @Nullable public static byte[] readByteArray(DataInput in) throws IOException {
+    public static @Nullable byte[] readByteArray(DataInput in) throws IOException {
         int len = in.readInt();
 
         if (len == -1)
@@ -2668,7 +2667,7 @@ public abstract class IgniteUtils {
      * @return Deserialized list.
      * @throws java.io.IOException If deserialization failed.
      */
-    @Nullable public static List<Byte> readByteList(DataInput in) throws IOException {
+    public static @Nullable List<Byte> readByteList(DataInput in) throws IOException {
         int size = in.readInt();
 
         // Check null flag.
@@ -3622,7 +3621,7 @@ public abstract class IgniteUtils {
      *
      * @return Project home directory (or {@code null} if it cannot be resolved).
      */
-    @Nullable private static String resolveProjectHome() {
+    private static @Nullable String resolveProjectHome() {
         assert Thread.holdsLock(IgniteUtils.class);
 
         // Resolve Ignite home via environment variables.
@@ -3715,7 +3714,7 @@ public abstract class IgniteUtils {
      *
      * @return {@code IGNITE_HOME} property.
      */
-    @Nullable public static String getIgniteHome() {
+    public static @Nullable String getIgniteHome() {
         GridTuple<String> ggHomeTup = ggHome;
 
         String ggHome0;
@@ -3802,7 +3801,7 @@ public abstract class IgniteUtils {
      * @param path Path to resolve.
      * @return Resolved path as file, or {@code null} if path cannot be resolved.
      */
-    @Nullable public static File resolveIgnitePath(String path) {
+    public static @Nullable File resolveIgnitePath(String path) {
         assert path != null;
 
         /*
@@ -3843,7 +3842,7 @@ public abstract class IgniteUtils {
      * @return Resolved path as URL, or {@code null} if path cannot be resolved.
      * @see #getIgniteHome()
      */
-    @Nullable public static URL resolveIgniteUrl(String path) {
+    public static @Nullable URL resolveIgniteUrl(String path) {
         return resolveIgniteUrl(path, true);
     }
 
@@ -3881,7 +3880,7 @@ public abstract class IgniteUtils {
      * @param path Resource path.
      * @return Resource URL inside classpath or {@code null}.
      */
-    @Nullable private static URL resolveInClasspath(String path) {
+    private static @Nullable URL resolveInClasspath(String path) {
         ClassLoader clsLdr = Thread.currentThread().getContextClassLoader();
 
         if (clsLdr == null)
@@ -3904,7 +3903,7 @@ public abstract class IgniteUtils {
      * @return Resolved path as URL, or {@code null} if path cannot be resolved.
      * @see #getIgniteHome()
      */
-    @Nullable public static URL resolveIgniteUrl(String path, boolean metaInf) {
+    public static @Nullable URL resolveIgniteUrl(String path, boolean metaInf) {
         File f = resolveIgnitePath(path);
 
         if (f != null) {
@@ -4889,7 +4888,7 @@ public abstract class IgniteUtils {
      * @return Read UUIDs.
      * @throws IOException If read failed.
      */
-    @Nullable public static List<UUID> readUuids(DataInput in) throws IOException {
+    public static @Nullable List<UUID> readUuids(DataInput in) throws IOException {
         int size = in.readInt();
 
         // Check null flag.
@@ -4933,7 +4932,7 @@ public abstract class IgniteUtils {
      * @return Read Grid UUIDs.
      * @throws IOException If read failed.
      */
-    @Nullable public static List<IgniteUuid> readGridUuids(DataInput in) throws IOException {
+    public static @Nullable List<IgniteUuid> readGridUuids(DataInput in) throws IOException {
         List<IgniteUuid> col = null;
 
         // Check null flag.
@@ -4975,7 +4974,7 @@ public abstract class IgniteUtils {
      * @return Read UUID.
      * @throws IOException If read failed.
      */
-    @Nullable public static UUID readUuid(DataInput in) throws IOException {
+    public static @Nullable UUID readUuid(DataInput in) throws IOException {
         // If UUID is not null.
         if (!in.readBoolean()) {
             long most = in.readLong();
@@ -5013,7 +5012,7 @@ public abstract class IgniteUtils {
      * @return Read UUID.
      * @throws IOException If read failed.
      */
-    @Nullable public static UUID readUuid(BinaryRawReader in) {
+    public static @Nullable UUID readUuid(BinaryRawReader in) {
         // If UUID is not null.
         if (in.readBoolean()) {
             long most = in.readLong();
@@ -5053,7 +5052,7 @@ public abstract class IgniteUtils {
      * @return Read UUID.
      * @throws IOException If read failed.
      */
-    @Nullable public static IgniteUuid readGridUuid(DataInput in) throws IOException {
+    public static @Nullable IgniteUuid readGridUuid(DataInput in) throws IOException {
         // If UUID is not null.
         if (!in.readBoolean()) {
             long most = in.readLong();
@@ -5158,7 +5157,7 @@ public abstract class IgniteUtils {
      * @return Read byte array, possibly <tt>null</tt>.
      * @throws IOException If read failed.
      */
-    @Nullable public static boolean[] readBooleanArray(DataInput in) throws IOException {
+    public static @Nullable boolean[] readBooleanArray(DataInput in) throws IOException {
         int len = in.readInt();
 
         if (len == -1)
@@ -5179,7 +5178,7 @@ public abstract class IgniteUtils {
      * @return Read byte array, possibly <tt>null</tt>.
      * @throws IOException If read failed.
      */
-    @Nullable public static int[] readIntArray(DataInput in) throws IOException {
+    public static @Nullable int[] readIntArray(DataInput in) throws IOException {
         int len = in.readInt();
 
         if (len == -1)
@@ -5240,8 +5239,7 @@ public abstract class IgniteUtils {
      * @throws IOException If de-serialization failed.
      * @throws ClassNotFoundException If deserialized class could not be found.
      */
-    @SuppressWarnings({"unchecked"})
-    @Nullable public static <K, V> Map<K, V> readMap(ObjectInput in) throws IOException, ClassNotFoundException {
+    @SuppressWarnings({"unchecked"}) public static @Nullable <K, V> Map<K, V> readMap(ObjectInput in) throws IOException, ClassNotFoundException {
         int size = in.readInt();
 
         if (size == -1)
@@ -5261,8 +5259,7 @@ public abstract class IgniteUtils {
      * @throws IOException If de-serialization failed.
      * @throws ClassNotFoundException If deserialized class could not be found.
      */
-    @SuppressWarnings({"unchecked"})
-    @Nullable public static <K, V> TreeMap<K, V> readTreeMap(
+    @SuppressWarnings({"unchecked"}) public static @Nullable <K, V> TreeMap<K, V> readTreeMap(
         ObjectInput in) throws IOException, ClassNotFoundException {
         int size = in.readInt();
 
@@ -5285,8 +5282,7 @@ public abstract class IgniteUtils {
      * @throws IOException If de-serialization failed.
      * @throws ClassNotFoundException If deserialized class could not be found.
      */
-    @SuppressWarnings({"unchecked"})
-    @Nullable public static <K, V> HashMap<K, V> readHashMap(ObjectInput in)
+    @SuppressWarnings({"unchecked"}) public static @Nullable <K, V> HashMap<K, V> readHashMap(ObjectInput in)
         throws IOException, ClassNotFoundException {
         int size = in.readInt();
 
@@ -5309,8 +5305,7 @@ public abstract class IgniteUtils {
      * @throws IOException If de-serialization failed.
      * @throws ClassNotFoundException If deserialized class could not be found.
      */
-    @SuppressWarnings({"unchecked"})
-    @Nullable public static <K, V> LinkedHashMap<K, V> readLinkedMap(ObjectInput in)
+    @SuppressWarnings({"unchecked"}) public static @Nullable <K, V> LinkedHashMap<K, V> readLinkedMap(ObjectInput in)
         throws IOException, ClassNotFoundException {
         int size = in.readInt();
 
@@ -5350,8 +5345,7 @@ public abstract class IgniteUtils {
      * @throws IOException If de-serialization failed.
      * @throws ClassNotFoundException If deserialized class could not be found.
      */
-    @SuppressWarnings({"unchecked"})
-    @Nullable public static <V> Map<Integer, V> readIntKeyMap(ObjectInput in) throws IOException,
+    @SuppressWarnings({"unchecked"}) public static @Nullable <V> Map<Integer, V> readIntKeyMap(ObjectInput in) throws IOException,
         ClassNotFoundException {
         int size = in.readInt();
 
@@ -5392,8 +5386,7 @@ public abstract class IgniteUtils {
      * @return Read map.
      * @throws IOException If de-serialization failed.
      */
-    @SuppressWarnings({"unchecked"})
-    @Nullable public static Map<Integer, Integer> readIntKeyIntValueMap(DataInput in) throws IOException {
+    @SuppressWarnings({"unchecked"}) public static @Nullable Map<Integer, Integer> readIntKeyIntValueMap(DataInput in) throws IOException {
         Map<Integer, Integer> map = null;
 
         // Check null flag.
@@ -5415,8 +5408,7 @@ public abstract class IgniteUtils {
      * @throws IOException If deserialization failed.
      * @throws ClassNotFoundException If deserialized class could not be found.
      */
-    @SuppressWarnings({"unchecked"})
-    @Nullable public static <E> List<E> readList(ObjectInput in) throws IOException, ClassNotFoundException {
+    @SuppressWarnings({"unchecked"}) public static @Nullable <E> List<E> readList(ObjectInput in) throws IOException, ClassNotFoundException {
         int size = in.readInt();
 
         // Check null flag.
@@ -5436,7 +5428,7 @@ public abstract class IgniteUtils {
      * @return Deserialized list.
      * @throws IOException If deserialization failed.
      */
-    @Nullable public static List<Integer> readIntList(DataInput in) throws IOException {
+    public static @Nullable List<Integer> readIntList(DataInput in) throws IOException {
         int size = in.readInt();
 
         // Check null flag.
@@ -5457,8 +5449,7 @@ public abstract class IgniteUtils {
      * @throws IOException If deserialization failed.
      * @throws ClassNotFoundException If deserialized class could not be found.
      */
-    @SuppressWarnings({"unchecked"})
-    @Nullable public static <E> Set<E> readSet(ObjectInput in) throws IOException, ClassNotFoundException {
+    @SuppressWarnings({"unchecked"}) public static @Nullable <E> Set<E> readSet(ObjectInput in) throws IOException, ClassNotFoundException {
         int size = in.readInt();
 
         // Check null flag.
@@ -5478,7 +5469,7 @@ public abstract class IgniteUtils {
      * @return Deserialized set.
      * @throws IOException If deserialization failed.
      */
-    @Nullable public static Set<Integer> readIntSet(DataInput in) throws IOException {
+    public static @Nullable Set<Integer> readIntSet(DataInput in) throws IOException {
         int size = in.readInt();
 
         // Check null flag.
@@ -5515,7 +5506,7 @@ public abstract class IgniteUtils {
      * @return Read string, possibly {@code null}.
      * @throws IOException If read failed.
      */
-    @Nullable public static String readString(DataInput in) throws IOException {
+    public static @Nullable String readString(DataInput in) throws IOException {
         // If value is not null, then read it. Otherwise return null.
         return !in.readBoolean() ? in.readUTF() : null;
     }
@@ -5566,7 +5557,7 @@ public abstract class IgniteUtils {
      * @param annCls Annotation to get.
      * @return Instance of annotation, or {@code null} if not found.
      */
-    @Nullable public static <T extends Annotation> T getAnnotation(Class<?> cls, Class<T> annCls) {
+    public static @Nullable <T extends Annotation> T getAnnotation(Class<?> cls, Class<T> annCls) {
         if (cls == Object.class)
             return null;
 
@@ -5600,7 +5591,7 @@ public abstract class IgniteUtils {
      * @param annCls Annotation to get.
      * @return Instance of annotation, or {@code null} if not found.
      */
-    @Nullable public static <T extends Annotation> T getDeclaredAnnotation(Class<?> cls, Class<T> annCls) {
+    public static @Nullable <T extends Annotation> T getDeclaredAnnotation(Class<?> cls, Class<T> annCls) {
         if (cls == Object.class)
             return null;
 
@@ -5878,7 +5869,7 @@ public abstract class IgniteUtils {
      * @param obj Object to find class loader for class of.
      * @return Class loader for given object (possibly {@code null}).
      */
-    @Nullable public static ClassLoader detectObjectClassLoader(@Nullable Object obj) {
+    public static @Nullable ClassLoader detectObjectClassLoader(@Nullable Object obj) {
         if (obj == null)
             return null;
 
@@ -6118,7 +6109,7 @@ public abstract class IgniteUtils {
      * @param processed Set of processed objects to avoid infinite recursion.
      * @return Peer deploy class, or {@code null} if one could not be found.
      */
-    @Nullable private static GridPeerDeployAware nestedPeerDeployAware(Object obj, boolean top, Set<Object> processed) {
+    private static @Nullable GridPeerDeployAware nestedPeerDeployAware(Object obj, boolean top, Set<Object> processed) {
         // Avoid infinite recursion.
         if (!processed.add(obj))
             return null;
@@ -6804,7 +6795,7 @@ public abstract class IgniteUtils {
      * @return Return value.
      * @throws IgniteCheckedException If call failed.
      */
-    @Nullable public static <R> R wrapThreadLoader(ClassLoader ldr, Callable<R> c) throws IgniteCheckedException {
+    public static @Nullable <R> R wrapThreadLoader(ClassLoader ldr, Callable<R> c) throws IgniteCheckedException {
         Thread curThread = Thread.currentThread();
 
         // Get original context class loader.
@@ -6836,7 +6827,7 @@ public abstract class IgniteUtils {
      * @param <R> Return type.
      * @return Return value.
      */
-    @Nullable public static <R> R wrapThreadLoader(ClassLoader ldr, IgniteOutClosure<R> c) {
+    public static @Nullable <R> R wrapThreadLoader(ClassLoader ldr, IgniteOutClosure<R> c) {
         Thread curThread = Thread.currentThread();
 
         // Get original context class loader.
@@ -7484,7 +7475,7 @@ public abstract class IgniteUtils {
         assert ctx != null;
 
         return new C1<UUID, ClusterNode>() {
-            @Nullable @Override public ClusterNode apply(UUID id) {
+            @Override public @Nullable ClusterNode apply(UUID id) {
                 return ctx.discovery().node(id);
             }
         };
@@ -7741,7 +7732,7 @@ public abstract class IgniteUtils {
     }
 
     /** */
-    @Nullable private static Class defaultClassLoaderClass() {
+    private static @Nullable Class defaultClassLoaderClass() {
         try {
             return Class.forName("jdk.internal.loader.BuiltinClassLoader");
         }
@@ -7751,7 +7742,7 @@ public abstract class IgniteUtils {
     }
 
     /** */
-    @Nullable private static Field urlClassLoaderField() {
+    private static @Nullable Field urlClassLoaderField() {
         try {
             Class cls = defaultClassLoaderClass();
 
@@ -8695,7 +8686,7 @@ public abstract class IgniteUtils {
      * @param cls Class. If {@code null}, method is no-op.
      * @return Wrapper class or original class if it is non-primitive.
      */
-    @Nullable public static Class<?> box(@Nullable Class<?> cls) {
+    public static @Nullable Class<?> box(@Nullable Class<?> cls) {
         if (cls == null)
             return null;
 
@@ -9007,7 +8998,7 @@ public abstract class IgniteUtils {
      * @return First non-null value, or {@code null}, if array is empty or contains
      *      only nulls.
      */
-    @Nullable public static <T> T firstNotNull(@Nullable T... vals) {
+    public static @Nullable <T> T firstNotNull(@Nullable T... vals) {
         if (vals == null)
             return null;
 
@@ -9476,7 +9467,7 @@ public abstract class IgniteUtils {
      * @return Full name of enclosing class for JDK8 lambda class name or
      *      {@code null} if passed in name is not related to lambda.
      */
-    @Nullable public static String lambdaEnclosingClassName(String clsName) {
+    public static @Nullable String lambdaEnclosingClassName(String clsName) {
         int idx = clsName.indexOf("$$Lambda$");
 
         return idx != -1 ? clsName.substring(0, idx) : null;
@@ -9689,7 +9680,7 @@ public abstract class IgniteUtils {
      * @param paramTypes Method parameters.
      * @return Method or {@code null}.
      */
-    @Nullable public static Method findNonPublicMethod(Class<?> cls, String name, Class<?>... paramTypes) {
+    public static @Nullable Method findNonPublicMethod(Class<?> cls, String name, Class<?>... paramTypes) {
         while (cls != null) {
             Method mtd = getNonPublicMethod(cls, name, paramTypes);
 
@@ -9712,7 +9703,7 @@ public abstract class IgniteUtils {
      * @param paramTypes Method parameters.
      * @return Method or {@code null}.
      */
-    @Nullable public static Method getNonPublicMethod(Class<?> cls, String name, Class<?>... paramTypes) {
+    public static @Nullable Method getNonPublicMethod(Class<?> cls, String name, Class<?>... paramTypes) {
         try {
             Method mtd = cls.getDeclaredMethod(name, paramTypes);
 
@@ -9737,7 +9728,7 @@ public abstract class IgniteUtils {
      * @param paramTypes Method parameters.
      * @return Method or {@code null}.
      */
-    @Nullable public static Method findInheritableMethod(Class<?> cls, String name, Class<?>... paramTypes) {
+    public static @Nullable Method findInheritableMethod(Class<?> cls, String name, Class<?>... paramTypes) {
         Method mtd = null;
 
         Class<?> cls0 = cls;
@@ -9790,7 +9781,7 @@ public abstract class IgniteUtils {
      * @param name Name of a field to get.
      * @return Field or {@code null}.
      */
-    @Nullable public static Field findField(Class<?> cls, String name) {
+    public static @Nullable Field findField(Class<?> cls, String name) {
         while (cls != null) {
             try {
                 Field fld = cls.getDeclaredField(name);
@@ -10282,7 +10273,7 @@ public abstract class IgniteUtils {
      *
      * @return Current Ignite name.
      */
-    @Nullable public static String getCurrentIgniteName() {
+    public static @Nullable String getCurrentIgniteName() {
         return LOC_IGNITE_NAME.get();
     }
 
@@ -10303,8 +10294,7 @@ public abstract class IgniteUtils {
      * @param newName New name.
      * @return Old name.
      */
-    @SuppressWarnings("StringEquality")
-    @Nullable public static String setCurrentIgniteName(@Nullable String newName) {
+    @SuppressWarnings("StringEquality") public static @Nullable String setCurrentIgniteName(@Nullable String newName) {
         String oldName = LOC_IGNITE_NAME.get();
 
         if (oldName != newName)
@@ -10550,7 +10540,7 @@ public abstract class IgniteUtils {
      * @param path Path.
      * @param name Name.
      */
-    public static Path searchFileRecursively(Path path, @NotNull final String name) throws IgniteCheckedException {
+    public static Path searchFileRecursively(Path path, final @NotNull String name) throws IgniteCheckedException {
         final AtomicReference<Path> res = new AtomicReference<>();
 
         try {
@@ -10922,12 +10912,12 @@ public abstract class IgniteUtils {
         }
 
         /** {@inheritDoc} */
-        @NotNull @Override public Lock readLock() {
+        @Override public @NotNull Lock readLock() {
             return readLock;
         }
 
         /** {@inheritDoc} */
-        @NotNull @Override public Lock writeLock() {
+        @Override public @NotNull Lock writeLock() {
             return writeLock;
         }
 
@@ -11042,7 +11032,7 @@ public abstract class IgniteUtils {
         }
 
         /** {@inheritDoc} */
-        @NotNull @Override public Condition newCondition() {
+        @Override public @NotNull Condition newCondition() {
             return delegate.newCondition();
         }
 

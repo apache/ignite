@@ -255,7 +255,7 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Integer load(Integer key) {
+        @Override public @Nullable Integer load(Integer key) {
             boolean res = locks[key].tryLock();
 
             if (res) {

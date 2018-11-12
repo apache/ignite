@@ -42,7 +42,7 @@ public class VisorNodePingTask extends VisorOneNodeTask<VisorNodePingTaskArg, Vi
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected VisorNodePingTaskResult reduce0(List<ComputeJobResult> results) {
+    @Override protected @Nullable VisorNodePingTaskResult reduce0(List<ComputeJobResult> results) {
         try {
             return super.reduce0(results);
         }

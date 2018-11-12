@@ -180,7 +180,7 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheGroupIdMessage {
     /**
      * @return Partition map.
      */
-    @Nullable public GridDhtPartitionFullMap partitionMap() {
+    public @Nullable GridDhtPartitionFullMap partitionMap() {
         return partMap;
     }
 

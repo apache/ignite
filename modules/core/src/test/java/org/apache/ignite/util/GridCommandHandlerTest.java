@@ -1075,7 +1075,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     /**
      * @return Build matcher for dump file name.
      */
-    @NotNull private Matcher dumpFileNameMatcher() {
+    private @NotNull Matcher dumpFileNameMatcher() {
         Pattern fileNamePattern = Pattern.compile(".*VisorIdleVerifyDumpTask successfully written output to '(.*)'");
 
         return fileNamePattern.matcher(testOut.toString());

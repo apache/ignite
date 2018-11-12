@@ -57,7 +57,7 @@ public interface Hadoop {
      * @return Job execution status or {@code null} in case job with the given ID is not found.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public HadoopJobStatus status(HadoopJobId jobId) throws IgniteCheckedException;
+    public @Nullable HadoopJobStatus status(HadoopJobId jobId) throws IgniteCheckedException;
 
     /**
      * Returns job counters.
@@ -75,7 +75,7 @@ public interface Hadoop {
      * @return Job finish future or {@code null} in case job with the given ID is not found.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgniteInternalFuture<?> finishFuture(HadoopJobId jobId) throws IgniteCheckedException;
+    public @Nullable IgniteInternalFuture<?> finishFuture(HadoopJobId jobId) throws IgniteCheckedException;
 
     /**
      * Kills job.

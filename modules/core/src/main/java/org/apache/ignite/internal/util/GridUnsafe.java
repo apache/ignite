@@ -1478,7 +1478,7 @@ public abstract class GridUnsafe {
     }
 
     /** */
-    @NotNull private static String miscPackage() {
+    private static @NotNull String miscPackage() {
         int javaVer = majorJavaVersion(jdkVersion());
 
         return javaVer < 9 ? "sun" : "jdk.internal";

@@ -33,10 +33,10 @@ public interface AffinityTask {
     /**
      * @return Affinity cache name.
      */
-    @Nullable public Collection<String> affinityCacheNames();
+    public @Nullable Collection<String> affinityCacheNames();
 
     /**
      * @return Affinity topology version.
      */
-    @Nullable public AffinityTopologyVersion topologyVersion();
+    public @Nullable AffinityTopologyVersion topologyVersion();
 }

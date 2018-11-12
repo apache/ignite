@@ -70,7 +70,7 @@ public class SslParametersTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    @NotNull private SslContextFactory createSslFactory() {
+    private @NotNull SslContextFactory createSslFactory() {
         SslContextFactory factory = (SslContextFactory)GridTestUtils.sslTrustedFactory(
             "node01", "trustone");
 

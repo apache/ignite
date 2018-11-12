@@ -54,7 +54,7 @@ public class VisorQueryDetailMetricsCollectorTask extends VisorMultiNodeTask<Vis
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Collection<VisorQueryDetailMetrics> reduce0(List<ComputeJobResult> results)
+    @Override protected @Nullable Collection<VisorQueryDetailMetrics> reduce0(List<ComputeJobResult> results)
         throws IgniteException {
         Map<GridCacheQueryDetailMetricsKey, GridCacheQueryDetailMetricsAdapter> taskRes = new HashMap<>();
 

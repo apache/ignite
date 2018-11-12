@@ -71,7 +71,7 @@ public class EncryptedCachePreconfiguredRestartTest extends EncryptedCacheRestar
     /**
      * @return Cache name.
      */
-    @NotNull @Override protected String cacheName() {
+    @Override protected @NotNull String cacheName() {
         return ENCRYPTED_CACHE + (differentCachesOnNodes ? "." + GRID_1 : "");
     }
 

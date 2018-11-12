@@ -58,7 +58,7 @@ public class TestCacheSession implements CacheStoreSession {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Transaction transaction() {
+    @Override public @Nullable Transaction transaction() {
         return tx;
     }
 
@@ -76,8 +76,7 @@ public class TestCacheSession implements CacheStoreSession {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Nullable @Override public <T> T attachment() {
+    @Override @SuppressWarnings("unchecked") public @Nullable <T> T attachment() {
         return (T) attach;
     }
 
@@ -88,7 +87,7 @@ public class TestCacheSession implements CacheStoreSession {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String cacheName() {
+    @Override public @Nullable String cacheName() {
         return cacheName;
     }
 }

@@ -203,7 +203,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     /**
      * @return Last successfully connected address.
      */
-    @Nullable public InetSocketAddress lastSuccessfulAddress() {
+    public @Nullable InetSocketAddress lastSuccessfulAddress() {
         return lastSuccessfulAddr;
     }
 

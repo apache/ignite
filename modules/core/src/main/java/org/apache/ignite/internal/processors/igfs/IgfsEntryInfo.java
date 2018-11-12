@@ -243,7 +243,7 @@ public abstract class IgfsEntryInfo implements Externalizable {
     * @return Affinity key used for single-node file collocation. If {@code null}, usual
     *      mapper procedure is used for block affinity detection.
     */
-    @Nullable public abstract IgniteUuid affinityKey();
+    public abstract @Nullable IgniteUuid affinityKey();
 
     /**
      * @return File affinity map.
@@ -255,7 +255,7 @@ public abstract class IgfsEntryInfo implements Externalizable {
      *
      * @return Lock ID if file is locked or {@code null} if file is free of locks.
      */
-    @Nullable public abstract IgniteUuid lockId();
+    public abstract @Nullable IgniteUuid lockId();
 
     /**
      * Get evict exclude flag.

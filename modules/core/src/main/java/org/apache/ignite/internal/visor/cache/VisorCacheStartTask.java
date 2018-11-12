@@ -52,7 +52,7 @@ public class VisorCacheStartTask extends VisorMultiNodeTask<VisorCacheStartTaskA
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Map<UUID, IgniteException> reduce0(List<ComputeJobResult> results) throws IgniteException {
+    @Override protected @Nullable Map<UUID, IgniteException> reduce0(List<ComputeJobResult> results) throws IgniteException {
         Map<UUID, IgniteException> map = new HashMap<>();
 
         for (ComputeJobResult res : results)

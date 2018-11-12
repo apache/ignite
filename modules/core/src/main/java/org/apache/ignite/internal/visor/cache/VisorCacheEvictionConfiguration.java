@@ -68,21 +68,21 @@ public class VisorCacheEvictionConfiguration extends VisorDataTransferObject {
     /**
      * @return Eviction policy.
      */
-    @Nullable public String getPolicy() {
+    public @Nullable String getPolicy() {
         return plc;
     }
 
     /**
      * @return Cache eviction policy max size.
      */
-    @Nullable public Integer getPolicyMaxSize() {
+    public @Nullable Integer getPolicyMaxSize() {
         return plcMaxSize;
     }
 
     /**
      * @return Eviction filter to specify which entries should not be evicted.
      */
-    @Nullable public String getFilter() {
+    public @Nullable String getFilter() {
         return filter;
     }
 

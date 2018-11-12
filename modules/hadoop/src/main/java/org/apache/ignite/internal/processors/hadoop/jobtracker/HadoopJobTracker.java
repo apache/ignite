@@ -447,7 +447,7 @@ public class HadoopJobTracker extends HadoopComponent {
      * @param jobId Job ID to get status for.
      * @return Job status for given job ID or {@code null} if job was not found.
      */
-    @Nullable public HadoopJobStatus status(HadoopJobId jobId) throws IgniteCheckedException {
+    public @Nullable HadoopJobStatus status(HadoopJobId jobId) throws IgniteCheckedException {
         if (!busyLock.tryReadLock())
             return null; // Grid is stopping.
 
@@ -468,7 +468,7 @@ public class HadoopJobTracker extends HadoopComponent {
      * @return Finish future or {@code null}.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgniteInternalFuture<?> finishFuture(HadoopJobId jobId) throws IgniteCheckedException {
+    public @Nullable IgniteInternalFuture<?> finishFuture(HadoopJobId jobId) throws IgniteCheckedException {
         if (!busyLock.tryReadLock())
             return null; // Grid is stopping.
 
@@ -1005,7 +1005,7 @@ public class HadoopJobTracker extends HadoopComponent {
      * @param jobId Job ID.
      * @return Setup task wrapped in collection.
      */
-    @Nullable private Collection<HadoopTaskInfo> setupTask(HadoopJobId jobId) {
+    private @Nullable Collection<HadoopTaskInfo> setupTask(HadoopJobId jobId) {
         if (activeJobs.containsKey(jobId))
             return null;
         else {
@@ -1113,7 +1113,7 @@ public class HadoopJobTracker extends HadoopComponent {
      * @return Job.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public HadoopJobEx job(HadoopJobId jobId, @Nullable HadoopJobInfo jobInfo) throws IgniteCheckedException {
+    public @Nullable HadoopJobEx job(HadoopJobId jobId, @Nullable HadoopJobInfo jobInfo) throws IgniteCheckedException {
         GridFutureAdapter<HadoopJobEx> fut = jobs.get(jobId);
 
         if (fut != null || (fut = jobs.putIfAbsent(jobId, new GridFutureAdapter<HadoopJobEx>())) != null)
@@ -1206,7 +1206,7 @@ public class HadoopJobTracker extends HadoopComponent {
      * @return Job counters or {@code null} if job cannot be found.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public HadoopCounters jobCounters(HadoopJobId jobId) throws IgniteCheckedException {
+    public @Nullable HadoopCounters jobCounters(HadoopJobId jobId) throws IgniteCheckedException {
         if (!busyLock.tryReadLock())
             return null;
 

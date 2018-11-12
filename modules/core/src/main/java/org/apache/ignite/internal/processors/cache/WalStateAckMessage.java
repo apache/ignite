@@ -97,7 +97,7 @@ public class WalStateAckMessage implements Message {
     /**
      * @return Error message.
      */
-    @Nullable public String errorMessage() {
+    public @Nullable String errorMessage() {
         return errMsg;
     }
 

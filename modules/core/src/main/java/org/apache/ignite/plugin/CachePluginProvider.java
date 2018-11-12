@@ -63,7 +63,7 @@ public interface CachePluginProvider<C extends CachePluginConfiguration> {
      * @param cls Ignite component class.
      * @return Ignite component or {@code null} if component is not supported.
      */
-    @Nullable public <T> T createComponent(Class<T> cls);
+    public @Nullable <T> T createComponent(Class<T> cls);
 
     /**
      * Unwrap entry to specified type. For details see {@code javax.cache.Cache.Entry.unwrap(Class)}.
@@ -72,7 +72,7 @@ public interface CachePluginProvider<C extends CachePluginConfiguration> {
      * @param cls Type of the expected component.
      * @return New instance of underlying type or {@code null} if it's not available.
      */
-    @Nullable public <T, K, V> T unwrapCacheEntry(Cache.Entry<K, V> entry, Class<T> cls);
+    public @Nullable <T, K, V> T unwrapCacheEntry(Cache.Entry<K, V> entry, Class<T> cls);
 
     /**
      * Validates cache plugin configuration in process of cache creation. Throw exception if validation failed.

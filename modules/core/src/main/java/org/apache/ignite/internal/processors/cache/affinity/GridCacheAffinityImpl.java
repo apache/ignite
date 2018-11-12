@@ -176,7 +176,7 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public ClusterNode mapKeyToNode(K key) {
+    @Override public @Nullable ClusterNode mapKeyToNode(K key) {
         A.notNull(key, "key");
 
         return F.first(mapKeysToNodes(F.asList(key)).keySet());

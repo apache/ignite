@@ -89,8 +89,7 @@ public class OdbcQueryExecuteBatchRequest extends OdbcRequest {
     /**
      * @return Schema.
      */
-    @Nullable
-    public String schema() {
+    public @Nullable String schema() {
         return schema;
     }
 

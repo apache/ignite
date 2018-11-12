@@ -170,7 +170,7 @@ public class TaskNodeRestartTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws IgniteException {
+        @Override public @Nullable Void reduce(List<ComputeJobResult> results) throws IgniteException {
             return null;
         }
     }
@@ -180,7 +180,7 @@ public class TaskNodeRestartTest extends GridCommonAbstractTest {
      */
     private static class TestTask2 implements ComputeTask<Void, Void> {
         /** {@inheritDoc} */
-        @Override @Nullable public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Void arg)
+        @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Void arg)
             throws IgniteException {
             Map<TestJob, ClusterNode> jobs = new HashMap<>();
 
@@ -196,7 +196,7 @@ public class TaskNodeRestartTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Void reduce(List<ComputeJobResult> results) {
+        @Override public @Nullable Void reduce(List<ComputeJobResult> results) {
             return null;
         }
     }
@@ -216,7 +216,7 @@ public class TaskNodeRestartTest extends GridCommonAbstractTest {
      */
     private static class TestCallable implements IgniteCallable<Void> {
         /** {@inheritDoc} */
-        @Nullable @Override public Void call() throws Exception {
+        @Override public @Nullable Void call() throws Exception {
             return null;
         }
     }

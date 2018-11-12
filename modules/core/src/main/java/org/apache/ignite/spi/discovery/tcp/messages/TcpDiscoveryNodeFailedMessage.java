@@ -67,7 +67,7 @@ public class TcpDiscoveryNodeFailedMessage extends TcpDiscoveryAbstractMessage {
     /**
      * @return Warning message to be shown on all nodes.
      */
-    @Nullable public String warning() {
+    public @Nullable String warning() {
         return warning;
     }
 

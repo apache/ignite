@@ -173,7 +173,7 @@ public class TransactionEventProxyImpl implements TransactionProxy, Externalizab
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String label() {
+    @Override public @Nullable String label() {
         return tx().label();
     }
 

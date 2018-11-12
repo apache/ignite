@@ -58,7 +58,7 @@ public class EncryptedSqlTableTest extends EncryptedCacheRestartTest {
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override protected String cacheName() {
+    @Override protected @NotNull String cacheName() {
         return "SQL_PUBLIC_ENCRYPTED";
     }
 

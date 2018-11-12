@@ -180,7 +180,7 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFileSystem> impleme
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Boolean globalSampling() {
+    @Override public @Nullable Boolean globalSampling() {
         return igfs.globalSampling();
     }
 
@@ -190,7 +190,7 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFileSystem> impleme
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String clientLogDirectory() {
+    @Override public @Nullable String clientLogDirectory() {
         return igfs.clientLogDirectory();
     }
 
@@ -293,7 +293,7 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFileSystem> impleme
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgfsFile update(IgfsPath path, Map<String, String> props) {
+    @Override public @Nullable IgfsFile update(IgfsPath path, Map<String, String> props) {
         return igfs.update(path, props);
     }
 
@@ -328,7 +328,7 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFileSystem> impleme
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgfsFile info(IgfsPath path) {
+    @Override public @Nullable IgfsFile info(IgfsPath path) {
         return igfs.info(path);
     }
 

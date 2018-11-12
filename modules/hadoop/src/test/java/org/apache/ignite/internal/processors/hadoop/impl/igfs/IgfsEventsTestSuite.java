@@ -182,7 +182,7 @@ public class IgfsEventsTestSuite extends TestSuite {
          * @return Secondary file system handle.
          * @throws Exception If failed.
          */
-        @Nullable private IgniteFileSystem startSecondary() throws Exception {
+        private @Nullable IgniteFileSystem startSecondary() throws Exception {
             IgniteConfiguration cfg = getConfiguration("grid-secondary", getSecondaryIgfsConfiguration());
 
             cfg.setLocalHost("127.0.0.1");

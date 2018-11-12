@@ -669,7 +669,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     /**
      * @return Operation.
      */
-    @NotNull private Operation nextRandomOperation() {
+    private @NotNull Operation nextRandomOperation() {
         return allowedLoadTestOps.get(nextRandom(allowedLoadTestOps.size()));
     }
 

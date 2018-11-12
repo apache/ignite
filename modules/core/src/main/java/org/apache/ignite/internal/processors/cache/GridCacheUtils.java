@@ -418,7 +418,7 @@ public class GridCacheUtils {
      * @return Always return {@code null}.
      * @throws GridCacheFilterFailedException If {@code err} flag is {@code true}.
      */
-    @Nullable public static CacheObject failed(boolean err) throws GridCacheFilterFailedException {
+    public static @Nullable CacheObject failed(boolean err) throws GridCacheFilterFailedException {
         return failed(err, null);
     }
 
@@ -429,7 +429,7 @@ public class GridCacheUtils {
      * @return Always return {@code val} passed in or throw exception.
      * @throws GridCacheFilterFailedException If {@code err} flag is {@code true}.
      */
-    @Nullable public static CacheObject failed(boolean err, CacheObject val) throws GridCacheFilterFailedException {
+    public static @Nullable CacheObject failed(boolean err, CacheObject val) throws GridCacheFilterFailedException {
         if (err)
             throw new GridCacheFilterFailedException(val);
 
@@ -513,7 +513,7 @@ public class GridCacheUtils {
      * @param nodes Nodes.
      * @return Oldest node for the given topology version.
      */
-    @Nullable public static ClusterNode oldest(Collection<ClusterNode> nodes) {
+    public static @Nullable ClusterNode oldest(Collection<ClusterNode> nodes) {
         ClusterNode oldest = null;
 
         for (ClusterNode n : nodes) {
@@ -934,7 +934,7 @@ public class GridCacheUtils {
      * @return Unmasked cache name, i.e. in case provided parameter was {@code <default>} then {@code null}
      *     will be returned.
      */
-    @Nullable public static String unmask(String cacheName) {
+    public static @Nullable String unmask(String cacheName) {
         return DEFAULT_MASK_NAME.equals(cacheName) ? null : cacheName;
     }
 
@@ -1302,7 +1302,7 @@ public class GridCacheUtils {
      * @param e Ignite checked exception.
      * @return CacheException runtime exception, never null.
      */
-    @NotNull public static RuntimeException convertToCacheException(IgniteCheckedException e) {
+    public static @NotNull RuntimeException convertToCacheException(IgniteCheckedException e) {
         IgniteClientDisconnectedCheckedException disconnectedErr =
             e.getCause(IgniteClientDisconnectedCheckedException.class);
 
@@ -1343,7 +1343,7 @@ public class GridCacheUtils {
      * @param cpy Copy flag.
      * @return Cache object value.
      */
-    @Nullable public static <T> T value(@Nullable CacheObject cacheObj, GridCacheContext ctx, boolean cpy) {
+    public static @Nullable <T> T value(@Nullable CacheObject cacheObj, GridCacheContext ctx, boolean cpy) {
         return cacheObj != null ? cacheObj.<T>value(ctx.cacheObjectContext(), cpy) : null;
     }
 
@@ -1585,7 +1585,7 @@ public class GridCacheUtils {
     /**
      * @return default TX configuration if system cache is used or current grid TX config otherwise.
      */
-    public static TransactionConfiguration transactionConfiguration(@Nullable final GridCacheContext sysCacheCtx,
+    public static TransactionConfiguration transactionConfiguration(final @Nullable GridCacheContext sysCacheCtx,
         final IgniteConfiguration cfg) {
         return sysCacheCtx != null && sysCacheCtx.systemTx()
             ? DEFAULT_TX_CFG
@@ -1746,12 +1746,12 @@ public class GridCacheUtils {
      * @param readThrough Read through.
      * @param skipVals Skip values.
      */
-    @Nullable public static BackupPostProcessingClosure createBackupPostProcessingClosure(
+    public static @Nullable BackupPostProcessingClosure createBackupPostProcessingClosure(
         final AffinityTopologyVersion topVer,
         final IgniteLogger log,
         final GridCacheContext cctx,
-        @Nullable final KeyCacheObject key,
-        @Nullable final IgniteCacheExpiryPolicy expiryPlc,
+        final @Nullable KeyCacheObject key,
+        final @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean readThrough,
         boolean skipVals
     ) {

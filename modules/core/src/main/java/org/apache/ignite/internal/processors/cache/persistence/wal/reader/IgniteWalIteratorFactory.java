@@ -84,7 +84,7 @@ public class IgniteWalIteratorFactory {
      *
      * @param log Logger.
      */
-    public IgniteWalIteratorFactory(@NotNull final IgniteLogger log) {
+    public IgniteWalIteratorFactory(final @NotNull IgniteLogger log) {
         this.log = log;
     }
 
@@ -352,7 +352,7 @@ public class IgniteWalIteratorFactory {
     /**
      * @return Fake shared context required for create minimal services for record reading.
      */
-    @NotNull private GridCacheSharedContext prepareSharedCtx(
+    private @NotNull GridCacheSharedContext prepareSharedCtx(
         IteratorParametersBuilder iteratorParametersBuilder
     ) throws IgniteCheckedException {
         GridKernalContext kernalCtx = new StandaloneGridKernalContext(log,
@@ -401,17 +401,17 @@ public class IgniteWalIteratorFactory {
          * Folder specifying location of metadata File Store. {@code null} means no specific folder is configured. <br>
          * This folder should be specified for converting data entries into BinaryObjects
          */
-        @Nullable private File binaryMetadataFileStoreDir;
+        private @Nullable File binaryMetadataFileStoreDir;
 
         /**
          * Folder specifying location of marshaller mapping file store. {@code null} means no specific folder is configured.
          * <br> This folder should be specified for converting data entries into BinaryObjects. Providing {@code null} will
          * disable unmarshall for non primitive objects, BinaryObjects will be provided
          */
-        @Nullable private File marshallerMappingFileStoreDir;
+        private @Nullable File marshallerMappingFileStoreDir;
 
         /** */
-        @Nullable private IgniteBiPredicate<RecordType, WALPointer> filter;
+        private @Nullable IgniteBiPredicate<RecordType, WALPointer> filter;
 
         /** */
         private FileWALPointer lowBound = DFLT_LOW_BOUND;

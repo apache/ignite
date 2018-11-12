@@ -711,7 +711,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @return {@link DataRegionMetrics} snapshot for specified {@link DataRegion} or {@code null} if
      * no {@link DataRegion} is configured for specified name.
      */
-    @Nullable public DataRegionMetrics memoryMetrics(String memPlcName) {
+    public @Nullable DataRegionMetrics memoryMetrics(String memPlcName) {
         if (!F.isEmpty(memMetricsMap)) {
             DataRegionMetrics memMetrics = memMetricsMap.get(memPlcName);
 
@@ -826,7 +826,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      *
      */
-    @Nullable public IgniteInternalFuture wakeupForCheckpoint(String reason) {
+    public @Nullable IgniteInternalFuture wakeupForCheckpoint(String reason) {
         return null;
     }
 
@@ -842,7 +842,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      *
      * @param reason Reason.
      */
-    @Nullable public CheckpointFuture forceCheckpoint(String reason) {
+    public @Nullable CheckpointFuture forceCheckpoint(String reason) {
         return null;
     }
 
@@ -905,7 +905,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      * @return Future that will be completed when indexes for given cache are restored.
      */
-    @Nullable public IgniteInternalFuture indexRebuildFuture(int cacheId) {
+    public @Nullable IgniteInternalFuture indexRebuildFuture(int cacheId) {
         return null;
     }
 
@@ -1075,7 +1075,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      *
      * @throws IgniteCheckedException If resolving swap directory fails.
      */
-    @Nullable protected File buildAllocPath(DataRegionConfiguration plc) throws IgniteCheckedException {
+    protected @Nullable File buildAllocPath(DataRegionConfiguration plc) throws IgniteCheckedException {
         String path = plc.getSwapPath();
 
         if (path == null)

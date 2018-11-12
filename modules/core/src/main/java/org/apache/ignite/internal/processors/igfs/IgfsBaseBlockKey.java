@@ -38,5 +38,5 @@ public interface IgfsBaseBlockKey {
     /**
      * @return Block affinity key (if any).
      */
-    @Nullable public IgniteUuid affinityKey();
+    public @Nullable IgniteUuid affinityKey();
 }

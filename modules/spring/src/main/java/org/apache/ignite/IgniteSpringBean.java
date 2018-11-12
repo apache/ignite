@@ -296,7 +296,7 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DataRegionMetrics dataRegionMetrics(String memPlcName) {
+    @Override public @Nullable DataRegionMetrics dataRegionMetrics(String memPlcName) {
         checkIgnite();
 
         return g.dataRegionMetrics(memPlcName);
@@ -315,7 +315,7 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
+    @Override public @Nullable MemoryMetrics memoryMetrics(String memPlcName) {
         return DataRegionMetricsAdapter.valueOf(dataRegionMetrics(memPlcName));
     }
 
@@ -479,7 +479,7 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create) {
+    @Override public @Nullable IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create) {
         checkIgnite();
 
         return g.atomicSequence(name, initVal, create);
@@ -494,7 +494,7 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteAtomicLong atomicLong(String name, long initVal, boolean create) {
+    @Override public @Nullable IgniteAtomicLong atomicLong(String name, long initVal, boolean create) {
         checkIgnite();
 
         return g.atomicLong(name, initVal, create);
@@ -508,7 +508,7 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> IgniteAtomicReference<T> atomicReference(String name,
+    @Override public @Nullable <T> IgniteAtomicReference<T> atomicReference(String name,
         @Nullable T initVal,
         boolean create)
     {
@@ -526,7 +526,7 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name,
+    @Override public @Nullable <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name,
         @Nullable T initVal,
         @Nullable S initStamp,
         boolean create)
@@ -544,7 +544,7 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteCountDownLatch countDownLatch(String name,
+    @Override public @Nullable IgniteCountDownLatch countDownLatch(String name,
         int cnt,
         boolean autoDel,
         boolean create)
@@ -555,7 +555,7 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteSemaphore semaphore(String name,
+    @Override public @Nullable IgniteSemaphore semaphore(String name,
         int cnt,
         boolean failoverSafe,
         boolean create)
@@ -567,7 +567,7 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteLock reentrantLock(String name,
+    @Override public @Nullable IgniteLock reentrantLock(String name,
         boolean failoverSafe,
         boolean fair,
         boolean create)
@@ -578,7 +578,7 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> IgniteQueue<T> queue(String name,
+    @Override public @Nullable <T> IgniteQueue<T> queue(String name,
         int cap,
         CollectionConfiguration cfg)
     {
@@ -588,7 +588,7 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> IgniteSet<T> set(String name,
+    @Override public @Nullable <T> IgniteSet<T> set(String name,
         CollectionConfiguration cfg)
     {
         checkIgnite();

@@ -107,7 +107,7 @@ public class GridCircularBuffer<T> {
      * @return Evicted object or {@code null} if nothing evicted.
      * @throws InterruptedException If interrupted.
      */
-    @Nullable public T add(T t) throws InterruptedException {
+    public @Nullable T add(T t) throws InterruptedException {
         long idx = idxGen.getAndIncrement();
 
         int idx0 = (int)(idx & sizeMask);
@@ -122,7 +122,7 @@ public class GridCircularBuffer<T> {
      * @throws InterruptedException If interrupted.
      * @throws IgniteCheckedException If closure throws exception.
      */
-    @Nullable public T add(T t, @Nullable IgniteInClosureX<T> c) throws InterruptedException, IgniteCheckedException {
+    public @Nullable T add(T t, @Nullable IgniteInClosureX<T> c) throws InterruptedException, IgniteCheckedException {
         long idx = idxGen.getAndIncrement();
 
         int idx0 = (int)(idx & sizeMask);
@@ -167,7 +167,7 @@ public class GridCircularBuffer<T> {
          * @return Evicted value on success or {@code null} if update failed.
          * @throws InterruptedException If interrupted.
          */
-        @Nullable synchronized V update(long newIdx, V newItem, long maxIdxDiff) throws InterruptedException {
+        synchronized @Nullable V update(long newIdx, V newItem, long maxIdxDiff) throws InterruptedException {
             assert newIdx >= 0;
 
             // Thread should wait and allow previous update to finish.
@@ -193,7 +193,7 @@ public class GridCircularBuffer<T> {
          * @throws InterruptedException If interrupted.
          * @throws IgniteCheckedException If closure throws exception.
          */
-        @Nullable synchronized V update(long newIdx, V newItem, long maxIdxDiff, @Nullable IgniteInClosureX<V> c)
+        synchronized @Nullable V update(long newIdx, V newItem, long maxIdxDiff, @Nullable IgniteInClosureX<V> c)
             throws InterruptedException, IgniteCheckedException {
             assert newIdx >= 0;
 

@@ -155,7 +155,7 @@ abstract class GridCacheAbstractLoadTest {
 
         try {
             IgniteInternalFuture<?> f1 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
+                @Override public @Nullable Object call() throws Exception {
                     long start = System.currentTimeMillis();
 
                     while (!done.get()) {
@@ -177,7 +177,7 @@ abstract class GridCacheAbstractLoadTest {
             }, writeThreads(), "cache-load-test-worker");
 
             IgniteInternalFuture<?> f2 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
+                @Override public @Nullable Object call() throws Exception {
                     long start = System.currentTimeMillis();
 
                     while(!done.get()) {

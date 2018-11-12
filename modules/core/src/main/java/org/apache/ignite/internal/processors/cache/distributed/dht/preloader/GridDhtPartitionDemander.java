@@ -278,7 +278,7 @@ public class GridDhtPartitionDemander {
         boolean force,
         long rebalanceId,
         final Runnable next,
-        @Nullable final GridCompoundFuture<Boolean, Boolean> forcedRebFut
+        final @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut
     ) {
         if (log.isDebugEnabled())
             log.debug("Adding partition assignments: " + assignments);

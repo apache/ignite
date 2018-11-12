@@ -488,7 +488,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
     /**
      * @return result of explain plan
      */
-    @NotNull private String doExplainPlan(IgniteCache<Object, Object> cache, String sql) {
+    private @NotNull String doExplainPlan(IgniteCache<Object, Object> cache, String sql) {
         return cache.query(new SqlFieldsQuery(sql)).getAll().get(0).get(0).toString().toLowerCase();
     }
 
@@ -511,7 +511,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
     /**
      * @return cache configuration with test table
      */
-    @NotNull private CacheConfiguration<Object, Object> getTestTableConfiguration() {
+    private @NotNull CacheConfiguration<Object, Object> getTestTableConfiguration() {
         LinkedHashMap<String, String> fields = new LinkedHashMap<>();
         fields.put("a", "java.lang.Integer");
         fields.put("B", "java.lang.String");

@@ -51,8 +51,7 @@ public class ReadOnlyCollectionView2X<T> extends GridSerializableCollection<T> {
     }
 
     /** {@inheritDoc} */
-    @NotNull
-    @Override public Iterator<T> iterator() {
+    @Override public @NotNull Iterator<T> iterator() {
         return new GridSerializableIterator<T>() {
             private Iterator<T> it1 = c1.iterator();
             private Iterator<T> it2 = c2.iterator();

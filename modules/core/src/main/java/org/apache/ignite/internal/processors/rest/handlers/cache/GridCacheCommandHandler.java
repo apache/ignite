@@ -312,7 +312,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @return Rest response.
      */
     private static IgniteClosure<IgniteInternalFuture<?>, GridRestResponse> resultWrapper(
-        final IgniteInternalCache<Object, Object> c, @Nullable final Object key) {
+        final IgniteInternalCache<Object, Object> c, final @Nullable Object key) {
         return new CX1<IgniteInternalFuture<?>, GridRestResponse>() {
             @Override public GridRestResponse applyx(IgniteInternalFuture<?> f) throws IgniteCheckedException {
                 GridCacheRestResponse resp = new GridCacheRestResponse();
@@ -1009,7 +1009,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         private IgniteEx ignite;
 
         /** {@inheritDoc} */
-        @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+        @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             String cacheName) throws IgniteException {
 
             GridDiscoveryManager discovery = ignite.context().discovery();
@@ -1058,7 +1058,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public GridRestResponse reduce(List<ComputeJobResult> results) throws IgniteException {
+        @Override public @Nullable GridRestResponse reduce(List<ComputeJobResult> results) throws IgniteException {
             Map<String, GridCacheSqlMetadata> map = new HashMap<>();
 
             for (ComputeJobResult r : results) {

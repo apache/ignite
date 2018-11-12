@@ -829,7 +829,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @param types Event types to wait for.
      * @return Event future.
      */
-    public <T extends Event> IgniteInternalFuture<T> waitForEvent(@Nullable final IgnitePredicate<T> p,
+    public <T extends Event> IgniteInternalFuture<T> waitForEvent(final @Nullable IgnitePredicate<T> p,
         @Nullable int... types) {
         final GridFutureAdapter<T> fut = new GridFutureAdapter<>();
 

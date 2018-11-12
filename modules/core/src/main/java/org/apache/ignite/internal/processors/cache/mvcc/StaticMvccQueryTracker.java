@@ -65,7 +65,7 @@ public class StaticMvccQueryTracker implements MvccQueryTracker {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<MvccSnapshot> requestSnapshot(@NotNull final AffinityTopologyVersion topVer) {
+    @Override public IgniteInternalFuture<MvccSnapshot> requestSnapshot(final @NotNull AffinityTopologyVersion topVer) {
         return new GridFinishedFuture<>(snapshot);
     }
 

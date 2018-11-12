@@ -142,7 +142,7 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
 
             IgniteInternalFuture<?> fut = multithreadedAsync(
                 new Callable<Object>() {
-                    @Nullable @Override public Object call() throws Exception {
+                    @Override public @Nullable Object call() throws Exception {
                         Thread.sleep(1000);
 
                         stopGrid(NO_COMMIT);

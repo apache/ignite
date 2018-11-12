@@ -79,7 +79,7 @@ public class DiscoveryDataBag {
         }
 
         /** {@inheritDoc} */
-        @Override @Nullable public Serializable joiningNodeData() {
+        @Override public @Nullable Serializable joiningNodeData() {
             return joiningNodeData.get(cmpId);
         }
 
@@ -108,7 +108,7 @@ public class DiscoveryDataBag {
         }
 
         /** {@inheritDoc} */
-        @Override @Nullable public Serializable commonData() {
+        @Override public @Nullable Serializable commonData() {
             if (commonData != null)
                 return commonData.get(cmpId);
 
@@ -309,7 +309,7 @@ public class DiscoveryDataBag {
     /**
      *
      */
-    @Nullable public Map<Integer, Serializable> localNodeSpecificData() {
+    public @Nullable Map<Integer, Serializable> localNodeSpecificData() {
         return nodeSpecificData.get(DEFAULT_KEY);
     }
 }

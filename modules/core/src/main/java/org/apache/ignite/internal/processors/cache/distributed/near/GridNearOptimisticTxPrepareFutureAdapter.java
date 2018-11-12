@@ -147,7 +147,7 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
      * @param remap Remap flag.
      * @param c Optional closure to run after map.
      */
-    protected final void prepareOnTopology(final boolean remap, @Nullable final Runnable c) {
+    protected final void prepareOnTopology(final boolean remap, final @Nullable Runnable c) {
         GridDhtTopologyFuture topFut = topologyReadLock();
 
         AffinityTopologyVersion topVer = null;

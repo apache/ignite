@@ -77,14 +77,14 @@ public class QuerySchemaPatch {
     /**
      * @return Patch operations for applying.
      */
-    @NotNull public Collection<SchemaAbstractOperation> getPatchOperations() {
+    public @NotNull Collection<SchemaAbstractOperation> getPatchOperations() {
         return patchOperations;
     }
 
     /**
      * @return Entities which should be added by whole.
      */
-    @NotNull public Collection<QueryEntity> getEntityToAdd() {
+    public @NotNull Collection<QueryEntity> getEntityToAdd() {
         return entityToAdd;
     }
 

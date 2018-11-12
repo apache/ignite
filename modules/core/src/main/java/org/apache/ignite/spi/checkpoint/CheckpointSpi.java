@@ -68,7 +68,7 @@ public interface CheckpointSpi extends IgniteSpi {
      *      checkpoint data. Note that in case when given {@code key} is not
      *      found this method will return {@code null}.
      */
-    @Nullable public byte[] loadCheckpoint(String key) throws IgniteSpiException;
+    public @Nullable byte[] loadCheckpoint(String key) throws IgniteSpiException;
 
     /**
      * Saves checkpoint to the storage.

@@ -123,7 +123,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     private List<GridQueryProperty> propsWithDefaultValue;
 
     /** */
-    @Nullable private CacheObjectContext coCtx;
+    private @Nullable CacheObjectContext coCtx;
 
     /**
      * Constructor.
@@ -252,7 +252,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      * @param name Name.
      * @return Index.
      */
-    @Nullable public QueryIndexDescriptorImpl index(String name) {
+    public @Nullable QueryIndexDescriptorImpl index(String name) {
         synchronized (idxMux) {
             return idxs.get(name);
         }
@@ -541,12 +541,12 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String keyFieldAlias() {
+    @Override public @Nullable String keyFieldAlias() {
         return keyFieldName != null ? aliases.get(keyFieldName) : null;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String valueFieldAlias() {
+    @Override public @Nullable String valueFieldAlias() {
         return valFieldName != null ? aliases.get(valFieldName) : null;
     }
 

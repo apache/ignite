@@ -41,12 +41,12 @@ public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Integer firstCacheId() {
+    @Override public @Nullable Integer firstCacheId() {
         return activeCacheIds.isEmpty() ? null : activeCacheIds.get(0);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridIntList cacheIds() {
+    @Override public @Nullable GridIntList cacheIds() {
         return activeCacheIds;
     }
 
@@ -108,7 +108,7 @@ public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheContext singleCacheContext(GridCacheSharedContext cctx) {
+    @Override public @Nullable GridCacheContext singleCacheContext(GridCacheSharedContext cctx) {
         return null;
     }
 

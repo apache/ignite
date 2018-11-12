@@ -204,7 +204,7 @@ public class VisorTaskUtils {
      * @param obj Object to compact.
      * @return String.
      */
-    @Nullable public static Object compactObject(Object obj) {
+    public static @Nullable Object compactObject(Object obj) {
         if (obj == null)
             return null;
 
@@ -274,7 +274,7 @@ public class VisorTaskUtils {
      * @param cls Class object for compact.
      * @return Compacted string.
      */
-    @Nullable public static String compactClass(Class cls) {
+    public static @Nullable String compactClass(Class cls) {
         if (cls == null)
             return null;
 
@@ -287,7 +287,7 @@ public class VisorTaskUtils {
      * @param obj Object for compact.
      * @return Compacted string.
      */
-    @Nullable public static String compactClass(@Nullable Object obj) {
+    public static @Nullable String compactClass(@Nullable Object obj) {
         if (obj == null)
             return null;
 
@@ -300,7 +300,7 @@ public class VisorTaskUtils {
      * @param clss Classes to compact.
      * @return Compacted string.
      */
-    @Nullable public static List<String> compactClasses(Class<?>[] clss) {
+    public static @Nullable List<String> compactClasses(Class<?>[] clss) {
         if (clss == null)
             return null;
 
@@ -320,7 +320,7 @@ public class VisorTaskUtils {
      * @param arr Array.
      * @return String.
      */
-    @Nullable public static String compactArray(Object[] arr) {
+    public static @Nullable String compactArray(Object[] arr) {
         if (arr == null || arr.length == 0)
             return null;
 
@@ -343,7 +343,7 @@ public class VisorTaskUtils {
      * @param col Iterable collection.
      * @return String.
      */
-    @Nullable public static String compactIterable(Iterable col) {
+    public static @Nullable String compactIterable(Iterable col) {
         if (col == null || !col.iterator().hasNext())
             return null;
 

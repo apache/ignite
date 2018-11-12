@@ -46,7 +46,7 @@ public class GridSqlAggregateFunction extends GridSqlFunction {
      * @param type H2 type.
      * @return Ignite type, {@code null} if not supported.
      */
-    @Nullable private static GridSqlFunctionType mapType(Aggregate.AggregateType type) {
+    private static @Nullable GridSqlFunctionType mapType(Aggregate.AggregateType type) {
         switch (type) {
             case COUNT_ALL:
                 return COUNT_ALL;

@@ -217,7 +217,7 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
      * @param ver Version to lookup (if {@code null} - return any).
      * @return Last added explicit lock candidate, if any, or {@code null}.
      */
-    @Nullable public GridCacheMvccCandidate candidate(IgniteTxKey key, @Nullable final GridCacheVersion ver) {
+    public @Nullable GridCacheMvccCandidate candidate(IgniteTxKey key, final @Nullable GridCacheVersion ver) {
         lock();
 
         try {
@@ -245,7 +245,7 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
      *
      * @return Topology snapshot or {@code null} if candidate list is empty.
      */
-    @Nullable public AffinityTopologyVersion topologyVersion() {
+    public @Nullable AffinityTopologyVersion topologyVersion() {
         return releaseFut.isDone() ? null : topVer;
     }
 

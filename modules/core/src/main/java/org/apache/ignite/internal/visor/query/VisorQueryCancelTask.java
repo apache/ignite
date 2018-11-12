@@ -42,7 +42,7 @@ public class VisorQueryCancelTask extends VisorOneNodeTask<VisorQueryCancelTaskA
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Void reduce0(List<ComputeJobResult> results) throws IgniteException {
+    @Override protected @Nullable Void reduce0(List<ComputeJobResult> results) throws IgniteException {
         return null;
     }
 

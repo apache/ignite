@@ -205,7 +205,7 @@ public class BinaryTypeConfiguration implements Serializable {
     /**
      * @return Enum name to ordinal mapping
      */
-    @Nullable public Map<String, Integer> getEnumValues() {
+    public @Nullable Map<String, Integer> getEnumValues() {
         return enumValues;
     }
 

@@ -653,7 +653,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
      * @return File ID to process or {@code null} if there are no such files.
      * @throws IgniteCheckedException In case of error.
      */
-    @Nullable private IgfsEntryInfo fileForFragmentizer(Collection<IgniteUuid> exclude) throws IgniteCheckedException {
+    private @Nullable IgfsEntryInfo fileForFragmentizer(Collection<IgniteUuid> exclude) throws IgniteCheckedException {
         return fragmentizerEnabled ? igfsCtx.meta().fileForFragmentizer(exclude) : null;
     }
 

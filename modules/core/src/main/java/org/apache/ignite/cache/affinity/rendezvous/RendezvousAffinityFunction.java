@@ -213,7 +213,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
      *
      * @return Optional backup filter.
      */
-    @Nullable public IgniteBiPredicate<ClusterNode, ClusterNode> getBackupFilter() {
+    public @Nullable IgniteBiPredicate<ClusterNode, ClusterNode> getBackupFilter() {
         return backupFilter;
     }
 
@@ -245,7 +245,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
      *
      * @return Optional backup filter.
      */
-    @Nullable public IgniteBiPredicate<ClusterNode, List<ClusterNode>> getAffinityBackupFilter() {
+    public @Nullable IgniteBiPredicate<ClusterNode, List<ClusterNode>> getAffinityBackupFilter() {
         return affinityBackupFilter;
     }
 

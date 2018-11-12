@@ -152,7 +152,7 @@ public class VisorDataTransferObjectInput implements ObjectInput {
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public String readUTF() throws IOException {
+    @Override public @NotNull String readUTF() throws IOException {
         return ois.readUTF();
     }
 }

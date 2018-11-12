@@ -430,7 +430,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      * return null if counter page does not exist.
      * @throws IgniteCheckedException If page memory operation failed.
      */
-    @Nullable private static Map<Integer, Long> readSharedGroupCacheSizes(PageSupport pageMem, int grpId,
+    private static @Nullable Map<Integer, Long> readSharedGroupCacheSizes(PageSupport pageMem, int grpId,
         long cntrsPageId) throws IgniteCheckedException {
 
         if (cntrsPageId == 0L)
@@ -788,7 +788,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable protected IgniteHistoricalIterator historicalIterator(
+    @Override protected @Nullable IgniteHistoricalIterator historicalIterator(
         CachePartitionPartialCountersMap partCntrs, Set<Integer> missing) throws IgniteCheckedException {
         if (partCntrs == null || partCntrs.isEmpty())
             return null;

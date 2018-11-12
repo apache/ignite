@@ -138,7 +138,7 @@ public class GridBoundedConcurrentOrderedMap<K, V> extends ConcurrentSkipListMap
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V put(K k, V v) {
+    @Override public @Nullable V put(K k, V v) {
         A.notNull(k, "k", v, "v");
 
         V ret = super.put(k, v);
@@ -149,7 +149,7 @@ public class GridBoundedConcurrentOrderedMap<K, V> extends ConcurrentSkipListMap
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V putIfAbsent(K k, V v) {
+    @Override public @Nullable V putIfAbsent(K k, V v) {
         A.notNull(k, "k", v, "v");
 
         V ret = super.putIfAbsent(k, v);

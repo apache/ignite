@@ -114,7 +114,7 @@ public final class ScanQuery<K, V> extends Query<Cache.Entry<K, V>> {
      *
      * @return Partition number or {@code null}.
      */
-    @Nullable public Integer getPartition() {
+    public @Nullable Integer getPartition() {
         return part;
     }
 

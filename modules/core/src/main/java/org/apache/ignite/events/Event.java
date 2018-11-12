@@ -113,7 +113,7 @@ public interface Event extends Comparable<Event>, Serializable {
      *
      * @return Optional (can be {@code null}) message for this event.
      */
-    @Nullable public String message();
+    public @Nullable String message();
 
     /**
      * Gets type of this event. All system event types are defined in

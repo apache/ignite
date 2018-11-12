@@ -130,34 +130,34 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService {
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public <T> Future<T> submit(Callable<T> task) {
+    @Override public @NotNull <T> Future<T> submit(Callable<T> task) {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public <T> Future<T> submit(Runnable task, T res) {
+    @Override public @NotNull <T> Future<T> submit(Runnable task, T res) {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Future<?> submit(Runnable task) {
+    @Override public @NotNull Future<?> submit(Runnable task) {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) {
+    @Override public @NotNull <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks,
+    @Override public @NotNull <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks,
         long timeout,
         TimeUnit unit) {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public <T> T invokeAny(Collection<? extends Callable<T>> tasks) {
+    @Override public @NotNull <T> T invokeAny(Collection<? extends Callable<T>> tasks) {
         throw new UnsupportedOperationException();
     }
 

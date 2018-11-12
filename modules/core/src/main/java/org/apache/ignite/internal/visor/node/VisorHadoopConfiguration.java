@@ -114,7 +114,7 @@ public class VisorHadoopConfiguration extends VisorDataTransferObject {
     /**
      * @return Native library names.
      */
-    @Nullable public List<String> getNativeLibraryNames() {
+    public @Nullable List<String> getNativeLibraryNames() {
         return libNames;
     }
 

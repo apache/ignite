@@ -267,7 +267,7 @@ public class ZookeeperDiscoveryImpl {
      * @param nodeId Node ID.
      * @return Node instance.
      */
-    @Nullable public ZookeeperClusterNode node(UUID nodeId) {
+    public @Nullable ZookeeperClusterNode node(UUID nodeId) {
         assert nodeId != null;
 
         return rtState.top.nodesById.get(nodeId);
@@ -277,7 +277,7 @@ public class ZookeeperDiscoveryImpl {
      * @param nodeOrder Node order.
      * @return Node instance.
      */
-    @Nullable public ZookeeperClusterNode node(long nodeOrder) {
+    public @Nullable ZookeeperClusterNode node(long nodeOrder) {
         assert nodeOrder > 0 : nodeOrder;
 
         return rtState.top.nodesByOrder.get(nodeOrder);
@@ -2574,7 +2574,7 @@ public class ZookeeperDiscoveryImpl {
      * @throws Exception If failed.
      * @return Events.
      */
-    @Nullable private ZkDiscoveryEventsData processNewEvents(byte[] data) throws Exception {
+    private @Nullable ZkDiscoveryEventsData processNewEvents(byte[] data) throws Exception {
         ZkDiscoveryEventsData newEvts = data.length > 0 ? (ZkDiscoveryEventsData)unmarshalZip(data) : null;
 
         if (rtState.joined && (newEvts == null || !rtState.evtsData.clusterId.equals(newEvts.clusterId))) {
@@ -3754,7 +3754,7 @@ public class ZookeeperDiscoveryImpl {
      * @return Ack message.
      * @throws Exception If failed.
      */
-    @Nullable private DiscoverySpiCustomMessage handleProcessedCustomEvent(String ctx, ZkDiscoveryCustomEventData evtData)
+    private @Nullable DiscoverySpiCustomMessage handleProcessedCustomEvent(String ctx, ZkDiscoveryCustomEventData evtData)
         throws Exception {
         if (log.isDebugEnabled())
             log.debug("All nodes processed custom event [ctx=" + ctx + ", evtData=" + evtData + ']');

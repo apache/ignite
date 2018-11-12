@@ -132,7 +132,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
      *
      * @return Default user name.
      */
-    @Nullable public String getDefaultUserName() {
+    public @Nullable String getDefaultUserName() {
         return dfltUsrName;
     }
 
@@ -179,7 +179,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgfsFile update(IgfsPath path, Map<String, String> props) {
+    @Override public @Nullable IgfsFile update(IgfsPath path, Map<String, String> props) {
         return target.update(path, props);
     }
 

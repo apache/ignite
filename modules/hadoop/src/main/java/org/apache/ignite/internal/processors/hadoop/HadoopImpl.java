@@ -77,7 +77,7 @@ public class HadoopImpl implements Hadoop {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public HadoopJobStatus status(HadoopJobId jobId) throws IgniteCheckedException {
+    @Override public @Nullable HadoopJobStatus status(HadoopJobId jobId) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 return proc.status(jobId);
@@ -91,7 +91,7 @@ public class HadoopImpl implements Hadoop {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public HadoopCounters counters(HadoopJobId jobId) throws IgniteCheckedException {
+    @Override public @Nullable HadoopCounters counters(HadoopJobId jobId) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 return proc.counters(jobId);
@@ -105,7 +105,7 @@ public class HadoopImpl implements Hadoop {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteInternalFuture<?> finishFuture(HadoopJobId jobId) throws IgniteCheckedException {
+    @Override public @Nullable IgniteInternalFuture<?> finishFuture(HadoopJobId jobId) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 return proc.finishFuture(jobId);

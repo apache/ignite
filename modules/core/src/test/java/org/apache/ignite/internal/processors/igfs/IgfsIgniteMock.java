@@ -99,7 +99,7 @@ public class IgfsIgniteMock implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <K, V> IgniteInternalCache<K, V> cachex(@Nullable String name) {
+    @Override public @Nullable <K, V> IgniteInternalCache<K, V> cachex(@Nullable String name) {
         throwUnsupported();
 
         return null;
@@ -143,7 +143,7 @@ public class IgfsIgniteMock implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFileSystem igfsx(String name) {
+    @Override public @Nullable IgniteFileSystem igfsx(String name) {
         return F.eq(name, igfs.name()) ? igfs : null;
     }
 
@@ -162,7 +162,7 @@ public class IgfsIgniteMock implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String latestVersion() {
+    @Override public @Nullable String latestVersion() {
         throwUnsupported();
 
         return null;
@@ -595,7 +595,7 @@ public class IgfsIgniteMock implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DataRegionMetrics dataRegionMetrics(String memPlcName) {
+    @Override public @Nullable DataRegionMetrics dataRegionMetrics(String memPlcName) {
         throwUnsupported();
 
         return null;
@@ -614,7 +614,7 @@ public class IgfsIgniteMock implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
+    @Override public @Nullable MemoryMetrics memoryMetrics(String memPlcName) {
         return DataRegionMetricsAdapter.valueOf(dataRegionMetrics(memPlcName));
     }
 

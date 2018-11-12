@@ -108,7 +108,7 @@ public class HibernateL2CacheTransactionalSelfTest extends HibernateL2CacheSelfT
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected ServiceRegistryBuilder registryBuilder() {
+    @Override protected @Nullable ServiceRegistryBuilder registryBuilder() {
         ServiceRegistryBuilder builder = new ServiceRegistryBuilder();
 
         DatasourceConnectionProviderImpl connProvider = new DatasourceConnectionProviderImpl();

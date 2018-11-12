@@ -251,7 +251,7 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
 
     /** {@inheritDoc} */
     @Override public HadoopIgfsStreamDelegate create(final IgfsPath path, final boolean overwrite,
-        final boolean colocate, final int replication, final long blockSize, @Nullable final Map<String, String> props)
+        final boolean colocate, final int replication, final long blockSize, final @Nullable Map<String, String> props)
         throws IOException {
         return withReconnectHandling(new FileSystemClosure<HadoopIgfsStreamDelegate>() {
             @Override public HadoopIgfsStreamDelegate apply(HadoopIgfsEx hadoop,
@@ -263,7 +263,7 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
 
     /** {@inheritDoc} */
     @Override public HadoopIgfsStreamDelegate append(final IgfsPath path, final boolean create,
-        @Nullable final Map<String, String> props) throws IOException {
+        final @Nullable Map<String, String> props) throws IOException {
         return withReconnectHandling(new FileSystemClosure<HadoopIgfsStreamDelegate>() {
             @Override public HadoopIgfsStreamDelegate apply(HadoopIgfsEx hadoop,
                 IgfsHandshakeResponse hndResp) throws IgniteCheckedException, IOException {

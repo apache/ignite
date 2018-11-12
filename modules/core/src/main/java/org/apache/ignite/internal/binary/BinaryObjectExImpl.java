@@ -71,7 +71,7 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
      * @return Field value.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of any other error.
      */
-    @Nullable public abstract <F> F field(int fieldId) throws BinaryObjectException;
+    public abstract @Nullable <F> F field(int fieldId) throws BinaryObjectException;
 
     /** {@inheritDoc} */
     @Override public int enumOrdinal() throws BinaryObjectException {
@@ -103,7 +103,7 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
      * @param order Field offset.
      * @return Field value.
      */
-    @Nullable public abstract <F> F fieldByOrder(int order);
+    public abstract @Nullable <F> F fieldByOrder(int order);
 
     /**
      * Create field comparator.
@@ -126,7 +126,7 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
      * @param fieldName Field name.
      * @return Field value.
      */
-    @Nullable protected abstract <F> F field(BinaryReaderHandles ctx, String fieldName);
+    protected abstract @Nullable <F> F field(BinaryReaderHandles ctx, String fieldName);
 
     /**
      * @return {@code True} if object has schema.

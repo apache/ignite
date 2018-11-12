@@ -76,7 +76,7 @@ public class GridLoadTestUtils {
 
         for (int i = 0; i < threadCnt; i++)
             pool.submit(new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
+                @Override public @Nullable Object call() throws Exception {
                     while (!finish.get())
                         c.call();
 

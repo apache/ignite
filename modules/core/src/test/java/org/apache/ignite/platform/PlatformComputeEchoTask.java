@@ -117,13 +117,13 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
     public static final String DEFAULT_CACHE_NAME = "default";
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable Integer arg) {
         return Collections.singletonMap(new EchoJob(arg), F.first(subgrid));
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object reduce(List<ComputeJobResult> results) {
+    @Override public @Nullable Object reduce(List<ComputeJobResult> results) {
         return results.get(0).getData();
     }
 
@@ -148,7 +148,7 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object execute() {
+        @Override public @Nullable Object execute() {
             switch (type) {
                 case TYPE_NULL:
                     return null;

@@ -88,7 +88,7 @@ public abstract class CacheEntryPredicateAdapter implements CacheEntryPredicate 
      * @param entry Entry.
      * @return Value.
      */
-    @Nullable protected CacheObject peekVisibleValue(GridCacheEntryEx entry) {
+    protected @Nullable CacheObject peekVisibleValue(GridCacheEntryEx entry) {
         return locked ? entry.rawGet() : entry.peekVisibleValue();
     }
 

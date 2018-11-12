@@ -57,7 +57,7 @@ public class VisorLifecycleConfiguration extends VisorDataTransferObject{
     /**
      * @return Lifecycle beans.
      */
-    @Nullable public String getBeans() {
+    public @Nullable String getBeans() {
         return beans;
     }
 

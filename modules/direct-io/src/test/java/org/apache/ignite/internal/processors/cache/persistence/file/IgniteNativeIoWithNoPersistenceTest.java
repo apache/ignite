@@ -70,7 +70,7 @@ public class IgniteNativeIoWithNoPersistenceTest extends GridCommonAbstractTest 
      * @param i key.
      * @return value with extra data, which allows to verify
      */
-    @NotNull private String valueForKey(int i) {
+    private @NotNull String valueForKey(int i) {
         return Strings.repeat(Integer.toString(i), 10);
     }
 }

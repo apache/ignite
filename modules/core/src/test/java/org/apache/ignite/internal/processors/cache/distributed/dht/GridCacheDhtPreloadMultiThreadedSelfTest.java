@@ -61,7 +61,7 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
 
             GridTestUtils.runMultiThreadedAsync(
                 new Callable<Object>() {
-                    @Nullable @Override public Object call() throws Exception {
+                    @Override public @Nullable Object call() throws Exception {
                         Ignite g = startGrid("first");
 
                         g.events().localListen(
@@ -89,7 +89,7 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
 
             GridTestUtils.runMultiThreaded(
                 new Callable<Object>() {
-                    @Nullable @Override public Object call() throws Exception {
+                    @Override public @Nullable Object call() throws Exception {
                         startLatch.await();
 
                         startGrid("second");
@@ -114,7 +114,7 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
         try {
             multithreadedAsync(
                 new Callable<Object>() {
-                    @Nullable @Override public Object call() throws Exception {
+                    @Override public @Nullable Object call() throws Exception {
                         IgniteConfiguration cfg = loadConfiguration("modules/core/src/test/config/spring-multicache.xml");
 
                         cfg.setGridLogger(getTestResources().getLogger());
@@ -140,7 +140,7 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
         try {
             multithreadedAsync(
                 new Callable<Object>() {
-                    @Nullable @Override public Object call() throws Exception {
+                    @Override public @Nullable Object call() throws Exception {
                         String igniteInstanceName = "grid-" + Thread.currentThread().getName();
 
                         startGrid(igniteInstanceName, "modules/core/src/test/config/example-cache.xml");

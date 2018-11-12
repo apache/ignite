@@ -122,7 +122,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
      *
      * @return Pending messages from previous node.
      */
-    @Nullable public Collection<TcpDiscoveryAbstractMessage> messages() {
+    public @Nullable Collection<TcpDiscoveryAbstractMessage> messages() {
         return msgs;
     }
 
@@ -131,7 +131,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
      *
      * @return Discarded message ID.
      */
-    @Nullable public IgniteUuid discardedMessageId() {
+    public @Nullable IgniteUuid discardedMessageId() {
         return discardMsgId;
     }
 
@@ -140,7 +140,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
      *
      * @return Discarded message ID.
      */
-    @Nullable public IgniteUuid discardedCustomMessageId() {
+    public @Nullable IgniteUuid discardedCustomMessageId() {
         return discardCustomMsgId;
     }
 
@@ -166,7 +166,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
      *
      * @return Current topology.
      */
-    @Nullable public Collection<TcpDiscoveryNode> topology() {
+    public @Nullable Collection<TcpDiscoveryNode> topology() {
         return top;
     }
 

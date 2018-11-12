@@ -263,7 +263,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
      * @param topVer Topology version.
      * @return Context.
      */
-    @Nullable public CounterSkipContext skipUpdateCounter(@Nullable CounterSkipContext skipCtx,
+    public @Nullable CounterSkipContext skipUpdateCounter(@Nullable CounterSkipContext skipCtx,
         int part,
         long cntr,
         AffinityTopologyVersion topVer,
@@ -279,7 +279,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
      * @param preload Whether update happened during preloading.
      * @return Registered listeners.
      */
-    @Nullable public Map<UUID, CacheContinuousQueryListener> updateListeners(
+    public @Nullable Map<UUID, CacheContinuousQueryListener> updateListeners(
         boolean internal,
         boolean preload) {
         if (preload && !internal)
@@ -495,11 +495,11 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
      * @return Continuous routine ID.
      * @throws IgniteCheckedException In case of error.
      */
-    public UUID executeQuery(@Nullable final CacheEntryUpdatedListener locLsnr,
-        @Nullable final EventListener locTransLsnr,
-        @Nullable final CacheEntryEventSerializableFilter rmtFilter,
-        @Nullable final Factory<? extends CacheEntryEventFilter> rmtFilterFactory,
-        @Nullable final Factory<? extends IgniteClosure> rmtTransFactory,
+    public UUID executeQuery(final @Nullable CacheEntryUpdatedListener locLsnr,
+        final @Nullable EventListener locTransLsnr,
+        final @Nullable CacheEntryEventSerializableFilter rmtFilter,
+        final @Nullable Factory<? extends CacheEntryEventFilter> rmtFilterFactory,
+        final @Nullable Factory<? extends IgniteClosure> rmtTransFactory,
         int bufSize,
         long timeInterval,
         boolean autoUnsubscribe,

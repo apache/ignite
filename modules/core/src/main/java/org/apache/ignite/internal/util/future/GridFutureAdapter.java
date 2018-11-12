@@ -204,7 +204,7 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
      * @throws IgniteFutureTimeoutCheckedException If timeout reached before computation completed.
      * @throws IgniteCheckedException If error occurred.
      */
-    @Nullable private R get0(boolean ignoreInterrupts, long nanosTimeout) throws IgniteCheckedException {
+    private @Nullable R get0(boolean ignoreInterrupts, long nanosTimeout) throws IgniteCheckedException {
         if (isDone() || !registerWaiter(Thread.currentThread()))
             return resolve();
 
@@ -379,7 +379,7 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
     /**
      * @return Logger instance.
      */
-    @Nullable public IgniteLogger logger() {
+    public @Nullable IgniteLogger logger() {
         return null;
     }
 

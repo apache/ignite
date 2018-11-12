@@ -182,7 +182,7 @@ public class PlatformFutureUtils {
      * @param writer Optional writer.
      */
     public static void listen(final PlatformContext ctx, PlatformListenable listenable, final long futPtr, final
-        int typ, @Nullable final Writer writer, final PlatformTarget target) {
+        int typ, final @Nullable Writer writer, final PlatformTarget target) {
         final PlatformCallbackGateway gate = ctx.gateway();
 
         listenable.listen(new IgniteBiInClosure<Object, Throwable>() {

@@ -79,7 +79,7 @@ public interface GridDhtTopologyFuture extends IgniteInternalFuture<AffinityTopo
      * @param keys Keys involved in a cache operation.
      * @return valid ot not.
      */
-    @Nullable public Throwable validateCache(
+    public @Nullable Throwable validateCache(
         GridCacheContext cctx,
         boolean recovery,
         boolean read,

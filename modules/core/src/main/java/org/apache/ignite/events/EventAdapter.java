@@ -135,7 +135,7 @@ public class EventAdapter implements Event {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String message() {
+    @Override public @Nullable String message() {
         return msg;
     }
 

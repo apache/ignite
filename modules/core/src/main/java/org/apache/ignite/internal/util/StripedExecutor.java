@@ -215,7 +215,7 @@ public class StripedExecutor implements ExecutorService {
      *
      * @return Empty list (always).
      */
-    @NotNull @Override public List<Runnable> shutdownNow() {
+    @Override public @NotNull List<Runnable> shutdownNow() {
         signalStop();
 
         return Collections.emptyList();
@@ -353,7 +353,7 @@ public class StripedExecutor implements ExecutorService {
     /**
      * Operation not supported.
      */
-    @NotNull @Override public <T> Future<T> submit(
+    @Override public @NotNull <T> Future<T> submit(
         @NotNull Runnable task,
         T res
     ) {
@@ -363,21 +363,21 @@ public class StripedExecutor implements ExecutorService {
     /**
      * Operation not supported.
      */
-    @NotNull @Override public Future<?> submit(@NotNull Runnable task) {
+    @Override public @NotNull Future<?> submit(@NotNull Runnable task) {
         throw new UnsupportedOperationException();
     }
 
     /**
      * Operation not supported.
      */
-    @NotNull @Override public <T> Future<T> submit(@NotNull Callable<T> task) {
+    @Override public @NotNull <T> Future<T> submit(@NotNull Callable<T> task) {
         throw new UnsupportedOperationException();
     }
 
     /**
      * Operation not supported.
      */
-    @NotNull @Override public <T> List<Future<T>> invokeAll(@NotNull Collection<? extends Callable<T>> tasks)
+    @Override public @NotNull <T> List<Future<T>> invokeAll(@NotNull Collection<? extends Callable<T>> tasks)
         throws InterruptedException {
         throw new UnsupportedOperationException();
     }
@@ -385,7 +385,7 @@ public class StripedExecutor implements ExecutorService {
     /**
      * Operation not supported.
      */
-    @NotNull @Override public <T> List<Future<T>> invokeAll(
+    @Override public @NotNull <T> List<Future<T>> invokeAll(
         @NotNull Collection<? extends Callable<T>> tasks,
         long timeout,
         @NotNull TimeUnit unit
@@ -396,7 +396,7 @@ public class StripedExecutor implements ExecutorService {
     /**
      * Operation not supported.
      */
-    @NotNull @Override public <T> T invokeAny(@NotNull Collection<? extends Callable<T>> tasks)
+    @Override public @NotNull <T> T invokeAny(@NotNull Collection<? extends Callable<T>> tasks)
         throws InterruptedException, ExecutionException {
         throw new UnsupportedOperationException();
     }

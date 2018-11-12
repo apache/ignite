@@ -232,11 +232,11 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
             @LoggerResource
             private IgniteLogger log;
 
-            @Nullable @Override public Object call() throws Exception {
+            @Override public @Nullable Object call() throws Exception {
                 // Test semaphore in multiple threads on each node.
                 IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(
                     new Callable<Object>() {
-                        @Nullable @Override public Object call() throws Exception {
+                        @Override public @Nullable Object call() throws Exception {
                             IgniteSemaphore semaphore = ignite.semaphore("semaphore", -2, true, true);
 
                             assert semaphore != null && semaphore.availablePermits() == -2;
@@ -307,7 +307,7 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
         assertEquals(-gridCount() + 1, sem.availablePermits());
 
         grid(0).compute().broadcast(new IgniteCallable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
+            @Override public @Nullable Object call() throws Exception {
                 sem.release();
 
                 return null;

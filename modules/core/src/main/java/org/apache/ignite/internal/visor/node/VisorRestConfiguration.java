@@ -167,28 +167,28 @@ public class VisorRestConfiguration extends VisorDataTransferObject {
     /**
      * @return Jetty config path.
      */
-    @Nullable public String getJettyPath() {
+    public @Nullable String getJettyPath() {
         return jettyPath;
     }
 
     /**
      * @return Jetty host.
      */
-    @Nullable public String getJettyHost() {
+    public @Nullable String getJettyHost() {
         return jettyHost;
     }
 
     /**
      * @return Jetty port.
      */
-    @Nullable public Integer getJettyPort() {
+    public @Nullable Integer getJettyPort() {
         return jettyPort;
     }
 
     /**
      * @return REST TCP binary host.
      */
-    @Nullable public String getTcpHost() {
+    public @Nullable String getTcpHost() {
         return tcpHost;
     }
 
@@ -202,14 +202,14 @@ public class VisorRestConfiguration extends VisorDataTransferObject {
     /**
      * @return Context factory for SSL.
      */
-    @Nullable public String getTcpSslContextFactory() {
+    public @Nullable String getTcpSslContextFactory() {
         return tcpSslCtxFactory;
     }
 
     /**
      * @return Secret key.
      */
-    @Nullable public String getSecretKey() {
+    public @Nullable String getSecretKey() {
         return secretKey;
     }
 
@@ -303,7 +303,7 @@ public class VisorRestConfiguration extends VisorDataTransferObject {
     /**
      * @return Interceptor.
      */
-    @Nullable public String getMessageInterceptor() {
+    public @Nullable String getMessageInterceptor() {
         return msgInterceptor;
     }
 

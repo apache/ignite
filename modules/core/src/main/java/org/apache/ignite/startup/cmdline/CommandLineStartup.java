@@ -213,7 +213,7 @@ public final class CommandLineStartup {
      * @return Configuration file path. {@code null} if operation  was cancelled.
      * @throws IOException In case of error.
      */
-    @Nullable private static String askConfigFile() throws IOException {
+    private static @Nullable String askConfigFile() throws IOException {
         List<GridTuple3<String, Long, File>> files = GridConfigurationFinder.getConfigFiles();
 
         String title = "Available configuration files:";

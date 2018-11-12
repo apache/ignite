@@ -337,13 +337,12 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
      */
     private static class TestCacheInterceptor implements CacheInterceptor, Serializable {
         /** {@inheritDoc} */
-        @Nullable
-        @Override public Object onGet(Object key, @Nullable Object val) {
+        @Override public @Nullable Object onGet(Object key, @Nullable Object val) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object onBeforePut(Cache.Entry entry, Object newVal) {
+        @Override public @Nullable Object onBeforePut(Cache.Entry entry, Object newVal) {
             return null;
         }
 
@@ -353,7 +352,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
+        @Override public @Nullable IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
             return null;
         }
 

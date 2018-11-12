@@ -503,7 +503,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param futId Future ID.
      * @return Future.
      */
-    @Nullable public IgniteInternalFuture<?> atomicFuture(long futId) {
+    public @Nullable IgniteInternalFuture<?> atomicFuture(long futId) {
         return atomicFuts.get(futId);
     }
 
@@ -511,7 +511,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param futId Future ID.
      * @return Removed future.
      */
-    @Nullable public IgniteInternalFuture<?> removeAtomicFuture(long futId) {
+    public @Nullable IgniteInternalFuture<?> removeAtomicFuture(long futId) {
         return atomicFuts.remove(futId);
     }
 
@@ -704,8 +704,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param futId Future ID.
      * @return Future.
      */
-    @SuppressWarnings({"unchecked"})
-    @Nullable public GridCacheVersionedFuture<?> versionedFuture(GridCacheVersion ver, IgniteUuid futId) {
+    @SuppressWarnings({"unchecked"}) public @Nullable GridCacheVersionedFuture<?> versionedFuture(GridCacheVersion ver, IgniteUuid futId) {
         Collection<GridCacheVersionedFuture<?>> futs = this.verFuts.get(ver);
 
         if (futs != null) {
@@ -733,8 +732,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param ver Lock ID.
      * @return Futures.
      */
-    @SuppressWarnings({"unchecked"})
-    @Nullable public Collection<GridCacheVersionedFuture<?>> futuresForVersion(GridCacheVersion ver) {
+    @SuppressWarnings({"unchecked"}) public @Nullable Collection<GridCacheVersionedFuture<?>> futuresForVersion(GridCacheVersion ver) {
         Collection<GridCacheVersionedFuture<?>> futs = this.verFuts.get(ver);
 
         if (futs != null) {
@@ -750,7 +748,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param futId Future ID.
      * @return Found future.
      */
-    @Nullable public GridCacheFuture future(IgniteUuid futId) {
+    public @Nullable GridCacheFuture future(IgniteUuid futId) {
         return futs.get(futId);
     }
 
@@ -1005,7 +1003,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @return Last added explicit lock candidate for given thread id and key or {@code null} if
      *      no such candidate.
      */
-    @Nullable public GridCacheMvccCandidate explicitLock(long threadId, IgniteTxKey key) {
+    public @Nullable GridCacheMvccCandidate explicitLock(long threadId, IgniteTxKey key) {
         if (threadId < 0)
             return explicitLock(key, null);
         else {
@@ -1022,7 +1020,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param ver Version.
      * @return Lock candidate that satisfies given criteria or {@code null} if no such candidate.
      */
-    @Nullable public GridCacheMvccCandidate explicitLock(IgniteTxKey key, @Nullable GridCacheVersion ver) {
+    public @Nullable GridCacheMvccCandidate explicitLock(IgniteTxKey key, @Nullable GridCacheVersion ver) {
         for (GridCacheExplicitLockSpan span : pendingExplicit.values()) {
             GridCacheMvccCandidate cand = span.candidate(key, ver);
 
@@ -1037,7 +1035,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param threadId Thread ID.
      * @return Topology snapshot for last acquired and not released lock.
      */
-    @Nullable public AffinityTopologyVersion lastExplicitLockTopologyVersion(long threadId) {
+    public @Nullable AffinityTopologyVersion lastExplicitLockTopologyVersion(long threadId) {
         GridCacheExplicitLockSpan span = pendingExplicit.get(threadId);
 
         return span != null ? span.topologyVersion() : null;
@@ -1170,7 +1168,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @return Future that signals when all locks for given partitions will be released.
      */
     private IgniteInternalFuture<?> finishLocks(
-        @Nullable final IgnitePredicate<GridDistributedCacheEntry> filter,
+        final @Nullable IgnitePredicate<GridDistributedCacheEntry> filter,
         AffinityTopologyVersion topVer
     ) {
         assert topVer.topologyVersion() != 0;

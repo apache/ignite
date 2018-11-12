@@ -82,7 +82,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
     private IgniteLogger log;
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(
+    @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(
         List<ClusterNode> subgrid, Set<String> cacheNames) throws IgniteException {
         Map<ComputeJob, ClusterNode> jobs = new HashMap<>();
 
@@ -93,7 +93,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<PartitionKey, List<PartitionHashRecord>> reduce(List<ComputeJobResult> results)
+    @Override public @Nullable Map<PartitionKey, List<PartitionHashRecord>> reduce(List<ComputeJobResult> results)
         throws IgniteException {
         Map<PartitionKey, List<PartitionHashRecord>> clusterHashes = new HashMap<>();
 

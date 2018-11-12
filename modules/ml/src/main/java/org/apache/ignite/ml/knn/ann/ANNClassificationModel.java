@@ -96,7 +96,7 @@ public class ANNClassificationModel extends NNClassificationModel  {
      * @param distanceIdxPairs The distance map.
      * @return K-nearest neighbors.
      */
-    @NotNull private LabeledVector[] getKClosestVectors(
+    private @NotNull LabeledVector[] getKClosestVectors(
         TreeMap<Double, Set<Integer>> distanceIdxPairs) {
         LabeledVector[] res;
 
@@ -131,7 +131,7 @@ public class ANNClassificationModel extends NNClassificationModel  {
      * @return Key - distanceMeasure from given features before features with idx stored in value. Value is presented
      * with Set because there can be a few vectors with the same distance.
      */
-    @NotNull private TreeMap<Double, Set<Integer>> getDistances(Vector v) {
+    private @NotNull TreeMap<Double, Set<Integer>> getDistances(Vector v) {
         TreeMap<Double, Set<Integer>> distanceIdxPairs = new TreeMap<>();
 
         for (int i = 0; i < candidates.rowSize(); i++) {

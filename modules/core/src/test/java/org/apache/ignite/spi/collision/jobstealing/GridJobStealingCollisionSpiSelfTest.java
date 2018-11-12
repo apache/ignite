@@ -295,7 +295,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Job
      */
     public GridTestTaskSession createTaskSession() {
         return new GridTestTaskSession() {
-            @Nullable @Override public Collection<UUID> getTopology() {
+            @Override public @Nullable Collection<UUID> getTopology() {
                 try {
                     return F.nodeIds(getSpiContext().nodes());
                 }

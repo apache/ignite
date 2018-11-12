@@ -44,7 +44,7 @@ public class TcpDiscoveryClientPingRequest extends TcpDiscoveryAbstractMessage {
     /**
      * @return Pinged client node ID.
      */
-    @Nullable public UUID nodeToPing() {
+    public @Nullable UUID nodeToPing() {
         return nodeToPing;
     }
 

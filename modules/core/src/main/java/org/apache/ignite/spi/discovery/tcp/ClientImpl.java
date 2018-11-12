@@ -375,7 +375,7 @@ class ClientImpl extends TcpDiscoveryImpl {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public ClusterNode getNode(UUID nodeId) {
+    @Override public @Nullable ClusterNode getNode(UUID nodeId) {
         if (getLocalNodeId().equals(nodeId))
             return locNode;
 
@@ -385,7 +385,7 @@ class ClientImpl extends TcpDiscoveryImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean pingNode(@NotNull final UUID nodeId) {
+    @Override public boolean pingNode(final @NotNull UUID nodeId) {
         if (nodeId.equals(getLocalNodeId()))
             return true;
 
@@ -541,8 +541,7 @@ class ClientImpl extends TcpDiscoveryImpl {
      * @throws IgniteSpiException If failed.
      * @see TcpDiscoverySpi#joinTimeout
      */
-    @SuppressWarnings("BusyWait")
-    @Nullable private T2<SocketStream, Boolean> joinTopology(
+    @SuppressWarnings("BusyWait") private @Nullable T2<SocketStream, Boolean> joinTopology(
         InetSocketAddress prevAddr,
         long timeout,
         @Nullable Runnable beforeEachSleep,
@@ -671,7 +670,7 @@ class ClientImpl extends TcpDiscoveryImpl {
      * @param addr Address.
      * @return Socket, connect response and client acknowledge support flag.
      */
-    @Nullable private T3<SocketStream, Integer, Boolean> sendJoinRequest(boolean recon,
+    private @Nullable T3<SocketStream, Integer, Boolean> sendJoinRequest(boolean recon,
         InetSocketAddress addr) {
         assert addr != null;
 

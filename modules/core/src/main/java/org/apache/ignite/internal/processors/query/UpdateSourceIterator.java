@@ -83,7 +83,7 @@ public interface UpdateSourceIterator<T> extends GridCloseableIterator<T> {
     }
 
     /** {@inheritDoc} */
-    @Override @NotNull default Iterator<T> iterator() {
+    @Override default @NotNull Iterator<T> iterator() {
         return this;
     }
 }

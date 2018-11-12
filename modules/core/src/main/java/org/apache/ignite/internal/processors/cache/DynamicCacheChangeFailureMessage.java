@@ -117,12 +117,12 @@ public class DynamicCacheChangeFailureMessage implements DiscoveryCustomMessage 
     /**
      * @return Exchange version.
      */
-    @Nullable public GridDhtPartitionExchangeId exchangeId() {
+    public @Nullable GridDhtPartitionExchangeId exchangeId() {
         return exchId;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
+    @Override public @Nullable DiscoveryCustomMessage ackMessage() {
         return null;
     }
 

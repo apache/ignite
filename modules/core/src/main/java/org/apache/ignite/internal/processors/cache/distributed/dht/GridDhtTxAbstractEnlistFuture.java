@@ -897,7 +897,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
      * @param key Key.
      * @return Backup nodes for the given key.
      */
-    @NotNull private List<ClusterNode> backupNodes(KeyCacheObject key) {
+    private @NotNull List<ClusterNode> backupNodes(KeyCacheObject key) {
         List<ClusterNode> dhtNodes = cctx.affinity().nodesByKey(key, tx.topologyVersion());
 
         assert !dhtNodes.isEmpty() && dhtNodes.get(0).id().equals(cctx.localNodeId()) :
@@ -1093,7 +1093,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
     /**
      * @return Timeout exception.
      */
-    @NotNull protected IgniteTxTimeoutCheckedException timeoutException() {
+    protected @NotNull IgniteTxTimeoutCheckedException timeoutException() {
         return new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout for " +
             "transaction [timeout=" + timeout + ", tx=" + tx + ']');
     }

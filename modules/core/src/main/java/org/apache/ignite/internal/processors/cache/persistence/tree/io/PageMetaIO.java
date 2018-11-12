@@ -195,7 +195,7 @@ public class PageMetaIO extends PageIO {
      *
      * @param buf Buffer to read data from.
      */
-    public int getLastAllocatedPageCount(@NotNull final ByteBuffer buf) {
+    public int getLastAllocatedPageCount(final @NotNull ByteBuffer buf) {
         return buf.getInt(LAST_PAGE_COUNT_OFF);
     }
 

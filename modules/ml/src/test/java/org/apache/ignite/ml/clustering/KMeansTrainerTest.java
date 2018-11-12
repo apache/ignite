@@ -104,7 +104,7 @@ public class KMeansTrainerTest extends TrainerTest {
     }
 
     /** */
-    @NotNull private KMeansTrainer createAndCheckTrainer() {
+    private @NotNull KMeansTrainer createAndCheckTrainer() {
         KMeansTrainer trainer = new KMeansTrainer()
             .withDistance(new EuclideanDistance())
             .withAmountOfClusters(10)

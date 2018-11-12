@@ -51,7 +51,7 @@ public class CacheJndiTmLookup implements CacheTmLookup {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public TransactionManager getTm() throws IgniteException {
+    @Override public @Nullable TransactionManager getTm() throws IgniteException {
         assert jndiNames != null;
         assert !jndiNames.isEmpty();
 

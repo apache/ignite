@@ -168,7 +168,7 @@ public class TcpDiscoverySslSecuredUnsecuredTest extends GridCommonAbstractTest 
         }
 
         /** {@inheritDoc} */
-        @Override protected <T> T readMessage(final Socket sock, @Nullable final InputStream in,
+        @Override protected <T> T readMessage(final Socket sock, final @Nullable InputStream in,
             final long timeout) throws IOException, IgniteCheckedException {
             if (cnt-- > 0) {
                 if (plain)

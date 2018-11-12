@@ -837,7 +837,7 @@ class ClusterCachesInfo {
      *
      * @return Caches to be started when this node starts.
      */
-    @Nullable public LocalJoinCachesContext localJoinCachesContext() {
+    public @Nullable LocalJoinCachesContext localJoinCachesContext() {
         if (ctx.isDaemon())
             return null;
 
@@ -1043,7 +1043,7 @@ class ClusterCachesInfo {
      *
      * @return Error message if conflicts was found.
      */
-    @Nullable private String validateRegisteredCaches() {
+    private @Nullable String validateRegisteredCaches() {
         String conflictErr = null;
 
         if (joinDiscoData != null) {
@@ -1722,7 +1722,7 @@ class ClusterCachesInfo {
      * @param grpName Group name.
      * @return Group descriptor if group found.
      */
-    @Nullable private CacheGroupDescriptor cacheGroupByName(String grpName) {
+    private @Nullable CacheGroupDescriptor cacheGroupByName(String grpName) {
         assert grpName != null;
 
         for (CacheGroupDescriptor grpDesc : registeredCacheGrps.values()) {
@@ -1737,7 +1737,7 @@ class ClusterCachesInfo {
      * @param cacheName Cache name.
      * @return Group descriptor.
      */
-    @Nullable private CacheGroupDescriptor nonSharedCacheGroupByCacheName(String cacheName) {
+    private @Nullable CacheGroupDescriptor nonSharedCacheGroupByCacheName(String cacheName) {
         assert cacheName != null;
 
         for (CacheGroupDescriptor grpDesc : registeredCacheGrps.values()) {

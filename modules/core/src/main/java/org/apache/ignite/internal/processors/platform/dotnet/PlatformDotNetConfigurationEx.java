@@ -86,7 +86,7 @@ public class PlatformDotNetConfigurationEx extends PlatformDotNetConfiguration i
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Collection<PlatformCacheExtension> cacheExtensions() {
+    @Override public @Nullable Collection<PlatformCacheExtension> cacheExtensions() {
         Collection<PlatformCacheExtension> exts = new ArrayList<>(2);
 
         exts.add(new PlatformDotNetSessionCacheExtension());

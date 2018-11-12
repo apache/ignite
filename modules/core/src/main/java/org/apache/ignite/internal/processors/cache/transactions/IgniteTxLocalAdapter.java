@@ -355,7 +355,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteTxEntry entry(IgniteTxKey key) {
+    @Override public @Nullable IgniteTxEntry entry(IgniteTxKey key) {
         return txState.entry(key);
     }
 
@@ -399,7 +399,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridTuple<CacheObject> peek(
+    @Override public @Nullable GridTuple<CacheObject> peek(
         GridCacheContext cacheCtx,
         boolean failFast,
         KeyCacheObject key
@@ -1795,7 +1795,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         }
 
         /** {@inheritDoc} */
-        @Override public final IgniteInternalFuture<T> apply(Boolean locked, @Nullable final Exception e) {
+        @Override public final IgniteInternalFuture<T> apply(Boolean locked, final @Nullable Exception e) {
             TransactionDeadlockException deadlockErr = X.cause(e, TransactionDeadlockException.class);
 
             if (e != null && deadlockErr == null) {

@@ -305,7 +305,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Value.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public V localPeek(K key, CachePeekMode[] peekModes, @Nullable IgniteCacheExpiryPolicy plc)
+    public @Nullable V localPeek(K key, CachePeekMode[] peekModes, @Nullable IgniteCacheExpiryPolicy plc)
         throws IgniteCheckedException;
 
     /**
@@ -335,7 +335,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @throws IgniteCheckedException If get operation failed.
      * @throws NullPointerException if the key is {@code null}.
      */
-    @Nullable public V get(K key) throws IgniteCheckedException;
+    public @Nullable V get(K key) throws IgniteCheckedException;
 
     /**
      * Retrieves value mapped to the specified key from cache. Value will only be returned if
@@ -357,7 +357,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @throws IgniteCheckedException If get operation failed.
      * @throws NullPointerException if the key is {@code null}.
      */
-    @Nullable public CacheEntry<K, V> getEntry(K key) throws IgniteCheckedException;
+    public @Nullable CacheEntry<K, V> getEntry(K key) throws IgniteCheckedException;
 
     /**
      * Asynchronously retrieves value mapped to the specified key from cache. Value will only be returned if
@@ -512,7 +512,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws IgniteCheckedException If put operation failed.
      */
-    @Nullable public V getAndPut(K key, V val)
+    public @Nullable V getAndPut(K key, V val)
         throws IgniteCheckedException;
 
     /**
@@ -621,7 +621,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws IgniteCheckedException If put operation failed.
      */
-    @Nullable public V getAndPutIfAbsent(K key, V val) throws IgniteCheckedException;
+    public @Nullable V getAndPutIfAbsent(K key, V val) throws IgniteCheckedException;
 
     /**
      * Asynchronously stores given key-value pair in cache only if cache had no previous mapping for it. If cache
@@ -717,7 +717,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws IgniteCheckedException If replace operation failed.
      */
-    @Nullable public V getAndReplace(K key, V val) throws IgniteCheckedException;
+    public @Nullable V getAndReplace(K key, V val) throws IgniteCheckedException;
 
     /**
      * Asynchronously stores given key-value pair in cache only if there is a previous mapping for it. If cache
@@ -926,7 +926,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Transaction started by this thread or {@code null} if this thread
      *      does not have a transaction.
      */
-    @Nullable public GridNearTxLocal tx();
+    public @Nullable GridNearTxLocal tx();
 
     /**
      * Evicts entry associated with given key from cache. Note, that entry will be evicted
@@ -1070,7 +1070,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @throws NullPointerException If key is {@code null}.
      * @throws IgniteCheckedException If remove operation failed.
      */
-    @Nullable public V getAndRemove(K key)
+    public @Nullable V getAndRemove(K key)
         throws IgniteCheckedException;
 
     /**
@@ -1613,7 +1613,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Value.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public V getForcePrimary(K key) throws IgniteCheckedException;
+    public @Nullable V getForcePrimary(K key) throws IgniteCheckedException;
 
     /**
      * Asynchronously gets value from cache. Will go to primary node even if this is a backup.
@@ -1668,7 +1668,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     /**
      * @return {@link ExpiryPolicy} associated with this projection.
      */
-    @Nullable public ExpiryPolicy expiry();
+    public @Nullable ExpiryPolicy expiry();
 
     /**
      * @param plc {@link ExpiryPolicy} to associate with this projection.
@@ -1693,7 +1693,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Invoke result.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public <T> EntryProcessorResult<T> invoke(K key,
+    public @Nullable <T> EntryProcessorResult<T> invoke(K key,
         EntryProcessor<K, V, T> entryProcessor,
         Object... args) throws IgniteCheckedException;
 
@@ -1807,7 +1807,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Invoke result.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public <T> EntryProcessorResult<T> invoke(
+    public @Nullable <T> EntryProcessorResult<T> invoke(
         @Nullable AffinityTopologyVersion topVer,
         K key,
         EntryProcessor<K, V, T> entryProcessor,

@@ -620,7 +620,7 @@ final class PreparedStatementExImpl implements PreparedStatementEx {
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public <T> T meta(int id) {
+    @Override public @Nullable <T> T meta(int id) {
         return meta != null && id < meta.length ? (T)meta[id] : null;
     }
 

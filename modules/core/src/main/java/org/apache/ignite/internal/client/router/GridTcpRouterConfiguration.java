@@ -164,7 +164,7 @@ public class GridTcpRouterConfiguration {
      * @return SslContextFactory instance.
      * @see GridSslContextFactory
      */
-    @Nullable public GridSslContextFactory getSslContextFactory() {
+    public @Nullable GridSslContextFactory getSslContextFactory() {
         return sslCtxFactory;
     }
 
@@ -198,7 +198,7 @@ public class GridTcpRouterConfiguration {
      *
      * @return Credentials.
      */
-    @Nullable public SecurityCredentialsProvider getSecurityCredentialsProvider() {
+    public @Nullable SecurityCredentialsProvider getSecurityCredentialsProvider() {
         return credsProvider;
     }
 

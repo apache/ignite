@@ -2457,7 +2457,7 @@ public class GridSqlQuerySplitter {
      * @return partition info, or {@code null} if none identified
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable private static CacheQueryPartitionInfo getCacheQueryPartitionInfo(
+    private static @Nullable CacheQueryPartitionInfo getCacheQueryPartitionInfo(
         Column leftCol,
         GridSqlConst rightConst,
         GridSqlParameter rightParam,

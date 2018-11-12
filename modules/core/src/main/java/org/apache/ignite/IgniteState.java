@@ -59,7 +59,7 @@ public enum IgniteState {
      * @param ord Ordinal value.
      * @return Enumerated value.
      */
-    @Nullable public static IgniteState fromOrdinal(byte ord) {
+    public static @Nullable IgniteState fromOrdinal(byte ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

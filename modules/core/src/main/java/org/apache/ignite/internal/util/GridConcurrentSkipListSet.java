@@ -223,14 +223,14 @@ public class GridConcurrentSkipListSet<E> extends GridSerializableSet<E> impleme
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public E pollFirst() {
+    @Override public @Nullable E pollFirst() {
         Map.Entry<E, Object> e = m.pollFirstEntry();
 
         return e == null ? null : e.getKey();
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public E pollLast() {
+    @Override public @Nullable E pollLast() {
         Map.Entry<E, Object> e = m.pollLastEntry();
 
         return e == null ? null : e.getKey();
@@ -251,7 +251,7 @@ public class GridConcurrentSkipListSet<E> extends GridSerializableSet<E> impleme
      *
      * @return First entry or {@code null} if set is empty.
      */
-    @Nullable public E firstx() {
+    public @Nullable E firstx() {
         Map.Entry<E, Object> e = m.firstEntry();
 
         return e == null ? null : e.getKey();
@@ -267,7 +267,7 @@ public class GridConcurrentSkipListSet<E> extends GridSerializableSet<E> impleme
      *
      * @return Last entry or {@code null} if set is empty.
      */
-    @Nullable public E lastx() {
+    public @Nullable E lastx() {
         Map.Entry<E, Object> e = m.lastEntry();
 
         return e == null ? null : e.getKey();

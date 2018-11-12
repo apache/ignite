@@ -138,7 +138,7 @@ public class SecurityCredentials implements Externalizable {
      *
      * @return User object.
      */
-    @Nullable public Object getUserObject() {
+    public @Nullable Object getUserObject() {
         return userObj;
     }
 

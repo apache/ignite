@@ -99,13 +99,13 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
     private String bucketName;
 
     /** Bucket endpoint. */
-    @Nullable private String bucketEndpoint;
+    private @Nullable String bucketEndpoint;
 
     /** Server side encryption algorithm. */
-    @Nullable private String sseAlg;
+    private @Nullable String sseAlg;
 
     /** Sub-folder name to write node addresses. */
-    @Nullable private String keyPrefix;
+    private @Nullable String keyPrefix;
 
     /** Init guard. */
     @GridToStringExclude

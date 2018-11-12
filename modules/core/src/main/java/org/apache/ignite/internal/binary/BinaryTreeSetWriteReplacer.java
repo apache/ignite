@@ -26,7 +26,7 @@ import java.util.TreeSet;
  */
 public class BinaryTreeSetWriteReplacer implements BinaryWriteReplacer {
     /** {@inheritDoc} */
-    @Nullable @Override public Object replace(Object target) {
+    @Override public @Nullable Object replace(Object target) {
         assert target instanceof TreeSet;
 
         return new BinaryTreeSet((TreeSet)target);

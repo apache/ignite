@@ -167,7 +167,7 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object[] invokeArguments() {
+    @Override public @Nullable Object[] invokeArguments() {
         return invokeArgs;
     }
 

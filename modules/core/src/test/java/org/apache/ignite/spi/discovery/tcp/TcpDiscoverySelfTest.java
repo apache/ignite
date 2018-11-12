@@ -316,7 +316,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             final AtomicInteger igniteInstanceNameIdx = new AtomicInteger(1);
 
             GridTestUtils.runMultiThreaded(new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
+                @Override public @Nullable Object call() throws Exception {
                     startGrid(igniteInstanceNameIdx.incrementAndGet());
 
                     return null;
@@ -1052,7 +1052,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             GridTestUtils.assertThrows(
                 log,
                 new Callable<Object>() {
-                    @Nullable @Override public Object call() throws Exception {
+                    @Override public @Nullable Object call() throws Exception {
                         startGrid(1);
 
                         return null;
@@ -1156,7 +1156,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             GridTestUtils.assertThrows(
                 log,
                 new Callable<Object>() {
-                    @Nullable @Override public Object call() throws Exception {
+                    @Override public @Nullable Object call() throws Exception {
                         // Exception will be thrown and output to log.
                         startGrid(3);
 
@@ -1187,7 +1187,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             GridTestUtils.assertThrows(
                 log,
                 new Callable<Object>() {
-                    @Nullable @Override public Object call() throws Exception {
+                    @Override public @Nullable Object call() throws Exception {
                         // Exception will be thrown because we start node which does not use loopback address,
                         // but the first node does.
                         startGridNoOptimize("LoopbackProblemTest");
@@ -1216,7 +1216,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             GridTestUtils.assertThrows(
                 log,
                 new Callable<Object>() {
-                    @Nullable @Override public Object call() throws Exception {
+                    @Override public @Nullable Object call() throws Exception {
                         // Exception will be thrown because we start node which uses loopback address,
                         // but the first node does not.
                         startGridNoOptimize(1);
@@ -1703,7 +1703,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      * @param failOrder Fail order.
      * @return Failed node spi.
      */
-    @NotNull private TestFailedNodesSpi createFailedNodeSpi(int failOrder) {
+    private @NotNull TestFailedNodesSpi createFailedNodeSpi(int failOrder) {
         TestFailedNodesSpi spi = new TestFailedNodesSpi(failOrder);
 
         spi.setConnectionRecoveryTimeout(0);

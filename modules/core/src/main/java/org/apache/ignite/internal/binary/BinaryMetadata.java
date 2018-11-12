@@ -160,7 +160,7 @@ public class BinaryMetadata implements Externalizable {
      * @param fieldName Field name.
      * @return Field type name.
      */
-    @Nullable public String fieldTypeName(String fieldName) {
+    public @Nullable String fieldTypeName(String fieldName) {
         BinaryFieldMetadata meta = fields != null ? fields.get(fieldName) : null;
 
         return meta != null ? BinaryUtils.fieldTypeName(meta.typeId()) : null;
@@ -169,7 +169,7 @@ public class BinaryMetadata implements Externalizable {
     /**
      * @return Affinity key field name.
      */
-    @Nullable public String affinityKeyFieldName() {
+    public @Nullable String affinityKeyFieldName() {
         return affKeyFieldName;
     }
 

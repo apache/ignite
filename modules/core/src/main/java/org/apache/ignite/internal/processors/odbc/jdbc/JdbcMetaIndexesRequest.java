@@ -55,7 +55,7 @@ public class JdbcMetaIndexesRequest extends JdbcRequest {
     /**
      * @return Schema name.
      */
-    @Nullable public String schemaName() {
+    public @Nullable String schemaName() {
         return schemaName;
     }
 

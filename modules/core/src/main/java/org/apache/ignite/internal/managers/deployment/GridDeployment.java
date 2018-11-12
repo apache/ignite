@@ -316,7 +316,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
     /**
      * @return Node participant map.
      */
-    @Nullable @Override public Map<UUID, IgniteUuid> participants() {
+    @Override public @Nullable Map<UUID, IgniteUuid> participants() {
         if (clsLdr instanceof GridDeploymentClassLoader)
             return ((GridDeploymentInfo)clsLdr).participants();
 
@@ -404,7 +404,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
      * @return New instance.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public <T> T newInstance(Class<T> cls) throws IgniteCheckedException {
+    public @Nullable <T> T newInstance(Class<T> cls) throws IgniteCheckedException {
         assert cls != null;
 
         GridTuple<Constructor<?>> t = dfltCtorsCache.get(cls);
@@ -451,8 +451,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
      * @param alias Optional array of aliases.
      * @return Class for given name.
      */
-    @SuppressWarnings({"StringEquality"})
-    @Nullable public Class<?> deployedClass(String clsName, String... alias) {
+    @SuppressWarnings({"StringEquality"}) public @Nullable Class<?> deployedClass(String clsName, String... alias) {
         Class<?> cls = clss.get(clsName);
 
         if (cls == null) {
@@ -556,7 +555,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
      * @return Value of annotated field or method.
      * @throws IgniteCheckedException If failed to find.
      */
-    @Nullable public Object annotatedValue(Object target, Class<? extends Annotation> annCls) throws IgniteCheckedException {
+    public @Nullable Object annotatedValue(Object target, Class<? extends Annotation> annCls) throws IgniteCheckedException {
         return annotatedValue(target, annCls, null, false).get1();
     }
 
@@ -722,7 +721,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
      * @param annCls Annotation class for fields.
      * @return List of fields with given annotation, possibly {@code null}.
      */
-    @Nullable private Collection<Field> fieldsFromCache(Class<?> cls, Class<? extends Annotation> annCls) {
+    private @Nullable Collection<Field> fieldsFromCache(Class<?> cls, Class<? extends Annotation> annCls) {
         assert cls != null;
         assert annCls != null;
 
@@ -758,7 +757,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
      * @param annCls Annotation class for fields.
      * @return List of methods with given annotation, possibly {@code null}.
      */
-    @Nullable private Collection<Method> methodsFromCache(Class<?> cls, Class<? extends Annotation> annCls) {
+    private @Nullable Collection<Method> methodsFromCache(Class<?> cls, Class<? extends Annotation> annCls) {
         assert cls != null;
         assert annCls != null;
 

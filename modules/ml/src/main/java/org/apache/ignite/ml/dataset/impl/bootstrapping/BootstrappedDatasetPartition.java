@@ -57,7 +57,7 @@ public class BootstrappedDatasetPartition implements AutoCloseable, Iterable<Boo
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Iterator<BootstrappedVector> iterator() {
+    @Override public @NotNull Iterator<BootstrappedVector> iterator() {
         return Arrays.stream(vectors).iterator();
     }
 

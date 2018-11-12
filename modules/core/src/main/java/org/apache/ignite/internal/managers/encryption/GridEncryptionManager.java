@@ -306,7 +306,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node,
+    @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node,
         JoiningNodeDiscoveryData discoData) {
         IgniteNodeValidationResult res = super.validateNode(node, discoData);
 
@@ -355,7 +355,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
+    @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node) {
         IgniteNodeValidationResult res = super.validateNode(node);
 
         if (res != null)
@@ -471,7 +471,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param grpId Group id.
      * @return Group encryption key.
      */
-    @Nullable public Serializable groupKey(int grpId) {
+    public @Nullable Serializable groupKey(int grpId) {
         if (grpEncKeys.isEmpty())
             return null;
 
@@ -707,7 +707,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param knownKeys Saved keys set.
      * @return New keys for local cache groups.
      */
-    @Nullable private HashMap<Integer, byte[]> newEncryptionKeys(Set<Integer> knownKeys) {
+    private @Nullable HashMap<Integer, byte[]> newEncryptionKeys(Set<Integer> knownKeys) {
         Map<Integer, CacheGroupDescriptor> grpDescs = ctx.cache().cacheGroupDescriptors();
 
         HashMap<Integer, byte[]> newKeys = null;
@@ -728,7 +728,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /**
      * @return Local encryption keys.
      */
-    @Nullable private HashMap<Integer, byte[]> knownEncryptionKeys() {
+    private @Nullable HashMap<Integer, byte[]> knownEncryptionKeys() {
         if (F.isEmpty(grpEncKeys))
             return null;
 

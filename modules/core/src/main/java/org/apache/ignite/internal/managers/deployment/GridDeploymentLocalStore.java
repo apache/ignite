@@ -120,7 +120,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridDeployment getDeployment(IgniteUuid ldrId) {
+    @Override public @Nullable GridDeployment getDeployment(IgniteUuid ldrId) {
         synchronized (mux) {
             for (Deque<GridDeployment> deps : cache.values())
                 for (GridDeployment dep : deps)
@@ -136,7 +136,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridDeployment getDeployment(GridDeploymentMetadata meta) {
+    @Override public @Nullable GridDeployment getDeployment(GridDeploymentMetadata meta) {
         if (log.isDebugEnabled())
             log.debug("Deployment meta for local deployment: " + meta);
 
@@ -231,7 +231,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
      * @param alias Class alias.
      * @return Deployment.
      */
-    @Nullable private GridDeployment deployment(String alias) {
+    private @Nullable GridDeployment deployment(String alias) {
         Deque<GridDeployment> deps = cache.get(alias);
 
         if (deps != null) {
@@ -341,7 +341,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridDeployment explicitDeploy(Class<?> cls, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public @Nullable GridDeployment explicitDeploy(Class<?> cls, ClassLoader clsLdr) throws IgniteCheckedException {
         try {
             // Make sure not to deploy peer loaded tasks with non-local class loader,
             // if local one exists.

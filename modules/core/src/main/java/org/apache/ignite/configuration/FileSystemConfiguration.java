@@ -226,7 +226,7 @@ public class FileSystemConfiguration {
      *
      * @return Cache configuration object.
      */
-    @Nullable public CacheConfiguration getMetaCacheConfiguration() {
+    public @Nullable CacheConfiguration getMetaCacheConfiguration() {
         return metaCacheCfg;
     }
 
@@ -255,7 +255,7 @@ public class FileSystemConfiguration {
      *
      * @return Cache configuration object.
      */
-    @Nullable public CacheConfiguration getDataCacheConfiguration() {
+    public @Nullable CacheConfiguration getDataCacheConfiguration() {
         return dataCacheCfg;
     }
 
@@ -443,7 +443,7 @@ public class FileSystemConfiguration {
      *
      * @return IPC endpoint configuration.
      */
-    @Nullable public IgfsIpcEndpointConfiguration getIpcEndpointConfiguration() {
+    public @Nullable IgfsIpcEndpointConfiguration getIpcEndpointConfiguration() {
         return ipcEndpointCfg;
     }
 
@@ -573,7 +573,7 @@ public class FileSystemConfiguration {
      *
      * @return Map of paths to {@code IGFS} modes.
      */
-    @Nullable public Map<String, IgfsMode> getPathModes() {
+    public @Nullable Map<String, IgfsMode> getPathModes() {
         return pathModes;
     }
 

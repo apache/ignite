@@ -81,7 +81,7 @@ public class IgniteTestResources {
     /**
      * @return Default MBean server or {@code null} if {@code IGNITE_MBEANS_DISABLED} is configured.
      */
-    @Nullable private static MBeanServer prepareMBeanServer() {
+    private static @Nullable MBeanServer prepareMBeanServer() {
         return U.IGNITE_MBEANS_DISABLED ? null : ManagementFactory.getPlatformMBeanServer();
     }
 
@@ -141,7 +141,7 @@ public class IgniteTestResources {
     /**
      * @return Local host.
      */
-    @Nullable private String localHost() {
+    private @Nullable String localHost() {
         try {
             return U.getLocalHost().getHostAddress();
         }

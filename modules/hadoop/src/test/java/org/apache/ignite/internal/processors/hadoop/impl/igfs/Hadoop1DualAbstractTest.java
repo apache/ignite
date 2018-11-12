@@ -146,7 +146,7 @@ public abstract class Hadoop1DualAbstractTest extends IgfsDualAbstractSelfTest {
         private boolean started;
 
         /** {@inheritDoc} */
-        @Nullable @Override public String map(String name) {
+        @Override public @Nullable String map(String name) {
             assert started;
             assert name != null && name.contains("@");
 

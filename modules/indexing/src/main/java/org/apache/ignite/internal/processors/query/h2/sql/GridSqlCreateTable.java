@@ -188,7 +188,7 @@ public class GridSqlCreateTable extends GridSqlStatement {
     /**
      * @return Backups number for new cache.
      */
-    @Nullable public Integer backups() {
+    public @Nullable Integer backups() {
         return backups;
     }
 

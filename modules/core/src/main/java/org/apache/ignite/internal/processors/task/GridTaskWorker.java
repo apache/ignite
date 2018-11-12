@@ -357,8 +357,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
      * @param key Thread-local context key.
      * @return Thread-local context value, if any.
      */
-    @SuppressWarnings({"unchecked"})
-    @Nullable private <V> V getThreadContext(GridTaskThreadContextKey key) {
+    @SuppressWarnings({"unchecked"}) private @Nullable <V> V getThreadContext(GridTaskThreadContextKey key) {
         return thCtx == null ? null : (V)thCtx.get(key);
     }
 
@@ -1039,11 +1038,11 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
      * @param results Existing job results.
      * @return Job result policy.
      */
-    @Nullable private ComputeJobResultPolicy result(final ComputeJobResult jobRes, final List<ComputeJobResult> results) {
+    private @Nullable ComputeJobResultPolicy result(final ComputeJobResult jobRes, final List<ComputeJobResult> results) {
         assert !Thread.holdsLock(mux);
 
         return U.wrapThreadLoader(dep.classLoader(), new CO<ComputeJobResultPolicy>() {
-            @Nullable @Override public ComputeJobResultPolicy apply() {
+            @Override public @Nullable ComputeJobResultPolicy apply() {
                 try {
                     // Obtain job result policy.
                     ComputeJobResultPolicy plc = null;
@@ -1134,7 +1133,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             try {
                 // Reduce results.
                 reduceRes = U.wrapThreadLoader(dep.classLoader(), new Callable<R>() {
-                    @Nullable @Override public R call() {
+                    @Override public @Nullable R call() {
                         return task.reduce(results);
                     }
                 });

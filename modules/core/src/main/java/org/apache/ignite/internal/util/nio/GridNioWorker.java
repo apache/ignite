@@ -39,7 +39,7 @@ interface GridNioWorker {
      * @param ses Session.
      * @return Session state change requests.
      */
-    @Nullable public List<GridNioServer.SessionChangeRequest> clearSessionRequests(GridNioSession ses);
+    public @Nullable List<GridNioServer.SessionChangeRequest> clearSessionRequests(GridNioSession ses);
 
     /**
      * @param ses Session to register write interest for.

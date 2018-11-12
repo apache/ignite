@@ -40,7 +40,7 @@ public class GridCacheQueryJdbcValidationTask extends ComputeTaskSplitAdapter<St
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected Collection<? extends ComputeJob> split(int gridSize, @Nullable final String cacheName) {
+    @Override protected Collection<? extends ComputeJob> split(int gridSize, final @Nullable String cacheName) {
         return Collections.singleton(new ComputeJobAdapter() {
             @IgniteInstanceResource
             private Ignite ignite;

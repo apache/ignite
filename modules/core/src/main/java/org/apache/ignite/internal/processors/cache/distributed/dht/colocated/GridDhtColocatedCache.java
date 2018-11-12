@@ -287,7 +287,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Map<K, V>> getAllAsync(
-        @Nullable final Collection<? extends K> keys,
+        final @Nullable Collection<? extends K> keys,
         boolean forcePrimary,
         boolean skipTx,
         @Nullable UUID subjId,
@@ -941,7 +941,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      */
     IgniteInternalFuture<Exception> lockAllAsync(
         final GridCacheContext<?, ?> cacheCtx,
-        @Nullable final GridNearTxLocal tx,
+        final @Nullable GridNearTxLocal tx,
         final long threadId,
         final GridCacheVersion ver,
         final AffinityTopologyVersion topVer,
@@ -951,7 +951,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final long timeout,
         final long createTtl,
         final long accessTtl,
-        @Nullable final CacheEntryPredicate[] filter,
+        final @Nullable CacheEntryPredicate[] filter,
         final boolean skipStore,
         final boolean keepBinary
     ) {
@@ -1025,7 +1025,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      */
     private IgniteInternalFuture<Exception> lockAllAsync0(
         GridCacheContext<?, ?> cacheCtx,
-        @Nullable final GridNearTxLocal tx,
+        final @Nullable GridNearTxLocal tx,
         long threadId,
         final GridCacheVersion ver,
         AffinityTopologyVersion topVer,
@@ -1035,7 +1035,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final long timeout,
         final long createTtl,
         final long accessTtl,
-        @Nullable final CacheEntryPredicate[] filter,
+        final @Nullable CacheEntryPredicate[] filter,
         boolean skipStore,
         boolean keepBinary) {
         int cnt = keys.size();

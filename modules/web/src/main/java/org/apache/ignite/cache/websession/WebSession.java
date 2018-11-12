@@ -50,7 +50,7 @@ class WebSession implements HttpSession, Externalizable {
 
     /** Empty session context. */
     private static final HttpSessionContext EMPTY_SES_CTX = new HttpSessionContext() {
-        @Nullable @Override public HttpSession getSession(String id) {
+        @Override public @Nullable HttpSession getSession(String id) {
             return null;
         }
 

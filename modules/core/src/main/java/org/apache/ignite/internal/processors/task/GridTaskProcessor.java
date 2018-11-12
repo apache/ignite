@@ -343,7 +343,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
      * @return Thread-local context value associated with given {@code key} - or {@code null}
      *      if value with given {@code key} doesn't exist.
      */
-    @Nullable public <T> T getThreadContext(GridTaskThreadContextKey key) {
+    public @Nullable <T> T getThreadContext(GridTaskThreadContextKey key) {
         assert(key != null);
 
         Map<GridTaskThreadContextKey, Object> map = thCtx.get();
@@ -826,7 +826,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
      * @param sesId Task's session id.
      * @return A {@link ComputeTaskInternalFuture} instance or {@code null} if no such task found.
      */
-    @Nullable public <R> ComputeTaskInternalFuture<R> taskFuture(IgniteUuid sesId) {
+    public @Nullable <R> ComputeTaskInternalFuture<R> taskFuture(IgniteUuid sesId) {
         GridTaskWorker<?, ?> taskWorker = tasks.get(sesId);
 
         return taskWorker != null ? (ComputeTaskInternalFuture<R>)taskWorker.getTaskFuture() : null;

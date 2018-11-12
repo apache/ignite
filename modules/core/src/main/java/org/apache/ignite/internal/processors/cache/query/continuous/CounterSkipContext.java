@@ -62,7 +62,7 @@ public class CounterSkipContext {
     /**
      * @return Entries
      */
-    @Nullable public List<Runnable> processClosures() {
+    public @Nullable List<Runnable> processClosures() {
         return procC;
     }
 

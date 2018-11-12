@@ -205,14 +205,14 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) {
             return Collections.singleton(new ComputeJobAdapter() {
-                @Nullable @Override public Object execute() {
+                @Override public @Nullable Object execute() {
                     return null;
                 }
             });
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Void reduce(List<ComputeJobResult> results) {
+        @Override public @Nullable Void reduce(List<ComputeJobResult> results) {
             return null;
         }
     }
@@ -225,14 +225,14 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) {
             return Collections.singleton(new ComputeJobAdapter() {
-                @Nullable @Override public Object execute() {
+                @Override public @Nullable Object execute() {
                     throw new IgniteException("Task failed.");
                 }
             });
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Void reduce(List<ComputeJobResult> results) {
+        @Override public @Nullable Void reduce(List<ComputeJobResult> results) {
             return null;
         }
     }

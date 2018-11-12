@@ -78,7 +78,7 @@ public class HadoopMapReducePlanTopology {
      * @param host Host.
      * @return Group.
      */
-    @Nullable public HadoopMapReducePlanGroup groupForHost(String host) {
+    public @Nullable HadoopMapReducePlanGroup groupForHost(String host) {
         return hostToGrp.get(host);
     }
 

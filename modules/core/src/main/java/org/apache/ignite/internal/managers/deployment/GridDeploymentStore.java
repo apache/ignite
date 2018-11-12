@@ -56,7 +56,7 @@ public interface GridDeploymentStore {
      * @param meta Deployment metadata.
      * @return Deployment.
      */
-    @Nullable public GridDeployment getDeployment(GridDeploymentMetadata meta);
+    public @Nullable GridDeployment getDeployment(GridDeploymentMetadata meta);
 
     /**
      * Gets class loader based on ID.
@@ -65,7 +65,7 @@ public interface GridDeploymentStore {
      * @param ldrId Class loader ID.
      * @return Class loader of {@code null} if not found.
      */
-    @Nullable public GridDeployment getDeployment(IgniteUuid ldrId);
+    public @Nullable GridDeployment getDeployment(IgniteUuid ldrId);
 
     /**
      * @return All current deployments.

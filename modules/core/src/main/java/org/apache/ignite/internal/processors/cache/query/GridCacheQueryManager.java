@@ -1414,7 +1414,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Iterator.
      * @throws IgniteCheckedException In case of error.
      */
-    @Nullable private QueryResult<K, V> queryResult(final GridCacheQueryInfo qryInfo,
+    private @Nullable QueryResult<K, V> queryResult(final GridCacheQueryInfo qryInfo,
         String taskName) throws IgniteCheckedException {
         assert qryInfo != null;
 

@@ -351,22 +351,22 @@ public class FastSizeDeque<E> implements Deque<E> {
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Iterator<E> iterator() {
+    @Override public @NotNull Iterator<E> iterator() {
         return new Iter(deque.iterator());
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Object[] toArray() {
+    @Override public @NotNull Object[] toArray() {
         return deque.toArray();
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public <T> T[] toArray(@NotNull T[] ts) {
+    @Override public @NotNull <T> T[] toArray(@NotNull T[] ts) {
         return deque.toArray(ts);
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Iterator<E> descendingIterator() {
+    @Override public @NotNull Iterator<E> descendingIterator() {
         return new Iter(deque.descendingIterator());
     }
 }

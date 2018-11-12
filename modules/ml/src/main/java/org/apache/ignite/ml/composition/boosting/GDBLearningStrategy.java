@@ -137,7 +137,7 @@ public class GDBLearningStrategy {
      * @param mdlToUpdate Model to update.
      * @return list of already learned models.
      */
-    @NotNull protected List<Model<Vector, Double>> initLearningState(GDBTrainer.GDBModel mdlToUpdate) {
+    protected @NotNull List<Model<Vector, Double>> initLearningState(GDBTrainer.GDBModel mdlToUpdate) {
         List<Model<Vector, Double>> models = new ArrayList<>();
         if(mdlToUpdate != null) {
             models.addAll(mdlToUpdate.getModels());

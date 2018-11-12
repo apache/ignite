@@ -112,7 +112,7 @@ public abstract class IgfsUserContext {
      * {@link #doAs(String, IgniteOutClosure)} call on the call stack.
      * @return The current user, may be null.
      */
-    @Nullable public static String currentUser() {
+    public static @Nullable String currentUser() {
         return userStackThreadLocal.get();
     }
 }

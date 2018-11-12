@@ -137,7 +137,7 @@ public class JdbcBulkLoadBatchRequest extends JdbcRequest {
      *
      * @return data if data was not supplied
      */
-    @NotNull public byte[] data() {
+    public @NotNull byte[] data() {
         return data;
     }
 

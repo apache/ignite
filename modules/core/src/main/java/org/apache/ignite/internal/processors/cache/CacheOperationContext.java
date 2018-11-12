@@ -156,7 +156,7 @@ public class CacheOperationContext implements Serializable {
      *
      * @return Client ID.
      */
-    @Nullable public UUID subjectId() {
+    public @Nullable UUID subjectId() {
         return subjId;
     }
 
@@ -165,7 +165,7 @@ public class CacheOperationContext implements Serializable {
      *
      * @return Datacenter ID.
      */
-    @Nullable public Byte dataCenterId() {
+    public @Nullable Byte dataCenterId() {
         return dataCenterId;
     }
 
@@ -215,7 +215,7 @@ public class CacheOperationContext implements Serializable {
     /**
      * @return {@link ExpiryPolicy} associated with this projection.
      */
-    @Nullable public ExpiryPolicy expiry() {
+    public @Nullable ExpiryPolicy expiry() {
         return expiryPlc;
     }
 

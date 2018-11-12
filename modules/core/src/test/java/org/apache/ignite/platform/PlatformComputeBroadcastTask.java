@@ -38,7 +38,7 @@ import java.util.UUID;
  */
 public class PlatformComputeBroadcastTask extends ComputeTaskAdapter<Object, Collection<UUID>> {
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) {
+    @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) {
         Map<ComputeJob, ClusterNode> jobs = new HashMap<>();
 
         for (ClusterNode node : subgrid)
@@ -48,7 +48,7 @@ public class PlatformComputeBroadcastTask extends ComputeTaskAdapter<Object, Col
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Collection<UUID> reduce(List<ComputeJobResult> results) {
+    @Override public @Nullable Collection<UUID> reduce(List<ComputeJobResult> results) {
         List<UUID> ids = new ArrayList<>();
 
         for (ComputeJobResult res : results)
@@ -66,7 +66,7 @@ public class PlatformComputeBroadcastTask extends ComputeTaskAdapter<Object, Col
         private Ignite ignite;
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object execute() {
+        @Override public @Nullable Object execute() {
             try {
                 Thread.sleep(50); // Short sleep for cancellation tests.
             }

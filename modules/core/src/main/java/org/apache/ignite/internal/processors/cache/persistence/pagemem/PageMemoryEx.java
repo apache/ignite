@@ -121,7 +121,7 @@ public interface PageMemoryEx extends PageMemory {
      * @return {@code Partition generation} if data was read, {@code null} otherwise (data already saved to storage).
      * @throws IgniteException If failed to obtain page data.
      */
-    @Nullable public Integer getForCheckpoint(FullPageId pageId, ByteBuffer outBuf, CheckpointMetricsTracker tracker);
+    public @Nullable Integer getForCheckpoint(FullPageId pageId, ByteBuffer outBuf, CheckpointMetricsTracker tracker);
 
     /**
      * Marks partition as invalid / outdated.

@@ -94,7 +94,7 @@ public class GridKeyLock {
      * @return Sync object that should be passed to {@link #unlock(Object, Object)} method or
      *      {@code null} if try lock failed.
      */
-    @Nullable public <T> Object tryLock(T key) {
+    public @Nullable <T> Object tryLock(T key) {
         assert key != null;
 
         Sync t = new Sync();

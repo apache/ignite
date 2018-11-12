@@ -77,7 +77,7 @@ public class OdbcQueryExecuteBatchResult {
     /**
      * @return Error message.
      */
-    @Nullable public String errorMessage() {
+    public @Nullable String errorMessage() {
         return errorMessage;
     }
 

@@ -119,12 +119,12 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheContext context() {
+    @Override public @Nullable GridCacheContext context() {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public EvictableEntry wrapEviction() {
+    @Override public @Nullable EvictableEntry wrapEviction() {
         return null;
     }
 
@@ -288,7 +288,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public List<GridCacheEntryInfo> allVersionsInfo()
+    @Override public @Nullable List<GridCacheEntryInfo> allVersionsInfo()
         throws IgniteCheckedException {
         return null;
     }
@@ -350,7 +350,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    @Nullable @Override public CacheObject peekVisibleValue() {
+    @Override public @Nullable CacheObject peekVisibleValue() {
         assert false;
 
         return null;
@@ -434,7 +434,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    @Nullable @Override public EntryGetResult innerGetVersioned(
+    @Override public @Nullable EntryGetResult innerGetVersioned(
         @Nullable GridCacheVersion ver,
         IgniteInternalTx tx,
         boolean updateMetrics,
@@ -912,7 +912,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheObject peek(boolean heap,
+    @Override public @Nullable CacheObject peek(boolean heap,
         boolean offheap,
         AffinityTopologyVersion topVer,
         @Nullable IgniteCacheExpiryPolicy plc)
@@ -921,7 +921,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheObject peek(
+    @Override public @Nullable CacheObject peek(
         @Nullable IgniteCacheExpiryPolicy plc)
         throws GridCacheEntryRemovedException, IgniteCheckedException {
         return null;

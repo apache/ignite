@@ -296,7 +296,7 @@ public class ExchangeLatchManager {
      * @param topVer Latch topology version.
      * @return Oldest alive server node with latch functionality.
      */
-    @Nullable private ClusterNode getLatchCoordinator(AffinityTopologyVersion topVer) {
+    private @Nullable ClusterNode getLatchCoordinator(AffinityTopologyVersion topVer) {
         Collection<ClusterNode> aliveNodes = aliveNodesForTopologyVer(topVer);
 
         List<ClusterNode> applicableNodes = aliveNodes

@@ -172,7 +172,7 @@ public class GridJobStealingCollisionSpiCustomTopologySelfTest extends
      */
     private GridTestTaskSession createTaskSession(final ClusterNode node) {
         return new GridTestTaskSession() {
-            @Nullable @Override public Collection<UUID> getTopology() {
+            @Override public @Nullable Collection<UUID> getTopology() {
                 return Collections.singleton(node.id());
             }
         };

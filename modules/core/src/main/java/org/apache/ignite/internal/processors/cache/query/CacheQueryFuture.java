@@ -36,7 +36,7 @@ public interface CacheQueryFuture<T> extends IgniteInternalFuture<Collection<T>>
      * @return Next fetched element or {@code null} if all the elements have been fetched.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public T next() throws IgniteCheckedException;
+    public @Nullable T next() throws IgniteCheckedException;
 
     /**
      * Checks if all data is fetched by the query.

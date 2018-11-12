@@ -316,7 +316,7 @@ class HadoopV2JobResourceManager {
      *
      * @return Class path collection.
      */
-    @Nullable public URL[] classPath() {
+    public @Nullable URL[] classPath() {
         return clsPath;
     }
 }

@@ -42,7 +42,7 @@ public class VisorContentionTask extends VisorMultiNodeTask<VisorContentionTaskA
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Nullable @Override protected VisorContentionTaskResult reduce0(List<ComputeJobResult> list) throws IgniteException {
+    @Override protected @Nullable VisorContentionTaskResult reduce0(List<ComputeJobResult> list) throws IgniteException {
         Map<UUID, Exception> exceptions = new HashMap<>();
         List<VisorContentionJobResult> infos = new ArrayList<>();
 

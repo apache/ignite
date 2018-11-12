@@ -114,7 +114,7 @@ public class LocalFileSystemIgfsFile implements IgfsFile {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String property(String name, @Nullable String dfltVal) {
+    @Override public @Nullable String property(String name, @Nullable String dfltVal) {
         if (props != null) {
             String res = props.get(name);
 

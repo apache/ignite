@@ -93,7 +93,7 @@ public class CacheStatisticsClearMessage implements DiscoveryCustomMessage {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
+    @Override public @Nullable DiscoveryCustomMessage ackMessage() {
         return initial() ? new CacheStatisticsClearMessage(this) : null;
     }
 

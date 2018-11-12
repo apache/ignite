@@ -88,7 +88,7 @@ public class TestCompatibilityPluginProvider implements PluginProvider {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Serializable provideDiscoveryData(UUID nodeId) {
+    @Override public @Nullable Serializable provideDiscoveryData(UUID nodeId) {
         return null;
     }
 
@@ -103,7 +103,7 @@ public class TestCompatibilityPluginProvider implements PluginProvider {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object createComponent(PluginContext ctx, Class cls) {
+    @Override public @Nullable Object createComponent(PluginContext ctx, Class cls) {
         if (DiscoveryNodeValidationProcessor.class == cls)
             return new DisabledValidationProcessor(kCtx);
 

@@ -144,7 +144,7 @@ public class OptimizedMarshallerIndexNameTest extends GridCommonAbstractTest {
      *
      * @return The name of subdirectory (the short name of the test class).
      */
-    @NotNull private String workSubdir() {
+    private @NotNull String workSubdir() {
         return getClass().getSimpleName();
     }
 

@@ -297,7 +297,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     /**
      * @return Transaction isolation or {@code null} if no transaction.
      */
-    @Nullable private TransactionIsolation isolation() {
+    private @Nullable TransactionIsolation isolation() {
         return tx == null ? null : tx.isolation();
     }
 
@@ -317,7 +317,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      *      implicit transaction accesses locked entry.
      * @throws IgniteCheckedException If failed to add entry due to external locking.
      */
-    @Nullable private GridCacheMvccCandidate addEntry(GridDistributedCacheEntry entry) throws IgniteCheckedException {
+    private @Nullable GridCacheMvccCandidate addEntry(GridDistributedCacheEntry entry) throws IgniteCheckedException {
         IgniteTxKey txKey = entry.txKey();
 
         GridCacheMvccCandidate cand = cctx.mvcc().explicitLock(threadId, txKey);
@@ -813,7 +813,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      * @param remap Remap flag.
      * @param c Optional closure to run after map.
      */
-    private void mapOnTopology(final boolean remap, @Nullable final Runnable c) {
+    private void mapOnTopology(final boolean remap, final @Nullable Runnable c) {
         // We must acquire topology snapshot from the topology version future.
         cctx.topology().readLock();
 

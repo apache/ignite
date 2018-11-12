@@ -332,7 +332,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public IgniteInternalFuture<Map<K, V>> getAllAsync(
-        @Nullable final Collection<? extends K> keys,
+        final @Nullable Collection<? extends K> keys,
         final boolean forcePrimary,
         boolean skipTx,
         @Nullable UUID subjId,
@@ -747,12 +747,12 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
      * @return Completion future.
      */
     private IgniteInternalFuture updateAllAsync0(
-        @Nullable final Map<? extends K, ? extends V> map,
-        @Nullable final Map<? extends K, ? extends EntryProcessor> invokeMap,
-        @Nullable final Object[] invokeArgs,
+        final @Nullable Map<? extends K, ? extends V> map,
+        final @Nullable Map<? extends K, ? extends EntryProcessor> invokeMap,
+        final @Nullable Object[] invokeArgs,
         final boolean retval,
         final boolean rawRetval,
-        @Nullable final CacheEntryPredicate filter
+        final @Nullable CacheEntryPredicate filter
     ) {
         final GridCacheOperation op = invokeMap != null ? TRANSFORM : UPDATE;
 
@@ -798,10 +798,10 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
      * @return Completion future.
      */
     private IgniteInternalFuture removeAllAsync0(
-        @Nullable final Collection<? extends K> keys,
+        final @Nullable Collection<? extends K> keys,
         final boolean retval,
         final boolean rawRetval,
-        @Nullable final CacheEntryPredicate filter
+        final @Nullable CacheEntryPredicate filter
     ) {
         final boolean writeThrough = ctx.writeThrough();
 
@@ -1347,8 +1347,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
      * @param transformed {@code True} if transform operation performed.
      * @return Partial update exception.
      */
-    @SuppressWarnings({"unchecked", "ConstantConditions"})
-    @Nullable private CachePartialUpdateCheckedException updatePartialBatch(
+    @SuppressWarnings({"unchecked", "ConstantConditions"}) private @Nullable CachePartialUpdateCheckedException updatePartialBatch(
         List<GridCacheEntryEx> entries,
         final GridCacheVersion ver,
         @Nullable List<CacheObject> writeVals,
@@ -1572,7 +1571,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
     /**
      * @return Expiry policy.
      */
-    @Nullable private ExpiryPolicy expiryPerCall() {
+    private @Nullable ExpiryPolicy expiryPerCall() {
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         ExpiryPolicy expiry = opCtx != null ? opCtx.expiry() : null;

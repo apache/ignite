@@ -40,7 +40,7 @@ public class BasicUserNameMapper implements UserNameMapper {
     private String dfltUsrName;
 
     /** {@inheritDoc} */
-    @Nullable @Override public String map(String name) {
+    @Override public @Nullable String map(String name) {
         String res = mappings != null ? mappings.get(name) : null;
 
         return res != null ? res : useDfltUsrName ? dfltUsrName : name;
@@ -51,7 +51,7 @@ public class BasicUserNameMapper implements UserNameMapper {
      *
      * @return Mappings.
      */
-    @Nullable public Map<String, String> getMappings() {
+    public @Nullable Map<String, String> getMappings() {
         return mappings;
     }
 
@@ -92,7 +92,7 @@ public class BasicUserNameMapper implements UserNameMapper {
      *
      * @return Default user name.
      */
-    @Nullable public String getDefaultUserName() {
+    public @Nullable String getDefaultUserName() {
         return dfltUsrName;
     }
 

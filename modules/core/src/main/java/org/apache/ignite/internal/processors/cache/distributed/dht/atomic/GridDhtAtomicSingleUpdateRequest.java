@@ -258,42 +258,42 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public CacheObject value(int idx) {
+    @Override public @Nullable CacheObject value(int idx) {
         assert idx == 0 : idx;
 
         return near() ? null : val;
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public CacheObject previousValue(int idx) {
+    @Override public @Nullable CacheObject previousValue(int idx) {
         assert idx == 0 : idx;
 
         return prevVal;
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public CacheObject nearValue(int idx) {
+    @Override public @Nullable CacheObject nearValue(int idx) {
         assert idx == 0 : idx;
 
         return near() ? val : null;
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public EntryProcessor<Object, Object, Object> entryProcessor(int idx) {
+    @Override public @Nullable EntryProcessor<Object, Object, Object> entryProcessor(int idx) {
         assert idx == 0 : idx;
 
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public EntryProcessor<Object, Object, Object> nearEntryProcessor(int idx) {
+    @Override public @Nullable EntryProcessor<Object, Object, Object> nearEntryProcessor(int idx) {
         assert idx == 0 : idx;
 
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public GridCacheVersion conflictVersion(int idx) {
+    @Override public @Nullable GridCacheVersion conflictVersion(int idx) {
         assert idx == 0 : idx;
 
         return null;
@@ -328,7 +328,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public Object[] invokeArguments() {
+    @Override public @Nullable Object[] invokeArguments() {
         return null;
     }
 

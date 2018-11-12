@@ -131,7 +131,7 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Collection<SecurityPermission> systemPermissions() {
+    @Override public @Nullable Collection<SecurityPermission> systemPermissions() {
         return systemPermissions;
     }
 

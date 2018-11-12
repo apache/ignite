@@ -229,7 +229,7 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public WALPointer addRecord(WALRecord rec) throws StorageException {
+    @Override public @Nullable WALPointer addRecord(WALRecord rec) throws StorageException {
         assert rec.size() > 0 || rec.getClass() == FakeRecord.class;
 
         boolean flushed = false;

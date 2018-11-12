@@ -617,7 +617,7 @@ public class GridSqlQueryParser {
      * @return Query with {@code key} and {@code val} columns appended to the list of columns,
      *     if it's an {@code FOR UPDATE} query, or {@code null} if nothing has to be done.
      */
-    @NotNull public static String rewriteQueryForUpdateIfNeeded(Prepared p, boolean inTx) {
+    public static @NotNull String rewriteQueryForUpdateIfNeeded(Prepared p, boolean inTx) {
         GridSqlStatement gridStmt = new GridSqlQueryParser(false).parse(p);
         return rewriteQueryForUpdateIfNeeded(gridStmt, inTx);
     }
@@ -628,7 +628,7 @@ public class GridSqlQueryParser {
      * @return Query with {@code key} and {@code val} columns appended to the list of columns,
      *     if it's an {@code FOR UPDATE} query, or {@code null} if nothing has to be done.
      */
-    @NotNull public static String rewriteQueryForUpdateIfNeeded(GridSqlStatement stmt, boolean inTx) {
+    public static @NotNull String rewriteQueryForUpdateIfNeeded(GridSqlStatement stmt, boolean inTx) {
         // We have checked above that it's not an UNION query, so it's got to be SELECT.
         assert stmt instanceof GridSqlSelect;
 
@@ -1689,7 +1689,7 @@ public class GridSqlQueryParser {
      * @param stmt Prepared.
      * @return Target table.
      */
-    @NotNull public static GridH2Table dmlTable(@NotNull Prepared stmt) {
+    public static @NotNull GridH2Table dmlTable(@NotNull Prepared stmt) {
         Table table;
 
         if (stmt.getClass() == Insert.class)

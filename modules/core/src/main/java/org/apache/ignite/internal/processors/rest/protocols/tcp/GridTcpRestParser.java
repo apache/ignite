@@ -94,7 +94,7 @@ public class GridTcpRestParser implements GridNioParser {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridClientMessage decode(GridNioSession ses, ByteBuffer buf) throws IOException,
+    @Override public @Nullable GridClientMessage decode(GridNioSession ses, ByteBuffer buf) throws IOException,
         IgniteCheckedException {
         ParserState state = ses.removeMeta(PARSER_STATE.ordinal());
 
@@ -256,7 +256,7 @@ public class GridTcpRestParser implements GridNioParser {
      * @throws IOException If packet cannot be parsed.
      * @throws IgniteCheckedException If deserialization error occurred.
      */
-    @Nullable private GridClientMessage parseMemcachePacket(GridNioSession ses, ByteBuffer buf, ParserState state)
+    private @Nullable GridClientMessage parseMemcachePacket(GridNioSession ses, ByteBuffer buf, ParserState state)
         throws IOException, IgniteCheckedException {
         assert state.packetType() == GridClientPacketType.MEMCACHE;
         assert state.packet() != null;
@@ -352,7 +352,7 @@ public class GridTcpRestParser implements GridNioParser {
      * @param state Parser state.
      * @return True if a hint was parsed, false if still need more bytes to parse.
      */
-    @Nullable private GridClientMessage parseHandshake(ByteBuffer buf, ParserState state) {
+    private @Nullable GridClientMessage parseHandshake(ByteBuffer buf, ParserState state) {
         assert state.packetType() == GridClientPacketType.IGNITE_HANDSHAKE;
 
         int idx = state.index();
@@ -406,7 +406,7 @@ public class GridTcpRestParser implements GridNioParser {
      * @throws IOException If packet parsing or deserialization failed.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable private GridClientMessage parseCustomPacket(GridNioSession ses, ByteBuffer buf, ParserState state)
+    private @Nullable GridClientMessage parseCustomPacket(GridNioSession ses, ByteBuffer buf, ParserState state)
         throws IOException, IgniteCheckedException {
         assert state.packetType() == GridClientPacketType.IGNITE;
         assert state.packet() == null;
@@ -478,7 +478,7 @@ public class GridTcpRestParser implements GridNioParser {
      * In case of {@code null} result, the input buffer is empty (read fully).
      * @throws IOException If IO error occurs.
      */
-    @Nullable private byte[] statefulRead(ByteBuffer buf, ByteArrayOutputStream intBuf, int size) throws IOException {
+    private @Nullable byte[] statefulRead(ByteBuffer buf, ByteArrayOutputStream intBuf, int size) throws IOException {
         if (intBuf.size() + buf.remaining() >= size) {
             int off = 0;
             byte[] bytes = new byte[size];
@@ -898,7 +898,7 @@ public class GridTcpRestParser implements GridNioParser {
         /**
          * @return Pending packet.
          */
-        @Nullable public GridClientMessage packet() {
+        public @Nullable GridClientMessage packet() {
             return packet;
         }
 

@@ -43,12 +43,12 @@ import java.util.Map;
  */
 public class PlatformComputeBinarizableArgTask extends ComputeTaskAdapter<Object, Integer> {
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) {
+    @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) {
         return Collections.singletonMap(new BinarizableArgJob(arg), F.first(subgrid));
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Integer reduce(List<ComputeJobResult> results) {
+    @Override public @Nullable Integer reduce(List<ComputeJobResult> results) {
         ComputeJobResult res = results.get(0);
 
         if (res.getException() != null)
@@ -85,7 +85,7 @@ public class PlatformComputeBinarizableArgTask extends ComputeTaskAdapter<Object
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object execute() {
+        @Override public @Nullable Object execute() {
             BinaryObjectEx arg0 = ((BinaryObjectEx)arg);
 
             BinaryType meta = ignite.binary().type(arg0.typeId());

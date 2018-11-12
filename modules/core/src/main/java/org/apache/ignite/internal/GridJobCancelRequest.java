@@ -88,7 +88,7 @@ public class GridJobCancelRequest implements Message {
      *
      * @return Execution ID of task to be cancelled.
      */
-    @Nullable public IgniteUuid sessionId() {
+    public @Nullable IgniteUuid sessionId() {
         return sesId;
     }
 
@@ -98,7 +98,7 @@ public class GridJobCancelRequest implements Message {
      *
      * @return Execution ID of job to be cancelled.
      */
-    @Nullable public IgniteUuid jobId() {
+    public @Nullable IgniteUuid jobId() {
         return jobId;
     }
 

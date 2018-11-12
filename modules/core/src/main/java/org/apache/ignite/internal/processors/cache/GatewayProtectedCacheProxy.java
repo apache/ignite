@@ -1535,7 +1535,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
      *
      * @return Cache Gateway.
      */
-    @Nullable private GridCacheGateway<K, V> gate() {
+    private @Nullable GridCacheGateway<K, V> gate() {
         GridCacheContext<K, V> cacheContext = delegate.context();
         return cacheContext != null ? cacheContext.gate() : null;
     }

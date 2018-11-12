@@ -101,7 +101,7 @@ public final class GridRouterFactory {
      * @param id Router Id.
      * @return Router with the given id or {@code null} if router not found.
      */
-    @Nullable public static GridTcpRouter tcpRouter(UUID id) {
+    public static @Nullable GridTcpRouter tcpRouter(UUID id) {
         return tcpRouters.get(id);
     }
 

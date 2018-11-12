@@ -37,7 +37,7 @@ public interface GridCacheVersionedEntry<K, V> {
      * @param ctx Object value context.
      * @return Entry's value.
      */
-    @Nullable public V value(CacheObjectValueContext ctx);
+    public @Nullable V value(CacheObjectValueContext ctx);
 
     /**
      * Gets entry's TTL.

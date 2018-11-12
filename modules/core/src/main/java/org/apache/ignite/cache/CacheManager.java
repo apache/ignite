@@ -230,7 +230,7 @@ public class CacheManager implements javax.cache.CacheManager {
      * @param cacheName Cache name.
      * @return Cache.
      */
-    @Nullable private <K, V> IgniteCache<K, V> getCache0(String cacheName) {
+    private @Nullable <K, V> IgniteCache<K, V> getCache0(String cacheName) {
         if (cacheName == null)
             throw new NullPointerException();
 

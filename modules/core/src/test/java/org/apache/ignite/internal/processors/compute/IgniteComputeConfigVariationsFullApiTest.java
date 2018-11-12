@@ -1099,7 +1099,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * Override the base method to return {@code null} value in case the valId is negative.
      */
-    @Nullable @Override public Object value(int valId) {
+    @Override public @Nullable Object value(int valId) {
         if (valId < 0)
             return null;
 
@@ -1151,7 +1151,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public List<Object> reduce(List<ComputeJobResult> results) throws IgniteException {
+        @Override public @Nullable List<Object> reduce(List<ComputeJobResult> results) throws IgniteException {
             List<Object> ret = new ArrayList<>(results.size());
 
             for (ComputeJobResult result : results)
@@ -1236,7 +1236,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object execute() {
+        @Override public @Nullable Object execute() {
             checkState();
 
             return argument(0);
@@ -1827,7 +1827,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object call() throws Exception {
+        @Override public @Nullable Object call() throws Exception {
             checkState();
 
             return arg;

@@ -157,7 +157,7 @@ public class UriDeploymentHttpScanner implements UriDeploymentScanner {
         return new TrustManager[]{
             new X509TrustManager() {
                 /** {@inheritDoc} */
-                @Nullable @Override public X509Certificate[] getAcceptedIssuers() { return null; }
+                @Override public @Nullable X509Certificate[] getAcceptedIssuers() { return null; }
 
                 /** {@inheritDoc} */
                 @Override public void checkClientTrusted(X509Certificate[] certs, String authType) {

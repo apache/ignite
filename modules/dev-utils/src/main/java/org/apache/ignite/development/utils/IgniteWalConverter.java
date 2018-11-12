@@ -66,7 +66,7 @@ public class IgniteWalConverter {
         if (workFiles == null)
             throw new IllegalArgumentException("No .wal files in dir: " + args[1]);
 
-        @Nullable final WalStat stat = printStat ? new WalStat() : null;
+        final @Nullable WalStat stat = printStat ? new WalStat() : null;
 
         IgniteWalIteratorFactory.IteratorParametersBuilder iteratorParametersBuilder =
                 new IgniteWalIteratorFactory.IteratorParametersBuilder().filesOrDirs(workFiles)

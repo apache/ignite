@@ -56,7 +56,7 @@ public class PlatformBalancingSingleClosureTask extends PlatformAbstractTask {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable Object arg) {
         assert job != null : "Job null-check must be performed in native platform.";
 

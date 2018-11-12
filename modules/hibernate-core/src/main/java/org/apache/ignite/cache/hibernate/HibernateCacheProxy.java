@@ -121,7 +121,7 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object localPeek(
+    @Override public @Nullable Object localPeek(
         Object key,
         CachePeekMode[] peekModes,
         @Nullable IgniteCacheExpiryPolicy plc
@@ -137,12 +137,12 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object get(Object key) throws IgniteCheckedException {
+    @Override public @Nullable Object get(Object key) throws IgniteCheckedException {
         return delegate.get(keyTransformer.transform(key));
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheEntry getEntry(Object key) throws IgniteCheckedException {
+    @Override public @Nullable CacheEntry getEntry(Object key) throws IgniteCheckedException {
         return delegate.getEntry(keyTransformer.transform(key));
     }
 
@@ -180,7 +180,7 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object getAndPut(Object key, Object val) throws IgniteCheckedException {
+    @Override public @Nullable Object getAndPut(Object key, Object val) throws IgniteCheckedException {
         return delegate.getAndPut(keyTransformer.transform(key), val);
     }
 
@@ -200,7 +200,7 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object getAndPutIfAbsent(Object key, Object val) throws IgniteCheckedException {
+    @Override public @Nullable Object getAndPutIfAbsent(Object key, Object val) throws IgniteCheckedException {
         return delegate.getAndPutIfAbsent(keyTransformer.transform(key), val);
     }
 
@@ -220,7 +220,7 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object getAndReplace(Object key, Object val) throws IgniteCheckedException {
+    @Override public @Nullable Object getAndReplace(Object key, Object val) throws IgniteCheckedException {
         return delegate.getAndReplace(keyTransformer.transform(key), val);
     }
 
@@ -296,7 +296,7 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridNearTxLocal tx() {
+    @Override public @Nullable GridNearTxLocal tx() {
         return delegate.tx();
     }
 
@@ -356,7 +356,7 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object getAndRemove(Object key) throws IgniteCheckedException {
+    @Override public @Nullable Object getAndRemove(Object key) throws IgniteCheckedException {
         return delegate.getAndRemove(keyTransformer.transform(key));
     }
 
@@ -571,7 +571,7 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object getForcePrimary(Object key) throws IgniteCheckedException {
+    @Override public @Nullable Object getForcePrimary(Object key) throws IgniteCheckedException {
         return delegate.getForcePrimary(keyTransformer.transform(key));
     }
 
@@ -601,7 +601,7 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public ExpiryPolicy expiry() {
+    @Override public @Nullable ExpiryPolicy expiry() {
         return delegate.expiry();
     }
 
@@ -662,7 +662,7 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public EntryProcessorResult invoke(
+    @Override public @Nullable EntryProcessorResult invoke(
         @Nullable AffinityTopologyVersion topVer,
         Object key,
         EntryProcessor entryProcessor,
@@ -701,7 +701,7 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public EntryProcessorResult invoke(
+    @Override public @Nullable EntryProcessorResult invoke(
         Object key,
         EntryProcessor entryProcessor,
         Object... args

@@ -43,7 +43,7 @@ public class GridP2PContinuousDeploymentTask2 extends ComputeTaskSplitAdapter<Ob
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object reduce(List<ComputeJobResult> results) {
+    @Override public @Nullable Object reduce(List<ComputeJobResult> results) {
         return null;
     }
 }

@@ -80,7 +80,7 @@ public class GridPluginComponent implements GridComponent {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
+    @Override public @Nullable DiscoveryDataExchangeType discoveryDataType() {
         return null;
     }
 
@@ -105,7 +105,7 @@ public class GridPluginComponent implements GridComponent {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
+    @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node) {
         try {
             plugin.validateNewNode(node);
 
@@ -117,7 +117,7 @@ public class GridPluginComponent implements GridComponent {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node, JoiningNodeDiscoveryData discoData) {
+    @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node, JoiningNodeDiscoveryData discoData) {
         return null;
     }
 

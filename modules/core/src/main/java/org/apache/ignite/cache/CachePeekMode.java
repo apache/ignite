@@ -74,7 +74,7 @@ public enum CachePeekMode {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static CachePeekMode fromOrdinal(byte ord) {
+    public static @Nullable CachePeekMode fromOrdinal(byte ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

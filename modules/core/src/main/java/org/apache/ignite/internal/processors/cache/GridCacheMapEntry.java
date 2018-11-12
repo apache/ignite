@@ -393,7 +393,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheEntryInfo info() {
+    @Override public @Nullable GridCacheEntryInfo info() {
         GridCacheEntryInfo info = null;
 
         lockEntry();
@@ -427,7 +427,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public List<GridCacheEntryInfo> allVersionsInfo() throws IgniteCheckedException {
+    @Override public @Nullable List<GridCacheEntryInfo> allVersionsInfo() throws IgniteCheckedException {
         assert cctx.mvccEnabled();
 
         lockEntry();
@@ -510,7 +510,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public final CacheObject unswap(boolean needVal)
+    @Override public final @Nullable CacheObject unswap(boolean needVal)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         CacheDataRow row = unswap(null, true);
 
@@ -526,7 +526,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @throws IgniteCheckedException If failed.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @Nullable protected CacheDataRow unswap(@Nullable CacheDataRow row, boolean checkExpire)
+    protected @Nullable CacheDataRow unswap(@Nullable CacheDataRow row, boolean checkExpire)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         boolean obsolete = false;
         boolean deferred = false;
@@ -612,14 +612,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @return Read value.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings({"RedundantTypeArguments"})
-    @Nullable protected Object readThrough(@Nullable IgniteInternalTx tx, KeyCacheObject key, boolean reload, UUID subjId,
+    @SuppressWarnings({"RedundantTypeArguments"}) protected @Nullable Object readThrough(@Nullable IgniteInternalTx tx, KeyCacheObject key, boolean reload, UUID subjId,
         String taskName) throws IgniteCheckedException {
         return cctx.store().load(tx, key);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public final CacheObject innerGet(
+    @Override public final @Nullable CacheObject innerGet(
         @Nullable GridCacheVersion ver,
         @Nullable IgniteInternalTx tx,
         boolean readThrough,
@@ -976,8 +975,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked", "TooBroadScope"})
-    @Nullable @Override public final CacheObject innerReload()
+    @Override @SuppressWarnings({"unchecked", "TooBroadScope"}) public final @Nullable CacheObject innerReload()
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         CU.checkStore(cctx);
 
@@ -2244,30 +2242,30 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         final UUID evtNodeId,
         final UUID affNodeId,
         final GridCacheOperation op,
-        @Nullable final Object writeObj,
-        @Nullable final Object[] invokeArgs,
+        final @Nullable Object writeObj,
+        final @Nullable Object[] invokeArgs,
         final boolean writeThrough,
         final boolean readThrough,
         final boolean retval,
         final boolean keepBinary,
-        @Nullable final IgniteCacheExpiryPolicy expiryPlc,
+        final @Nullable IgniteCacheExpiryPolicy expiryPlc,
         final boolean evt,
         final boolean metrics,
         final boolean primary,
         final boolean verCheck,
         final AffinityTopologyVersion topVer,
-        @Nullable final CacheEntryPredicate[] filter,
+        final @Nullable CacheEntryPredicate[] filter,
         final GridDrType drType,
         final long explicitTtl,
         final long explicitExpireTime,
-        @Nullable final GridCacheVersion conflictVer,
+        final @Nullable GridCacheVersion conflictVer,
         final boolean conflictResolve,
         final boolean intercept,
-        @Nullable final UUID subjId,
+        final @Nullable UUID subjId,
         final String taskName,
-        @Nullable final CacheObject prevVal,
-        @Nullable final Long updateCntr,
-        @Nullable final GridDhtAtomicAbstractUpdateFuture fut,
+        final @Nullable CacheObject prevVal,
+        final @Nullable Long updateCntr,
+        final @Nullable GridDhtAtomicAbstractUpdateFuture fut,
         boolean transformOp
     ) throws IgniteCheckedException, GridCacheEntryRemovedException, GridClosureException {
         assert cctx.atomic() && !detached();
@@ -2552,7 +2550,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @param cpy Copy flag.
      * @return Cache object value.
      */
-    @Nullable private Object value(@Nullable Object val, @Nullable CacheObject cacheObj, boolean keepBinary, boolean cpy) {
+    private @Nullable Object value(@Nullable Object val, @Nullable CacheObject cacheObj, boolean keepBinary, boolean cpy) {
         if (val != null)
             return val;
 
@@ -3117,7 +3115,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheObject peek(
+    @Override public @Nullable CacheObject peek(
         boolean heap,
         boolean offheap,
         AffinityTopologyVersion topVer,
@@ -3184,7 +3182,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheObject peek(@Nullable IgniteCacheExpiryPolicy plc)
+    @Override public @Nullable CacheObject peek(@Nullable IgniteCacheExpiryPolicy plc)
         throws GridCacheEntryRemovedException, IgniteCheckedException {
         IgniteInternalTx tx = cctx.tm().localTx();
 
@@ -3867,7 +3865,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheMvccCandidate candidate(GridCacheVersion ver)
+    @Override public @Nullable GridCacheMvccCandidate candidate(GridCacheVersion ver)
         throws GridCacheEntryRemovedException {
         lockEntry();
 
@@ -4200,7 +4198,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheObject valueBytes(@Nullable GridCacheVersion ver)
+    @Override public @Nullable CacheObject valueBytes(@Nullable GridCacheVersion ver)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         CacheObject val = null;
 
@@ -4362,7 +4360,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public CacheObject peekVisibleValue() {
+    @Override public @Nullable CacheObject peekVisibleValue() {
         try {
             IgniteInternalTx tx = cctx.tm().userTx();
 
@@ -4730,15 +4728,14 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /**
      * @return MVCC.
      */
-    @Nullable protected final GridCacheMvcc mvccExtras() {
+    protected final @Nullable GridCacheMvcc mvccExtras() {
         return extras != null ? extras.mvcc() : null;
     }
 
     /**
      * @return All MVCC local and non near candidates.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
-    @Nullable public final List<GridCacheMvccCandidate> mvccAllLocal() {
+    @SuppressWarnings("ForLoopReplaceableByForEach") public final @Nullable List<GridCacheMvccCandidate> mvccAllLocal() {
         lockEntry();
 
         try {
@@ -4778,7 +4775,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /**
      * @return Obsolete version.
      */
-    @Nullable protected final GridCacheVersion obsoleteVersionExtras() {
+    protected final @Nullable GridCacheVersion obsoleteVersionExtras() {
         return extras != null ? extras.obsoleteVersion() : null;
     }
 
@@ -5628,7 +5625,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         private final GridCacheMapEntry entry;
 
         /** */
-        @Nullable private final CacheObject val;
+        private final @Nullable CacheObject val;
 
         /** */
         private final GridCacheVersion ver;
@@ -5637,7 +5634,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         private final long expireTime;
 
         /** */
-        @Nullable private final IgnitePredicate<CacheDataRow> predicate;
+        private final @Nullable IgnitePredicate<CacheDataRow> predicate;
 
         /** */
         private CacheDataRow newRow;
@@ -5707,7 +5704,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public CacheDataRow oldRow() {
+        @Override public @Nullable CacheDataRow oldRow() {
             return oldRow;
         }
 
@@ -5891,7 +5888,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public CacheDataRow oldRow() {
+        @Override public @Nullable CacheDataRow oldRow() {
             return oldRow;
         }
 

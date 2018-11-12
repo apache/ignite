@@ -845,7 +845,7 @@ public class VisorMimeTypes {
      * @param f File to detect content type.
      * @return Content type.
      */
-    @Nullable public static String getContentType(File f) {
+    public static @Nullable String getContentType(File f) {
         try (FileInputStream is = new FileInputStream(f)) {
             byte[] data = new byte[Math.min((int)f.length(), PREVIEW_SIZE)];
 
@@ -863,7 +863,7 @@ public class VisorMimeTypes {
      * @param name File name to detect content type by file name.
      * @return Content type.
      */
-    @Nullable public static String getContentType(byte[] data, String name) {
+    public static @Nullable String getContentType(byte[] data, String name) {
         if (data == null)
             return null;
 
@@ -999,7 +999,7 @@ public class VisorMimeTypes {
      * @param name File name to detect content type by file name.
      * @return Content type.
      */
-    @Nullable public static String guessContentTypeFromName(String name) {
+    public static @Nullable String guessContentTypeFromName(String name) {
         if (name == null)
             return null;
 

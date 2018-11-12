@@ -203,7 +203,7 @@ public class CacheCheckpointSpi extends IgniteSpiAdapter implements CheckpointSp
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public byte[] loadCheckpoint(String key) throws IgniteSpiException {
+    @Override public @Nullable byte[] loadCheckpoint(String key) throws IgniteSpiException {
         assert key != null;
 
         try {

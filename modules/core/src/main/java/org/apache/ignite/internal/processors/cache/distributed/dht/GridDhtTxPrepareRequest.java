@@ -207,7 +207,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /**
      * @return Near cache writes for which cache was not found (possible if client near cache was closed).
      */
-    @Nullable public List<IgniteTxKey> nearWritesCacheMissed() {
+    public @Nullable List<IgniteTxKey> nearWritesCacheMissed() {
         return nearWritesCacheMissed;
     }
 
@@ -228,7 +228,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /**
      * @return Subject ID.
      */
-    @Nullable public UUID subjectId() {
+    public @Nullable UUID subjectId() {
         return subjId;
     }
 

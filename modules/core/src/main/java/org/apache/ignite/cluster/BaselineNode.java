@@ -51,8 +51,7 @@ public interface BaselineNode {
      *      {@code org.apache.ignite} are reserved for internal use.
      * @return Attribute value or {@code null}.
      */
-    @Nullable
-    public <T> T attribute(String name);
+    public @Nullable <T> T attribute(String name);
 
     /**
      * Gets all node attributes. Attributes are assigned to nodes at startup

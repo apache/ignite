@@ -97,7 +97,7 @@ public class GridReflectionCache implements Externalizable {
      * @return Value of the field for given object or {@code null} if field was not found.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public Object firstFieldValue(Object o) throws IgniteCheckedException {
+    public @Nullable Object firstFieldValue(Object o) throws IgniteCheckedException {
         assert o != null;
 
         Field f = firstField(o.getClass());
@@ -121,7 +121,7 @@ public class GridReflectionCache implements Externalizable {
      * @return Method return value for given object or {@code null} if method was not found.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public Object firstMethodValue(Object o) throws IgniteCheckedException {
+    public @Nullable Object firstMethodValue(Object o) throws IgniteCheckedException {
         assert o != null;
 
         Method m = firstMethod(o.getClass());
@@ -144,7 +144,7 @@ public class GridReflectionCache implements Externalizable {
      * @param cls Class.
      * @return First field.
      */
-    @Nullable public Field firstField(Class<?> cls) {
+    public @Nullable Field firstField(Class<?> cls) {
         assert cls != null;
 
         List<Field> l = fields(cls);
@@ -158,7 +158,7 @@ public class GridReflectionCache implements Externalizable {
      * @param cls Class.
      * @return First method.
      */
-    @Nullable public Method firstMethod(Class<?> cls) {
+    public @Nullable Method firstMethod(Class<?> cls) {
         assert cls != null;
 
         List<Method> l = methods(cls);

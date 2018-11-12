@@ -402,7 +402,7 @@ public class AlignedBuffersDirectFileIO extends AbstractFileIO {
      * @param val value to box to native long.
      * @return native long.
      */
-    @NotNull private static NativeLong nl(long val) {
+    private static @NotNull NativeLong nl(long val) {
         if (val % NL_CACHE_DIVISOR == 0 && val < CACHED_LONGS * NL_CACHE_DIVISOR) {
             int cacheIdx = (int)(val / NL_CACHE_DIVISOR);
 
@@ -437,7 +437,7 @@ public class AlignedBuffersDirectFileIO extends AbstractFileIO {
      * @param pos position, used as offset for resulting pointer.
      * @return Buffer memory address.
      */
-    @NotNull private Pointer bufferPtrAtPosition(ByteBuffer buf, int pos) {
+    private @NotNull Pointer bufferPtrAtPosition(ByteBuffer buf, int pos) {
         long alignedPointer = GridUnsafe.bufferAddress(buf);
 
         if (pos < 0)

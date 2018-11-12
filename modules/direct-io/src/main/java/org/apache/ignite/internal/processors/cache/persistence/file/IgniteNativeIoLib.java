@@ -95,7 +95,7 @@ public class IgniteNativeIoLib {
     private static boolean jnaAvailable;
 
     /** JNA library initialization exception. To be logged to Ignite logger later. */
-    @Nullable private static Exception ex;
+    private static @Nullable Exception ex;
 
     static {
         if (Platform.isLinux()) {

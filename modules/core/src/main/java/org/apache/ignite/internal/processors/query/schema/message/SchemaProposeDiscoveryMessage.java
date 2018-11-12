@@ -50,7 +50,7 @@ public class SchemaProposeDiscoveryMessage extends SchemaAbstractDiscoveryMessag
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
+    @Override public @Nullable DiscoveryCustomMessage ackMessage() {
         return null;
     }
 
@@ -79,7 +79,7 @@ public class SchemaProposeDiscoveryMessage extends SchemaAbstractDiscoveryMessag
     /**
      * @return Deployment ID.
      */
-    @Nullable public IgniteUuid deploymentId() {
+    public @Nullable IgniteUuid deploymentId() {
         return depId;
     }
 
@@ -118,7 +118,7 @@ public class SchemaProposeDiscoveryMessage extends SchemaAbstractDiscoveryMessag
     /**
      * @return Error message (if any).
      */
-    @Nullable public SchemaOperationException error() {
+    public @Nullable SchemaOperationException error() {
         return err;
     }
 

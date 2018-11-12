@@ -26,7 +26,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 public class IgniteCacheReplicatedAtomicColumnConstraintsTest 
     extends IgniteCachePartitionedAtomicColumnConstraintsTest {
     /** {@inheritDoc} */
-    @NotNull @Override protected CacheMode cacheMode() {
+    @Override protected @NotNull CacheMode cacheMode() {
         return PARTITIONED;
     }
 }

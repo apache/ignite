@@ -57,7 +57,7 @@ public interface GridCacheSqlMetadata extends Externalizable {
      * @param type Type name.
      * @return Key class name or {@code null} if type name is unknown.
      */
-    @Nullable public String keyClass(String type);
+    public @Nullable String keyClass(String type);
 
     /**
      * Gets value class name for provided type.
@@ -67,7 +67,7 @@ public interface GridCacheSqlMetadata extends Externalizable {
      * @param type Type name.
      * @return Value class name or {@code null} if type name is unknown.
      */
-    @Nullable public String valueClass(String type);
+    public @Nullable String valueClass(String type);
 
     /**
      * Gets fields and their class names for provided type.
@@ -75,7 +75,7 @@ public interface GridCacheSqlMetadata extends Externalizable {
      * @param type Type name.
      * @return Fields map or {@code null} if type name is unknown.
      */
-    @Nullable public Map<String, String> fields(String type);
+    public @Nullable Map<String, String> fields(String type);
 
     /**
      * Gets not null fields.

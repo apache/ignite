@@ -63,7 +63,7 @@ public class GridTuple<V> implements Iterable<V>, Cloneable, Externalizable {
      *
      * @return Wrapped value.
      */
-    @Nullable public V get() {
+    public @Nullable V get() {
         return val;
     }
 

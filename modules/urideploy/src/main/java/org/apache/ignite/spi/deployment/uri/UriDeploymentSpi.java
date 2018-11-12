@@ -704,7 +704,7 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DeploymentResource findResource(String rsrcName) {
+    @Override public @Nullable DeploymentResource findResource(String rsrcName) {
         assert rsrcName != null;
 
         // Wait until all scanner managers finish their first scanning.
@@ -847,7 +847,7 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
      * if registered resources conflicts with rule when all task classes must be
      * annotated with different task names.
      */
-    @Nullable private Map<String, String> addResources(ClassLoader ldr, GridUriDeploymentUnitDescriptor desc, Class<?>[] clss)
+    private @Nullable Map<String, String> addResources(ClassLoader ldr, GridUriDeploymentUnitDescriptor desc, Class<?>[] clss)
         throws IgniteSpiException {
         assert ldr != null;
         assert desc != null;

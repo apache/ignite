@@ -265,7 +265,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteLogger logger() {
+    @Override public @Nullable IgniteLogger logger() {
         return log;
     }
 
@@ -1155,7 +1155,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      * @return Not null exception if version check failed.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable private IgniteCheckedException checkReadConflict(Iterable<IgniteTxEntry> entries)
+    private @Nullable IgniteCheckedException checkReadConflict(Iterable<IgniteTxEntry> entries)
         throws IgniteCheckedException {
         try {
             for (IgniteTxEntry entry : entries) {

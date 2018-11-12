@@ -162,7 +162,7 @@ public class CacheLoadOnlyStoreExample {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override protected IgniteBiTuple<Long, Person> parse(String rec, @Nullable Object... args) {
+        @Override protected @Nullable IgniteBiTuple<Long, Person> parse(String rec, @Nullable Object... args) {
             String[] p = rec.split("\\s*,\\s*");
             return new T2<>(Long.valueOf(p[0]), new Person(Long.valueOf(p[0]), Long.valueOf(p[1]),
                 p[2], p[3], Double.valueOf(p[4]), p[5].trim()));

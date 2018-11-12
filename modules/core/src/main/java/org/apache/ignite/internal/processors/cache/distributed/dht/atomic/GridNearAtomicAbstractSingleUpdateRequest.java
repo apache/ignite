@@ -92,12 +92,12 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
     /**
      * @return Optional arguments for entry processor.
      */
-    @Override @Nullable public Object[] invokeArguments() {
+    @Override public @Nullable Object[] invokeArguments() {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheEntryPredicate[] filter() {
+    @Override public @Nullable CacheEntryPredicate[] filter() {
         return NO_FILTER;
     }
 

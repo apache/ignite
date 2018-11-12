@@ -43,7 +43,7 @@ import java.util.Map;
 @SuppressWarnings("unused")  // Used by .NET ExceptionsTest.
 public class PlatformExceptionTask extends ComputeTaskAdapter<String, String> {
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable String arg) {
         assert arg != null;
 
@@ -78,7 +78,7 @@ public class PlatformExceptionTask extends ComputeTaskAdapter<String, String> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String reduce(List<ComputeJobResult> results) {
+    @Override public @Nullable String reduce(List<ComputeJobResult> results) {
         return results.get(0).getData();
     }
 }

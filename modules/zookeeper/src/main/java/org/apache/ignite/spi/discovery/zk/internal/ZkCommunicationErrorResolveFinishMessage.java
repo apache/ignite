@@ -48,7 +48,7 @@ class ZkCommunicationErrorResolveFinishMessage implements DiscoverySpiCustomMess
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoverySpiCustomMessage ackMessage() {
+    @Override public @Nullable DiscoverySpiCustomMessage ackMessage() {
         return null;
     }
 

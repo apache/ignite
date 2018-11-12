@@ -39,7 +39,7 @@ public final class GridAnnotationsCache {
      * @param annCls Annotation class.
      * @return Annotation (or {@code null}).
      */
-    @Nullable public static <T extends Annotation> T getAnnotation(Class<?> cls, Class<T> annCls) {
+    public static @Nullable <T extends Annotation> T getAnnotation(Class<?> cls, Class<T> annCls) {
         ConcurrentMap<Class<? extends Annotation>, GridTuple<Annotation>> clsAnns = anns.get(cls);
 
         if (clsAnns == null) {

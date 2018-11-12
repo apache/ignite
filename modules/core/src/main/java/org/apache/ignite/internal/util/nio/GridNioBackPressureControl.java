@@ -52,7 +52,7 @@ public class GridNioBackPressureControl {
     /**
      * @return Thread local back pressure tracker of messages, associated with one connection.
      */
-    @Nullable public static IgniteRunnable threadTracker() {
+    public static @Nullable IgniteRunnable threadTracker() {
         return threadProcMsg.get().tracker;
     }
 

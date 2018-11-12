@@ -794,7 +794,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
      * @param read Read lock flag.
      * @return Candidate.
      */
-    @Nullable private GridCacheMvccCandidate addLocal(GridCacheMvcc mvcc,
+    private @Nullable GridCacheMvccCandidate addLocal(GridCacheMvcc mvcc,
         GridCacheEntryEx e,
         GridCacheVersion ver,
         GridCacheVersion serOrder,

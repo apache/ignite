@@ -303,7 +303,7 @@ public enum IgniteComponentType {
      * @return Message factory or {@code null} if none or the component is not in classpath.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public MessageFactory messageFactory() throws IgniteCheckedException {
+    public @Nullable MessageFactory messageFactory() throws IgniteCheckedException {
         Class<?> cls;
 
         if (msgFactoryCls == null || null == (cls = U.classForName(msgFactoryCls, null)))

@@ -56,10 +56,10 @@ public class RecoveryDebug implements AutoCloseable {
     };
 
     /** */
-    @Nullable private final IgniteLogger log;
+    private final @Nullable IgniteLogger log;
 
     /** */
-    @Nullable private FileChannel fc;
+    private @Nullable FileChannel fc;
 
     /**
      * @param constId Consistent ID.

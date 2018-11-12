@@ -475,7 +475,7 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Serializable provideDiscoveryData(UUID nodeId) {
+        @Override public @Nullable Serializable provideDiscoveryData(UUID nodeId) {
             return null;
         }
 
@@ -490,7 +490,7 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object createComponent(PluginContext ctx, Class cls) {
+        @Override public @Nullable Object createComponent(PluginContext ctx, Class cls) {
             return null;
         }
 

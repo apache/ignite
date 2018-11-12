@@ -218,7 +218,7 @@ public class CacheJtaManager extends CacheJtaManagerAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object tmLookup() {
+    @Override public @Nullable Object tmLookup() {
         return tmLookupRef.get();
     }
 }

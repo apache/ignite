@@ -358,14 +358,14 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             return Collections.singleton(new ComputeJobAdapter() {
-                @Nullable @Override public Object execute() {
+                @Override public @Nullable Object execute() {
                     return null;
                 }
             });
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object reduce(List<ComputeJobResult> results) {
+        @Override public @Nullable Object reduce(List<ComputeJobResult> results) {
             return null;
         }
     }
@@ -375,14 +375,14 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             return Collections.singleton(new ComputeJobAdapter() {
-                @Nullable @Override public Object execute() {
+                @Override public @Nullable Object execute() {
                     return null;
                 }
             });
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object reduce(List<ComputeJobResult> results) {
+        @Override public @Nullable Object reduce(List<ComputeJobResult> results) {
             throw new IgniteException("Task failed.");
         }
     }
@@ -392,7 +392,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             return Collections.singleton(new ComputeJobAdapter() {
-                @Nullable @Override public Object execute() {
+                @Override public @Nullable Object execute() {
                     try {
                         Thread.sleep(10000);
                     }
@@ -406,7 +406,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object reduce(List<ComputeJobResult> results) {
+        @Override public @Nullable Object reduce(List<ComputeJobResult> results) {
             return null;
         }
     }

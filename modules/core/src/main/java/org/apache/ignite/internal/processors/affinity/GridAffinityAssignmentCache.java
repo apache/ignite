@@ -260,7 +260,7 @@ public class GridAffinityAssignmentCache {
     /**
      * @return Assignment.
      */
-    @Nullable public List<List<ClusterNode>> idealAssignment() {
+    public @Nullable List<List<ClusterNode>> idealAssignment() {
         return idealAssignment;
     }
 
@@ -562,7 +562,7 @@ public class GridAffinityAssignmentCache {
      * @param topVer Topology version to await for.
      * @return Future that will be completed after affinity for topology version {@code topVer} is calculated.
      */
-    @Nullable public IgniteInternalFuture<AffinityTopologyVersion> readyFuture(AffinityTopologyVersion topVer) {
+    public @Nullable IgniteInternalFuture<AffinityTopologyVersion> readyFuture(AffinityTopologyVersion topVer) {
         GridAffinityAssignment aff = head.get();
 
         if (aff.topologyVersion().compareTo(topVer) >= 0) {

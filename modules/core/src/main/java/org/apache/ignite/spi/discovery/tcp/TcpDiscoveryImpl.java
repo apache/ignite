@@ -203,7 +203,7 @@ abstract class TcpDiscoveryImpl {
      * @param nodeId Node id.
      * @return Node with given ID or {@code null} if node is not found.
      */
-    @Nullable public abstract ClusterNode getNode(UUID nodeId);
+    public abstract @Nullable ClusterNode getNode(UUID nodeId);
 
     /**
      * @param nodeId Node id.

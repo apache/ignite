@@ -119,7 +119,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
 
             IgniteInternalFuture fut = multithreadedAsync(
                 new Callable<Object>() {
-                    @Nullable @Override public Object call() throws Exception {
+                    @Override public @Nullable Object call() throws Exception {
                         startLatch.await();
 
                         info("Started evicting...");
@@ -208,7 +208,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
      * @param g Grid.
      * @return Random entry from cache.
      */
-    @Nullable private Cache.Entry<Integer, Object> randomEntry(Ignite g) {
+    private @Nullable Cache.Entry<Integer, Object> randomEntry(Ignite g) {
         return g.<Integer, Object>cache(DEFAULT_CACHE_NAME).iterator().next();
     }
 

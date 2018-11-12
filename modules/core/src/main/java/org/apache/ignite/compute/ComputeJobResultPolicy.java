@@ -49,7 +49,7 @@ public enum ComputeJobResultPolicy {
      * @param ord Ordinal value.
      * @return Enumerated value.
      */
-    @Nullable public static ComputeJobResultPolicy fromOrdinal(byte ord) {
+    public static @Nullable ComputeJobResultPolicy fromOrdinal(byte ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

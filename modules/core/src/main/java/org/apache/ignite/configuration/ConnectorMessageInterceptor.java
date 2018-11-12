@@ -33,7 +33,7 @@ public interface ConnectorMessageInterceptor {
      * @param obj Original incoming object.
      * @return Object which should replace original in later processing.
      */
-    @Nullable public Object onReceive(@Nullable Object obj);
+    public @Nullable Object onReceive(@Nullable Object obj);
 
     /**
      * Intercepts received objects.
@@ -41,5 +41,5 @@ public interface ConnectorMessageInterceptor {
      * @param obj Original incoming object.
      * @return Object which should be send to remote client instead of original.
      */
-    @Nullable public Object onSend(Object obj);
+    public @Nullable Object onSend(Object obj);
 }

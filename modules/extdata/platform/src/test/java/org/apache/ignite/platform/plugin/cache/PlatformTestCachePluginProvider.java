@@ -60,12 +60,12 @@ public class PlatformTestCachePluginProvider implements CachePluginProvider {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object unwrapCacheEntry(Cache.Entry entry, Class cls) {
+    @Override public @Nullable Object unwrapCacheEntry(Cache.Entry entry, Class cls) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object createComponent(Class cls) {
+    @Override public @Nullable Object createComponent(Class cls) {
         return null;
     }
 }

@@ -196,14 +196,14 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
     /**
      * Make test cache name by prefix.
      */
-    @NotNull private String cacheName(int cachePrefixIdx) {
+    private @NotNull String cacheName(int cachePrefixIdx) {
         return "cache" + cachePrefixIdx;
     }
 
     /**
      * Ignite configuration for client.
      */
-    @NotNull private IgniteConfiguration getClientConfiguration(int nodesPrefix) throws Exception {
+    private @NotNull IgniteConfiguration getClientConfiguration(int nodesPrefix) throws Exception {
         IgniteConfiguration clientConf = getConfiguration(getTestIgniteInstanceName(nodesPrefix));
 
         clientConf.setClientMode(true);

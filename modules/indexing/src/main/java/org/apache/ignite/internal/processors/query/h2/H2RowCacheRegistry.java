@@ -40,7 +40,7 @@ public class H2RowCacheRegistry {
      * @param grpId Cache group ID.
      * @return Row cache or {@code null} if none available.
      */
-    @Nullable public H2RowCache forGroup(int grpId) {
+    public @Nullable H2RowCache forGroup(int grpId) {
         return caches != null ? caches.get(grpId) : null;
     }
 

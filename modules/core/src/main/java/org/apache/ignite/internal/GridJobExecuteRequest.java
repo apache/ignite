@@ -437,7 +437,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     /**
      * @return Topology.
      */
-    @Nullable public Collection<UUID> topology() {
+    public @Nullable Collection<UUID> topology() {
         return top;
     }
 

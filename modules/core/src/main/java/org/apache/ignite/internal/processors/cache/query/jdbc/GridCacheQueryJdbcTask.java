@@ -137,7 +137,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
      * @param first First.
      * @param cache Cache.
      */
-    @Nullable private Map<? extends ComputeJob, ClusterNode> mapToNode(
+    private @Nullable Map<? extends ComputeJob, ClusterNode> mapToNode(
         List<ClusterNode> subgrid,
         Map<String, Object> args,
         boolean first,

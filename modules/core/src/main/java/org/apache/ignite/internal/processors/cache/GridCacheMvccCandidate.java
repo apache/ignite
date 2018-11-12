@@ -256,7 +256,7 @@ public class GridCacheMvccCandidate implements Externalizable,
     /**
      * @return Removed reentry candidate or {@code null}.
      */
-    @Nullable public GridCacheMvccCandidate unenter() {
+    public @Nullable GridCacheMvccCandidate unenter() {
         if (reentry != null) {
             GridCacheMvccCandidate old = reentry;
 
@@ -380,7 +380,7 @@ public class GridCacheMvccCandidate implements Externalizable,
      * @return Version of owned candidate by the time this candidate was added, or {@code null}
      *      if there were no owned candidates.
      */
-    @Nullable public GridCacheVersion ownerVersion() {
+    public @Nullable GridCacheVersion ownerVersion() {
         return ownerVer;
     }
 
@@ -444,7 +444,7 @@ public class GridCacheMvccCandidate implements Externalizable,
     /**
      * @return Version for serializable transactions ordering.
      */
-    @Nullable public GridCacheVersion serializableOrder() {
+    public @Nullable GridCacheVersion serializableOrder() {
         return serOrder;
     }
 
@@ -528,7 +528,7 @@ public class GridCacheMvccCandidate implements Externalizable,
     /**
      * @return Lock that comes before in the same thread, possibly <tt>null</tt>.
      */
-    @Nullable public GridCacheMvccCandidate previous() {
+    public @Nullable GridCacheMvccCandidate previous() {
         return prev;
     }
 

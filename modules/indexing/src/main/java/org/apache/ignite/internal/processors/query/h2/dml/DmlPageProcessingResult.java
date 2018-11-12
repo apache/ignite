@@ -61,7 +61,7 @@ public final class DmlPageProcessingResult {
     /**
      * @return Error.
      */
-    @Nullable public SQLException error() {
+    public @Nullable SQLException error() {
         return ex;
     }
 }

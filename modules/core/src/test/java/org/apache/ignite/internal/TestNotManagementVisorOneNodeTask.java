@@ -37,7 +37,7 @@ public class TestNotManagementVisorOneNodeTask extends VisorOneNodeTask<VisorTas
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Object reduce0(List<ComputeJobResult> results) {
+    @Override protected @Nullable Object reduce0(List<ComputeJobResult> results) {
         return null;
     }
 

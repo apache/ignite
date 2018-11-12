@@ -41,7 +41,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public abstract class HadoopProtocolTaskAdapter<R> implements ComputeTask<HadoopProtocolTaskArguments, R> {
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable HadoopProtocolTaskArguments arg) {
         return Collections.singletonMap(new Job(arg), subgrid.get(0));
     }
@@ -52,7 +52,7 @@ public abstract class HadoopProtocolTaskAdapter<R> implements ComputeTask<Hadoop
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public R reduce(List<ComputeJobResult> results) {
+    @Override public @Nullable R reduce(List<ComputeJobResult> results) {
         if (!F.isEmpty(results)) {
             ComputeJobResult res = results.get(0);
 
@@ -95,7 +95,7 @@ public abstract class HadoopProtocolTaskAdapter<R> implements ComputeTask<Hadoop
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object execute() {
+        @Override public @Nullable Object execute() {
             try {
                 return run(jobCtx, ((IgniteEx)ignite).hadoop(), args);
             }

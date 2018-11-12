@@ -94,7 +94,7 @@ public abstract class WalStateAbstractMessage implements DiscoveryCustomMessage 
      *
      * @return Massage or {@code null} if no processing is required.
      */
-    @Nullable public WalStateProposeMessage exchangeMessage() {
+    public @Nullable WalStateProposeMessage exchangeMessage() {
         return exchangeMsg;
     }
 
@@ -113,7 +113,7 @@ public abstract class WalStateAbstractMessage implements DiscoveryCustomMessage 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
+    @Override public @Nullable DiscoveryCustomMessage ackMessage() {
         return null;
     }
 

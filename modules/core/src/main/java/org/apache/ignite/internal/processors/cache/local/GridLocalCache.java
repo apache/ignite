@@ -103,7 +103,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
      * @param key Key of entry.
      * @return Cache entry.
      */
-    @Nullable private GridLocalCacheEntry peekExx(KeyCacheObject key) {
+    private @Nullable GridLocalCacheEntry peekExx(KeyCacheObject key) {
         return (GridLocalCacheEntry)peekEx(key);
     }
 

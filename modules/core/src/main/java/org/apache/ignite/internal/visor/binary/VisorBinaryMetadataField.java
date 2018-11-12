@@ -69,7 +69,7 @@ public class VisorBinaryMetadataField extends VisorDataTransferObject {
     /**
      * @return Field type name.
      */
-    @Nullable public String getFieldTypeName() {
+    public @Nullable String getFieldTypeName() {
         return fieldTypeName;
     }
 

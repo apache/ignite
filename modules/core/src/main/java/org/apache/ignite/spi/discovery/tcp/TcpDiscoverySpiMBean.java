@@ -220,8 +220,7 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean, Discover
      *
      * @return Gets current coordinator.
      */
-    @MXBeanDescription("Coordinator node ID.")
-    @Override @Nullable public UUID getCoordinator();
+    @Override @MXBeanDescription("Coordinator node ID.") public @Nullable UUID getCoordinator();
 
     /**
      * Gets message acknowledgement timeout.

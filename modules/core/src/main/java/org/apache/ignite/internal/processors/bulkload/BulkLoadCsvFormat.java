@@ -27,40 +27,40 @@ import java.util.regex.Pattern;
  */
 public class BulkLoadCsvFormat extends BulkLoadFormat {
     /** Line separator pattern. */
-    @NotNull public static final Pattern DEFAULT_LINE_SEPARATOR = Pattern.compile("[\r\n]+");
+    public static final @NotNull Pattern DEFAULT_LINE_SEPARATOR = Pattern.compile("[\r\n]+");
 
     /** Field separator pattern. */
-    @NotNull public static final Pattern DEFAULT_FIELD_SEPARATOR = Pattern.compile(",");
+    public static final @NotNull Pattern DEFAULT_FIELD_SEPARATOR = Pattern.compile(",");
 
     /** Quote characters */
-    @NotNull public static final String DEFAULT_QUOTE_CHARS = "\"";
+    public static final @NotNull String DEFAULT_QUOTE_CHARS = "\"";
 
     /** Default escape sequence start characters. */
-    @Nullable public static final String DEFAULT_ESCAPE_CHARS = null;
+    public static final @Nullable String DEFAULT_ESCAPE_CHARS = null;
 
     /** Line comment start pattern. */
-    @Nullable public static final Pattern DEFAULT_COMMENT_CHARS = null;
+    public static final @Nullable Pattern DEFAULT_COMMENT_CHARS = null;
 
     /** Format name. */
     public static final String NAME = "CSV";
 
     /** Line separator pattern. */
-    @Nullable private Pattern lineSeparator;
+    private @Nullable Pattern lineSeparator;
 
     /** Field separator pattern. */
-    @Nullable private Pattern fieldSeparator;
+    private @Nullable Pattern fieldSeparator;
 
     /** Set of quote characters. */
-    @Nullable private String quoteChars;
+    private @Nullable String quoteChars;
 
     /** Line comment start pattern. */
-    @Nullable private Pattern commentChars;
+    private @Nullable Pattern commentChars;
 
     /** Set of escape start characters. */
-    @Nullable private String escapeChars;
+    private @Nullable String escapeChars;
 
     /** File charset. */
-    @Nullable private String inputCharsetName;
+    private @Nullable String inputCharsetName;
 
     /**
      * Returns the name of the format.
@@ -76,7 +76,7 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
      *
      * @return The line separator pattern.
      */
-    @Nullable public Pattern lineSeparator() {
+    public @Nullable Pattern lineSeparator() {
         return lineSeparator;
     }
 
@@ -94,7 +94,7 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
      *
      * @return The field separator pattern.
      */
-    @Nullable public Pattern fieldSeparator() {
+    public @Nullable Pattern fieldSeparator() {
         return fieldSeparator;
     }
 
@@ -112,7 +112,7 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
      *
      * @return The quote characters.
      */
-    @Nullable public String quoteChars() {
+    public @Nullable String quoteChars() {
         return quoteChars;
     }
 
@@ -130,7 +130,7 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
      *
      * @return The line comment start pattern.
      */
-    @Nullable public Pattern commentChars() {
+    public @Nullable Pattern commentChars() {
         return commentChars;
     }
 
@@ -148,7 +148,7 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
      *
      * @return The escape characters.
      */
-    @Nullable public String escapeChars() {
+    public @Nullable String escapeChars() {
         return escapeChars;
     }
 
@@ -166,7 +166,7 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
      *
      * @return The input file charset name, null if not specified.
      */
-    @Nullable public String inputCharsetName() {
+    public @Nullable String inputCharsetName() {
         return inputCharsetName;
     }
 

@@ -73,7 +73,7 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
     /**
      * @return CacheConfiguration Cache configuration.
      */
-    @NotNull private CacheConfiguration getCacheConfiguration() {
+    private @NotNull CacheConfiguration getCacheConfiguration() {
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setName(CACHE_PARAMS);

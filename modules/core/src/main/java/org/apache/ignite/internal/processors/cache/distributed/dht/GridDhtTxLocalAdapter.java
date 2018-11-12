@@ -242,7 +242,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @param topVer Topology version.
      * @return {@code True} if reader was added as a result of this call.
      */
-    @Nullable protected abstract IgniteInternalFuture<Boolean> addReader(long msgId,
+    protected abstract @Nullable IgniteInternalFuture<Boolean> addReader(long msgId,
         GridDhtCacheEntry cached,
         IgniteTxEntry entry,
         AffinityTopologyVersion topVer);
@@ -468,7 +468,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @return Future for active transactions for the time when reader was added.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgniteInternalFuture<Boolean> addEntry(long msgId, IgniteTxEntry e) throws IgniteCheckedException {
+    public @Nullable IgniteInternalFuture<Boolean> addEntry(long msgId, IgniteTxEntry e) throws IgniteCheckedException {
         init();
 
         TransactionState state = state();
@@ -906,7 +906,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      *
      * @return Current lock future or null if it's safe to roll back.
      */
-    @Nullable public IgniteInternalFuture<?> tryRollbackAsync() {
+    public @Nullable IgniteInternalFuture<?> tryRollbackAsync() {
         while (true) {
             final IgniteInternalFuture fut = lockFut;
 

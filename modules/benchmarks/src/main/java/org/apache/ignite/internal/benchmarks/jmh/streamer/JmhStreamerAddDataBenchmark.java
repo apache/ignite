@@ -193,7 +193,7 @@ public class JmhStreamerAddDataBenchmark {
     /**
      * @return Synchronization mode.
      */
-    @NotNull protected CacheWriteSynchronizationMode writeSynchronizationMode() {
+    protected @NotNull CacheWriteSynchronizationMode writeSynchronizationMode() {
         return FULL_SYNC;
     }
 

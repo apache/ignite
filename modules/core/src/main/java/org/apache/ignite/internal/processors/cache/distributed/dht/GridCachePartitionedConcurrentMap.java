@@ -56,7 +56,7 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
      * @param create Create flag.
      * @return Local partition.
      */
-    @Nullable private GridDhtLocalPartition localPartition(
+    private @Nullable GridDhtLocalPartition localPartition(
         GridCacheContext cctx,
         KeyCacheObject key,
         AffinityTopologyVersion topVer,
@@ -71,7 +71,7 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheMapEntry getEntry(GridCacheContext ctx, KeyCacheObject key) {
+    @Override public @Nullable GridCacheMapEntry getEntry(GridCacheContext ctx, KeyCacheObject key) {
         GridDhtLocalPartition part = localPartition(ctx, key, AffinityTopologyVersion.NONE, false);
 
         if (part == null)

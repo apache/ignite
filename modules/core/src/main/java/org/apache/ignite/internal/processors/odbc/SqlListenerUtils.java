@@ -38,7 +38,7 @@ public abstract class SqlListenerUtils {
      * @return Read object.
      * @throws BinaryObjectException On error.
      */
-    @Nullable public static Object readObject(BinaryReaderExImpl reader, boolean binObjAllow)
+    public static @Nullable Object readObject(BinaryReaderExImpl reader, boolean binObjAllow)
         throws BinaryObjectException {
         byte type = reader.readByte();
 

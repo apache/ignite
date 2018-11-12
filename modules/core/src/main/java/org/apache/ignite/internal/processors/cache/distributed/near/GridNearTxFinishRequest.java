@@ -123,7 +123,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
     /**
      * @return Mvcc info.
      */
-    @Nullable public MvccSnapshot mvccSnapshot() {
+    public @Nullable MvccSnapshot mvccSnapshot() {
         return mvccSnapshot;
     }
 

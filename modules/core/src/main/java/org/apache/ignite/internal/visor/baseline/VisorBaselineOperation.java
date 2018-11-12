@@ -43,7 +43,7 @@ public enum VisorBaselineOperation {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static VisorBaselineOperation fromOrdinal(int ord) {
+    public static @Nullable VisorBaselineOperation fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

@@ -70,7 +70,7 @@ public class TxCounters {
     /**
      * @return Final update counters.
      */
-    @Nullable public Collection<PartitionUpdateCountersMessage> updateCounters() {
+    public @Nullable Collection<PartitionUpdateCountersMessage> updateCounters() {
         return updCntrs;
     }
 

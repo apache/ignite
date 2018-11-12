@@ -69,7 +69,7 @@ public class GridMultiCollectionWrapper<E> implements Collection<E>{
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Iterator<E> iterator() {
+    @Override public @NotNull Iterator<E> iterator() {
         if (collections.length == 0)
             return Collections.emptyIterator();
 
@@ -109,12 +109,12 @@ public class GridMultiCollectionWrapper<E> implements Collection<E>{
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Object[] toArray() {
+    @Override public @NotNull Object[] toArray() {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public <T> T[] toArray(@NotNull T[] a) {
+    @Override public @NotNull <T> T[] toArray(@NotNull T[] a) {
         throw new UnsupportedOperationException();
     }
 

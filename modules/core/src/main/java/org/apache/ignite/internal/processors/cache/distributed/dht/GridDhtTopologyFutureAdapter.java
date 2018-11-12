@@ -69,7 +69,7 @@ public abstract class GridDhtTopologyFutureAdapter extends GridFutureAdapter<Aff
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public final Throwable validateCache(
+    @Override public final @Nullable Throwable validateCache(
         GridCacheContext cctx,
         boolean recovery,
         boolean read,

@@ -179,7 +179,7 @@ public class IgniteComputeResultExceptionTest extends GridCommonAbstractTest {
         }
 
         /** */
-        @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteException {
+        @Override public @Nullable Object reduce(List<ComputeJobResult> results) throws IgniteException {
             return null;
         }
     }

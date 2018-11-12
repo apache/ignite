@@ -55,7 +55,7 @@ public abstract class IgfsProcessorAdapter extends GridProcessorAdapter implemen
      * @param name (Nullable) IGFS name.
      * @return IGFS instance.
      */
-    @Nullable public abstract IgniteFileSystem igfs(String name);
+    public abstract @Nullable IgniteFileSystem igfs(String name);
 
     /**
      * Gets server endpoints for particular IGFS.
@@ -76,6 +76,6 @@ public abstract class IgfsProcessorAdapter extends GridProcessorAdapter implemen
      * @param recRslv Record resolver.
      * @return Compute job.
      */
-    @Nullable public abstract ComputeJob createJob(IgfsJob job, @Nullable String igfsName, IgfsPath path,
+    public abstract @Nullable ComputeJob createJob(IgfsJob job, @Nullable String igfsName, IgfsPath path,
         long start, long length, IgfsRecordResolver recRslv);
 }

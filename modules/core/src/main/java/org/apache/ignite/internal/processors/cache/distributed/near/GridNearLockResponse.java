@@ -109,7 +109,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
     /**
      * @return {@code True} if client node should remap lock request.
      */
-    @Nullable public AffinityTopologyVersion clientRemapVersion() {
+    public @Nullable AffinityTopologyVersion clientRemapVersion() {
         return clientRemapVer;
     }
 

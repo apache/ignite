@@ -86,7 +86,7 @@ public class VisorSqlConnectorConfiguration extends VisorDataTransferObject {
     /**
      * @return Host.
      */
-    @Nullable public String getHost() {
+    public @Nullable String getHost() {
         return host;
     }
 

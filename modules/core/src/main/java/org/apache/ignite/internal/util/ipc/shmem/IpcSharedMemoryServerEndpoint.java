@@ -401,7 +401,7 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String getHost() {
+    @Override public @Nullable String getHost() {
         return null;
     }
 

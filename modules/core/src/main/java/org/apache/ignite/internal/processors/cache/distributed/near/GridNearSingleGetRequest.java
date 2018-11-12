@@ -159,7 +159,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
     /**
      * @return Mvcc version.
      */
-    @Nullable public MvccSnapshot mvccSnapshot() {
+    public @Nullable MvccSnapshot mvccSnapshot() {
         return mvccSnapshot;
     }
 

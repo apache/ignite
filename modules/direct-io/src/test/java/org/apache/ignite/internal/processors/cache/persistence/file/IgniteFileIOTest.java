@@ -283,7 +283,7 @@ public class IgniteFileIOTest extends TestCase {
     /**
      * @param arr Array.
      */
-    private static void fillRandomArray(@NotNull final byte[] arr) {
+    private static void fillRandomArray(final @NotNull byte[] arr) {
         ThreadLocalRandom.current().nextBytes(arr);
     }
 
@@ -291,7 +291,7 @@ public class IgniteFileIOTest extends TestCase {
      * @param arr1 Array 1.
      * @param arr2 Array 2.
      */
-    private static boolean compareArrays(@NotNull final byte[] arr1, @NotNull final byte[] arr2) {
+    private static boolean compareArrays(final @NotNull byte[] arr1, final @NotNull byte[] arr2) {
         if (arr1.length != arr2.length)
             return false;
 

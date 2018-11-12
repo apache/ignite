@@ -237,7 +237,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
     /**
      * @return list of actual module dependencies from pom.xml
      */
-    @NotNull protected Collection<Dependency> getDependencies(String igniteVer) {
+    protected @NotNull Collection<Dependency> getDependencies(String igniteVer) {
         final Collection<Dependency> dependencies = new ArrayList<>();
 
         dependencies.add(new Dependency("core", "ignite-core"));

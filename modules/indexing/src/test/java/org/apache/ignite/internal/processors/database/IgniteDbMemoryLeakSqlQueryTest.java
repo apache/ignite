@@ -65,7 +65,7 @@ public class IgniteDbMemoryLeakSqlQueryTest extends IgniteDbMemoryLeakTest {
      * @param cache IgniteCache.
      * @return SqlFieldsQuery.
      */
-    @NotNull private SqlFieldsQuery sqlQuery(IgniteCache<Object, Object> cache) {
+    private @NotNull SqlFieldsQuery sqlQuery(IgniteCache<Object, Object> cache) {
         String qry = String.format("select _key from \"%s\".DbValue where iVal=?", cache.getName());
 
         SqlFieldsQuery sqlQry = new SqlFieldsQuery(qry);

@@ -47,7 +47,7 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<VisorCach
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Iterable<VisorCacheAggregatedMetrics> reduce0(List<ComputeJobResult> results) {
+    @Override protected @Nullable Iterable<VisorCacheAggregatedMetrics> reduce0(List<ComputeJobResult> results) {
         Map<String, VisorCacheAggregatedMetrics> grpAggrMetrics = U.newHashMap(results.size());
 
         for (ComputeJobResult res : results) {

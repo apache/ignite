@@ -72,19 +72,19 @@ public abstract class AbstractWalRecordsIterator
     private AbstractReadFileHandle currWalSegment;
 
     /** Logger */
-    @NotNull protected final IgniteLogger log;
+    protected final @NotNull IgniteLogger log;
 
     /**
      * Shared context for creating serializer of required version and grid name access. Also cacheObjects processor from
      * this context may be used to covert Data entry key and value from its binary representation into objects.
      */
-    @NotNull protected final GridCacheSharedContext sharedCtx;
+    protected final @NotNull GridCacheSharedContext sharedCtx;
 
     /** Serializer factory. */
-    @NotNull private final RecordSerializerFactory serializerFactory;
+    private final @NotNull RecordSerializerFactory serializerFactory;
 
     /** Factory to provide I/O interfaces for read/write operations with files */
-    @NotNull protected final FileIOFactory ioFactory;
+    protected final @NotNull FileIOFactory ioFactory;
 
     /** Utility buffer for reading records */
     private final ByteBufferExpander buf;
@@ -101,10 +101,10 @@ public abstract class AbstractWalRecordsIterator
      * @param segmentFileInputFactory Factory to provide I/O interfaces for read primitives with files.
      */
     protected AbstractWalRecordsIterator(
-        @NotNull final IgniteLogger log,
-        @NotNull final GridCacheSharedContext sharedCtx,
-        @NotNull final RecordSerializerFactory serializerFactory,
-        @NotNull final FileIOFactory ioFactory,
+        final @NotNull IgniteLogger log,
+        final @NotNull GridCacheSharedContext sharedCtx,
+        final @NotNull RecordSerializerFactory serializerFactory,
+        final @NotNull FileIOFactory ioFactory,
         final int initialReadBufferSize,
         SegmentFileInputFactory segmentFileInputFactory) {
         this.log = log;
@@ -203,7 +203,7 @@ public abstract class AbstractWalRecordsIterator
      * @return closed handle
      * @throws IgniteCheckedException if IO failed
      */
-    @Nullable protected AbstractReadFileHandle closeCurrentWalSegment() throws IgniteCheckedException {
+    protected @Nullable AbstractReadFileHandle closeCurrentWalSegment() throws IgniteCheckedException {
         final AbstractReadFileHandle walSegmentClosed = currWalSegment;
 
         if (walSegmentClosed != null) {
@@ -222,7 +222,7 @@ public abstract class AbstractWalRecordsIterator
      * @throws IgniteCheckedException if reading failed
      */
     protected abstract AbstractReadFileHandle advanceSegment(
-        @Nullable final AbstractReadFileHandle curWalSegment
+        final @Nullable AbstractReadFileHandle curWalSegment
     ) throws IgniteCheckedException;
 
     /**
@@ -232,7 +232,7 @@ public abstract class AbstractWalRecordsIterator
      * @return next advanced record.
      */
     protected IgniteBiTuple<WALPointer, WALRecord> advanceRecord(
-        @Nullable final AbstractReadFileHandle hnd
+        final @Nullable AbstractReadFileHandle hnd
     ) throws IgniteCheckedException {
         if (hnd == null)
             return null;
@@ -272,7 +272,7 @@ public abstract class AbstractWalRecordsIterator
      * @param rec record to post process.
      * @return post processed record.
      */
-    @NotNull protected WALRecord postProcessRecord(@NotNull final WALRecord rec) {
+    protected @NotNull WALRecord postProcessRecord(final @NotNull WALRecord rec) {
         return rec;
     }
 
@@ -285,8 +285,8 @@ public abstract class AbstractWalRecordsIterator
      * was not handled, and we should stop the iteration.
      */
     protected IgniteCheckedException handleRecordException(
-        @NotNull final Exception e,
-        @Nullable final FileWALPointer ptr
+        final @NotNull Exception e,
+        final @Nullable FileWALPointer ptr
     ) {
         if (log.isInfoEnabled())
             log.info("Stopping WAL iteration due to an exception: " + e.getMessage() + ", ptr=" + ptr);
@@ -305,10 +305,10 @@ public abstract class AbstractWalRecordsIterator
      * @throws IgniteCheckedException If initialized failed due to another unexpected error.
      */
     protected AbstractReadFileHandle initReadHandle(
-        @NotNull final AbstractFileDescriptor desc,
-        @Nullable final FileWALPointer start,
-        @NotNull final SegmentIO fileIO,
-        @NotNull final SegmentHeader segmentHeader
+        final @NotNull AbstractFileDescriptor desc,
+        final @Nullable FileWALPointer start,
+        final @NotNull SegmentIO fileIO,
+        final @NotNull SegmentHeader segmentHeader
     ) throws IgniteCheckedException {
         try {
             boolean isCompacted = segmentHeader.isCompacted();
@@ -369,8 +369,8 @@ public abstract class AbstractWalRecordsIterator
      * @throws IgniteCheckedException If initialized failed due to another unexpected error.
      */
     protected AbstractReadFileHandle initReadHandle(
-        @NotNull final AbstractFileDescriptor desc,
-        @Nullable final FileWALPointer start
+        final @NotNull AbstractFileDescriptor desc,
+        final @Nullable FileWALPointer start
     ) throws IgniteCheckedException, FileNotFoundException {
         SegmentIO fileIO = null;
 

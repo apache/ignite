@@ -58,7 +58,7 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
      * @return Field value from object.
      * @throws CacheException in case of error.
      */
-    @Override @Nullable protected Object extractParameter(@Nullable String cacheName, String typeName, TypeKind typeKind,
+    @Override protected @Nullable Object extractParameter(@Nullable String cacheName, String typeName, TypeKind typeKind,
         String fldName, Object obj) throws CacheException {
         switch (typeKind) {
             case BUILT_IN:
@@ -80,7 +80,7 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
      * @return Field value from object.
      * @throws CacheException in case of error.
      */
-    @Nullable private Object extractPojoParameter(@Nullable String cacheName, String typeName, String fldName,
+    private @Nullable Object extractPojoParameter(@Nullable String cacheName, String typeName, String fldName,
         Object obj) throws CacheException {
         try {
             Map<String, PojoPropertiesCache> cacheProps = pojosProps.get(cacheName);
@@ -472,7 +472,7 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
          * @param str String.
          * @return String with capitalized first character.
          */
-        @Nullable private String capitalFirst(@Nullable String str) {
+        private @Nullable String capitalFirst(@Nullable String str) {
             return str == null ? null :
                 str.isEmpty() ? "" : Character.toUpperCase(str.charAt(0)) + str.substring(1);
         }

@@ -173,7 +173,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     /**
      * @return Cache groups to get affinity for (affinity is requested when node joins cluster).
      */
-    @Nullable public Collection<Integer> cacheGroupsAffinityRequest() {
+    public @Nullable Collection<Integer> cacheGroupsAffinityRequest() {
         return grpsAffRequest;
     }
 
@@ -330,7 +330,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     /**
      * @return Not null exception if exchange processing failed.
      */
-    @Nullable public Exception getError() {
+    public @Nullable Exception getError() {
         return err;
     }
 

@@ -37,7 +37,7 @@ public abstract class HibernateAbstractRegionAccessStrategy implements RegionAcc
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object get(Object key, long txTs) throws CacheException {
+    @Override public @Nullable Object get(Object key, long txTs) throws CacheException {
         return stgy.get(key);
     }
 
@@ -57,14 +57,14 @@ public abstract class HibernateAbstractRegionAccessStrategy implements RegionAcc
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public SoftLock lockItem(Object key, Object ver) throws CacheException {
+    @Override public @Nullable SoftLock lockItem(Object key, Object ver) throws CacheException {
         stgy.lock(key);
 
         return null;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public SoftLock lockRegion() throws CacheException {
+    @Override public @Nullable SoftLock lockRegion() throws CacheException {
         stgy.lockRegion();
 
         return null;

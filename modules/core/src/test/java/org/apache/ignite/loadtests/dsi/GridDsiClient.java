@@ -112,7 +112,7 @@ public class GridDsiClient implements Callable {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object call() throws Exception {
+    @Override public @Nullable Object call() throws Exception {
         IgniteCompute comp = g.compute(g.cluster().forPredicate(serverNode()));
 
         while (!finish.get()) {

@@ -471,7 +471,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
      * @param locNearEntriesFut Local future for near cache entries prepare.
      * @return Prepare error if any.
      */
-    @Nullable private IgniteCheckedException prepare(final MiniFuture fut,
+    private @Nullable IgniteCheckedException prepare(final MiniFuture fut,
         Map<UUID, Collection<UUID>> txNodes,
         @Nullable MiniFuture locNearEntriesFut) {
         GridDistributedTxMapping m = fut.mapping();

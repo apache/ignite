@@ -116,7 +116,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
      * Cache object processor. Used for converting cache objects and keys into binary objects. Null means there is no
      * convert is configured. All entries in this case will be lazy data entries.
      */
-    @Nullable private IgniteCacheObjectProcessor cacheObjProcessor;
+    private @Nullable IgniteCacheObjectProcessor cacheObjProcessor;
 
     /** Marshaller context implementation. */
     private MarshallerContextImpl marshallerCtx;
@@ -573,7 +573,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public ExecutorService getIndexingExecutorService() {
+    @Override public @Nullable ExecutorService getIndexingExecutorService() {
         return null;
     }
 
@@ -583,7 +583,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<String, ? extends ExecutorService> customExecutors() {
+    @Override public @Nullable Map<String, ? extends ExecutorService> customExecutors() {
         return null;
     }
 
@@ -668,7 +668,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Iterator<GridComponent> iterator() {
+    @Override public @NotNull Iterator<GridComponent> iterator() {
         return null;
     }
 }

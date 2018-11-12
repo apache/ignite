@@ -58,7 +58,7 @@ public abstract class IgniteDataTransferObject implements Externalizable {
      * @param <T> Collection type.
      * @return List based on passed collection.
      */
-    @Nullable protected static <T> List<T> toList(Collection<T> col) {
+    protected static @Nullable <T> List<T> toList(Collection<T> col) {
         if (col != null)
             return new ArrayList<>(col);
 
@@ -70,7 +70,7 @@ public abstract class IgniteDataTransferObject implements Externalizable {
      * @param <T> Collection type.
      * @return List based on passed collection.
      */
-    @Nullable protected static <T> Set<T> toSet(Collection<T> col) {
+    protected static @Nullable <T> Set<T> toSet(Collection<T> col) {
         if (col != null)
             return new LinkedHashSet<>(col);
 

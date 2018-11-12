@@ -92,7 +92,7 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
      * @param nodes List of cluster nodes.
      * @return Statistic.
      */
-    @NotNull private static Map<String, Integer> getAttributeStatistic(Collection<ClusterNode> nodes) {
+    private static @NotNull Map<String, Integer> getAttributeStatistic(Collection<ClusterNode> nodes) {
         Map<String, Integer> backupAssignedAttribute = new HashMap<>();
 
         backupAssignedAttribute.put(FIRST_NODE_GROUP, 0);

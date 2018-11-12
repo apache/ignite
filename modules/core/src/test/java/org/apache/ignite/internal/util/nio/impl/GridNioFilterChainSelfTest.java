@@ -381,7 +381,7 @@ public class GridNioFilterChainSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public GridNioRecoveryDescriptor outRecoveryDescriptor() {
+        @Override public @Nullable GridNioRecoveryDescriptor outRecoveryDescriptor() {
             return null;
         }
 
@@ -391,7 +391,7 @@ public class GridNioFilterChainSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public GridNioRecoveryDescriptor inRecoveryDescriptor() {
+        @Override public @Nullable GridNioRecoveryDescriptor inRecoveryDescriptor() {
             return null;
         }
 

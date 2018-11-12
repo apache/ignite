@@ -217,7 +217,7 @@ class GridClientComputeImpl extends GridClientAbstractProjection<GridClientCompu
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridClientNode refreshNode(String ip, boolean includeAttrs, boolean inclMetrics)
+    @Override public @Nullable GridClientNode refreshNode(String ip, boolean includeAttrs, boolean inclMetrics)
         throws GridClientException {
         return refreshNodeAsync(ip, includeAttrs, inclMetrics).get();
     }

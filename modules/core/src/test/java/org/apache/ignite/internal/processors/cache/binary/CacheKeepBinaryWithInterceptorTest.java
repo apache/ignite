@@ -218,7 +218,7 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
         static int onAfterRmv;
 
         /** {@inheritDoc} */
-        @Nullable @Override public BinaryObject onGet(BinaryObject key, @Nullable BinaryObject val) {
+        @Override public @Nullable BinaryObject onGet(BinaryObject key, @Nullable BinaryObject val) {
             System.out.println("Get [key=" + key + ", val=" + val + ']');
 
             onGet++;
@@ -230,7 +230,7 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public BinaryObject onBeforePut(Cache.Entry<BinaryObject, BinaryObject> entry, BinaryObject newVal) {
+        @Override public @Nullable BinaryObject onBeforePut(Cache.Entry<BinaryObject, BinaryObject> entry, BinaryObject newVal) {
             System.out.println("Before put [e=" + entry + ", newVal=" + newVal + ']');
 
             onBeforePut++;
@@ -255,7 +255,7 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public IgniteBiTuple<Boolean, BinaryObject> onBeforeRemove(Cache.Entry<BinaryObject, BinaryObject> entry) {
+        @Override public @Nullable IgniteBiTuple<Boolean, BinaryObject> onBeforeRemove(Cache.Entry<BinaryObject, BinaryObject> entry) {
             assertEquals(1, (int)entry.getKey().field("key"));
             assertEquals(10, (int)entry.getValue().field("val"));
 
@@ -295,7 +295,7 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
         static int onAfterRmv;
 
         /** {@inheritDoc} */
-        @Nullable @Override public Integer onGet(Integer key, @Nullable Integer val) {
+        @Override public @Nullable Integer onGet(Integer key, @Nullable Integer val) {
             System.out.println("Get [key=" + key + ", val=" + val + ']');
 
             onGet++;
@@ -307,7 +307,7 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Integer onBeforePut(Cache.Entry<Integer, Integer> entry, Integer newVal) {
+        @Override public @Nullable Integer onBeforePut(Cache.Entry<Integer, Integer> entry, Integer newVal) {
             System.out.println("Before put [e=" + entry + ", newVal=" + newVal + ']');
 
             onBeforePut++;
@@ -332,7 +332,7 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public IgniteBiTuple<Boolean, Integer> onBeforeRemove(Cache.Entry<Integer, Integer> entry) {
+        @Override public @Nullable IgniteBiTuple<Boolean, Integer> onBeforeRemove(Cache.Entry<Integer, Integer> entry) {
             assertEquals((Integer)1, entry.getKey());
             assertEquals((Integer)10, entry.getValue());
 

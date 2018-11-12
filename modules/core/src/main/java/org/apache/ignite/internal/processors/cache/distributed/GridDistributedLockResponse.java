@@ -173,7 +173,7 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
      * @param idx Index.
      * @return Value for given index.
      */
-    @Nullable public CacheObject value(int idx) {
+    public @Nullable CacheObject value(int idx) {
         if (!F.isEmpty(vals))
             return vals.get(idx);
 

@@ -186,7 +186,7 @@ public class DiscoCache {
     /**
      * @return Mvcc coordinator node.
      */
-    @Nullable public MvccCoordinator mvccCoordinator() {
+    public @Nullable MvccCoordinator mvccCoordinator() {
         return mvccCrd;
     }
 
@@ -233,7 +233,7 @@ public class DiscoCache {
      *
      * @return A collection of baseline nodes or {@code null} if baseline topology was not set.
      */
-    @Nullable public List<? extends BaselineNode> baselineNodes() {
+    public @Nullable List<? extends BaselineNode> baselineNodes() {
         return baselineNodes;
     }
 
@@ -294,7 +294,7 @@ public class DiscoCache {
      * @return A view of baseline nodes that are currently present in the cluster or {@code null} if baseline
      *      topology was not set.
      */
-    @Nullable public Collection<ClusterNode> aliveBaselineNodes() {
+    public @Nullable Collection<ClusterNode> aliveBaselineNodes() {
         return baselineNodes == null ? null : F.viewReadOnly(baselineNodes, BASELINE_TO_CLUSTER, aliveBaselineNodePred);
 
     }
@@ -310,8 +310,7 @@ public class DiscoCache {
     /**
      * @return Oldest alive server node.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
-    @Nullable public ClusterNode oldestAliveServerNode(){
+    @SuppressWarnings("ForLoopReplaceableByForEach") public @Nullable ClusterNode oldestAliveServerNode(){
         // Avoid iterator allocation.
         for (int i = 0; i < srvNodes.size(); i++) {
             ClusterNode srv = srvNodes.get(i);
@@ -326,7 +325,7 @@ public class DiscoCache {
     /**
      * @return Oldest server node.
      */
-    @Nullable public ClusterNode oldestServerNode(){
+    public @Nullable ClusterNode oldestServerNode(){
         if (!srvNodes.isEmpty())
             return srvNodes.get(0);
 
@@ -373,7 +372,7 @@ public class DiscoCache {
      * @param id Node ID.
      * @return Node.
      */
-    @Nullable public ClusterNode node(UUID id) {
+    public @Nullable ClusterNode node(UUID id) {
         return nodeMap.get(id);
     }
 
@@ -402,7 +401,7 @@ public class DiscoCache {
      * @param order Order.
      * @return Server node instance.
      */
-    @Nullable public ClusterNode serverNodeByOrder(long order) {
+    public @Nullable ClusterNode serverNodeByOrder(long order) {
         int idx = serverNodeBinarySearch(order);
 
         if (idx >= 0)

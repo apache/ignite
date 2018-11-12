@@ -205,7 +205,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
      * @return Field value from object.
      * @throws CacheException in case of error.
      */
-    @Nullable protected abstract Object extractParameter(@Nullable String cacheName, String typeName, TypeKind typeKind,
+    protected abstract @Nullable Object extractParameter(@Nullable String cacheName, String typeName, TypeKind typeKind,
         String fieldName, Object obj) throws CacheException;
 
     /**
@@ -427,8 +427,8 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
     private Callable<Void> loadCacheRange(
         final EntryMapping em,
         final IgniteBiInClosure<K, V> clo,
-        @Nullable final Object[] lowerBound,
-        @Nullable final Object[] upperBound,
+        final @Nullable Object[] lowerBound,
+        final @Nullable Object[] upperBound,
         final int fetchSize
     ) {
         return new Callable<Void>() {
@@ -824,7 +824,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V load(K key) throws CacheLoaderException {
+    @Override public @Nullable V load(K key) throws CacheLoaderException {
         assert key != null;
 
         EntryMapping em = entryMapping(session().cacheName(), typeIdForObject(key));

@@ -47,7 +47,7 @@ public class NetworkFailureTest extends TestCase {
 
         IgniteInternalFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
+                @Override public @Nullable Object call() throws Exception {
                     ServerSocket srvSock = null;
                     Socket sock = null;
 
@@ -85,7 +85,7 @@ public class NetworkFailureTest extends TestCase {
 
         IgniteInternalFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
+                @Override public @Nullable Object call() throws Exception {
                     Socket sock = null;
 
                     try {
@@ -146,7 +146,7 @@ public class NetworkFailureTest extends TestCase {
 
         IgniteInternalFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
+                @Override public @Nullable Object call() throws Exception {
                     ServerSocket srvSock = null;
                     Socket sock = null;
 
@@ -187,7 +187,7 @@ public class NetworkFailureTest extends TestCase {
 
         IgniteInternalFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
+                @Override public @Nullable Object call() throws Exception {
                     Socket sock = null;
 
                     try {
@@ -230,7 +230,7 @@ public class NetworkFailureTest extends TestCase {
 
         IgniteInternalFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
+                @Override public @Nullable Object call() throws Exception {
                     ServerSocket srvSock = null;
                     Socket sock = null;
 
@@ -258,7 +258,7 @@ public class NetworkFailureTest extends TestCase {
 
         IgniteInternalFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
+                @Override public @Nullable Object call() throws Exception {
                     Socket sock = null;
 
                     try {
@@ -292,7 +292,7 @@ public class NetworkFailureTest extends TestCase {
 
         IgniteInternalFuture<?> fut3 = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
+                @Override public @Nullable Object call() throws Exception {
                     while (true) {
                         U.sleep(1000);
 

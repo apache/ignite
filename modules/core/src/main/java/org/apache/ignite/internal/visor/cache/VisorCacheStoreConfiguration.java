@@ -129,7 +129,7 @@ public class VisorCacheStoreConfiguration extends VisorDataTransferObject {
     /**
      * @return Cache store class name.
      */
-    @Nullable public String getStore() {
+    public @Nullable String getStore() {
         return store;
     }
 

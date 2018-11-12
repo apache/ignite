@@ -38,5 +38,5 @@ public interface GridNioMessageReader {
     /**
      * @return Optional message factory.
      */
-    @Nullable public MessageFactory messageFactory();
+    public @Nullable MessageFactory messageFactory();
 }

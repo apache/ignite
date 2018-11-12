@@ -573,7 +573,7 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
      * @param rmv Remove operation.
      * @return Queues.
      */
-    @NotNull private List<BlockingQueue<Cache.Entry<TestKey, TestValue>>> getInterceptorQueues(
+    private @NotNull List<BlockingQueue<Cache.Entry<TestKey, TestValue>>> getInterceptorQueues(
         IgniteCache<Object, Object> cache,
         Object key,
         boolean rmv

@@ -98,7 +98,7 @@ public abstract class NNClassificationModel implements Model<Vector, Double>, Ex
      * @param distanceIdxPairs The distance map.
      * @return K-nearest neighbors.
      */
-    @NotNull protected LabeledVector[] getKClosestVectors(LabeledVectorSet<Double, LabeledVector> trainingData,
+    protected @NotNull LabeledVector[] getKClosestVectors(LabeledVectorSet<Double, LabeledVector> trainingData,
                                                           TreeMap<Double, Set<Integer>> distanceIdxPairs) {
         LabeledVector[] res;
 
@@ -134,7 +134,7 @@ public abstract class NNClassificationModel implements Model<Vector, Double>, Ex
      * @return Key - distanceMeasure from given features before features with idx stored in value. Value is presented
      * with Set because there can be a few vectors with the same distance.
      */
-    @NotNull protected TreeMap<Double, Set<Integer>> getDistances(Vector v, LabeledVectorSet<Double, LabeledVector> trainingData) {
+    protected @NotNull TreeMap<Double, Set<Integer>> getDistances(Vector v, LabeledVectorSet<Double, LabeledVector> trainingData) {
         TreeMap<Double, Set<Integer>> distanceIdxPairs = new TreeMap<>();
 
         for (int i = 0; i < trainingData.rowSize(); i++) {

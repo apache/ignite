@@ -92,7 +92,7 @@ public class GridLoadBalancerManager extends GridManagerAdapter<LoadBalancingSpi
 
         // Return value is not intended for sending over network.
         return new GridLoadBalancerAdapter() {
-            @Nullable @Override public ClusterNode getBalancedNode(ComputeJob job, @Nullable Collection<ClusterNode> exclNodes) {
+            @Override public @Nullable ClusterNode getBalancedNode(ComputeJob job, @Nullable Collection<ClusterNode> exclNodes) {
                 A.notNull(job, "job");
 
                 if (F.isEmpty(exclNodes))

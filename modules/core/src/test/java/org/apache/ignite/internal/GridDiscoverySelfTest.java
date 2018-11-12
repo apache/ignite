@@ -350,17 +350,17 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public <T> T attribute(String name) {
+        @Override public @Nullable <T> T attribute(String name) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public ClusterMetrics metrics() {
+        @Override public @Nullable ClusterMetrics metrics() {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Map<String, Object> attributes() {
+        @Override public @Nullable Map<String, Object> attributes() {
             return null;
         }
 

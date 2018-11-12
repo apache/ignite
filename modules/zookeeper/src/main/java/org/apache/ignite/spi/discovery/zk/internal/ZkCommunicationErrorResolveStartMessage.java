@@ -40,7 +40,7 @@ public class ZkCommunicationErrorResolveStartMessage implements DiscoverySpiCust
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoverySpiCustomMessage ackMessage() {
+    @Override public @Nullable DiscoverySpiCustomMessage ackMessage() {
         return null;
     }
 

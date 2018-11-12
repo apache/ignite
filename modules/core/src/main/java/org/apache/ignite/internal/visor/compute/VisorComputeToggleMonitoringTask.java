@@ -42,7 +42,7 @@ public class VisorComputeToggleMonitoringTask extends
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Boolean reduce0(List<ComputeJobResult> results) {
+    @Override protected @Nullable Boolean reduce0(List<ComputeJobResult> results) {
         Collection<Boolean> toggles = new HashSet<>();
 
         for (ComputeJobResult res : results)

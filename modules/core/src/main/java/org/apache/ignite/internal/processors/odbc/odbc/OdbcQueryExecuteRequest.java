@@ -81,7 +81,7 @@ public class OdbcQueryExecuteRequest extends OdbcRequest {
     /**
      * @return Schema.
      */
-    @Nullable public String schema() {
+    public @Nullable String schema() {
         return schema;
     }
 

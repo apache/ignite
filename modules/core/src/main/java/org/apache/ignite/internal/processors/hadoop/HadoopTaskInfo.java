@@ -164,7 +164,7 @@ public class HadoopTaskInfo implements Externalizable {
     /**
      * @return Input split.
      */
-    @Nullable public HadoopInputSplit inputSplit() {
+    public @Nullable HadoopInputSplit inputSplit() {
         return inputSplit;
     }
 
