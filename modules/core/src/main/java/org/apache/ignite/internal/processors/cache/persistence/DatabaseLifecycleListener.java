@@ -32,6 +32,14 @@ public interface DatabaseLifecycleListener {
     default void onInitDataRegions(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {};
 
     /**
+     * Callback executed when node detected that baseline topology is changed and node is not in that baseline.
+     * It's useful to cleanup and invalidate all available data restored at that moment.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    default void onBaselineChange() throws IgniteCheckedException {}
+
+    /**
      * Callback executed right before node become perform binary recovery.
      *
      * @param mgr Database shared manager.
@@ -42,10 +50,18 @@ public interface DatabaseLifecycleListener {
     /**
      * Callback executed when binary memory has fully restored and WAL logging is resumed.
      *
-     * @param mgr Database shared manager.
+     * @param binaryState Result of binary recovery.
      * @throws IgniteCheckedException If failed.
      */
-    default void afterBinaryMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {};
+    default void afterBinaryMemoryRestore(GridCacheDatabaseSharedManager.RestoreBinaryState binaryState) throws IgniteCheckedException {};
+
+    /**
+     * Callback executed when all logical updates were applied and page memory become to fully consistent state.
+     *
+     * @param logicalState Result of logical recovery.
+     * @throws IgniteCheckedException If failed.
+     */
+    default void afterLogicalUpdatesApplied(GridCacheDatabaseSharedManager.RestoreLogicalState logicalState) throws IgniteCheckedException {}
 
     /**
      *

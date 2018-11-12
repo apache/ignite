@@ -21,21 +21,24 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import com.google.common.collect.Lists;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -45,12 +48,17 @@ import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.wal.memtracker.PageMemoryTrackerConfiguration;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -94,7 +102,6 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         );
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
-            .setAlwaysWriteFullPages(true)
             .setWalMode(WALMode.LOG_ONLY)
             .setCheckpointFrequency(1024 * 1024 * 1024) // Disable automatic checkpoints.
             .setDefaultDataRegionConfiguration(
@@ -110,7 +117,11 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         if (ioFactory != null)
             dsCfg.setFileIOFactory(ioFactory);
 
-        cfg.setPluginConfigurations(new PageMemoryTrackerConfiguration().setEnabled(false).setCheckPagesOnCheckpoint(true));
+        TestRecordingCommunicationSpi spi = new TestRecordingCommunicationSpi();
+
+        spi.record(GridDhtPartitionDemandMessage.class);
+
+        cfg.setCommunicationSpi(spi);
 
         return cfg;
     }
@@ -130,16 +141,16 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
      * @param cacheMode Cache mode.
      * @param atomicityMode Atomicity mode.
      */
-    private CacheConfiguration<Object, Object> cacheConfiguration(String name, @Nullable String groupName, CacheMode cacheMode, CacheAtomicityMode atomicityMode) {
-        CacheConfiguration<Object, Object> cfg = new CacheConfiguration<>();
+    protected CacheConfiguration<Object, Object> cacheConfiguration(String name, @Nullable String groupName, CacheMode cacheMode, CacheAtomicityMode atomicityMode) {
+        CacheConfiguration<Object, Object> cfg = new CacheConfiguration<>(name)
+            .setGroupName(groupName)
+            .setCacheMode(cacheMode)
+            .setAtomicityMode(atomicityMode)
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+            .setBackups(2)
+            .setAffinity(new RendezvousAffinityFunction(false, 32));
 
-        cfg.setGroupName(groupName);
-        cfg.setName(name);
-        cfg.setCacheMode(cacheMode);
-        cfg.setAtomicityMode(atomicityMode);
-        cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cfg.setBackups(2);
-        cfg.setAffinity(new RendezvousAffinityFunction(false, 32));
+        cfg.setIndexedTypes(Integer.class, Integer.class);
 
         return cfg;
     }
@@ -172,25 +183,23 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
 
         IgniteEx node = grid(2);
 
-        AggregateCacheLoader aggCacheLoader = new AggregateCacheLoader(node);
+        AggregateCacheLoader cacheLoader = new AggregateCacheLoader(node);
 
-        aggCacheLoader.start();
-
-        U.sleep(3000);
+        cacheLoader.loadByTime(5_000).get();
 
         forceCheckpoint();
 
-        U.sleep(3000);
-
-        aggCacheLoader.stop();
+        cacheLoader.loadByTime(5_000).get();
 
         stopGrid(2, true);
 
-        startGrid(2);
+        node = startGrid(2);
 
         awaitPartitionMapExchange();
 
-        aggCacheLoader.consistencyCheck(grid(2));
+        cacheLoader.consistencyCheck(node);
+
+        checkNoRebalanceAfterRecovery();
     }
 
     /**
@@ -203,29 +212,27 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
 
         IgniteEx node = grid(2);
 
-        AggregateCacheLoader aggCacheLoader = new AggregateCacheLoader(node);
+        AggregateCacheLoader cacheLoader = new AggregateCacheLoader(node);
 
-        aggCacheLoader.start();
-
-        U.sleep(3000);
+        cacheLoader.loadByTime(5_000).get();
 
         forceCheckpoint();
 
-        U.sleep(3000);
-
-        aggCacheLoader.stop();
+        cacheLoader.loadByTime(5_000).get();
 
         stopGrid(2, true);
 
         crd.cluster().active(false);
 
-        startGrid(2);
+        node = startGrid(2);
 
         crd.cluster().active(true);
 
         awaitPartitionMapExchange();
 
-        aggCacheLoader.consistencyCheck(grid(2));
+        checkNoRebalanceAfterRecovery();
+
+        cacheLoader.consistencyCheck(node);
     }
 
     /**
@@ -268,17 +275,13 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
 
         node.getOrCreateCaches(dynamicCaches);
 
-        AggregateCacheLoader aggCacheLoader = new AggregateCacheLoader(node);
+        AggregateCacheLoader cacheLoader = new AggregateCacheLoader(node);
 
-        aggCacheLoader.start();
-
-        U.sleep(3000);
+        cacheLoader.loadByTime(5_000).get();
 
         forceCheckpoint();
 
-        U.sleep(3000);
-
-        aggCacheLoader.stop();
+        cacheLoader.loadByTime(5_000).get();
 
         stopGrid(2, true);
 
@@ -286,8 +289,10 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
+        checkNoRebalanceAfterRecovery();
+
         for (int idx = 0; idx < 3; idx++)
-            aggCacheLoader.consistencyCheck(grid(idx));
+            cacheLoader.consistencyCheck(grid(idx));
     }
 
     /**
@@ -300,17 +305,13 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
 
         IgniteEx node = grid(2);
 
-        AggregateCacheLoader aggCacheLoader = new AggregateCacheLoader(node);
+        AggregateCacheLoader cacheLoader = new AggregateCacheLoader(node);
 
-        aggCacheLoader.start();
-
-        U.sleep(3000);
+        cacheLoader.loadByTime(5_000).get();
 
         forceCheckpoint();
 
-        U.sleep(3000);
-
-        aggCacheLoader.stop();
+        cacheLoader.loadByTime(5_000).get();
 
         stopGrid(2, true);
 
@@ -323,34 +324,26 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         for (int idx = 0; idx < 3; idx++)
-            aggCacheLoader.consistencyCheck(grid(idx));
+            cacheLoader.consistencyCheck(grid(idx));
     }
 
     /**
      *
      */
     public void testRecoveryOnCrushDuringCheckpointOnNodeStart() throws Exception {
-        // Crash recovery fails because of the bug in pages recycling.
-        // Test passes if don't perform removes in cache loader.
-        fail("https://issues.apache.org/jira/browse/IGNITE-9303");
-
         IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3, false);
 
         crd.cluster().active(true);
 
         IgniteEx node = grid(2);
 
-        AggregateCacheLoader aggCacheLoader = new AggregateCacheLoader(node);
+        AggregateCacheLoader cacheLoader = new AggregateCacheLoader(node);
 
-        aggCacheLoader.start();
-
-        U.sleep(3000);
+        cacheLoader.loadByTime(5_000).get();
 
         forceCheckpoint();
 
-        U.sleep(3000);
-
-        aggCacheLoader.stop();
+        cacheLoader.loadByTime(5_000).get();
 
         stopGrid(2, false);
 
@@ -363,6 +356,18 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         }
         catch (Exception expected) { }
 
+        // Wait until node will leave cluster.
+        GridTestUtils.waitForCondition(() -> {
+            try {
+                grid(2);
+            }
+            catch (IgniteIllegalStateException e) {
+                return true;
+            }
+
+            return false;
+        }, getTestTimeout());
+
         ioFactory = null;
 
         // Start node again and check recovery.
@@ -370,8 +375,10 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
+        checkNoRebalanceAfterRecovery();
+
         for (int idx = 0; idx < 3; idx++)
-            aggCacheLoader.consistencyCheck(grid(idx));
+            cacheLoader.consistencyCheck(grid(idx));
     }
 
     /** {@inheritDoc} */
@@ -381,7 +388,30 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 600 * 1000;
+        return 120 * 1000;
+    }
+
+    /**
+     * Method checks that there were no rebalance for all caches (excluding sys cache).
+     */
+    private void checkNoRebalanceAfterRecovery() {
+        int sysCacheGroupId = CU.cacheId(GridCacheUtils.UTILITY_CACHE_NAME);
+
+        List<Ignite> nodes = G.allGrids();
+
+        for (Ignite node : nodes) {
+            TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(node);
+
+            List<Integer> rebalancedGroups = spi.recordedMessages(true).stream()
+                .map(msg -> (GridDhtPartitionDemandMessage) msg)
+                .map(msg -> msg.groupId())
+                .filter(grpId -> grpId != sysCacheGroupId)
+                .distinct()
+                .collect(Collectors.toList());
+
+            Assert.assertTrue("There was unexpected rebalance for some groups" +
+                    " [node=" + node.name() + ", groups=" + rebalancedGroups + ']', rebalancedGroups.isEmpty());
+        }
     }
 
     /**
@@ -389,59 +419,50 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
      */
     private static class AggregateCacheLoader {
         /** Ignite. */
-        IgniteEx ignite;
-
-        /** Stop flag. */
-        AtomicBoolean stopFlag;
+        final IgniteEx ignite;
 
         /** Cache loaders. */
-        Map<CacheLoader, IgniteInternalFuture> cacheLoaders;
+        final List<CacheLoader> cacheLoaders;
 
         /**
          * @param ignite Ignite.
          */
         public AggregateCacheLoader(IgniteEx ignite) {
             this.ignite = ignite;
+
+            List<CacheLoader> cacheLoaders = new ArrayList<>();
+
+            for (String cacheName : ignite.cacheNames())
+                cacheLoaders.add(new CacheLoader(ignite, cacheName));
+
+            this.cacheLoaders = cacheLoaders;
         }
 
         /**
-         *
+         * @param timeMillis Loading time in milliseconds.
          */
-        public void start() {
-            if (stopFlag != null && !stopFlag.get())
-                throw new IllegalStateException("Cache loaders must be stopped before start again");
+        public IgniteInternalFuture<?> loadByTime(int timeMillis) {
+            GridCompoundFuture<?, ?> loadFut = new GridCompoundFuture();
 
-            stopFlag = new AtomicBoolean();
-            cacheLoaders = new HashMap<>();
+            for (CacheLoader cacheLoader : cacheLoaders) {
+                long endTime = U.currentTimeMillis() + timeMillis;
 
-            for (String cacheName : ignite.cacheNames()) {
-                CacheLoader loader = new CacheLoader(ignite, stopFlag, cacheName);
+                cacheLoader.stopPredicate = it -> U.currentTimeMillis() >= endTime;
 
-                IgniteInternalFuture loadFuture = GridTestUtils.runAsync(loader);
-
-                cacheLoaders.put(loader, loadFuture);
+                loadFut.add(GridTestUtils.runAsync(cacheLoader));
             }
+
+            loadFut.markInitialized();
+
+            return loadFut;
         }
 
         /**
-         *
-         */
-        public void stop() throws IgniteCheckedException {
-            if (stopFlag != null)
-                stopFlag.set(true);
-
-            if (cacheLoaders != null)
-                for (IgniteInternalFuture loadFuture : cacheLoaders.values())
-                    loadFuture.get();
-        }
-
-        /**
-         * @param ignite Ignite.
+         * @param ignite Ignite node to check consistency from.
          */
         public void consistencyCheck(IgniteEx ignite) {
-            if (cacheLoaders != null)
-                for (CacheLoader cacheLoader : cacheLoaders.keySet())
-                    cacheLoader.consistencyCheck(ignite);
+            for (CacheLoader cacheLoader : cacheLoaders)
+                cacheLoader.consistencyCheck(ignite);
         }
     }
 
@@ -455,38 +476,38 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         /** Ignite. */
         final IgniteEx ignite;
 
-        /** Stop flag. */
-        final AtomicBoolean stopFlag;
+        /** Stop predicate. */
+        volatile Predicate<IgniteEx> stopPredicate;
 
         /** Cache name. */
         final String cacheName;
 
         /** Local cache. */
-        final Map<Object, Object> locCache = new ConcurrentHashMap<>();
+        final Map<Integer, TestValue> locCache = new ConcurrentHashMap<>();
 
         /**
          * @param ignite Ignite.
-         * @param stopFlag Stop flag.
          * @param cacheName Cache name.
          */
-        public CacheLoader(IgniteEx ignite, AtomicBoolean stopFlag, String cacheName) {
+        public CacheLoader(IgniteEx ignite, String cacheName) {
             this.ignite = ignite;
-            this.stopFlag = stopFlag;
             this.cacheName = cacheName;
         }
 
         /** {@inheritDoc} */
         @Override public void run() {
-            while (!stopFlag.get()) {
+            final Predicate<IgniteEx> predicate = stopPredicate;
+
+            while (!predicate.test(ignite)) {
                 ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                 int key = rnd.nextInt(KEYS_SPACE);
 
                 boolean remove = rnd.nextInt(100) <= 20;
 
-                IgniteCache<Object, Object> cache = ignite.getOrCreateCache(cacheName);
-
                 try {
+                    IgniteCache<Object, Object> cache = ignite.getOrCreateCache(cacheName);
+
                     if (remove) {
                         cache.remove(key);
 
@@ -496,10 +517,15 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
                         int[] payload = new int[KEYS_SPACE];
                         Arrays.fill(payload, key);
 
-                        cache.put(key, payload);
+                        TestValue val = new TestValue(key, payload);
 
-                        locCache.put(key, payload);
+                        cache.put(key, val);
+
+                        locCache.put(key, val);
                     }
+
+                    // Throttle against GC.
+                    U.sleep(1);
                 }
                 catch (Exception ignored) { }
             }
@@ -509,14 +535,14 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
          *
          */
         public void consistencyCheck(IgniteEx ignite) {
-            IgniteCache<Object, Object> cache = ignite.getOrCreateCache(cacheName);
+            IgniteCache<Integer, TestValue> cache = ignite.getOrCreateCache(cacheName);
 
             for (int key = 0; key < KEYS_SPACE; key++) {
-                int[] expectedValue = (int[]) locCache.get(key);
-                int[] actualValue = (int[]) cache.get(key);
+                TestValue expectedVal = locCache.get(key);
+                TestValue actualVal = cache.get(key);
 
                 Assert.assertEquals("Consistency check failed for: " + cache.getName() + ", key=" + key,
-                    arrayToString(expectedValue), arrayToString(actualValue));
+                    expectedVal, actualVal);
             }
         }
 
@@ -582,5 +608,48 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         sb.append(']');
 
         return sb.toString();
+    }
+
+    /**
+     * Test payload with indexed field.
+     */
+    static class TestValue {
+        /** Indexed field. */
+        @QuerySqlField(index = true)
+        private final int indexedField;
+
+        /** Payload. */
+        private final int[] payload;
+
+        /**
+         * @param indexedField Indexed field.
+         * @param payload Payload.
+         */
+        public TestValue(int indexedField, int[] payload) {
+            this.indexedField = indexedField;
+            this.payload = payload;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            TestValue testValue = (TestValue) o;
+
+            return indexedField == testValue.indexedField &&
+                Arrays.equals(payload, testValue.payload);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int result = Objects.hash(indexedField);
+
+            result = 31 * result + Arrays.hashCode(payload);
+
+            return result;
+        }
     }
 }

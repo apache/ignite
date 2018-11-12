@@ -221,7 +221,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @return {@code True} if this record should be encrypted.
      */
     private boolean needEncryption(WALRecord rec) {
-        if (!(rec instanceof WalRecordCacheGroupAware) || rec instanceof MetastoreDataRecord)
+        if (!(rec instanceof WalRecordCacheGroupAware))
             return false;
 
         return needEncryption(((WalRecordCacheGroupAware)rec).groupId());
