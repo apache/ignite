@@ -58,6 +58,7 @@
             <artifactId>kafka-clients</artifactId>
             <version>${kafka.version}</version>
             <classifier>test</classifier>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
