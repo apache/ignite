@@ -38,7 +38,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * A response to {@link GridNearTxQueryEnlistRequest}.
  */
 public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage implements ExceptionAware {
     /** */
@@ -99,6 +99,7 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage implements
      * @param lockVer Lock version.
      * @param res Result.
      * @param removeMapping Remove mapping flag.
+     * @param newDhtNodes New DHT nodes involved into transaction.
      */
     public GridNearTxQueryEnlistResponse(int cacheId, IgniteUuid futId, int miniId, GridCacheVersion lockVer, long res,
         boolean removeMapping, Set<UUID> newDhtNodes) {

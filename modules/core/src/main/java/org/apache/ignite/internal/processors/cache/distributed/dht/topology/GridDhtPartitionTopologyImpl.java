@@ -885,8 +885,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             locParts.set(p, part);
 
-            ctx.pageStore().onPartitionCreated(grp.groupId(), p);
-
             return part;
         }
         finally {
@@ -946,8 +944,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     }
                 }
                 else if (loc != null && state == RENTING && !showRenting) {
+                    boolean belongsNow = topVer.equals(this.readyTopVer) ? belongs : partitionLocalNode(p, this.readyTopVer);
+
                     throw new GridDhtInvalidPartitionException(p, "Adding entry to partition that is concurrently " +
-                        "evicted [grp=" + grp.cacheOrGroupName() + ", part=" + p + ", shouldBeMoving="
+                        "evicted [grp=" + grp.cacheOrGroupName() + ", part=" + p + ", belongsNow=" + belongsNow
                         + ", belongs=" + belongs + ", topVer=" + topVer + ", curTopVer=" + this.readyTopVer + "]");
                 }
 
@@ -1345,7 +1345,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     @Override public boolean update(
         @Nullable AffinityTopologyVersion exchangeVer,
         GridDhtPartitionFullMap partMap,
@@ -1719,7 +1718,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     @Override public boolean update(
         @Nullable GridDhtPartitionExchangeId exchId,
         GridDhtPartitionMap parts,
@@ -2049,6 +2047,12 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         }
                     }
 
+                    if (!recentlyLost.isEmpty()) {
+                        U.warn(log, "Detected lost partitions [grp=" + grp.cacheOrGroupName()
+                            + ", parts=" + S.compact(recentlyLost)
+                            + ", plc=" + plc + "]");
+                    }
+
                     // Update partition state on all nodes.
                     for (Integer part : lost) {
                         long updSeq = updateSeq.incrementAndGet();
@@ -2125,8 +2129,15 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         if (locPart != null && locPart.state() == LOST) {
                             boolean marked = locPart.own();
 
-                            if (marked)
+                            if (marked) {
                                 updateLocal(locPart.id(), locPart.state(), updSeq, resTopVer);
+
+                                long updateCntr = locPart.updateCounter();
+
+                                //Set update counters to 0, for full rebalance.
+                                locPart.updateCounter(updateCntr, -updateCntr);
+                                locPart.initialUpdateCounter(0);
+                            }
                         }
                     }
                 }
@@ -2427,7 +2438,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * @param affVer Affinity version.
      * @return Update sequence.
      */
-    @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     private long updateLocal(int p, GridDhtPartitionState state, long updateSeq, AffinityTopologyVersion affVer) {
         assert lock.isWriteLockedByCurrentThread();
 
@@ -2649,7 +2659,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public CachePartitionPartialCountersMap localUpdateCounters(boolean skipZeros) {
+    @Override public CachePartitionPartialCountersMap localUpdateCounters(boolean skipZeros,
+        boolean finalizeCntrsBeforeCollecting) {
         lock.readLock().lock();
 
         try {
@@ -2669,6 +2680,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 if (part == null)
                     continue;
+
+                if (finalizeCntrsBeforeCollecting)
+                    part.finalizeUpdateCountres();
 
                 long updCntr = part.updateCounter();
                 long initCntr = part.initialUpdateCounter();

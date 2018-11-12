@@ -30,6 +30,7 @@ import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -96,6 +97,13 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
         cfg.setDataStorageConfiguration(memCfg);
 
         return cfg;
+    }
+
+    /**
+     * @return Atomicity mode.
+     */
+    protected CacheAtomicityMode atomicityMode() {
+        return ATOMIC;
     }
 
     /** {@inheritDoc} */

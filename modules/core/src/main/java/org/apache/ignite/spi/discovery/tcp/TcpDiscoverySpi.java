@@ -108,6 +108,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessa
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryEnsureDelivery;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.TestOnly;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
@@ -223,7 +224,6 @@ import static org.apache.ignite.IgniteSystemProperties.getBoolean;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see DiscoverySpi
  */
-@SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
 @IgniteSpiMultipleInstancesSupport(true)
 @DiscoverySpiOrderSupport(true)
 @DiscoverySpiHistorySupport(true)
@@ -302,7 +302,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     protected long netTimeout = DFLT_NETWORK_TIMEOUT;
 
     /** Join timeout. */
-    @SuppressWarnings("RedundantFieldInitialization")
     protected long joinTimeout = DFLT_JOIN_TIMEOUT;
 
     /** Thread priority for all threads started by SPI. */
@@ -360,21 +359,18 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     protected int locPortRange = DFLT_PORT_RANGE;
 
     /** Reconnect attempts count. */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     private int reconCnt = DFLT_RECONNECT_CNT;
 
     /** Delay between attempts to connect to the cluster. */
     private long reconDelay = DFLT_RECONNECT_DELAY;
 
     /** Statistics print frequency. */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized", "RedundantFieldInitialization"})
     protected long statsPrintFreq = DFLT_STATS_PRINT_FREQ;
 
     /** Maximum message acknowledgement timeout. */
     private long maxAckTimeout = DFLT_MAX_ACK_TIMEOUT;
 
     /** IP finder clean frequency. */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     protected long ipFinderCleanFreq = DFLT_IP_FINDER_CLEAN_FREQ;
 
     /** Node authenticator. */
@@ -422,6 +418,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** */
     private IgniteDiscoverySpiInternalListener internalLsnr;
+
+    /** For test purposes. */
+    private boolean skipAddrsRandomization = false;
 
     /**
      * Gets current SPI state.
@@ -1609,6 +1608,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /**
      * @param msg Message.
      */
+    @TestOnly
     protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
         // No-op, intended for usage in tests.
     }
@@ -1881,7 +1881,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             }
         }
 
-        if (!res.isEmpty())
+        if (!res.isEmpty() && !skipAddrsRandomization)
             Collections.shuffle(res);
 
         return res;

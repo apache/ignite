@@ -22,10 +22,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -37,6 +40,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 import javax.cache.Cache;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -45,6 +49,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
@@ -59,12 +64,17 @@ import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridInClosure3;
@@ -85,6 +95,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
@@ -92,11 +103,9 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SCAN;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL_SUM;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.WriteMode.DML;
-import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.WriteMode.PUT;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -223,6 +232,8 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        persistence = false;
+
         try {
             verifyOldVersionsCleaned();
 
@@ -230,11 +241,11 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         }
         finally {
             stopAllGrids();
+
+            MvccProcessorImpl.coordinatorAssignClosure(null);
+
+            cleanPersistenceDir();
         }
-
-        MvccProcessorImpl.coordinatorAssignClosure(null);
-
-        cleanPersistenceDir();
 
         super.afterTest();
     }
@@ -420,7 +431,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                             Integer id1 = Math.min(i1, i2);
                             Integer id2 = Math.max(i1, i2);
 
-                            TreeSet<Integer> keys = new TreeSet<>();
+                            Set<Integer> keys = new HashSet<>();
 
                             keys.add(id1);
                             keys.add(id2);
@@ -787,7 +798,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
      * @param cache Cache.
      * @return All accounts
      */
-    private static Map<Integer, MvccTestAccount> getAllSql(TestCache<Integer, MvccTestAccount> cache) {
+    protected static Map<Integer, MvccTestAccount> getAllSql(TestCache<Integer, MvccTestAccount> cache) {
         Map<Integer, MvccTestAccount> accounts = new HashMap<>();
 
         SqlFieldsQuery qry = new SqlFieldsQuery("select _key, val, updateCnt from MvccTestAccount");
@@ -826,8 +837,24 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
      * @param cache Cache.
      * @param key Key.
      */
-    private static void removeSql(TestCache<Integer, MvccTestAccount> cache, Integer key) {
+    protected static void removeSql(TestCache<Integer, MvccTestAccount> cache, Integer key) {
         SqlFieldsQuery qry = new SqlFieldsQuery("delete from MvccTestAccount where _key=" + key);
+
+        cache.cache.query(qry).getAll();
+    }
+
+
+    /**
+     * Merge account by means of SQL API.
+     *
+     * @param cache Cache.
+     * @param key Key.
+     * @param val Value.
+     * @param updateCnt Update counter.
+     */
+    protected static void mergeSql(TestCache<Integer, MvccTestAccount> cache, Integer key, Integer val, Integer updateCnt) {
+        SqlFieldsQuery qry = new SqlFieldsQuery("merge into MvccTestAccount(_key, val, updateCnt) values " +
+            " (" + key+ ", " + val + ", " + updateCnt + ")");
 
         cache.cache.query(qry).getAll();
     }
@@ -867,9 +894,6 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         ReadMode readMode,
         WriteMode writeMode
     ) throws Exception {
-        if(readMode == SCAN && writeMode == PUT)
-            fail("https://issues.apache.org/jira/browse/IGNITE-7764");
-
         final int RANGE = 20;
 
         final int writers = 4;
@@ -886,15 +910,23 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
                     info("Thread range [min=" + min + ", max=" + max + ']');
 
-                    Map<Integer, Integer> map = new HashMap<>();
+                    // Sorted map for put to avoid deadlocks.
+                    Map<Integer, Integer> map = new TreeMap<>();
+
+                    // Unordered key sequence.
+                    Set<Integer> keys = new LinkedHashSet<>();
 
                     int v = idx * 1_000_000;
 
                     boolean first = true;
 
                     while (!stop.get()) {
-                        while (map.size() < RANGE)
-                            map.put(rnd.nextInt(min, max), v);
+                        while (keys.size() < RANGE) {
+                            int key = rnd.nextInt(min, max);
+
+                            if (keys.add(key))
+                                map.put(key, v);
+                        }
 
                         TestCache<Integer, Integer> cache = randomCache(caches, rnd);
 
@@ -903,9 +935,9 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
                             try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                 if (!first && rnd.nextBoolean()) {
-                                    Map<Integer, Integer> res = readAllByMode(cache.cache, map.keySet(), readMode, INTEGER_CODEC);
+                                    Map<Integer, Integer> res = readAllByMode(cache.cache, keys, readMode, INTEGER_CODEC);
 
-                                    for (Integer k : map.keySet())
+                                    for (Integer k : keys)
                                         assertEquals("res=" + res, v - 1, (Object)res.get(k));
                                 }
 
@@ -917,13 +949,11 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                             }
 
                             if (rnd.nextBoolean()) {
-                                Map<Integer, Integer> res = readAllByMode(cache.cache, map.keySet(), readMode, INTEGER_CODEC);
+                                Map<Integer, Integer> res = readAllByMode(cache.cache, keys, readMode, INTEGER_CODEC);
 
-                                for (Integer k : map.keySet())
+                                for (Integer k : keys)
                                     assertEquals("key=" + k, v, (Object)res.get(k));
                             }
-
-                            map.clear();
 
                             v++;
                         }
@@ -932,6 +962,8 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                         }
                         finally {
                             cache.readUnlock();
+
+                            keys.clear();
 
                             map.clear();
                         }
@@ -955,6 +987,8 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
                         int min = range * RANGE;
                         int max = min + RANGE;
+
+                        keys.clear();
 
                         while (keys.size() < RANGE)
                             keys.add(rnd.nextInt(min, max));
@@ -1003,8 +1037,6 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                                 }
                             }
                         }
-
-                        keys.clear();
                     }
                 }
             };
@@ -1054,9 +1086,6 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
     )
         throws Exception
     {
-        if(readMode == SCAN && writeMode == PUT)
-            fail("https://issues.apache.org/jira/browse/IGNITE-7764");
-
         final int TOTAL = 20;
 
         assert N <= TOTAL;
@@ -1071,7 +1100,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
             @Override public void apply(IgniteCache<Object, Object> cache) {
                 final IgniteTransactions txs = cache.unwrap(Ignite.class).transactions();
 
-                Map<Integer, Integer> vals = new HashMap<>();
+                Map<Integer, Integer> vals = new LinkedHashMap<>();
 
                 for (int i = 0; i < TOTAL; i++)
                     vals.put(i, N);
@@ -1341,6 +1370,9 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
             while (System.currentTimeMillis() < stopTime && !stop.get()) {
                 Thread.sleep(1000);
 
+                if (System.currentTimeMillis() >= stopTime || stop.get())
+                    break;
+
                 if (restartMode != null) {
                     switch (restartMode) {
                         case RESTART_CRD: {
@@ -1450,8 +1482,64 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
      * @param e Exception.
      */
     protected void handleTxException(Exception e) {
-        if (log.isTraceEnabled())
-            log.trace("Exception during tx execution: " + X.getFullStackTrace(e));
+        if (log.isDebugEnabled())
+            log.debug("Exception during tx execution: " + X.getFullStackTrace(e));
+
+        if (X.hasCause(e, IgniteFutureCancelledCheckedException.class))
+            return;
+
+        if (X.hasCause(e, ClusterTopologyException.class))
+            return;
+
+        if (X.hasCause(e, ClusterTopologyCheckedException.class))
+            return;
+
+        if (X.hasCause(e, IgniteTxRollbackCheckedException.class))
+            return;
+
+        if (X.hasCause(e, TransactionException.class))
+            return;
+
+        if (X.hasCause(e, IgniteTxTimeoutCheckedException.class))
+            return;
+
+        if (X.hasCause(e, CacheException.class)) {
+            CacheException cacheEx = X.cause(e, CacheException.class);
+
+            if (cacheEx != null && cacheEx.getMessage() != null) {
+                if (cacheEx.getMessage().contains("Data node has left the grid during query execution"))
+                    return;
+            }
+
+            if (cacheEx != null && cacheEx.getMessage() != null) {
+                if (cacheEx.getMessage().contains("Query was interrupted."))
+                    return;
+            }
+
+            if (cacheEx != null && cacheEx.getMessage() != null) {
+                if (cacheEx.getMessage().contains("Failed to fetch data from node"))
+                    return;
+            }
+
+            if (cacheEx != null && cacheEx.getMessage() != null) {
+                if (cacheEx.getMessage().contains("Failed to send message"))
+                    return;
+            }
+        }
+
+        if (X.hasCause(e, IgniteSQLException.class)) {
+            IgniteSQLException sqlEx = X.cause(e, IgniteSQLException.class);
+
+            if (sqlEx != null && sqlEx.getMessage() != null) {
+                if (sqlEx.getMessage().contains("Transaction is already completed."))
+                    return;
+
+                if (sqlEx.getMessage().contains("Cannot serialize transaction due to write conflict"))
+                    return;
+            }
+        }
+
+        fail("Unexpected tx exception. " + X.getFullStackTrace(e));
     }
 
     /**
@@ -1507,12 +1595,21 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     protected void verifyOldVersionsCleaned() throws Exception {
-        runVacuumSync();
+        boolean retry;
 
-        // Check versions.
-        boolean cleaned = checkOldVersions(false);
+        try {
+            runVacuumSync();
 
-        if (!cleaned) { // Retry on a stable topology with a newer snapshot.
+            // Check versions.
+            retry = !checkOldVersions(false);
+        }
+        catch (Exception e) {
+            U.warn(log(), "Failed to perform vacuum, will retry.", e);
+
+            retry = true;
+        }
+
+        if (retry) { // Retry on a stable topology with a newer snapshot.
             awaitPartitionMapExchange();
 
             runVacuumSync();
@@ -1533,7 +1630,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
             for (IgniteCacheProxy cache : ((IgniteKernal)node).caches()) {
                 GridCacheContext cctx = cache.context();
 
-                if (!cctx.userCache() || !cctx.group().mvccEnabled())
+                if (!cctx.userCache() || !cctx.group().mvccEnabled() || F.isEmpty(cctx.group().caches()) || cctx.shared().closed(cctx))
                     continue;
 
                 for (Iterator it = cache.withKeepBinary().iterator(); it.hasNext(); ) {
@@ -1577,10 +1674,6 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                     continue;
 
                 assert GridTestUtils.getFieldValue(crd, "txLog") != null;
-
-                Throwable vacuumError = crd.vacuumError();
-
-                assertNull(X.getFullStackTrace(vacuumError), vacuumError);
 
                 fut.add(crd.runVacuum());
             }
@@ -1806,12 +1899,15 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                     }
                 });
 
+                Map res;
 
-                Map res = (Map)cache.query(scanQry).getAll()
-                    .stream()
-                    .collect(Collectors.toMap(v -> ((IgniteBiTuple)v).getKey(), v -> ((IgniteBiTuple)v).getValue()));
+                try (QueryCursor qry = cache.query(scanQry)) {
+                    res = (Map)qry.getAll()
+                        .stream()
+                        .collect(Collectors.toMap(v -> ((IgniteBiTuple)v).getKey(), v -> ((IgniteBiTuple)v).getValue()));
 
-                assertTrue("res.size()=" + res.size() + ", keys.size()=" + keys.size(), res.size() <= keys.size());
+                    assertTrue("res.size()=" + res.size() + ", keys.size()=" + keys.size(), res.size() <= keys.size());
+                }
 
                 return res;
 
@@ -1833,29 +1929,29 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
                 String qry = b.toString();
 
-                SqlFieldsQuery sqlFieldsQry =  new SqlFieldsQuery(qry);
+                SqlFieldsQuery sqlFieldsQry = new SqlFieldsQuery(qry);
 
                 if (emulateLongQry)
                     sqlFieldsQry.setLazy(true).setPageSize(1);
 
                 List<List> rows;
 
-                if (emulateLongQry) {
-                    FieldsQueryCursor<List> cur = cache.query(sqlFieldsQry);
+                try (FieldsQueryCursor<List> cur = cache.query(sqlFieldsQry)) {
+                    if (emulateLongQry) {
+                        rows = new ArrayList<>();
 
-                    rows = new ArrayList<>();
+                        for (List row : cur) {
+                            rows.add(row);
 
-                    for (List row : cur) {
-                        rows.add(row);
-
-                        doSleep(ThreadLocalRandom.current().nextInt(50));
+                            doSleep(ThreadLocalRandom.current().nextInt(50));
+                        }
                     }
+                    else
+                        rows = cur.getAll();
                 }
-                else
-                    rows = cache.query(sqlFieldsQry).getAll();
 
                 if (rows.isEmpty())
-                    return Collections.EMPTY_MAP;
+                    return Collections.emptyMap();
 
                 res = new HashMap();
 
@@ -1887,7 +1983,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                 rows = cur.getAll();
 
                 if (rows.isEmpty())
-                    return Collections.EMPTY_MAP;
+                    return Collections.emptyMap();
 
                 res = new HashMap();
 
@@ -2104,6 +2200,23 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+            MvccTestAccount account = (MvccTestAccount)o;
+            return val == account.val &&
+                updateCnt == account.updateCnt;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+
+            return Objects.hash(val, updateCnt);
+        }
+
+        /** {@inheritDoc} */
         @Override public String toString() {
             return "MvccTestAccount{" +
                 "val=" + val +
@@ -2126,7 +2239,10 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         SQL,
 
         /** */
-        SQL_SUM
+        SQL_SUM,
+
+        /** */
+        INVOKE
     }
 
     /**
@@ -2137,7 +2253,10 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         DML,
 
         /** */
-        PUT
+        PUT,
+
+        /** */
+        INVOKE
     }
 
     /**

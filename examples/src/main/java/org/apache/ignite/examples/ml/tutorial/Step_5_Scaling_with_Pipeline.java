@@ -48,7 +48,7 @@ import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
  */
 public class Step_5_Scaling_with_Pipeline {
     /** Run example. */
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) {
         System.out.println();
         System.out.println(">>> Tutorial step 5 (scaling) via Pipeline example started.");
 

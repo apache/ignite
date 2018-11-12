@@ -305,6 +305,11 @@ class ClientImpl extends TcpDiscoveryImpl {
             }
         }.start();
 
+        timer.schedule(
+            new MetricsSender(),
+            spi.metricsUpdateFreq,
+            spi.metricsUpdateFreq);
+
         try {
             joinLatch.await();
 
@@ -316,11 +321,6 @@ class ClientImpl extends TcpDiscoveryImpl {
         catch (InterruptedException e) {
             throw new IgniteSpiException("Thread has been interrupted.", e);
         }
-
-        timer.schedule(
-            new MetricsSender(),
-            spi.metricsUpdateFreq,
-            spi.metricsUpdateFreq);
 
         spi.printStartInfo();
     }
@@ -479,12 +479,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 Collection<ClusterNode> top = updateTopologyHistory(topVer + 1, null);
 
-                try {
-                    lsnr.onDiscovery(EVT_NODE_FAILED, topVer, n, top, new TreeMap<>(topHist), null).get();
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException("Failed to wait for discovery listener notification", e);
-                }
+                lsnr.onDiscovery(EVT_NODE_FAILED, topVer, n, top, new TreeMap<>(topHist), null).get();
             }
         }
 
@@ -1658,7 +1653,6 @@ class ClientImpl extends TcpDiscoveryImpl {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("InfiniteLoopStatement")
         @Override protected void body() throws InterruptedException {
             state = STARTING;
 
@@ -1889,6 +1883,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                                 err = spi.duplicateIdError((TcpDiscoveryDuplicateIdMessage)msg);
                             else if (discoMsg instanceof TcpDiscoveryAuthFailedMessage)
                                 err = spi.authenticationFailedError((TcpDiscoveryAuthFailedMessage)msg);
+                            //TODO: https://issues.apache.org/jira/browse/IGNITE-9829
                             else if (discoMsg instanceof TcpDiscoveryCheckFailedMessage)
                                 err = spi.checkFailedError((TcpDiscoveryCheckFailedMessage)msg);
 
@@ -1903,6 +1898,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                                 else
                                     joinError(err);
 
+                                cancel();
+                                
                                 break;
                             }
                         }
@@ -2594,12 +2591,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     debugLog.debug("Discovery notification [node=" + node + ", type=" + U.gridEventName(type) +
                         ", topVer=" + topVer + ']');
 
-                try {
-                    lsnr.onDiscovery(type, topVer, node, top, new TreeMap<>(topHist), data).get();
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException("Failed to wait for discovery listener notification", e);
-                }
+                lsnr.onDiscovery(type, topVer, node, top, new TreeMap<>(topHist), data).get();
             }
             else if (debugLog.isDebugEnabled())
                 debugLog.debug("Skipped discovery notification [node=" + node + ", type=" + U.gridEventName(type) +

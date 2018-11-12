@@ -17,36 +17,37 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import java.io.Serializable;
+import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
+import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
-import javax.cache.configuration.FactoryBuilder;
-import javax.cache.expiry.CreatedExpiryPolicy;
-import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheInterceptorAdapter;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.store.CacheStore;
-import org.apache.ignite.cache.store.CacheStoreReadFromBackupTest;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.configvariations.ConfigVariations;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+import static org.apache.ignite.cache.CacheMode.LOCAL;
 
 /**
  *
@@ -75,14 +76,16 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ThrowableNotThrown")
     public void testMvccModeMismatchForGroup1() throws Exception {
         final Ignite node = startGrid(0);
 
         node.createCache(new CacheConfiguration("cache1").setGroupName("grp1").setAtomicityMode(ATOMIC));
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                node.createCache(new CacheConfiguration("cache2").setGroupName("grp1").setAtomicityMode(TRANSACTIONAL_SNAPSHOT));
+            @Override public Void call() {
+                node.createCache(
+                    new CacheConfiguration("cache2").setGroupName("grp1").setAtomicityMode(TRANSACTIONAL_SNAPSHOT));
 
                 return null;
             }
@@ -94,25 +97,29 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ThrowableNotThrown")
     public void testMvccModeMismatchForGroup2() throws Exception {
         final Ignite node = startGrid(0);
 
-        node.createCache(new CacheConfiguration("cache1").setGroupName("grp1").setAtomicityMode(TRANSACTIONAL_SNAPSHOT));
+        node.createCache(
+            new CacheConfiguration("cache1").setGroupName("grp1").setAtomicityMode(TRANSACTIONAL_SNAPSHOT));
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override public Void call() throws Exception {
+            @Override public Void call() {
                 node.createCache(new CacheConfiguration("cache2").setGroupName("grp1").setAtomicityMode(ATOMIC));
 
                 return null;
             }
         }, CacheException.class, null);
 
-        node.createCache(new CacheConfiguration("cache2").setGroupName("grp1").setAtomicityMode(TRANSACTIONAL_SNAPSHOT));
+        node.createCache(
+            new CacheConfiguration("cache2").setGroupName("grp1").setAtomicityMode(TRANSACTIONAL_SNAPSHOT));
     }
 
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ThrowableNotThrown")
     public void testMvccLocalCacheDisabled() throws Exception {
         final Ignite node1 = startGrid(1);
         final Ignite node2 = startGrid(2);
@@ -125,7 +132,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
         cache1.put(2,2);
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override public Void call() throws Exception {
+            @Override public Void call() {
                 node1.createCache(new CacheConfiguration("cache2").setCacheMode(CacheMode.LOCAL)
                     .setAtomicityMode(TRANSACTIONAL_SNAPSHOT));
 
@@ -144,108 +151,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
-    public void testMvccExpiredPolicyCacheDisabled() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8640");
-
-        final Ignite node1 = startGrid(1);
-        final Ignite node2 = startGrid(2);
-
-        IgniteCache cache1 = node1.createCache(new CacheConfiguration("cache1")
-            .setAtomicityMode(TRANSACTIONAL_SNAPSHOT));
-
-        cache1.put(1,1);
-        cache1.put(2,2);
-        cache1.put(2,2);
-
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                node1.createCache(new CacheConfiguration("cache2")
-                    .setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.MINUTES, 1)))
-                    .setAtomicityMode(TRANSACTIONAL_SNAPSHOT));
-
-                return null;
-            }
-        }, CacheException.class, null);
-
-        IgniteCache cache3 = node2.createCache(new CacheConfiguration("cache3")
-            .setAtomicityMode(TRANSACTIONAL_SNAPSHOT));
-
-        cache3.put(1, 1);
-        cache3.put(2, 2);
-        cache3.put(3, 3);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testMvccThirdPartyStoreCacheDisabled() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8640");
-
-        final Ignite node1 = startGrid(1);
-        final Ignite node2 = startGrid(2);
-
-        IgniteCache cache1 = node1.createCache(new CacheConfiguration("cache1")
-            .setAtomicityMode(TRANSACTIONAL_SNAPSHOT));
-
-        cache1.put(1,1);
-        cache1.put(2,2);
-        cache1.put(2,2);
-
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                node1.createCache(new CacheConfiguration("cache2")
-                    .setCacheStoreFactory(FactoryBuilder.factoryOf(CacheStoreReadFromBackupTest.TestStore.class))
-                    .setAtomicityMode(TRANSACTIONAL_SNAPSHOT));
-
-                return null;
-            }
-        }, CacheException.class, null);
-
-        IgniteCache cache3 = node2.createCache(new CacheConfiguration("cache3")
-            .setAtomicityMode(TRANSACTIONAL_SNAPSHOT));
-
-        cache3.put(1, 1);
-        cache3.put(2, 2);
-        cache3.put(3, 3);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testMvccInterceptorCacheDisabled() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8640");
-
-        final Ignite node1 = startGrid(1);
-        final Ignite node2 = startGrid(2);
-
-        IgniteCache cache1 = node1.createCache(new CacheConfiguration("cache1")
-            .setAtomicityMode(TRANSACTIONAL_SNAPSHOT));
-
-        cache1.put(1,1);
-        cache1.put(2,2);
-        cache1.put(2,2);
-
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                node1.createCache(new CacheConfiguration("cache2")
-                    .setInterceptor(new ConfigVariations.NoopInterceptor())
-                    .setAtomicityMode(TRANSACTIONAL_SNAPSHOT));
-
-                return null;
-            }
-        }, CacheException.class, null);
-
-        IgniteCache cache3 = node2.createCache(new CacheConfiguration("cache3")
-            .setAtomicityMode(TRANSACTIONAL_SNAPSHOT));
-
-        cache3.put(1, 1);
-        cache3.put(2, 2);
-        cache3.put(3, 3);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
+    @SuppressWarnings("ThrowableNotThrown")
     public void testNodeRestartWithCacheModeChangedTxToMvcc() throws Exception {
         cleanPersistenceDir();
 
@@ -292,6 +198,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ThrowableNotThrown")
     public void testNodeRestartWithCacheModeChangedMvccToTx() throws Exception {
         cleanPersistenceDir();
 
@@ -336,89 +243,123 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    public void testTxCacheWithCacheStore() throws Exception {
-        checkTransactionalModeConflict("cacheStoreFactory", new TestFactory(),
-            "Transactional cache may not have a third party cache store when MVCC is enabled.");
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxCacheWithExpiryPolicy() throws Exception {
-        checkTransactionalModeConflict("expiryPolicyFactory0", CreatedExpiryPolicy.factoryOf(Duration.FIVE_MINUTES),
-            "Transactional cache may not have expiry policy when MVCC is enabled.");
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxCacheWithInterceptor() throws Exception {
-        checkTransactionalModeConflict("interceptor", new CacheInterceptorAdapter(),
-            "Transactional cache may not have an interceptor when MVCC is enabled.");
-    }
-
-    /**
-     * Check that setting specified property conflicts with transactional cache atomicity mode.
-     * @param propName Property name.
-     * @param obj Property value.
-     * @param errMsg Expected error message.
-     * @throws IgniteCheckedException if failed.
-     */
-    @SuppressWarnings("ThrowableNotThrown")
-    private void checkTransactionalModeConflict(String propName, Object obj, String errMsg)
-        throws Exception {
-        final String setterName = "set" + propName.substring(0, 1).toUpperCase() + propName.substring(1);
-
-        try (final Ignite node = startGrid(0)) {
-            final CacheConfiguration cfg = new TestConfiguration("cache");
-
-            cfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
-
-            U.invoke(TestConfiguration.class, cfg, setterName, obj);
-
-            GridTestUtils.assertThrows(log, new Callable<Void>() {
-                @SuppressWarnings("unchecked")
-                @Override public Void call() {
-                    node.getOrCreateCache(cfg);
-
-                    return null;
-                }
-            }, IgniteCheckedException.class, errMsg);
-        }
-    }
-
-    /**
-     * Dummy class to overcome ambiguous method name "setExpiryPolicyFactory".
-     */
-    private final static class TestConfiguration extends CacheConfiguration {
-        /**
-         *
-         */
-        TestConfiguration(String cacheName) {
-            super(cacheName);
-        }
-
-        /**
-         *
-         */
-        @SuppressWarnings("unused")
-        public void setExpiryPolicyFactory0(Factory<ExpiryPolicy> plcFactory) {
-            super.setExpiryPolicyFactory(plcFactory);
-        }
-    }
-
-    /**
+     * Test TRANSACTIONAL_SNAPSHOT and near cache.
      *
+     * @throws Exception If failed.
      */
-    private static class TestFactory implements Factory<CacheStore> {
-        /** Serial version uid. */
-        private static final long serialVersionUID = 0L;
+    @SuppressWarnings("unchecked")
+    public void testTransactionalSnapshotLimitations() throws Exception {
+        assertCannotStart(
+            mvccCacheConfig().setCacheMode(LOCAL),
+            "LOCAL cache mode cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode"
+        );
+
+        assertCannotStart(
+            mvccCacheConfig().setNearConfiguration(new NearCacheConfiguration<>()),
+            "near cache cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode"
+        );
+
+        assertCannotStart(
+            mvccCacheConfig().setReadThrough(true),
+            "readThrough cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode"
+        );
+
+        assertCannotStart(
+            mvccCacheConfig().setWriteThrough(true),
+            "writeThrough cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode"
+        );
+
+        assertCannotStart(
+            mvccCacheConfig().setWriteBehindEnabled(true),
+            "writeBehindEnabled cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode"
+        );
+
+        assertCannotStart(
+            mvccCacheConfig().setExpiryPolicyFactory(new TestExpiryPolicyFactory()),
+            "expiry policy cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode"
+        );
+
+        assertCannotStart(
+            mvccCacheConfig().setInterceptor(new TestCacheInterceptor()),
+            "interceptor cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode"
+        );
+    }
+
+    /**
+     * Make sure cache cannot be started with the given configuration.
+     *
+     * @param ccfg Cache configuration.
+     * @param msg Message.
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("unchecked")
+    private void assertCannotStart(CacheConfiguration ccfg, String msg) throws Exception {
+        Ignite node = startGrid(0);
+
+        try {
+            try {
+                node.getOrCreateCache(ccfg);
+
+                fail("Cache should not start.");
+            }
+            catch (Exception e) {
+                if (msg != null) {
+                    assert e.getMessage() != null : "Error message is null";
+                    assert e.getMessage().contains(msg) : "Wrong error message: " + e.getMessage();
+                }
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @return MVCC-enabled cache configuration.
+     */
+    private static CacheConfiguration mvccCacheConfig() {
+        return new CacheConfiguration().setName(DEFAULT_CACHE_NAME + UUID.randomUUID())
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
+    }
+
+    /**
+     * Test expiry policy.
+     */
+    private static class TestExpiryPolicyFactory implements Factory<ExpiryPolicy>, Serializable {
+        /** {@inheritDoc} */
+        @Override public ExpiryPolicy create() {
+            return null;
+        }
+    }
+
+    /**
+     * Test cache interceptor.
+     */
+    private static class TestCacheInterceptor implements CacheInterceptor, Serializable {
+        /** {@inheritDoc} */
+        @Nullable
+        @Override public Object onGet(Object key, @Nullable Object val) {
+            return null;
+        }
 
         /** {@inheritDoc} */
-        @Override public CacheStore create() {
+        @Nullable @Override public Object onBeforePut(Cache.Entry entry, Object newVal) {
             return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onAfterPut(Cache.Entry entry) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onAfterRemove(Cache.Entry entry) {
+            // No-op.
         }
     }
 }

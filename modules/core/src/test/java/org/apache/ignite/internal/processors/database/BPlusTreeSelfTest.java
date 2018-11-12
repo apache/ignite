@@ -204,7 +204,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
         finally {
             if (pageMem != null)
-                pageMem.stop();
+                pageMem.stop(true);
 
             MAX_PER_PAGE = 0;
             PUT_INC = 1;
@@ -296,40 +296,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
             checkCursor(tree.find(null, size, new TestTreeFindFilteredClosure(exp), null), exp.iterator());
         }
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    public void _testBenchInvoke() throws IgniteCheckedException {
-        MAX_PER_PAGE = 10;
-
-        TestTree tree = createTestTree(true);
-
-        long start = System.nanoTime();
-
-        for (int i = 0; i < 10_000_000; i++) {
-            final long key = BPlusTree.randomInt(1000);
-
-//            tree.findOne(key); // 39
-//            tree.putx(key); // 22
-
-            tree.invoke(key, null, new IgniteTree.InvokeClosure<Long>() { // 25
-                @Override public void call(@Nullable Long row) throws IgniteCheckedException {
-                    // No-op.
-                }
-
-                @Override public Long newRow() {
-                    return key;
-                }
-
-                @Override public IgniteTree.OperationType operationType() {
-                    return PUT;
-                }
-            });
-        }
-
-        X.println("   __ time: " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
     }
 
     /**

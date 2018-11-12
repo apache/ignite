@@ -368,6 +368,8 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
 
         GridCacheMvccCandidate doomed;
 
+        GridCacheVersion deferredDelVer;
+
         CacheObject val;
 
         lockEntry();
@@ -406,9 +408,20 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
             }
 
             val = this.val;
+
+            deferredDelVer = this.ver;
         }
         finally {
             unlockEntry();
+        }
+
+        if (val == null) {
+            boolean deferred = cctx.deferredDelete() && !detached() && !isInternal();
+
+            if (deferred) {
+                if (deferredDelVer != null)
+                    cctx.onDeferredDelete(this, deferredDelVer);
+            }
         }
 
         if (log.isDebugEnabled())
@@ -705,11 +718,6 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public final void txUnlock(IgniteInternalTx tx) throws GridCacheEntryRemovedException {
-        removeLock(tx.xidVersion());
-    }
-
     /**
      * @param emptyBefore Empty flag before operation.
      * @param emptyAfter Empty flag after operation.
@@ -727,7 +735,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
     }
 
     /** {@inheritDoc} */
-    @Override final protected void checkThreadChain(GridCacheMvccCandidate owner) {
+    @Override protected final void checkThreadChain(GridCacheMvccCandidate owner) {
         assert !lockedByCurrentThread();
 
         assert owner != null;
