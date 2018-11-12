@@ -39,4 +39,13 @@ public class CacheKeepBinaryIterationNearEnabledTest extends CacheKeepBinaryIter
         return ccfg;
     }
 
+    /** {@inheritDoc} */
+    @Override public void testMvccTxOnHeap() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testMvccTxOnHeapLocalEntries() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+    }
 }

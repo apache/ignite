@@ -480,11 +480,6 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
         @Override public byte newMvccTxState() {
             return 0;
         }
-
-        /** {@inheritDoc} */
-        @Override public boolean isKeyAbsentBefore() {
-            return false;
-        }
     }
 
     /**

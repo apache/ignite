@@ -77,6 +77,14 @@ namespace ignite
                     void Put(const WritableKey& key, const Writable& value);
 
                     /**
+                     * Stores given key-value pairs in cache.
+                     * If write-through is enabled, the stored values will be persisted to store.
+                     *
+                     * @param pairs Writable key-value pair sequence.
+                     */
+                    void PutAll(const Writable& pairs);
+
+                    /**
                      * Get value from cache.
                      *
                      * @param key Key.
@@ -85,12 +93,45 @@ namespace ignite
                     void Get(const WritableKey& key, Readable& value);
 
                     /**
+                     * Retrieves values mapped to the specified keys from cache.
+                     * If some value is not present in cache, then it will be looked up from swap storage. If
+                     * it's not present in swap, or if swap is disabled, and if read-through is allowed, value
+                     * will be loaded from persistent store.
+                     *
+                     * @param keys Writable key sequence.
+                     * @param pairs Readable key-value pair sequence.
+                     */
+                    void GetAll(const Writable& keys, Readable& pairs);
+
+                    /**
+                     * Stores given key-value pair in cache only if there is a previous mapping for it.
+                     * If cache previously contained value for the given key, then this value is returned.
+                     * In case of PARTITIONED or REPLICATED caches, the value will be loaded from the primary node,
+                     * which in its turn may load the value from the swap storage, and consecutively, if it's not
+                     * in swap, rom the underlying persistent storage.
+                     * If write-through is enabled, the stored value will be persisted to store.
+                     *
+                     * @param key Key to store in cache.
+                     * @param value Value to be associated with the given key.
+                     * @return True if the value was replaced.
+                     */
+                    bool Replace(const WritableKey& key, const Writable& value);
+
+                    /**
                      * Check if the cache contains a value for the specified key.
                      *
                      * @param key Key whose presence in this cache is to be tested.
                      * @return @c true if the cache contains specified key.
                      */
                     bool ContainsKey(const WritableKey& key);
+
+                    /**
+                     * Check if cache contains mapping for these keys.
+                     *
+                     * @param keys Keys.
+                     * @return True if cache contains mapping for all these keys.
+                     */
+                    bool ContainsKeys(const Writable& keys);
 
                     /**
                      * Gets the number of all entries cached across all nodes.
@@ -125,7 +166,6 @@ namespace ignite
                      * If the returned value is not needed, method removex() should always be used instead of this
                      * one to avoid the overhead associated with returning of the previous value.
                      * If write-through is enabled, the value will be removed from store.
-                     * This method is transactional and will enlist the entry into ongoing transaction if there is one.
                      *
                      * @param key Key whose mapping is to be removed from cache.
                      * @return False if there was no matching key.
@@ -133,9 +173,16 @@ namespace ignite
                     bool Remove(const WritableKey& key);
 
                     /**
+                     * Removes given key mappings from cache.
+                     * If write-through is enabled, the value will be removed from store.
+                     *
+                     * @param keys Keys whose mappings are to be removed from cache.
+                     */
+                    void RemoveAll(const Writable& keys);
+
+                    /**
                      * Removes all mappings from cache.
                      * If write-through is enabled, the value will be removed from store.
-                     * This method is transactional and will enlist the entry into ongoing transaction if there is one.
                      */
                     void RemoveAll();
 
@@ -151,6 +198,14 @@ namespace ignite
                      * Clear cache.
                      */
                     void Clear();
+
+                    /**
+                     * Clear entries from the cache and swap storage, without notifying listeners or CacheWriters.
+                     * Entry is cleared only if it is not currently locked, and is not participating in a transaction.
+                     *
+                     * @param keys Keys to clear.
+                     */
+                    void ClearAll(const Writable& keys);
 
                     /**
                      * Get from CacheClient.

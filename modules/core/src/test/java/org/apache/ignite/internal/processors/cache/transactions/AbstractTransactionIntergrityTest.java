@@ -33,6 +33,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
@@ -40,10 +41,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -73,7 +74,7 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
     private static final int DFLT_ACCOUNTS_CNT = 32;
 
     /** Count of threads and caches. */
-    private static final int DFLT_TX_THREADS_CNT = 20;
+    private static final int DFLT_TX_THREADS_CNT = Runtime.getRuntime().availableProcessors();
 
     /** Count of nodes to start. */
     private static final int DFLT_NODES_CNT = 3;
@@ -126,16 +127,6 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
         return true;
     }
 
-    /**
-     * @return Flag enables cross-node transactions,
-     *         when primary partitions participating in transaction spreaded across several cluster nodes.
-     */
-    protected boolean crossNodeTransactions() {
-        // Commit error during cross node transactions breaks transaction integrity
-        // TODO: https://issues.apache.org/jira/browse/IGNITE-9086
-        return false;
-    }
-
     /** {@inheritDoc} */
     @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
         return new StopNodeFailureHandler();
@@ -148,14 +139,15 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
         cfg.setConsistentId(name);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
-        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
-        cfg.setLocalHost("127.0.0.1");
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setMaxSize(256 * 1024 * 1024)
-                .setPersistenceEnabled(persistent()))
-        );
+                    .setPersistenceEnabled(persistent())
+                    .setMaxSize(50 * 1024 * 1024)
+            )
+            .setWalSegmentSize(16 * 1024 * 1024)
+            .setPageSize(1024)
+            .setWalMode(WALMode.LOG_ONLY));
 
         CacheConfiguration[] cacheConfigurations = new CacheConfiguration[txThreadsCount()];
 
@@ -177,6 +169,8 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
         }
 
         cfg.setCacheConfiguration(cacheConfigurations);
+
+        cfg.setFailureDetectionTimeout(30_000);
 
         return cfg;
     }
@@ -219,8 +213,11 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
 
     /**
      * Test transfer amount.
+     *
+     * @param failoverScenario Scenario.
+     * @param colocatedAccounts {@code True} to use colocated on same primary node accounts.
      */
-    public void doTestTransferAmount(FailoverScenario failoverScenario) throws Exception {
+    public void doTestTransferAmount(FailoverScenario failoverScenario, boolean colocatedAccounts) throws Exception {
         failoverScenario.beforeNodesStarted();
 
         //given: started some nodes with client.
@@ -230,26 +227,26 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
 
         igniteClient.cluster().active(true);
 
-        int[] initAmount = new int[txThreadsCount()];
+        int[] initAmounts = new int[txThreadsCount()];
         completedTxs = new ConcurrentLinkedHashMap[txThreadsCount()];
 
         //and: fill all accounts on all caches and calculate total amount for every cache.
         for (int cachePrefixIdx = 0; cachePrefixIdx < txThreadsCount(); cachePrefixIdx++) {
             IgniteCache<Integer, AccountState> cache = igniteClient.getOrCreateCache(cacheName(cachePrefixIdx));
 
-            AtomicInteger coinsCounter = new AtomicInteger();
+            AtomicInteger coinsCntr = new AtomicInteger();
 
             try (Transaction tx = igniteClient.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 for (int accountId = 0; accountId < accountsCount(); accountId++) {
-                    Set<Integer> initialAmount = generateCoins(coinsCounter, 5);
+                    Set<Integer> initAmount = generateCoins(coinsCntr, 5);
 
-                    cache.put(accountId, new AccountState(accountId, tx.xid(), initialAmount));
+                    cache.put(accountId, new AccountState(accountId, tx.xid(), initAmount));
                 }
 
                 tx.commit();
             }
 
-            initAmount[cachePrefixIdx] = coinsCounter.get();
+            initAmounts[cachePrefixIdx] = coinsCntr.get();
             completedTxs[cachePrefixIdx] = new ConcurrentLinkedHashMap();
         }
 
@@ -259,7 +256,8 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
         ArrayList<Thread> transferThreads = new ArrayList<>();
 
         for (int i = 0; i < txThreadsCount(); i++) {
-            transferThreads.add(new TransferAmountTxThread(firstTransactionDone, igniteClient, cacheName(i), i));
+            transferThreads.add(new TransferAmountTxThread(firstTransactionDone,
+                igniteClient, cacheName(i), i, colocatedAccounts));
 
             transferThreads.get(i).start();
         }
@@ -268,13 +266,12 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
 
         failoverScenario.afterFirstTransaction();
 
-        for (Thread thread : transferThreads) {
+        for (Thread thread : transferThreads)
             thread.join();
-        }
 
         failoverScenario.afterTransactionsFinished();
 
-        consistencyCheck(initAmount);
+        consistencyCheck(initAmounts);
     }
 
     /**
@@ -385,11 +382,11 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
 
         /**
          * @param txId Transaction id.
-         * @param coinsToRemove Coins to remove from current account.
+         * @param coinsToRmv Coins to remove from current account.
          * @return Account state with removed coins.
          */
-        public AccountState removeCoins(IgniteUuid txId, Set<Integer> coinsToRemove) {
-            return new AccountState(accId, txId, Sets.difference(coins, coinsToRemove).immutableCopy());
+        public AccountState removeCoins(IgniteUuid txId, Set<Integer> coinsToRmv) {
+            return new AccountState(accId, txId, Sets.difference(coins, coinsToRmv).immutableCopy());
         }
 
         /** {@inheritDoc} */
@@ -418,11 +415,11 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
     /**
      * @param coinsNum Coins number.
      */
-    private Set<Integer> generateCoins(AtomicInteger coinsCounter, int coinsNum) {
+    private Set<Integer> generateCoins(AtomicInteger coinsCntr, int coinsNum) {
         Set<Integer> res = new HashSet<>();
 
         for (int i = 0; i < coinsNum; i++)
-            res.add(coinsCounter.incrementAndGet());
+            res.add(coinsCntr.incrementAndGet());
 
         return res;
     }
@@ -479,23 +476,35 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
     private class TransferAmountTxThread extends Thread {
         /** */
         private CountDownLatch firstTransactionLatch;
+
         /** */
         private IgniteEx ignite;
+
         /** */
         private String cacheName;
+
         /** */
-        private int txIndex;
+        private int workerIdx;
+
         /** */
         private Random random = new Random();
+
+        /** */
+        private final boolean colocatedAccounts;
 
         /**
          * @param ignite Ignite.
          */
-        private TransferAmountTxThread(CountDownLatch firstTransactionLatch, final IgniteEx ignite, String cacheName, int txIndex) {
+        private TransferAmountTxThread(CountDownLatch firstTransactionLatch,
+            final IgniteEx ignite,
+            String cacheName,
+            int workerIdx,
+            boolean colocatedAccounts) {
             this.firstTransactionLatch = firstTransactionLatch;
             this.ignite = ignite;
             this.cacheName = cacheName;
-            this.txIndex = txIndex;
+            this.workerIdx = workerIdx;
+            this.colocatedAccounts = colocatedAccounts;
         }
 
         /** {@inheritDoc} */
@@ -514,7 +523,6 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
         /**
          * @throws IgniteException if fails
          */
-        @SuppressWarnings("unchecked")
         private void updateInTransaction(IgniteCache<Integer, AccountState> cache) throws IgniteException {
             int accIdFrom;
             int accIdTo;
@@ -526,11 +534,16 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
                 if (accIdFrom == accIdTo)
                     continue;
 
-                ClusterNode primaryForAccFrom = ignite.cachex(cacheName).affinity().mapKeyToNode(accIdFrom);
-                ClusterNode primaryForAccTo = ignite.cachex(cacheName).affinity().mapKeyToNode(accIdTo);
+                Affinity<Object> affinity = ignite.affinity(cacheName);
+
+                ClusterNode primaryForAccFrom = affinity.mapKeyToNode(accIdFrom);
+                assertNotNull(primaryForAccFrom);
+
+                ClusterNode primaryForAccTo = affinity.mapKeyToNode(accIdTo);
+                assertNotNull(primaryForAccTo);
 
                 // Allows only transaction between accounts that primary on the same node if corresponding flag is enabled.
-                if (!crossNodeTransactions() && !primaryForAccFrom.id().equals(primaryForAccTo.id()))
+                if (colocatedAccounts && !primaryForAccFrom.id().equals(primaryForAccTo.id()))
                     continue;
 
                 break;
@@ -541,7 +554,10 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
 
             try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 acctFrom = cache.get(accIdFrom);
+                assertNotNull(acctFrom);
+
                 acctTo = cache.get(accIdTo);
+                assertNotNull(acctTo);
 
                 Set<Integer> coinsToTransfer = acctFrom.coinsToTransfer(random);
 
@@ -553,23 +569,8 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
 
                 tx.commit();
 
-                completedTxs[txIndex].put(tx.xid(), new TxState(acctFrom, acctTo, nextFrom, nextTo, coinsToTransfer));
+                completedTxs[workerIdx].put(tx.xid(), new TxState(acctFrom, acctTo, nextFrom, nextTo, coinsToTransfer));
             }
-        }
-
-        /**
-         * @param curr current
-         * @return random value
-         */
-        private long getNextAccountId(long curr) {
-            long randomVal;
-
-            do {
-                randomVal = random.nextInt(accountsCount());
-            }
-            while (curr == randomVal);
-
-            return randomVal;
         }
     }
 

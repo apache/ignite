@@ -189,6 +189,7 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.worker.FailureHandlingMxBeanImpl;
 import org.apache.ignite.internal.worker.WorkersControlMXBeanImpl;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -202,6 +203,7 @@ import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.mxbean.FailureHandlingMxBean;
 import org.apache.ignite.mxbean.ClusterMetricsMXBean;
 import org.apache.ignite.mxbean.DataStorageMXBean;
 import org.apache.ignite.mxbean.IgniteMXBean;
@@ -323,7 +325,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private IgniteConfiguration cfg;
 
     /** */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     @GridToStringExclude
     private GridLoggerProxy log;
 
@@ -716,7 +717,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param evt Grid event.
      * @throws IgniteCheckedException If user threw exception during start.
      */
-    @SuppressWarnings({"CatchGenericClass"})
     private void notifyLifecycleBeans(LifecycleEventType evt) throws IgniteCheckedException {
         if (!cfg.isDaemon() && cfg.getLifecycleBeans() != null) {
             for (LifecycleBean bean : cfg.getLifecycleBeans())
@@ -736,7 +736,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      *
      * @param evt Grid event.
      */
-    @SuppressWarnings({"CatchGenericClass"})
     private void notifyLifecycleBeansEx(LifecycleEventType evt) {
         try {
             notifyLifecycleBeans(evt);
@@ -773,7 +772,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param hnd Default uncaught exception handler used by thread pools.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    @SuppressWarnings({"CatchGenericClass", "unchecked"})
+    @SuppressWarnings({"unchecked"})
     public void start(
         final IgniteConfiguration cfg,
         ExecutorService utilityCachePool,
@@ -1046,6 +1045,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 fillNodeAttributes(clusterProc.updateNotifierEnabled());
 
                 ctx.cache().context().database().notifyMetaStorageSubscribersOnReadyForRead();
+
+                ctx.cache().context().database().startMemoryRestore(ctx);
+
+                ctx.recoveryMode(false);
             }
             catch (Throwable e) {
                 U.error(
@@ -1452,7 +1455,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param notifyEnabled Update notifier flag.
      * @throws IgniteCheckedException thrown if was unable to set up attribute.
      */
-    @SuppressWarnings({"SuspiciousMethodCalls", "unchecked", "TypeMayBeWeakened"})
+    @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
     private void fillNodeAttributes(boolean notifyEnabled) throws IgniteCheckedException {
         ctx.addNodeAttribute(ATTR_REBALANCE_POOL_SIZE, configuration().getRebalanceThreadPoolSize());
         ctx.addNodeAttribute(ATTR_DATA_STREAMER_POOL_SIZE, configuration().getDataStreamerThreadPoolSize());
@@ -2171,7 +2174,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /**
      * @return Language runtime.
      */
-    @SuppressWarnings("ThrowableInstanceNeverThrown")
     private String getLanguage() {
         boolean scala = false;
         boolean groovy = false;
@@ -2289,6 +2291,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 }
             }
 
+            if (ctx.hadoopHelper() != null)
+                ctx.hadoopHelper().close();
+
             if (starveTask != null)
                 starveTask.close();
 
@@ -2376,6 +2381,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             U.clearClassCache();
             MarshallerExclusions.clearCache();
             BinaryEnumCache.clear();
+
 
             gw.writeLock();
 
@@ -2577,19 +2583,25 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      *
      */
     private void ackRebalanceConfiguration() throws IgniteCheckedException {
-        if (cfg.getSystemThreadPoolSize() <= cfg.getRebalanceThreadPoolSize())
-            throw new IgniteCheckedException("Rebalance thread pool size exceed or equals System thread pool size. " +
-                "Change IgniteConfiguration.rebalanceThreadPoolSize property before next start.");
+        if (cfg.isClientMode()) {
+            if (cfg.getRebalanceThreadPoolSize() != IgniteConfiguration.DFLT_REBALANCE_THREAD_POOL_SIZE)
+                U.warn(log, "Setting the rebalance pool size has no effect on the client mode");
+        }
+        else {
+            if (cfg.getSystemThreadPoolSize() <= cfg.getRebalanceThreadPoolSize())
+                throw new IgniteCheckedException("Rebalance thread pool size exceed or equals System thread pool size. " +
+                    "Change IgniteConfiguration.rebalanceThreadPoolSize property before next start.");
 
-        if (cfg.getRebalanceThreadPoolSize() < 1)
-            throw new IgniteCheckedException("Rebalance thread pool size minimal allowed value is 1. " +
-                "Change IgniteConfiguration.rebalanceThreadPoolSize property before next start.");
+            if (cfg.getRebalanceThreadPoolSize() < 1)
+                throw new IgniteCheckedException("Rebalance thread pool size minimal allowed value is 1. " +
+                    "Change IgniteConfiguration.rebalanceThreadPoolSize property before next start.");
 
-        for (CacheConfiguration ccfg : cfg.getCacheConfiguration()) {
-            if (ccfg.getRebalanceBatchesPrefetchCount() < 1)
-                throw new IgniteCheckedException("Rebalance batches prefetch count minimal allowed value is 1. " +
-                    "Change CacheConfiguration.rebalanceBatchesPrefetchCount property before next start. " +
-                    "[cache=" + ccfg.getName() + "]");
+            for (CacheConfiguration ccfg : cfg.getCacheConfiguration()) {
+                if (ccfg.getRebalanceBatchesPrefetchCount() < 1)
+                    throw new IgniteCheckedException("Rebalance batches prefetch count minimal allowed value is 1. " +
+                        "Change CacheConfiguration.rebalanceBatchesPrefetchCount property before next start. " +
+                        "[cache=" + ccfg.getName() + "]");
+            }
         }
     }
 
@@ -4371,6 +4383,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 registerMBean("Kernal", workerCtrlMXBean.getClass().getSimpleName(),
                     workerCtrlMXBean, WorkersControlMXBean.class);
             }
+
+            FailureHandlingMxBean blockOpCtrlMXBean = new FailureHandlingMxBeanImpl(workersRegistry,
+                ctx.cache().context().database());
+
+            registerMBean("Kernal", blockOpCtrlMXBean.getClass().getSimpleName(), blockOpCtrlMXBean,
+                FailureHandlingMxBean.class);
         }
 
         /**

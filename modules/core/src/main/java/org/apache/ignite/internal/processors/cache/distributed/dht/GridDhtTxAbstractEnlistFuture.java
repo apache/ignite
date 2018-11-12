@@ -193,6 +193,9 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
     /** Moving partitions. */
     private Map<Integer, Boolean> movingParts;
 
+    /** Map for tracking nodes to which first request was already sent in order to send smaller subsequent requests. */
+    private final Set<ClusterNode> firstReqSent = new HashSet<>();
+
     /**
      * @param nearNodeId Near node ID.
      * @param nearLockVer Near lock version.
@@ -428,6 +431,8 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
                     tx.markQueryEnlisted(mvccSnapshot);
 
+                    boolean needOldVal = cctx.shared().mvccCaching().continuousQueryListeners(cctx, tx, key) != null;
+
                     GridCacheUpdateTxResult res;
 
                     while (true) {
@@ -442,6 +447,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                                         topVer,
                                         mvccSnapshot,
                                         isMoving(key.partition()),
+                                        needOldVal,
                                         filter,
                                         needResult());
 
@@ -463,6 +469,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                                         op.cacheOperation(),
                                         isMoving(key.partition()),
                                         op.noCreate(),
+                                        needOldVal,
                                         filter,
                                         needResult());
 
@@ -631,6 +638,10 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
         if (!updRes.success())
             return;
+
+        if (!updRes.filtered())
+            cctx.shared().mvccCaching().addEnlisted(entry.key(), updRes.newValue(), 0, 0, lockVer,
+                updRes.oldValue(), tx.local(), tx.topologyVersion(), mvccSnapshot, cctx.cacheId(), tx, null, -1);
 
         if (op != EnlistOperation.LOCK)
             addToBatch(entry.key(), val, updRes.mvccHistory(), entry.context().cacheId());
@@ -815,8 +826,11 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
         GridDhtTxQueryEnlistRequest req;
 
-        if (newRemoteTx(node)) {
+        if (newRemoteTx(node))
             addNewRemoteTxNode(node);
+
+        if (!firstReqSent.contains(node)) {
+            firstReqSent.add(node);
 
             // If this is a first request to this node, send full info.
             req = new GridDhtTxQueryFirstEnlistRequest(cctx.cacheId(),

@@ -129,7 +129,6 @@ import static org.apache.ignite.internal.util.IgniteTree.OperationType.PUT;
 /**
  *
  */
-@SuppressWarnings("PublicInnerClass")
 public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager {
     /**
      * Throttling timeout in millis which avoid excessive PendingTree access on unwind
@@ -336,6 +335,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void preloadPartition(int p) throws IgniteCheckedException {
+        throw new IgniteCheckedException("Operation only applicable to caches with enabled persistence");
+    }
+
     /**
      * @param p Partition.
      * @return Partition data.
@@ -517,6 +521,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         boolean primary,
         boolean needHistory,
         boolean noCreate,
+        boolean needOldVal,
         @Nullable CacheEntryPredicate filter,
         boolean retVal,
         EntryProcessor entryProc,
@@ -538,6 +543,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             primary,
             needHistory,
             noCreate,
+            needOldVal,
             retVal);
     }
 
@@ -547,6 +553,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         MvccSnapshot mvccSnapshot,
         boolean primary,
         boolean needHistory,
+        boolean needOldVal,
         @Nullable CacheEntryPredicate filter,
         boolean retVal) throws IgniteCheckedException {
         if (entry.detached() || entry.isNear())
@@ -560,6 +567,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             filter,
             primary,
             needHistory,
+            needOldVal,
             retVal);
     }
 
@@ -1552,6 +1560,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
+        @Override public void finalizeUpdateCountres() {
+            pCntr.finalizeUpdateCountres();
+        }
+
+        /** {@inheritDoc} */
         @Override public String name() {
             return name;
         }
@@ -1868,6 +1881,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             boolean primary,
             boolean needHistory,
             boolean noCreate,
+            boolean needOldVal,
             boolean retVal) throws IgniteCheckedException {
             assert mvccSnapshot != null;
             assert primary || !needHistory;
@@ -1901,6 +1915,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     needHistory,
                     // we follow fast update visit flow here if row cannot be created by current operation
                     noCreate,
+                    needOldVal,
                     retVal || entryProc != null);
 
                 assert cctx.shared().database().checkpointLockIsHeldByThread();
@@ -2046,6 +2061,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 }
             }
             catch (Exception e) {
+                log.error("Exception was thrown during entry processing.", e);
+
                 err = e;
             }
 
@@ -2064,6 +2081,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             @Nullable CacheEntryPredicate filter,
             boolean primary,
             boolean needHistory,
+            boolean needOldVal,
             boolean retVal) throws IgniteCheckedException {
             assert mvccSnapshot != null;
             assert primary || mvccSnapshot.activeTransactions().size() == 0 : mvccSnapshot;
@@ -2094,6 +2112,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     false,
                     needHistory,
                     true,
+                    needOldVal,
                     retVal);
 
                 assert cctx.shared().database().checkpointLockIsHeldByThread();
@@ -2158,6 +2177,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     null,
                     true,
                     true,
+                    false,
                     false,
                     false,
                     false);
@@ -2888,6 +2908,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public PendingEntriesTree pendingTree() {
             return pendingEntries;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void preload() throws IgniteCheckedException {
+            // No-op.
         }
 
         /**
