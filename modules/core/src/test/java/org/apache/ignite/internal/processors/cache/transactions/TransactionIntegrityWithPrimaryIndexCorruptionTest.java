@@ -182,9 +182,6 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
                     return hnd;
 
                 if (treeCorruptionPred.apply(hnd, tree)) {
-                    log.info("Created corrupted tree handler [nodeOrder=" + locIgnite.localNode().order() + ", hnd=" + hnd +
-                        ", tree=" + tree + ']');
-
                     PageHandler<Object, BPlusTree.Result> delegate = (PageHandler<Object, BPlusTree.Result>)hnd;
 
                     return new PageHandler<BPlusTree.Get, BPlusTree.Result>() {

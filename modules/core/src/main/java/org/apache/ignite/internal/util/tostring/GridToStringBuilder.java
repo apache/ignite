@@ -806,7 +806,6 @@ public class GridToStringBuilder {
      * @param cls value class.
      * @param val value to print.
      */
-    @SuppressWarnings({"unchecked"})
     private static void toString(SBLimitedLength buf, Class<?> cls, Object val) {
         if (val == null) {
             buf.a("null");
@@ -1008,7 +1007,6 @@ public class GridToStringBuilder {
      * @return String presentation of the given object.
      * @param <T> Type of object.
      */
-    @SuppressWarnings({"unchecked"})
     private static <T> String toStringImpl0(
         Class<T> cls,
         SBLimitedLength buf,

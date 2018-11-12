@@ -496,7 +496,6 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
          * @param strArr Array.
          * @param shortVal Short value.
          */
-        @SuppressWarnings( {"UnusedDeclaration"})
         private NonSerializableA(@Nullable String[] strArr, @Nullable Short shortVal) {
             // No-op.
         }
@@ -593,7 +592,6 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
          *
          * @param aVal Unused.
          */
-        @SuppressWarnings( {"UnusedDeclaration"})
         private NonSerializable(NonSerializableA aVal) {
         }
 
@@ -697,7 +695,6 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
          *
          * @param id Unused.
          */
-        @SuppressWarnings( {"UnusedDeclaration"})
         private SomeSerializable(Long id) {
             init();
         }
@@ -715,7 +712,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
     /**
      * Some externalizable class.
      */
-    @SuppressWarnings( {"UnusedDeclaration", "PublicField"})
+    @SuppressWarnings( {"PublicField"})
     private static class ExternalizableA implements Externalizable {
         /** */
         private boolean boolVal;
@@ -767,7 +764,6 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
         private String key;
 
         /** */
-        @SuppressWarnings({"UnusedDeclaration"})
         private String terminalId;
 
         /**
@@ -798,7 +794,6 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
         private String key;
 
         /** */
-        @SuppressWarnings({"UnusedDeclaration"})
         private String terminalId;
 
         /**

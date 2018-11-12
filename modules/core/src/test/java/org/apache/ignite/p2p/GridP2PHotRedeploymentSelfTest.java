@@ -28,7 +28,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 /**
  *
  */
-@SuppressWarnings({"JUnitTestClassNamingConvention", "ProhibitedExceptionDeclared"})
+@SuppressWarnings({"ProhibitedExceptionDeclared"})
 @GridCommonTest(group = "P2P")
 public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
     /** Task name. */
