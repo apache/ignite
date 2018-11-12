@@ -41,6 +41,7 @@ import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -1760,6 +1761,24 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 completionCb.apply(req, res);
 
                                 return;
+                            }
+
+                            for (GridDhtTopologyFuture topFut : ctx.shared().exchange().exchangeFutures()) {
+                                if (topFut.exchangeDone() && topFut.topologyVersion().equals(req.topologyVersion())) {
+                                    Throwable err = topFut.validateCache(ctx, req.recovery(), false, null, null);
+
+                                    if (err != null) {
+                                        IgniteCheckedException e = new IgniteCheckedException(err);
+
+                                        res.error(e);
+
+                                        completionCb.apply(req, res);
+
+                                        return;
+                                    }
+
+                                    break;
+                                }
                             }
 
                             boolean remap = false;
