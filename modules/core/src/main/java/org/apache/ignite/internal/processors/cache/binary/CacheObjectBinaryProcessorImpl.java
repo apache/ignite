@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentMap;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -46,9 +47,9 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.binary.BinaryContext;
@@ -66,7 +67,6 @@ import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOffheapInputStream;
-import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
@@ -87,7 +87,6 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
@@ -102,10 +101,8 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_TEST_FEATURES_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAIT_SCHEMA_UPDATE;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
-import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.BINARY_PROC;
 
 /**
@@ -115,6 +112,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     CacheObjectBinaryProcessor {
     /** */
     private volatile boolean discoveryStarted;
+
+    /** */
+    private volatile IgniteFuture<?> reconnectFut;
 
     /** */
     private BinaryContext binaryCtx;
@@ -145,16 +145,6 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     @GridToStringExclude
     private IgniteBinary binaries;
 
-    /** Listener removes all registered binary schemas and user type descriptors after the local client reconnected. */
-    private final GridLocalEventListener clientDisconLsnr = new GridLocalEventListener() {
-        @Override public void onEvent(Event evt) {
-            binaryContext().unregisterUserTypeDescriptors();
-            binaryContext().unregisterBinarySchemas();
-
-            metadataLocCache.clear();
-        }
-    };
-
     /** Locally cached metadata. This local cache is managed by exchanging discovery custom events. */
     private final ConcurrentMap<Integer, BinaryMetadataHolder> metadataLocCache = new ConcurrentHashMap<>();
 
@@ -176,9 +166,6 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         if (marsh instanceof BinaryMarshaller) {
-            if (ctx.clientNode())
-                ctx.event().addLocalEventListener(clientDisconLsnr, EVT_CLIENT_NODE_DISCONNECTED);
-
             if (!ctx.clientNode())
                 metadataFileStore = new BinaryMetadataFileStore(metadataLocCache, ctx, log, binaryMetadataFileStoreDir);
 
@@ -205,11 +192,6 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                     BinaryMetadata newMeta0 = ((BinaryTypeImpl)newMeta).metadata();
 
                     CacheObjectBinaryProcessorImpl.this.addMeta(typeId, newMeta0.wrap(binaryCtx), failIfUnregistered);
-                }
-
-                @Override public void addMetaLocally(int typeId, BinaryType meta, boolean failIfUnregistered)
-                    throws BinaryObjectException {
-                    CacheObjectBinaryProcessorImpl.this.addMetaLocally(typeId, meta);
                 }
 
                 @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
@@ -290,17 +272,28 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) {
-        if (ctx.clientNode())
-            ctx.event().removeLocalEventListener(clientDisconLsnr);
-
         if (transport != null)
             transport.stop();
     }
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
+        this.reconnectFut = reconnectFut;
+
         if (transport != null)
             transport.onDisconnected();
+
+        binaryContext().unregisterUserTypeDescriptors();
+        binaryContext().unregisterBinarySchemas();
+
+        metadataLocCache.clear();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) throws IgniteCheckedException {
+        this.reconnectFut = null;
+
+        return super.onReconnected(clusterRestarted);
     }
 
     /** {@inheritDoc} */
@@ -565,7 +558,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     @Nullable public BinaryMetadata metadata0(final int typeId) {
         BinaryMetadataHolder holder = metadataLocCache.get(typeId);
 
-        if (holder == null) {
+        IgniteThread curThread = IgniteThread.current();
+
+        if (holder == null && (curThread == null || !curThread.isForbiddenToRequestBinaryMetadata())) {
             if (ctx.clientNode()) {
                 try {
                     transport.requestUpToDateMetadata(typeId).get();
@@ -579,7 +574,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         }
 
         if (holder != null) {
-            if (IgniteThread.current() instanceof IgniteDiscoveryThread)
+            if (curThread instanceof IgniteDiscoveryThread)
                 return holder.metadata();
 
             if (holder.pendingVersion() - holder.acceptedVersion() > 0) {
@@ -626,6 +621,11 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 }
 
                 holder = metadataLocCache.get(typeId);
+
+                IgniteFuture<?> reconnectFut0 = reconnectFut;
+
+                if (holder == null && reconnectFut0 != null)
+                    throw new IgniteClientDisconnectedException(reconnectFut0, "Client node disconnected.");
 
                 if (log.isDebugEnabled())
                     log.debug("Finished waiting for client metadata update" +

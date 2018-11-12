@@ -1869,64 +1869,6 @@ treecontrol.tree-classic {
     border-bottom-width: 0;
 }
 
-.ribbon-wrapper {
-    width: 150px;
-    height: 150px;
-    position: absolute;
-    overflow: hidden;
-    top: 0;
-    z-index: 1001;
-    pointer-events: none;
-}
-
-.ribbon-wrapper.right {
-    right: 0;
-}
-
-.ribbon {
-    position: absolute;
-    top: 42px;
-    width: 186px;
-    padding: 1px 0;
-    color: $btn-primary-color;
-    background: $btn-primary-border;
-
-    right: -42px;
-    -moz-transform: rotate(45deg);
-    -webkit-transform: rotate(45deg);
-    -o-transform: rotate(45deg);
-    -ms-transform: rotate(45deg);
-    transform: rotate(45deg);
-
-    > label {
-        padding: 1px 0;
-        height: 17px;
-        line-height: 12px;
-        text-align: center;
-        text-decoration: none;
-        font-family: Roboto, sans-serif;
-        font-size: 16px;
-        display: block;
-        font-weight: 400;
-
-        border: 1px solid rgba(255,255,255,0.3);
-
-        -moz-text-shadow: 0 0 10px rgba(0,0,0,0.31);
-        -webkit-text-shadow: 0 0 10px rgba(0,0,0,0.31);
-        text-shadow: 0 0 10px rgba(0,0,0,0.31);
-    }
-}
-
-.ribbon-wrapper.left {
-    overflow: visible;
-
-    .ribbon {
-        transform: rotate(-45deg);
-        left: -75px;
-        top: 10px;
-    }
-}
-
 html, body {
     width: 100%;
     min-height: 100vh;

@@ -40,6 +40,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 import javax.cache.Cache;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -63,12 +64,17 @@ import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridInClosure3;
@@ -89,6 +95,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
@@ -1475,8 +1482,64 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
      * @param e Exception.
      */
     protected void handleTxException(Exception e) {
-        if (log.isTraceEnabled())
-            log.trace("Exception during tx execution: " + X.getFullStackTrace(e));
+        if (log.isDebugEnabled())
+            log.debug("Exception during tx execution: " + X.getFullStackTrace(e));
+
+        if (X.hasCause(e, IgniteFutureCancelledCheckedException.class))
+            return;
+
+        if (X.hasCause(e, ClusterTopologyException.class))
+            return;
+
+        if (X.hasCause(e, ClusterTopologyCheckedException.class))
+            return;
+
+        if (X.hasCause(e, IgniteTxRollbackCheckedException.class))
+            return;
+
+        if (X.hasCause(e, TransactionException.class))
+            return;
+
+        if (X.hasCause(e, IgniteTxTimeoutCheckedException.class))
+            return;
+
+        if (X.hasCause(e, CacheException.class)) {
+            CacheException cacheEx = X.cause(e, CacheException.class);
+
+            if (cacheEx != null && cacheEx.getMessage() != null) {
+                if (cacheEx.getMessage().contains("Data node has left the grid during query execution"))
+                    return;
+            }
+
+            if (cacheEx != null && cacheEx.getMessage() != null) {
+                if (cacheEx.getMessage().contains("Query was interrupted."))
+                    return;
+            }
+
+            if (cacheEx != null && cacheEx.getMessage() != null) {
+                if (cacheEx.getMessage().contains("Failed to fetch data from node"))
+                    return;
+            }
+
+            if (cacheEx != null && cacheEx.getMessage() != null) {
+                if (cacheEx.getMessage().contains("Failed to send message"))
+                    return;
+            }
+        }
+
+        if (X.hasCause(e, IgniteSQLException.class)) {
+            IgniteSQLException sqlEx = X.cause(e, IgniteSQLException.class);
+
+            if (sqlEx != null && sqlEx.getMessage() != null) {
+                if (sqlEx.getMessage().contains("Transaction is already completed."))
+                    return;
+
+                if (sqlEx.getMessage().contains("Cannot serialize transaction due to write conflict"))
+                    return;
+            }
+        }
+
+        fail("Unexpected tx exception. " + X.getFullStackTrace(e));
     }
 
     /**
@@ -1532,14 +1595,21 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     protected void verifyOldVersionsCleaned() throws Exception {
-        runVacuumSync();
+        boolean retry;
 
-        awaitPartitionMapExchange();
+        try {
+            runVacuumSync();
 
-        // Check versions.
-        boolean cleaned = checkOldVersions(false);
+            // Check versions.
+            retry = !checkOldVersions(false);
+        }
+        catch (Exception e) {
+            U.warn(log(), "Failed to perform vacuum, will retry.", e);
 
-        if (!cleaned) { // Retry on a stable topology with a newer snapshot.
+            retry = true;
+        }
+
+        if (retry) { // Retry on a stable topology with a newer snapshot.
             awaitPartitionMapExchange();
 
             runVacuumSync();
@@ -1604,10 +1674,6 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                     continue;
 
                 assert GridTestUtils.getFieldValue(crd, "txLog") != null;
-
-                Throwable vacuumError = crd.vacuumError();
-
-                assertNull(X.getFullStackTrace(vacuumError), vacuumError);
 
                 fut.add(crd.runVacuum());
             }

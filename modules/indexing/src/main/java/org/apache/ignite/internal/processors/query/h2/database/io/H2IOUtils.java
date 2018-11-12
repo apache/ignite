@@ -23,8 +23,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
 
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccVersionIsValid;
-
 /**
  *
  */

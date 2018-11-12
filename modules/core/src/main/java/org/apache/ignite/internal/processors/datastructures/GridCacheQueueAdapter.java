@@ -105,7 +105,6 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      * @param hdr Queue hdr.
      * @param cctx Cache context.
      */
-    @SuppressWarnings("unchecked")
     protected GridCacheQueueAdapter(String queueName, GridCacheQueueHeader hdr, GridCacheContext<?, ?> cctx) {
         this.cctx = cctx;
         this.queueName = queueName;
@@ -567,7 +566,6 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void close() {
         if (rmvd)
             return;

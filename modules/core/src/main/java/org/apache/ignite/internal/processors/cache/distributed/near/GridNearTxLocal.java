@@ -151,12 +151,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     private IgniteTxMappings mappings;
 
     /** Prepare future. */
-    @SuppressWarnings("UnusedDeclaration")
     @GridToStringExclude
     private volatile IgniteInternalFuture<?> prepFut;
 
     /** Commit future. */
-    @SuppressWarnings("UnusedDeclaration")
     @GridToStringExclude
     private volatile NearTxFinishFuture finishFut;
 
@@ -2422,16 +2420,16 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     try {
                         IgniteInternalFuture<Map<K, V>> fut1 = plc2.apply(fut.get(), null);
 
-                        return fut1.isDone() ?
+                        return nonInterruptable(fut1.isDone() ?
                             new GridFinishedFuture<>(finClos.apply(fut1.get(), null)) :
-                            new GridEmbeddedFuture<>(finClos, fut1);
+                            new GridEmbeddedFuture<>(finClos, fut1));
                     }
                     catch (GridClosureException e) {
                         return new GridFinishedFuture<>(e.unwrap());
                     }
                     catch (IgniteCheckedException e) {
                         try {
-                            return plc2.apply(false, e);
+                            return nonInterruptable(plc2.apply(false, e));
                         }
                         catch (Exception e1) {
                             return new GridFinishedFuture<>(e1);
@@ -2439,10 +2437,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     }
                 }
                 else {
-                    return new GridEmbeddedFuture<>(
+                    return nonInterruptable(new GridEmbeddedFuture<>(
                         fut,
                         plc2,
-                        finClos);
+                        finClos));
                 }
             }
             else {
@@ -3609,7 +3607,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CatchGenericClass", "ThrowableInstanceNeverThrown"})
     @Override public boolean localFinish(boolean commit, boolean clearThreadMap) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Finishing near local tx [tx=" + this + ", commit=" + commit + "]");
@@ -3840,7 +3837,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      *
      * @return Rollback future.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public IgniteInternalFuture<IgniteInternalTx> rollbackNearTxLocalAsync(final boolean clearThreadMap,
         final boolean onTimeout) {
         if (log.isDebugEnabled())
@@ -4427,7 +4423,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Nullable @Override public IgniteInternalFuture<?> currentPrepareFuture() {
         return prepFut;
     }
@@ -4741,7 +4736,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param fut Future.
      * @return Future ignoring interrupts on {@code get()}.
      */
-    private <T> IgniteInternalFuture<T> nonInterruptable(IgniteInternalFuture<T> fut) {
+    private static <T> IgniteInternalFuture<T> nonInterruptable(IgniteInternalFuture<T> fut) {
         // Safety.
         if (fut instanceof GridFutureAdapter)
             ((GridFutureAdapter)fut).ignoreInterrupts();

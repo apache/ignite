@@ -23,14 +23,6 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
-import org.apache.ignite.events.CacheEvent;
-import org.apache.ignite.events.CacheQueryExecutedEvent;
-import org.apache.ignite.events.CacheQueryReadEvent;
-import org.apache.ignite.events.CacheRebalancingEvent;
-import org.apache.ignite.events.CheckpointEvent;
-import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.events.JobEvent;
-import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
@@ -51,7 +43,6 @@ import java.util.UUID;
 /**
  * Test task writing all events to a stream.
  */
-@SuppressWarnings("UnusedDeclaration")
 public class PlatformEventsWriteEventTask extends ComputeTaskAdapter<Long, Object> {
     /** {@inheritDoc} */
     @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
@@ -67,7 +58,6 @@ public class PlatformEventsWriteEventTask extends ComputeTaskAdapter<Long, Objec
     /**
      * Job.
      */
-    @SuppressWarnings("deprecation")
     private static class Job extends ComputeJobAdapter {
         /** Grid. */
         @IgniteInstanceResource

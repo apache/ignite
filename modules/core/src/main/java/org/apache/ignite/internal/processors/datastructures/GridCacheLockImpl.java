@@ -45,10 +45,7 @@ import org.apache.ignite.IgniteCondition;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLock;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.typedef.X;
@@ -1033,7 +1030,6 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
      * @param key Reentrant lock key.
      * @param lockView Reentrant lock projection.
      */
-    @SuppressWarnings("unchecked")
     public GridCacheLockImpl(String name,
         GridCacheInternalKey key,
         IgniteInternalCache<GridCacheInternalKey, GridCacheLockState> lockView) {

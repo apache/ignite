@@ -214,7 +214,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param nodeId Node ID.
      * @param req Request.
      */
-    @SuppressWarnings({"RedundantTypeArguments"})
     public void clearLocks(UUID nodeId, GridDhtUnlockRequest req) {
         assert nodeId != null;
 
@@ -279,7 +278,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @throws IgniteCheckedException If failed.
      * @throws GridDistributedLockCancelledException If lock has been cancelled.
      */
-    @SuppressWarnings({"RedundantTypeArguments", "ForLoopReplaceableByForEach"})
     @Nullable public GridNearTxRemote startRemoteTx(UUID nodeId, GridDhtLockRequest req)
         throws IgniteCheckedException, GridDistributedLockCancelledException {
         List<KeyCacheObject> nearKeys = req.nearKeys();
@@ -635,7 +633,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param ver Lock version.
      * @param keys Keys.
      */
-    @SuppressWarnings({"unchecked"})
     public void removeLocks(GridCacheVersion ver, Collection<KeyCacheObject> keys) {
         if (keys.isEmpty())
             return;

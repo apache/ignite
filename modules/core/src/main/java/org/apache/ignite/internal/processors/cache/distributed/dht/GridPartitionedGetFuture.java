@@ -452,7 +452,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
      * @param mapped Previously mapped.
      * @return {@code True} if has remote nodes.
      */
-    @SuppressWarnings("ConstantConditions")
     private boolean map(
         KeyCacheObject key,
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings,
@@ -793,7 +792,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         /**
          * @param e Failure exception.
          */
-        @SuppressWarnings("UnusedParameters")
         synchronized void onNodeLeft(ClusterTopologyCheckedException e) {
             if (remapped)
                 return;
@@ -834,7 +832,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         /**
          * @param res Result callback.
          */
-        @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
         void onResult(final GridNearGetResponse res) {
             final Collection<Integer> invalidParts = res.invalidPartitions();
 
@@ -882,7 +879,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 IgniteInternalFuture<AffinityTopologyVersion> topFut = cctx.shared().exchange().affinityReadyFuture(rmtTopVer);
 
                 topFut.listen(new CIX1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                    @SuppressWarnings("unchecked")
                     @Override public void applyx(
                         IgniteInternalFuture<AffinityTopologyVersion> fut) throws IgniteCheckedException {
                         AffinityTopologyVersion topVer = fut.get();

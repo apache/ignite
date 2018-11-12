@@ -152,7 +152,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     private final Map<KeyCacheObject, IgniteBiTuple<GridCacheVersion, CacheObject>> valMap;
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     private volatile int done;
 
     /** Trackable flag (here may be non-volatile). */
@@ -537,7 +536,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      * @param miniId Mini ID to find.
      * @return Mini future.
      */
-    @SuppressWarnings({"ForLoopReplaceableByForEach", "IfMayBeConditional"})
+    @SuppressWarnings({"IfMayBeConditional"})
     private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (this) {
