@@ -129,7 +129,6 @@ import static org.apache.ignite.internal.util.IgniteTree.OperationType.PUT;
 /**
  *
  */
-@SuppressWarnings("PublicInnerClass")
 public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager {
     /**
      * Throttling timeout in millis which avoid excessive PendingTree access on unwind

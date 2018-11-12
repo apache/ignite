@@ -86,7 +86,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlus
 /**
  * Abstract B+Tree.
  */
-@SuppressWarnings({"RedundantThrowsDeclaration", "ConstantValueVariableUse"})
+@SuppressWarnings({"ConstantValueVariableUse"})
 public abstract class BPlusTree<L, T extends L> extends DataStructure implements IgniteTree<L, T> {
     /** */
     private static final Object[] EMPTY = {};

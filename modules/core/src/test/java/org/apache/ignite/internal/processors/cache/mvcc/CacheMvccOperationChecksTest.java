@@ -162,7 +162,6 @@ public class CacheMvccOperationChecksTest extends CacheMvccAbstractTest {
 
             try (IgniteCache<Integer, String> cache = node.createCache(cfg)) {
                 GridTestUtils.assertThrows(log, new Callable<Void>() {
-                    @SuppressWarnings("unchecked")
                     @Override public Void call() throws Exception {
                         try {
                             Object o = U.invoke(null, cache, mtdName, paramTypes, args);
