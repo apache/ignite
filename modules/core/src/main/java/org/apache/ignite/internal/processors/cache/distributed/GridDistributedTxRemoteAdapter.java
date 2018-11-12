@@ -28,12 +28,11 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.Latches;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -777,7 +776,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                         if (!near() && !F.isEmpty(dataEntries) && cctx.wal() != null) {
                             T2<CountDownLatch, Exchanger<Long>> newVal = new T2<>(new CountDownLatch(2), new Exchanger<Long>());
-                            T2<CountDownLatch, Exchanger<Long>> val = Latches.latches.putIfAbsent(cctx.localNodeId(), newVal);
+                            T2<CountDownLatch, Exchanger<Long>> val = Ignition.latches.putIfAbsent(cctx.localNodeId(), newVal);
 
                             if (val == null)
                                 val = newVal;

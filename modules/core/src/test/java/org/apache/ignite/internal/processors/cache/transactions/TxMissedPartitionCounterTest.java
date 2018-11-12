@@ -215,7 +215,7 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
 
         int part = 0;
 
-        List<Integer> keys = loadDataToPartition(part, DEFAULT_CACHE_NAME, 100, 0, 1);
+        List<Integer> keys = loadDataToPartition(part, DEFAULT_CACHE_NAME, 100, 0, 100);
 
         forceCheckpoint(); // Prevent IGNITE-10088
 
@@ -223,11 +223,24 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        List<Integer> keys1 = loadDataToPartition(part, DEFAULT_CACHE_NAME, 100, 100, 1);
+        List<Integer> keys1 = loadDataToPartition(part, DEFAULT_CACHE_NAME, 100, 100, 100);
 
+        assertEquals(200, grid(0).cache(DEFAULT_CACHE_NAME).size());
+
+        stopGrid(0);
+
+        IgniteWalRebalanceTest.WalRebalanceCheckingCommunicationSpi.cleanup();
+
+        crd = startGrid(0);
         startGrid(1);
 
+        crd.cluster().active(true);
+
         awaitPartitionMapExchange();
+
+        Map<Integer, Set<Long>> map = IgniteWalRebalanceTest.WalRebalanceCheckingCommunicationSpi.allRebalances();
+
+        assertTrue(map.size() > 0);
     }
 
     public void testNodeRestartWithHolesDuringRebalance() {

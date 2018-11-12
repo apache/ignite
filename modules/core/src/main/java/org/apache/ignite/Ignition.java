@@ -19,14 +19,21 @@ package org.apache.ignite;
 
 import java.io.InputStream;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Exchanger;
+import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.client.thin.TcpIgniteClient;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.thread.IgniteThread;
@@ -102,6 +109,7 @@ public class Ignition {
      * to auto-stop the Ignite JVM process without restarting.
      */
     public static final int KILL_EXIT_CODE = 130;
+    public static Map<UUID, T2<CountDownLatch, Exchanger<Long>>> latches = new ConcurrentHashMap<>();
 
     /**
      * Enforces singleton.
