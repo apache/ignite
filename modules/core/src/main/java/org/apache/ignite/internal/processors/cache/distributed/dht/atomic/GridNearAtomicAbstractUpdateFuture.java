@@ -400,6 +400,10 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
 
         Collection<Object> keys = new ArrayList<>(keys0.size());
 
+        Collection<Object> failedToUnwrapKeys = null;
+
+        Exception suppressedErr = null;
+
         for (KeyCacheObject key : keys0) {
             try {
                 keys.add(cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, false));
@@ -408,13 +412,34 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
                 keys.add(cctx.toCacheKeyObject(key));
 
                 if (log.isDebugEnabled()) {
-                    log.warning("Failed to unwrap the key: " + key +
-                        " (the binary object will be used instead).");
+                    if (failedToUnwrapKeys == null)
+                        failedToUnwrapKeys = new ArrayList<>();
+
+                    // To limit keys count in log message.
+                    if (failedToUnwrapKeys.size() < 5)
+                        failedToUnwrapKeys.add(key);
                 }
+
+                suppressedErr = e;
+            }
+            catch (Exception e) {
+                keys.add(cctx.toCacheKeyObject(key));
+
+                suppressedErr = e;
             }
         }
 
-        err.add(keys, res.error(), req.topologyVersion());
+        if (failedToUnwrapKeys != null) {
+            log.warning("Failed to unwrap keys: " + failedToUnwrapKeys +
+                " (the binary objects will be used instead).");
+        }
+
+        IgniteCheckedException error = res.error();
+
+        if (suppressedErr != null)
+            error.addSuppressed(suppressedErr);
+
+        err.add(keys, error, req.topologyVersion());
     }
 
     /**

@@ -2723,6 +2723,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             final GridDhtAtomicAbstractUpdateFuture dhtFut = dhtUpdRes.dhtFuture();
 
+            Collection<Object> failedToUnwrapKeys = null;
+
             // Avoid iterator creation.
             for (int i = 0; i < entries.size(); i++) {
                 GridDhtCacheEntry entry = entries.get(i);
@@ -2743,8 +2745,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     }
                     catch (BinaryInvalidTypeException e) {
                         if (log.isDebugEnabled()) {
-                            log.warning("Failed to get a value of the key: " + key +
-                                " (the binary object will be used instead).");
+                            if (failedToUnwrapKeys == null)
+                                failedToUnwrapKeys = new ArrayList<>();
+
+                            // To limit keys count in log message.
+                            if (failedToUnwrapKeys.size() < 5)
+                                failedToUnwrapKeys.add(key);
                         }
                     }
 
@@ -2879,6 +2885,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 dhtUpdRes.processedEntriesCount(firstEntryIdx + i + 1);
             }
 
+            if (failedToUnwrapKeys != null) {
+                log.warning("Failed to get values of keys: " + failedToUnwrapKeys +
+                    " (the binary objects will be used instead).");
+            }
         }
         catch (IgniteCheckedException e) {
             res.addFailedKeys(putMap != null ? putMap.keySet() : rmvKeys, e);
