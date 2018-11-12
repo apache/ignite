@@ -154,6 +154,7 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
@@ -2318,7 +2319,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     ) throws IgniteCheckedException {
         cctx.walState().runWithOutWAL(() -> {
             if (it != null)
-                applyUpdates(it, stopPred, entryPred, false);
+                applyUpdates(it, stopPred, entryPred, false, null);
 
             checkpointReadLock();
 
@@ -2336,17 +2337,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /**
      * Applies data entries updates from given WAL iterator if entry satisfies to provided predicates.
-     *
-     * @param it WAL iterator.
+     *  @param it WAL iterator.
      * @param stopPred WAL record predicate for stopping iteration.
      * @param entryPred Data record and corresponding data entries predicate.
      * @param lockEntries If true, update will be performed under entry lock.
+     * @param onWalPointerApplied Listener to be invoked after every WAL record applied.
      */
     public void applyUpdates(
         WALIterator it,
         @Nullable IgnitePredicate<WALRecord> stopPred,
         IgniteBiPredicate<WALRecord, DataEntry> entryPred,
-        boolean lockEntries
+        boolean lockEntries,
+        IgniteInClosure<WALPointer> onWalPointerApplied
     ) {
         while (it.hasNext()) {
             IgniteBiTuple<WALPointer, WALRecord> next = it.next();
@@ -2392,6 +2394,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 default:
                     // Skip other records.
             }
+
+            if (onWalPointerApplied != null)
+                onWalPointerApplied.apply(next.get1());
         }
     }
 
