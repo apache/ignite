@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import java.util.concurrent.CyclicBarrier;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -88,34 +89,53 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
      * @throws Exception If fails.
      */
     public void testSingleNodeTxMissedRollback() throws Exception {
-        checkSingleNodeRestart(true, false);
+        checkSingleNodeRestart(true, false, true);
     }
 
     /**
      * @throws Exception If fails.
      */
-    public void testSingleNodeTxMissedRollbackNoCheckpoint() throws Exception {
-        checkSingleNodeRestart(true, true);
+    public void testSingleNodeTxMissedRollbackRecoverFromWAL() throws Exception {
+        checkSingleNodeRestart(true, true, true);
     }
 
     /**
      * @throws Exception If fails.
      */
     public void testSingleNodeTxMissedCommit() throws Exception {
-        checkSingleNodeRestart(false, false);
+        checkSingleNodeRestart(false, false, true);
     }
 
     /**
      * @throws Exception If fails.
      */
-    public void testSingleNodeTxMissedCommitNoCheckpoint() throws Exception {
-        checkSingleNodeRestart(false, true);
+    public void testSingleNodeTxMissedCommitRecoverFromWAL() throws Exception {
+        checkSingleNodeRestart(false, true, true);
     }
 
     /**
      * @throws Exception If fails.
      */
-    public void checkSingleNodeRestart(boolean rollBack, boolean disableCheckpointer) throws Exception {
+    public void testSingleNodeRollbackedTxRecoverFromWAL() throws Exception {
+        checkSingleNodeRestart(true, true, false);
+    }
+
+    /**
+     * @throws Exception If fails.
+     */
+    public void testSingleNodeCommitedTxRecoverFromWAL() throws Exception {
+        checkSingleNodeRestart(false, true, false);
+    }
+
+
+    /**
+     * @param rollBack If {@code True} then Tx will be rolled backup, committed otherwise.
+     * @param recoverFromWAL If {@code True} then Tx recovery from WAL will be checked,
+     *                       binary recovery from latest checkpoint otherwise.
+     * @param omitTxFinish If {@code True} then unfinished Tx state will be restored as if node fails during commit.
+     * @throws Exception If fails.
+     */
+    public void checkSingleNodeRestart(boolean rollBack, boolean recoverFromWAL, boolean omitTxFinish) throws Exception {
         IgniteEx node = startGrid(0);
 
         node.cluster().active(true);
@@ -129,7 +149,7 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
 
         IgniteWriteAheadLogManager wal = node.context().cache().context().wal();
 
-        if (disableCheckpointer){
+        if (recoverFromWAL){
             //Force checkpoint. See for details: https://issues.apache.org/jira/browse/IGNITE-10187
             node.context().cache().context().database().waitForCheckpoint(null);
 
@@ -148,15 +168,20 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
 
             flushTask.onTimeout(); // Flush WAL.
 
-            // Disable wal.
-            GridTestUtils.setFieldValue(wctx, "disableWal", true);
+            if (!recoverFromWAL){
+                //Force checkpoint, then disable.
+                node.context().cache().context().database().waitForCheckpoint(null);
+
+                ((GridCacheDatabaseSharedManager)node.context().cache().context().database()).enableCheckpoints(false).get();
+            }
+
+            if (omitTxFinish)
+                GridTestUtils.setFieldValue(wctx, "disableWal", true); // Disable wal.
 
             if (rollBack)
                 tx.rollback();
             else
                 tx.commit();
-
-            GridTestUtils.setFieldValue(wctx, "disableWal", false);
         }
 
         stopGrid(0);
@@ -169,13 +194,79 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
 
         assertEquals((Integer)1, cache.get(1));
 
-        if (!rollBack && !disableCheckpointer)
-            assertEquals((Integer)2, cache.get(2)); // Checkpoint has happened on node stop.
+        if (omitTxFinish || rollBack)
+            assertEquals((Integer) 1, cache.get(2)); // Commit\rollback marker were saved neither in WAL nor in checkpoint.
         else
-            assertEquals((Integer)1, cache.get(2));
+            assertEquals((Integer) 2, cache.get(2));
 
         cache.put(2, 3);
 
         assertEquals((Integer)3, cache.get(2));
+    }
+
+
+    /**
+     * @throws Exception If fails.
+     */
+    public void testLostRollbackOnBackup() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10219");
+
+        IgniteEx node = startGrid(0);
+
+        startGrid(1);
+
+        node.cluster().active(true);
+
+        final CyclicBarrier barrier = new CyclicBarrier(2);
+
+        GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                try {
+                    barrier.await();
+
+                    stopGrid(1);
+
+                    barrier.await();
+
+                    startGrid(1);
+
+                    barrier.await();
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                    barrier.reset();
+                }
+            }
+        });
+
+        IgniteCache<Integer, Integer> cache = node.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        Integer key = primaryKey(cache);
+
+        cache.put(key, 0);
+
+        IgniteTransactions txs = node.transactions();
+
+        try (Transaction tx = txs.txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
+            assertEquals((Integer)0, cache.get(key));
+
+            cache.put(key, 1);
+
+            barrier.await();
+
+            barrier.await(); // Await backup node stop.
+
+            Thread.sleep(1000);
+
+            tx.rollback();
+        }
+
+        barrier.await();
+
+        assertEquals((Integer)0, cache.get(key));
+
+        cache.put(key, 2);
+
+        assertEquals((Integer)2, cache.get(key));
     }
 }
