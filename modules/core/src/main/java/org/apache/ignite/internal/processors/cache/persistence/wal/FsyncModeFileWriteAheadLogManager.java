@@ -1912,7 +1912,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
             try (ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zip)))) {
                 zos.setLevel(dsCfg.getWalCompactionLevel());
-                zos.putNextEntry(new ZipEntry(""));
+                zos.putNextEntry(new ZipEntry(nextSegment + ".wal"));
 
                 zos.write(prepareSerializerVersionBuffer(nextSegment, segmentSerializerVer, true).array());
 
