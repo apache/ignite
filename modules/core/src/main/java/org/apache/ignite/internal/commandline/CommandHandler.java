@@ -623,7 +623,6 @@ public class CommandHandler {
      * @return Task result.
      * @throws GridClientException If failed to execute task.
      */
-    @SuppressWarnings("unchecked")
     private <R> R executeTaskByNameOnNode(
         GridClient client,
         String taskClsName,
