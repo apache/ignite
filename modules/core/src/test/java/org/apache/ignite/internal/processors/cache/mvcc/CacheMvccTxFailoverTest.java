@@ -17,11 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import java.util.concurrent.CyclicBarrier;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.WalStateManager;
@@ -197,5 +202,71 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
         cache.put(2, 3);
 
         assertEquals((Integer)3, cache.get(2));
+    }
+
+
+    /**
+     * @throws Exception If fails.
+     */
+    public void testLostRollbackOnBackup() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10219");
+
+        IgniteEx node = startGrid(0);
+
+        startGrid(1);
+
+        node.cluster().active(true);
+
+        final CyclicBarrier barrier = new CyclicBarrier(2);
+
+        GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                try {
+                    barrier.await();
+
+                    stopGrid(1);
+
+                    barrier.await();
+
+                    startGrid(1);
+
+                    barrier.await();
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                    barrier.reset();
+                }
+            }
+        });
+
+        IgniteCache<Integer, Integer> cache = node.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        Integer key = primaryKey(cache);
+
+        cache.put(key, 0);
+
+        IgniteTransactions txs = node.transactions();
+
+        try (Transaction tx = txs.txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
+            assertEquals((Integer)0, cache.get(key));
+
+            cache.put(key, 1);
+
+            barrier.await();
+
+            barrier.await(); // Await backup node stop.
+
+            Thread.sleep(1000);
+
+            tx.rollback();
+        }
+
+        barrier.await();
+
+        assertEquals((Integer)0, cache.get(key));
+
+        cache.put(key, 2);
+
+        assertEquals((Integer)2, cache.get(key));
     }
 }
