@@ -3565,13 +3565,23 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      *
      */
     private void finalizePartitionCounters() {
+        int parallelismLvl = cctx.kernalContext().config().getSystemThreadPoolSize();
+
+        // Reserve at least 2 threads for system operations.
+        parallelismLvl = Math.max(1, parallelismLvl - 2);
+
         long time = System.currentTimeMillis();
 
         try {
-            U.doInParallel(
+            U.<CacheGroupContext, Void>doInParallel(
+                parallelismLvl,
                 cctx.kernalContext().getSystemExecutorService(),
                 nonLocalCacheGroups(),
-                grp -> grp.topology().finalizeUpdateCounters()
+                grp -> {
+                    grp.topology().finalizeUpdateCounters();
+
+                    return null;
+                }
             );
         }
         catch (IgniteCheckedException e) {

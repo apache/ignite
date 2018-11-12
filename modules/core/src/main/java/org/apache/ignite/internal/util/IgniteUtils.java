@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.util;
 
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.RunnableFuture;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
@@ -10781,20 +10783,23 @@ public abstract class IgniteUtils {
         Collection<T> srcDatas,
         IgniteThrowableConsumer<T, R> operation
     ) throws IgniteCheckedException, IgniteInterruptedCheckedException {
-        if(srcDatas.isEmpty())
+        assert parallelismLvl >= 0;
+
+        if (parallelismLvl == 0)
+            parallelismLvl = 1;
+
+        if(F.isEmpty(srcDatas))
             return Collections.emptyList();
 
-        int batchSize = srcDatas.size() / parallelismLvl;
+        int srcSize = srcDatas.size(), batchSize = srcSize < parallelismLvl ? srcSize : srcSize / parallelismLvl;
 
-        final int finalBatchSize = batchSize == 0 ? srcDatas.size() : batchSize;
+        assert batchSize > 0;
 
         List<List<T>> batches = IntStream.range(0, parallelismLvl)
-            .mapToObj(i -> new ArrayList<T>(finalBatchSize))
+            .mapToObj(i -> new ArrayList<T>(batchSize))
             .collect(Collectors.toList());
 
-        int batchIndex = 0;
-
-        final int maxBatchIndex = batches.size() -1;
+        int batchIndex = 0, maxBatchIndex = batches.size() -1;
 
         List<T> currentBatch = batches.get(batchIndex);
 
@@ -10805,9 +10810,9 @@ public abstract class IgniteUtils {
                 currentBatch = batches.get(++batchIndex);
         }
 
-        List<Future<Collection<R>>> consumerFutures = batches.stream()
+        List<RunnableFuture<Collection<R>>> consumerFutures = batches.stream()
             .filter(batch -> !batch.isEmpty())
-            .map(batch -> executorSvc.submit(() -> {
+            .map(batch -> new FutureTask<>(() -> {
                 Collection<R> results = new ArrayList<>(batch.size());
 
                 for (T item : batch)
@@ -10817,9 +10822,17 @@ public abstract class IgniteUtils {
             }))
             .collect(Collectors.toList());
 
-        Throwable error =null;
+        if (F.isEmpty(batches))
+            return Collections.emptyList();
 
-        Collection<R> results = new ArrayList<>(srcDatas.size());
+        for (int i = 1; i < consumerFutures.size(); i++)
+            executorSvc.submit(consumerFutures.get(i));
+
+        consumerFutures.get(0).run(); // Use current thread as well.
+
+        Throwable error = null;
+
+        Collection<R> results = new ArrayList<>(srcSize);
 
         for (Future<Collection<R>> future : consumerFutures) {
             try {
@@ -10858,28 +10871,6 @@ public abstract class IgniteUtils {
         }
 
         return results;
-    }
-
-    /**
-     * @param fut Future to wait for completion.
-     * @throws ExecutionException If the future
-     */
-    private static void getUninterruptibly(Future fut) throws ExecutionException {
-        boolean interrupted = false;
-
-        while (true) {
-            try {
-                fut.get();
-
-                break;
-            }
-            catch (InterruptedException e) {
-                interrupted = true;
-            }
-        }
-
-        if (interrupted)
-            Thread.currentThread().interrupt();
     }
 
     /**
