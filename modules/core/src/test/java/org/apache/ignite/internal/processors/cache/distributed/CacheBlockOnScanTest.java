@@ -48,6 +48,11 @@ public class CacheBlockOnScanTest extends CacheBlockOnReadAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected long warmup() {
+        return 2 * super.warmup();
+    }
+
+    /** {@inheritDoc} */
     @Params(baseline = 9, atomicityMode = ATOMIC, cacheMode = PARTITIONED, allowException = true)
     @Override public void testStopBaselineAtomicPartitioned() throws Exception {
         super.testStopBaselineAtomicPartitioned();
@@ -93,29 +98,5 @@ public class CacheBlockOnScanTest extends CacheBlockOnReadAbstractTest {
     @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
     @Override public void testStopClientTransactionalReplicated() {
         fail("https://issues.apache.org/jira/browse/IGNITE-9987");
-    }
-
-    /** {@inheritDoc} */
-    @Params(atomicityMode = ATOMIC, cacheMode = PARTITIONED)
-    @Override public void testStartClientAtomicPartitioned() throws Exception {
-        super.testStartClientTransactionalReplicated();
-    }
-
-    /** {@inheritDoc} */
-    @Params(atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
-    @Override public void testStartClientTransactionalPartitioned() throws Exception {
-        super.testStartClientTransactionalReplicated();
-    }
-
-    /** {@inheritDoc} */
-    @Params(atomicityMode = ATOMIC, cacheMode = PARTITIONED)
-    @Override public void testStopClientAtomicPartitioned() throws Exception {
-        super.testStopClientTransactionalReplicated();
-    }
-
-    /** {@inheritDoc} */
-    @Params(atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
-    @Override public void testStopClientTransactionalPartitioned() throws Exception {
-        super.testStopClientTransactionalReplicated();
     }
 }

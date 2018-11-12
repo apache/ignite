@@ -66,6 +66,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNe
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.UpdateErrors;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
@@ -238,7 +239,17 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                         log.debug(msg0.toString());
                     }
 
-                    fut = cctx.exchange().affinityReadyFuture(rmtAffVer);
+                    if (shouldWaitForAffinityReadyFuture(cacheMsg))
+                        fut = cctx.exchange().affinityReadyFuture(rmtAffVer);
+                    else {
+                        if (log.isDebugEnabled()) {
+                            StringBuilder msg0 = new StringBuilder("Skip waiting for topology future on message [");
+
+                            appendMessageInfo(cacheMsg, nodeId, msg0).append(']');
+
+                            log.debug(msg0.toString());
+                        }
+                    }
                 }
             }
 
@@ -292,6 +303,21 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             }
 
             handleMessage(nodeId, cacheMsg, plc);
+        }
+
+        /**
+         * @param cacheMsg Cache message.
+         * @return Whether one should wait for the requested affinity version to handle given message.
+         */
+        private boolean shouldWaitForAffinityReadyFuture(GridCacheMessage cacheMsg) {
+            if (cacheMsg instanceof GridNearSingleGetRequest || cacheMsg instanceof GridNearGetRequest) {
+                GridDhtPartitionsExchangeFuture lastTopFut = cctx.exchange().lastTopologyFuture();
+
+                if (lastTopFut.exchangeId().topologyVersion().equals(cacheMsg.topologyVersion()))
+                    return false;
+            }
+
+            return true;
         }
     };
 

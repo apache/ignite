@@ -33,6 +33,7 @@ import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
@@ -89,8 +90,11 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  *
  */
 public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTest {
+    /** Default partitions count. */
+    protected static final int DFLT_PARTITIONS_COUNT = 16;
+
     /** Default cache entries count. */
-    private static final int DFLT_CACHE_ENTRIES_CNT = 2 * 1024;
+    protected static final int DFLT_CACHE_ENTRIES_CNT = 16 * DFLT_PARTITIONS_COUNT;
 
     /** Ip finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -242,12 +246,12 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
         /**
          * Number of milliseconds to warmup reading process. Used to lower fluctuations in run time. Might be 0.
          */
-        long warmup() default 2000L;
+        long warmup() default 3000L;
 
         /**
          * Number of milliseconds to wait on the potentially blocking operation.
          */
-        long timeout() default 3000L;
+        long timeout() default 10_000L;
 
         /**
          * Cache atomicity mode.
@@ -277,8 +281,10 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
         cfg.setDiscoverySpi(new TestTcpDiscoverySpi() {
             /** {@inheritDoc} */
             @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
-                if (discoveryMsgProcessor != null)
-                    discoveryMsgProcessor.accept(msg, igniteInstanceName);
+                BiConsumer<TcpDiscoveryAbstractMessage, String> msgProcessor = discoveryMsgProcessor;
+
+                if (msgProcessor != null)
+                    msgProcessor.accept(msg, igniteInstanceName);
             }
         }.setIpFinder(customIpFinder == null ? IP_FINDER : customIpFinder));
 
@@ -354,7 +360,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
      */
     @Params(atomicityMode = ATOMIC, cacheMode = PARTITIONED)
     public void testCreateCacheAtomicPartitioned() throws Exception {
-        testCreateCacheTransactionalReplicated();
+        doTestCreateCache();
     }
 
     /**
@@ -362,7 +368,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
      */
     @Params(atomicityMode = ATOMIC, cacheMode = REPLICATED)
     public void testCreateCacheAtomicReplicated() throws Exception {
-        testCreateCacheTransactionalReplicated();
+        doTestCreateCache();
     }
 
     /**
@@ -370,7 +376,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
      */
     @Params(atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
     public void testCreateCacheTransactionalPartitioned() throws Exception {
-        testCreateCacheTransactionalReplicated();
+        doTestCreateCache();
     }
 
     /**
@@ -378,6 +384,13 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
      */
     @Params(atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
     public void testCreateCacheTransactionalReplicated() throws Exception {
+        doTestCreateCache();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void doTestCreateCache() throws Exception {
         doTest(
             asMessagePredicate(CacheBlockOnReadAbstractTest::createCachePredicate),
             () -> baseline.get(0).createCache(UUID.randomUUID().toString())
@@ -387,32 +400,39 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(timeout = 5000L, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
+    @Params(atomicityMode = ATOMIC, cacheMode = PARTITIONED)
     public void testDestroyCacheAtomicPartitioned() throws Exception {
-        testDestroyCacheTransactionalReplicated();
+        doTestDestroyCache();
     }
 
     /**
      * @throws Exception If failed.
      */
-    @Params(timeout = 5000L, atomicityMode = ATOMIC, cacheMode = REPLICATED)
+    @Params(atomicityMode = ATOMIC, cacheMode = REPLICATED)
     public void testDestroyCacheAtomicReplicated() throws Exception {
-        testDestroyCacheTransactionalReplicated();
+        doTestDestroyCache();
     }
 
     /**
      * @throws Exception If failed.
      */
-    @Params(timeout = 5000L, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
+    @Params(atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
     public void testDestroyCacheTransactionalPartitioned() throws Exception {
-        testDestroyCacheTransactionalReplicated();
+        doTestDestroyCache();
     }
 
     /**
      * @throws Exception If failed.
      */
-    @Params(timeout = 5000L, atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
+    @Params(atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
     public void testDestroyCacheTransactionalReplicated() throws Exception {
+        doTestDestroyCache();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void doTestDestroyCache() throws Exception {
         List<String> cacheNames = new ArrayList<>(Arrays.asList(
             UUID.randomUUID().toString(),
             UUID.randomUUID().toString(),
@@ -433,7 +453,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
      */
     @Params(atomicityMode = ATOMIC, cacheMode = PARTITIONED)
     public void testStartServerAtomicPartitioned() throws Exception {
-        testStartServerTransactionalReplicated();
+        doTestStartServer();
     }
 
     /**
@@ -441,7 +461,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
      */
     @Params(atomicityMode = ATOMIC, cacheMode = REPLICATED)
     public void testStartServerAtomicReplicated() throws Exception {
-        testStartServerTransactionalReplicated();
+        doTestStartServer();
     }
 
     /**
@@ -449,7 +469,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
      */
     @Params(atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
     public void testStartServerTransactionalPartitioned() throws Exception {
-        testStartServerTransactionalReplicated();
+        doTestStartServer();
     }
 
     /**
@@ -457,6 +477,13 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
      */
     @Params(atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
     public void testStartServerTransactionalReplicated() throws Exception {
+        doTestStartServer();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void doTestStartServer() throws Exception {
         startNodesInClientMode(false);
 
         doTest(
@@ -470,7 +497,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
      */
     @Params(servers = 4, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
     public void testStopServerAtomicPartitioned() throws Exception {
-        testStopServerTransactionalReplicated();
+        doTestStopServer();
     }
 
     /**
@@ -478,7 +505,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
      */
     @Params(servers = 4, atomicityMode = ATOMIC, cacheMode = REPLICATED)
     public void testStopServerAtomicReplicated() throws Exception {
-        testStopServerTransactionalReplicated();
+        doTestStopServer();
     }
 
     /**
@@ -486,7 +513,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
      */
     @Params(servers = 4, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
     public void testStopServerTransactionalPartitioned() throws Exception {
-        testStopServerTransactionalReplicated();
+        doTestStopServer();
     }
 
     /**
@@ -494,6 +521,13 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
      */
     @Params(servers = 4, atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
     public void testStopServerTransactionalReplicated() throws Exception {
+        doTestStopServer();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void doTestStopServer() throws Exception {
         doTest(
             asMessagePredicate(discoEvt -> discoEvt.type() == EventType.EVT_NODE_LEFT),
             () -> stopGrid(srvs.remove(srvs.size() - 1).name())
@@ -505,7 +539,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
      */
     @Params(baseline = 4, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
     public void testRestartBaselineAtomicPartitioned() throws Exception {
-        testRestartBaselineTransactionalReplicated();
+        doTestRestartBaseline();
     }
 
     /**
@@ -513,7 +547,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
      */
     @Params(baseline = 4, atomicityMode = ATOMIC, cacheMode = REPLICATED)
     public void testRestartBaselineAtomicReplicated() throws Exception {
-        testRestartBaselineTransactionalReplicated();
+        doTestRestartBaseline();
     }
 
     /**
@@ -521,7 +555,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
      */
     @Params(baseline = 4, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
     public void testRestartBaselineTransactionalPartitioned() throws Exception {
-        testRestartBaselineTransactionalReplicated();
+        doTestRestartBaseline();
     }
 
     /**
@@ -529,6 +563,13 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
      */
     @Params(baseline = 4, atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
     public void testRestartBaselineTransactionalReplicated() throws Exception {
+        doTestRestartBaseline();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void doTestRestartBaseline() throws Exception {
         doTest(
             asMessagePredicate(discoEvt -> discoEvt.type() == EventType.EVT_NODE_JOINED),
             () -> {
@@ -549,32 +590,46 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(timeout = 5000L, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
+    @Params(atomicityMode = ATOMIC, cacheMode = PARTITIONED)
     public void testUpdateBaselineTopologyAtomicPartitioned() throws Exception {
-        testUpdateBaselineTopologyTransactionalReplicated();
+        doTestUpdateBaselineTopology();
     }
 
     /**
      * @throws Exception If failed.
      */
-    @Params(timeout = 5000L, atomicityMode = ATOMIC, cacheMode = REPLICATED)
+    @Params(atomicityMode = ATOMIC, cacheMode = REPLICATED)
     public void testUpdateBaselineTopologyAtomicReplicated() throws Exception {
-        testUpdateBaselineTopologyTransactionalReplicated();
+        doTestUpdateBaselineTopology();
     }
 
     /**
      * @throws Exception If failed.
      */
-    @Params(timeout = 5000L, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
+    @Params(atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
     public void testUpdateBaselineTopologyTransactionalPartitioned() throws Exception {
-        testUpdateBaselineTopologyTransactionalReplicated();
+        doTestUpdateBaselineTopology();
     }
 
     /**
      * @throws Exception If failed.
      */
-    @Params(timeout = 5000L, atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
+    @Params(atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
     public void testUpdateBaselineTopologyTransactionalReplicated() throws Exception {
+        doTestUpdateBaselineTopology();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void doTestUpdateBaselineTopology() throws Exception {
+        AtomicBoolean shouldStopDiscoveryMessages = new AtomicBoolean(false);
+
+        // Workaround to wait on new server node as well.
+        baseline.add(0, baseline.get(0));
+
+        baseline.addAll(srvs);
+
         doTest(
             asMessagePredicate(discoEvt -> {
                 if (discoEvt instanceof DiscoveryCustomEvent) {
@@ -582,7 +637,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
 
                     DiscoveryCustomMessage customMsg = discoCustomEvt.customMessage();
 
-                    return customMsg instanceof ChangeGlobalStateMessage;
+                    return customMsg instanceof ChangeGlobalStateMessage && shouldStopDiscoveryMessages.get();
                 }
 
                 return false;
@@ -592,9 +647,13 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
 
                 IgniteEx ignite = startGrid(UUID.randomUUID().toString());
 
+                baseline.add(ignite);
+
+                shouldStopDiscoveryMessages.set(true);
+
                 baseline.get(0).cluster().setBaselineTopology(baseline.get(0).context().discovery().topologyVersion());
 
-                baseline.add(ignite);
+                shouldStopDiscoveryMessages.set(false);
             }
         );
     }
@@ -604,7 +663,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
      */
     @Params(baseline = 9, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
     public void testStopBaselineAtomicPartitioned() throws Exception {
-        testStopBaselineTransactionalReplicated();
+        doTestStopBaseline();
     }
 
     /**
@@ -612,7 +671,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
      */
     @Params(baseline = 9, atomicityMode = ATOMIC, cacheMode = REPLICATED)
     public void testStopBaselineAtomicReplicated() throws Exception {
-        testStopBaselineTransactionalReplicated();
+        doTestStopBaseline();
     }
 
     /**
@@ -620,7 +679,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
      */
     @Params(baseline = 9, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
     public void testStopBaselineTransactionalPartitioned() throws Exception {
-        testStopBaselineTransactionalReplicated();
+        doTestStopBaseline();
     }
 
     /**
@@ -628,6 +687,13 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
      */
     @Params(baseline = 9, atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
     public void testStopBaselineTransactionalReplicated() throws Exception {
+        doTestStopBaseline();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void doTestStopBaseline() throws Exception {
         AtomicInteger cntDownCntr = new AtomicInteger(0);
 
         doTest(
@@ -652,7 +718,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
      */
     @Params(atomicityMode = ATOMIC, cacheMode = PARTITIONED)
     public void testStartClientAtomicPartitioned() throws Exception {
-        testStartClientTransactionalReplicated();
+        doTestStartClient();
     }
 
     /**
@@ -660,7 +726,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
      */
     @Params(atomicityMode = ATOMIC, cacheMode = REPLICATED)
     public void testStartClientAtomicReplicated() throws Exception {
-        testStartClientTransactionalReplicated();
+        doTestStartClient();
     }
 
     /**
@@ -668,7 +734,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
      */
     @Params(atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
     public void testStartClientTransactionalPartitioned() throws Exception {
-        testStartClientTransactionalReplicated();
+        doTestStartClient();
     }
 
     /**
@@ -676,6 +742,13 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
      */
     @Params(atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
     public void testStartClientTransactionalReplicated() throws Exception {
+        doTestStartClient();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void doTestStartClient() throws Exception {
         doTest(
             TcpDiscoveryNodeAddFinishedMessage.class,
             () -> {
@@ -701,7 +774,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
      */
     @Params(atomicityMode = ATOMIC, cacheMode = PARTITIONED)
     public void testStopClientAtomicPartitioned() throws Exception {
-        testStopClientTransactionalReplicated();
+        doTestStopClient();
     }
 
     /**
@@ -709,7 +782,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
      */
     @Params(atomicityMode = ATOMIC, cacheMode = REPLICATED)
     public void testStopClientAtomicReplicated() throws Exception {
-        testStopClientTransactionalReplicated();
+        doTestStopClient();
     }
 
     /**
@@ -717,14 +790,21 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
      */
     @Params(atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
     public void testStopClientTransactionalPartitioned() throws Exception {
-        testStopClientTransactionalReplicated();
+        doTestStopClient();
     }
 
     /**
      * @throws Exception If failed.
      */
-    @Params(atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED, timeout = 5_000L)
+    @Params(atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
     public void testStopClientTransactionalReplicated() throws Exception {
+        doTestStopClient();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void doTestStopClient() throws Exception {
         startNodesInClientMode(true);
 
         customIpFinder = new TcpDiscoveryVmIpFinder(false)
@@ -871,7 +951,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
         doTest0(baseline.get(0), readOperation, backgroundOperation);
 
         try (AutoCloseable read = readOperation.start()) {
-            Thread.sleep(500L);
+            GridTestUtils.waitForCondition(() -> readOperation.readOperationsFinishedUnderBlock() > 0, 1000L);
         }
 
         assertEquals(
@@ -903,15 +983,20 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
 
         cntFinishedReadOperations = new CountDownLatch(baseline.size() - 1);
 
+        int MIN_READ_OPERATIONS_CNT = 8;
+
         // Read while potentially blocking operation is executing.
         try (AutoCloseable block = backgroundOperation.start()) {
-            cntFinishedReadOperations.await(5 * timeout(), TimeUnit.MILLISECONDS);
+            cntFinishedReadOperations.await(10 * timeout(), TimeUnit.MILLISECONDS);
 
             // Possible if test itself is wrong.
             assertEquals("Messages weren't blocked in time", 0, cntFinishedReadOperations.getCount());
 
             try (AutoCloseable read = readOperation.start()) {
-                Thread.sleep(timeout());
+                GridTestUtils.waitForCondition(
+                    () -> readOperation.readOperationsFinishedUnderBlock() > MIN_READ_OPERATIONS_CNT,
+                    timeout()
+                );
             }
         }
         finally {
@@ -928,18 +1013,15 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
             readOperation.readOperationsFailed()
         );
 
+        int operationsFinished = readOperation.readOperationsFinishedUnderBlock();
+
         assertTrue(
-            "No read operations were finished during timeout.",
-            readOperation.readOperationsFinishedUnderBlock() > 0
+            "Not enough read operations were finished during timeout: " + operationsFinished,
+            operationsFinished > MIN_READ_OPERATIONS_CNT
         );
 
         // There were no operations as long as blocking timeout.
         assertNotAlmostEqual(timeout(), readOperation.maxReadDuration());
-
-        // On average every read operation was much faster then blocking timeout.
-        double avgDuration = (double)timeout() / readOperation.readOperationsFinishedUnderBlock();
-
-        assertTrue("Avarage duration was too long.",avgDuration < timeout() * 0.25);
     }
 
     /**
@@ -1092,8 +1174,8 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
          * @return Whether the given message should be blocked or not.
          */
         private boolean blockMessage(ClusterNode node, Message msg) {
-            boolean block = blockMsg.test(msg)
-                && baseline.stream().map(IgniteEx::name).anyMatch(node.consistentId()::equals);
+            boolean block = baseline.stream().map(IgniteEx::name).anyMatch(node.consistentId()::equals)
+                && blockMsg.test(msg);
 
             if (block)
                 cntFinishedReadOperations.countDown();
@@ -1268,8 +1350,8 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
 
                     readOperationsFinishedUnderBlock.incrementAndGet();
                 }
-                catch (Exception e) {
-                    boolean threadInterrupted = X.hasCause(e,
+                catch (Throwable t) {
+                    boolean threadInterrupted = X.hasCause(t,
                         InterruptedException.class,
                         IgniteInterruptedException.class,
                         IgniteInterruptedCheckedException.class
@@ -1277,13 +1359,13 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
 
                     if (threadInterrupted)
                         Thread.currentThread().interrupt();
-                    else if (allowException() && X.hasCause(e, ClusterTopologyCheckedException.class))
+                    else if (allowException() && X.hasCause(t, ClusterTopologyCheckedException.class))
                         readOperationsFinishedUnderBlock.incrementAndGet();
                     else {
                         readOperationsFailed.incrementAndGet();
 
-                        if (loggedMessages.add(e.getMessage()))
-                            log.error("Error during read operation execution", e);
+                        if (loggedMessages.add(t.getMessage()))
+                            log.error("Error during read operation execution", t);
 
                         continue;
                     }
@@ -1359,9 +1441,10 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
         protected CacheConfiguration<KeyType, ValueType> createCacheConfiguration() {
             return new CacheConfiguration<KeyType, ValueType>(DEFAULT_CACHE_NAME)
                 .setBackups(backupsCount())
+                .setReadFromBackup(false)
                 .setAffinity(
                     new RendezvousAffinityFunction()
-                        .setPartitions(32)
+                        .setPartitions(DFLT_PARTITIONS_COUNT)
                 );
         }
 

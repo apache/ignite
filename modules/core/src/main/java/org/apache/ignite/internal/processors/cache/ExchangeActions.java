@@ -232,7 +232,7 @@ public class ExchangeActions {
      * @param desc Cache descriptor.
      * @return Actions map.
      */
-    private Map<String, CacheActionData> add(Map<String, CacheActionData> map,
+    private static Map<String, CacheActionData> add(Map<String, CacheActionData> map,
         DynamicCacheChangeRequest req,
         DynamicCacheDescriptor desc) {
         assert req != null;
@@ -262,7 +262,7 @@ public class ExchangeActions {
      * @param req Request.
      * @param desc Cache descriptor.
      */
-    public void addCacheToStop(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc) {
+    void addCacheToStop(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc) {
         assert req.stop() : req;
 
         cachesToStop = add(cachesToStop, req, desc);
@@ -316,7 +316,7 @@ public class ExchangeActions {
      * @param grpDesc Group descriptor.
      * @param destroy Destroy flag.
      */
-    public void addCacheGroupToStop(CacheGroupDescriptor grpDesc, boolean destroy) {
+    void addCacheGroupToStop(CacheGroupDescriptor grpDesc, boolean destroy) {
         assert grpDesc != null;
 
         if (cacheGrpsToStop == null)
