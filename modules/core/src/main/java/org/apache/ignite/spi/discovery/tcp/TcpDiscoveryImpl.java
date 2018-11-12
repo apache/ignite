@@ -331,10 +331,14 @@ abstract class TcpDiscoveryImpl {
         // ... but limit it if join timeout is configured.
         long start = spi.getJoinTimeout() > 0 ? U.currentTimeMillis() : 0;
 
+        boolean clientDiscovery = locNode.isClient() && !spi.isForceServerMode();
+
         while (true) {
             try {
-                spi.ipFinder.initializeLocalAddresses(
-                    U.resolveAddresses(spi.getAddressResolver(), locNode.socketAddresses()));
+                if (!clientDiscovery) {
+                    spi.ipFinder.initializeLocalAddresses(
+                        U.resolveAddresses(spi.getAddressResolver(), locNode.socketAddresses()));
+                }
 
                 // Success.
                 break;

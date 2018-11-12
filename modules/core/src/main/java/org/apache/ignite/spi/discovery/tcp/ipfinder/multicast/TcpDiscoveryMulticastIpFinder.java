@@ -335,9 +335,6 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
             U.warn(log, "TcpDiscoveryMulticastIpFinder has no pre-configured addresses " +
                 "(it is recommended in production to specify at least one address in " +
                 "TcpDiscoveryMulticastIpFinder.getAddresses() configuration property)");
-
-        boolean clientMode = discoveryClientMode();
-
         try {
             mcastAddr = InetAddress.getByName(mcastGrp);
         }
@@ -378,8 +375,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
             if (!addr.isLoopbackAddress()) {
                 try {
-                    if (!clientMode)
-                        addrSnds.add(new AddressSender(mcastAddr, addr, addrs));
+                    addrSnds.add(new AddressSender(mcastAddr, addr, addrs));
 
                     reqItfs.add(addr);
                 }
@@ -392,48 +388,41 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
             }
         }
 
-        if (!clientMode) {
-            locNodeAddrs = new HashSet<>(addrs);
+        locNodeAddrs = new HashSet<>(addrs);
+
+        if (addrSnds.isEmpty()) {
+            try {
+                // Create non-bound socket if local host is loopback or failed to create sockets explicitly
+                // bound to interfaces.
+                addrSnds.add(new AddressSender(mcastAddr, null, addrs));
+            }
+            catch (IOException e) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to create multicast socket [mcastAddr=" + mcastAddr +
+                        ", mcastGrp=" + mcastGrp + ", mcastPort=" + mcastPort + ", err=" + e + ']');
+            }
 
             if (addrSnds.isEmpty()) {
                 try {
-                    // Create non-bound socket if local host is loopback or failed to create sockets explicitly
-                    // bound to interfaces.
-                    addrSnds.add(new AddressSender(mcastAddr, null, addrs));
+                    addrSnds.add(new AddressSender(mcastAddr, mcastAddr, addrs));
+
+                    reqItfs.add(mcastAddr);
                 }
                 catch (IOException e) {
                     if (log.isDebugEnabled())
                         log.debug("Failed to create multicast socket [mcastAddr=" + mcastAddr +
-                            ", mcastGrp=" + mcastGrp + ", mcastPort=" + mcastPort + ", err=" + e + ']');
-                }
-
-                if (addrSnds.isEmpty()) {
-                    try {
-                        addrSnds.add(new AddressSender(mcastAddr, mcastAddr, addrs));
-
-                        reqItfs.add(mcastAddr);
-                    }
-                    catch (IOException e) {
-                        if (log.isDebugEnabled())
-                            log.debug("Failed to create multicast socket [mcastAddr=" + mcastAddr +
-                                ", mcastGrp=" + mcastGrp + ", mcastPort=" + mcastPort + ", locAddr=" + mcastAddr +
-                                ", err=" + e + ']');
-                    }
+                            ", mcastGrp=" + mcastGrp + ", mcastPort=" + mcastPort + ", locAddr=" + mcastAddr +
+                            ", err=" + e + ']');
                 }
             }
-
-            if (!addrSnds.isEmpty()) {
-                for (AddressSender addrSnd : addrSnds)
-                    addrSnd.start();
-            }
-            else
-                mcastErr = true;
         }
-        else {
-            assert addrSnds.isEmpty() : addrSnds;
 
-            locNodeAddrs = Collections.emptySet();
+        if (!addrSnds.isEmpty()) {
+            for (AddressSender addrSnd : addrSnds)
+                addrSnd.start();
         }
+        else
+            mcastErr = true;
     }
 
     /** {@inheritDoc} */
