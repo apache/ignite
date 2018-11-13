@@ -39,7 +39,7 @@ public class WalCompactionSwitchOnTest extends GridCommonAbstractTest {
     /** Compaction enabled. */
     private boolean compactionEnabled;
 
-    /** @{inheritDoc} */
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -55,13 +55,13 @@ public class WalCompactionSwitchOnTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    /** @{inheritDoc} */
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         cleanPersistenceDir();
     }
 
     /**
-     * Load without compaction -> Stop -> Enable WAL Compaction -> Start
+     * Load without compaction -> Stop -> Enable WAL Compaction -> Start.
      *
      * @throws Exception On exception.
      */
@@ -89,10 +89,8 @@ public class WalCompactionSwitchOnTest extends GridCommonAbstractTest {
         forceCheckpoint();
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            /** @{inheritDoc} */
             @Override public boolean apply() {
                 File[] archivedFiles = walDir.listFiles(new FileFilter() {
-                    /** @{inheritDoc} */
                     @Override public boolean accept(File pathname) {
                         return pathname.getName().endsWith(".wal");
                     }
@@ -117,7 +115,6 @@ public class WalCompactionSwitchOnTest extends GridCommonAbstractTest {
         );
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            /** @{inheritDoc} */
             @Override public boolean apply() {
                 File[] archivedFiles = archiveDir.listFiles(new FileFilter() {
                     @Override public boolean accept(File pathname) {
@@ -130,7 +127,6 @@ public class WalCompactionSwitchOnTest extends GridCommonAbstractTest {
         }, 5000);
 
         File[] tmpFiles = archiveDir.listFiles(new FileFilter() {
-            /** {@inheritDoc} */
             @Override public boolean accept(File pathname) {
                 return pathname.getName().endsWith(FilePageStoreManager.TMP_SUFFIX);
             }
