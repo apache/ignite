@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.cache.NonAffinityCoordinatorDynamic
 import org.apache.ignite.internal.processors.cache.distributed.CacheLoadingConcurrentGridStartSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLoadingConcurrentGridStartSelfTestAllowOverwrite;
 import org.apache.ignite.internal.processors.cache.distributed.CachePartitionStateTest;
+import org.apache.ignite.internal.processors.cache.distributed.GridCacheTransformEventSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheClientNodePartitionsExchangeTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheServerNodeConcurrentStart;
 import org.apache.ignite.internal.processors.cache.distributed.dht.CachePartitionPartialCountersMapSelfTest;
@@ -130,6 +131,9 @@ public class IgniteCacheMvccTestSuite2 extends TestSuite {
         ignoredTests.add(CacheComparatorTest.class);
         ignoredTests.add(CachePartitionPartialCountersMapSelfTest.class);
         ignoredTests.add(IgniteReflectionFactorySelfTest.class);
+
+        // Skip classes that already contains Mvcc tests or have Mvcc siblings.
+        ignoredTests.add(GridCacheTransformEventSelfTest.class);
 
         TestSuite suite = new TestSuite("IgniteCache Mvcc Test Suite part 2");
 
