@@ -108,6 +108,8 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
     /** */
     private final IgniteLogger log;
 
+    private boolean unwrappedPk;
+
     /**
      * Constructor.
      *
@@ -143,9 +145,8 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
         H2RowFactory rowStore,
         long metaPageId,
         boolean initNew,
-        IndexColumn[] cols,
-        List<InlineIndexHelper> inlineIdxs,
-        int inlineSize,
+        H2TreeIndex.IndexColumnsInfo unwrappedColsInfo,
+        H2TreeIndex.IndexColumnsInfo wrappedColsInfo,
         AtomicInteger maxCalculatedInlineSize,
         boolean pk,
         boolean affinityKey,
@@ -157,15 +158,23 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
         super(name, grpId, pageMem, wal, globalRmvId, metaPageId, reuseList, failureProcessor);
 
         if (!initNew) {
-            // Page is ready - read inline size from it.
-            inlineSize = getMetaInlineSize();
+            // Page is ready - read meta information.
+            MetaPageInfo metaInfo = getMetaInfo();
+
+            inlineSize = metaInfo.inlineSize();
+
+            unwrappedPk = metaInfo.useUnwrappedPk();
+        }
+        else {
+            unwrappedPk = true;
+
+            inlineSize = unwrappedColsInfo.inlineSize();
         }
 
         this.idxName = idxName;
         this.cacheName = cacheName;
         this.tblName = tblName;
 
-        this.inlineSize = inlineSize;
         this.maxCalculatedInlineSize = maxCalculatedInlineSize;
 
         this.pk = pk;
@@ -176,8 +185,8 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
         assert rowStore != null;
 
         this.rowStore = rowStore;
-        this.inlineIdxs = inlineIdxs;
-        this.cols = cols;
+        this.inlineIdxs = unwrappedPk ? unwrappedColsInfo.inlineIdx() : wrappedColsInfo.inlineIdx();
+        this.cols = unwrappedPk ? unwrappedColsInfo.cols() : wrappedColsInfo.cols();
 
         this.columnIds = new int[cols.length];
 
@@ -259,7 +268,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
      * @return Inline size.
      * @throws IgniteCheckedException If failed.
      */
-    private int getMetaInlineSize() throws IgniteCheckedException {
+    private MetaPageInfo getMetaInfo() throws IgniteCheckedException {
         final long metaPage = acquirePage(metaPageId);
 
         try {
@@ -271,7 +280,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
             try {
                 BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(pageAddr);
 
-                return io.getInlineSize(pageAddr);
+                return new MetaPageInfo(io.getInlineSize(pageAddr), io.unwrappedPk());
             }
             finally {
                 readUnlock(metaPageId, metaPage, pageAddr);
@@ -497,6 +506,46 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
                 ", recommendedInlineSize=" + newSize + "]";
 
             U.warn(log, warn);
+        }
+    }
+
+    /**
+     * @return {@code true} In case use unwrapped columns for PK
+     */
+    public boolean unwrappedPk() {
+        return unwrappedPk;
+    }
+
+    /**
+     *
+     */
+    private class MetaPageInfo {
+        /** */
+        int inlineSize;
+        /** */
+        boolean useUnwrappedPk;
+
+        /**
+         * @param inlineSize Inline size.
+         * @param useUnwrappedPk {@code true} In case use unwrapped PK for indexes.
+         */
+        public MetaPageInfo(int inlineSize, boolean useUnwrappedPk) {
+            this.inlineSize = inlineSize;
+            this.useUnwrappedPk = useUnwrappedPk;
+        }
+
+        /**
+         * @return Inline size.
+         */
+        public int inlineSize() {
+            return inlineSize;
+        }
+
+        /**
+         * @return {@code true} In case use unwrapped PK for indexes.
+         */
+        public boolean useUnwrappedPk() {
+            return useUnwrappedPk;
         }
     }
 
