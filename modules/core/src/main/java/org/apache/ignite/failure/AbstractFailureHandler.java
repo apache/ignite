@@ -29,7 +29,8 @@ import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_BLOCKED;
 
 /**
  * Abstract superclass for {@link FailureHandler} implementations.
- * Maintains a set of ignored failure types.
+ * Maintains a set of ignored failure types. Failure handler will not invalidate kernal context for this failures
+ * and will not handle it.
  */
 public abstract class AbstractFailureHandler implements FailureHandler {
     /** */
@@ -37,8 +38,13 @@ public abstract class AbstractFailureHandler implements FailureHandler {
     private Set<FailureType> ignoredFailureTypes =
             Collections.unmodifiableSet(EnumSet.of(SYSTEM_WORKER_BLOCKED, SYSTEM_CRITICAL_OPERATION_TIMEOUT));
 
-    /** {@inheritDoc} */
-    @Override public void setIgnoredFailureTypes(Set<FailureType> failureTypes) {
+    /**
+     * Sets failure types that must be ignored by failure handler.
+     *
+     * @param failureTypes Set of failure type that must be ignored.
+     * @see FailureType
+     */
+    public void setIgnoredFailureTypes(Set<FailureType> failureTypes) {
         ignoredFailureTypes = Collections.unmodifiableSet(failureTypes);
     }
 
