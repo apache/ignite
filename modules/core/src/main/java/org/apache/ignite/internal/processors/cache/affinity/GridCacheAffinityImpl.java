@@ -17,12 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.affinity;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
@@ -220,6 +216,11 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
 
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> mapKeyToPrimaryAndBackups(K key) {
+        return mapKeyToPrimaryAndBackupsList(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<ClusterNode> mapKeyToPrimaryAndBackupsList(K key) {
         A.notNull(key, "key");
 
         return cctx.affinity().nodesByPartition(partition(key), topologyVersion());
@@ -227,6 +228,11 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
 
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> mapPartitionToPrimaryAndBackups(int part) {
+       return mapPartitionToPrimaryAndBackupsList(part);
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<ClusterNode> mapPartitionToPrimaryAndBackupsList(int part) {
         A.ensure(part >= 0 && part < partitions(), "part >= 0 && part < total partitions");
 
         return cctx.affinity().nodesByPartition(part, topologyVersion());
