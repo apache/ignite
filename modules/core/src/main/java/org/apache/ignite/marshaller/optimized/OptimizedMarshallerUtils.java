@@ -33,7 +33,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.marshaller.MarshallerContext;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 
 /**
  * Miscellaneous utility methods to facilitate {@link OptimizedMarshaller}.
@@ -149,9 +148,6 @@ class OptimizedMarshallerUtils {
 
     /** UTF-8 character name. */
     static final Charset UTF_8 = Charset.forName("UTF-8");
-
-    /** JDK marshaller. */
-    static final JdkMarshaller JDK_MARSH = new JdkMarshaller();
 
     static {
         long mapOff;

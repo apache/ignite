@@ -25,7 +25,9 @@ import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.MarshallerContextAdapter;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.io.Externalizable;
@@ -91,7 +93,7 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
     private static class MarshallerContextWithNoStorage extends MarshallerContextAdapter {
         /** */
         public MarshallerContextWithNoStorage() {
-            super(null);
+            super(null, null);
         }
 
         /** {@inheritDoc} */
@@ -102,6 +104,16 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override protected String className(int id) throws IgniteCheckedException {
             return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgnitePredicate<String> classNameFilter() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public JdkMarshaller jdkMarshaller() {
+            return new JdkMarshaller();
         }
     }
 

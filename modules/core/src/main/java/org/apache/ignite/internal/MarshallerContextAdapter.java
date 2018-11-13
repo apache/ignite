@@ -35,33 +35,41 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
+
+import static org.apache.ignite.marshaller.MarshallerUtils.CLS_NAMES_FILE;
+import static org.apache.ignite.marshaller.MarshallerUtils.JDK_CLS_NAMES_FILE;
 
 /**
  * Marshaller context adapter.
  */
 public abstract class MarshallerContextAdapter implements MarshallerContext {
     /** */
-    private static final String CLS_NAMES_FILE = "META-INF/classnames.properties";
-
-    /** */
-    private static final String JDK_CLS_NAMES_FILE = "META-INF/classnames-jdk.properties";
-
-    /** */
     private final ConcurrentMap<Integer, Object> map = new ConcurrentHashMap8<>();
 
     /** */
     private final Set<String> registeredSystemTypes = new HashSet<>();
+
+    /** Class name filter. */
+    private final IgnitePredicate<String> clsFilter;
+
+    /** JDK marshaller. */
+    private final JdkMarshaller jdkMarsh;
 
     /**
      * Initializes context.
      *
      * @param plugins Plugins.
      */
-    public MarshallerContextAdapter(@Nullable List<PluginProvider> plugins) {
+    public MarshallerContextAdapter(@Nullable List<PluginProvider> plugins, IgnitePredicate<String> clsFilter) {
+        this.clsFilter = clsFilter;
+        this.jdkMarsh = new JdkMarshaller(clsFilter);
+
         try {
             ClassLoader ldr = U.gridClassLoader();
 
@@ -195,7 +203,7 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
         if (clsName == null)
             throw new ClassNotFoundException("Unknown type ID: " + id);
 
-        return U.forName(clsName, ldr);
+        return U.forName(clsName, ldr, clsFilter);
     }
 
     /**
@@ -264,6 +272,16 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
     /** {@inheritDoc} */
     @Override public boolean isSystemType(String typeName) {
         return registeredSystemTypes.contains(typeName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgnitePredicate<String> classNameFilter() {
+        return clsFilter;
+    }
+
+    /** {@inheritDoc} */
+    @Override public JdkMarshaller jdkMarshaller() {
+        return jdkMarsh;
     }
 
     /**

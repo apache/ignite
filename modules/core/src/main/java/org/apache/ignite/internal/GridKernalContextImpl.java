@@ -90,6 +90,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
@@ -419,7 +420,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         ExecutorService affExecSvc,
         @Nullable ExecutorService idxExecSvc,
         IgniteStripedThreadPoolExecutor callbackExecSvc,
-        List<PluginProvider> plugins
+        List<PluginProvider> plugins,
+        IgnitePredicate<String> clsFilter
     ) throws IgniteCheckedException {
         assert grid != null;
         assert cfg != null;
@@ -444,7 +446,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
         String workDir = U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome());
 
-        marshCtx = new MarshallerContextImpl(workDir, plugins);
+        marshCtx = new MarshallerContextImpl(workDir, plugins, clsFilter);
 
         try {
             spring = SPRING.create(false);

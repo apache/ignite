@@ -128,7 +128,7 @@ public class BinaryMarshallerLocalMetadataCache extends GridCommonAbstractTest {
     }
 
     private static class BinaryMarshallerWrapper extends BinaryMarshaller {
-        private MarshallerContext ctx0 = new MarshallerContextAdapter(Collections.<PluginProvider>emptyList()) {
+        private MarshallerContext ctx0 = new MarshallerContextAdapter(Collections.<PluginProvider>emptyList(), null) {
             @Override protected boolean registerClassName(int id, String clsName) {
                 U.dumpStack(id + " " + clsName);
                 registerClassCalled.incrementAndGet();

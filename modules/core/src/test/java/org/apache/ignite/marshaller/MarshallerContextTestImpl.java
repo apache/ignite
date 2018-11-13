@@ -43,7 +43,7 @@ public class MarshallerContextTestImpl extends MarshallerContextAdapter {
      * @param excluded Excluded classes.
      */
     public MarshallerContextTestImpl(@Nullable List<PluginProvider> plugins, Collection<String> excluded) {
-        super(plugins);
+        super(plugins, null);
 
         this.excluded = excluded;
     }

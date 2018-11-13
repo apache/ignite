@@ -850,7 +850,7 @@ public class PlatformUtils {
 
             String workDir = U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome());
 
-            marsh.setContext(new MarshallerContextImpl(workDir, null));
+            marsh.setContext(new MarshallerContextImpl(workDir, null, null));
 
             ctx.configure(marsh, new IgniteConfiguration());
 

@@ -46,7 +46,7 @@ public abstract class StreamAdapter<T, K, V> {
     private IgniteDataStreamer<K, V> stmr;
 
     /** Ignite. */
-    private Ignite ignite;
+    protected Ignite ignite;
 
     /**
      * Empty constructor.

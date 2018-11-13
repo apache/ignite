@@ -473,6 +473,12 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2 =
         "IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2";
 
+    /** Defines path to the file that contains list of classes allowed to safe deserialization.*/
+    public static final String IGNITE_MARSHALLER_WHITELIST = "IGNITE_MARSHALLER_WHITELIST";
+
+    /** Defines path to the file that contains list of classes disallowed to safe deserialization.*/
+    public static final String IGNITE_MARSHALLER_BLACKLIST = "IGNITE_MARSHALLER_BLACKLIST";
+
     /**
      * If set to {@code true}, then default selected keys set is used inside
      * {@code GridNioServer} which lead to some extra garbage generation when

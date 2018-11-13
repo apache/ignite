@@ -46,6 +46,7 @@ import org.apache.ignite.internal.util.GridStripedLock;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.PluginProvider;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHALLER_CACHE_REREAD_PAUSE;
@@ -86,8 +87,8 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
      * @param plugins Plugins.
      * @throws IgniteCheckedException In case of error.
      */
-    public MarshallerContextImpl(String igniteWorkDir, List<PluginProvider> plugins) throws IgniteCheckedException {
-        super(plugins);
+    public MarshallerContextImpl(String igniteWorkDir, List<PluginProvider> plugins, IgnitePredicate<String> clsFilter) throws IgniteCheckedException {
+        super(plugins, clsFilter);
 
         workDir = U.resolveWorkDirectory(igniteWorkDir, "marshaller", false);
     }

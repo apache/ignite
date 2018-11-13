@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.spi.GridTcpSpiForwardingSelfTest;
+import org.apache.ignite.spi.discovery.tcp.DiscoveryUnmarshalVulnerabilityTest;
 import org.apache.ignite.spi.discovery.tcp.IgniteClientConnectTest;
 import org.apache.ignite.spi.discovery.tcp.IgniteClientReconnectMassiveShutdownTest;
 import org.apache.ignite.spi.discovery.AuthenticationRestartTest;
@@ -105,6 +106,8 @@ public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(TcpDiscoverySslSecuredUnsecuredTest.class));
 
         suite.addTest(new TestSuite(TcpDiscoveryPendingMessageDeliveryTest.class));
+
+        suite.addTest(new TestSuite(DiscoveryUnmarshalVulnerabilityTest.class));
 
         return suite;
     }
