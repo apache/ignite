@@ -87,6 +87,9 @@ public class Arguments {
     private String sslAlgorithm;
 
     /** */
+    private String sslCipherSuites;
+
+    /** */
     private String sslKeyStorePath;
 
     /** */
@@ -119,30 +122,49 @@ public class Arguments {
      * @param pingTimeout Ping timeout. See {@link GridClientConfiguration#pingTimeout}.
      * @param pingInterval Ping interval. See {@link GridClientConfiguration#pingInterval}.
      * @param autoConfirmation Auto confirmation flag.
+     * @param sslEnable SSL flag.
+     * @param sslProtocol SSL protocol.
+     * @param sslAlgorithm SSL algorithm.
+     * @param sslCipherSuites SSL cipher suites.
+     * @param sslKeyStorePath Key store path.
+     * @param sslKeyStoreType Key store type.
+     * @param sslKeyStorePassword Key store password.
+     * @param sslTrustStorePath Trust store path.
+     * @param sslTrustStoreType Trust store type.
+     * @param sslTrustStorePassword Trust store password.
      */
-    public Arguments(Command cmd, String host, String port, String user, String pwd, String baselineAct,
-                     String baselineArgs, VisorTxTaskArg txArg, CacheArguments cacheArgs, String walAct, String walArgs,
-                     Long pingTimeout, Long pingInterval, boolean autoConfirmation,
-                     boolean sslEnable, String sslProtocol, String sslAlgorithm,
-                     String sslKeyStorePath, String sslKeyStoreType, char sslKeyStorePassword[],
-                     String sslTrustStorePath, String sslTrustStoreType, char sslTrustStorePassword[]) {
+    public Arguments(Command cmd, String host, String port, String user, String pwd,
+        String baselineAct, String baselineArgs,
+        VisorTxTaskArg txArg, CacheArguments cacheArgs, String walAct, String walArgs,
+        Long pingTimeout, Long pingInterval, boolean autoConfirmation,
+        boolean sslEnable, String sslProtocol, String sslAlgorithm, String sslCipherSuites,
+        String sslKeyStorePath, String sslKeyStoreType, char sslKeyStorePassword[],
+        String sslTrustStorePath, String sslTrustStoreType, char sslTrustStorePassword[]
+    ) {
         this.cmd = cmd;
         this.host = host;
         this.port = port;
         this.user = user;
         this.pwd = pwd;
+
         this.baselineAct = baselineAct;
         this.baselineArgs = baselineArgs;
+
         this.txArg = txArg;
         this.cacheArgs = cacheArgs;
+
         this.walAct = walAct;
         this.walArgs = walArgs;
+
         this.pingTimeout = pingTimeout;
         this.pingInterval = pingInterval;
+
         this.autoConfirmation = autoConfirmation;
+
         this.sslEnable = sslEnable;
         this.sslProtocol = sslProtocol;
         this.sslAlgorithm = sslAlgorithm;
+        this.sslCipherSuites = sslCipherSuites;
         this.sslKeyStorePath = sslKeyStorePath;
         this.sslKeyStoreType = sslKeyStoreType;
         this.sslKeyStorePassword = sslKeyStorePassword;
@@ -280,6 +302,11 @@ public class Arguments {
     /** */
     public String getSslAlgorithm() {
         return sslAlgorithm;
+    }
+
+    /** */
+    public String getSslCipherSuites() {
+        return sslCipherSuites;
     }
 
     /** */
