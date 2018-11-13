@@ -93,11 +93,10 @@ public class JdbcMessageParser implements ClientListenerMessageParser {
         return writer.array();
     }
 
-    // TODO: 09.11.18 implement
     /** {@inheritDoc} */
-    @Override public int decodeCommandId(byte[] msg) {
+    @Override public int decodeCommandType(byte[] msg) {
         assert msg != null;
 
-        return msg[4]; //createReader(msg).readByte();
+        return JdbcRequest.readType(msg);
     }
 }

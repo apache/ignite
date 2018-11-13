@@ -390,8 +390,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     }
 
     /** {@inheritDoc} */
-    // TODO: 09.11.18 implement
-    @Override public int decodeCommandId(byte[] msg) {
+    @Override public int decodeCommandType(byte[] msg) {
         assert msg != null;
 
         BinaryInputStream inStream = new BinaryHeapInputStream(msg);

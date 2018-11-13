@@ -37,6 +37,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.BulkLoadContextCursor;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteVersionUtils;
@@ -148,6 +149,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
     /** Mapping query to cursors using corresponing IDs. */
     private volatile ConcurrentHashMap<Long, List<Long>> requestToCursorMapping = new ConcurrentHashMap<>();
+
+    private volatile ConcurrentHashMap<Long, Thread> requestToHandlerThreadMapping = new ConcurrentHashMap<>();
 
     /**
      * Constructor.
@@ -468,13 +471,15 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     private JdbcResponse executeQuery(JdbcQueryExecuteRequest req) {
 
         if (req.isCancellationSupported()) {
-            synchronized (cancellationProcessingMux){
+            synchronized (cancellationProcessingMux) {
                 // request for cancellation overtook the original request
                 if (requestToCursorMapping.containsKey(req.reqId())) {
                     requestToCursorMapping.remove(req.reqId());
 
                     return new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED, "The query was canceled. [reqId = " + req.reqId() + "]");
                 }
+
+                requestToHandlerThreadMapping.put(req.reqId(), Thread.currentThread());
             }
         }
 
@@ -554,7 +559,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             }
 
             if (results.size() == 1) {
-
                 JdbcQueryCursor cur = new JdbcQueryCursor(cursorId, req.pageSize(), req.maxRows(),
                     (QueryCursorImpl)fieldsCur);
 
@@ -636,15 +640,11 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             U.error(log, "Failed to execute SQL query [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
-            // TODO: 09.11.18 do I really need it here?
-//            if (X.cause(e, QueryCancelledException.class) != null) {
-//                return exceptionToResult(new IgniteSQLException("The query was cancelled while executing",
-//                    IgniteQueryErrorCode.QUERY_CANCELED));
-//            }
-//            else
-//                return exceptionToResult(e);
-
-            return exceptionToResult(e);
+            if (X.cause(e, QueryCancelledException.class) != null) {
+                return exceptionToResult(new QueryCancelledException());
+            }
+            else
+                return exceptionToResult(e);
         }
     }
 
@@ -1142,6 +1142,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @return resulting {@link JdbcResponse}.
      */
     private JdbcResponse exceptionToResult(Exception e) {
+        if (e instanceof QueryCancelledException )
+            return new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED, e.getMessage());
         if (e instanceof IgniteSQLException)
             return new JdbcResponse(((IgniteSQLException) e).statusCode(), e.getMessage());
         else
@@ -1193,7 +1195,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private JdbcResponse cancelQuery(JdbcQueryCancelRequest req) {
         synchronized (cancellationProcessingMux) {
-            List<Long> prevCursorIds = requestToCursorMapping.putIfAbsent(req.reqId(), null);
+            List<Long> prevCursorIds = requestToCursorMapping.putIfAbsent(req.reqId(), Collections.emptyList());
 
             if (prevCursorIds != null) {
                 for (Long cursorId: prevCursorIds) {
@@ -1204,7 +1206,13 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 requestToCursorMapping.remove(req.reqId());
             }
 
-            return new JdbcResponse(null);
+            Thread reqHandlerThread = requestToHandlerThreadMapping.get(req.reqId());
+
+//            if (reqHandlerThread != null)
+//                reqHandlerThread.interrupt();
+
+            // TODO: 12.11.18 research why null doesn't propagate to client, whick is good
+            return null;
         }
     }
 }

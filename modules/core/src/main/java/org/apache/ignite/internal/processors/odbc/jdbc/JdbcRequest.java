@@ -190,4 +190,14 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
 
         return req;
     }
+
+    /**
+     * Reads JdbcRequest command type
+     *
+     * @param msg Jdbc request as byte array.
+     * @return Command type.
+     */
+    public static byte readType(byte[] msg) {
+        return msg[0];
+    }
 }

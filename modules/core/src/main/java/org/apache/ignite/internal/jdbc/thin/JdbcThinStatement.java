@@ -71,7 +71,7 @@ public class JdbcThinStatement implements Statement {
     public static final int EMPTY_CURSOR_ID = -1;
 
     /** Request ID sequence. */
-    private static final AtomicLong REQ_ID_GEN = new AtomicLong(1);
+    private static final AtomicLong REQ_ID_GEN = new AtomicLong(0);
 
     /** JDBC Connection implementation. */
     protected JdbcThinConnection conn;
@@ -193,7 +193,7 @@ public class JdbcThinStatement implements Statement {
             nativeCmd = tryParseNative(sql);
 
         if (nativeCmd != null) {
-            conn.executeNative(sql, nativeCmd, REQ_ID_GEN.getAndIncrement());
+            conn.executeNative(sql, nativeCmd, REQ_ID_GEN.incrementAndGet());
 
             resultSets = Collections.singletonList(resultSetForUpdate(0));
 
@@ -217,7 +217,7 @@ public class JdbcThinStatement implements Statement {
 
         JdbcResult res0 = conn.sendRequest(new JdbcQueryExecuteRequest(stmtType, schema, pageSize,
             maxRows, conn.getAutoCommit(), sql, args == null ? null : args.toArray(new Object[args.size()]),
-            REQ_ID_GEN.getAndIncrement()));
+            REQ_ID_GEN.incrementAndGet()));
 
         assert res0 != null;
 
@@ -360,7 +360,7 @@ public class JdbcThinStatement implements Statement {
             return;
 
         try {
-            cancel();
+            closeResults();
         }
         finally {
             closed = true;
@@ -463,9 +463,7 @@ public class JdbcThinStatement implements Statement {
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
 
-        JdbcResult res0 = conn.sendRequest(new JdbcQueryCancelRequest(REQ_ID_GEN.get()));
-
-        assert res0 != null;
+        conn.sendQueryCancelRequest(new JdbcQueryCancelRequest(REQ_ID_GEN.get()));
     }
 
     /** {@inheritDoc} */
@@ -668,7 +666,7 @@ public class JdbcThinStatement implements Statement {
 
         try {
             JdbcBatchExecuteResult res = conn.sendRequest(new JdbcBatchExecuteRequest( conn.getSchema(), batch,
-                conn.getAutoCommit(), false, REQ_ID_GEN.getAndIncrement()));
+                conn.getAutoCommit(), false, REQ_ID_GEN.incrementAndGet()));
 
             if (res.errorCode() != ClientListenerResponse.STATUS_SUCCESS) {
                 throw new BatchUpdateException(res.errorMessage(), IgniteQueryErrorCode.codeToSqlState(res.errorCode()),

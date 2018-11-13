@@ -38,10 +38,10 @@ public interface ClientListenerMessageParser {
     public byte[] encode(ClientListenerResponse resp);
 
     /**
-     * Decode command Id. Allows to recognize the command (message type) without decoding the entire message.
+     * Decode command type. Allows to recognize the command (message type) without decoding the entire message.
      *
      * @param msg Message.
-     * @return Command Id.
+     * @return Command type.
      */
-    public int decodeCommandId(byte[] msg);
+    public int decodeCommandType(byte[] msg);
 }

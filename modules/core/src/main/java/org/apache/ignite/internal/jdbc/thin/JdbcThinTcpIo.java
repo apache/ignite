@@ -37,10 +37,12 @@ import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
+import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcOrderedBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCancelRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataRequest;
@@ -111,7 +113,7 @@ public class JdbcThinTcpIo {
     private BufferedOutputStream out;
 
     /** Input stream. */
-    private BufferedInputStream in;
+    public BufferedInputStream in;
 
     /** Connected flag. */
     private boolean connected;
@@ -130,6 +132,9 @@ public class JdbcThinTcpIo {
 
     /** Server index. */
     private volatile int srvIdx;
+
+    /** Flag indicating whether the request has been canceled. */
+    private boolean canceled;
 
     /**
      * Constructor.
@@ -310,7 +315,7 @@ public class JdbcThinTcpIo {
      * @throws IOException On IO error.
      * @throws SQLException On connection reject.
      */
-    private void handshake(ClientListenerProtocolVersion ver) throws IOException, SQLException {
+    public void handshake(ClientListenerProtocolVersion ver) throws IOException, SQLException {
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE),
             null, null);
 
@@ -451,6 +456,7 @@ public class JdbcThinTcpIo {
      * @throws SQLException On error.
      */
     void sendBatchRequestNoWaitResponse(JdbcOrderedBatchExecuteRequest req) throws IOException, SQLException {
+        // TODO: 13.11.18 coniser user cancel flag here;
         synchronized (mux) {
             if (ownThread != null) {
                 throw new SQLException("Concurrent access to JDBC connection is not allowed"
@@ -509,13 +515,33 @@ public class JdbcThinTcpIo {
 
             send(writer.array());
 
-            return readResponse();
+            JdbcResponse response = readResponse();
+
+            if (canceled)
+                throw new SQLException("The query was cancelled while executing.", SqlStateCode.QUERY_CANCELED,
+                    ClientListenerResponse.STATUS_FAILED);
+            else
+                return response;
         }
         finally {
             synchronized (mux) {
                 ownThread = null;
+                canceled = false;
             }
         }
+    }
+
+    /**
+     * Sends cancel request.
+     * @param cancellationRequest contains request id to be cancelled
+     * @throws IOException In case of IO error.
+     */
+    void sendCancelRequest(JdbcQueryCancelRequest cancellationRequest) throws IOException {
+        synchronized (mux) {
+            canceled = true;
+        }
+
+        sendRequestRaw(cancellationRequest);
     }
 
     /**
@@ -531,7 +557,6 @@ public class JdbcThinTcpIo {
 
         return res;
     }
-
 
     /**
      * Try to guess request capacity.
@@ -560,6 +585,22 @@ public class JdbcThinTcpIo {
             cap = DYNAMIC_SIZE_MSG_CAP;
 
         return cap;
+    }
+
+    /**
+     * @param req Request.
+     * @throws IOException In case of IO error.
+     * @throws SQLException On error.
+     */
+    private void sendRequestRaw(JdbcRequest req) throws IOException {
+        int cap = guessCapacity(req);
+
+        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap),
+            null, null);
+
+        req.writeBinary(writer, srvProtocolVer);
+
+        send(writer.array());
     }
 
     /**

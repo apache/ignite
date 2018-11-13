@@ -279,16 +279,16 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
             sslFilter.needClientAuth(auth);
 
             return new GridNioFilter[] {
+                priorityFilter,
                 openSesFilter,
                 codecFilter,
-                priorityFilter,
                 sslFilter
             };
         } else {
             return new GridNioFilter[] {
+                priorityFilter,
                 openSesFilter,
-                codecFilter,
-                priorityFilter
+                codecFilter
             };
         }
     }

@@ -20,7 +20,6 @@ package org.apache.ignite.jdbc.thin;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.sql.SQLTimeoutException;
 import java.sql.Statement;
 import java.util.concurrent.Callable;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
@@ -34,6 +33,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
+/**
+ * Statement cancel test.
+ */
 public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -56,10 +58,6 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);
         cache.setWriteSynchronizationMode(FULL_SYNC);
-//        cache.setIndexedTypes(
-//            String.class, JdbcThinStatementSelfTest.Person.class,
-//            Integer.class, JdbcThinStatementSelfTest.Test.class
-//        );
         cache.setSqlFunctionClasses(JdbcThinStatementTimeoutSelfTest.class);
 
         cfg.setCacheConfiguration(cache);
@@ -78,8 +76,6 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
         super.beforeTestsStarted();
 
         startGridsMultiThreaded(3);
-
-//        fillCache();
     }
 
     /** {@inheritDoc} */
@@ -112,68 +108,31 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testCancel() throws Exception {
-//        fail("https://issues.apache.org/jira/browse/IGNITE-5439");
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    stmt.execute("select sleep_func(3)");
+        GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                try {
+                    Thread.sleep(1000);
 
-                    return null;
+                    stmt.cancel();
                 }
-            },
-            SQLException.class,
-            "The query is canceled");
+                catch (Exception e) {
+                    log.error("Unexpected exception.", e);
 
-//        IgniteInternalFuture f = GridTestUtils.runAsync(new Runnable() {
-//            @Override public void run() {
-//                try {
-//                    stmt.cancel();
-//                }
-//                catch (SQLException e) {
-//                    log.error("Unexpected exception", e);
-//
-//                    fail("Unexpected exception.");
-//                }
-//            }
-//        });
-//
-//        f.get();
-//
-//        stmt.close();
-//
-//        GridTestUtils.assertThrows(log,
-//            new Callable<Object>() {
-//                @Override public Object call() throws Exception {
-//                    stmt.cancel();
-//
-//                    return null;
-//                }
-//            },
-//            SQLException.class,
-//            "Statement is closed");
-    }
-
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testExecuteUpdateTimeout() throws Exception {
-//        fail("https://issues.apache.org/jira/browse/IGNITE-5438");
-
-        final String sqlText = "update test set val=1 where _key=sleep_func(3)";
-
-        stmt.setQueryTimeout(1);
-
-        // Timeout
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return stmt.executeUpdate(sqlText);
+                    fail("Unexpected exception");
                 }
-            },
-            SQLTimeoutException.class,
-            "Query timeout has been reached"
-        );
+            }
+        });
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                // Execute long running query
+                stmt.executeQuery("select sleep_func(3)");
+
+                return null;
+            }
+        }, SQLException.class, "The query was cancelled while executing.");
+
+        stmt.close();
     }
 
     @SuppressWarnings("unused")

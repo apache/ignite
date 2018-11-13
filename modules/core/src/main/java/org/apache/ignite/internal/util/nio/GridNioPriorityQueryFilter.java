@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.util.nio;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.odbc.ClientListenerConnectionContext;
@@ -62,19 +61,20 @@ public class GridNioPriorityQueryFilter extends GridNioFilterAdapter {
 
     /** {@inheritDoc} */
     @Override public void onMessageReceived(GridNioSession ses, Object msg) throws IgniteCheckedException {
-
         ClientListenerConnectionContext connCtx = ses.meta(ClientListenerNioListener.CONN_CTX_META_KEY);
 
         if (connCtx != null && connCtx.parser() != null){
-            //TODO add checks that msg is actually a ByteBuffer
-            int cmdId = connCtx.parser().decodeCommandId(((ByteBuffer)msg).array());
+            byte[] inMsg = (byte[]) msg;
+
+            int cmdId = connCtx.parser().decodeCommandType(inMsg);
             if (connCtx.handler().isSynchronousHandlingExpected(cmdId)){
-                ClientListenerResponse resp = connCtx.handler().handleSynchronously(connCtx.parser().decode(new byte[]{15}));
-//                ClientListenerResponse resp = connCtx.handler().handleSynchronously(connCtx.parser().decode(((ByteBuffer)msg).array()));
+                ClientListenerResponse resp = connCtx.handler().handleSynchronously(connCtx.parser().decode(inMsg));
 
-                byte[] outMsg = connCtx.parser().encode(resp);
+                if (resp != null) {
+                    byte[] outMsg = connCtx.parser().encode(resp);
 
-                ses.send(outMsg);
+                    ses.send(outMsg);
+                }
             } else
                 proceedMessageReceived(ses, msg);
         } else
