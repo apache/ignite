@@ -17,7 +17,6 @@
 
 package org.apache.ignite.failure;
 
-import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
@@ -37,9 +36,4 @@ public interface FailureHandler {
      * @return Whether kernal context must be invalidated or not.
      */
     public boolean onFailure(Ignite ignite, FailureContext failureCtx);
-
-    /**
-     * Sets failure types to ignore.
-     */
-    public void setIgnoredFailureTypes(Set<FailureType> failureTypes);
 }
