@@ -983,6 +983,14 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_EVICTION_PERMITS = "IGNITE_EVICTION_PERMITS";
 
     /**
+     * When set to {@code true}, Ignite will allow execute DML operation (MERGE|INSERT|UPDATE|DELETE)
+     * within transaction for non MVCC mode.
+     *
+     * Default is {@code false}.
+     */
+    public static final String IGNITE_ALLOW_DML_INSIDE_TRANSACTION = "IGNITE_ALLOW_DML_INSIDE_TRANSACTION";
+
+    /**
      * Timeout between ZooKeeper client retries, default 2s.
      */
     public static final String IGNITE_ZOOKEEPER_DISCOVERY_RETRY_TIMEOUT = "IGNITE_ZOOKEEPER_DISCOVERY_RETRY_TIMEOUT";
