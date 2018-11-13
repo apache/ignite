@@ -18,7 +18,6 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.ClusterBaselineNodesMetricsSelfTest;
 import org.apache.ignite.internal.ClusterNodeMetricsSelfTest;
 import org.apache.ignite.internal.ClusterNodeMetricsUpdateTest;
 import org.apache.ignite.internal.GridAffinityNoCacheSelfTest;
@@ -75,6 +74,7 @@ import org.apache.ignite.internal.IgniteExecutorServiceTest;
 import org.apache.ignite.internal.IgniteExplicitImplicitDeploymentSelfTest;
 import org.apache.ignite.internal.IgniteRoundRobinErrorAfterClientReconnectTest;
 import org.apache.ignite.internal.TaskNodeRestartTest;
+import org.apache.ignite.internal.VisorManagementEventSelfTest;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManagerSelfTest;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointTaskSelfTest;
 import org.apache.ignite.internal.managers.communication.GridCommunicationManagerListenersSelfTest;
@@ -110,6 +110,7 @@ public class IgniteComputeGridTestSuite {
         suite.addTestSuite(GridCancelUnusedJobSelfTest.class);
         suite.addTestSuite(GridTaskJobRejectSelfTest.class);
         suite.addTestSuite(GridTaskExecutionSelfTest.class);
+        //suite.addTestSuite(GridTaskExecutionContextSelfTest.class);
         suite.addTestSuite(GridTaskExecutionWithoutPeerClassLoadingSelfTest.class);
         suite.addTestSuite(GridFailoverSelfTest.class);
         suite.addTestSuite(GridTaskListenerSelfTest.class);
@@ -125,7 +126,6 @@ public class IgniteComputeGridTestSuite {
         suite.addTestSuite(GridTaskInstanceExecutionSelfTest.class);
         suite.addTestSuite(ClusterNodeMetricsSelfTest.class);
         suite.addTestSuite(ClusterNodeMetricsUpdateTest.class);
-        suite.addTestSuite(ClusterBaselineNodesMetricsSelfTest.class);
         suite.addTestSuite(GridNonHistoryMetricsSelfTest.class);
         suite.addTestSuite(GridCancelledJobsMetricsSelfTest.class);
         suite.addTestSuite(GridCollisionJobsContextSelfTest.class);
@@ -154,6 +154,8 @@ public class IgniteComputeGridTestSuite {
         suite.addTestSuite(GridProjectionLocalJobMultipleArgumentsSelfTest.class);
         suite.addTestSuite(GridAffinitySelfTest.class);
         suite.addTestSuite(GridAffinityNoCacheSelfTest.class);
+        //suite.addTestSuite(GridAffinityMappedTest.class);
+        //suite.addTestSuite(GridAffinityP2PSelfTest.class);
         suite.addTestSuite(GridEventStorageRuntimeConfigurationSelfTest.class);
         suite.addTestSuite(GridMultinodeRedeployContinuousModeSelfTest.class);
         suite.addTestSuite(GridMultinodeRedeploySharedModeSelfTest.class);
@@ -173,6 +175,8 @@ public class IgniteComputeGridTestSuite {
         suite.addTestSuite(IgniteComputeCustomExecutorSelfTest.class);
 
         suite.addTestSuite(IgniteComputeJobOneThreadTest.class);
+
+        suite.addTestSuite(VisorManagementEventSelfTest.class);
 
         return suite;
     }

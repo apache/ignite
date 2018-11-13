@@ -51,16 +51,19 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
  */
 public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscoverySpiSelfTest {
     /** */
-    private final static int FAILURE_AWAIT_TIME = 7_000;
+    private static final int FAILURE_AWAIT_TIME = 7_000;
 
     /** */
-    private final static long FAILURE_THRESHOLD = 10_000;
+    private static final long FAILURE_THRESHOLD = 10_000;
 
     /** Failure detection timeout for nodes configuration. */
     private static long failureThreshold = FAILURE_THRESHOLD;
 
     /** */
     private static boolean useTestSpi;
+
+    /** */
+    private static boolean disableTopChangeRecovery;
 
     /** {@inheritDoc} */
     @Override protected boolean useFailureDetectionTimeout() {
@@ -89,7 +92,19 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
 
     /** {@inheritDoc} */
     @Override protected TcpDiscoverySpi getDiscoverySpi() {
-        return useTestSpi ? new TestTcpDiscoverySpi2() : super.getDiscoverySpi();
+        TcpDiscoverySpi spi = useTestSpi ? new TestTcpDiscoverySpi2() : super.getDiscoverySpi();
+
+        if (disableTopChangeRecovery)
+            spi.setConnectionRecoveryTimeout(0);
+
+        return spi;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        disableTopChangeRecovery = false;
     }
 
     /**
@@ -202,6 +217,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
         failureThreshold = 1000;
         clientFailureDetectionTimeout = 10000;
         useTestSpi = true;
+        disableTopChangeRecovery = true;
 
         try {
             startServerNodes(3);

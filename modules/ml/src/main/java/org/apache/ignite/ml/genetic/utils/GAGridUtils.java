@@ -18,16 +18,12 @@
 package org.apache.ignite.ml.genetic.utils;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-
 import javax.cache.Cache.Entry;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlQuery;
-
 import org.apache.ignite.ml.genetic.Chromosome;
 import org.apache.ignite.ml.genetic.Gene;
 import org.apache.ignite.ml.genetic.cache.PopulationCacheConfig;
@@ -41,15 +37,15 @@ public class GAGridUtils {
      * Retrieve chromosomes
      *
      * @param ignite Ignite
-     * @param query Sql
+     * @param qry Sql
      * @return List of Chromosomes
      */
-    public static List<Chromosome> getChromosomes(Ignite ignite, String query) {
+    public static List<Chromosome> getChromosomes(Ignite ignite, String qry) {
         List<Chromosome> chromosomes = new ArrayList<Chromosome>();
 
         IgniteCache<Long, Chromosome> populationCache = ignite.getOrCreateCache(PopulationCacheConfig.populationCache());
 
-        SqlQuery sql = new SqlQuery(Chromosome.class, query);
+        SqlQuery sql = new SqlQuery(Chromosome.class, qry);
 
         try (QueryCursor<Entry<Long, Chromosome>> cursor = populationCache.query(sql)) {
             for (Entry<Long, Chromosome> e : cursor)

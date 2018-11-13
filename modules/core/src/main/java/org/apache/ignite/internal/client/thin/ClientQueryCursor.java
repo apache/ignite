@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -64,6 +63,9 @@ class ClientQueryCursor<T> implements QueryCursor<T> {
             private Iterator<T> currPageIt = null;
 
             @Override public boolean hasNext() {
+                if (!pager.hasFirstPage())
+                    return nextPage().hasNext();
+
                 return pager.hasNext() || (currPageIt != null && currPageIt.hasNext());
             }
 
@@ -71,20 +73,24 @@ class ClientQueryCursor<T> implements QueryCursor<T> {
                 if (!hasNext())
                     throw new NoSuchElementException();
 
-                if (currPageIt == null || (!currPageIt.hasNext() && pager.hasNext())) {
-                    try {
-                        Collection<T> currPage = pager.next();
-                        currPageIt = currPage.iterator();
-                    }
-                    catch (ClientException e) {
-                        throw e;
-                    }
-                    catch (Exception e) {
-                        throw new ClientException("Failed to retrieve query results", e);
-                    }
-                }
+                if (currPageIt == null || (!currPageIt.hasNext() && pager.hasNext()))
+                    nextPage();
 
                 return currPageIt.next();
+            }
+
+            private Iterator<T> nextPage() {
+                try {
+                    currPageIt = pager.next().iterator();
+
+                    return currPageIt;
+                }
+                catch (ClientException e) {
+                    throw e;
+                }
+                catch (Exception e) {
+                    throw new ClientException("Failed to retrieve query results", e);
+                }
             }
         };
     }

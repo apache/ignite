@@ -38,14 +38,14 @@ module.exports = {
              * @param {Socket} sock
              */
             add(sock) {
-                const token = sock.request.user.token;
+                const token = sock.request.user._id.toString();
 
                 if (this.sockets.has(token))
                     this.sockets.get(token).push(sock);
                 else
                     this.sockets.set(token, [sock]);
 
-                return this.sockets.get(token);
+                return this.sockets.get(sock.request.user);
             }
 
             /**
@@ -61,11 +61,13 @@ module.exports = {
                 return sockets;
             }
 
-            get(token) {
-                if (this.sockets.has(token))
-                    return this.sockets.get(token);
+            get(account) {
+                let sockets = this.sockets.get(account._id.toString());
 
-                return [];
+                if (_.isEmpty(sockets))
+                    this.sockets.set(account._id.toString(), sockets = []);
+
+                return sockets;
             }
 
             demo(token) {
@@ -103,11 +105,11 @@ module.exports = {
             }
 
             /**
-             * @param {String} token
+             * @param {String} account
              * @param {Array.<Socket>} [socks]
              */
-            agentStats(token, socks = this._browserSockets.get(token)) {
-                return this._agentHnd.agents(token)
+            agentStats(account, socks = this._browserSockets.get(account)) {
+                return this._agentHnd.agents(account)
                     .then((agentSocks) => {
                         const stat = _.reduce(agentSocks, (acc, agentSock) => {
                             acc.count += 1;
@@ -127,8 +129,8 @@ module.exports = {
                     .then((stat) => _.forEach(socks, (sock) => sock.emit('agents:stat', stat)));
             }
 
-            clusterChanged(token, cluster) {
-                const socks = this._browserSockets.get(token);
+            clusterChanged(account, cluster) {
+                const socks = this._browserSockets.get(account);
 
                 _.forEach(socks, (sock) => sock.emit('cluster:changed', cluster));
             }
@@ -153,10 +155,10 @@ module.exports = {
                 }
             }
 
-            executeOnAgent(token, demo, event, ...args) {
+            executeOnAgent(account, demo, event, ...args) {
                 const cb = _.last(args);
 
-                return this._agentHnd.agent(token, demo)
+                return this._agentHnd.agent(account, demo)
                     .then((agentSock) => agentSock.emitEvent(event, ..._.dropRight(args)))
                     .then((res) => cb(null, res))
                     .catch((err) => cb(this.errorTransformer(err)));
@@ -164,43 +166,35 @@ module.exports = {
 
             agentListeners(sock) {
                 const demo = sock.request._query.IgniteDemoMode === 'true';
-                const token = () => sock.request.user.token;
+                const account = () => sock.request.user;
 
                 // Return available drivers to browser.
                 sock.on('schemaImport:drivers', (...args) => {
-                    this.executeOnAgent(token(), demo, 'schemaImport:drivers', ...args);
+                    this.executeOnAgent(account(), demo, 'schemaImport:drivers', ...args);
                 });
 
                 // Return schemas from database to browser.
                 sock.on('schemaImport:schemas', (...args) => {
-                    this.executeOnAgent(token(), demo, 'schemaImport:schemas', ...args);
+                    this.executeOnAgent(account(), demo, 'schemaImport:schemas', ...args);
                 });
 
                 // Return tables from database to browser.
                 sock.on('schemaImport:metadata', (...args) => {
-                    this.executeOnAgent(token(), demo, 'schemaImport:metadata', ...args);
+                    this.executeOnAgent(account(), demo, 'schemaImport:metadata', ...args);
                 });
             }
 
             /**
              * @param {Promise.<AgentSocket>} agent
              * @param {Boolean} demo
+             * @param {{sessionId: String}|{'login': String, 'password': String}} credentials
              * @param {Object.<String, String>} params
              * @return {Promise.<T>}
              */
-            executeOnNode(agent, demo, params) {
+            executeOnNode(agent, demo, credentials, params) {
                 return agent
-                    .then((agentSock) => agentSock.emitEvent('node:rest', {uri: 'ignite', demo, params}))
-                    .then((res) => {
-                        if (res.status === 0) {
-                            if (res.zipped)
-                                return res;
-
-                            return JSON.parse(res.data);
-                        }
-
-                        throw new Error(res.error);
-                    });
+                    .then((agentSock) => agentSock.emitEvent('node:rest',
+                        {uri: 'ignite', demo, params: _.merge({}, credentials, params)}));
             }
 
             registerVisorTask(taskId, taskCls, ...argCls) {
@@ -212,13 +206,23 @@ module.exports = {
 
             nodeListeners(sock) {
                 // Return command result from grid to browser.
-                sock.on('node:rest', (clusterId, params, cb) => {
-                    const demo = sock.request._query.IgniteDemoMode === 'true';
-                    const token = sock.request.user.token;
+                sock.on('node:rest', (arg, cb) => {
+                    const {clusterId, params, credentials} = arg || {};
 
-                    const agent = this._agentHnd.agent(token, demo, clusterId);
+                    if (!_.isFunction(cb))
+                        cb = console.log;
 
-                    this.executeOnNode(agent, demo, params)
+                    const demo = _.get(sock, 'request._query.IgniteDemoMode') === 'true';
+
+                    if ((_.isNil(clusterId) && !demo) || _.isNil(params)) {
+                        console.log('Received invalid message: "node:rest" on socket:', JSON.stringify(sock.handshake));
+
+                        return cb('Invalid format of message: "node:rest"');
+                    }
+
+                    const agent = this._agentHnd.agent(sock.request.user, demo, clusterId);
+
+                    this.executeOnNode(agent, demo, credentials, params)
                         .then((data) => cb(null, data))
                         .catch((err) => cb(this.errorTransformer(err)));
                 });
@@ -240,39 +244,50 @@ module.exports = {
 
                 this.registerVisorTask('toggleClusterState', internalVisor('misc.VisorChangeGridActiveStateTask'), internalVisor('misc.VisorChangeGridActiveStateTaskArg'));
 
-                // Return command result from grid to browser.
-                sock.on('node:visor', (clusterId, taskId, nids, ...args) => {
-                    const demo = sock.request._query.IgniteDemoMode === 'true';
-                    const token = sock.request.user.token;
+                this.registerVisorTask('cacheNamesCollectorTask', internalVisor('cache.VisorCacheNamesCollectorTask'), 'java.lang.Void');
 
-                    const cb = _.last(args);
-                    args = _.dropRight(args);
+                this.registerVisorTask('cacheNodesTask', internalVisor('cache.VisorCacheNodesTask'), 'java.lang.String');
+                this.registerVisorTask('cacheNodesTaskX2', internalVisor('cache.VisorCacheNodesTask'), internalVisor('cache.VisorCacheNodesTaskArg'));
+
+                // Return command result from grid to browser.
+                sock.on('node:visor', (arg, cb) => {
+                    const {clusterId, params, credentials} = arg || {};
+
+                    if (!_.isFunction(cb))
+                        cb = console.log;
+
+                    const demo = _.get(sock, 'request._query.IgniteDemoMode') === 'true';
+
+                    if ((_.isNil(clusterId) && !demo) || _.isNil(params)) {
+                        console.log('Received invalid message: "node:visor" on socket:', JSON.stringify(sock.handshake));
+
+                        return cb('Invalid format of message: "node:visor"');
+                    }
+
+                    const {taskId, nids, args = []} = params;
 
                     const desc = this._visorTasks.get(taskId);
 
                     if (_.isNil(desc))
                         return cb(this.errorTransformer(new errors.IllegalArgumentException(`Failed to find Visor task for id: ${taskId}`)));
 
-                    const params = {
+                    const exeParams = {
                         cmd: 'exe',
                         name: 'org.apache.ignite.internal.visor.compute.VisorGatewayTask',
                         p1: nids,
                         p2: desc.taskCls
                     };
 
-                    _.forEach(_.concat(desc.argCls, args), (param, idx) => { params[`p${idx + 3}`] = param; });
+                    _.forEach(_.concat(desc.argCls, args), (param, idx) => { exeParams[`p${idx + 3}`] = param; });
 
-                    const agent = this._agentHnd.agent(token, demo, clusterId);
+                    const agent = this._agentHnd.agent(sock.request.user, demo, clusterId);
 
-                    this.executeOnNode(agent, demo, params)
+                    this.executeOnNode(agent, demo, credentials, exeParams)
                         .then((data) => {
-                            if (data.zipped)
-                                return cb(null, data);
-
-                            if (data.finished)
+                            if (data.finished && !data.zipped)
                                 return cb(null, data.result);
 
-                            cb(this.errorTransformer(data.error));
+                            return cb(null, data);
                         })
                         .catch((err) => cb(this.errorTransformer(err)));
                 });
@@ -305,18 +320,13 @@ module.exports = {
                             // Handle browser disconnect event.
                             sock.on('disconnect', () => {
                                 this._browserSockets.remove(sock);
-
-                                const demo = sock.request._query.IgniteDemoMode === 'true';
-
-                                // Stop demo if latest demo tab for this token.
-                                demo && agentHnd.tryStopDemo(sock);
                             });
 
                             this.agentListeners(sock);
                             this.nodeListeners(sock);
 
                             this.pushInitialData(sock);
-                            this.agentStats(sock.request.user.token, [sock]);
+                            this.agentStats(sock.request.user, [sock]);
                             this.emitNotification(sock);
                         });
                     });

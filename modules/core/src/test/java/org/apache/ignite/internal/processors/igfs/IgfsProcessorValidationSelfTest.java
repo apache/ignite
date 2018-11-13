@@ -163,7 +163,6 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("NullableProblems")
     public void testLocalNullIgfsNameIsNotSupported() throws Exception {
         try {
             g1IgfsCfg1.setName(null);

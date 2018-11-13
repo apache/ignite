@@ -71,7 +71,7 @@ public class CacheNearDisabledTransactionalInvokeRestartSelfTest extends CacheAb
     }
 
     /** {@inheritDoc} */
-    protected void checkCache(IgniteEx ignite, IgniteCache cache) {
+    @Override protected void checkCache(IgniteEx ignite, IgniteCache cache) {
         log.info("Start cache validation.");
 
         long startTime = U.currentTimeMillis();

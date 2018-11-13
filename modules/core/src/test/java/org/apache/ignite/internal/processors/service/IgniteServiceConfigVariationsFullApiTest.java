@@ -60,7 +60,6 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
     private static int cntr;
 
     /** Callable factories. */
-    @SuppressWarnings("unchecked")
     private static final Factory[] serviceFactories = new Factory[] {
         Parameters.factory(TestServiceImpl.class),
         Parameters.factory(TestServiceImplExternalizable.class),
@@ -322,7 +321,7 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
         }
 
         /** {@inheritDoc} */
-        public void setValue(Object val) {
+        @Override public void setValue(Object val) {
             this.val = val;
         }
     }

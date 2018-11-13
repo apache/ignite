@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import junit.framework.TestSuite;
 import org.apache.curator.test.InstanceSpec;
-import org.apache.curator.test.TestingCluster;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator.TestingCluster;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
@@ -54,7 +54,7 @@ public abstract class ZookeeperDiscoverySpiAbstractTestSuite extends TestSuite {
      *
      * @param cfg Configuration to change.
      */
-    public synchronized static void preprocessConfiguration(IgniteConfiguration cfg) {
+    public static synchronized void preprocessConfiguration(IgniteConfiguration cfg) {
         if (testingCluster == null)
             throw new IllegalStateException("Test Zookeeper cluster is not started.");
 

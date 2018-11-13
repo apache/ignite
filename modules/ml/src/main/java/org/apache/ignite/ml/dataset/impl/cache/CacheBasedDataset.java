@@ -144,6 +144,7 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
     /** {@inheritDoc} */
     @Override public void close() {
         datasetCache.destroy();
+        ComputeUtils.removeData(ignite, datasetId);
     }
 
     /**
@@ -163,7 +164,8 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
 
         R res = identity;
         for (R partRes : results)
-            res = reduce.apply(res, partRes);
+            if (partRes != null)
+                res = reduce.apply(res, partRes);
 
         return res;
     }

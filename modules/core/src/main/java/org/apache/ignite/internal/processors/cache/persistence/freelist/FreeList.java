@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.freelist;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 
 /**
  */
@@ -37,6 +38,17 @@ public interface FreeList<T extends Storable> {
      * @throws IgniteCheckedException If failed.
      */
     public boolean updateDataRow(long link, T row) throws IgniteCheckedException;
+
+    /**
+     * @param link Row link.
+     * @param pageHnd Page handler.
+     * @param arg Handler argument.
+     * @param <S> Argument type.
+     * @param <R> Result type.
+     * @return Result.
+     * @throws IgniteCheckedException If failed.
+     */
+    public <S, R>  R updateDataRow(long link, PageHandler<S, R> pageHnd, S arg) throws IgniteCheckedException;
 
     /**
      * @param link Row link.

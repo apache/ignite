@@ -49,6 +49,7 @@ import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.internal.AsyncSupportAdapter;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -145,6 +146,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         CacheOperationGate opGate = onEnter();
 
         try {
+            MvccUtils.verifyMvccOperationSupport(delegate.context(), "withExpiryPolicy");
+
             return new GatewayProtectedCacheProxy<>(delegate, opCtx.withExpiryPolicy(plc), lock);
         }
         finally {
@@ -168,6 +171,28 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
                 return this;
 
             return new GatewayProtectedCacheProxy<>(delegate, opCtx.setSkipStore(true), lock);
+        }
+        finally {
+            onLeave(opGate);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteCache<K, V> withAllowAtomicOpsInTx() {
+        if (context().atomic() && !opCtx.allowedAtomicOpsInTx() && context().tm().tx() != null) {
+            throw new IllegalStateException("Enabling atomic operations during active transaction is not allowed. " +
+                "Enable atomic operations before transaction start.");
+        }
+
+        CacheOperationGate opGate = onEnter();
+
+        try {
+            boolean allowed = opCtx.allowedAtomicOpsInTx();
+
+            if (allowed)
+                return this;
+
+            return new GatewayProtectedCacheProxy<>(delegate, opCtx.setAllowAtomicOpsInTx(), lock);
         }
         finally {
             onLeave(opGate);
@@ -316,7 +341,14 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
 
     /** {@inheritDoc} */
     @Override public Lock lock(K key) {
-        return delegate.lock(key);
+        CacheOperationGate opGate = onEnter();
+
+        try {
+            return delegate.lock(key);
+        }
+        finally {
+            onLeave(opGate);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1444,6 +1476,54 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
 
         try {
             delegate.enableStatistics(enabled);
+        }
+        finally {
+            onLeave(opGate);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clearStatistics() {
+        CacheOperationGate opGate = onEnter();
+
+        try {
+            delegate.clearStatistics();
+        }
+        finally {
+            onLeave(opGate);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void preloadPartition(int part) {
+        CacheOperationGate opGate = onEnter();
+
+        try {
+            delegate.preloadPartition(part);
+        }
+        finally {
+            onLeave(opGate);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> preloadPartitionAsync(int part) {
+        CacheOperationGate opGate = onEnter();
+
+        try {
+            return delegate.preloadPartitionAsync(part);
+        }
+        finally {
+            onLeave(opGate);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean localPreloadPartition(int part) {
+        CacheOperationGate opGate = onEnter();
+
+        try {
+            return delegate.localPreloadPartition(part);
         }
         finally {
             onLeave(opGate);

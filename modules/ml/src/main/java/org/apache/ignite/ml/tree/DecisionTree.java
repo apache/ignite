@@ -19,11 +19,13 @@ package org.apache.ignite.ml.tree;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collections;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.data.DecisionTreeDataBuilder;
@@ -38,18 +40,21 @@ import org.apache.ignite.ml.tree.leaf.DecisionTreeLeafBuilder;
  *
  * @param <T> Type of impurity measure.
  */
-abstract class DecisionTree<T extends ImpurityMeasure<T>> implements DatasetTrainer<DecisionTreeNode, Double> {
+public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends DatasetTrainer<DecisionTreeNode, Double> {
     /** Max tree deep. */
-    private final int maxDeep;
+    int maxDeep;
 
     /** Min impurity decrease. */
-    private final double minImpurityDecrease;
+    double minImpurityDecrease;
 
     /** Step function compressor. */
-    private final StepFunctionCompressor<T> compressor;
+    StepFunctionCompressor<T> compressor;
 
     /** Decision tree leaf builder. */
     private final DecisionTreeLeafBuilder decisionTreeLeafBuilder;
+
+    /** Use index structure instead of using sorting while learning. */
+    protected boolean usingIdx = true;
 
     /**
      * Constructs a new distributed decision tree trainer.
@@ -59,7 +64,8 @@ abstract class DecisionTree<T extends ImpurityMeasure<T>> implements DatasetTrai
      * @param compressor Impurity function compressor.
      * @param decisionTreeLeafBuilder Decision tree leaf builder.
      */
-    DecisionTree(int maxDeep, double minImpurityDecrease, StepFunctionCompressor<T> compressor, DecisionTreeLeafBuilder decisionTreeLeafBuilder) {
+    DecisionTree(int maxDeep, double minImpurityDecrease, StepFunctionCompressor<T> compressor,
+        DecisionTreeLeafBuilder decisionTreeLeafBuilder) {
         this.maxDeep = maxDeep;
         this.minImpurityDecrease = minImpurityDecrease;
         this.compressor = compressor;
@@ -68,16 +74,43 @@ abstract class DecisionTree<T extends ImpurityMeasure<T>> implements DatasetTrai
 
     /** {@inheritDoc} */
     @Override public <K, V> DecisionTreeNode fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
         try (Dataset<EmptyContext, DecisionTreeData> dataset = datasetBuilder.build(
             new EmptyContextBuilder<>(),
-            new DecisionTreeDataBuilder<>(featureExtractor, lbExtractor)
+            new DecisionTreeDataBuilder<>(featureExtractor, lbExtractor, usingIdx)
         )) {
-            return split(dataset, e -> true, 0, getImpurityMeasureCalculator(dataset));
+            return fit(dataset);
         }
         catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Trains new model based on dataset because there is no valid approach to update decision trees.
+     *
+     * @param mdl Learned model.
+     * @param datasetBuilder Dataset builder.
+     * @param featureExtractor Feature extractor.
+     * @param lbExtractor Label extractor.
+     * @param <K> Type of a key in {@code upstream} data.
+     * @param <V> Type of a value in {@code upstream} data.
+     * @return New model based on new dataset.
+     */
+    @Override public <K, V> DecisionTreeNode updateModel(DecisionTreeNode mdl, DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+
+        return fit(datasetBuilder, featureExtractor, lbExtractor);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean checkState(DecisionTreeNode mdl) {
+        return true;
+    }
+
+    /** */
+    public <K,V> DecisionTreeNode fit(Dataset<EmptyContext, DecisionTreeData> dataset) {
+        return split(dataset, e -> true, 0, getImpurityMeasureCalculator(dataset));
     }
 
     /**
@@ -86,7 +119,7 @@ abstract class DecisionTree<T extends ImpurityMeasure<T>> implements DatasetTrai
      * @param dataset Dataset.
      * @return Impurity measure calculator.
      */
-    abstract ImpurityMeasureCalculator<T> getImpurityMeasureCalculator(Dataset<EmptyContext, DecisionTreeData> dataset);
+    protected abstract ImpurityMeasureCalculator<T> getImpurityMeasureCalculator(Dataset<EmptyContext, DecisionTreeData> dataset);
 
     /**
      * Splits the node specified by the given dataset and predicate and returns decision tree node.
@@ -102,7 +135,7 @@ abstract class DecisionTree<T extends ImpurityMeasure<T>> implements DatasetTrai
         if (deep >= maxDeep)
             return decisionTreeLeafBuilder.createLeafNode(dataset, filter);
 
-        StepFunction<T>[] criterionFunctions = calculateImpurityForAllColumns(dataset, filter, impurityCalc);
+        StepFunction<T>[] criterionFunctions = calculateImpurityForAllColumns(dataset, filter, impurityCalc, deep);
 
         if (criterionFunctions == null)
             return decisionTreeLeafBuilder.createLeafNode(dataset, filter);
@@ -129,13 +162,14 @@ abstract class DecisionTree<T extends ImpurityMeasure<T>> implements DatasetTrai
      * @return Array of impurity measure functions for all columns.
      */
     private StepFunction<T>[] calculateImpurityForAllColumns(Dataset<EmptyContext, DecisionTreeData> dataset,
-        TreeFilter filter, ImpurityMeasureCalculator<T> impurityCalc) {
+        TreeFilter filter, ImpurityMeasureCalculator<T> impurityCalc, int depth) {
+
         return dataset.compute(
             part -> {
                 if (compressor != null)
-                    return compressor.compress(impurityCalc.calculate(part.filter(filter)));
+                    return compressor.compress(impurityCalc.calculate(part, filter, depth));
                 else
-                    return impurityCalc.calculate(part.filter(filter));
+                    return impurityCalc.calculate(part, filter, depth);
             }, this::reduce
         );
     }
@@ -248,5 +282,48 @@ abstract class DecisionTree<T extends ImpurityMeasure<T>> implements DatasetTrai
             this.col = col;
             this.threshold = threshold;
         }
+    }
+
+    /**
+     * Represents DecisionTree as String.
+     *
+     * @param node Decision tree.
+     * @param pretty Use pretty mode.
+     */
+    public static String printTree(DecisionTreeNode node, boolean pretty) {
+        StringBuilder builder = new StringBuilder();
+        printTree(node, 0, builder, pretty, false);
+        return builder.toString();
+    }
+
+    /**
+     * Recursive realisation of DectisionTree to String converting.
+     *
+     * @param node Decision tree.
+     * @param depth Current depth.
+     * @param builder String builder.
+     * @param pretty Use pretty mode.
+     */
+    private static void printTree(DecisionTreeNode node, int depth, StringBuilder builder, boolean pretty, boolean isThen) {
+        builder.append(pretty ? String.join("", Collections.nCopies(depth, "\t")) : "");
+        if (node instanceof DecisionTreeLeafNode) {
+            DecisionTreeLeafNode leaf = (DecisionTreeLeafNode)node;
+            builder.append(String.format("%s return ", isThen ? "then" : "else"))
+                .append(String.format("%.4f", leaf.getVal()));
+        }
+        else if (node instanceof DecisionTreeConditionalNode) {
+            DecisionTreeConditionalNode cond = (DecisionTreeConditionalNode)node;
+            String prefix = depth == 0 ? "" : (isThen ? "then " : "else ");
+            builder.append(String.format("%sif (x", prefix))
+                .append(cond.getCol())
+                .append(" > ")
+                .append(String.format("%.4f", cond.getThreshold()))
+                .append(pretty ? ")\n" : ") ");
+            printTree(cond.getThenNode(), depth + 1, builder, pretty, true);
+            builder.append(pretty ? "\n" : " ");
+            printTree(cond.getElseNode(), depth + 1, builder, pretty, false);
+        }
+        else
+            throw new IllegalArgumentException();
     }
 }

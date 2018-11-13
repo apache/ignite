@@ -42,8 +42,10 @@ abstract class AbstractDataFrameSpec extends FunSpec with Matchers with BeforeAn
 
     var client: Ignite = _
 
+    private val NUM_SERVERS = 5
+
     override protected def beforeAll(): Unit = {
-        for (i ← 0 to 3)
+        for (i ← 0 to NUM_SERVERS)
             Ignition.start(configuration("grid-" + i, client = false))
 
         client = Ignition.getOrStart(configuration("client", client = true))
@@ -54,7 +56,7 @@ abstract class AbstractDataFrameSpec extends FunSpec with Matchers with BeforeAn
     override protected def afterAll(): Unit = {
         Ignition.stop("client", false)
 
-        for (i ← 0 to 3)
+        for (i ← 0 to NUM_SERVERS)
             Ignition.stop("grid-" + i, false)
 
         spark.close()
@@ -115,8 +117,10 @@ abstract class AbstractDataFrameSpec extends FunSpec with Matchers with BeforeAn
         cache.query(qry.setArgs(4L.asInstanceOf[JLong], "St. Petersburg")).getAll
     }
 
-    def createEmployeeCache(client: Ignite, cacheName: String): Unit = {
+    def createEmployeeCache(client: Ignite, cacheName: String, schemaName: Option[String] = None): Unit = {
         val ccfg = AbstractDataFrameSpec.cacheConfiguration[String, Employee](cacheName)
+
+        schemaName.foreach(ccfg.setSqlSchema)
 
         val cache = client.getOrCreateCache(ccfg)
 
@@ -206,7 +210,7 @@ object AbstractDataFrameSpec {
         val plan = df.queryExecution.optimizedPlan
 
         val cnt = plan.collectLeaves.count {
-            case LogicalRelation(relation: IgniteSQLAccumulatorRelation[_, _], _, _) ⇒
+            case LogicalRelation(relation: IgniteSQLAccumulatorRelation[_, _], _, _, _) ⇒
                 if (qry != "")
                     assert(qry.toLowerCase == relation.acc.compileQuery().toLowerCase,
                         s"Generated query should be equal to expected.\nexpected  - $qry\ngenerated - ${relation.acc.compileQuery()}")

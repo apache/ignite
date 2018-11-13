@@ -31,7 +31,8 @@ export default class Caches {
     /** @type {ig.menu<ig.config.cache.AtomicityModes>} */
     atomicityModes = [
         {value: 'ATOMIC', label: 'ATOMIC'},
-        {value: 'TRANSACTIONAL', label: 'TRANSACTIONAL'}
+        {value: 'TRANSACTIONAL', label: 'TRANSACTIONAL'},
+        {value: 'TRANSACTIONAL_SNAPSHOT', label: 'TRANSACTIONAL_SNAPSHOT'}
     ];
 
     /**
@@ -165,7 +166,10 @@ export default class Caches {
         maxMemorySize: {
             min: (evictionPolicy) => {
                 const policy = evictionPolicy[evictionPolicy.kind];
-                if (!policy) return true;
+
+                if (!policy)
+                    return true;
+
                 const maxSize = policy.maxSize === null || policy.maxSize === void 0
                     ? this.evictionPolicy.maxSize.default
                     : policy.maxSize;
@@ -177,7 +181,10 @@ export default class Caches {
         maxSize: {
             min: (evictionPolicy) => {
                 const policy = evictionPolicy[evictionPolicy.kind];
-                if (!policy) return true;
+
+                if (!policy)
+                    return true;
+
                 const maxMemorySize = policy.maxMemorySize === null || policy.maxMemorySize === void 0
                     ? this.evictionPolicy.maxMemorySize.default
                     : policy.maxMemorySize;

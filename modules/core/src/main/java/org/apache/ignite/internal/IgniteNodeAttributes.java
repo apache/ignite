@@ -82,9 +82,6 @@ public final class IgniteNodeAttributes {
     public static final String ATTR_IGFS = ATTR_PREFIX + ".igfs";
 
     /** Internal attribute name constant. */
-    public static final String ATTR_MONGO = ATTR_PREFIX + ".mongo";
-
-    /** Internal attribute name constant. */
     public static final String ATTR_DAEMON = ATTR_PREFIX + ".daemon";
 
     /** Internal attribute name constant. */
@@ -198,6 +195,15 @@ public final class IgniteNodeAttributes {
 
     /** User authentication enabled flag. */
     public static final String ATTR_AUTHENTICATION_ENABLED = ATTR_PREFIX + ".authentication.enabled";
+
+    /** Encryption master key digest. */
+    public static final String ATTR_ENCRYPTION_MASTER_KEY_DIGEST = ATTR_PREFIX + ".master.key.digest";
+
+    /** Rebalance thread pool size. */
+    public static final String ATTR_REBALANCE_POOL_SIZE = ATTR_PREFIX + ".rebalance.pool.size";
+
+    /** Internal attribute name constant. */
+    public static final String ATTR_DYNAMIC_CACHE_START_ROLLBACK_SUPPORTED = ATTR_PREFIX + ".dynamic.cache.start.rollback.supported";
 
     /**
      * Enforces singleton.

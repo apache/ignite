@@ -24,7 +24,7 @@ import java.nio.MappedByteBuffer;
 /**
  * Decorator class for File I/O
  */
-public class FileIODecorator implements FileIO {
+public class FileIODecorator extends AbstractFileIO {
     /** File I/O delegate */
     private final FileIO delegate;
 
@@ -72,8 +72,8 @@ public class FileIODecorator implements FileIO {
     }
 
     /** {@inheritDoc} */
-    @Override public void write(byte[] buf, int off, int len) throws IOException {
-        delegate.write(buf, off, len);
+    @Override public int write(byte[] buf, int off, int len) throws IOException {
+        return delegate.write(buf, off, len);
     }
 
     /** {@inheritDoc} */

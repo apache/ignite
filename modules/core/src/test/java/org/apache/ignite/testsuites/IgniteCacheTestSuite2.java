@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.cache.affinity.rendezvous.ClusterNodeAttributeAffinityBackupFilterSelfTest;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionBackupFilterSelfTest;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionExcludeNeighborsSelfTest;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionFastPowerOfTwoHashSelfTest;
@@ -31,7 +32,6 @@ import org.apache.ignite.internal.processors.cache.CacheEnumOperationsSingleNode
 import org.apache.ignite.internal.processors.cache.CacheEnumOperationsTest;
 import org.apache.ignite.internal.processors.cache.CacheExchangeMessageDuplicatedStateTest;
 import org.apache.ignite.internal.processors.cache.CacheGroupLocalConfigurationSelfTest;
-import org.apache.ignite.internal.processors.cache.CacheDataRegionConfigurationTest;
 import org.apache.ignite.internal.processors.cache.CacheOptimisticTransactionsWithFilterSingleServerTest;
 import org.apache.ignite.internal.processors.cache.CacheOptimisticTransactionsWithFilterTest;
 import org.apache.ignite.internal.processors.cache.CrossCacheTxNearEnabledRandomOperationsTest;
@@ -159,6 +159,7 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         // Local cache.
         suite.addTestSuite(GridCacheLocalBasicApiSelfTest.class);
         suite.addTestSuite(GridCacheLocalBasicStoreSelfTest.class);
+        //suite.addTestSuite(GridCacheLocalBasicStoreMultithreadedSelfTest.class);
         suite.addTestSuite(GridCacheLocalAtomicBasicStoreSelfTest.class);
         suite.addTestSuite(GridCacheLocalGetAndTransformStoreSelfTest.class);
         suite.addTestSuite(GridCacheLocalAtomicGetAndTransformStoreSelfTest.class);
@@ -166,6 +167,7 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTestSuite(GridCacheLocalLockSelfTest.class);
         suite.addTestSuite(GridCacheLocalMultithreadedSelfTest.class);
         suite.addTestSuite(GridCacheLocalTxSingleThreadedSelfTest.class);
+        //suite.addTestSuite(GridCacheLocalTxReadTest.class);
         suite.addTestSuite(GridCacheLocalTxTimeoutSelfTest.class);
         suite.addTestSuite(GridCacheLocalEventSelfTest.class);
         suite.addTestSuite(GridCacheLocalEvictionEventSelfTest.class);
@@ -188,6 +190,7 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTest(new TestSuite(GridCacheNearReaderPreloadSelfTest.class));
         suite.addTest(new TestSuite(GridCacheAtomicNearReadersSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedAffinitySelfTest.class));
+        //suite.addTest(new TestSuite(RendezvousAffinityFunctionSelfTest.class));
         suite.addTest(new TestSuite(RendezvousAffinityFunctionExcludeNeighborsSelfTest.class));
         suite.addTest(new TestSuite(RendezvousAffinityFunctionFastPowerOfTwoHashSelfTest.class));
         suite.addTest(new TestSuite(RendezvousAffinityFunctionStandardHashSelfTest.class));
@@ -208,6 +211,13 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTest(new TestSuite(GridCachePartitionedNodeFailureSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedExplicitLockNodeFailureSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedTxSingleThreadedSelfTest.class));
+        //suite.addTest(new TestSuite(GridCachePartitionedEntryLockSelfTest.class));
+        //suite.addTest(new TestSuite(GridCachePartitionedEvictionSelfTest.class));
+        //suite.addTest(new TestSuite(GridCachePartitionedNestedTxTest.class));
+        //suite.addTest(new TestSuite(GridCachePartitionedStorePutSelfTest.class));
+        //suite.addTest(new TestSuite(GridCachePartitionedTxConcurrentGetTest.class));
+        //suite.addTest(new TestSuite(GridCachePartitionedTxMultiNodeSelfTest.class));
+        //suite.addTest(new TestSuite(GridCachePartitionedTxReadTest.class));
         suite.addTest(new TestSuite(GridCacheColocatedTxSingleThreadedSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedTxTimeoutSelfTest.class));
         suite.addTest(new TestSuite(GridCacheFinishPartitionsSelfTest.class));
@@ -227,6 +237,7 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTest(new TestSuite(GridCacheDhtPreloadStartStopSelfTest.class));
         suite.addTest(new TestSuite(GridCacheDhtPreloadUnloadSelfTest.class));
         suite.addTest(new TestSuite(RendezvousAffinityFunctionBackupFilterSelfTest.class));
+        suite.addTest(new TestSuite(ClusterNodeAttributeAffinityBackupFilterSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedPreloadLifecycleSelfTest.class));
         suite.addTest(new TestSuite(CacheLoadingConcurrentGridStartSelfTest.class));
         suite.addTest(new TestSuite(CacheLoadingConcurrentGridStartSelfTestAllowOverwrite.class));
@@ -266,7 +277,6 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTest(new TestSuite(CacheConfigurationLeakTest.class));
         suite.addTest(new TestSuite(MemoryPolicyConfigValidationTest.class));
         suite.addTest(new TestSuite(MemoryPolicyInitializationTest.class));
-        suite.addTest(new TestSuite(CacheDataRegionConfigurationTest.class));
         suite.addTest(new TestSuite(CacheGroupLocalConfigurationSelfTest.class));
         suite.addTest(new TestSuite(CacheEnumOperationsSingleNodeTest.class));
         suite.addTest(new TestSuite(CacheEnumOperationsTest.class));
@@ -279,10 +289,14 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTest(new TestSuite(CacheConcurrentReadThroughTest.class));
 
         suite.addTest(new TestSuite(GridNearCacheStoreUpdateTest.class));
+        //suite.addTest(new TestSuite(NearCacheMultithreadedUpdateTest.class));
+        //suite.addTest(new TestSuite(NearCachePutAllMultinodeTest.class));
 
         suite.addTest(new TestSuite(IgniteOnePhaseCommitInvokeTest.class));
 
         suite.addTest(new TestSuite(IgniteCacheNoSyncForGetTest.class));
+        //suite.addTest(new TestSuite(IgniteCacheContainsKeyNearSelfTest.class));
+        //suite.addTest(new TestSuite(IgniteCacheNearTxRollbackTest.class));
 
         suite.addTest(new TestSuite(IgniteOnePhaseCommitNearReadersTest.class));
         suite.addTest(new TestSuite(IgniteNearClientCacheCloseTest.class));
@@ -302,6 +316,17 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTest(new TestSuite(CachePartitionPartialCountersMapSelfTest.class));
 
         suite.addTest(new TestSuite(IgniteReflectionFactorySelfTest.class));
+
+        //suite.addTest(new TestSuite(GridCacheColocatedDebugTest.class));
+        //suite.addTest(new TestSuite(GridCacheDhtAtomicEvictionNearReadersSelfTest.class));
+        //suite.addTest(new TestSuite(GridCacheDhtEntrySetSelfTest.class));
+        //suite.addTest(new TestSuite(GridCacheDhtEvictionNearReadersSelfTest.class));
+        //suite.addTest(new TestSuite(GridCacheDhtMultiBackupTest.class));
+        //suite.addTest(new TestSuite(GridCacheDhtPreloadMessageCountTest.class));
+        //suite.addTest(new TestSuite(GridCachePartitionedNearDisabledMetricsSelfTest.class));
+        //suite.addTest(new TestSuite(IgniteCacheContainsKeyColocatedSelfTest.class));
+        //suite.addTest(new TestSuite(IgniteCrossCacheTxNearEnabledSelfTest.class));
+        //suite.addTest(new TestSuite(IgniteTxConsistencyColocatedRestartSelfTest.class));
 
         return suite;
     }

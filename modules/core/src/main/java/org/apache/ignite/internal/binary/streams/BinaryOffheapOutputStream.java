@@ -90,7 +90,7 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
     }
 
     /** {@inheritDoc} */
-    public int capacity() {
+    @Override public int capacity() {
         return cap;
     }
 

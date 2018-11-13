@@ -20,7 +20,7 @@ function log(msg) {
 }
 
 function error(msg, err) {
-    console.log(`[${new Date().toISOString()}] [ERROR] ${msg}. Error: ${err}`);
+    console.log(`[${new Date().toISOString()}] [ERROR] ${msg}.` + (err ? ` Error: ${err}` : ''));
 }
 
 function recreateIndex0(done, model, oldIdxName, oldIdx, newIdx) {
@@ -52,19 +52,11 @@ function recreateIndex(done, model, oldIdxName, oldIdx, newIdx) {
 
 const LOST_AND_FOUND = 'LOST_AND_FOUND';
 
-let _clusterLostAndFound = null;
-
 function getClusterForMigration(clustersModel, space) {
-    if (_clusterLostAndFound)
-        return Promise.resolve(_clusterLostAndFound);
-
-    return clustersModel.findOne({name: LOST_AND_FOUND}).lean().exec()
+    return clustersModel.findOne({space, name: LOST_AND_FOUND}).lean().exec()
         .then((cluster) => {
-            if (cluster) {
-                _clusterLostAndFound = cluster;
-
+            if (cluster)
                 return cluster;
-            }
 
             return clustersModel.create({
                 space,
@@ -82,28 +74,15 @@ function getClusterForMigration(clustersModel, space) {
                     Multicast: {addresses: ['127.0.0.1:47500..47510']},
                     Vm: {addresses: ['127.0.0.1:47500..47510']}
                 }
-            })
-                .then((cluster) => {
-                    _clusterLostAndFound = cluster;
-
-                    return cluster;
-                });
+            });
         });
 }
 
-let _cacheLostAndFound = null;
-
 function getCacheForMigration(clustersModel, cachesModel, space) {
-    if (_cacheLostAndFound)
-        return Promise.resolve(_cacheLostAndFound);
-
-    return cachesModel.findOne({name: LOST_AND_FOUND})
+    return cachesModel.findOne({space, name: LOST_AND_FOUND})
         .then((cache) => {
-            if (cache) {
-                _cacheLostAndFound = cache;
-
+            if (cache)
                 return cache;
-            }
 
             return getClusterForMigration(clustersModel, space)
                 .then((cluster) => {
@@ -131,11 +110,6 @@ function getCacheForMigration(clustersModel, cachesModel, space) {
                 .then((cache) => {
                     return clustersModel.update({_id: cache.clusters[0]}, {$addToSet: {caches: cache._id}}).exec()
                         .then(() => cache);
-                })
-                .then((cache) => {
-                    _cacheLostAndFound = cache;
-
-                    return cache;
                 });
         });
 }

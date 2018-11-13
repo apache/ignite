@@ -200,7 +200,6 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
      *
      * @return {@code True} if there are pending futures.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     protected final boolean hasPending() {
         synchronized (this) {
             int size = futuresCountNoLock();
@@ -285,12 +284,12 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
                 onDone(rdc != null ? rdc.reduce() : null);
             }
             catch (RuntimeException e) {
-                logError(null, "Failed to execute compound future reducer: " + this, e);
+                logError(logger(), "Failed to execute compound future reducer: " + this, e);
 
                 onDone(e);
             }
             catch (AssertionError e) {
-                logError(null, "Failed to execute compound future reducer: " + this, e);
+                logError(logger(), "Failed to execute compound future reducer: " + this, e);
 
                 onDone(e);
 

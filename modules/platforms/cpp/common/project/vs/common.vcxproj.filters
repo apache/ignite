@@ -82,6 +82,9 @@
     <ClInclude Include="..\..\include\ignite\common\lazy.h">
       <Filter>Code\common</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\common\expected.h">
+      <Filter>Code\common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\date.cpp">

@@ -22,17 +22,38 @@ mixin discovery-kubernetes(modelAt = '$ctrl.clonedCluster')
 
     .pc-form-grid-row&attributes(attributes=attributes)
         .pc-form-grid-col-30
-            +text('Service name:', `${model}.serviceName`, `'${discoveryKind}ServiceName'`, 'false', 'ignite',
-                "The name of Kubernetes service for Ignite pods' IP addresses lookup.<br/>\
-                The name of the service must be equal to the name set in service's Kubernetes configuration.<br/>\
-                If this parameter is not changed then the name of the service has to be set to 'ignite' in the corresponding Kubernetes configuration.")
+            +form-field__text({
+                label: 'Service name:',
+                model: `${model}.serviceName`,
+                name: `'${discoveryKind}ServiceName'`,
+                placeholder: 'ignite',
+                tip: "The name of Kubernetes service for Ignite pods' IP addresses lookup.<br/>\
+                     The name of the service must be equal to the name set in service's Kubernetes configuration.<br/>\
+                     If this parameter is not changed then the name of the service has to be set to 'ignite' in the corresponding Kubernetes configuration."
+            })
         .pc-form-grid-col-30
-            +text('Namespace:', `${model}.namespace`, `'${discoveryKind}Namespace'`, 'false', 'default',
-                "The namespace the Kubernetes service belongs to.<br/>\
-                By default, it's supposed that the service is running under Kubernetes `default` namespace.")
+            +form-field__text({
+                label: 'Namespace:',
+                model: `${model}.namespace`,
+                name: `'${discoveryKind}Namespace'`,
+                placeholder: 'default',
+                tip: "The namespace the Kubernetes service belongs to.<br/>\
+                      By default, it's supposed that the service is running under Kubernetes `default` namespace."
+            })
         .pc-form-grid-col-60
-            +url('Kubernetes server:', `${model}.masterUrl`, `'${discoveryKind}MasterUrl'`, 'true', 'false', 'https://kubernetes.default.svc.cluster.local:443',
-                'The host name of the Kubernetes API server')
+            +form-field__url({
+                label: 'Kubernetes server:',
+                model: `${model}.masterUrl`,
+                name: `'${discoveryKind}MasterUrl'`,
+                enabled: 'true',
+                placeholder: 'https://kubernetes.default.svc.cluster.local:443',
+                tip: 'The host name of the Kubernetes API server'
+            })
         .pc-form-grid-col-60
-            +text('Service token file:', `${model}.accountToken`, `'${discoveryKind}AccountToken'`, 'false', '/var/run/secrets/kubernetes.io/serviceaccount/token',
-                'The path to the service token file')
+            +form-field__text({
+                label: 'Service token file:',
+                model: `${model}.accountToken`,
+                name: `'${discoveryKind}AccountToken'`,
+                placeholder: '/var/run/secrets/kubernetes.io/serviceaccount/token',
+                tip: 'The path to the service token file'
+            })

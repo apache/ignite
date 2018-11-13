@@ -63,7 +63,7 @@ object IgniteOptimization extends Rule[LogicalPlan] with Logging {
         plan.transformUp {
             //We found basic node to transform.
             //We create new accumulator and going to the upper layers.
-            case LogicalRelation(igniteSqlRelation: IgniteSQLRelation[_, _], output, _catalogTable) ⇒
+            case LogicalRelation(igniteSqlRelation: IgniteSQLRelation[_, _], output, _catalogTable, _) ⇒
                 //Clear flag to optimize each statement separately
                 stepSkipped = false
 
@@ -73,7 +73,8 @@ object IgniteOptimization extends Rule[LogicalPlan] with Logging {
                     catalogTable = _catalogTable,
                     aliasIndex = aliasIndexIterator,
                     cacheName =
-                        sqlCacheName(igniteSqlRelation.ic.ignite(), igniteSqlRelation.tableName)
+                        sqlCacheName(igniteSqlRelation.ic.ignite(), igniteSqlRelation.tableName,
+                            igniteSqlRelation.schemaName)
                             .getOrElse(throw new IgniteException("Unknown table")))
 
                 //Logical Relation is bottomest TreeNode in LogicalPlan.
@@ -126,7 +127,7 @@ object IgniteOptimization extends Rule[LogicalPlan] with Logging {
                         if (acc.groupBy.isDefined) {
                             val tableAlias = acc.igniteQueryContext.uniqueTableAlias
 
-                            accumulator.SingleTableSQLAccumulator(
+                            SingleTableSQLAccumulator(
                                 igniteQueryContext = acc.igniteQueryContext,
                                 table = None,
                                 tableExpression = Some((acc, tableAlias)),
@@ -141,7 +142,7 @@ object IgniteOptimization extends Rule[LogicalPlan] with Logging {
                     case acc: QueryAccumulator ⇒
                         val tableAlias = acc.igniteQueryContext.uniqueTableAlias
 
-                        accumulator.SingleTableSQLAccumulator(
+                        SingleTableSQLAccumulator(
                             igniteQueryContext = acc.igniteQueryContext,
                             table = None,
                             tableExpression = Some((acc, tableAlias)),
@@ -156,6 +157,9 @@ object IgniteOptimization extends Rule[LogicalPlan] with Logging {
                     case acc: SelectAccumulator ⇒
                         acc.withLocalLimit(limit.limitExpr)
 
+                    case acc: QueryAccumulator ⇒
+                        acc.withLocalLimit(limit.limitExpr)
+
                     case _ ⇒
                         throw new IgniteException("stepSkipped == true but child is not SelectAccumulator")
                 }
@@ -163,6 +167,9 @@ object IgniteOptimization extends Rule[LogicalPlan] with Logging {
             case limit: GlobalLimit if !stepSkipped && exprsAllowed(limit.limitExpr) ⇒
                 limit.child.transformUp {
                     case acc: SelectAccumulator ⇒
+                        acc.withLimit(limit.limitExpr)
+
+                    case acc: QueryAccumulator ⇒
                         acc.withLimit(limit.limitExpr)
 
                     case _ ⇒
@@ -352,7 +359,8 @@ object IgniteOptimization extends Rule[LogicalPlan] with Logging {
                 new LogicalRelation (
                     relation = IgniteSQLAccumulatorRelation(acc),
                     output = acc.outputExpressions.map(toAttributeReference(_, Seq.empty)),
-                    catalogTable = acc.igniteQueryContext.catalogTable)
+                    catalogTable = acc.igniteQueryContext.catalogTable,
+                    false)
         }
 
     /**
@@ -407,19 +415,16 @@ object IgniteOptimization extends Rule[LogicalPlan] with Logging {
                                     nullable = found.nullable,
                                     metadata = found.metadata)(
                                     exprId = found.exprId,
-                                    qualifier = found.qualifier,
-                                    isGenerated = found.isGenerated),
+                                    qualifier = found.qualifier),
                                 alias.name) (
                                 exprId = alias.exprId,
                                 qualifier = alias.qualifier,
-                                explicitMetadata = alias.explicitMetadata,
-                                isGenerated = alias.isGenerated).asInstanceOf[T]
+                                explicitMetadata = alias.explicitMetadata).asInstanceOf[T]
 
                         case attr: AttributeReference ⇒
                             attr.copy(name = found.name)(
                                 exprId = found.exprId,
-                                qualifier = found.qualifier,
-                                isGenerated = found.isGenerated).asInstanceOf[T]
+                                qualifier = found.qualifier).asInstanceOf[T]
 
                         case _ ⇒ ne.asInstanceOf[T]
                     }

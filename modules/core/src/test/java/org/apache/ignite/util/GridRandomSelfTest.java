@@ -19,13 +19,13 @@ package org.apache.ignite.util;
 
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
-import junit.framework.TestCase;
 import org.apache.ignite.internal.util.GridRandom;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Test for {@link GridRandom}.
  */
-public class GridRandomSelfTest extends TestCase {
+public class GridRandomSelfTest extends GridCommonAbstractTest {
     /**
      */
     public void testRandom() {

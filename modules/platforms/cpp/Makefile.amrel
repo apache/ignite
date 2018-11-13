@@ -17,6 +17,10 @@
 
 ACLOCAL_AMFLAGS =-I m4
 
+if COND_THIN_CLIENT
+  MAYBE_THIN_CLIENT = thin-client
+endif
+
 if COND_ODBC
   MAYBE_ODBC = odbc
 endif
@@ -38,6 +42,7 @@ SUBDIRS = \
     $(MAYBE_JNI) \
     $(MAYBE_ODBC) \
     $(MAYBE_CORE) \
+    $(MAYBE_THIN_CLIENT) \
     $(MAYBE_NODE)
 
 DIST_SUBDIRS = \
@@ -46,4 +51,5 @@ DIST_SUBDIRS = \
     jni \
     odbc \
     core \
+    thin-client \
     ignite

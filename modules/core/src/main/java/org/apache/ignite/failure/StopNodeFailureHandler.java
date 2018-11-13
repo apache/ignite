@@ -25,9 +25,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * Handler will stop node in case of critical error using {@code IgnitionEx.stop(nodeName, true, true)} call.
  */
-public class StopNodeFailureHandler implements FailureHandler {
+public class StopNodeFailureHandler extends AbstractFailureHandler {
     /** {@inheritDoc} */
-    @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
+    @Override public boolean handle(Ignite ignite, FailureContext failureCtx) {
         new Thread(
             new Runnable() {
                 @Override public void run() {
@@ -44,6 +44,6 @@ public class StopNodeFailureHandler implements FailureHandler {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(StopNodeFailureHandler.class, this);
+        return S.toString(StopNodeFailureHandler.class, this, "super", super.toString());
     }
 }

@@ -270,8 +270,9 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
             fail();
         }
-        catch (IgniteCheckedException e) {
-            assertTrue(X.getCause(e).getMessage().contains("Failed to start configured cache."));
+        catch (Exception e) {
+            assertTrue(
+                X.cause(e, IgniteCheckedException.class).getMessage().contains("Failed to start configured cache."));
         }
     }
 

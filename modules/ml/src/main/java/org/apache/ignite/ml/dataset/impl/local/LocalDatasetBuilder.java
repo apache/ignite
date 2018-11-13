@@ -72,7 +72,6 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <C extends Serializable, D extends AutoCloseable> LocalDataset<C, D> build(
         PartitionContextBuilder<K, V, C> partCtxBuilder, PartitionDataBuilder<K, V, C, D> partDataBuilder) {
         List<C> ctxList = new ArrayList<>();
@@ -111,6 +110,12 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
         }
 
         return new LocalDataset<>(ctxList, dataList);
+    }
+
+    /** {@inheritDoc} */
+    @Override public DatasetBuilder<K, V> withFilter(IgniteBiPredicate<K, V> filterToAdd) {
+        return new LocalDatasetBuilder<>(upstreamMap,
+            (e1, e2) -> filter.apply(e1, e2) && filterToAdd.apply(e1, e2), partitions);
     }
 
     /**

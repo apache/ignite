@@ -24,5 +24,5 @@ import org.apache.ignite.ml.Model;
  *
  * @param <M> Type of a produced model.
  */
-public interface MultiLabelDatasetTrainer<M extends Model> extends DatasetTrainer<M, double[]> {
+public abstract class MultiLabelDatasetTrainer<M extends Model> extends DatasetTrainer<M, double[]> {
 }

@@ -258,7 +258,7 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         String revTsStr = new SimpleDateFormat("yyyyMMdd").format(new Date(revTs * 1000));
 
         String hash = U.byteArray2HexString(revHash).toLowerCase();
@@ -274,7 +274,6 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
      * @param verStr String representation of version.
      * @return Product version.
      */
-    @SuppressWarnings({"MagicConstant", "TypeMayBeWeakened"})
     public static IgniteProductVersion fromString(String verStr) {
         assert verStr != null;
 

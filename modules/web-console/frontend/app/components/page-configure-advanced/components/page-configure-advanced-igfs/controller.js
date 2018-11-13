@@ -27,7 +27,8 @@ import ConfigSelectors from 'app/components/page-configure/store/selectors';
 import IGFSs from 'app/services/IGFSs';
 
 export default class PageConfigureAdvancedIGFS {
-    static $inject = [ConfigSelectors.name, ConfigureState.name, '$uiRouter', IGFSs.name, '$state', 'configSelectionManager'];
+    static $inject = ['ConfigSelectors', 'ConfigureState', '$uiRouter', 'IGFSs', '$state', 'configSelectionManager'];
+
     /**
      * @param {ConfigSelectors} ConfigSelectors        
      * @param {ConfigureState} ConfigureState         

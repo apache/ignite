@@ -127,7 +127,6 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
      *        before stored in cache.
      * @return Key cache object.
      */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     protected KeyCacheObject toCacheKeyObject0(CacheObjectContext ctx,
         @Nullable GridCacheContext cctx,
         Object obj,
@@ -225,6 +224,12 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     @Nullable @Override public CacheObject toCacheObject(CacheObjectContext ctx,
         @Nullable Object obj,
         boolean userObj) {
+        return toCacheObject(ctx, obj, userObj, false);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj, boolean userObj,
+        boolean failIfUnregistered) {
         if (obj == null || obj instanceof CacheObject)
             return (CacheObject)obj;
 
@@ -237,7 +242,6 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
      *        before stored in cache.
      * @return Cache object.
      */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     protected CacheObject toCacheObject0(@Nullable Object obj, boolean userObj) {
         assert obj != null;
 

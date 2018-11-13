@@ -34,6 +34,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Utility methods to support output of {@link Vector} and {@link Matrix} instances to plain text or HTML.
@@ -51,7 +53,7 @@ public class Tracer {
     /**
      * Continuous red-to-blue color mapping.
      */
-    static private ColorMapper defaultColorMapper(double min, double max) {
+    private static ColorMapper defaultColorMapper(double min, double max) {
         double range = max - min;
 
         return new ColorMapper() {
@@ -74,7 +76,7 @@ public class Tracer {
      * @param vec Vector to map.
      * @return {@link ColorMapper} for the given vector.
      */
-    static private ColorMapper mkVectorColorMapper(Vector vec) {
+    private static ColorMapper mkVectorColorMapper(Vector vec) {
         return defaultColorMapper(vec.minValue(), vec.maxValue());
     }
 
@@ -85,7 +87,7 @@ public class Tracer {
      * @param mtx Matrix to be mapped.
      * @return Color mapper for given matrix.
      */
-    static private ColorMapper mkMatrixColorMapper(Matrix mtx) {
+    private static ColorMapper mkMatrixColorMapper(Matrix mtx) {
         return defaultColorMapper(mtx.minValue(), mtx.maxValue());
     }
 
@@ -115,7 +117,22 @@ public class Tracer {
     public static void showAscii(Vector vec, String fmt) {
         String cls = vec.getClass().getSimpleName();
 
-        System.out.println(String.format(LOCALE, "%s(%d) [%s]", cls, vec.size(), mkString(vec, fmt)));
+        System.out.println(asAscii(vec, fmt, true));
+    }
+
+    /**
+     * @param vec Vector to show as plain text.
+     * @param fmt Format string for vector elements.
+     * @param showMeta Show vector type and size.
+     */
+    public static String asAscii(Vector vec, String fmt, boolean showMeta) {
+        String cls = vec.getClass().getSimpleName();
+        String vectorStr = mkString(vec, fmt);
+
+        if(showMeta)
+            return String.format(LOCALE, "%s(%d) [%s]", cls, vec.size(), vectorStr);
+        else
+            return String.format(LOCALE, "[%s]", vectorStr);
     }
 
     /**
@@ -131,7 +148,7 @@ public class Tracer {
      * @param fmt Format string for matrix elements in the row.
      * @return String representation of given matrix row according to given format.
      */
-    static private String rowStr(Matrix mtx, int row, String fmt) {
+    private static String rowStr(Matrix mtx, int row, String fmt) {
         StringBuilder buf = new StringBuilder();
 
         boolean first = true;
@@ -157,15 +174,26 @@ public class Tracer {
      * @param fmt Format string for matrix rows.
      */
     public static void showAscii(Matrix mtx, String fmt) {
+        System.out.println(asAscii(mtx, fmt));
+    }
+
+
+    /**
+     * @param mtx {@link Matrix} object to show as a plain text.
+     * @param fmt Format string for matrix rows.
+     */
+    public static String asAscii(Matrix mtx, String fmt) {
+        StringBuilder builder = new StringBuilder();
         String cls = mtx.getClass().getSimpleName();
 
         int rows = mtx.rowSize();
         int cols = mtx.columnSize();
 
-        System.out.println(String.format(LOCALE, "%s(%dx%d)", cls, rows, cols));
+        builder.append(String.format(LOCALE, "%s(%dx%d)\n", cls, rows, cols));
 
         for (int row = 0; row < rows; row++)
-            System.out.println(rowStr(mtx, row, fmt));
+            builder.append(rowStr(mtx, row, fmt)).append(row != rows - 1 ? "\n" : "");
+        return builder.toString();
     }
 
     /**
@@ -305,7 +333,7 @@ public class Tracer {
      * @param clr {@link Color} to paint.
      * @return JSON representation for given value and color.
      */
-    static private String dataColorJson(double d, Color clr) {
+    private static String dataColorJson(double d, Color clr) {
         return "{" +
             "d: " + String.format(LOCALE, "%4f", d) +
             ", r: " + clr.getRed() +
@@ -386,7 +414,7 @@ public class Tracer {
      * @param html HTML content.
      * @throws IOException Thrown in case of any errors.
      */
-    static private void openHtmlFile(String html) throws IOException {
+    private static void openHtmlFile(String html) throws IOException {
         File temp = File.createTempFile(IgniteUuid.randomUuid().toString(), ".html");
 
         BufferedWriter bw = new BufferedWriter(new FileWriter(temp));

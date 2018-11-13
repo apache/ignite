@@ -232,7 +232,6 @@ public class HadoopJobTracker extends HadoopComponent {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
     @Override public void onKernalStart() throws IgniteCheckedException {
         super.onKernalStart();
 
@@ -259,6 +258,7 @@ public class HadoopJobTracker extends HadoopComponent {
             null,
             true,
             true,
+            false,
             false
         );
 
@@ -302,7 +302,6 @@ public class HadoopJobTracker extends HadoopComponent {
      * @param info Job info.
      * @return Job completion future.
      */
-    @SuppressWarnings("unchecked")
     public IgniteInternalFuture<HadoopJobId> submit(HadoopJobId jobId, HadoopJobInfo info) {
         if (!busyLock.tryReadLock()) {
             return new GridFinishedFuture<>(new IgniteCheckedException("Failed to execute map-reduce job " +
@@ -425,7 +424,6 @@ public class HadoopJobTracker extends HadoopComponent {
      * @param meta Metadata.
      * @return Status.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public static HadoopJobStatus status(HadoopJobMetadata meta) {
         HadoopJobInfo jobInfo = meta.jobInfo();
 
@@ -547,7 +545,7 @@ public class HadoopJobTracker extends HadoopComponent {
      * @param info Task info.
      * @param status Task status.
      */
-    @SuppressWarnings({"ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
+    @SuppressWarnings({"ConstantConditions"})
     public void onTaskFinished(HadoopTaskInfo info, HadoopTaskStatus status) {
         if (!busyLock.tryReadLock())
             return;

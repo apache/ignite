@@ -172,7 +172,6 @@ public class AttributeNodeFilterSelfTest extends GridCommonAbstractTest {
             ClusterNode.class.getClassLoader(),
             new Class[] { ClusterNode.class },
             new InvocationHandler() {
-                @SuppressWarnings("SuspiciousMethodCalls")
                 @Override public Object invoke(Object proxy, Method mtd, Object[] args) throws Throwable {
                     if ("attributes".equals(mtd.getName()))
                         return attrs;

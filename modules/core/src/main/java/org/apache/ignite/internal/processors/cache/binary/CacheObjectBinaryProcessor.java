@@ -49,9 +49,10 @@ public interface CacheObjectBinaryProcessor extends IgniteCacheObjectProcessor {
     /**
      * @param typeId Type ID.
      * @param newMeta New meta data.
+     * @param failIfUnregistered Fail if unregistered.
      * @throws IgniteException In case of error.
      */
-    public void addMeta(int typeId, final BinaryType newMeta) throws IgniteException;
+    public void addMeta(int typeId, final BinaryType newMeta, boolean failIfUnregistered) throws IgniteException;
 
     /**
      * Adds metadata locally without triggering discovery exchange.
@@ -136,12 +137,13 @@ public interface CacheObjectBinaryProcessor extends IgniteCacheObjectProcessor {
      * @return Binaries interface.
      * @throws IgniteException If failed.
      */
-    public IgniteBinary binary() throws IgniteException;
+    @Override public IgniteBinary binary() throws IgniteException;
 
     /**
      * @param obj Original object.
+     * @param failIfUnregistered Throw exception if class isn't registered.
      * @return Binary object (in case binary marshaller is used).
      * @throws IgniteException If failed.
      */
-    public Object marshalToBinary(Object obj) throws IgniteException;
+    public Object marshalToBinary(Object obj, boolean failIfUnregistered) throws IgniteException;
 }

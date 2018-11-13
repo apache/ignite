@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.CacheKeepBinaryTransactionTes
 import org.apache.ignite.internal.processors.cache.CacheNearReaderUpdateTest;
 import org.apache.ignite.internal.processors.cache.CacheRebalancingSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheSerializableTransactionsTest;
+import org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTest;
 import org.apache.ignite.internal.processors.cache.ClusterStatePartitionedSelfTest;
 import org.apache.ignite.internal.processors.cache.ClusterStateReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.ConcurrentCacheStartTest;
@@ -37,7 +38,6 @@ import org.apache.ignite.internal.processors.cache.IgniteCachePutStackOverflowSe
 import org.apache.ignite.internal.processors.cache.IgniteCacheReadThroughEvictionsVariationsSuite;
 import org.apache.ignite.internal.processors.cache.IgniteCacheStoreCollectionTest;
 import org.apache.ignite.internal.processors.cache.PartitionsExchangeOnDiscoveryHistoryOverflowTest;
-import org.apache.ignite.internal.processors.cache.distributed.Cache64kPartitionsTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentNodeJoinValidationTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheGroupsPartitionLossPolicySelfTest;
@@ -77,6 +77,7 @@ public class IgniteCacheTestSuite5 extends TestSuite {
 
         suite.addTestSuite(ClusterStatePartitionedSelfTest.class);
         suite.addTestSuite(ClusterStateReplicatedSelfTest.class);
+        suite.addTestSuite(ClusterReadOnlyModeTest.class);
         suite.addTestSuite(IgniteCachePartitionLossPolicySelfTest.class);
         suite.addTestSuite(IgniteCacheGroupsPartitionLossPolicySelfTest.class);
 
@@ -102,8 +103,9 @@ public class IgniteCacheTestSuite5 extends TestSuite {
 
         suite.addTestSuite(ConcurrentCacheStartTest.class);
 
-        suite.addTestSuite(Cache64kPartitionsTest.class);
-
+        //suite.addTestSuite(GridCacheAtomicPreloadSelfTest.class);
+        //suite.addTestSuite(IgniteCacheContainsKeyColocatedAtomicSelfTest.class);
+        //suite.addTestSuite(IgniteCacheContainsKeyNearAtomicSelfTest.class);
         return suite;
     }
 }

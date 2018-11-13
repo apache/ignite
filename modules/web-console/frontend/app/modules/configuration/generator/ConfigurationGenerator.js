@@ -107,6 +107,7 @@ export default class IgniteConfigurationGenerator {
 
         this.clusterMisc(cluster, available, cfg);
         this.clusterMetrics(cluster, available, cfg);
+        this.clusterMvcc(cluster, available, cfg);
         this.clusterODBC(cluster.odbc, available, cfg);
 
         // Since ignite 2.1 deprecated in ignite 2.3
@@ -1394,7 +1395,8 @@ export default class IgniteConfigurationGenerator {
                     .longProperty('rateTimeInterval');
             }
 
-            if (plcBean.isEmpty()) return;
+            if (plcBean.isEmpty())
+                return;
 
             policies.push(plcBean);
         });
@@ -1515,7 +1517,6 @@ export default class IgniteConfigurationGenerator {
     static clusterMisc(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
         cfg.stringProperty('workDirectory');
 
-        // Since Ignite 2.0
         if (available('2.0.0')) {
             cfg.stringProperty('consistentId')
                 .emptyBeanProperty('warmupClosure')
@@ -1525,6 +1526,16 @@ export default class IgniteConfigurationGenerator {
 
         if (available(['1.0.0', '2.1.0']))
             cfg.boolProperty('lateAffinityAssignment');
+
+        return cfg;
+    }
+
+    // Generate MVCC configuration.
+    static clusterMvcc(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
+        if (available('2.7.0')) {
+            cfg.intProperty('mvccVacuumThreadCount')
+                .intProperty('mvccVacuumFrequency');
+        }
 
         return cfg;
     }
@@ -1697,7 +1708,7 @@ export default class IgniteConfigurationGenerator {
                 .emptyBeanProperty('service')
                 .intProperty('maxPerNodeCount')
                 .intProperty('totalCount')
-                .stringProperty('cache', 'cacheName', (_id) => _id ? _.find(caches, {_id}).name : null)
+                .stringProperty('cache', 'cacheName', (_id) => _id ? _.get(_.find(caches, {_id}), 'name', null) : null)
                 .stringProperty('affinityKey');
 
             srvBeans.push(bean);

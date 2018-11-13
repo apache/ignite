@@ -204,6 +204,8 @@ namespace ignite
         if (!connection)
             return SQL_INVALID_HANDLE;
 
+        connection->Deregister();
+
         delete connection;
 
         return SQL_SUCCESS;
