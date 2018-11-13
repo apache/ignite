@@ -29,6 +29,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.jetbrains.annotations.NotNull;
 import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkDriverAdapter;
 import org.yardstickframework.BenchmarkUtils;
@@ -166,6 +167,10 @@ public abstract class IgniteAbstractBenchmark extends BenchmarkDriverAdapter {
         for (long top = curTop; top >= 1; top--) {
             Collection<ClusterNode> nodes = cluster.topology(top);
 
+            // Current node don't know about such topology because it joined later.
+            if (nodes == null)
+                continue;
+
             if (topologyContainsId(nodes, locNodeId) && nodes.size() >= args.nodes())
                 return true;
         }
@@ -178,7 +183,7 @@ public abstract class IgniteAbstractBenchmark extends BenchmarkDriverAdapter {
      * @param nodeId id of the node to find.
      * @return {@code True} if topology contains node with specified id, {@code false} otherwise.
      */
-    private static boolean topologyContainsId(Collection<? extends ClusterNode> top, UUID nodeId) {
+    private static boolean topologyContainsId(@NotNull Collection<? extends ClusterNode> top, UUID nodeId) {
         for (ClusterNode node : top) {
             if (node.id().equals(nodeId))
                 return true;
