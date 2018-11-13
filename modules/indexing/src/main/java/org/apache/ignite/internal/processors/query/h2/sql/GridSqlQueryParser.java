@@ -1713,7 +1713,6 @@ public class GridSqlQueryParser {
      *
      * @return {@code true} if query may be run locally on all caches mentioned in the query, i.e. there's no need
      *     to run distributed query.
-     * @see SqlFieldsQuery#isReplicatedOnly()
      */
     public boolean isLocalQuery() {
         for (Object o : h2ObjToGridObj.values()) {
