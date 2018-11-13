@@ -19,6 +19,8 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 
+import static org.apache.ignite.testframework.config.GridTestProperties.IGNITE_CFG_PREPROCESSOR_CLS;
+
 /**
  */
 public class IgnitePdsCompressionTestSuite2 {
@@ -27,6 +29,8 @@ public class IgnitePdsCompressionTestSuite2 {
      */
     public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite 2 (with page compression).");
+
+        System.setProperty(IGNITE_CFG_PREPROCESSOR_CLS, IgnitePdsCompressionTestSuite.class.getName());
 
         IgnitePdsTestSuite2.addRealPageStoreTests(suite);
 
