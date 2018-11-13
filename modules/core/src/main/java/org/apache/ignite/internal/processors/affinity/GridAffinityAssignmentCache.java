@@ -723,7 +723,7 @@ public class GridAffinityAssignmentCache {
             if (e != null)
                 cache = e.getValue();
 
-            if (cache == null) {
+            if (cache == null || cache.topologyVersion().compareTo(topVer) > 0) {
                 throw new IllegalStateException("Getting affinity for topology version earlier than affinity is " +
                     "calculated [locNode=" + ctx.discovery().localNode() +
                     ", grp=" + cacheOrGrpName +
