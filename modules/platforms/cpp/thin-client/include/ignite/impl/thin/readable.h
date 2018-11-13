@@ -146,8 +146,8 @@ namespace ignite
                     {
                         std::pair<ElementType1, ElementType2> pair;
 
-                        reader.ReadTopObject<ElementType1>(pair.first);
-                        reader.ReadTopObject<ElementType2>(pair.second);
+                        reader.ReadTopObject0<ElementType1>(pair.first);
+                        reader.ReadTopObject0<ElementType2>(pair.second);
 
                         iter = pair;
 
