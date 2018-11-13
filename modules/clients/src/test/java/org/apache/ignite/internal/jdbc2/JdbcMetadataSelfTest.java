@@ -491,7 +491,6 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     /**
      * Person.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Person implements Serializable {
         /** Name. */
         @QuerySqlField(index = false)
@@ -524,7 +523,6 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     /**
      * Organization.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Organization implements Serializable {
         /** ID. */
         @QuerySqlField

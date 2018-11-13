@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -40,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CheckpointWritePr
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
@@ -50,6 +52,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
@@ -191,7 +195,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
      * @param fullPageId page ID to determine segment for
      * @return segment related
      */
-    @SuppressWarnings("TypeMayBeWeakened") private ReentrantReadWriteLock getSegment(FullPageId fullPageId) {
+    private ReentrantReadWriteLock getSegment(FullPageId fullPageId) {
         ReentrantReadWriteLock[] segments = U.field(pageMemory, "segments");
 
         int idx = PageMemoryImpl.segmentIndex(fullPageId.groupId(), fullPageId.pageId(),
@@ -222,6 +226,17 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
         GridKernalContext kernalCtx = mock(GridKernalContext.class);
 
         when(kernalCtx.config()).thenReturn(cfg);
+        when(kernalCtx.log(any(Class.class))).thenReturn(log);
+        when(kernalCtx.internalSubscriptionProcessor()).thenAnswer(new Answer<Object>() {
+            @Override public Object answer(InvocationOnMock mock) throws Throwable {
+                return new GridInternalSubscriptionProcessor(kernalCtx);
+            }
+        });
+        when(kernalCtx.encryption()).thenAnswer(new Answer<Object>() {
+            @Override public Object answer(InvocationOnMock mock) throws Throwable {
+                return new GridEncryptionManager(kernalCtx);
+            }
+        });
         when(sctx.kernalContext()).thenReturn(kernalCtx);
 
         DataRegionConfiguration regCfg = cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration();

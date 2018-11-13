@@ -28,7 +28,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  * Tests for local transactions.
  */
-@SuppressWarnings( {"BusyWait"})
 public abstract class IgniteTxSingleThreadedAbstractTest extends IgniteTxAbstractTest {
     /**
      * @throws IgniteCheckedException If test failed.

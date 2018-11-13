@@ -71,7 +71,6 @@ public class RocketMQStreamerTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected void beforeTestsStarted() throws Exception {
         testRocketMQServer = new TestRocketMQServer(log);
     }

@@ -31,7 +31,6 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -49,7 +48,6 @@ import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecove
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryResponse;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxRemoteAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
@@ -63,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrep
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxRemote;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridInvokeValue;
+import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
@@ -76,9 +75,9 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxRemote;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.PartitionCountersNeighborcastRequest;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.PartitionCountersNeighborcastResponse;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -1685,6 +1684,7 @@ public class IgniteTxHandler {
                     single,
                     req.storeWriteThrough());
 
+                tx.onePhaseCommit(req.onePhaseCommit());
                 tx.writeVersion(req.writeVersion());
 
                 tx = ctx.tm().onCreated(null, tx);
@@ -1848,8 +1848,6 @@ public class IgniteTxHandler {
         assert keys != null && (vals == null || vals.size() == keys.size());
         assert tx != null;
 
-        WALPointer ptr = null;
-
         GridDhtCacheAdapter dht = ctx.dht();
 
         tx.addActiveCache(ctx, false);
@@ -1969,16 +1967,11 @@ public class IgniteTxHandler {
                         updRes.oldValue(), tx.local(), tx.topologyVersion(), snapshot, ctx.cacheId(), tx, futId, batchNum);
 
                 assert updRes.updateFuture() == null : "Entry should not be locked on the backup";
-
-                ptr = updRes.loggedPointer();
             }
             finally {
                 locPart.release();
             }
         }
-
-        if (ptr != null && !ctx.tm().logTxRecords())
-            ctx.shared().wal().flush(ptr, true);
     }
 
     /**

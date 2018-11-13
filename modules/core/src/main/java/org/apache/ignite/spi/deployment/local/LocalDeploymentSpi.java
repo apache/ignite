@@ -76,7 +76,6 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSp
         IgniteSystemProperties.getBoolean(IGNITE_DEPLOYMENT_ADDITIONAL_CHECK);
 
     /** */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     @LoggerResource
     private IgniteLogger log;
 

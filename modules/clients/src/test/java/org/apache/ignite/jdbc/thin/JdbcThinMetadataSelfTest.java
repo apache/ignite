@@ -157,6 +157,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             stmt.execute("CREATE INDEX \"MyTestIndex quoted\" on \"Quoted\" (\"Id\" DESC)");
             stmt.execute("CREATE INDEX IDX ON TEST (ID ASC)");
             stmt.execute("CREATE TABLE TEST_DECIMAL_COLUMN (ID INT primary key, DEC_COL DECIMAL(8, 3))");
+            stmt.execute("CREATE TABLE TEST_DECIMAL_COLUMN_PRECISION (ID INT primary key, DEC_COL DECIMAL(8))");
         }
     }
 
@@ -259,7 +260,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "dep.DEPARTMENT",
                 "PUBLIC.TEST",
                 "PUBLIC.Quoted",
-                "PUBLIC.TEST_DECIMAL_COLUMN"));
+                "PUBLIC.TEST_DECIMAL_COLUMN",
+                "PUBLIC.TEST_DECIMAL_COLUMN_PRECISION"));
 
             Set<String> actualTbls = new HashSet<>(expectedTbls.size());
 
@@ -409,7 +411,9 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "PUBLIC.Quoted.Id.null",
                 "PUBLIC.Quoted.Name.null.50",
                 "PUBLIC.TEST_DECIMAL_COLUMN.ID.null",
-                "PUBLIC.TEST_DECIMAL_COLUMN.DEC_COL.null.8.3"
+                "PUBLIC.TEST_DECIMAL_COLUMN.DEC_COL.null.8.3",
+                "PUBLIC.TEST_DECIMAL_COLUMN_PRECISION.ID.null",
+                "PUBLIC.TEST_DECIMAL_COLUMN_PRECISION.DEC_COL.null.8"
             ));
 
             Set<String> actualCols = new HashSet<>(expectedCols.size());
@@ -561,7 +565,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "PUBLIC.TEST.PK_PUBLIC_TEST.ID",
                 "PUBLIC.TEST.PK_PUBLIC_TEST.NAME",
                 "PUBLIC.Quoted.PK_PUBLIC_Quoted.Id",
-                "PUBLIC.TEST_DECIMAL_COLUMN.ID.ID"));
+                "PUBLIC.TEST_DECIMAL_COLUMN.ID.ID",
+                "PUBLIC.TEST_DECIMAL_COLUMN_PRECISION.ID.ID"));
 
             Set<String> actualPks = new HashSet<>(expectedPks.size());
 
@@ -699,7 +704,6 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * Person.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Person implements Serializable {
         /** Name. */
         private final String name;
@@ -729,7 +733,6 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * Organization.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Organization implements Serializable {
         /** ID. */
         private final int id;
@@ -750,7 +753,6 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * Organization.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Department implements Serializable {
         /** ID. */
         @QuerySqlField
