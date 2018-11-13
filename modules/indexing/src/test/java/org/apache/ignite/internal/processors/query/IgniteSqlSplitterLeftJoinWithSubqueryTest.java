@@ -114,27 +114,40 @@ public class IgniteSqlSplitterLeftJoinWithSubqueryTest extends GridCommonAbstrac
         sql("CREATE TABLE build (id int PRIMARY KEY, verId int, name varchar, ts timestamp)");
 
         String qry =
-            "SELECT prod.name, MAX(bld.ts)\n" +
+            "SELECT count(1) " +
+                "FROM " +
+                "version ver " +
+                "LEFT JOIN (SELECT DISTINCT id, verId, ts FROM build) as bld ON bld.verId = ver.id " +
+                "WHERE bld.id = 1";
+
+        sql(qry);
+
+        List<List<?>> plan = sql("EXPLAIN " + qry);
+
+        printPlan(plan);
+
+        qry =
+            "SELECT prod.name, MAX(bld.ts) " +
             "FROM " +
-            "product prod \n" +
-            "LEFT JOIN version ver ON ver.prodId = prod.id \n" +
-            "LEFT JOIN (SELECT DISTINCT id, verId, ts FROM build) as bld ON bld.verId = ver.id \n" +
+            "product prod " +
+            "LEFT JOIN version ver ON ver.prodId = prod.id " +
+            "LEFT JOIN (SELECT DISTINCT id, verId, ts FROM build) as bld ON bld.verId = ver.id " +
             "GROUP BY prod.id ";
 
         assertTrue(F.isEmpty(sql(qry)));
 
-        List<List<?>> plan = sql("EXPLAIN " + qry);
+        plan = sql("EXPLAIN " + qry);
 
         // Plan must contains 3 map queries (for each join relation) + 1 reduce query.
         assertEquals("Invalid plan: " + plan, 4, plan.size());
 
         // Trivial split test
         qry =
-            "SELECT prod.name, MAX(bld.ts)\n" +
+            "SELECT prod.name, MAX(bld.ts) " +
                 "FROM " +
-                "product prod \n" +
-                "LEFT JOIN version ver ON ver.prodId = prod.id \n" +
-                "LEFT JOIN (SELECT id, verId, ts FROM build) as bld ON bld.verId = ver.id \n" +
+                "product prod " +
+                "LEFT JOIN version ver ON ver.prodId = prod.id " +
+                "LEFT JOIN (SELECT id, verId, ts FROM build) as bld ON bld.verId = ver.id " +
                 "GROUP BY prod.id ";
 
         assertTrue(F.isEmpty(sql(qry)));

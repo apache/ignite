@@ -460,7 +460,7 @@ public class GridSqlQuerySplitter {
                 // Push down the currently collected range.
                 if (begin != -1) {
                     if (!pushDownJoinsOneToOne) {
-                        pushDownQueryModelRange(qrym, begin, qrym.size() - 1);
+                        pushDownQueryModelRange(qrym, begin, i - 1);
 
                         i = begin + 1; // We've modified qrym by this range push down, need to adjust counter.
                     }
