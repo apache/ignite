@@ -392,7 +392,9 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
      * Tests checks for arithmetic overflow when trying to serialize huge object.
      * WARNING! Requires a lot of heap space. Should not be run on CI.
      */
-    public void _testAllocationOverflow() {
+    public void testAllocationOverflow() {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10192");
+
         allocationOverflowCheck(() -> marshaller().marshal(new HugeObject()));
 
         allocationOverflowCheck(() -> {

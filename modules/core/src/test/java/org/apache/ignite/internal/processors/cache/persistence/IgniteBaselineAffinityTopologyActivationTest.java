@@ -1033,7 +1033,9 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
      * Restore this test when requirements for BaselineTopology deletion are clarified and this feature
      * is covered with more tests.
      */
-    public void _testBaselineTopologyHistoryIsDeletedOnBaselineDelete() throws Exception {
+    public void testBaselineTopologyHistoryIsDeletedOnBaselineDelete() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10193");
+
         BaselineTopologyHistoryVerifier verifier = new BaselineTopologyHistoryVerifier() {
             @Override public void verify(BaselineTopologyHistory bltHist) {
                 assertNotNull(bltHist);

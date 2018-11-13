@@ -548,7 +548,9 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     /**
      *
      */
-    public void _testAffinityCompatibility() {
+    public void testAffinityCompatibility() {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10191");
+
         mode = TopologyModificationMode.ADD;
 
         AffinityFunction aff0 = new RendezvousAffinityFunction(true, 1024);

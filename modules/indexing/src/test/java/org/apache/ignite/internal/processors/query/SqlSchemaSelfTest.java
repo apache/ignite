@@ -292,9 +292,8 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void _testTypeConflictInPublicSchema() throws Exception {
-        // TODO: IGNITE-5380: uncomment work after fix.
-        fail("Hang for now, need to fix");
+    public void testTypeConflictInPublicSchema() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10195");
 
         node.createCache(new CacheConfiguration<PersonKey, Person>()
             .setName(CACHE_PERSON)

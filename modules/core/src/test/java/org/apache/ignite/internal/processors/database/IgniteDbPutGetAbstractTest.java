@@ -810,7 +810,12 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
         }
     }
 
-    public void _testRandomPutGetRemove() throws Exception {
+    /**
+     * @throws Exception if failed.
+     */
+    public void testRandomPutGetRemove() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10197");
+
         final IgniteCache<Integer, DbValue> cache = cache(null);
 
         int cnt = KEYS_COUNT;
