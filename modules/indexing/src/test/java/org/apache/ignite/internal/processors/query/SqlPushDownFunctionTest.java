@@ -65,36 +65,6 @@ public class SqlPushDownFunctionTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    public void testSplitJoinWithSubqueryUnion() throws Exception {
-        sql("CREATE TABLE Person (id INTEGER PRIMARY KEY, company_id INTEGER, salary DECIMAL) " +
-            "with \"template=replicated\"");
-        sql("CREATE TABLE Company (id INTEGER PRIMARY KEY, name VARCHAR)");
-        sql("CREATE TABLE Address (id INTEGER PRIMARY KEY, person_id INTEGER, city VARCHAR)");
-
-        sql("INSERT INTO Person (id, company_id, salary) VALUES (1, 1, 100), (2, 2, 200), (3, 3, 300)");
-        sql("INSERT INTO Company (id, name) VALUES (1, 'n1'), (2, 'n2'), (3, 'n3')");
-        sql("INSERT INTO Address (id, person_id, city) VALUES (1, 1, 'san francisco'), (2, 2, 'paris'), (3, 3, 'new york')");
-
-        sql("SELECT a.id FROM \n" +
-            "(" +
-            "SELECT distinct p1.id, p1.company_id FROM Person p1 WHERE p1.id = 1) p\n"
-            + "LEFT JOIN Address a ON a.person_id = p.id "
-            + "LEFT JOIN Company c ON c.id = p.company_id "
-        );
-
-        //        sql("SELECT a.id FROM \n" +
-//            "(" +
-//            "SELECT distinct p1.id, p1.company_id FROM Person p1 WHERE p1.id = 1 \n" +
-//            ")  p\n"
-//            + "LEFT JOIN Address a ON a.person_id = p.id "
-//            + "LEFT JOIN Company c ON a.id = c.id "
-//        );
-    }
-
-
-    /**
      * @param sql SQL query.
      * @return Results.
      */

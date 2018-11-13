@@ -140,6 +140,9 @@ public class GridSqlQuerySplitter {
     /** */
     private GridKernalContext ctx;
 
+    /** */
+    private boolean pushDownJoinsOneToOne;
+
     /**
      * @param params Query parameters.
      * @param collocatedGrpBy If it is a collocated GROUP BY query.
@@ -293,21 +296,21 @@ public class GridSqlQuerySplitter {
         QueryModel qrym = fakeQrymPrnt.get(0);
 
         // Setup the needed information for split.
-        analyzeQueryModel(qrym);
+        analyzeQueryModel(qrym, 0);
 
-        debug("ANALYZED", printQueryModel(qrym));
+//        debug("ANALYZED", printQueryModel(qrym));
 
         // If we have child queries to split, then go hard way.
         if (qrym.needSplitChild) {
             // All the siblings to selects we are going to split must be also wrapped into subqueries.
             pushDownQueryModel(qrym);
 
-            debug("PUSHED_DOWN", printQueryModel(qrym));
+//            debug("PUSHED_DOWN", printQueryModel(qrym));
 
             // Need to make all the joined subqueries to be ordered by join conditions.
             setupMergeJoinSorting(qrym);
 
-            debug("SETUP_MERGE_JOIN", printQueryModel(qrym));
+//            debug("SETUP_MERGE_JOIN", printQueryModel(qrym));
         }
         else if (!qrym.needSplit)  // Just split the top level query.
             setNeedSplit(qrym);
@@ -441,8 +444,6 @@ public class GridSqlQuerySplitter {
 
             boolean hasPushedDownCol = false;
 
-            debug("PUSH DOWN CHECK:", printQueryModel(child));
-
             // It is either splittable subquery (it must remain in REDUCE query)
             // or left join condition with pushed down columns (this condition
             // can not be pushed down into a wrap query).
@@ -458,9 +459,15 @@ public class GridSqlQuerySplitter {
 
                 // Push down the currently collected range.
                 if (begin != -1) {
-                    pushDownQueryModelRange(qrym, begin, i - 1);
+                    if (!pushDownJoinsOneToOne) {
+                        pushDownQueryModelRange(qrym, begin, qrym.size() - 1);
 
-                    i = begin + 1; // We've modified qrym by this range push down, need to adjust counter.
+                        i = begin + 1; // We've modified qrym by this range push down, need to adjust counter.
+                    }
+                    else {
+                        for (int j = begin; j < qrym.size(); ++j)
+                            pushDownQueryModelRange(qrym, j, j);
+                    }
 
                     assert qrym.get(i) == child; // Adjustment check: we have to return to the same point.
 
@@ -480,8 +487,14 @@ public class GridSqlQuerySplitter {
         }
 
         // Push down the remaining range.
-        if (begin != -1)
-            pushDownQueryModelRange(qrym, begin, qrym.size() - 1);
+        if (begin != -1) {
+            if (!pushDownJoinsOneToOne)
+                pushDownQueryModelRange(qrym, begin, qrym.size() - 1);
+            else {
+                for (int i = begin; i < qrym.size(); ++i)
+                    pushDownQueryModelRange(qrym, i, i);
+            }
+        }
     }
 
     /**
@@ -739,8 +752,6 @@ public class GridSqlQuerySplitter {
 
         QueryModel wrapQrym = new QueryModel(Type.SELECT, wrapSubqry, 0, wrapAlias);
 
-        debug("doPushDownQueryModelRange0 " + begin  + " " + end, printQueryModel(wrapQrym));
-
         wrapQrym.needSplit = needSplit;
 
         // Prepare all the prerequisites.
@@ -764,12 +775,8 @@ public class GridSqlQuerySplitter {
         // Move all the related WHERE conditions to wrap query.
         pushDownWhereConditions(tblAliases, cols, wrapAlias, select);
 
-        debug("doPushDownQueryModelRange1 " + begin  + " " + end, printQueryModel(wrapQrym));
-
         // Push down to a subquery all the JOIN elements and process ON conditions.
         pushDownJoins(tblAliases, cols, qrym, begin, end, wrapAlias);
-
-        debug("doPushDownQueryModelRange2 " + begin  + " " + end, printQueryModel(wrapQrym));
 
         // Add all the collected columns to the wrap query.
         for (GridSqlAlias col : cols.values())
@@ -784,16 +791,12 @@ public class GridSqlQuerySplitter {
             wrapQrym.add(child);
         }
 
-        debug("doPushDownQueryModelRange3 " + begin  + " " + end, printQueryModel(wrapQrym));
-
         // Replace the first child model with the created one.
         qrym.set(begin, wrapQrym);
 
         // Drop others.
         for (int x = begin + 1, i = x; i <= end; i++)
             qrym.remove(x);
-
-        debug("doPushDownQueryModelRange end " + begin  + " " + end, printQueryModel(qrym));
     }
 
     /**
@@ -1274,8 +1277,9 @@ public class GridSqlQuerySplitter {
 
     /**
      * @param qrym Query model.
+     * @param level Model tree level.
      */
-    private void analyzeQueryModel(QueryModel qrym) {
+    private void analyzeQueryModel(QueryModel qrym, int level) {
         if (!qrym.isQuery())
             return;
 
@@ -1283,7 +1287,7 @@ public class GridSqlQuerySplitter {
         for (int i = 0; i < qrym.size(); i++) {
             QueryModel child = qrym.get(i);
 
-            analyzeQueryModel(child);
+            analyzeQueryModel(child, level + 1);
 
             // Pull up information about the splitting child.
             if (child.needSplit || child.needSplitChild)
@@ -1294,8 +1298,12 @@ public class GridSqlQuerySplitter {
             // We may need to split the SELECT only if it has no splittable children,
             // because only the downmost child can be split, the parents will be the part of
             // the reduce query.
-            if (!qrym.needSplitChild)
+            if (!qrym.needSplitChild) {
                 qrym.needSplit = needSplitSelect(qrym.<GridSqlSelect>ast()); // Only SELECT can have this flag in true.
+
+                if (qrym.needSplit && level > 0)
+                    pushDownJoinsOneToOne = true;
+            }
         }
         else if (qrym.type == Type.UNION) {
             // If it is not a UNION ALL, then we have to split because otherwise we can produce duplicates or
@@ -1569,8 +1577,6 @@ public class GridSqlQuerySplitter {
         if (map.isPartitioned())
             map.derivedPartitions(derivePartitionsFromQuery(mapQry, ctx));
 
-        X.println("+++ MAP QRY: " + mapQry);
-        X.println("+++ MAP: " + map);
         mapSqlQrys.add(map);
     }
 
@@ -2601,6 +2607,10 @@ public class GridSqlQuerySplitter {
                     " ast: " + ast(m) +" ]";
             }
 
+            /**
+             * @param m Query model.
+             * @return String representation of the AST.
+             */
             private String ast(QueryModel m) {
                 if (m.prnt == null)
                     return "-+-+-";
@@ -2699,7 +2709,7 @@ public class GridSqlQuerySplitter {
         /**
          * @return {@code true} If this is a SELECT or UNION query model.
          */
-        public boolean isQuery() {
+        private boolean isQuery() {
             return type == Type.SELECT || type == Type.UNION;
         }
 
