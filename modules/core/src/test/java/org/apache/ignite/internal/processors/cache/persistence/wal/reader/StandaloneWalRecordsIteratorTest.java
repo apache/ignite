@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
-import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
