@@ -202,7 +202,15 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(com.SocketSendBufferSize, resCom.SocketSendBufferSize);
                 Assert.AreEqual(com.TcpNoDelay, resCom.TcpNoDelay);
                 Assert.AreEqual(com.UnacknowledgedMessagesBufferSize, resCom.UnacknowledgedMessagesBufferSize);
-
+                Assert.AreEqual(com.ConnectionsPerNode, resCom.ConnectionsPerNode);
+                Assert.AreEqual(com.UsePairedConnections, resCom.UsePairedConnections);
+                Assert.AreEqual(com.SharedMemoryPort, resCom.SharedMemoryPort);
+                Assert.AreEqual(com.SocketWriteTimeout, resCom.SocketWriteTimeout);
+                Assert.AreEqual(com.SelectorSpins, resCom.SelectorSpins);
+                Assert.AreEqual(com.FilterReachableAddresses, resCom.FilterReachableAddresses);
+                Assert.AreEqual(com.SocketReceiveBuffer, resCom.SocketReceiveBuffer);
+                Assert.AreEqual(com.SocketSendBuffer, resCom.SocketSendBuffer);
+                
                 Assert.AreEqual(cfg.FailureDetectionTimeout, resCfg.FailureDetectionTimeout);
                 Assert.AreEqual(cfg.SystemWorkerBlockedTimeout, resCfg.SystemWorkerBlockedTimeout);
                 Assert.AreEqual(cfg.ClientFailureDetectionTimeout, resCfg.ClientFailureDetectionTimeout);
@@ -750,7 +758,15 @@ namespace Apache.Ignite.Core.Tests
                     TcpNoDelay = false,
                     SlowClientQueueLimit = 98,
                     SocketSendBufferSize = 2045,
-                    UnacknowledgedMessagesBufferSize = 3450
+                    UnacknowledgedMessagesBufferSize = 3450,
+                    ConnectionsPerNode = 12, 
+                    UsePairedConnections = true,
+                    SharedMemoryPort = 1234,
+                    SocketWriteTimeout = 2222,
+                    SelectorSpins = 12,
+                    FilterReachableAddresses = true,
+                    SocketReceiveBuffer = 110000,
+                    SocketSendBuffer = 150000
                 },
                 FailureDetectionTimeout = TimeSpan.FromSeconds(3.5),
                 SystemWorkerBlockedTimeout = TimeSpan.FromSeconds(8.5),
