@@ -35,6 +35,7 @@ public class IgnitePdsNativeIoTestSuite2 extends TestSuite {
 
         IgnitePdsTestSuite2.addRealPageStoreTests(suite);
 
+        // Direct IO + Page compression.
         suite.addTestSuite(PageCompressionIntegrationDirectIOTest.class);
 
         //Integrity test with reduced count of pages.

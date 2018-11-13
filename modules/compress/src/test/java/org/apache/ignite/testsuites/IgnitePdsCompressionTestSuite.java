@@ -14,24 +14,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.compress;
+
+package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.compress.CompressionProcessorTest;
+import org.apache.ignite.internal.processors.compress.FileSystemUtilsTest;
+import org.apache.ignite.internal.processors.compress.PageCompressionIntegrationAsyncTest;
+import org.apache.ignite.internal.processors.compress.PageCompressionIntegrationTest;
 
 /**
  */
-public class CompressionTestSuite extends TestSuite {
+public class IgnitePdsCompressionTestSuite {
     /**
      * @return Suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Compression Test Suite");
+    public static TestSuite suite() {
+        TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite (with page compression).");
 
         suite.addTestSuite(CompressionProcessorTest.class);
         suite.addTestSuite(FileSystemUtilsTest.class);
         suite.addTestSuite(PageCompressionIntegrationTest.class);
         suite.addTestSuite(PageCompressionIntegrationAsyncTest.class);
+
+        IgnitePdsTestSuite.addRealPageStoreTests(suite);
 
         return suite;
     }
