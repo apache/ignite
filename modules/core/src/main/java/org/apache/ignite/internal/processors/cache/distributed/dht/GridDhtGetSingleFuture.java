@@ -38,7 +38,6 @@ import org.apache.ignite.internal.processors.cache.ReaderArguments;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFutureAdapter.LostPolicyValidator;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -51,6 +50,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.singleton;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFutureAdapter.OperationType.READ;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 
 /**
  *
@@ -239,7 +240,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                                 onDone(e);
                             }
                             else
-                                map0();
+                                map0(true);
                         }
                     }
                 );
@@ -248,16 +249,16 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
             }
         }
 
-        map0();
+        map0(false);
     }
 
     /**
      *
      */
-    private void map0() {
+    private void map0(boolean forceKeys) {
         assert retry == null : retry;
 
-        if (!map(key)) {
+        if (!map(key, forceKeys)) {
             retry = cctx.affinity().partition(key);
 
             if (!isDone())
@@ -278,7 +279,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
      * @param key Key.
      * @return {@code True} if mapped.
      */
-    private boolean map(KeyCacheObject key) {
+    private boolean map(KeyCacheObject key, boolean forceKeys) {
         try {
             int keyPart = cctx.affinity().partition(key);
 
@@ -291,7 +292,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
 
             assert this.part == -1;
 
-            if (part.state() == GridDhtPartitionState.LOST && !recovery) {
+            if (!forceKeys && part.state() == LOST && !recovery) {
                 Throwable error = LostPolicyValidator.validate(cctx, key, READ, singleton(part.id()));
 
                 if (error != null) {
@@ -303,7 +304,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
 
             // By reserving, we make sure that partition won't be unloaded while processed.
             if (part.reserve()) {
-                if (part.state() == GridDhtPartitionState.OWNING || part.state() == GridDhtPartitionState.LOST) {
+                if (forceKeys || (part.state() == OWNING || part.state() == LOST)) {
                     this.part = part.id();
 
                     return true;
