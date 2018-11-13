@@ -30,7 +30,6 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -303,17 +302,13 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
 		    .setIndexedTypes(PersonKey.class, Person.class)
 		    .setSqlSchema(QueryUtils.DFLT_SCHEMA));
 
-	    Throwable err = GridTestUtils.assertThrows(log, (Callable<Void>) () -> {
+	    GridTestUtils.assertThrows(log, (Callable<Void>) () -> {
 		    node.createCache(new CacheConfiguration<PersonKey, Person>()
 			    .setName(CACHE_PERSON_2)
 			    .setIndexedTypes(PersonKey.class, Person.class)
 			    .setSqlSchema(QueryUtils.DFLT_SCHEMA));
 		    return null;
 	    }, CacheException.class, "Table already exists: PERSON");
-
-	    CacheException spiErr = X.cause(err, CacheException.class);
-
-	    assertNotNull(spiErr);
     }
 
     /**
