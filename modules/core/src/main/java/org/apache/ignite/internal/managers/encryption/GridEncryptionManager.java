@@ -136,6 +136,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /** Group encryption keys. */
     private Map<Integer, Serializable> grpEncKeys = new HashMap<>();
 
+    /** */
+    private volatile boolean isEmpty = true;
+
     /** Pending generate encryption key futures. */
     private ConcurrentMap<IgniteUuid, GenerateEncryptionKeyFuture> genEncKeyFuts = new ConcurrentHashMap<>();
 
@@ -472,10 +475,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @return Group encryption key.
      */
     @Nullable public Serializable groupKey(int grpId) {
-        if (grpEncKeys.isEmpty())
-            return null;
-
-        return grpEncKeys.get(grpId);
+        return isEmpty ? null : grpEncKeys.get(grpId);
     }
 
     /**
@@ -495,6 +495,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
             grpEncKeys.put(grpId, encKey);
 
+            isEmpty = false;
+
             writeToMetaStore(grpId, encGrpKey);
         }
     }
@@ -510,6 +512,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
             try {
                 grpEncKeys.remove(grpId);
+
+                isEmpty = grpEncKeys.isEmpty();
 
                 metaStorage.remove(ENCRYPTION_KEY_PREFIX + grpId);
 
@@ -565,6 +569,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             }
 
             if (!grpEncKeys.isEmpty()) {
+                isEmpty = false;
+
                 U.quietAndInfo(log, "Encryption keys loaded from metastore. [grps=" +
                     F.concat(grpEncKeys.keySet(), ",") + "]");
             }
