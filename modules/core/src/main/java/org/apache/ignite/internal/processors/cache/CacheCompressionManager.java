@@ -22,7 +22,7 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.PageCompression;
+import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -35,7 +35,7 @@ import static org.apache.ignite.internal.processors.compress.CompressionProcesso
  */
 public class CacheCompressionManager extends GridCacheManagerAdapter {
     /** */
-    private PageCompression pageCompression;
+    private DiskPageCompression diskPageCompression;
 
     /** */
     private int pageCompressLevel;
@@ -49,16 +49,16 @@ public class CacheCompressionManager extends GridCacheManagerAdapter {
 
         CacheConfiguration cfg = cctx.config();
 
-        pageCompression = cfg.getPageCompression();
+        diskPageCompression = cfg.getDiskPageCompression();
 
-        if (pageCompression != null) {
+        if (diskPageCompression != null) {
             if (!cctx.dataRegion().config().isPersistenceEnabled())
                 throw new IgniteCheckedException("Page compression makes sense only with enabled persistence.");
 
-            Integer lvl = cfg.getPageCompressionLevel();
+            Integer lvl = cfg.getDiskPageCompressionLevel();
             pageCompressLevel = lvl != null ?
-                checkCompressionLevelBounds(lvl, pageCompression) :
-                getDefaultCompressionLevel(pageCompression);
+                checkCompressionLevelBounds(lvl, diskPageCompression) :
+                getDefaultCompressionLevel(diskPageCompression);
 
             DataStorageConfiguration dsCfg = cctx.kernalContext().config().getDataStorageConfiguration();
 
@@ -77,7 +77,7 @@ public class CacheCompressionManager extends GridCacheManagerAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public ByteBuffer compressPage(ByteBuffer page, PageStore store) throws IgniteCheckedException {
-        if (pageCompression == null)
+        if (diskPageCompression == null)
             return page;
 
         int blockSize = store.getBlockSize();
@@ -85,6 +85,6 @@ public class CacheCompressionManager extends GridCacheManagerAdapter {
         if (blockSize <= 0)
             throw new IgniteCheckedException("Failed to detect storage block size on " + U.osString());
 
-        return compressProc.compressPage(page, store.getPageSize(), blockSize, pageCompression, pageCompressLevel);
+        return compressProc.compressPage(page, store.getPageSize(), blockSize, diskPageCompression, pageCompressLevel);
     }
 }

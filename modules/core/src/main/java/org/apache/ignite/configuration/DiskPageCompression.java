@@ -15,17 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence;
-
-import org.apache.ignite.internal.processors.cache.persistence.file.AlignedBuffersDirectFileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.compress.PageCompressionIntegrationTest;
+package org.apache.ignite.configuration;
 
 /**
+ * Page compression options.
+ *
+ * @see CacheConfiguration#setDiskPageCompression
+ * @see CacheConfiguration#setDiskPageCompressionLevel
  */
-public class PageCompressionIntegrationDirectIOTest extends PageCompressionIntegrationTest {
-    /** {@inheritDoc} */
-    @Override protected void checkFileIOFactory(FileIOFactory f) {
-        assertTrue(f instanceof AlignedBuffersDirectFileIOFactory);
-    }
+public enum DiskPageCompression {
+    /** Retain only useful data from half-filled pages, but do not apply any compression. */
+    SKIP_GARBAGE,
+
+    /** Zstd compression. */
+    ZSTD,
+
+    /** LZ4 compression. */
+    LZ4,
+
+    /** Snappy compression. */
+    SNAPPY
 }

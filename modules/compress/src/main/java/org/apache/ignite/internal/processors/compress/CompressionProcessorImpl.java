@@ -26,14 +26,14 @@ import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4FastDecompressor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.configuration.PageCompression;
+import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CompactablePageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.xerial.snappy.Snappy;
 
-import static org.apache.ignite.configuration.PageCompression.SKIP_GARBAGE;
+import static org.apache.ignite.configuration.DiskPageCompression.SKIP_GARBAGE;
 import static org.apache.ignite.internal.util.GridUnsafe.NATIVE_BYTE_ORDER;
 
 /**
@@ -94,7 +94,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
         ByteBuffer page,
         int pageSize,
         int blockSize,
-        PageCompression compression,
+        DiskPageCompression compression,
         int compressLevel
     ) throws IgniteCheckedException {
         assert compression != null;
@@ -154,7 +154,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
      * @param compactedSize Compact size.
      * @return The given page.
      */
-    private static ByteBuffer setCompressionInfo(ByteBuffer page, PageCompression compression, int compressedSize, int compactedSize) {
+    private static ByteBuffer setCompressionInfo(ByteBuffer page, DiskPageCompression compression, int compressedSize, int compactedSize) {
         assert compressedSize >= 0 && compressedSize <= Short.MAX_VALUE: compressedSize;
         assert compactedSize >= 0 && compactedSize <= Short.MAX_VALUE: compactedSize;
 
@@ -172,7 +172,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
      * @param compressLevel Compression level.
      * @return Compressed page.
      */
-    private ByteBuffer doCompressPage(PageCompression compression, ByteBuffer compactPage, int compactSize, int compressLevel) {
+    private ByteBuffer doCompressPage(DiskPageCompression compression, ByteBuffer compactPage, int compactSize, int compressLevel) {
         switch (compression) {
             case ZSTD:
                 return compressPageZstd(compactPage, compactSize, compressLevel);
@@ -266,7 +266,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
      * @param compression Compression.
      * @return Level.
      */
-    private static byte getCompressionType(PageCompression compression) {
+    private static byte getCompressionType(DiskPageCompression compression) {
         if (compression == null)
             return UNCOMPRESSED_PAGE;
 

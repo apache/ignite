@@ -26,7 +26,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.configuration.PageCompression;
+import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageUtils;
@@ -41,10 +41,10 @@ import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.configuration.PageCompression.LZ4;
-import static org.apache.ignite.configuration.PageCompression.SKIP_GARBAGE;
-import static org.apache.ignite.configuration.PageCompression.SNAPPY;
-import static org.apache.ignite.configuration.PageCompression.ZSTD;
+import static org.apache.ignite.configuration.DiskPageCompression.LZ4;
+import static org.apache.ignite.configuration.DiskPageCompression.SKIP_GARBAGE;
+import static org.apache.ignite.configuration.DiskPageCompression.SNAPPY;
+import static org.apache.ignite.configuration.DiskPageCompression.ZSTD;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.LZ4_MAX_LEVEL;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.LZ4_MIN_LEVEL;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.UNCOMPRESSED_PAGE;
@@ -67,7 +67,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     private int pageSize = 4 * 1024;
 
     /** */
-    private PageCompression compression;
+    private DiskPageCompression compression;
 
     /** */
     private int compressLevel;

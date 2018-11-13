@@ -15,16 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.compress;
+package org.apache.ignite.internal.processors.cache.persistence;
 
-import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.AlignedBuffersDirectFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.compress.DiskPageCompressionIntegrationTest;
 
 /**
  */
-public class PageCompressionIntegrationAsyncTest extends PageCompressionIntegrationTest {
+public class DiskPageCompressionIntegrationDirectIOTest extends DiskPageCompressionIntegrationTest {
     /** {@inheritDoc} */
-    @Override protected FileIOFactory getFileIOFactory() {
-        return new AsyncFileIOFactory();
+    @Override protected void checkFileIOFactory(FileIOFactory f) {
+        assertTrue(f instanceof AlignedBuffersDirectFileIOFactory);
     }
 }

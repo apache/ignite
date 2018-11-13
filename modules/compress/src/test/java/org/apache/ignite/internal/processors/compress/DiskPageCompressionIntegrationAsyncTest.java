@@ -15,24 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration;
+package org.apache.ignite.internal.processors.compress;
+
+import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 
 /**
- * Page compression options.
- *
- * @see CacheConfiguration#setPageCompression
- * @see CacheConfiguration#setPageCompressionLevel
  */
-public enum PageCompression {
-    /** Retain only useful data from half-filled pages, but do not apply any compression. */
-    SKIP_GARBAGE,
-
-    /** Zstd compression. */
-    ZSTD,
-
-    /** LZ4 compression. */
-    LZ4,
-
-    /** Snappy compression. */
-    SNAPPY
+public class DiskPageCompressionIntegrationAsyncTest extends DiskPageCompressionIntegrationTest {
+    /** {@inheritDoc} */
+    @Override protected FileIOFactory getFileIOFactory() {
+        return new AsyncFileIOFactory();
+    }
 }

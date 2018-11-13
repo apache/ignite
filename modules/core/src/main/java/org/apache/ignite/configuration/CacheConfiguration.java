@@ -384,10 +384,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private boolean encryptionEnabled;
 
     /** */
-    private PageCompression pageCompression;
+    private DiskPageCompression diskPageCompression;
 
     /** */
-    private Integer pageCompressionLevel;
+    private Integer diskPageCompressionLevel;
 
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
@@ -449,8 +449,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         nearCfg = cc.getNearConfiguration();
         nodeFilter = cc.getNodeFilter();
         onheapCache = cc.isOnheapCacheEnabled();
-        pageCompression = cc.getPageCompression();
-        pageCompressionLevel = cc.getPageCompressionLevel();
+        diskPageCompression = cc.getDiskPageCompression();
+        diskPageCompressionLevel = cc.getDiskPageCompressionLevel();
         partLossPlc = cc.getPartitionLossPolicy();
         pluginCfgs = cc.getPluginConfigurations();
         qryDetailMetricsSz = cc.getQueryDetailMetricsSize();
@@ -2309,44 +2309,44 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Gets page compression algorithm. Makes sense only with enabled {@link DataRegionConfiguration#setPersistenceEnabled persistence}.
      *
      * @return Page compression algorithm.
-     * @see #getPageCompressionLevel
+     * @see #getDiskPageCompressionLevel
      */
-    public PageCompression getPageCompression() {
-        return pageCompression;
+    public DiskPageCompression getDiskPageCompression() {
+        return diskPageCompression;
     }
 
     /**
      * Sets page compression algorithm. Makes sense only with enabled {@link DataRegionConfiguration#setPersistenceEnabled persistence}.
      *
-     * @param pageCompression Page compression algorithm.
+     * @param diskPageCompression Page compression algorithm.
      * @return {@code this} for chaining.
-     * @see #setPageCompressionLevel
+     * @see #setDiskPageCompressionLevel
      */
-    public CacheConfiguration<K,V> setPageCompression(PageCompression pageCompression) {
-        this.pageCompression = pageCompression;
+    public CacheConfiguration<K,V> setDiskPageCompression(DiskPageCompression diskPageCompression) {
+        this.diskPageCompression = diskPageCompression;
 
         return this;
     }
 
     /**
-     * Gets {@link #getPageCompression algorithm} specific page compression level.
+     * Gets {@link #getDiskPageCompression algorithm} specific page compression level.
      *
      * @return Page compression level or {@code null} for default.
      */
-    public Integer getPageCompressionLevel() {
-        return pageCompressionLevel;
+    public Integer getDiskPageCompressionLevel() {
+        return diskPageCompressionLevel;
     }
 
     /**
-     * Sets {@link #setPageCompression algorithm} specific page compression level.
+     * Sets {@link #setDiskPageCompression algorithm} specific page compression level.
      *
-     * @param pageCompressionLevel Page compression level or {@code null} to use default.
-     *                             {@link PageCompression#ZSTD Zstd}: from {@code -131072} to {@code 22} (default {@code 3}).
-     *                             {@link PageCompression#LZ4 LZ4}: from {@code 0} to {@code 17} (default {@code 0}).
+     * @param diskPageCompressionLevel Page compression level or {@code null} to use default.
+     *                             {@link DiskPageCompression#ZSTD Zstd}: from {@code -131072} to {@code 22} (default {@code 3}).
+     *                             {@link DiskPageCompression#LZ4 LZ4}: from {@code 0} to {@code 17} (default {@code 0}).
      * @return {@code this} for chaining.
      */
-    public CacheConfiguration<K,V> setPageCompressionLevel(Integer pageCompressionLevel) {
-        this.pageCompressionLevel = pageCompressionLevel;
+    public CacheConfiguration<K,V> setDiskPageCompressionLevel(Integer diskPageCompressionLevel) {
+        this.diskPageCompressionLevel = diskPageCompressionLevel;
 
         return this;
     }

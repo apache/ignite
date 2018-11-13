@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.compress;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.PageCompression;
+import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -76,7 +76,7 @@ public class CompressionProcessor extends GridProcessorAdapter {
      * @param compression Compression algorithm.
      * @return Default compression level.
      */
-    public static int getDefaultCompressionLevel(PageCompression compression) {
+    public static int getDefaultCompressionLevel(DiskPageCompression compression) {
         switch (compression) {
             case ZSTD:
                 return ZSTD_DEFAULT_LEVEL;
@@ -97,7 +97,7 @@ public class CompressionProcessor extends GridProcessorAdapter {
      * @param compression Compression algorithm.
      * @return Compression level.
      */
-    public static int checkCompressionLevelBounds(int compressLevel, PageCompression compression) {
+    public static int checkCompressionLevelBounds(int compressLevel, DiskPageCompression compression) {
         switch (compression) {
             case ZSTD:
                 checkCompressionLevelBounds(compressLevel, ZSTD_MIN_LEVEL, ZSTD_MAX_LEVEL);
@@ -155,7 +155,7 @@ public class CompressionProcessor extends GridProcessorAdapter {
         ByteBuffer page,
         int pageSize,
         int storeBlockSize,
-        PageCompression compression,
+        DiskPageCompression compression,
         int compressLevel
     ) throws IgniteCheckedException {
         return fail();
