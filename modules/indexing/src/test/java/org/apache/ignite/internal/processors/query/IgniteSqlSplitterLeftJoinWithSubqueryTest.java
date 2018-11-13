@@ -30,7 +30,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Tests for correct distributed partitioned queries.
  */
-@SuppressWarnings("unchecked")
 public class IgniteSqlSplitterLeftJoinWithSubqueryTest extends GridCommonAbstractTest {
     /** */
     private static final int CLIENT = 7;
@@ -55,7 +54,7 @@ public class IgniteSqlSplitterLeftJoinWithSubqueryTest extends GridCommonAbstrac
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGridsMultiThreaded(3, false);
+        startGridsMultiThreaded(2, false);
         Ignition.setClientMode(true);
         try {
             startGrid(CLIENT);
