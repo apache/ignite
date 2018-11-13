@@ -20,7 +20,9 @@ package org.apache.ignite.internal.processors.query;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -28,8 +30,11 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import javax.cache.CacheException;
 
 /**
  * Tests for schemas.
@@ -292,19 +297,23 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void _testTypeConflictInPublicSchema() throws Exception {
-        // TODO: IGNITE-5380: uncomment work after fix.
-        fail("Hang for now, need to fix");
+    public void testTypeConflictInPublicSchema() throws Exception {
+	    node.createCache(new CacheConfiguration<PersonKey, Person>()
+		    .setName(CACHE_PERSON)
+		    .setIndexedTypes(PersonKey.class, Person.class)
+		    .setSqlSchema(QueryUtils.DFLT_SCHEMA));
 
-        node.createCache(new CacheConfiguration<PersonKey, Person>()
-            .setName(CACHE_PERSON)
-            .setIndexedTypes(PersonKey.class, Person.class)
-            .setSqlSchema(QueryUtils.DFLT_SCHEMA));
+	    Throwable err = GridTestUtils.assertThrows(log, (Callable<Void>) () -> {
+		    node.createCache(new CacheConfiguration<PersonKey, Person>()
+			    .setName(CACHE_PERSON_2)
+			    .setIndexedTypes(PersonKey.class, Person.class)
+			    .setSqlSchema(QueryUtils.DFLT_SCHEMA));
+		    return null;
+	    }, CacheException.class, "Table already exists: PERSON");
 
-        node.createCache(new CacheConfiguration<PersonKey, Person>()
-            .setName(CACHE_PERSON_2)
-            .setIndexedTypes(PersonKey.class, Person.class)
-            .setSqlSchema(QueryUtils.DFLT_SCHEMA));
+	    CacheException spiErr = X.cause(err, CacheException.class);
+
+	    assertNotNull(spiErr);
     }
 
     /**
