@@ -125,7 +125,7 @@ public class IgniteDbSingleNodeTinyPutGetTest extends IgniteDbSingleNodePutGetTe
     }
 
     /** {@inheritDoc} */
-    @Override public void _testRandomPutGetRemove() {
+    @Override public void testRandomPutGetRemove() {
         // No-op
     }
 
