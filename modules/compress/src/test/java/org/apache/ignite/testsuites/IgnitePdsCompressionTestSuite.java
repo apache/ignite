@@ -18,15 +18,10 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.compress.CompressionProcessorTest;
 import org.apache.ignite.internal.processors.compress.FileSystemUtilsTest;
 import org.apache.ignite.internal.processors.compress.PageCompressionIntegrationAsyncTest;
 import org.apache.ignite.internal.processors.compress.PageCompressionIntegrationTest;
-
-import static org.apache.ignite.configuration.PageCompression.ZSTD;
-import static org.apache.ignite.testframework.config.GridTestProperties.IGNITE_CFG_PREPROCESSOR_CLS;
 
 /**
  */
@@ -42,23 +37,8 @@ public class IgnitePdsCompressionTestSuite {
         suite.addTestSuite(PageCompressionIntegrationTest.class);
         suite.addTestSuite(PageCompressionIntegrationAsyncTest.class);
 
-        System.setProperty(IGNITE_CFG_PREPROCESSOR_CLS, IgnitePdsCompressionTestSuite.class.getName());
-
         IgnitePdsTestSuite.addRealPageStoreTests(suite);
 
         return suite;
-    }
-
-    /**
-     * @param cfg Enable page compression for all the persistent caches..
-     */
-    public static void preprocessConfiguration(IgniteConfiguration cfg) {
-        for (CacheConfiguration ccfg : cfg.getCacheConfiguration()) {
-            if (ccfg.getPageCompression() == null) {
-                System.err.println(" >>> Enabling disk page compression for cache: " + ccfg.getName());
-
-                ccfg.setPageCompression(ZSTD);
-            }
-        }
     }
 }
