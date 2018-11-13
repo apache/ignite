@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.query;
+package org.apache.ignite.internal.processors.query.h2.affinity;
 
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -37,7 +37,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * The given class holds the required info, so that effective partition
  * can be calculated during query parameter binding.
  */
-public class CacheQueryPartitionInfo {
+public class PartitionInfo {
     /** */
     private final int partId;
 
@@ -60,7 +60,7 @@ public class CacheQueryPartitionInfo {
      * @param dataType Required data type id for the query parameter.
      * @param paramIdx Query parameter index required for partition calculation.
      */
-    public CacheQueryPartitionInfo(int partId, String cacheName, String tableName, int dataType, int paramIdx) {
+    public PartitionInfo(int partId, String cacheName, String tableName, int dataType, int paramIdx) {
         // In case partition is not known, both cacheName and tableName must be provided.
         assert (partId >= 0) ^ ((cacheName != null) && (tableName != null));
 
@@ -119,10 +119,10 @@ public class CacheQueryPartitionInfo {
         if (this == obj)
             return true;
 
-        if (!(obj instanceof CacheQueryPartitionInfo))
+        if (!(obj instanceof PartitionInfo))
             return false;
 
-        CacheQueryPartitionInfo other = (CacheQueryPartitionInfo)obj;
+        PartitionInfo other = (PartitionInfo)obj;
 
         if (partId >= 0)
             return partId == other.partId;
@@ -138,6 +138,6 @@ public class CacheQueryPartitionInfo {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CacheQueryPartitionInfo.class, this);
+        return S.toString(PartitionInfo.class, this);
     }
 }
