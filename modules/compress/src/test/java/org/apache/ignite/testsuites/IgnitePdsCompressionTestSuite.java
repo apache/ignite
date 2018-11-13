@@ -19,9 +19,13 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.compress.CompressionProcessorTest;
-import org.apache.ignite.internal.processors.compress.FileSystemUtilsTest;
 import org.apache.ignite.internal.processors.compress.DiskPageCompressionIntegrationAsyncTest;
 import org.apache.ignite.internal.processors.compress.DiskPageCompressionIntegrationTest;
+import org.apache.ignite.internal.processors.compress.FileSystemUtilsTest;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DISK_PAGE_COMPRESSION;
+import static org.apache.ignite.configuration.DiskPageCompression.ZSTD;
 
 /**
  */
@@ -37,8 +41,16 @@ public class IgnitePdsCompressionTestSuite {
         suite.addTestSuite(DiskPageCompressionIntegrationTest.class);
         suite.addTestSuite(DiskPageCompressionIntegrationAsyncTest.class);
 
+        enableCompressionByDefault();
         IgnitePdsTestSuite.addRealPageStoreTests(suite);
 
         return suite;
+    }
+
+    /**
+     */
+    static void enableCompressionByDefault() {
+        System.setProperty(IGNITE_DEFAULT_DISK_PAGE_COMPRESSION, ZSTD.name());
+        System.setProperty(IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE, String.valueOf(8 * 1024));
     }
 }

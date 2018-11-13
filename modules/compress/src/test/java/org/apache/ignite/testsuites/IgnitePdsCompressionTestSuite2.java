@@ -19,6 +19,8 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 
+import static org.apache.ignite.testsuites.IgnitePdsCompressionTestSuite.enableCompressionByDefault;
+
 /**
  */
 public class IgnitePdsCompressionTestSuite2 {
@@ -28,6 +30,7 @@ public class IgnitePdsCompressionTestSuite2 {
     public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite 2 (with page compression).");
 
+        enableCompressionByDefault();
         IgnitePdsTestSuite2.addRealPageStoreTests(suite);
 
         return suite;

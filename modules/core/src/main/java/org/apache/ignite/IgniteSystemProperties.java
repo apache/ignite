@@ -1032,10 +1032,54 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_ALLOW_START_CACHES_IN_PARALLEL = "IGNITE_ALLOW_START_CACHES_IN_PARALLEL";
 
     /**
+     * Sets default disk page compression for {@link CacheConfiguration}.
+     */
+    public static final String IGNITE_DEFAULT_DISK_PAGE_COMPRESSION = "IGNITE_DEFAULT_DISK_PAGE_COMPRESSION";
+
+    /**
+     * Sets default storage page size for {@link DataStorageConfiguration}.
+     */
+    public static final String IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE = "IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
         // No-op.
+    }
+
+    /**
+     * @param enumCls Enum type.
+     * @param name Name of the system property or environment variable.
+     * @return Enum value or {@code null} if the property is not set.
+     */
+    public static <E extends Enum<E>> E getEnum(Class<E> enumCls, String name) {
+        return getEnum(enumCls, name, null);
+    }
+
+    /**
+     * @param name Name of the system property or environment variable.
+     * @return Enum value or the given default.
+     */
+    public static <E extends Enum<E>> E getEnum(String name, E dflt) {
+        return getEnum(dflt.getDeclaringClass(), name, dflt);
+    }
+
+    /**
+     * @param enumCls Enum type.
+     * @param name Name of the system property or environment variable.
+     * @param dflt Default value.
+     * @return Enum value or the given default.
+     */
+    private static <E extends Enum<E>> E getEnum(Class<E> enumCls, String name, E dflt) {
+        assert enumCls != null;
+
+        String val = getString(name);
+
+        if (val == null)
+            return dflt;
+
+        return Enum.valueOf(enumCls, val);
     }
 
     /**
