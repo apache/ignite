@@ -1999,9 +1999,8 @@ public class IgniteTxHandler {
                         locPart.release();
                     }
                 }
-                else {
+                else
                     tx.addInvalidPartition(ctx, part);
-                }
             }
             catch (GridDhtInvalidPartitionException e) {
                 tx.addInvalidPartition(ctx, e.partition());

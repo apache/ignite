@@ -373,6 +373,15 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
         ctx.cache().context().pageStore().initialize(TX_LOG_CACHE_ID, 1,
             TX_LOG_CACHE_NAME, mgr.dataRegion(TX_LOG_CACHE_NAME).memoryMetrics());
+
+        boolean hasMvccCaches = ctx.cache().cacheGroups().stream().filter(CacheGroupContext::persistenceEnabled)
+            .anyMatch(g -> g.config().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT);
+
+        if (hasMvccCaches) {
+            txLog = new TxLog(ctx, mgr);
+
+            mvccEnabled = true;
+        }
     }
 
     /** {@inheritDoc} */
