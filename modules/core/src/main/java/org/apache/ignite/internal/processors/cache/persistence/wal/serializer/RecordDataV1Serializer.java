@@ -237,7 +237,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @return {@code True} if this record should be encrypted.
      */
     private boolean needEncryption(int grpId) {
-        return encMgr.groupKey(grpId) != null;
+        return false; //encMgr.groupKey(grpId) != null;
     }
 
     /**
