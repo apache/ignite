@@ -261,6 +261,23 @@ public abstract class GridAbstractTest extends TestCase {
         this.startGrid = startGrid;
     }
 
+    /** Supports obtaining test name for JUnit4 cases. */
+    @Rule public transient TestName nameRule = new TestName();
+
+    /** Manages test-running for JUnit4 and Junit3 cases. */
+    @Rule public transient TestRule runRule = (base, description) -> new Statement() {
+        @Override public void evaluate() throws Throwable {
+            runTest(base);
+        }
+    };
+
+    /** {@inheritDoc} */
+    @Override public String getName() {
+        String junit3Name = super.getName();
+
+        return junit3Name != null ? junit3Name : nameRule.getMethodName();
+    }
+
     /**
      * @param cls Class to create.
      * @return Instance of class.
@@ -2120,23 +2137,6 @@ public abstract class GridAbstractTest extends TestCase {
     protected synchronized TestCounters getTestCounters(IgniteConfiguration cfg) throws IgniteCheckedException {
         return new TestCounters(cfg);
     }
-
-    /** Supports obtaining test name for JUnit4 cases. */
-    @Rule public transient TestName nameRule = new TestName();
-
-    /** {@inheritDoc} */
-    @Override public String getName() {
-        String junit3Name = super.getName();
-
-        return junit3Name != null ? junit3Name : nameRule.getMethodName();
-    }
-
-    /** Manages test-running for JUnit4 and Junit3 cases. */
-    @Rule public transient TestRule runRule = (base, description) -> new Statement() {
-        @Override public void evaluate() throws Throwable {
-            runTest(base);
-        }
-    };
 
     /** {@inheritDoc} */
     @SuppressWarnings({"ProhibitedExceptionDeclared"})
