@@ -283,8 +283,12 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                         }
                     }
                 }
-                else if (mappedKeys != null)
+                else {
+                    if (mappedKeys == null)
+                        mappedKeys = U.newLinkedHashMap(keys.size());
+
                     mappedKeys.put(key.getKey(), key.getValue());
+                }
             }
         }
 
