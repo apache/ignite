@@ -144,7 +144,12 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             T row,
             int written)
             throws IgniteCheckedException {
-            AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
+            AbstractDataPageIO<T> io;
+            try {
+                io = (AbstractDataPageIO<T>)iox;
+            } catch (ClassCastException e) {
+                throw e;
+            }
 
             int rowSize = row.size();
             int oldFreeSpace = io.getFreeSpace(pageAddr);
