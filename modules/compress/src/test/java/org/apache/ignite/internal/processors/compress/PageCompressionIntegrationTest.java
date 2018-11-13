@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -248,6 +249,20 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
         int groupId = cctx.groupId();
 
         assertEquals(cacheId, groupId);
+
+        CacheGroupMetricsMXBean mx = cctx.group().mxBean();
+
+        storeSize = mx.getStorageSize();
+        sparseStoreSize = mx.getSparseStorageSize();
+
+        assertTrue("storeSize: " + storeSize, storeSize > 0);
+
+        if (U.isLinux()) {
+            assertTrue("sparseSize: " + sparseStoreSize, sparseStoreSize > 0);
+            assertTrue(storeSize + " > " + sparseStoreSize, storeSize > sparseStoreSize);
+        }
+        else
+            assertTrue(sparseStoreSize < 0);
 
         int parts = cctx.affinity().partitions();
 
