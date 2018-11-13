@@ -19,112 +19,74 @@ package org.apache.ignite.internal.pagemem.wal.record;
 
 import java.util.Collection;
 import java.util.Map;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Logical data record indented for transaction (tx) related actions.<br>
- * This record is marker of begin, prepare, commit, and rollback transactions.
+ * Logical data record indented for MVCC transaction related actions.<br>
+ * This record is marker of prepare, commit, and rollback transactions.
  */
-public class TxRecord extends TimeStampRecord {
-    /** Transaction state. */
-    @GridToStringInclude
-    private final TransactionState state;
-
-    /** Global transaction identifier within cluster, assigned by transaction coordinator. */
-    @GridToStringInclude
-    private final GridCacheVersion nearXidVer;
-
-    /** Transaction entries write topology version. */
-    private final GridCacheVersion writeVer;
+public class MvccTxRecord extends TxRecord {
+    /** Transaction mvcc snapshot version. */
+    private final MvccVersion mvccVer;
 
     /**
-     * Transaction participating nodes.
-     *
-     * Structure:
-     * Primary node -> [Backup nodes...], where nodes are identified by compact ID for some baseline topology.
-     **/
-    @Nullable private Map<Short, Collection<Short>> participatingNodes;
-
-    /**
-     *
      * @param state Transaction state.
      * @param nearXidVer Transaction id.
      * @param writeVer Transaction entries write topology version.
      * @param participatingNodes Primary -> Backup nodes compact IDs participating in transaction.
+     * @param mvccVer Transaction snapshot version.
      */
-    public TxRecord(
+    public MvccTxRecord(
         TransactionState state,
         GridCacheVersion nearXidVer,
         GridCacheVersion writeVer,
-        @Nullable Map<Short, Collection<Short>> participatingNodes
+        @Nullable Map<Short, Collection<Short>> participatingNodes,
+        MvccVersion mvccVer
     ) {
-        this.state = state;
-        this.nearXidVer = nearXidVer;
-        this.writeVer = writeVer;
-        this.participatingNodes = participatingNodes;
+        super(state, nearXidVer, writeVer, participatingNodes);
+
+        this.mvccVer = mvccVer;
     }
 
     /**
      * @param state Transaction state.
      * @param nearXidVer Transaction id.
      * @param writeVer Transaction entries write topology version.
+     * @param mvccVer Transaction snapshot version.
      * @param participatingNodes Primary -> Backup nodes participating in transaction.
      * @param ts TimeStamp.
      */
-    public TxRecord(
+    public MvccTxRecord(
         TransactionState state,
         GridCacheVersion nearXidVer,
         GridCacheVersion writeVer,
         @Nullable Map<Short, Collection<Short>> participatingNodes,
+        MvccVersion mvccVer,
         long ts
     ) {
-        super(ts);
+        super(state, nearXidVer, writeVer, participatingNodes, ts);
 
-        this.state = state;
-        this.nearXidVer = nearXidVer;
-        this.writeVer = writeVer;
-        this.participatingNodes = participatingNodes;
+        this.mvccVer = mvccVer;
     }
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
-        return RecordType.TX_RECORD;
+        return RecordType.MVCC_TX_RECORD;
     }
 
     /**
-     * @return Near xid version.
+     * @return Mvcc version.
      */
-    public GridCacheVersion nearXidVersion() {
-        return nearXidVer;
-    }
-
-    /**
-     * @return DHT version.
-     */
-    public GridCacheVersion writeVersion() {
-        return writeVer;
-    }
-
-    /**
-     * @return Transaction state.
-     */
-    public TransactionState state() {
-        return state;
-    }
-
-    /**
-     * @return Primary -> backup participating nodes compact IDs.
-     */
-    public Map<Short, Collection<Short>> participatingNodes() {
-        return participatingNodes;
+    public MvccVersion mvccVersion() {
+        return mvccVer;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(TxRecord.class, this, "super", super.toString());
+        return S.toString(MvccTxRecord.class, this, "super", super.toString());
     }
 }
