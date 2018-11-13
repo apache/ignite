@@ -195,6 +195,7 @@ public class StripedExecutor implements ExecutorService {
         for (int i = 0; i < stripes.length; i++) {
             Stripe stripe = stripes[i];
 
+            // TODO: save and show currently executing task which holds queue processing.
             if (!stripe.contHist.isEmpty()) {
                 GridStringBuilder sb = new GridStringBuilder();
 
@@ -203,7 +204,7 @@ public class StripedExecutor implements ExecutorService {
 
                 stripe.contHist.descendingMap().values().stream().limit(5)
                         .forEach(snaps -> {
-                            synchronized (snaps) {
+                            synchronized (snaps) { // Iteration over synchronized array must be synchronized on the instance.
                                 for (StripeSnap snap : snaps) {
                                     sb.a("  ").a(LocalDateTime.ofInstant(
                                         Instant.ofEpochMilli(snap.timestamp()),
@@ -219,9 +220,10 @@ public class StripedExecutor implements ExecutorService {
 
                 U.warn(log, msg);
 
-                U.printStackTrace(
-                    stripe.thread.getId(),
-                    sb);
+                // TODO FIXME no-op.
+//                U.printStackTrace(
+//                    stripe.thread.getId(),
+//                    sb);
 
                 stripe.contHist.clear();
             }
