@@ -179,7 +179,6 @@ public interface GridQueryIndexing {
      * @param ifExists Ignore operation if index does not exist (instead of throwing an error).
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public void dynamicIndexDrop(String schemaName, String idxName, boolean ifExists) throws IgniteCheckedException;
 
     /**
@@ -193,7 +192,6 @@ public interface GridQueryIndexing {
      *     for single column case.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public void dynamicAddColumn(String schemaName, String tblName, List<QueryField> cols, boolean ifTblExists,
         boolean ifColNotExists) throws IgniteCheckedException;
 
@@ -208,7 +206,6 @@ public interface GridQueryIndexing {
      *     for single column case.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public void dynamicDropColumn(String schemaName, String tblName, List<String> cols, boolean ifTblExists,
         boolean ifColExists) throws IgniteCheckedException;
 

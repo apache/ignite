@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.AffinityKeyNameAndValueFieldNameConflictTest;
 import org.apache.ignite.internal.processors.cache.BigEntryQueryTest;
 import org.apache.ignite.internal.processors.cache.BinaryMetadataConcurrentUpdateWithIndexesTest;
 import org.apache.ignite.internal.processors.cache.BinarySerializationQuerySelfTest;
@@ -209,9 +210,12 @@ import org.apache.ignite.internal.processors.query.h2.sql.H2CompareBigQueryTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.InOperationExtractPartitionSelfTest;
 import org.apache.ignite.internal.processors.sql.IgniteCachePartitionedAtomicColumnConstraintsTest;
 import org.apache.ignite.internal.processors.sql.IgniteCachePartitionedTransactionalColumnConstraintsTest;
+import org.apache.ignite.internal.processors.sql.IgniteCachePartitionedTransactionalSnapshotColumnConstraintTest;
 import org.apache.ignite.internal.processors.sql.IgniteCacheReplicatedAtomicColumnConstraintsTest;
 import org.apache.ignite.internal.processors.sql.IgniteCacheReplicatedTransactionalColumnConstraintsTest;
+import org.apache.ignite.internal.processors.sql.IgniteCacheReplicatedTransactionalSnapshotColumnConstraintTest;
 import org.apache.ignite.internal.processors.sql.IgniteSQLColumnConstraintsTest;
+import org.apache.ignite.internal.processors.sql.IgniteTransactionSQLColumnConstraintTest;
 import org.apache.ignite.internal.processors.sql.SqlConnectorConfigurationValidationSelfTest;
 import org.apache.ignite.internal.sql.SqlParserBulkLoadSelfTest;
 import org.apache.ignite.internal.sql.SqlParserCreateIndexSelfTest;
@@ -234,6 +238,8 @@ public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
      */
     public static TestSuite suite() throws Exception {
         IgniteTestSuite suite = new IgniteTestSuite("Ignite Cache Queries Test Suite");
+
+        suite.addTestSuite(AffinityKeyNameAndValueFieldNameConflictTest.class);
 
         suite.addTestSuite(PartitionedSqlTest.class);
         suite.addTestSuite(ReplicatedSqlTest.class);
@@ -475,11 +481,14 @@ public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
         suite.addTestSuite(IgniteSqlDefaultValueTest.class);
         suite.addTestSuite(IgniteDecimalSelfTest.class);
         suite.addTestSuite(IgniteSQLColumnConstraintsTest.class);
+        suite.addTestSuite(IgniteTransactionSQLColumnConstraintTest.class);
 
         suite.addTestSuite(IgniteCachePartitionedAtomicColumnConstraintsTest.class);
         suite.addTestSuite(IgniteCachePartitionedTransactionalColumnConstraintsTest.class);
+        suite.addTestSuite(IgniteCachePartitionedTransactionalSnapshotColumnConstraintTest.class);
         suite.addTestSuite(IgniteCacheReplicatedAtomicColumnConstraintsTest.class);
         suite.addTestSuite(IgniteCacheReplicatedTransactionalColumnConstraintsTest.class);
+        suite.addTestSuite(IgniteCacheReplicatedTransactionalSnapshotColumnConstraintTest.class);
 
         // H2 Rows on-heap cache
         suite.addTestSuite(H2RowCacheSelfTest.class);

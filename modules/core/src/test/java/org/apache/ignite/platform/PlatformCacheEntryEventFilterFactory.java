@@ -32,7 +32,6 @@ import java.io.Serializable;
 public class PlatformCacheEntryEventFilterFactory implements Serializable,
     PlatformJavaObjectFactory<CacheEntryEventSerializableFilter> {
     /** Property to be set from platform. */
-    @SuppressWarnings("FieldCanBeLocal")
     private String startsWith = "-";
 
     /** Injected instance. */

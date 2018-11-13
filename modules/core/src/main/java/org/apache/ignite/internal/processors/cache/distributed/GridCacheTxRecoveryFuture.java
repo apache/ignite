@@ -144,7 +144,6 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
     /**
      * Initializes future.
      */
-    @SuppressWarnings("ConstantConditions")
     public void prepare() {
         if (nearTxCheck) {
             UUID nearNodeId = tx.eventNodeId();
@@ -424,7 +423,6 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
      * @param miniId Mini ID to find.
      * @return Mini future.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     private MiniFuture miniFuture(IgniteUuid miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (this) {

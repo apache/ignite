@@ -44,7 +44,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  * Tests for local transactions.
  */
-@SuppressWarnings( {"BusyWait"})
 public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstractTest {
     /**
      * @return Thread count.

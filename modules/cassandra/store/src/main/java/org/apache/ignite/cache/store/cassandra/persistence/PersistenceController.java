@@ -212,7 +212,6 @@ public class PersistenceController {
      *
      * @return key object.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public Object buildKeyObject(Row row) {
         return buildObject(row, persistenceSettings.getKeyPersistenceSettings());
     }

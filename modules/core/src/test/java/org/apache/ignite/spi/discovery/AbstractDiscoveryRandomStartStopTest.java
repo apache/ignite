@@ -57,7 +57,6 @@ public abstract class AbstractDiscoveryRandomStartStopTest<T extends DiscoverySp
         private volatile boolean canceled;
 
         /** {@inheritDoc} */
-        @SuppressWarnings({"UnusedCatchParameter"})
         @Override public void run() {
             while (!canceled) {
                 try {
