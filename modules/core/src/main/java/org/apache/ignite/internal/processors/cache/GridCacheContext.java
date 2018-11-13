@@ -2244,7 +2244,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Affinity node to get key from or {@code null} if there is no suitable alive node.
      */
     @Nullable public ClusterNode selectAffinityNodeBalanced(List<ClusterNode> affNodes, boolean canRemap) {
-        if (!readLoadBalancingEnabled) {
+        if (!readLoadBalancingEnabled || config().getCacheMode() == CacheMode.PARTITIONED) {
             if (!canRemap) {
                 for (ClusterNode node : affNodes) {
                     if (ctx.discovery().alive(node))
