@@ -976,6 +976,17 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         if (grp.sharedGroup())
             grp.onPartitionCounterUpdate(cacheId, id, primaryCntr != null ? primaryCntr : nextCntr, topVer, primary);
 
+        // This is first update in partition, we should log partition state information for further crash recovery.
+        if (nextCntr == 1) {
+            if (grp.persistenceEnabled() && grp.walEnabled())
+                try {
+                    ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, state(), 0));
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to log partition state snapshot to WAL.", e);
+                }
+        }
+
         return nextCntr;
     }
 

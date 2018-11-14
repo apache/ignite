@@ -50,7 +50,7 @@ public class IgnitePdsPartitionsStateRecoveryTest extends GridCommonAbstractTest
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
             .setWalMode(WALMode.LOG_ONLY)
-            .setWalSegmentSize(2 * 1024 * 1024)
+            .setWalSegmentSize(16 * 1024 * 1024)
             .setCheckpointFrequency(20 * 60 * 1000)
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
@@ -116,6 +116,46 @@ public class IgnitePdsPartitionsStateRecoveryTest extends GridCommonAbstractTest
         GridDhtPartitionTopology topology = ignite.cachex(CACHE).context().topology();
 
         Assert.assertFalse(topology.hasMovingPartitions());
+
+        log.info("Stopping grid...");
+
+        stopGrid(0);
+
+        ignite = startGrid(0);
+
+        awaitPartitionMapExchange();
+
+        topology = ignite.cachex(CACHE).context().topology();
+
+        Assert.assertFalse("Node restored moving partitions after join to topology.", topology.hasMovingPartitions());
+    }
+
+    /**
+     * Test checks that partition state is recovered properly if only logical updates exist.
+     *
+     * @throws Exception If failed.
+     */
+    public void testPartitionsStateConsistencyAfterRecoveryNoCheckpoints() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        ignite.cluster().active(true);
+
+        IgniteCache<Object, Object> cache = ignite.getOrCreateCache(CACHE);
+
+        forceCheckpoint();
+
+        for (int key = 0; key < 4096; key++) {
+            int[] payload = new int[4096];
+            Arrays.fill(payload, key);
+
+            cache.put(key, payload);
+        }
+
+        GridDhtPartitionTopology topology = ignite.cachex(CACHE).context().topology();
+
+        Assert.assertFalse(topology.hasMovingPartitions());
+
+        log.info("Stopping grid...");
 
         stopGrid(0);
 
