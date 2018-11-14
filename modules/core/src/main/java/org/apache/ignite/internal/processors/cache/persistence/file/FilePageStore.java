@@ -261,11 +261,6 @@ public class FilePageStore implements PageStore {
         if (fileSize == headerSize()) // Every file has a special meta page.
             fileSize = pageSize + headerSize();
 
-        if ((fileSize - headerSize()) % pageSize != 0)
-            throw new IOException(prefix + "(invalid file size)" +
-                " [fileSize=" + U.hexLong(fileSize) +
-                ", pageSize=" + U.hexLong(pageSize) + ']');
-
         return fileSize;
     }
 
