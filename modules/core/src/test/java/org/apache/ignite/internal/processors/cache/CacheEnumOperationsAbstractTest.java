@@ -103,6 +103,8 @@ public abstract class CacheEnumOperationsAbstractTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testMvccTx() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10260");
+
         if (!singleNode())
             fail("https://issues.apache.org/jira/browse/IGNITE-7187");
 
