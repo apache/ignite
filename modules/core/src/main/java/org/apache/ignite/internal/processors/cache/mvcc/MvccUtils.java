@@ -100,13 +100,13 @@ public class MvccUtils {
     /** */
     public static final int MVCC_VISIBLE = 2;
 
-    /** */
+    /** A special version visible by everyone */
     public static final MvccVersion INITIAL_VERSION =
         mvccVersion(MVCC_CRD_START_CNTR, MVCC_INITIAL_CNTR, MVCC_START_OP_CNTR);
 
-    /** */
-    public static final MvccVersion MVCC_VERSION_NA =
-        mvccVersion(MVCC_CRD_COUNTER_NA, MVCC_COUNTER_NA, MVCC_OP_COUNTER_NA);
+    /** A special snapshot for which all committed versions are visible */
+    public static final MvccSnapshot MVCC_MAX_SNAPSHOT =
+        new MvccSnapshotWithoutTxs(Long.MAX_VALUE, Long.MAX_VALUE, MVCC_READ_OP_CNTR, MVCC_COUNTER_NA);
 
     /** */
     private static final MvccClosure<Integer> getVisibleState = new GetVisibleState();

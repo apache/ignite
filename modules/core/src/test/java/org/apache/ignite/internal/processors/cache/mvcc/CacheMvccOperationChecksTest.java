@@ -106,14 +106,6 @@ public class CacheMvccOperationChecksTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
-    public void testPeekOperationsUnsupported() throws Exception {
-        checkOperationUnsupported("localPeek", m("Peek"), t(Object.class, CachePeekMode[].class), 1,
-            new CachePeekMode[]{CachePeekMode.NEAR});
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
     public void testEvictOperationsUnsupported() throws Exception {
         checkOperationUnsupported("localEvict", m("Evict"), t(Collection.class), Collections.singleton(1));
     }

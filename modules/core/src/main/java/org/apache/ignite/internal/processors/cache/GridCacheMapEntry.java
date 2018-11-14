@@ -114,6 +114,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult.UpdateOutcome.INVOKE_NO_OP;
 import static org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult.UpdateOutcome.REMOVE_NO_VAL;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_MAX_SNAPSHOT;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.compareIgnoreOpCounter;
 import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.NO_KEY;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.DUPLICATE_KEY;
@@ -3114,6 +3115,26 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      */
     int hash() {
         return hash;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public CacheObject mvccPeek(boolean onheapOnly)
+        throws GridCacheEntryRemovedException, IgniteCheckedException {
+        if (onheapOnly)
+            return null;
+
+        lockEntry();
+
+        try {
+            checkObsolete();
+
+            CacheDataRow row = cctx.offheap().mvccRead(cctx, key, MVCC_MAX_SNAPSHOT);
+
+            return row != null ? row.value() : null;
+        }
+        finally {
+            unlockEntry();
+        }
     }
 
     /** {@inheritDoc} */
