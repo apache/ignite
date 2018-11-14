@@ -1975,42 +1975,47 @@ public class CommandHandler {
                         break;
 
                     case CMD_SSL_PROTOCOL:
-                        sslProtocol = nextArg("Expected ssl protocol");
+                        sslProtocol = nextArg("Expected SSL protocol");
 
                         break;
 
                     case CMD_SSL_ALGORITHM:
-                        sslAlgorithm = nextArg("Expected ssl algorithm");
+                        sslAlgorithm = nextArg("Expected SSL algorithm");
+
+                        break;
+
+                    case CMD_SSL_CIPHER_SUITES:
+                        sslCipherSuites = nextArg("Expected SSL cipher suites");
 
                         break;
 
                     case CMD_SSL_KEY_STORE_PATH:
-                        sslKeyStorePath = nextArg("Expected ssl key store path");
+                        sslKeyStorePath = nextArg("Expected SSL key store path");
 
                         break;
 
                     case CMD_SSL_KEY_STORE_TYPE:
-                        sslKeyStoreType = nextArg("Expected ssl key store type");
+                        sslKeyStoreType = nextArg("Expected SSL key store type");
 
                         break;
 
                     case CMD_SSL_KEY_STORE_PASSWORD:
-                        sslKeyStorePassword = nextArg("Expected ssl key store password").toCharArray();
+                        sslKeyStorePassword = nextArg("Expected SSL key store password").toCharArray();
 
                         break;
 
                     case CMD_SSL_TRUSTSTORE_PATH:
-                        sslTrustStorePath = nextArg("Expected ssl trust store path");
+                        sslTrustStorePath = nextArg("Expected SSL trust store path");
 
                         break;
 
                     case CMD_SSL_TRUSTSTORE_TYPE:
-                        sslTrustStoreType = nextArg("Expected ssl trust store type");
+                        sslTrustStoreType = nextArg("Expected SSL trust store type");
 
                         break;
 
                     case CMD_SSL_TRUSTSTORE_PASSWORD:
-                        sslTrustStorePassword = nextArg("Expected ssl trust store password").toCharArray();
+                        sslTrustStorePassword = nextArg("Expected SSL trust store password").toCharArray();
 
                         break;
 

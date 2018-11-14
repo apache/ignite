@@ -162,7 +162,7 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testNonExistentCipherSuite() throws Exception {
+    public void _testNonExistentCipherSuite() throws Exception {
         cipherSuites = new String[] {
             "TLS_RSA_WITH_AES_128_GCM_SHA256"
         };
@@ -207,7 +207,7 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testNonExistentProtocol() throws Exception {
+    public void _testNonExistentProtocol() throws Exception {
         protocols = new String[] {
             "SSLv3"
         };
