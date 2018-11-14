@@ -699,7 +699,9 @@ public class GridSqlQuerySplitter {
      */
     private static void setNeedSplit(QueryModel qrym) {
         if (qrym.type == Type.SELECT) {
-            assert !qrym.needSplitChild;
+            // Nothing to-do if children will be split.
+            if (qrym.needSplitChild)
+                return;
 
             qrym.needSplit = true;
         }

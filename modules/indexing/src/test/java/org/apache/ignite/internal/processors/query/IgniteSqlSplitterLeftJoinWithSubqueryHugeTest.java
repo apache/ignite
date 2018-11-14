@@ -20,11 +20,6 @@ package org.apache.ignite.internal.processors.query;
 import java.util.List;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -48,8 +43,136 @@ public class IgniteSqlSplitterLeftJoinWithSubqueryHugeTest extends GridCommonAbs
     /**
      *
      */
-    public void test() {
+    public void test0() {
+        String qry =
+            "SELECT session_name, " +
+                "       orig_ref, " +
+                "       clsb_input_ref, " +
+                "       common_ref, " +
+                "       related_ref, " +
+                "       clsb_match_ref, " +
+                "       trade_dt, " +
+                "       value_dt, " +
+                "       last_action_tms, " +
+                "       received_at, " +
+                "       executed_at, " +
+                "       tp_bic, " +
+                "       orig_lei, " +
+                "       orig_bic, " +
+                "       cp_bic, " +
+                "       tp_reference, " +
+                "       cp_lei, " +
+                "       fund_lei, " +
+                "       curr_id_buy, " +
+                "       vol_buy, " +
+                "       curr_id_sell, " +
+                "       vol_sell, " +
+                "       exch_rate, " +
+                "       input_status, " +
+                "       exec_tms, " +
+                "       tp_free_text, " +
+                "       same_day_flag, " +
+                "       report_juris, " +
+                "       usi, " +
+                "       prev_usi, " +
+                "       report_juris2, " +
+                "       usi2, " +
+                "       prev_usi3, " +
+                "       curr_susp_flag, " +
+                "       cp_susp_flag, " +
+                "       orig_susp_flag, " +
+                "       fund_member_name, " +
+                "       cp_fund_member_name, " +
+                "       orgid, " +
+                "       MT.msg_desc AS RejectionReason " +
+                "FROM   (SELECT 'MAIN' AS SESSION_NAME, " +
+                "               orig_ref, " +
+                "               clsb_input_ref, " +
+                "               common_ref, " +
+                "               related_ref, " +
+                "               clsb_match_ref, " +
+                "               trade_dt, " +
+                "               value_dt, " +
+                "               ( Timestampadd('MILLISECOND', ( input_version_id ), last_action_tms) ) AS LAST_ACTION_TMS, " +
+                "               exec_tms AS RECEIVED_AT, " +
+                "               exec_tms AS EXECUTED_AT, " +
+                "               tp_bic, " +
+                "               orig_lei, " +
+                "               orig_bic, " +
+                "               cp_bic, " +
+                "               tp_reference, " +
+                "               cp_lei, " +
+                "               fund_lei, " +
+                "               curr_id_buy, " +
+                "               vol_buy, " +
+                "               curr_id_sell, " +
+                "               vol_sell, " +
+                "               exch_rate, " +
+                "               input_status, " +
+                "               exec_tms, " +
+                "               tp_free_text, " +
+                "               same_day_flag, " +
+                "               report_juris, " +
+                "               usi, " +
+                "               prev_usi, " +
+                "               report_juris2, " +
+                "               usi2, " +
+                "               prev_usi3, " +
+                "               curr_susp_flag, " +
+                "               cp_susp_flag, " +
+                "               orig_susp_flag, " +
+                "               COALESCE(bics.mbr_name, '') AS FUND_MEMBER_NAME, " +
+                "               COALESCE(cpbics.mbr_name, '') AS CP_FUND_MEMBER_NAME, " +
+                "               bl.orgid, " +
+                "               COALESCE(MSG.msg_id, '') AS MSG_ID, " +
+                "               COALESCE(MSG.msg_subid, '') AS MSG_SUBID, " +
+                "               COALESCE(MSG.msg_type_id, 0) AS MSG_TYPE_ID " +
+                "        FROM   \"TBCLSMInputHistoCache\".tbclsm_input_histo A " +
+                "               INNER JOIN (SELECT DISTINCT orgid, cur_party_code " +
+                "                           FROM \"DB2OrganisationsBICListCache\".organisations_bic_list " +
+                "                           WHERE  orgid = 1) bl " +
+                "                       ON ( a.tp_bic = bl.cur_party_code OR a.tp_reference = bl.cur_party_code ) " +
+                "               LEFT JOIN (SELECT A.fund_id, " +
+                "                                 a.mbr_name " +
+                "                          FROM   \"TBCLSRTPFundCache\".tbclsr_tp_fund A " +
+                "                                 INNER JOIN (SELECT fund_id, " +
+                "                                                    Max(tp_id) TP_ID " +
+                "                                             FROM " +
+                "                                 \"TBCLSRTPFundCache\".tbclsr_tp_fund " +
+                "                                             GROUP BY fund_id) B " +
+                "                                         ON A.fund_id = B.fund_id " +
+                "                                            AND A.tp_id = B.tp_id) bics " +
+                "                      ON a.tp_bic = bics.fund_id " +
+                "               LEFT JOIN (SELECT A.fund_id, " +
+                "                                 a.mbr_name " +
+                "                          FROM   \"TBCLSRTPFundCache\".tbclsr_tp_fund A " +
+                "                                 INNER JOIN (SELECT fund_id, " +
+                "                                                    Max(tp_id) TP_ID " +
+                "                                             FROM \"TBCLSRTPFundCache\".tbclsr_tp_fund " +
+                "                                             GROUP BY fund_id) B " +
+                "                                         ON A.fund_id = B.fund_id AND A.tp_id = B.tp_id) cpbics " +
+                "                      ON a.tp_reference = cpbics.fund_id " +
+                "               LEFT JOIN (SELECT 13 TStatus, " +
+                "                                 MSG.ntf_id, " +
+                "                                 MSG.msg_id, " +
+                "                                 MSG.msg_subid, " +
+                "                                 MSG.msg_type_id " +
+                "                          FROM   \"TBCLSRMessageCache\".tbclsr_message MSG " +
+                "                          WHERE  MSG.msg_id IN ( 'RINP', 'RINS' )) Msg " +
+                "                      ON Msg.ntf_id = A.ntf_id " +
+                "                         AND A.input_status = Msg.tstatus " +
+                "        WHERE clsb_input_ref = ' ') a " +
+                "       LEFT JOIN \"TBDIMDMessageTypesCache\".tbdimd_message_types MT " +
+                "              ON a.msg_subid = MT.msg_sub_id " +
+                "                 AND MT.msg_type_id = a.msg_type_id " +
+                "                 AND a.msg_id = MT.msg_id " +
+                "                 AND MT.source_system = 'FX' ";
+
+        printPlan(sql("EXPLAIN " + qry));
+
+        sql(qry);
     }
+
     /**
      * @param plan Ignite query plan.
      */

@@ -68,26 +68,27 @@ public class IgniteSqlSplitterLeftJoinWithSubqueryTest extends GridCommonAbstrac
      *
      */
     public void testTwoJoinWithSubquery() {
-        sql("CREATE TABLE client (id int PRIMARY KEY, name varchar)");
-        sql("CREATE TABLE good (id int PRIMARY KEY, name varchar)");
-        sql("CREATE TABLE orders (id int PRIMARY KEY, cliId int, goodId int, price int, comment varchar)");
+        try {
+            sql("CREATE TABLE client (id int PRIMARY KEY, name varchar)");
+            sql("CREATE TABLE good (id int PRIMARY KEY, name varchar)");
+            sql("CREATE TABLE orders (id int PRIMARY KEY, cliId int, goodId int, price int, comment varchar)");
 
-        // Spit subquery
-        String qry =
-            "SELECT cli.name, good.name \n" +
-            "FROM " +
-            "(SELECT DISTINCT cliId, goodId FROM orders) as ord \n" +
-            "LEFT JOIN client cli ON cli.id = ord.cliId \n" +
-            "LEFT JOIN good good ON good.id = ord.goodId WHERE cli.id = 1";
+            // Spit subquery
+            String qry =
+                "SELECT cli.name, good.name " +
+                    "FROM " +
+                    "(SELECT DISTINCT cliId, goodId FROM orders) as ord " +
+                    "LEFT JOIN client cli ON cli.id = ord.cliId " +
+                    "LEFT JOIN good good ON good.id = ord.goodId WHERE cli.id = 1";
 
-        assertTrue(F.isEmpty(sql(qry)));
+            assertTrue(F.isEmpty(sql(qry)));
 
-        List<List<?>> plan = sql("EXPLAIN " + qry);
+            List<List<?>> plan = sql("EXPLAIN " + qry);
 
-        // Plan must contains 3 map queries (for each join relation) + 1 reduce query.
-        assertEquals("Invalid plan: " + plan, 4, plan.size());
+            // Plan must contains 3 map queries (for each join relation) + 1 reduce query.
+            assertEquals("Invalid plan: " + plan, 4, plan.size());
 
-        printPlan(plan);
+            printPlan(plan);
 
         // Trivial split test
         qry =
@@ -97,65 +98,114 @@ public class IgniteSqlSplitterLeftJoinWithSubqueryTest extends GridCommonAbstrac
             "LEFT JOIN client cli ON cli.id = ord.cliId \n" +
             "LEFT JOIN good good ON good.id = ord.goodId";
 
-        assertTrue(F.isEmpty(sql(qry)));
+            assertTrue(F.isEmpty(sql(qry)));
 
-        plan = sql("EXPLAIN " + qry);
+            plan = sql("EXPLAIN " + qry);
 
-        // Trivial two-step plan is expected.
-        assertEquals("Invalid plan: " + plan, 2, plan.size());
+            // Trivial two-step plan is expected.
+            assertEquals("Invalid plan: " + plan, 2, plan.size());
+        }
+        finally {
+            sql("DROP TABLE client");
+            sql("DROP TABLE good");
+            sql("DROP TABLE orders");
+        }
+    }
+
+    /**
+     *
+     */
+    public void testSplitSubqueryWithChildrenNeedSplit() {
+        try {
+            sql("CREATE TABLE client (id int PRIMARY KEY, name varchar)");
+            sql("CREATE TABLE good (id int PRIMARY KEY, name varchar)");
+            sql("CREATE TABLE orders (id int PRIMARY KEY, cliId int, goodId int, price int, comment varchar)");
+            sql("CREATE TABLE special_offer (id int PRIMARY KEY, cliId int, detail varchar)");
+
+            String qry =
+                "SELECT allCli.name, special_offer.detail " +
+                    "FROM " +
+                    "client as allCli " +
+                    "LEFT JOIN (SELECT cli.id as cliId, cli.name as cliName " +
+                        "FROM " +
+                        "client as cli " +
+                        "INNER JOIN (SELECT DISTINCT cliId as cliId, sum(price) as totalSpent FROM orders group by cliId) as ordTotal " +
+                            "ON cli.id = ordTotal.cliId " +
+                        "WHERE totalSpent > 100) as best_cli ON best_cli.cliId = allCli.id " +
+                    "LEFT JOIN special_offer on best_cli.cliId = special_offer.cliId ";
+
+            assertTrue(F.isEmpty(sql(qry)));
+
+            List<List<?>> plan = sql("EXPLAIN " + qry);
+
+//            printPlan(plan);
+        }
+        finally {
+            sql("DROP TABLE client");
+            sql("DROP TABLE good");
+            sql("DROP TABLE orders");
+            sql("DROP TABLE special_offer");
+        }
     }
 
     /**
      *
      */
     public void testTwoJoinWithSubqueryPushDown() {
-        sql("CREATE TABLE product (id int PRIMARY KEY, name varchar)");
-        sql("CREATE TABLE version (id int PRIMARY KEY, prodId int, name varchar)");
-        sql("CREATE TABLE build (id int PRIMARY KEY, verId int, name varchar, ts timestamp)");
+        try {
+            sql("CREATE TABLE product (id int PRIMARY KEY, name varchar)");
+            sql("CREATE TABLE version (id int PRIMARY KEY, prodId int, name varchar)");
+            sql("CREATE TABLE build (id int PRIMARY KEY, verId int, name varchar, ts timestamp)");
 
-        String qry =
-            "SELECT count(1) " +
-                "FROM " +
-                "version ver " +
-                "LEFT JOIN (SELECT DISTINCT id, verId, ts FROM build) as bld ON bld.verId = ver.id " +
-                "WHERE bld.id = 1";
+            String qry =
+                "SELECT count(1) " +
+                    "FROM " +
+                    "version ver " +
+                    "LEFT JOIN (SELECT DISTINCT id, verId, ts FROM build) as bld ON bld.verId = ver.id " +
+                    "WHERE bld.id = 1";
 
-        sql(qry);
+            sql(qry);
 
-        List<List<?>> plan = sql("EXPLAIN " + qry);
+            List<List<?>> plan = sql("EXPLAIN " + qry);
 
-        printPlan(plan);
+            printPlan(plan);
 
-        qry =
-            "SELECT prod.name, MAX(bld.ts) " +
-            "FROM " +
-            "product prod " +
-            "LEFT JOIN version ver ON ver.prodId = prod.id " +
-            "LEFT JOIN (SELECT DISTINCT id, verId, ts FROM build) as bld ON bld.verId = ver.id " +
-            "GROUP BY prod.id ";
+            qry =
+                "SELECT prod.name, MAX(bld.ts) " +
+                    "FROM " +
+                    "product prod " +
+                    "LEFT JOIN version ver ON ver.prodId = prod.id " +
+                    "LEFT JOIN (SELECT DISTINCT id, verId, ts FROM build) as bld ON bld.verId = ver.id " +
+                    "GROUP BY prod.id ";
 
-        assertTrue(F.isEmpty(sql(qry)));
+            assertTrue(F.isEmpty(sql(qry)));
 
-        plan = sql("EXPLAIN " + qry);
+            plan = sql("EXPLAIN " + qry);
 
-        // Plan must contains 3 map queries (for each join relation) + 1 reduce query.
-        assertEquals("Invalid plan: " + plan, 4, plan.size());
+            // Plan must contains 3 map queries (for each join relation) + 1 reduce query.
+            assertEquals("Invalid plan: " + plan, 4, plan.size());
 
-        // Trivial split test
-        qry =
-            "SELECT prod.name, MAX(bld.ts) " +
-                "FROM " +
-                "product prod " +
-                "LEFT JOIN version ver ON ver.prodId = prod.id " +
-                "LEFT JOIN (SELECT id, verId, ts FROM build) as bld ON bld.verId = ver.id " +
-                "GROUP BY prod.id ";
+            // Trivial split test
+            qry =
+                "SELECT prod.name, MAX(bld.ts) " +
+                    "FROM " +
+                    "product prod " +
+                    "LEFT JOIN version ver ON ver.prodId = prod.id " +
+                    "LEFT JOIN (SELECT id, verId, ts FROM build) as bld ON bld.verId = ver.id " +
+                    "GROUP BY prod.id ";
 
-        assertTrue(F.isEmpty(sql(qry)));
+            assertTrue(F.isEmpty(sql(qry)));
 
-        plan = sql("EXPLAIN " + qry);
+            plan = sql("EXPLAIN " + qry);
 
-        // Trivial two-step plan is expected.
-        assertEquals("Invalid plan: " + plan, 2, plan.size());
+            // Trivial two-step plan is expected.
+            assertEquals("Invalid plan: " + plan, 2, plan.size());
+        }
+        finally {
+            sql("DROP TABLE product");
+            sql("DROP TABLE version");
+            sql("DROP TABLE build");
+        }
     }
 
     /**
