@@ -16,10 +16,14 @@
  */
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.StopNodeFailureHandler;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ALLOW_START_CACHES_IN_PARALLEL;
@@ -28,9 +32,11 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_ALLOW_START_CACHES
  * Tests, that cluster could start and activate with all possible values of IGNITE_ALLOW_START_CACHES_IN_PARALLEL.
  */
 public class StartCachesInParallelTest extends GridCommonAbstractTest {
-
     /** IGNITE_ALLOW_START_CACHES_IN_PARALLEL option value before tests. */
     private String allowParallel;
+
+    /** Test failure handler. */
+    private TestStopNodeFailureHandler failureHandler;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -38,14 +44,16 @@ public class StartCachesInParallelTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true))
-                .setCheckpointFrequency(500L));
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
 
         cfg.setCacheConfiguration(
             new CacheConfiguration<>()
                 .setName(DEFAULT_CACHE_NAME)
                 .setIndexedTypes(Integer.class, Integer.class));
 
+        failureHandler = new TestStopNodeFailureHandler();
+
+        cfg.setFailureHandler(failureHandler);
         return cfg;
     }
 
@@ -69,8 +77,6 @@ public class StartCachesInParallelTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
-
-        System.setProperty(IGNITE_ALLOW_START_CACHES_IN_PARALLEL, "false");
 
         stopAllGrids();
 
@@ -118,6 +124,26 @@ public class StartCachesInParallelTest extends GridCommonAbstractTest {
 
         assertEquals("Property wasn't set", optionValue, System.getProperty(IGNITE_ALLOW_START_CACHES_IN_PARALLEL));
 
-        startGrid(0).cluster().active(true);
+        IgniteEx node = startGrid(0);
+
+        node.cluster().active(true);
+
+        assertNull("Node failed with " + failureHandler.lastFailureCtx, failureHandler.lastFailureCtx);
+
+        assertTrue(node.cluster().active());
     }
+
+    /** */
+    private static class TestStopNodeFailureHandler extends StopNodeFailureHandler {
+        /** Last failure context. */
+        private volatile FailureContext lastFailureCtx;
+
+        /** {@inheritDoc} */
+        @Override public boolean handle(Ignite ignite, FailureContext failureCtx) {
+            lastFailureCtx = failureCtx;
+
+            return super.handle(ignite, failureCtx);
+        }
+    }
+
 }
