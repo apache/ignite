@@ -464,7 +464,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         List<ClusterNode> affNodes = cctx.affinity().nodesByPartition(part, topVer);
 
         if (affNodes.isEmpty()) {
-            onDone(serverNotFoundError(topVer));
+            onDone(serverNotFoundError(part, topVer));
 
             return false;
         }
@@ -486,7 +486,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         ClusterNode node = cctx.selectAffinityNodeBalanced(affNodes, canRemap);
 
         if (node == null) {
-            onDone(serverNotFoundError(topVer));
+            onDone(serverNotFoundError(part, topVer));
 
             return false;
         }
