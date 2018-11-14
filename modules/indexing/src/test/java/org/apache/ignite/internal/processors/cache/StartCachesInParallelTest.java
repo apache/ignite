@@ -145,5 +145,4 @@ public class StartCachesInParallelTest extends GridCommonAbstractTest {
             return super.handle(ignite, failureCtx);
         }
     }
-
 }
