@@ -36,7 +36,7 @@ public class StartCachesInParallelTest extends GridCommonAbstractTest {
     private String allowParallel;
 
     /** Test failure handler. */
-    private TestStopNodeFailureHandler failureHandler;
+    private TestStopNodeFailureHandler failureHnd;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -51,9 +51,9 @@ public class StartCachesInParallelTest extends GridCommonAbstractTest {
                 .setName(DEFAULT_CACHE_NAME)
                 .setIndexedTypes(Integer.class, Integer.class));
 
-        failureHandler = new TestStopNodeFailureHandler();
+        failureHnd = new TestStopNodeFailureHandler();
 
-        cfg.setFailureHandler(failureHandler);
+        cfg.setFailureHandler(failureHnd);
         return cfg;
     }
 
@@ -110,25 +110,25 @@ public class StartCachesInParallelTest extends GridCommonAbstractTest {
     /**
      * Test routine.
      *
-     * @param optionValue IGNITE_ALLOW_START_CACHES_IN_PARALLEL value.
+     * @param optionVal IGNITE_ALLOW_START_CACHES_IN_PARALLEL value.
      * @throws Exception If failed.
      */
-    private void doTest(String optionValue) throws Exception {
-        if (optionValue == null)
+    private void doTest(String optionVal) throws Exception {
+        if (optionVal == null)
             System.clearProperty(IGNITE_ALLOW_START_CACHES_IN_PARALLEL);
         else {
-            Boolean.parseBoolean(optionValue);
+            Boolean.parseBoolean(optionVal);
 
-            System.setProperty(IGNITE_ALLOW_START_CACHES_IN_PARALLEL, optionValue);
+            System.setProperty(IGNITE_ALLOW_START_CACHES_IN_PARALLEL, optionVal);
         }
 
-        assertEquals("Property wasn't set", optionValue, System.getProperty(IGNITE_ALLOW_START_CACHES_IN_PARALLEL));
+        assertEquals("Property wasn't set", optionVal, System.getProperty(IGNITE_ALLOW_START_CACHES_IN_PARALLEL));
 
         IgniteEx node = startGrid(0);
 
         node.cluster().active(true);
 
-        assertNull("Node failed with " + failureHandler.lastFailureCtx, failureHandler.lastFailureCtx);
+        assertNull("Node failed with " + failureHnd.lastFailureCtx, failureHnd.lastFailureCtx);
 
         assertTrue(node.cluster().active());
     }
