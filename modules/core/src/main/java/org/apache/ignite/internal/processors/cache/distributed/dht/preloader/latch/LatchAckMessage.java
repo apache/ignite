@@ -107,6 +107,7 @@ public class LatchAckMessage implements Message {
                     return false;
 
                 writer.incrementState();
+
         }
 
         return true;
@@ -143,6 +144,7 @@ public class LatchAckMessage implements Message {
                     return false;
 
                 reader.incrementState();
+
         }
 
         return reader.afterMessageRead(LatchAckMessage.class);

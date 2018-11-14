@@ -104,7 +104,7 @@ public class PartitionCountersNeighborcastResponse extends GridCacheIdMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 4;
+        return 5;
     }
 
     /** {@inheritDoc} */
