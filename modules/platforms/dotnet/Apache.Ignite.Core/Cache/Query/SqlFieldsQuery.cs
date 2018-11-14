@@ -162,7 +162,9 @@ namespace Apache.Ignite.Core.Cache.Query
             return string.Format("SqlFieldsQuery [Sql={0}, Arguments=[{1}], Local={2}, PageSize={3}, " +
                                  "EnableDistributedJoins={4}, EnforceJoinOrder={5}, Timeout={6}, ReplicatedOnly={7}" +
                                  ", Colocated={8}, Schema={9}, Lazy={10}]", Sql, args, Local,
+#pragma warning disable 618
                                  PageSize, EnableDistributedJoins, EnforceJoinOrder, Timeout, ReplicatedOnly,
+#pragma warning restore 618
                                  Colocated, Schema, Lazy);
         }
     }

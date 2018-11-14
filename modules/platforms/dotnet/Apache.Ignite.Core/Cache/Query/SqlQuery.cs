@@ -141,7 +141,9 @@ namespace Apache.Ignite.Core.Cache.Query
 
             writer.WriteBoolean(EnableDistributedJoins);
             writer.WriteInt((int) Timeout.TotalMilliseconds);
+#pragma warning disable 618
             writer.WriteBoolean(ReplicatedOnly);
+#pragma warning restore 618
         }
 
         /** <inheritDoc /> */
@@ -162,7 +164,9 @@ namespace Apache.Ignite.Core.Cache.Query
 
             return string.Format("SqlQuery [Sql={0}, Arguments=[{1}], Local={2}, PageSize={3}, " +
                                  "EnableDistributedJoins={4}, Timeout={5}, ReplicatedOnly={6}]", Sql, args, Local,
+#pragma warning disable 618
                 PageSize, EnableDistributedJoins, Timeout, ReplicatedOnly);
+#pragma warning restore 618
         }
 
     }
