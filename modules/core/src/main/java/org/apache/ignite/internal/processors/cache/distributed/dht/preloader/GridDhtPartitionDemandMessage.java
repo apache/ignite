@@ -21,6 +21,7 @@ import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
@@ -35,6 +36,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Partition demand request.
  */
+@IgniteCodeGeneratingFail
 public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
     /** */
     private static final long serialVersionUID = 0L;
@@ -266,25 +268,25 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeLong("rebalanceId", rebalanceId))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
                 if (!writer.writeLong("timeout", timeout))
                     return false;
 
                 writer.incrementState();
 
-            case 7:
+            case 6:
                 if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
-            case 8:
+            case 7:
                 if (!writer.writeByteArray("topicBytes", topicBytes))
+                    return false;
+
+                writer.incrementState();
+
+            case 8:
+                if (!writer.writeLong("rebalanceId", rebalanceId))
                     return false;
 
                 writer.incrementState();
@@ -320,14 +322,6 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
                 reader.incrementState();
 
             case 5:
-                rebalanceId = reader.readLong("rebalanceId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 6:
                 timeout = reader.readLong("timeout");
 
                 if (!reader.isLastRead())
@@ -335,7 +329,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
 
                 reader.incrementState();
 
-            case 7:
+            case 6:
                 topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
@@ -343,8 +337,16 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
 
                 reader.incrementState();
 
-            case 8:
+            case 7:
                 topicBytes = reader.readByteArray("topicBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 8:
+                rebalanceId = reader.readLong("rebalanceId");
 
                 if (!reader.isLastRead())
                     return false;
