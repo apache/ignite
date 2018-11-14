@@ -28,7 +28,11 @@ namespace Apache.Ignite.Core.Tests.ApiParity
     public class TcpCommunicationSpiParityTest
     {
         /** Known property name mappings. */
-        private static readonly Dictionary<string, string> KnownMappings = new Dictionary<string, string>();
+        private static readonly Dictionary<string, string> KnownMappings = new Dictionary<string, string>()
+        {
+            {"SocketReceiveBuffer", "SocketReceiveBufferSize"},
+            {"SocketSendBuffer", "SocketSendBufferSize"}
+        };
 
         /** Properties that are not needed on .NET side. */
         private static readonly string[] UnneededProperties =
