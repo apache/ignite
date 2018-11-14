@@ -19,8 +19,11 @@ package org.apache.ignite.internal.processors.txdr;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.SnapshotRecord;
 import org.apache.ignite.internal.processors.GridProcessor;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperation;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -32,4 +35,12 @@ public interface TransactionalDrProcessor extends GridProcessor, IgniteChangeGlo
      * @param snapshotOperation Snapshot operation.
      */
     public void onMarkCheckPointBegin(long snapshotId, WALPointer ptr, SnapshotOperation snapshotOperation);
+
+    /**
+     * @param exchId Partition exchange id.
+     *               This parameter has always a non-null value in case of the message is created for an exchange.
+     * @param fullMsg Partitions full message.
+     */
+    public void onPartitionsFullMessagePrepared(@Nullable GridDhtPartitionExchangeId exchId,
+        GridDhtPartitionsFullMessage fullMsg);
 }

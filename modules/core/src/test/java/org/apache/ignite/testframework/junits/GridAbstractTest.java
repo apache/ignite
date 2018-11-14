@@ -140,9 +140,6 @@ import static org.apache.ignite.testframework.config.GridTestProperties.IGNITE_C
     "JUnitTestCaseWithNonTrivialConstructors"
 })
 public abstract class GridAbstractTest extends TestCase {
-    /** Persistence in tests allowed property. */
-    public static final String PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY = "PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY";
-
     /**************************************************************
      * DO NOT REMOVE TRANSIENT - THIS OBJECT MIGHT BE TRANSFERRED *
      *                  TO ANOTHER NODE.                          *
@@ -194,11 +191,8 @@ public abstract class GridAbstractTest extends TestCase {
     /** Number of tests. */
     private int testCnt;
 
-    /**
-     *
-     */
-    private static final boolean PERSISTENCE_ALLOWED =
-            IgniteSystemProperties.getBoolean(PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, true);
+    /** Lazily initialized current test method. */
+    private volatile Method currTestMtd;
 
     /**
      *
@@ -883,9 +877,6 @@ public abstract class GridAbstractTest extends TestCase {
      */
     protected Ignite startGrid(String igniteInstanceName, IgniteConfiguration cfg, GridSpringResourceContext ctx)
         throws Exception {
-
-        checkConfiguration(cfg);
-
         if (!isRemoteJvm(igniteInstanceName)) {
             IgniteUtils.setCurrentIgniteName(igniteInstanceName);
 
@@ -928,30 +919,6 @@ public abstract class GridAbstractTest extends TestCase {
         }
         else
             return startRemoteGrid(igniteInstanceName, null, ctx);
-    }
-
-    /**
-     * @param cfg Config.
-     */
-    protected void checkConfiguration(IgniteConfiguration cfg) {
-        if (cfg == null)
-            return;
-
-        if (!PERSISTENCE_ALLOWED) {
-            String errorMsg = "PERSISTENCE IS NOT ALLOWED IN THIS SUITE, PUT YOUR TEST TO ANOTHER ONE!";
-
-            DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
-
-            if (dsCfg != null) {
-                assertFalse(errorMsg, dsCfg.getDefaultDataRegionConfiguration().isPersistenceEnabled());
-
-                DataRegionConfiguration[] dataRegionConfigurations = dsCfg.getDataRegionConfigurations();
-
-                if (dataRegionConfigurations != null)
-                    for (DataRegionConfiguration dataRegionConfiguration : dataRegionConfigurations)
-                        assertFalse(errorMsg, dataRegionConfiguration.isPersistenceEnabled());
-            }
-        }
     }
 
     /**
@@ -1050,8 +1017,6 @@ public abstract class GridAbstractTest extends TestCase {
         if (cfg == null)
             cfg = optimize(getConfiguration(igniteInstanceName));
 
-        checkConfiguration(cfg);
-
         if (locNode != null) {
             DiscoverySpi discoverySpi = locNode.configuration().getDiscoverySpi();
 
@@ -1090,8 +1055,6 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws IgniteCheckedException On error.
      */
     protected IgniteConfiguration optimize(IgniteConfiguration cfg) throws IgniteCheckedException {
-        checkConfiguration(cfg);
-
         if (cfg.getLocalHost() == null) {
             if (cfg.getDiscoverySpi() instanceof TcpDiscoverySpi) {
                 cfg.setLocalHost("127.0.0.1");
@@ -1705,8 +1668,6 @@ public abstract class GridAbstractTest extends TestCase {
         cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         cfg.setFailureHandler(getFailureHandler(igniteInstanceName));
-
-        checkConfiguration(cfg);
 
         return cfg;
     }
