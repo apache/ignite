@@ -96,6 +96,17 @@ public abstract class GridDhtTopologyFutureAdapter extends GridFutureAdapter<Aff
 
         CacheGroupContext grp = cctx.group();
 
+        PartitionLossPolicy lossPlc = grp.config().getPartitionLossPolicy();
+
+        if (cctx.shared().readOnlyMode() && opType == WRITE)
+            return new IgniteCheckedException("Failed to perform cache operation (cluster is in read only mode)");
+
+        if (grp.needsRecovery() && !recovery) {
+            if (opType == WRITE && (lossPlc == READ_ONLY_SAFE || lossPlc == READ_ONLY_ALL))
+                return new IgniteCheckedException(
+                    "Failed to write to cache (cache is moved to a read-only state): " + cctx.name());
+        }
+
         CacheGroupValidation validation = grpValidRes.get(grp.groupId());
 
         if (validation == null)
