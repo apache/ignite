@@ -214,7 +214,6 @@ import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryNativeLoader;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.lang.GridTuple;
-import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -233,7 +232,6 @@ import org.apache.ignite.lang.IgniteFutureTimeoutException;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.marshaller.Marshaller;
@@ -10591,6 +10589,21 @@ public abstract class IgniteUtils {
 
             throw new IgniteCheckedException(error);
         }
+    }
+
+    /**
+     * Split number of tasks into optimized batches.
+     * @param parallelismLvl Level of parallelism.
+     * @param size number of tasks to split.
+     * @return array of batch sizes.
+     */
+    public static int[] calculateOptimalBatchSizes(int parallelismLvl, int size) {
+        int[] batcheSizes = new int[Math.min(parallelismLvl, size)];
+
+        for (int i = 0; i < size; i++)
+            batcheSizes[i % batcheSizes.length]++;
+
+        return batcheSizes;
     }
 
     /**

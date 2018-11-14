@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -896,6 +897,37 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         catch (Exception e) {
             assertTrue(e.toString(), X.hasCause(e, TimeoutException.class));
         }
+    }
+
+    /**
+     * Test optimal splitting on batch sizes.
+     */
+    public void testOptimalBatchSize() {
+        assertArrayEquals(new int[]{1}, IgniteUtils.calculateOptimalBatchSizes(1, 1));
+
+        assertArrayEquals(new int[]{2}, IgniteUtils.calculateOptimalBatchSizes(1, 2));
+
+        assertArrayEquals(new int[]{1, 1, 1, 1}, IgniteUtils.calculateOptimalBatchSizes(6, 4));
+
+        assertArrayEquals(new int[]{1}, IgniteUtils.calculateOptimalBatchSizes(4, 1));
+
+        assertArrayEquals(new int[]{1, 1}, IgniteUtils.calculateOptimalBatchSizes(4, 2));
+
+        assertArrayEquals(new int[]{1, 1, 1}, IgniteUtils.calculateOptimalBatchSizes(4, 3));
+
+        assertArrayEquals(new int[]{1, 1, 1, 1}, IgniteUtils.calculateOptimalBatchSizes(4, 4));
+
+        assertArrayEquals(new int[]{2, 1, 1, 1}, IgniteUtils.calculateOptimalBatchSizes(4, 5));
+
+        assertArrayEquals(new int[]{2, 2, 1, 1}, IgniteUtils.calculateOptimalBatchSizes(4, 6));
+
+        assertArrayEquals(new int[]{2, 2, 2, 1}, IgniteUtils.calculateOptimalBatchSizes(4, 7));
+
+        assertArrayEquals(new int[]{2, 2, 2, 2}, IgniteUtils.calculateOptimalBatchSizes(4, 8));
+
+        assertArrayEquals(new int[]{3, 2, 2, 2}, IgniteUtils.calculateOptimalBatchSizes(4, 9));
+
+        assertArrayEquals(new int[]{3, 3, 2, 2}, IgniteUtils.calculateOptimalBatchSizes(4, 10));
     }
 
     /**
