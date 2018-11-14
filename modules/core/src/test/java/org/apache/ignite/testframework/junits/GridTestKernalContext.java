@@ -70,6 +70,7 @@ public class GridTestKernalContext extends GridKernalContextImpl {
         );
 
         GridTestUtils.setFieldValue(grid(), "cfg", config());
+        GridTestUtils.setFieldValue(grid(), "ctx", this);
 
         config().setGridLogger(log);
     }
