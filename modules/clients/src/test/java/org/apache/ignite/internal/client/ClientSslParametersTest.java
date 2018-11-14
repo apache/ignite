@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client;
+package org.apache.ignite.internal.client;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.Callable;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.configuration.ClientConnectorConfiguration;
+import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.ssl.SslContextFactory;
+import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
@@ -31,7 +31,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Tests cases when node connects to cluster with different set of cipher suites.
  */
-public class SslParametersTest extends GridCommonAbstractTest {
+public class ClientSslParametersTest extends GridCommonAbstractTest {
     /** */
     public static final String TEST_CACHE_NAME = "TEST";
 
@@ -45,11 +45,12 @@ public class SslParametersTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration()
-            .setSslEnabled(true)
-            .setUseIgniteSslContextFactory(true));
+        ConnectorConfiguration conCfg = new ConnectorConfiguration();
+        conCfg.setSslEnabled(true);
+        conCfg.setSslClientAuth(true);
+        conCfg.setSslContextFactory(createSslFactory());
 
-        cfg.setSslContextFactory(createSslFactory());
+        cfg.setConnectorConfiguration(conCfg);
 
         CacheConfiguration ccfg = new CacheConfiguration(TEST_CACHE_NAME);
 
@@ -59,14 +60,12 @@ public class SslParametersTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @return Client config.
+     * @return Client configuration.
      */
-    protected ClientConfiguration getClientConfiguration() {
-        ClientConfiguration cfg = new ClientConfiguration();
+    protected GridClientConfiguration getClientConfiguration() {
+        GridClientConfiguration cfg = new GridClientConfiguration();
 
-        cfg.setAddresses("127.0.0.1:10800");
-
-        cfg.setSslMode(SslMode.REQUIRED);
+        cfg.setServers(Collections.singleton("127.0.0.1:11211"));
 
         cfg.setSslContextFactory(createSslFactory());
 
@@ -74,11 +73,10 @@ public class SslParametersTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @return SSL factory.
+     * @return SSL Factory.
      */
-    @NotNull private SslContextFactory createSslFactory() {
-        SslContextFactory factory = (SslContextFactory)GridTestUtils.sslTrustedFactory(
-            "node01", "trustone");
+    @NotNull private GridSslBasicContextFactory createSslFactory() {
+        GridSslBasicContextFactory factory = (GridSslBasicContextFactory)GridTestUtils.sslContextFactory();
 
         factory.setCipherSuites(cipherSuites);
         factory.setProtocols(protocols);
@@ -179,7 +177,7 @@ public class SslParametersTest extends GridCommonAbstractTest {
                 }
             },
             null,
-            IllegalArgumentException.class,
+            GridClientException.class,
             "Unsupported ciphersuite"
         );
     }
@@ -286,9 +284,11 @@ public class SslParametersTest extends GridCommonAbstractTest {
             this.cipherSuites = cipherSuites != null && i < cipherSuites.length ? cipherSuites[i] : null;
             this.protocols = protocols != null && i < protocols.length ? protocols[i] : null;
 
-            IgniteClient client = Ignition.startClient(getClientConfiguration());
+            GridClient client = GridClientFactory.start(getClientConfiguration());
 
-            client.getOrCreateCache(TEST_CACHE_NAME);
+            List<GridClientNode> top = client.compute().refreshTopology(false, false);
+
+            assertEquals(1, top.size());
 
             client.close();
         }
@@ -297,10 +297,9 @@ public class SslParametersTest extends GridCommonAbstractTest {
     /**
      * @param cipherSuites list of cipher suites
      * @param protocols list of protocols
-     * @throws Exception If failed.
      */
-    private void checkClientStartFailure(String[][] cipherSuites, String[][] protocols) throws Exception {
-        checkClientStartFailure(cipherSuites, protocols, ClientConnectionException.class, "Ignite cluster is unavailable");
+    private void checkClientStartFailure(String[][] cipherSuites, String[][] protocols) {
+        checkClientStartFailure(cipherSuites, protocols, GridClientException.class, "Latest topology update failed.");
     }
 
     /**
@@ -308,9 +307,8 @@ public class SslParametersTest extends GridCommonAbstractTest {
      * @param protocols list of protocols
      * @param ex expected exception class
      * @param msg exception message
-     * @throws Exception If failed.
      */
-    private void checkClientStartFailure(String[][] cipherSuites, String[][] protocols, Class<? extends Throwable> ex, String msg) throws Exception {
+    private void checkClientStartFailure(String[][] cipherSuites, String[][] protocols, Class<? extends Throwable> ex, String msg) {
         int n = Math.max(
             cipherSuites != null ? cipherSuites.length : 0,
             protocols != null ? protocols.length : 0);
@@ -321,11 +319,14 @@ public class SslParametersTest extends GridCommonAbstractTest {
 
             GridTestUtils.assertThrows(null, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    Ignition.startClient(getClientConfiguration());
+                    GridClient client = GridClientFactory.start(getClientConfiguration());
+
+                    client.compute().refreshTopology(false, false);
 
                     return null;
                 }
             }, ex, msg);
         }
     }
+
 }
