@@ -48,7 +48,7 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static final int GRID_CNT = 2;
+    private static final int GRID_CNT = 3;
 
     /** */
     private static final int MB = 1024 * 1024;
@@ -97,8 +97,8 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
 
         System.setProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
-//
-//        startGridsMultiThreaded(GRID_CNT);
+
+        startGridsMultiThreaded(GRID_CNT);
     }
 
     /** {@inheritDoc} */
@@ -215,7 +215,7 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
 
         int part = 0;
 
-        List<Integer> keys = loadDataToPartition(part, DEFAULT_CACHE_NAME, 100, 0, 100);
+        List<Integer> keys = loadDataToPartition(part, DEFAULT_CACHE_NAME, 100, 0, 1);
 
         forceCheckpoint(); // Prevent IGNITE-10088
 
@@ -223,24 +223,11 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        List<Integer> keys1 = loadDataToPartition(part, DEFAULT_CACHE_NAME, 100, 100, 100);
+        List<Integer> keys1 = loadDataToPartition(part, DEFAULT_CACHE_NAME, 100, 100, 1);
 
-        assertEquals(200, grid(0).cache(DEFAULT_CACHE_NAME).size());
-
-        stopGrid(0);
-
-        IgniteWalRebalanceTest.WalRebalanceCheckingCommunicationSpi.cleanup();
-
-        crd = startGrid(0);
         startGrid(1);
 
-        crd.cluster().active(true);
-
         awaitPartitionMapExchange();
-
-        Map<Integer, Set<Long>> map = IgniteWalRebalanceTest.WalRebalanceCheckingCommunicationSpi.allRebalances();
-
-        assertTrue(map.size() > 0);
     }
 
     public void testNodeRestartWithHolesDuringRebalance() {
