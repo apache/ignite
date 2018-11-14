@@ -38,7 +38,7 @@ public class CacheCompressionManager extends GridCacheManagerAdapter {
     private DiskPageCompression diskPageCompression;
 
     /** */
-    private int pageCompressLevel;
+    private int diskPageCompressLevel;
 
     /** */
     private CompressionProcessor compressProc;
@@ -56,7 +56,7 @@ public class CacheCompressionManager extends GridCacheManagerAdapter {
                 throw new IgniteCheckedException("Page compression makes sense only with enabled persistence.");
 
             Integer lvl = cfg.getDiskPageCompressionLevel();
-            pageCompressLevel = lvl != null ?
+            diskPageCompressLevel = lvl != null ?
                 checkCompressionLevelBounds(lvl, diskPageCompression) :
                 getDefaultCompressionLevel(diskPageCompression);
 
@@ -67,6 +67,11 @@ public class CacheCompressionManager extends GridCacheManagerAdapter {
             assert dbPath != null;
 
             compressProc.checkPageCompressionSupported(dbPath.toPath(), dsCfg.getPageSize());
+
+            if (log.isInfoEnabled()) {
+                log.info("Disk page compression is enabled [cache='" + cctx.name() +
+                    "', compression=" + diskPageCompression + ", level=" + diskPageCompressLevel + "]");
+            }
         }
     }
 
@@ -85,6 +90,6 @@ public class CacheCompressionManager extends GridCacheManagerAdapter {
         if (blockSize <= 0)
             throw new IgniteCheckedException("Failed to detect storage block size on " + U.osString());
 
-        return compressProc.compressPage(page, store.getPageSize(), blockSize, diskPageCompression, pageCompressLevel);
+        return compressProc.compressPage(page, store.getPageSize(), blockSize, diskPageCompression, diskPageCompressLevel);
     }
 }
