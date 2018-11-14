@@ -32,21 +32,24 @@ import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 public class GridCachePartitionedMvccTxSingleThreadedSelfTest extends IgniteMvccTxSingleThreadedAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> ccfg = defaultCacheConfiguration();
 
-        cc.setCacheMode(PARTITIONED);
-        cc.setBackups(1);
-        cc.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
+        ccfg.setCacheMode(PARTITIONED);
+        ccfg.setBackups(1);
+        ccfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
 
-        cc.setEvictionPolicy(null);
+        ccfg.setNearConfiguration(null);
+        ccfg.setEvictionPolicy(null);
 
-        cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC);
+        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC);
 
-        cc.setRebalanceMode(NONE);
+        ccfg.setRebalanceMode(NONE);
 
-        return c;
+        cfg.setCacheConfiguration(ccfg);
+
+        return cfg;
     }
 
     /** {@inheritDoc} */

@@ -33,10 +33,36 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * Tests for local transactions.
  */
 public abstract class IgniteMvccTxMultiThreadedAbstractTest extends IgniteTxAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9470");
+
+        super.beforeTestsStarted();
+    }
+
     /**
      * @return Thread count.
      */
     protected abstract int threadCount();
+
+    /**
+     /**
+     * @throws IgniteCheckedException If test failed.
+     */
+    public void testPessimisticRepeatableReadCommitMultithreaded() throws Exception {
+        checkCommitMultithreaded(PESSIMISTIC, REPEATABLE_READ);
+
+        finalChecks();
+    }
+
+    /**
+     * @throws IgniteCheckedException If test failed.
+     */
+    public void testPessimisticRepeatableReadRollbackMultithreaded() throws Exception {
+        checkRollbackMultithreaded(PESSIMISTIC, REPEATABLE_READ);
+
+        finalChecks();
+    }
 
     /**
      * @param concurrency Concurrency.
@@ -91,24 +117,5 @@ public abstract class IgniteMvccTxMultiThreadedAbstractTest extends IgniteTxAbst
                 }
             }
         }, threadCount(), concurrency + "-" + isolation);
-    }
-
-    /**
-    /**
-     * @throws IgniteCheckedException If test failed.
-     */
-    public void testPessimisticRepeatableReadCommitMultithreaded() throws Exception {
-        checkCommitMultithreaded(PESSIMISTIC, REPEATABLE_READ);
-
-        finalChecks();
-    }
-
-    /**
-     * @throws IgniteCheckedException If test failed.
-     */
-    public void testPessimisticRepeatableReadRollbackMultithreaded() throws Exception {
-        checkRollbackMultithreaded(PESSIMISTIC, REPEATABLE_READ);
-
-        finalChecks();
     }
 }

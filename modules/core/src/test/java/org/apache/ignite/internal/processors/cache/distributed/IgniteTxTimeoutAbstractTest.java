@@ -58,7 +58,7 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGridsMultiThreaded(GRID_COUNT, true);
+        startGridsMultiThreaded(GRID_COUNT);
     }
 
     /**

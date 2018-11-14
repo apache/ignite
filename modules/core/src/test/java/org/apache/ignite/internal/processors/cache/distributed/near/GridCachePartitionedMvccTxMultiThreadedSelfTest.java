@@ -38,22 +38,22 @@ public class GridCachePartitionedMvccTxMultiThreadedSelfTest extends IgniteMvccT
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> ccfg = defaultCacheConfiguration();
 
-        cc.setCacheMode(PARTITIONED);
-        cc.setBackups(1);
+        ccfg.setCacheMode(PARTITIONED);
+        ccfg.setBackups(1);
 
-        cc.setEvictionPolicy(null);
+        ccfg.setEvictionPolicy(null);
 
-        cc.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
-        cc.setNearConfiguration(nearEnabled() ? new NearCacheConfiguration() : null);
+        ccfg.setNearConfiguration(nearEnabled() ? new NearCacheConfiguration() : null);
 
-        c.setCacheConfiguration(cc);
+        cfg.setCacheConfiguration(ccfg);
 
-        return c;
+        return cfg;
     }
 
     /**
