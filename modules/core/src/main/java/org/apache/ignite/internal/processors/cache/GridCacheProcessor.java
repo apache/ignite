@@ -2067,19 +2067,23 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     private void prepareStartCaches(
         Collection<StartCacheInfo> startCacheInfos,
-        StartCacheFailHandler<StartCacheInfo> cacheStartFailHandler
+        StartCacheFailHandler<StartCacheInfo, Void> cacheStartFailHandler
     ) throws IgniteCheckedException {
         if (!IGNITE_ALLOW_START_CACHES_IN_PARALLEL || startCacheInfos.size() <= 1) {
             for (StartCacheInfo startCacheInfo : startCacheInfos) {
                 cacheStartFailHandler.handle(
                     startCacheInfo,
-                    cacheInfo -> prepareCacheStart(
-                        cacheInfo.getCacheDescriptor().cacheConfiguration(),
-                        cacheInfo.getCacheDescriptor(),
-                        cacheInfo.getReqNearCfg(),
-                        cacheInfo.getExchangeTopVer(),
-                        cacheInfo.isDisabledAfterStart()
-                    )
+                    cacheInfo -> {
+                        prepareCacheStart(
+                            cacheInfo.getCacheDescriptor().cacheConfiguration(),
+                            cacheInfo.getCacheDescriptor(),
+                            cacheInfo.getReqNearCfg(),
+                            cacheInfo.getExchangeTopVer(),
+                            cacheInfo.isDisabledAfterStart()
+                        );
+
+                        return null;
+                    }
                 );
 
                 context().exchange().exchangerUpdateHeartbeat();
@@ -2097,7 +2101,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 parallelismLvl,
                 sharedCtx.kernalContext().getSystemExecutorService(),
                 startCacheInfos,
-                startCacheInfo ->
+                startCacheInfo -> {
                     cacheStartFailHandler.handle(
                         startCacheInfo,
                         cacheInfo -> {
@@ -2111,8 +2115,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             cacheContexts.put(cacheInfo, cacheCtx);
 
                             context().exchange().exchangerUpdateHeartbeat();
+
+                            return null;
                         }
-                    )
+                    );
+
+                    return null;
+                }
             );
 
             /*
@@ -2144,6 +2153,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         }
 
                         context().exchange().exchangerUpdateHeartbeat();
+
+                        return null;
                     }
                 );
             }
@@ -2152,7 +2163,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 parallelismLvl,
                 sharedCtx.kernalContext().getSystemExecutorService(),
                 cacheContexts.entrySet(),
-                cacheCtxEntry ->
+                cacheCtxEntry -> {
                     cacheStartFailHandler.handle(
                         cacheCtxEntry.getKey(),
                         cacheInfo -> {
@@ -2164,8 +2175,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 onCacheStarted(cacheCtxEntry.getValue());
 
                             context().exchange().exchangerUpdateHeartbeat();
+
+                            return null;
                         }
-                    )
+                    );
+
+                    return null;
+                }
             );
         }
     }
@@ -2188,12 +2204,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     ) throws IgniteCheckedException {
         GridCacheContext cacheCtx = prepareCacheContext(startCfg, desc, reqNearCfg, exchTopVer, disabledAfterStart);
 
-        ctx.query().onCacheStart(cacheCtx, desc.schema() != null ? desc.schema() : new QuerySchema());
-
         if (cacheCtx.isRecoveryMode())
             finishRecovery(exchTopVer, cacheCtx);
-        else
+        else {
+            ctx.query().onCacheStart(cacheCtx, desc.schema() != null ? desc.schema() : new QuerySchema());
+
             onCacheStarted(cacheCtx);
+        }
     }
 
     /**
@@ -5468,7 +5485,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @param <T> Type of started data.
      */
-    private static interface StartCacheFailHandler<T> {
+    private static interface StartCacheFailHandler<T, R> {
         /**
          * Handle of fail.
          *
@@ -5476,7 +5493,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
          * @param startCacheOperation Operation for start cache.
          * @throws IgniteCheckedException if failed.
          */
-        void handle(T data, IgniteThrowableConsumer<T> startCacheOperation) throws IgniteCheckedException;
+        void handle(T data, IgniteThrowableConsumer<T, R> startCacheOperation) throws IgniteCheckedException;
     }
 
     /**

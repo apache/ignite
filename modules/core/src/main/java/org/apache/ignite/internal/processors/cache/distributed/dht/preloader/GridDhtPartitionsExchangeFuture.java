@@ -102,7 +102,6 @@ import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -557,6 +556,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private boolean dynamicCacheStartExchange() {
         return exchActions != null && !exchActions.cacheStartRequests().isEmpty()
             && exchActions.cacheStopRequests().isEmpty();
+    }
+
+    /**
+     * @param cacheOrGroupName Group or cache name for reset lost partitions.
+     * @return {@code True} if reset lost partition exchange.
+     */
+    public boolean resetLostPartitionFor(String cacheOrGroupName) {
+        return exchActions != null && exchActions.cachesToResetLostPartitions().contains(cacheOrGroupName);
     }
 
     /**
@@ -2204,8 +2211,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             for (PartitionsExchangeAware comp : cctx.exchange().exchangeAwareComponents())
                 comp.onDoneAfterTopologyUnlock(this);
 
-            exchActions = null;
-
             if (firstDiscoEvt instanceof DiscoveryCustomEvent)
                 ((DiscoveryCustomEvent)firstDiscoEvt).customMessage(null);
 
@@ -3524,7 +3529,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         || grpCtx.config().getRebalanceMode() == CacheRebalanceMode.NONE
                         || grpCtx.config().getExpiryPolicyFactory() == null
                         || SKIP_PARTITION_SIZE_VALIDATION)
-                        return;
+                        return null;
 
                     try {
                         validator.validatePartitionCountersAndSizes(GridDhtPartitionsExchangeFuture.this, top, msgs);
@@ -3533,6 +3538,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         log.warning("Partition states validation has failed for group: " + grpCtx.cacheOrGroupName() + ". " + ex.getMessage());
                         // TODO: Handle such errors https://issues.apache.org/jira/browse/IGNITE-7833
                     }
+
+                    return null;
                 }
             );
         }
@@ -3565,6 +3572,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         assignPartitionSizes(top);
                     else
                         assignPartitionStates(top);
+
+                    return null;
                 }
             );
         }
@@ -4021,6 +4030,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                                 null);
                         }
                     }
+
+                    return null;
                 });
         }
         catch (IgniteCheckedException e) {

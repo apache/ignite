@@ -1351,7 +1351,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 cctx.cache().cacheGroups(),
                 cacheGroup -> {
                     if (cacheGroup.isLocal())
-                        return;
+                        return null;
 
                     cctx.database().checkpointReadLock();
 
@@ -1364,6 +1364,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     finally {
                         cctx.database().checkpointReadUnlock();
                     }
+
+                    return null;
                 }
             );
         }

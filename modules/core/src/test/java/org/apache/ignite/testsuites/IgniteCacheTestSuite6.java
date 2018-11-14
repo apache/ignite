@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.ReplicatedTransactionalOptimi
 import org.apache.ignite.internal.processors.cache.ReplicatedTransactionalPessimisticCacheGetsDistributionTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteExchangeLatchManagerCoordinatorFailTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheExchangeMergeTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheParallelStartTest;
 import org.apache.ignite.internal.processors.cache.distributed.CachePartitionStateTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheTryLockMultithreadedTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCachePartitionEvictionDuringReadThroughSelfTest;
@@ -50,7 +51,6 @@ import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTime
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTopologyChangeTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxStateChangeEventTest;
-import org.apache.ignite.testframework.junits.GridAbstractTest;
 
 /**
  * Test suite.
@@ -61,8 +61,6 @@ public class IgniteCacheTestSuite6 extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        System.setProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, "false");
-
         TestSuite suite = new TestSuite("IgniteCache Test Suite part 6");
 
         suite.addTestSuite(CachePartitionStateTest.class);
@@ -112,6 +110,8 @@ public class IgniteCacheTestSuite6 extends TestSuite {
 
         suite.addTestSuite(PartitionsExchangeCoordinatorFailoverTest.class);
         suite.addTestSuite(CacheTryLockMultithreadedTest.class);
+
+        suite.addTestSuite(CacheParallelStartTest.class);
 
         //suite.addTestSuite(CacheClientsConcurrentStartTest.class);
         //suite.addTestSuite(GridCacheRebalancingOrderingTest.class);
