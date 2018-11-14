@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -163,6 +164,9 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPutGetNone1() throws Exception {
+        if (FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-10261");
+
         preloadMode = NONE;
         backups = 1;
 
@@ -173,6 +177,9 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPutGetNone2() throws Exception {
+        if (FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-10261");
+
         preloadMode = NONE;
         backups = 2;
 

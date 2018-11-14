@@ -143,7 +143,8 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testEntryProcessorNodeLeave() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10254");
+        if (FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-10254");
 
         startGrid(GRID_CNT);
 
