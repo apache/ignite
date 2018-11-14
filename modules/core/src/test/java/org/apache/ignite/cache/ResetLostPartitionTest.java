@@ -18,6 +18,7 @@
 package org.apache.ignite.cache;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
@@ -58,6 +59,9 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
     /** Cache size */
     public static final int CACHE_SIZE = 100000 / CACHE_NAMES.length;
 
+    /** */
+    private boolean persistenceEnabled = true;
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         if (MvccFeatureChecker.forcedMvcc())
@@ -88,7 +92,7 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
         DataStorageConfiguration storageCfg = new DataStorageConfiguration();
 
         storageCfg.getDefaultDataRegionConfiguration()
-            .setPersistenceEnabled(true)
+            .setPersistenceEnabled(persistenceEnabled)
             .setMaxSize(500L * 1024 * 1024);
 
         cfg.setDataStorageConfiguration(storageCfg);
@@ -236,6 +240,50 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
 
         //Rebalance should be successfully finished.
         assertEquals(CACHE_NAMES.length * CACHE_SIZE, averageSizeAroundAllNodes());
+    }
+
+    /**
+     * todo
+     *
+     * @throws Exception if fail.
+     */
+    public void testDuplicateOwners() throws Exception {
+        persistenceEnabled = false;
+
+        int gridCnt = 4;
+
+        Ignite node = startGridsMultiThreaded(gridCnt);
+
+        IgniteCache<Integer, Integer> cache = node.createCache(
+            new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME)
+                .setBackups(0)
+                .setPartitionLossPolicy(PartitionLossPolicy.READ_WRITE_SAFE));
+
+        for (int i = 0; i < CACHE_SIZE; i++)
+            cache.put(i, i);
+
+        stopGrid(gridCnt - 1);
+
+        startGrid(gridCnt - 1);
+
+        // todo
+        U.sleep(5_000);
+
+        grid(0).resetLostPartitions(Collections.singleton(DEFAULT_CACHE_NAME));
+
+        // todo
+        U.sleep(5_000);
+
+        int parts = grid(0).cachex(DEFAULT_CACHE_NAME).configuration().getAffinity().partitions();
+
+        int owners = 0;
+
+        for (int i = 0; i < gridCnt; i++) {
+            owners += getPartitionsStates(i, DEFAULT_CACHE_NAME).stream().
+                filter(v -> v == GridDhtPartitionState.OWNING).collect(Collectors.toList()).size();
+        }
+
+        assertEquals(parts, owners);
     }
 
     /**
