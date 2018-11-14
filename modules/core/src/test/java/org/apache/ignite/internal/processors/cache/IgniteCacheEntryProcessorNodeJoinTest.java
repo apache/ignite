@@ -116,7 +116,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        startGrids(GRID_CNT);
+        startGridsMultiThreaded(GRID_CNT, true);
     }
 
     /** {@inheritDoc} */
@@ -238,8 +238,6 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
                 checkIncrement(DEFAULT_CACHE_NAME, invokeAll, null, null);
             }
             finally {
-                stop.set(true);
-
                 fut.get(getTestTimeout());
             }
 
@@ -253,6 +251,8 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
             }
         }
         finally {
+            stop.set(true);
+
             if (!fut.isDone())
                 fut.cancel();
         }
@@ -366,22 +366,17 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
         try {
             int updVal = 0;
 
-            try {
-                while (!stop.get()) {
-                    info("Will put: " + (updVal + 1));
+            while (!stop.get()) {
+                info("Will put: " + (updVal + 1));
 
-                    for (int i = 0; i < keys; i++)
-                        assertTrue("Failed [key=" + i + ", oldVal=" + updVal + ']',
-                            ignite(0).cache(DEFAULT_CACHE_NAME).replace(i, updVal, updVal + 1));
+                for (int i = 0; i < keys; i++)
+                    assertTrue("Failed [key=" + i + ", oldVal=" + updVal + ']',
+                        ignite(0).cache(DEFAULT_CACHE_NAME).replace(i, updVal, updVal + 1));
 
-                    updVal++;
-                }
+                updVal++;
             }
-            finally {
-                stop.set(true);
 
-                fut.get(getTestTimeout());
-            }
+            fut.get(getTestTimeout());
 
             for (int i = 0; i < keys; i++) {
                 for (int g = 0; g < GRID_CNT + started; g++) {
@@ -397,6 +392,8 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
             }
         }
         finally {
+            stop.set(true);
+
             if (!fut.isDone())
                 fut.cancel();
         }

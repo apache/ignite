@@ -117,12 +117,17 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
             info(msg);
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         for (int i = 0; i < gridCount(); i++)
             startGrid(i);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+
+        super.afterTestsStopped();
     }
 
     /**
