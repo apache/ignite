@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.ReplicatedTransactionalOptimi
 import org.apache.ignite.internal.processors.cache.ReplicatedTransactionalPessimisticCacheGetsDistributionTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteExchangeLatchManagerCoordinatorFailTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheExchangeMergeTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheParallelStartTest;
 import org.apache.ignite.internal.processors.cache.distributed.CachePartitionStateTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheTryLockMultithreadedTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCachePartitionEvictionDuringReadThroughSelfTest;
@@ -109,6 +110,8 @@ public class IgniteCacheTestSuite6 extends TestSuite {
 
         suite.addTestSuite(PartitionsExchangeCoordinatorFailoverTest.class);
         suite.addTestSuite(CacheTryLockMultithreadedTest.class);
+
+        suite.addTestSuite(CacheParallelStartTest.class);
 
         //suite.addTestSuite(CacheClientsConcurrentStartTest.class);
         //suite.addTestSuite(GridCacheRebalancingOrderingTest.class);

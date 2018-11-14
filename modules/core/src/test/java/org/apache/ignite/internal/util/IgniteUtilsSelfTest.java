@@ -944,39 +944,46 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test optimal splitting on batch sizes.
+     */
+    public void testOptimalBatchSize() {
+        assertArrayEquals(new int[]{1}, IgniteUtils.calculateOptimalBatchSizes(1, 1));
+
+        assertArrayEquals(new int[]{2}, IgniteUtils.calculateOptimalBatchSizes(1, 2));
+
+        assertArrayEquals(new int[]{1, 1, 1, 1}, IgniteUtils.calculateOptimalBatchSizes(6, 4));
+
+        assertArrayEquals(new int[]{1}, IgniteUtils.calculateOptimalBatchSizes(4, 1));
+
+        assertArrayEquals(new int[]{1, 1}, IgniteUtils.calculateOptimalBatchSizes(4, 2));
+
+        assertArrayEquals(new int[]{1, 1, 1}, IgniteUtils.calculateOptimalBatchSizes(4, 3));
+
+        assertArrayEquals(new int[]{1, 1, 1, 1}, IgniteUtils.calculateOptimalBatchSizes(4, 4));
+
+        assertArrayEquals(new int[]{2, 1, 1, 1}, IgniteUtils.calculateOptimalBatchSizes(4, 5));
+
+        assertArrayEquals(new int[]{2, 2, 1, 1}, IgniteUtils.calculateOptimalBatchSizes(4, 6));
+
+        assertArrayEquals(new int[]{2, 2, 2, 1}, IgniteUtils.calculateOptimalBatchSizes(4, 7));
+
+        assertArrayEquals(new int[]{2, 2, 2, 2}, IgniteUtils.calculateOptimalBatchSizes(4, 8));
+
+        assertArrayEquals(new int[]{3, 2, 2, 2}, IgniteUtils.calculateOptimalBatchSizes(4, 9));
+
+        assertArrayEquals(new int[]{3, 3, 2, 2}, IgniteUtils.calculateOptimalBatchSizes(4, 10));
+    }
+
+    /**
      * Test parallel execution in order.
      */
     public void testDoInParallelResultsOrder() throws IgniteCheckedException {
         ExecutorService executorService = Executors.newFixedThreadPool(4);
 
         try {
-            testOrder(executorService, 1, 1);
-            testOrder(executorService, 2, 1);
-            testOrder(executorService, 3, 1);
-            testOrder(executorService, 9, 1);
-            testOrder(executorService, 10, 1);
-            testOrder(executorService, 9999, 1);
-
-            testOrder(executorService, 1, 2);
-            testOrder(executorService, 2, 2);
-            testOrder(executorService, 3, 2);
-            testOrder(executorService, 9, 2);
-            testOrder(executorService, 10, 2);
-            testOrder(executorService, 9999, 2);
-
-            testOrder(executorService, 1, 3);
-            testOrder(executorService, 2, 3);
-            testOrder(executorService, 3, 3);
-            testOrder(executorService, 3, 3);
-            testOrder(executorService, 10, 3);
-            testOrder(executorService, 9999, 3);
-
-            testOrder(executorService, 1, 4);
-            testOrder(executorService, 2, 4);
-            testOrder(executorService, 3, 4);
-            testOrder(executorService, 9, 4);
-            testOrder(executorService, 10, 4);
-            testOrder(executorService, 9999, 4);
+            for(int parallelism = 1; parallelism < 16; parallelism++)
+                for(int size = 0; size < 10_000; size++)
+                    testOrder(executorService, size, parallelism);
         } finally {
             executorService.shutdownNow();
         }
