@@ -329,7 +329,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public boolean registerType(GridCacheContext cctx,
-            GridQueryTypeDescriptor desc) throws IgniteCheckedException {
+            GridQueryTypeDescriptor desc, boolean isSql) throws IgniteCheckedException {
             return false;
         }
 
