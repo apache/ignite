@@ -207,6 +207,9 @@ public class CommandHandler {
     protected static final String CMD_SSL_ALGORITHM = "--ssl_algorithm";
 
     /** */
+    protected static final String CMD_SSL_CIPHER_SUITES = "--ssl_cipher_suites";
+
+    /** */
     protected static final String CMD_SSL_KEY_STORE_PATH = "--ssl_key_store_path";
 
     /** */
@@ -227,27 +230,34 @@ public class CommandHandler {
     /** */
     private static final String CMD_USER_ATTRIBUTES = "--user-attributes";
 
-
     /** List of optional auxiliary commands. */
     private static final Set<String> AUX_COMMANDS = new HashSet<>();
 
     static {
         AUX_COMMANDS.add(CMD_HELP);
+
         AUX_COMMANDS.add(CMD_HOST);
         AUX_COMMANDS.add(CMD_PORT);
+
         AUX_COMMANDS.add(CMD_PASSWORD);
         AUX_COMMANDS.add(CMD_USER);
+
         AUX_COMMANDS.add(CMD_AUTO_CONFIRMATION);
+
         AUX_COMMANDS.add(CMD_PING_INTERVAL);
         AUX_COMMANDS.add(CMD_PING_TIMEOUT);
+
         AUX_COMMANDS.add(CMD_SSL_ENABLED);
         AUX_COMMANDS.add(CMD_SSL_PROTOCOL);
         AUX_COMMANDS.add(CMD_SSL_ALGORITHM);
-        AUX_COMMANDS.add(CMD_SSL_KEY_STORE_PATH);
+        AUX_COMMANDS.add(CMD_SSL_CIPHER_SUITES);
+
         AUX_COMMANDS.add(CMD_SSL_KEY_STORE_TYPE);
+        AUX_COMMANDS.add(CMD_SSL_KEY_STORE_PATH);
         AUX_COMMANDS.add(CMD_SSL_KEY_STORE_PASSWORD);
-        AUX_COMMANDS.add(CMD_SSL_TRUSTSTORE_PATH);
+
         AUX_COMMANDS.add(CMD_SSL_TRUSTSTORE_TYPE);
+        AUX_COMMANDS.add(CMD_SSL_TRUSTSTORE_PATH);
         AUX_COMMANDS.add(CMD_SSL_TRUSTSTORE_PASSWORD);
     }
 
@@ -357,7 +367,15 @@ public class CommandHandler {
     private static final String UTILITY_NAME = "control.sh";
 
     /** Common options. */
-    private static final String COMMON_OPTIONS = String.join(" ", op(CMD_HOST, "HOST_OR_IP"), op(CMD_PORT, "PORT"), op(CMD_USER, "USER"), op(CMD_PASSWORD, "PASSWORD"), op(CMD_PING_INTERVAL, "PING_INTERVAL"), op(CMD_PING_TIMEOUT, "PING_TIMEOUT"), op(CMD_SSL_ENABLED), op(CMD_SSL_KEY_STORE_PATH,"PATH"),op(CMD_SSL_KEY_STORE_TYPE, "jks"), op(CMD_SSL_KEY_STORE_PASSWORD, "PASSWORD"), op(CMD_SSL_TRUSTSTORE_PATH, "PATH"), op(CMD_SSL_TRUSTSTORE_TYPE, "jks"), op(CMD_SSL_TRUSTSTORE_PASSWORD, "PASSWORD"));
+    private static final String COMMON_OPTIONS = String.join(" ", op(CMD_HOST, "HOST_OR_IP"), op(CMD_PORT, "PORT"),
+        op(CMD_USER, "USER"), op(CMD_PASSWORD, "PASSWORD"),
+        op(CMD_PING_INTERVAL, "PING_INTERVAL"), op(CMD_PING_TIMEOUT, "PING_TIMEOUT"),
+        op(CMD_SSL_ENABLED),
+        op(CMD_SSL_PROTOCOL, "SSL_PROTOCOL[, SSL_PROTOCOL_2, ...]"),
+        op(CMD_SSL_ALGORITHM, "SSL_ALGORITHM"),
+        op(CMD_SSL_CIPHER_SUITES, "SSL_CIPHER_1[, SSL_CIPHER_2, ...]"),
+        op(CMD_SSL_KEY_STORE_TYPE, "SSL_KEY_STORE_TYPE"), op(CMD_SSL_KEY_STORE_PATH, "PATH"), op(CMD_SSL_KEY_STORE_PASSWORD, "PASSWORD"),
+        op(CMD_SSL_TRUSTSTORE_TYPE, "SSL_TRUST_STORE_TYPE"), op(CMD_SSL_TRUSTSTORE_PATH, "PATH"), op(CMD_SSL_TRUSTSTORE_PASSWORD, "PASSWORD"));
 
     /** Utility name with common options. */
     private static final String UTILITY_NAME_WITH_COMMON_OPTIONS = String.join(" ", UTILITY_NAME, COMMON_OPTIONS);
@@ -629,7 +647,6 @@ public class CommandHandler {
 
     /**
      * @param client Client.
-     *
      * @return List of hosts.
      */
     private Stream<IgniteBiTuple<GridClientNode, String>> listHosts(GridClient client) throws GridClientException {
@@ -643,7 +660,6 @@ public class CommandHandler {
 
     /**
      * @param client Client.
-     *
      * @return List of hosts.
      */
     private Stream<IgniteBiTuple<GridClientNode, List<String>>> listHostsByClientNode(GridClient client) throws GridClientException {
@@ -876,11 +892,11 @@ public class CommandHandler {
         }
 
         for (Map.Entry<UUID, VisorValidateIndexesJobResult> nodeEntry : taskRes.results().entrySet()) {
-            boolean errors = false;
-
             log("validate_indexes result on node " + nodeEntry.getKey() + ":");
 
             Collection<IndexIntegrityCheckIssue> integrityCheckFailures = nodeEntry.getValue().integrityCheckFailures();
+
+            boolean errors = false;
 
             if (!integrityCheckFailures.isEmpty()) {
                 errors = true;
@@ -1030,10 +1046,9 @@ public class CommandHandler {
             executeTaskByNameOnNode(client, VisorCacheConfigurationCollectorTask.class.getName(), taskArg, nodeId);
 
         Map<String, Integer> cacheToMapped =
-            viewRes.cacheInfos().stream().collect(Collectors.toMap(x -> x.getCacheName(), x -> x.getMapped()));
+            viewRes.cacheInfos().stream().collect(Collectors.toMap(CacheInfo::getCacheName, CacheInfo::getMapped));
 
         printCachesConfig(res, cacheArgs.outputFormat(), cacheToMapped);
-
     }
 
     /**
@@ -1816,21 +1831,23 @@ public class CommandHandler {
 
         VisorTxTaskArg txArgs = null;
 
-        boolean sslEnable= false;
+        boolean sslEnable = false;
 
         String sslProtocol = SslContextFactory.DFLT_SSL_PROTOCOL;
 
         String sslAlgorithm = SslContextFactory.DFLT_KEY_ALGORITHM;
 
-        String sslKeyStorePath = null;
+        String sslCipherSuites = "";
 
         String sslKeyStoreType = SslContextFactory.DFLT_STORE_TYPE;
 
+        String sslKeyStorePath = null;
+
         char sslKeyStorePassword[] = null;
 
-        String sslTrustStorePath = null;
-
         String sslTrustStoreType = SslContextFactory.DFLT_STORE_TYPE;
+
+        String sslTrustStorePath = null;
 
         char sslTrustStorePassword[] = null;
 
@@ -1957,42 +1974,47 @@ public class CommandHandler {
                         break;
 
                     case CMD_SSL_PROTOCOL:
-                        sslProtocol = nextArg("Expected ssl protocol");
+                        sslProtocol = nextArg("Expected SSL protocol");
 
                         break;
 
                     case CMD_SSL_ALGORITHM:
-                        sslAlgorithm = nextArg("Expected ssl algorithm");
+                        sslAlgorithm = nextArg("Expected SSL algorithm");
+
+                        break;
+
+                    case CMD_SSL_CIPHER_SUITES:
+                        sslCipherSuites = nextArg("Expected SSL cipher suites");
 
                         break;
 
                     case CMD_SSL_KEY_STORE_PATH:
-                        sslKeyStorePath = nextArg("Expected ssl key store path");
+                        sslKeyStorePath = nextArg("Expected SSL key store path");
 
                         break;
 
                     case CMD_SSL_KEY_STORE_TYPE:
-                        sslKeyStoreType = nextArg("Expected ssl key store type");
+                        sslKeyStoreType = nextArg("Expected SSL key store type");
 
                         break;
 
                     case CMD_SSL_KEY_STORE_PASSWORD:
-                        sslKeyStorePassword = nextArg("Expected ssl key store password").toCharArray();
+                        sslKeyStorePassword = nextArg("Expected SSL key store password").toCharArray();
 
                         break;
 
                     case CMD_SSL_TRUSTSTORE_PATH:
-                        sslTrustStorePath = nextArg("Expected ssl trust store path");
+                        sslTrustStorePath = nextArg("Expected SSL trust store path");
 
                         break;
 
                     case CMD_SSL_TRUSTSTORE_TYPE:
-                        sslTrustStoreType = nextArg("Expected ssl trust store type");
+                        sslTrustStoreType = nextArg("Expected SSL trust store type");
 
                         break;
 
                     case CMD_SSL_TRUSTSTORE_PASSWORD:
-                        sslTrustStorePassword = nextArg("Expected ssl trust store password").toCharArray();
+                        sslTrustStorePassword = nextArg("Expected SSL trust store password").toCharArray();
 
                         break;
 
@@ -2012,9 +2034,12 @@ public class CommandHandler {
 
         Command cmd = commands.get(0);
 
-        return new Arguments(cmd, host, port, user, pwd, baselineAct, baselineArgs, txArgs, cacheArgs, walAct, walArgs,
+        return new Arguments(cmd, host, port, user, pwd,
+            baselineAct, baselineArgs,
+            txArgs, cacheArgs,
+            walAct, walArgs,
             pingTimeout, pingInterval, autoConfirmation,
-            sslEnable, sslProtocol, sslAlgorithm,
+            sslEnable, sslProtocol, sslAlgorithm, sslCipherSuites,
             sslKeyStorePath, sslKeyStoreType, sslKeyStorePassword,
             sslTrustStorePath, sslTrustStoreType, sslTrustStorePassword);
     }
@@ -2498,6 +2523,23 @@ public class CommandHandler {
     }
 
     /**
+     * Split string into items.
+     *
+     * @param s String to process.
+     * @param delim Delimiter.
+     * @return List with items.
+     */
+    private List<String> split(String s, String delim) {
+        if (F.isEmpty(s))
+            return Collections.emptyList();
+
+        return Arrays.stream(s.split(delim))
+            .map(String::trim)
+            .filter(item -> !item.isEmpty())
+            .collect(Collectors.toList());
+    }
+
+    /**
      * Parse and execute command.
      *
      * @param rawArgs Arguments to parse and execute.
@@ -2541,6 +2583,11 @@ public class CommandHandler {
                 log(i("PORT=" + DFLT_PORT, 2));
                 log(i("PING_INTERVAL=" + DFLT_PING_INTERVAL, 2));
                 log(i("PING_TIMEOUT=" + DFLT_PING_TIMEOUT, 2));
+                log(i("SSL_PROTOCOL=" + SslContextFactory.DFLT_SSL_PROTOCOL, 2));
+                log(i("SSL_ALGORITHM=" + SslContextFactory.DFLT_KEY_ALGORITHM, 2));
+                log(i("SSL_KEY_STORE_TYPE=" + SslContextFactory.DFLT_STORE_TYPE, 2));
+                log(i("SSL_TRUST_STORE_TYPE=" + SslContextFactory.DFLT_STORE_TYPE, 2));
+
                 nl();
 
                 log("Exit codes:");
@@ -2575,28 +2622,37 @@ public class CommandHandler {
 
             clientCfg.setServers(Collections.singletonList(args.host() + ":" + args.port()));
 
-            if (args.isSslEnable()){
+            if (args.isSslEnable()) {
                 GridSslBasicContextFactory factory = new GridSslBasicContextFactory();
 
-                factory.setProtocol(args.getSslProtocol());
+                List<String> sslProtocols = split(args.getSslProtocol(), ",");
+
+                String sslProtocol = F.isEmpty(sslProtocols) ? SslContextFactory.DFLT_SSL_PROTOCOL : sslProtocols.get(0);
+
+                factory.setProtocol(sslProtocol);
                 factory.setKeyAlgorithm(args.getSslAlgorithm());
 
-                if (args.getSslKeyStorePath()==null)
+                if (sslProtocols.size() > 1)
+                    factory.setProtocols(sslProtocols);
+
+                factory.setCipherSuites(split(args.getSslCipherSuites(), ","));
+
+                if (args.getSslKeyStorePath() == null)
                     throw new IllegalArgumentException("SSL key store location is not specified.");
 
                 factory.setKeyStoreFilePath(args.getSslKeyStorePath());
 
-                if (args.getSslKeyStorePassword()!=null)
+                if (args.getSslKeyStorePassword() != null)
                     factory.setKeyStorePassword(args.getSslKeyStorePassword());
 
                 factory.setKeyStoreType(args.getSslKeyStoreType());
 
-                if (args.getSslTrustStorePath()==null)
+                if (args.getSslTrustStorePath() == null)
                     factory.setTrustManagers(GridSslBasicContextFactory.getDisabledTrustManager());
                 else {
                     factory.setTrustStoreFilePath(args.getSslTrustStorePath());
 
-                    if (args.getSslTrustStorePassword()!=null)
+                    if (args.getSslTrustStorePassword() != null)
                         factory.setTrustStorePassword(args.getSslTrustStorePassword());
 
                     factory.setTrustStoreType(args.getSslTrustStoreType());
@@ -2607,7 +2663,7 @@ public class CommandHandler {
 
             boolean tryConnectAgain = true;
 
-            int tryConnectMaxCount=3;
+            int tryConnectMaxCount = 3;
 
             while (tryConnectAgain) {
                 tryConnectAgain = false;
@@ -2632,42 +2688,42 @@ public class CommandHandler {
                         case ACTIVATE:
                             activate(client);
 
-                        break;
+                            break;
 
-                    case DEACTIVATE:
-                        deactivate(client);
+                        case DEACTIVATE:
+                            deactivate(client);
 
-                        break;
+                            break;
 
-                    case STATE:
-                        state(client);
+                        case STATE:
+                            state(client);
 
-                        break;
+                            break;
 
-                    case BASELINE:
-                        baseline(client, args.baselineAction(), args.baselineArguments());
+                        case BASELINE:
+                            baseline(client, args.baselineAction(), args.baselineArguments());
 
-                        break;
+                            break;
 
-                    case TX:
-                        transactions(client, args.transactionArguments());
+                        case TX:
+                            transactions(client, args.transactionArguments());
 
-                        break;
+                            break;
 
-                    case CACHE:
-                        cache(client, args.cacheArgs());
+                        case CACHE:
+                            cache(client, args.cacheArgs());
 
-                        break;
+                            break;
 
-                    case WAL:
-                        wal(client, args.walAction(), args.walArguments());
+                        case WAL:
+                            wal(client, args.walAction(), args.walArguments());
 
                             break;
                     }
                 }
                 catch (Throwable e) {
                     if (tryConnectMaxCount > 0 && isAuthError(e)) {
-                        System.out.println("Authentication error, try connection again.");
+                        log("Authentication error, try connection again.");
 
                         final Console console = System.console();
 
@@ -2680,13 +2736,13 @@ public class CommandHandler {
                         else {
                             Scanner scanner = new Scanner(System.in);
 
-                            if (F.isEmpty(args.getUserName())){
-                                System.out.println("user: ");
+                            if (F.isEmpty(args.getUserName())) {
+                                log("user: ");
 
                                 args.setUserName(scanner.next());
                             }
 
-                            System.out.println("password: ");
+                            log("password: ");
 
                             args.setPassword(scanner.next());
                         }
