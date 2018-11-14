@@ -20,7 +20,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperation;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -43,5 +46,10 @@ public class NoOpTransactionalDrProcessor extends GridProcessorAdapter implement
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onPartitionsFullMessagePrepared(@Nullable GridDhtPartitionExchangeId exchId,
+        GridDhtPartitionsFullMessage fullMsg) {
     }
 }

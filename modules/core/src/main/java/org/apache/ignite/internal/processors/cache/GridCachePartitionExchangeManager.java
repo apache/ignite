@@ -1149,9 +1149,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     ) {
         long time = System.currentTimeMillis();
 
-        GridDhtPartitionsFullMessage m = createPartitionsFullMessage(true, false, null, null, null, null, grps);
-
-        m.topologyVersion(msgTopVer);
+        GridDhtPartitionsFullMessage m = createPartitionsFullMessage(true, false, null,
+            msgTopVer, null, null, null, grps);
 
         if (log.isInfoEnabled()) {
             long latency = System.currentTimeMillis() - time;
@@ -1216,13 +1215,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         boolean compress,
         boolean newCntrMap,
         @Nullable final GridDhtPartitionExchangeId exchId,
+        @Nullable AffinityTopologyVersion msgTopVer,
         @Nullable GridCacheVersion lastVer,
         @Nullable IgniteDhtPartitionHistorySuppliersMap partHistSuppliers,
         @Nullable IgniteDhtPartitionsToReloadMap partsToReload
     ) {
         Collection<CacheGroupContext> grps = cctx.cache().cacheGroups();
 
-        return createPartitionsFullMessage(compress, newCntrMap, exchId, lastVer, partHistSuppliers, partsToReload, grps);
+        return createPartitionsFullMessage(compress, newCntrMap, exchId, msgTopVer, lastVer, partHistSuppliers, partsToReload, grps);
     }
 
     /**
@@ -1242,15 +1242,21 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         boolean compress,
         boolean newCntrMap,
         @Nullable final GridDhtPartitionExchangeId exchId,
+        @Nullable AffinityTopologyVersion msgTopVer,
         @Nullable GridCacheVersion lastVer,
         @Nullable IgniteDhtPartitionHistorySuppliersMap partHistSuppliers,
         @Nullable IgniteDhtPartitionsToReloadMap partsToReload,
         Collection<CacheGroupContext> grps
     ) {
-        AffinityTopologyVersion ver = exchId != null ? exchId.topologyVersion() : AffinityTopologyVersion.NONE;
+        assert (exchId != null) ^ (msgTopVer != null): "Topology version of full map message must be specified" +
+            " either via exchangeId=[" + exchId + "], or via msgTopVer=[" + msgTopVer + "].";
 
-        final GridDhtPartitionsFullMessage m =
-            new GridDhtPartitionsFullMessage(exchId, lastVer, ver, partHistSuppliers, partsToReload);
+        final GridDhtPartitionsFullMessage m = new GridDhtPartitionsFullMessage(exchId,
+            lastVer,
+            exchId != null ? exchId.topologyVersion() : msgTopVer,
+            partHistSuppliers,
+            partsToReload
+            );
 
         m.compress(compress);
 
@@ -1305,6 +1311,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 m.addPartitionSizes(top.groupId(), top.globalPartSizes());
             }
         }
+
+        cctx.kernalContext().txDr().onPartitionsFullMessagePrepared(exchId, m);
 
         return m;
     }
