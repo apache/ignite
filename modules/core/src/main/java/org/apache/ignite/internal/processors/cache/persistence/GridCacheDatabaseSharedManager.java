@@ -129,6 +129,7 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.Partiti
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperation;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
@@ -350,6 +351,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** Timeout for checkpoint read lock acquisition in milliseconds. */
     private volatile long checkpointReadLockTimeout;
+
+    /** Flag allows to log additional information about partitions during recovery phases. */
+    private final boolean recoveryVerboseLogging = IgniteSystemProperties.getBoolean(
+            IgniteSystemProperties.IGNITE_RECOVERY_VERBOSE_LOGGING, true);
 
     /**
      * @param ctx Kernal context.
@@ -1888,6 +1893,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     g -> !initiallyGlobalWalDisabledGrps.contains(g) && !initiallyLocalWalDisabledGrps.contains(g)
             );
 
+            if (recoveryVerboseLogging && log.isInfoEnabled()) {
+                log.info("Partition states information after BINARY RECOVERY phase:");
+
+                dumpPartitionsInfo(cctx, log);
+            }
+
             CheckpointStatus status = readCheckpointStatus();
 
             RestoreLogicalState logicalState = applyLogicalUpdates(
@@ -1895,6 +1906,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     g -> !initiallyGlobalWalDisabledGrps.contains(g) && !initiallyLocalWalDisabledGrps.contains(g),
                     true
             );
+
+            if (recoveryVerboseLogging && log.isInfoEnabled()) {
+                log.info("Partition states information after LOGICAL RECOVERY phase:");
+
+                dumpPartitionsInfo(cctx, log);
+            }
 
             walTail = tailPointer(logicalState.lastRead);
 
@@ -4459,6 +4476,85 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             return null;
     }
 
+    /**
+     * Method dumps partitions info see {@link #dumpPartitionsInfo(CacheGroupContext, IgniteLogger)}
+     * for all persistent cache groups.
+     *
+     * @param cctx Shared context.
+     * @param log Logger.
+     * @throws IgniteCheckedException If failed.
+     */
+    private static void dumpPartitionsInfo(GridCacheSharedContext cctx, IgniteLogger log) throws IgniteCheckedException {
+        for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+            if (grp.isLocal() || !grp.persistenceEnabled())
+                continue;
+
+            dumpPartitionsInfo(grp, log);
+        }
+    }
+
+    /**
+     * Retrieves from page memory meta information about given {@code grp} group partitions
+     * and dumps this information to log INFO level.
+     *
+     * @param grp Cache group.
+     * @param log Logger.
+     * @throws IgniteCheckedException If failed.
+     */
+    private static void dumpPartitionsInfo(CacheGroupContext grp, IgniteLogger log) throws IgniteCheckedException {
+        PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
+
+        IgnitePageStoreManager pageStore = grp.shared().pageStore();
+
+        assert pageStore != null : "Persistent cache should have initialize page store manager.";
+
+        for (int p = 0; p < grp.affinity().partitions(); p++) {
+            if (!pageStore.exists(grp.groupId(), p))
+                continue;
+
+            pageStore.ensure(grp.groupId(), p);
+
+            if (pageStore.pages(grp.groupId(), p) <= 1) {
+                log.info("Partition [id=" + p + ", state=N/A (only file header) ]");
+
+                continue;
+            }
+
+            long partMetaId = pageMem.partitionMetaPageId(grp.groupId(), p);
+            long partMetaPage = pageMem.acquirePage(grp.groupId(), partMetaId);
+
+            try {
+                long pageAddr = pageMem.readLock(grp.groupId(), partMetaId, partMetaPage);
+
+                try {
+                    PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
+
+                    GridDhtPartitionState partitionState = GridDhtPartitionState.fromOrdinal(io.getPartitionState(pageAddr));
+
+                    String state = partitionState != null ? partitionState.toString() : "N/A";
+
+                    long updateCounter = io.getUpdateCounter(pageAddr);
+                    long size = io.getSize(pageAddr);
+
+                    log.info("Partition [grp=" + grp.cacheOrGroupName()
+                            + ", id=" + p
+                            + ", state=" + state
+                            + ", counter=" + updateCounter
+                            + ", size=" + size + "]");
+                }
+                finally {
+                    pageMem.readUnlock(grp.groupId(), partMetaId, partMetaPage);
+                }
+            }
+            finally {
+                pageMem.releasePage(grp.groupId(), partMetaId, partMetaPage);
+            }
+        }
+    }
+
+    /**
+     * Recovery lifecycle for read-write metastorage.
+     */
     private class MetastorageRecoveryLifecycle implements DatabaseLifecycleListener {
         @Override public void beforeBinaryMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
             cctx.pageStore().initializeForMetastorage();

@@ -463,8 +463,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                                     changed = true;
                                 }
 
-                                if (log.isInfoEnabled())
-                                    log.warning("Restored partition state (from WAL) " +
+                                if (log.isDebugEnabled())
+                                    log.debug("Restored partition state (from WAL) " +
                                         "[grp=" + grp.cacheOrGroupName() + ", p=" + p + ", state=" + part.state() +
                                         ", updCntr=" + part.initialUpdateCounter() + "]");
                             }

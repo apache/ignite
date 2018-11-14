@@ -592,25 +592,6 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param arr Array.
-     */
-    static String arrayToString(int[] arr) {
-        if (arr == null)
-            return "null";
-
-        StringBuilder sb = new StringBuilder();
-
-        sb.append('[');
-
-        for (int i = 0; i < Math.min(arr.length, 10); i++)
-            sb.append(i).append(",");
-
-        sb.append(']');
-
-        return sb.toString();
-    }
-
-    /**
      * Test payload with indexed field.
      */
     static class TestValue {
