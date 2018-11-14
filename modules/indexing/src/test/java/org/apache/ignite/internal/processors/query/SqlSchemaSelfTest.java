@@ -295,18 +295,18 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTypeConflictInPublicSchema() throws Exception {
-	    node.createCache(new CacheConfiguration<PersonKey, Person>()
-		    .setName(CACHE_PERSON)
-		    .setIndexedTypes(PersonKey.class, Person.class)
-		    .setSqlSchema(QueryUtils.DFLT_SCHEMA));
+        node.createCache(new CacheConfiguration<PersonKey, Person>()
+            .setName(CACHE_PERSON)
+            .setIndexedTypes(PersonKey.class, Person.class)
+            .setSqlSchema(QueryUtils.DFLT_SCHEMA));
 
-	    GridTestUtils.assertThrows(log, (Callable<Void>) () -> {
-		    node.createCache(new CacheConfiguration<PersonKey, Person>()
-			    .setName(CACHE_PERSON_2)
-			    .setIndexedTypes(PersonKey.class, Person.class)
-			    .setSqlSchema(QueryUtils.DFLT_SCHEMA));
-		    return null;
-	    }, CacheException.class, "Table already exists: PERSON");
+        GridTestUtils.assertThrows(log, (Callable<Void>) () -> {
+            node.createCache(new CacheConfiguration<PersonKey, Person>()
+                .setName(CACHE_PERSON_2)
+                .setIndexedTypes(PersonKey.class, Person.class)
+                .setSqlSchema(QueryUtils.DFLT_SCHEMA));
+            return null;
+        }, CacheException.class, "Table already exists: PERSON");
     }
 
     /**
