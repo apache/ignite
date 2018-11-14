@@ -108,4 +108,18 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
             }
         }
     }
+
+    /**
+     * Check that unsupported explain of update operation causes Exception on the driver side with correct code and
+     * message.
+     */
+    public void testExplainUpdatesUnsupported() throws Exception{
+        checkErrorState((conn) -> {
+            try (Statement statement = conn.createStatement()) {
+                statement.executeUpdate("CREATE TABLE TEST_EXPLAIN (ID LONG PRIMARY KEY, VAL LONG)");
+
+                statement.executeUpdate("EXPLAIN INSERT INTO TEST_EXPLAIN VALUES (1, 2)");
+            }
+        }, "0A000", "Explains of update queries are not supported.");
+    }
 }
