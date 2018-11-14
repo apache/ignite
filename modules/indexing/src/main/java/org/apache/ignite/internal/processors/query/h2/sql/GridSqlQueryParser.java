@@ -528,6 +528,9 @@ public class GridSqlQueryParser {
      */
     private int parsingSubQryExpression;
 
+    /** Whether this is SELECT FOR UPDATE. */
+    private boolean selectForUpdate;
+
     /**
      * @param useOptimizedSubqry If we have to find correct order for table filters in FROM clause.
      *                           Relies on uniqueness of table filter aliases.
@@ -1714,6 +1717,9 @@ public class GridSqlQueryParser {
      *     to run distributed query.
      */
     public boolean isLocalQuery() {
+        if (selectForUpdate)
+            return false;
+
         for (Object o : h2ObjToGridObj.values()) {
             if (o instanceof GridSqlAlias)
                 o = GridSqlAlias.unwrap((GridSqlAst)o);
@@ -1787,6 +1793,8 @@ public class GridSqlQueryParser {
         if (stmt instanceof Query) {
             if (optimizedTableFilterOrder != null)
                 collectOptimizedTableFiltersOrder((Query)stmt);
+
+            selectForUpdate = isForUpdateQuery(stmt);
 
             return parseQuery((Query)stmt);
         }
