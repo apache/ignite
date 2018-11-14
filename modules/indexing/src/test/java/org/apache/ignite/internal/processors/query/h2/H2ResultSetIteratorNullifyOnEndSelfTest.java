@@ -17,13 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
@@ -31,8 +29,6 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -256,67 +252,6 @@ public class H2ResultSetIteratorNullifyOnEndSelfTest extends GridCommonAbstractT
         return null;
     }
 
-    /**
-     * "onClose" should remove links to data.
-     */
-    public void testOnClose() {
-        try {
-            GridCloseableIterator it = indexing().queryLocalSql(
-                indexing().schema(cache().getName()),
-                cache().getName(),
-                SELECT_ALL_SQL,
-                null,
-                Collections.emptySet(),
-                "Person",
-                null,
-                null);
-
-            if (H2ResultSetIterator.class.isAssignableFrom(it.getClass())) {
-                H2ResultSetIterator h2it = (H2ResultSetIterator)it;
-
-                h2it.onClose();
-
-                assertNull(GridTestUtils.getFieldValue(h2it, H2ResultSetIterator.class, "data"));
-            }
-            else
-                fail();
-        }
-        catch (IgniteCheckedException e) {
-            fail(e.getMessage());
-        }
-    }
-
-    /**
-     * Complete iterate should remove links to data.
-     */
-    public void testOnComplete() {
-        try {
-            GridCloseableIterator it = indexing().queryLocalSql(
-                indexing().schema(cache().getName()),
-                cache().getName(),
-                SELECT_ALL_SQL,
-                null,
-                Collections.emptySet(),
-                "Person",
-                null,
-                null);
-
-            if (H2ResultSetIterator.class.isAssignableFrom(it.getClass())) {
-                H2ResultSetIterator h2it = (H2ResultSetIterator)it;
-
-                while (h2it.onHasNext())
-                    h2it.onNext();
-
-                assertNull(GridTestUtils.getFieldValue(h2it, H2ResultSetIterator.class, "data"));
-            }
-            else
-                fail();
-        }
-        catch (IgniteCheckedException e) {
-            fail(e.getMessage());
-        }
-    }
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrids(NODES_COUNT);
@@ -333,15 +268,6 @@ public class H2ResultSetIteratorNullifyOnEndSelfTest extends GridCommonAbstractT
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
-    }
-
-    /**
-     * @return H2 indexing instance.
-     */
-    private IgniteH2Indexing indexing() {
-        GridQueryProcessor qryProcessor = grid(0).context().query();
-
-        return GridTestUtils.getFieldValue(qryProcessor, GridQueryProcessor.class, "idx");
     }
 
     /**

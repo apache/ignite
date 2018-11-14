@@ -231,6 +231,11 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
+        @Override public SqlFieldsQuery generateFieldsQuery(String cacheName, SqlQuery qry) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
         @Override public void start(GridKernalContext ctx, GridSpinBusyLock busyLock) throws IgniteCheckedException {
             // No-op
         }
@@ -238,12 +243,6 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override public void stop() throws IgniteCheckedException {
             // No-op
-        }
-
-        /** {@inheritDoc} */
-        @Override public <K, V> QueryCursor<Cache.Entry<K, V>> queryDistributedSql(String schemaName, String cacheName,
-            SqlQuery qry, boolean keepBinary) throws IgniteCheckedException {
-            return null;
         }
 
         /** {@inheritDoc} */
@@ -262,12 +261,6 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         @Override public long streamUpdateQuery(String schemaName, String qry, @Nullable Object[] params,
             IgniteDataStreamer<?, ?> streamer) throws IgniteCheckedException {
             return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public <K, V> QueryCursor<Cache.Entry<K, V>> queryLocalSql(String schemaName, String cacheName,
-            SqlQuery qry, IndexingQueryFilter filter, boolean keepBinary) throws IgniteCheckedException {
-            return null;
         }
 
         /** {@inheritDoc} */
