@@ -47,7 +47,7 @@ public class CacheMvccProcessorTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testTreeWithoutPersistence() throws Exception {
-        persistence = true;
+        persistence = false;
 
         checkTreeOperations();
     }
@@ -66,12 +66,19 @@ public class CacheMvccProcessorTest extends CacheMvccAbstractTest {
 
         assertEquals(TxState.NA, mvccProcessor.txState(1, 1));
 
-        mvccProcessor.updateTxState(1, 1, TxState.PREPARED, true);
-        mvccProcessor.updateTxState(1, 2, TxState.PREPARED, true);
-        mvccProcessor.updateTxState(1, 3, TxState.COMMITTED, true);
-        mvccProcessor.updateTxState(1, 4, TxState.ABORTED, true);
-        mvccProcessor.updateTxState(1, 5, TxState.ABORTED, true);
-        mvccProcessor.updateTxState(1, 6, TxState.PREPARED, true);
+        grid.context().cache().context().database().checkpointReadLock();
+
+        try {
+            mvccProcessor.updateTxState(1, 1, TxState.PREPARED, true);
+            mvccProcessor.updateTxState(1, 2, TxState.PREPARED, true);
+            mvccProcessor.updateTxState(1, 3, TxState.COMMITTED, true);
+            mvccProcessor.updateTxState(1, 4, TxState.ABORTED, true);
+            mvccProcessor.updateTxState(1, 5, TxState.ABORTED, true);
+            mvccProcessor.updateTxState(1, 6, TxState.PREPARED, true);
+        }
+        finally {
+            grid.context().cache().context().database().checkpointReadUnlock();
+        }
 
         if (persistence) {
             stopGrid(0, false);

@@ -100,9 +100,13 @@ public class MvccUtils {
     /** */
     public static final int MVCC_VISIBLE = 2;
 
-    /** */
+    /** A special version visible by everyone */
     public static final MvccVersion INITIAL_VERSION =
         mvccVersion(MVCC_CRD_START_CNTR, MVCC_INITIAL_CNTR, MVCC_START_OP_CNTR);
+
+    /** A special snapshot for which all committed versions are visible */
+    public static final MvccSnapshot MVCC_MAX_SNAPSHOT =
+        new MvccSnapshotWithoutTxs(Long.MAX_VALUE, Long.MAX_VALUE, MVCC_READ_OP_CNTR, MVCC_COUNTER_NA);
 
     /** */
     private static final MvccClosure<Integer> getVisibleState = new GetVisibleState();
@@ -180,7 +184,14 @@ public class MvccUtils {
         if ((mvccOpCntr & MVCC_HINTS_MASK) != 0)
             return (byte)(mvccOpCntr >>> MVCC_HINTS_BIT_OFF);
 
-        return proc.txState(mvccCrd, mvccCntr);
+        byte state = proc.txState(mvccCrd, mvccCntr);
+
+        if ((state == TxState.NA || state == TxState.PREPARED)
+            && (proc.currentCoordinator() == null // Recovery from WAL.
+            || mvccCrd < proc.currentCoordinator().coordinatorVersion()))
+            state = TxState.ABORTED;
+
+        return state;
     }
 
     /**

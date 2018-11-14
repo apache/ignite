@@ -56,7 +56,7 @@ public class IgniteCacheContinuousQueryReconnectTest extends GridCommonAbstractT
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(atomicMode());
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setBackups(1);
+        ccfg.setBackups(2);
 
         cfg.setCacheConfiguration(ccfg);
 
