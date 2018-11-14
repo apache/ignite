@@ -261,6 +261,9 @@ public class FilePageStore implements PageStore {
         if (fileSize == headerSize()) // Every file has a special meta page.
             fileSize = pageSize + headerSize();
 
+        if (fileSize % pageSize != 0) // In the case of compressed pages we can miss the tail of the page.
+            fileSize = (fileSize / pageSize + 1) * pageSize;
+
         return fileSize;
     }
 
