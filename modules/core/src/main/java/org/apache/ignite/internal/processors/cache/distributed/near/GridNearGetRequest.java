@@ -412,43 +412,43 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeCollection("readersFlags", readersFlags, MessageCollectionItemType.BOOLEAN))
-                    return false;
-
-                writer.incrementState();
-
-            case 10:
-                if (!writer.writeUuid("subjId", subjId))
-                    return false;
-
-                writer.incrementState();
-
-            case 11:
-                if (!writer.writeInt("taskNameHash", taskNameHash))
-                    return false;
-
-                writer.incrementState();
-
-            case 12:
-                if (!writer.writeMessage("topVer", topVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 13:
-                if (!writer.writeMessage("ver", ver))
-                    return false;
-
-                writer.incrementState();
-
-            case 14:
                 if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
                     return false;
 
                 writer.incrementState();
 
+            case 10:
+                if (!writer.writeCollection("readersFlags", readersFlags, MessageCollectionItemType.BOOLEAN))
+                    return false;
+
+                writer.incrementState();
+
+            case 11:
+                if (!writer.writeUuid("subjId", subjId))
+                    return false;
+
+                writer.incrementState();
+
+            case 12:
+                if (!writer.writeInt("taskNameHash", taskNameHash))
+                    return false;
+
+                writer.incrementState();
+
+            case 13:
+                if (!writer.writeMessage("topVer", topVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 14:
+                if (!writer.writeString("txLbl", txLbl))
+                    return false;
+
+                writer.incrementState();
+
             case 15:
-                if (!writer.writeString("txlbl", txLbl))
+                if (!writer.writeMessage("ver", ver))
                     return false;
 
                 writer.incrementState();
@@ -518,46 +518,6 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
                 reader.incrementState();
 
             case 9:
-                readersFlags = reader.readCollection("readersFlags", MessageCollectionItemType.BOOLEAN);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 10:
-                subjId = reader.readUuid("subjId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 11:
-                taskNameHash = reader.readInt("taskNameHash");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 12:
-                topVer = reader.readMessage("topVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 13:
-                ver = reader.readMessage("ver");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 14:
                 mvccSnapshot = reader.readMessage("mvccSnapshot");
 
                 if (!reader.isLastRead())
@@ -565,10 +525,50 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
 
                 reader.incrementState();
 
-            case 15:
-                txLbl = reader.readString("txlbl");
+            case 10:
+                readersFlags = reader.readCollection("readersFlags", MessageCollectionItemType.BOOLEAN);
 
-                if(!reader.isLastRead())
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 11:
+                subjId = reader.readUuid("subjId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 12:
+                taskNameHash = reader.readInt("taskNameHash");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 13:
+                topVer = reader.readMessage("topVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 14:
+                txLbl = reader.readString("txLbl");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 15:
+                ver = reader.readMessage("ver");
+
+                if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();

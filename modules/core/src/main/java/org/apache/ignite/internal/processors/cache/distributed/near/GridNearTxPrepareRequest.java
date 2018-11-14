@@ -373,6 +373,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
                     return false;
 
                 writer.incrementState();
+
         }
 
         return true;

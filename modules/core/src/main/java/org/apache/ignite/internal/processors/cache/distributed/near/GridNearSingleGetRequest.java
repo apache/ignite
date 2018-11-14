@@ -352,30 +352,6 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
                 reader.incrementState();
 
             case 8:
-                subjId = reader.readUuid("subjId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
-                taskNameHash = reader.readInt("taskNameHash");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 10:
-                topVer = reader.readMessage("topVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 11:
                 mvccSnapshot = reader.readMessage("mvccSnapshot");
 
                 if (!reader.isLastRead())
@@ -383,10 +359,34 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
 
                 reader.incrementState();
 
-            case 12:
-                txLbl = reader.readString("txlbl");
+            case 9:
+                subjId = reader.readUuid("subjId");
 
-                if(!reader.isLastRead())
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 10:
+                taskNameHash = reader.readInt("taskNameHash");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 11:
+                topVer = reader.readMessage("topVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 12:
+                txLbl = reader.readString("txLbl");
+
+                if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
@@ -442,31 +442,31 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeUuid("subjId", subjId))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
-                if (!writer.writeInt("taskNameHash", taskNameHash))
-                    return false;
-
-                writer.incrementState();
-
-            case 10:
-                if (!writer.writeMessage("topVer", topVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 11:
                 if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
                     return false;
 
                 writer.incrementState();
 
+            case 9:
+                if (!writer.writeUuid("subjId", subjId))
+                    return false;
+
+                writer.incrementState();
+
+            case 10:
+                if (!writer.writeInt("taskNameHash", taskNameHash))
+                    return false;
+
+                writer.incrementState();
+
+            case 11:
+                if (!writer.writeMessage("topVer", topVer))
+                    return false;
+
+                writer.incrementState();
+
             case 12:
-                if (!writer.writeString("txlbl", txLbl))
+                if (!writer.writeString("txLbl", txLbl))
                     return false;
 
                 writer.incrementState();
