@@ -171,10 +171,14 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param ctx Context.
      * @param grp Cache group.
      * @param id Partition ID.
+     * @param recovery Flag indicates that partition is created during recovery phase.
      */
-    public GridDhtLocalPartition(GridCacheSharedContext ctx,
-        CacheGroupContext grp,
-        int id) {
+    public GridDhtLocalPartition(
+            GridCacheSharedContext ctx,
+            CacheGroupContext grp,
+            int id,
+            boolean recovery
+    ) {
         super(ENTRY_FACTORY);
 
         this.id = id;
@@ -211,7 +215,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             store = grp.offheap().createCacheDataStore(id);
 
             // Log partition creation for further crash recovery purposes.
-            if (grp.walEnabled())
+            if (grp.walEnabled() && !recovery)
                 ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, state(), updateCounter()));
 
             // Inject row cache cleaner on store creation
