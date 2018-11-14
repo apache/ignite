@@ -47,6 +47,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
@@ -103,6 +104,13 @@ public class IgniteCacheNoSyncForGetTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testMvccTxGet() throws Exception {
+        getTest(TRANSACTIONAL_SNAPSHOT);
+    }
+
+    /**
      * @param atomicityMode Cache atomicity mode.
      * @throws Exception If failed.
      */
@@ -135,14 +143,6 @@ public class IgniteCacheNoSyncForGetTest extends GridCommonAbstractTest {
         final boolean getAll,
         final boolean cfgExpiryPlc,
         final boolean withExpiryPlc) throws Exception {
-        if(FORCE_MVCC) {
-            if (heapCache)
-                fail("MVCC does not supported on-heap cache.");
-
-            if(cfgExpiryPlc || withExpiryPlc)
-                fail("https://issues.apache.org/jira/browse/IGNITE-7311");
-        }
-
         log.info("Test get [getAll=" + getAll + ", cfgExpiryPlc=" + cfgExpiryPlc + ']');
 
         Ignite srv = ignite(0);

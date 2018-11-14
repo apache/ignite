@@ -41,6 +41,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
@@ -52,14 +53,6 @@ public class IgniteNearClientCacheCloseTest extends GridCommonAbstractTest {
 
     /** */
     private boolean client;
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        if (FORCE_MVCC)
-            fail("https://issues.apache.org/jira/browse/IGNITE-7187");
-
-        super.beforeTestsStarted();
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -113,6 +106,28 @@ public class IgniteNearClientCacheCloseTest extends GridCommonAbstractTest {
         nearCacheClose(4, false, TRANSACTIONAL);
 
         nearCacheClose(4, true, TRANSACTIONAL);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNearCacheCloseMvccTx1() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+
+        nearCacheClose(1, false, TRANSACTIONAL_SNAPSHOT);
+
+        nearCacheClose(1, true, TRANSACTIONAL_SNAPSHOT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNearCacheCloseMvccTx2() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+
+        nearCacheClose(4, false, TRANSACTIONAL_SNAPSHOT);
+
+        nearCacheClose(4, true, TRANSACTIONAL_SNAPSHOT);
     }
 
     /**

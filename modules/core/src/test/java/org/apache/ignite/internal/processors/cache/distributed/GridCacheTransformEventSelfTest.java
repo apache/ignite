@@ -78,14 +78,6 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        if(FORCE_MVCC)
-            fail("https://issues.apache.org/jira/browse/IGNITE-9321");
-
-        super.beforeTestsStarted();
-    }
-
     /** Key 1. */
     private Integer key1;
 
@@ -407,7 +399,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMvccTxPartitionedPessimisticRepeatableRead() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9530");
+        fail("https://issues.apache.org/jira/browse/IGNITE-9321");
 
         checkMvccTx(PARTITIONED, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -473,6 +465,8 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMvccTxReplicatedPessimisticRepeatableRead() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9321");
+
         checkMvccTx(REPLICATED, PESSIMISTIC, REPEATABLE_READ);
     }
 

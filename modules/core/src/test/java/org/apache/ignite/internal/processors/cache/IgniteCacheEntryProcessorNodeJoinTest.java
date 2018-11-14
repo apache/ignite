@@ -46,6 +46,7 @@ import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -141,13 +142,10 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testEntryProcessorNodeLeave() throws Exception {
-        if(FORCE_MVCC)
-            fail("https://issues.apache.org/jira/browse/IGNITE-7388");
-
         startGrid(GRID_CNT);
 
         // TODO: IGNITE-1525 (test fails with one-phase commit).
-        boolean createCache = atomicityMode() == TRANSACTIONAL;
+        boolean createCache = atomicityMode() != ATOMIC;
 
         String cacheName = DEFAULT_CACHE_NAME;
 

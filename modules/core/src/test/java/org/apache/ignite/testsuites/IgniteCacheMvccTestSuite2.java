@@ -29,6 +29,8 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionSta
 import org.apache.ignite.internal.IgniteReflectionFactorySelfTest;
 import org.apache.ignite.internal.processors.cache.CacheComparatorTest;
 import org.apache.ignite.internal.processors.cache.CacheConfigurationLeakTest;
+import org.apache.ignite.internal.processors.cache.CacheEnumOperationsSingleNodeTest;
+import org.apache.ignite.internal.processors.cache.CacheEnumOperationsTest;
 import org.apache.ignite.internal.processors.cache.CacheExchangeMessageDuplicatedStateTest;
 import org.apache.ignite.internal.processors.cache.CacheGroupLocalConfigurationSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheOptimisticTransactionsWithFilterSingleServerTest;
@@ -36,8 +38,11 @@ import org.apache.ignite.internal.processors.cache.CacheOptimisticTransactionsWi
 import org.apache.ignite.internal.processors.cache.GridCacheAtomicMessageCountSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionedProjectionAffinitySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteAtomicCacheEntryProcessorNodeJoinTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheNoSyncForGetTest;
 import org.apache.ignite.internal.processors.cache.IgniteCachePartitionMapUpdateTest;
+import org.apache.ignite.internal.processors.cache.IgniteClientCacheStartFailoverTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheAndNodeStop;
+import org.apache.ignite.internal.processors.cache.IgniteNearClientCacheCloseTest;
 import org.apache.ignite.internal.processors.cache.MemoryPolicyConfigValidationTest;
 import org.apache.ignite.internal.processors.cache.NonAffinityCoordinatorDynamicStartStopTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLoadingConcurrentGridStartSelfTest;
@@ -50,14 +55,18 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.CachePartitio
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheColocatedOptimisticTransactionSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtAtomicEvictionNearReadersSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtPreloadOnheapSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionedUnloadEventsSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePartitionedBackupNodeFailureRecoveryTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicNearEvictionEventSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicNearMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicNearReadersSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearClientHitTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearJobExecutionSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearTxForceKeyTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedAffinitySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedAtomicGetAndTransformStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheRendezvousAffinityClientSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.NearCacheSyncUpdateTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.NoneRebalanceModeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedJobExecutionTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicBasicStoreSelfTest;
@@ -75,7 +84,7 @@ public class IgniteCacheMvccTestSuite2 extends TestSuite {
     public static TestSuite suite() {
         System.setProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, "true");
 
-        HashSet<Class> ignoredTests = new HashSet<>();
+        HashSet<Class> ignoredTests = new HashSet<>(128);
         // Optimistic tx tests
         ignoredTests.add(GridCacheColocatedOptimisticTransactionSelfTest.class);
         ignoredTests.add(CacheOptimisticTransactionsWithFilterSingleServerTest.class);
@@ -95,8 +104,10 @@ public class IgniteCacheMvccTestSuite2 extends TestSuite {
         ignoredTests.add(IgniteAtomicCacheEntryProcessorNodeJoinTest.class);
         ignoredTests.add(GridCacheDhtAtomicEvictionNearReadersSelfTest.class);
         ignoredTests.add(GridCacheNearClientHitTest.class);
+        ignoredTests.add(GridCacheNearTxForceKeyTest.class);
         ignoredTests.add(CacheLoadingConcurrentGridStartSelfTest.class);
         ignoredTests.add(CacheLoadingConcurrentGridStartSelfTestAllowOverwrite.class);
+        ignoredTests.add(IgniteCachePartitionedBackupNodeFailureRecoveryTest.class);
 
         // Other non-tx tests.
         ignoredTests.add(RendezvousAffinityFunctionSelfTest.class);
@@ -114,6 +125,8 @@ public class IgniteCacheMvccTestSuite2 extends TestSuite {
         ignoredTests.add(IgniteCachePartitionMapUpdateTest.class);
         ignoredTests.add(IgniteCacheClientNodePartitionsExchangeTest.class);
         ignoredTests.add(IgniteCacheServerNodeConcurrentStart.class);
+
+        ignoredTests.add(GridCachePartitionedUnloadEventsSelfTest.class);
 
         ignoredTests.add(IgniteNoCustomEventsOnNodeStart.class);
         ignoredTests.add(CacheExchangeMessageDuplicatedStateTest.class);
@@ -134,6 +147,12 @@ public class IgniteCacheMvccTestSuite2 extends TestSuite {
 
         // Skip classes that already contains Mvcc tests or have Mvcc siblings.
         ignoredTests.add(GridCacheTransformEventSelfTest.class);
+        ignoredTests.add(IgniteClientCacheStartFailoverTest.class);
+        ignoredTests.add(IgniteNearClientCacheCloseTest.class);
+        ignoredTests.add(IgniteCacheNoSyncForGetTest.class);
+        ignoredTests.add(CacheEnumOperationsSingleNodeTest.class);
+        ignoredTests.add(CacheEnumOperationsTest.class);
+        ignoredTests.add(NearCacheSyncUpdateTest.class);
 
         TestSuite suite = new TestSuite("IgniteCache Mvcc Test Suite part 2");
 

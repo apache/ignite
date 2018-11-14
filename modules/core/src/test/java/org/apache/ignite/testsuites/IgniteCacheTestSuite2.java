@@ -214,13 +214,13 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         GridTestUtils.addTestIfNeeded(suite, GridCachePartitionedMultiThreadedPutGetSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCachePartitionedNodeFailureSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCachePartitionedExplicitLockNodeFailureSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, GridCachePartitionedTxSingleThreadedSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheLockReleaseNodeLeaveTest.class, ignoredTests);
         //GridTestUtils.addTestIfNeeded(suite,GridCachePartitionedEntryLockSelfTest.class, ignoredTests);
         //GridTestUtils.addTestIfNeeded(suite,GridCachePartitionedNestedTxTest.class, ignoredTests);
         //GridTestUtils.addTestIfNeeded(suite,GridCachePartitionedTxConcurrentGetTest.class, ignoredTests);
         //GridTestUtils.addTestIfNeeded(suite,GridCachePartitionedTxMultiNodeSelfTest.class, ignoredTests);
         //GridTestUtils.addTestIfNeeded(suite,GridCachePartitionedTxReadTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCachePartitionedTxSingleThreadedSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheColocatedTxSingleThreadedSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCachePartitionedTxTimeoutSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheFinishPartitionsSelfTest.class, ignoredTests);

@@ -36,6 +36,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -67,9 +68,6 @@ public abstract class CacheEnumOperationsAbstractTest extends GridCommonAbstract
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        if(FORCE_MVCC && !singleNode())
-            fail("https://issues.apache.org/jira/browse/IGNITE-7187");
-
         super.beforeTestsStarted();
 
         if (!singleNode()) {
@@ -87,9 +85,6 @@ public abstract class CacheEnumOperationsAbstractTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testAtomic() throws Exception {
-        if (FORCE_MVCC)
-            return;
-
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, ATOMIC);
 
         enumOperations(ccfg);
@@ -100,6 +95,18 @@ public abstract class CacheEnumOperationsAbstractTest extends GridCommonAbstract
      */
     public void testTx() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL);
+
+        enumOperations(ccfg);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMvccTx() throws Exception {
+        if (!singleNode())
+            fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL_SNAPSHOT);
 
         enumOperations(ccfg);
     }
