@@ -2260,6 +2260,20 @@ public class GridSqlQueryParser {
     }
 
     /**
+     * Determines if specified prepared statement is an EXPLAIN of update operation: UPDATE, DELETE, etc.
+     * (e.g. not a SELECT query).
+     *
+     * @param statement statement to probe.
+     * @return {@code True} if statement is EXPLAIN UPDATE, EXPLAIN DELETE or etc.; {@code false} otherwise.
+     */
+    public static boolean isExplainUpdate(Prepared statement) {
+        if (!(statement instanceof Explain))
+            return false;
+
+        return !EXPLAIN_COMMAND.get((Explain)statement).isQuery();
+    }
+
+    /**
      * @param cls Class.
      * @param fldName Fld name.
      */
