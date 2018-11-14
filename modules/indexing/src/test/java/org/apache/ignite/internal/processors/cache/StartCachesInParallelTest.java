@@ -139,10 +139,10 @@ public class StartCachesInParallelTest extends GridCommonAbstractTest {
         private volatile FailureContext lastFailureCtx;
 
         /** {@inheritDoc} */
-        @Override public boolean handle(Ignite ignite, FailureContext failureCtx) {
+        @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
             lastFailureCtx = failureCtx;
 
-            return super.handle(ignite, failureCtx);
+            return super.onFailure(ignite, failureCtx);
         }
     }
 }
