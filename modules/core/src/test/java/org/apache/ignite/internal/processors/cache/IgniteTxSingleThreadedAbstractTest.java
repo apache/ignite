@@ -33,9 +33,6 @@ public abstract class IgniteTxSingleThreadedAbstractTest extends IgniteTxAbstrac
      * @throws IgniteCheckedException If test failed.
      */
     public void testPessimisticReadCommittedCommit() throws Exception {
-        if (FORCE_MVCC)
-            return;
-
         checkCommit(PESSIMISTIC, READ_COMMITTED);
 
         finalChecks();
@@ -54,9 +51,6 @@ public abstract class IgniteTxSingleThreadedAbstractTest extends IgniteTxAbstrac
      * @throws IgniteCheckedException If test failed.
      */
     public void testPessimisticSerializableCommit() throws Exception {
-        if (FORCE_MVCC)
-            return;
-
         checkCommit(PESSIMISTIC, SERIALIZABLE);
 
         finalChecks();
@@ -66,9 +60,6 @@ public abstract class IgniteTxSingleThreadedAbstractTest extends IgniteTxAbstrac
      * @throws IgniteCheckedException If test failed.
      */
     public void testOptimisticReadCommittedCommit() throws Exception {
-        if (FORCE_MVCC)
-            return;
-
         checkCommit(OPTIMISTIC, READ_COMMITTED);
 
         finalChecks();
@@ -78,9 +69,6 @@ public abstract class IgniteTxSingleThreadedAbstractTest extends IgniteTxAbstrac
      * @throws IgniteCheckedException If test failed.
      */
     public void testOptimisticRepeatableReadCommit() throws Exception {
-        if (FORCE_MVCC)
-            return;
-
         checkCommit(OPTIMISTIC, REPEATABLE_READ);
 
         finalChecks();
@@ -90,9 +78,6 @@ public abstract class IgniteTxSingleThreadedAbstractTest extends IgniteTxAbstrac
      * @throws IgniteCheckedException If test failed.
      */
     public void testOptimisticSerializableCommit() throws Exception {
-        if (FORCE_MVCC)
-            return;
-
         checkCommit(OPTIMISTIC, SERIALIZABLE);
 
         finalChecks();
@@ -102,9 +87,6 @@ public abstract class IgniteTxSingleThreadedAbstractTest extends IgniteTxAbstrac
      * @throws IgniteCheckedException If test failed.
      */
     public void testPessimisticReadCommittedRollback() throws Exception {
-        if (FORCE_MVCC)
-            return;
-
         checkRollback(PESSIMISTIC, READ_COMMITTED);
 
         finalChecks();
@@ -123,9 +105,6 @@ public abstract class IgniteTxSingleThreadedAbstractTest extends IgniteTxAbstrac
      * @throws IgniteCheckedException If test failed.
      */
     public void testPessimisticSerializableRollback() throws Exception {
-        if (FORCE_MVCC)
-            return;
-
         checkRollback(PESSIMISTIC, SERIALIZABLE);
 
         finalChecks();
@@ -135,9 +114,6 @@ public abstract class IgniteTxSingleThreadedAbstractTest extends IgniteTxAbstrac
      * @throws IgniteCheckedException If test failed.
      */
     public void testOptimisticReadCommittedRollback() throws Exception {
-        if (FORCE_MVCC)
-            return;
-
         checkRollback(OPTIMISTIC, READ_COMMITTED);
 
         finalChecks();
@@ -147,9 +123,6 @@ public abstract class IgniteTxSingleThreadedAbstractTest extends IgniteTxAbstrac
      * @throws IgniteCheckedException If test failed.
      */
     public void testOptimisticRepeatableReadRollback() throws Exception {
-        if (FORCE_MVCC)
-            return;
-
         checkRollback(OPTIMISTIC, REPEATABLE_READ);
 
         finalChecks();
@@ -159,9 +132,6 @@ public abstract class IgniteTxSingleThreadedAbstractTest extends IgniteTxAbstrac
      * @throws IgniteCheckedException If test failed.
      */
     public void testOptimisticSerializableRollback() throws Exception {
-        if (FORCE_MVCC)
-            return;
-
         checkRollback(OPTIMISTIC, SERIALIZABLE);
 
         finalChecks();

@@ -15,28 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.replicated;
+package org.apache.ignite.internal.processors.cache.distributed;
 
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteTxTimeoutAbstractTest;
-
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedMvccTxMultiThreadedSelfTest;
 
 /**
- * Simple cache test.
+ *
  */
-public class GridCacheReplicatedTxTimeoutSelfTest extends IgniteTxTimeoutAbstractTest {
+public class GridCachePartitionedNearDisabledMvccTxMultiThreadedSelfTest
+    extends GridCachePartitionedMvccTxMultiThreadedSelfTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
-
-        CacheConfiguration cc = defaultCacheConfiguration();
-
-        cc.setCacheMode(REPLICATED);
-
-        c.setCacheConfiguration(cc);
-
-        return c;
+    @Override protected boolean nearEnabled() {
+        return false;
     }
 }

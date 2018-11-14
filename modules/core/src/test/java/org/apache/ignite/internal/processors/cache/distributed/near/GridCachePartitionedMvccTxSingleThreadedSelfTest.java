@@ -17,17 +17,19 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteTxTimeoutAbstractTest;
+import org.apache.ignite.internal.processors.cache.IgniteMvccTxSingleThreadedAbstractTest;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 
 /**
- * Simple cache test.
+ * Tests for partitioned cache transactions.
  */
-public class GridCachePartitionedTxTimeoutSelfTest extends IgniteTxTimeoutAbstractTest {
+public class GridCachePartitionedMvccTxSingleThreadedSelfTest extends IgniteMvccTxSingleThreadedAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
@@ -36,12 +38,44 @@ public class GridCachePartitionedTxTimeoutSelfTest extends IgniteTxTimeoutAbstra
 
         cc.setCacheMode(PARTITIONED);
         cc.setBackups(1);
-        cc.setAtomicityMode(TRANSACTIONAL);
+        cc.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
 
-        //cacheCfg.setPreloadMode(NONE);
+        cc.setEvictionPolicy(null);
 
-        c.setCacheConfiguration(cc);
+        cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC);
+
+        cc.setRebalanceMode(NONE);
 
         return c;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int gridCount() {
+        return 4;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int keyCount() {
+        return 3;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int maxKeyValue() {
+        return 3;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int iterations() {
+        return 3000;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean isTestDebug() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean printMemoryStats() {
+        return true;
     }
 }

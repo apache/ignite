@@ -48,11 +48,15 @@ import org.apache.ignite.internal.processors.cache.NonAffinityCoordinatorDynamic
 import org.apache.ignite.internal.processors.cache.distributed.CacheLoadingConcurrentGridStartSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLoadingConcurrentGridStartSelfTestAllowOverwrite;
 import org.apache.ignite.internal.processors.cache.distributed.CachePartitionStateTest;
+import org.apache.ignite.internal.processors.cache.distributed.GridCachePartitionedNearDisabledMvccTxMultiThreadedSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.GridCachePartitionedNearDisabledTxMultiThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTransformEventSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheClientNodePartitionsExchangeTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheServerNodeConcurrentStart;
 import org.apache.ignite.internal.processors.cache.distributed.dht.CachePartitionPartialCountersMapSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheColocatedMvccTxSingleThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheColocatedOptimisticTransactionSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheColocatedTxSingleThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtAtomicEvictionNearReadersSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtPreloadOnheapSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionedUnloadEventsSelfTest;
@@ -65,6 +69,12 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNea
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearTxForceKeyTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedAffinitySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedAtomicGetAndTransformStoreSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedMvccTxMultiThreadedSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedMvccTxSingleThreadedSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedMvccTxTimeoutSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedTxMultiThreadedSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedTxSingleThreadedSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedTxTimeoutSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheRendezvousAffinityClientSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.NearCacheSyncUpdateTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.NoneRebalanceModeSelfTest;
@@ -145,7 +155,7 @@ public class IgniteCacheMvccTestSuite2 extends TestSuite {
         ignoredTests.add(CachePartitionPartialCountersMapSelfTest.class);
         ignoredTests.add(IgniteReflectionFactorySelfTest.class);
 
-        // Skip classes that already contains Mvcc tests or have Mvcc siblings.
+        // Skip classes that already contains Mvcc tests
         ignoredTests.add(GridCacheTransformEventSelfTest.class);
         ignoredTests.add(IgniteClientCacheStartFailoverTest.class);
         ignoredTests.add(IgniteNearClientCacheCloseTest.class);
@@ -154,9 +164,24 @@ public class IgniteCacheMvccTestSuite2 extends TestSuite {
         ignoredTests.add(CacheEnumOperationsTest.class);
         ignoredTests.add(NearCacheSyncUpdateTest.class);
 
+        // Skip classes which Mvcc implementations are added in this method below.
+        // TODO IGNITE-10175: refactor these tests (use assume) to support both mvcc and non-mvcc modes after moving to JUnit4/5.
+        ignoredTests.add(GridCachePartitionedTxSingleThreadedSelfTest.class); // See GridCachePartitionedMvccTxSingleThreadedSelfTest
+        ignoredTests.add(GridCacheColocatedTxSingleThreadedSelfTest.class); // See GridCacheColocatedMvccTxSingleThreadedSelfTest
+        ignoredTests.add(GridCachePartitionedTxMultiThreadedSelfTest.class); // See GridCachePartitionedMvccTxMultiThreadedSelfTest
+        ignoredTests.add(GridCachePartitionedNearDisabledTxMultiThreadedSelfTest.class); // See GridCachePartitionedNearDisabledMvccTxMultiThreadedSelfTest
+        ignoredTests.add(GridCachePartitionedTxTimeoutSelfTest.class); // See GridCachePartitionedMvccTxTimeoutSelfTest
+
         TestSuite suite = new TestSuite("IgniteCache Mvcc Test Suite part 2");
 
         suite.addTest(IgniteCacheTestSuite2.suite(ignoredTests));
+
+        // Add Mvcc clones.
+        suite.addTestSuite(GridCachePartitionedMvccTxSingleThreadedSelfTest.class);
+        suite.addTestSuite(GridCacheColocatedMvccTxSingleThreadedSelfTest.class);
+        suite.addTestSuite(GridCachePartitionedMvccTxMultiThreadedSelfTest.class);
+        suite.addTestSuite(GridCachePartitionedNearDisabledMvccTxMultiThreadedSelfTest.class);
+        suite.addTestSuite(GridCachePartitionedMvccTxTimeoutSelfTest.class);
 
         return suite;
     }
