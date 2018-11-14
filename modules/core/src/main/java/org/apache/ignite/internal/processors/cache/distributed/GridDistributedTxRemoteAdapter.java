@@ -998,10 +998,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
         }
     }
 
-    /**
-     * @return Transaction label.
-     */
-    @Nullable public String label() {
+    /** {@inheritDoc} */
+    @Override public String label() {
         return txLbl;
     }
 
