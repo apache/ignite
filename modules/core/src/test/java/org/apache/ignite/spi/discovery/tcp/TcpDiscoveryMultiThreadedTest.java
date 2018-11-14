@@ -665,6 +665,8 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCustomEventNodeRestart() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10249");
+
         clientFlagGlobal = false;
 
         Ignite ignite = startGrid(0);
