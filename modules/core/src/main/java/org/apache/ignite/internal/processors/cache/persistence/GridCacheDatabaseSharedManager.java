@@ -2373,7 +2373,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                                 byte txState = convertToTxState(txRecord.state());
 
-                                cctx.coordinators().updateState(txRecord.mvccVersion(), txState, false);
+                                cctx.coordinators().updateTxState(
+                                    txRecord.mvccVersion().coordinatorVersion(),
+                                    txRecord.mvccVersion().counter(),
+                                    txState,
+                                    false
+                                );
                             }
                             catch (IgniteCheckedException e) {
                                 throw new IgniteException(e);
@@ -2515,7 +2520,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                         byte txState = convertToTxState(txRecord.state());
 
-                        cctx.coordinators().updateState(txRecord.mvccVersion(), txState, false);
+                        cctx.coordinators().updateTxState(
+                            txRecord.mvccVersion().coordinatorVersion(),
+                            txRecord.mvccVersion().counter(),
+                            txState,
+                            false
+                        );
 
                         break;
 
