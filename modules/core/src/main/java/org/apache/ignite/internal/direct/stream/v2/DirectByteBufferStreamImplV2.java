@@ -299,16 +299,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     private long uuidLocId;
 
     /** */
-    private byte topVerState;
-
-    /** */
-    private long topVerMajor;
-
-    /** */
-    private int topVerMinor;
-
-    /** */
-    private boolean lastFinished;
+    protected boolean lastFinished;
 
     /**
      * @param msgFactory Message factory.
@@ -669,26 +660,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
 
     /** {@inheritDoc} */
     @Override public void writeAffinityTopologyVersion(AffinityTopologyVersion val) {
-        if (val == null)
-            val = AffinityTopologyVersion.ZERO;
-
-        switch (topVerState) {
-            case 0:
-                writeLong(val.topologyVersion());
-
-                if (!lastFinished)
-                    return;
-
-                topVerState++;
-
-            case 1:
-                writeInt(val.minorTopologyVersion());
-
-                if (!lastFinished)
-                    return;
-
-                topVerState = 0;
-        }
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /** {@inheritDoc} */
@@ -1188,30 +1160,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
 
     /** {@inheritDoc} */
     @Override public AffinityTopologyVersion readAffinityTopologyVersion() {
-        switch (topVerState) {
-            case 0:
-                topVerMajor = readLong();
-
-                if (!lastFinished)
-                    return null;
-
-                topVerState++;
-
-            case 1:
-                topVerMinor = readInt();
-
-                if (!lastFinished)
-                    return null;
-
-                topVerState = 0;
-        }
-
-        AffinityTopologyVersion val = new AffinityTopologyVersion(topVerMajor, topVerMinor);
-
-        topVerMajor = 0;
-        topVerMinor = 0;
-
-        return val;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /** {@inheritDoc} */
@@ -1649,7 +1598,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
      * @param val Value.
      * @param writer Writer.
      */
-    private void write(MessageCollectionItemType type, Object val, MessageWriter writer) {
+    protected void write(MessageCollectionItemType type, Object val, MessageWriter writer) {
         switch (type) {
             case BYTE:
                 writeByte((Byte)val);
@@ -1751,6 +1700,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
 
                 break;
 
+            case AFFINITY_TOPOLOGY_VERSION:
             case MSG:
                 try {
                     if (val != null)
@@ -1775,7 +1725,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
      * @param reader Reader.
      * @return Value.
      */
-    private Object read(MessageCollectionItemType type, MessageReader reader) {
+    protected Object read(MessageCollectionItemType type, MessageReader reader) {
         switch (type) {
             case BYTE:
                 return readByte();
@@ -1837,6 +1787,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
             case IGNITE_UUID:
                 return readIgniteUuid();
 
+            case AFFINITY_TOPOLOGY_VERSION:
             case MSG:
                 return readMessage(reader);
 

@@ -27,6 +27,7 @@ import org.apache.ignite.internal.direct.state.DirectMessageStateItem;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
 import org.apache.ignite.internal.direct.stream.v1.DirectByteBufferStreamImplV1;
 import org.apache.ignite.internal.direct.stream.v2.DirectByteBufferStreamImplV2;
+import org.apache.ignite.internal.direct.stream.v3.DirectByteBufferStreamImplV3;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -45,6 +46,10 @@ public class DirectMessageWriter implements MessageWriter {
     @GridToStringInclude
     private final DirectMessageState<StateItem> state;
 
+    /** Protocol version. */
+    @GridToStringInclude
+    private final byte protoVer;
+
     /**
      * @param protoVer Protocol version.
      */
@@ -54,6 +59,8 @@ public class DirectMessageWriter implements MessageWriter {
                 return new StateItem(protoVer);
             }
         });
+
+        this.protoVer = protoVer;
     }
 
     /** {@inheritDoc} */
@@ -275,11 +282,15 @@ public class DirectMessageWriter implements MessageWriter {
 
     /** {@inheritDoc} */
     @Override public boolean writeAffinityTopologyVersion(String name, AffinityTopologyVersion val) {
-        DirectByteBufferStream stream = state.item().stream;
+        if (protoVer >= 3) {
+            DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeAffinityTopologyVersion(val);
+            stream.writeAffinityTopologyVersion(val);
 
-        return stream.lastFinished();
+            return stream.lastFinished();
+        }
+
+        return writeMessage(name, val);
     }
 
     /** {@inheritDoc} */
@@ -383,6 +394,11 @@ public class DirectMessageWriter implements MessageWriter {
 
                 case 2:
                     stream = new DirectByteBufferStreamImplV2(null);
+
+                    break;
+
+                case 3:
+                    stream = new DirectByteBufferStreamImplV3(null);
 
                     break;
 
