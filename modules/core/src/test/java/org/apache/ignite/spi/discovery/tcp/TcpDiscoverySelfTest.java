@@ -68,6 +68,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
@@ -93,12 +94,14 @@ import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.events.EventType.EVT_JOB_MAPPED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
+import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.events.EventType.EVT_TASK_FAILED;
 import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.MARSHALLER_PROC;
@@ -188,6 +191,8 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         }
 
         cfg.setConnectorConfiguration(null);
+
+        cfg.setSegmentationPolicy(SegmentationPolicy.NOOP);
 
         if (nodeId != null)
             cfg.setNodeId(nodeId);
@@ -2127,6 +2132,37 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         finally {
             stopAllGrids();
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testFailCoordinatorNode() throws Exception {
+        IgniteEx coord = startGrid(0);
+
+        IgniteEx ignite1 = startGrid(1);
+
+        CountDownLatch segmentedLatch = new CountDownLatch(1);
+        CountDownLatch failedLatch = new CountDownLatch(1);
+
+        coord.events().localListen(evt -> {
+            segmentedLatch.countDown();
+
+            return false;
+        }, EVT_NODE_SEGMENTED);
+
+        ignite1.events().localListen(evt -> {
+            failedLatch.countDown();
+
+            return false;
+        }, EVT_NODE_FAILED);
+
+        ignite1.configuration().getDiscoverySpi().failNode(coord.localNode().id(), null);
+
+        assertTrue(failedLatch.await(5000, MILLISECONDS));
+        assertTrue(segmentedLatch.await(5000, MILLISECONDS));
+
+        assertEquals(1, ignite1.context().discovery().allNodes().size());
     }
 
     /**

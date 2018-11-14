@@ -4963,7 +4963,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 msg.verify(locNodeId);
             }
 
-            if (msg.verified()) {
+            if (msg.verified() && !locNodeId.equals(failedNodeId)) {
                 failedNode = ring.removeNode(failedNodeId);
 
                 interruptPing(failedNode);
