@@ -1887,6 +1887,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             compress,
             newCntrMap,
             exchangeId(),
+            null,
             last != null ? last : cctx.versions().last(),
             partHistSuppliers,
             partsToReload);
