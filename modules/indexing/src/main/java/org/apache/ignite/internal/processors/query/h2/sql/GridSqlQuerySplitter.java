@@ -2376,7 +2376,7 @@ public class GridSqlQuerySplitter {
 
         GridH2Table tbl = (GridH2Table) column.column().getTable();
 
-        if (!isAffinityKey(leftCol.getColumnId(), tbl))
+        if (!isAffinityKey(column.column().getColumnId(), tbl))
             return null;
 
         GridH2RowDescriptor desc = tbl.rowDescriptor();
