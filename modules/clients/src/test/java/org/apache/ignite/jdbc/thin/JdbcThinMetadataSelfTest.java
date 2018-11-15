@@ -25,6 +25,7 @@ import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
@@ -44,6 +45,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteVersionUtils;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinDatabaseMetadata;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -155,6 +157,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             stmt.execute("CREATE INDEX \"MyTestIndex quoted\" on \"Quoted\" (\"Id\" DESC)");
             stmt.execute("CREATE INDEX IDX ON TEST (ID ASC)");
             stmt.execute("CREATE TABLE TEST_DECIMAL_COLUMN (ID INT primary key, DEC_COL DECIMAL(8, 3))");
+            stmt.execute("CREATE TABLE TEST_DECIMAL_COLUMN_PRECISION (ID INT primary key, DEC_COL DECIMAL(8))");
         }
     }
 
@@ -201,39 +204,43 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = DriverManager.getConnection(URL)) {
             DatabaseMetaData meta = conn.getMetaData();
 
-            ResultSet rs = meta.getTables("", "pers", "%", new String[]{"TABLE"});
+            ResultSet rs = meta.getTables(null, "pers", "%", new String[]{"TABLE"});
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
+            assertEquals(JdbcThinDatabaseMetadata.CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("PERSON", rs.getString("TABLE_NAME"));
 
             assertFalse(rs.next());
 
-            rs = meta.getTables("", "org", "%", new String[]{"TABLE"});
+            rs = meta.getTables(null, "org", "%", new String[]{"TABLE"});
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
+            assertEquals(JdbcThinDatabaseMetadata.CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("ORGANIZATION", rs.getString("TABLE_NAME"));
 
             assertFalse(rs.next());
 
-            rs = meta.getTables("", "pers", "%", null);
+            rs = meta.getTables(null, "pers", "%", null);
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
+            assertEquals(JdbcThinDatabaseMetadata.CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("PERSON", rs.getString("TABLE_NAME"));
 
             assertFalse(rs.next());
 
-            rs = meta.getTables("", "org", "%", null);
+            rs = meta.getTables(null, "org", "%", null);
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
+            assertEquals(JdbcThinDatabaseMetadata.CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("ORGANIZATION", rs.getString("TABLE_NAME"));
 
             assertFalse(rs.next());
 
-            rs = meta.getTables("", "PUBLIC", "", new String[]{"WRONG"});
+            rs = meta.getTables(null, "PUBLIC", "", new String[]{"WRONG"});
             assertFalse(rs.next());
         }
     }
@@ -253,7 +260,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "dep.DEPARTMENT",
                 "PUBLIC.TEST",
                 "PUBLIC.Quoted",
-                "PUBLIC.TEST_DECIMAL_COLUMN"));
+                "PUBLIC.TEST_DECIMAL_COLUMN",
+                "PUBLIC.TEST_DECIMAL_COLUMN_PRECISION"));
 
             Set<String> actualTbls = new HashSet<>(expectedTbls.size());
 
@@ -276,7 +284,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
 
             DatabaseMetaData meta = conn.getMetaData();
 
-            ResultSet rs = meta.getColumns("", "pers", "PERSON", "%");
+            ResultSet rs = meta.getColumns(null, "pers", "PERSON", "%");
 
             ResultSetMetaData rsMeta = rs.getMetaData();
 
@@ -337,7 +345,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             assert names.isEmpty();
             assert cnt == 3;
 
-            rs = meta.getColumns("", "org", "ORGANIZATION", "%");
+            rs = meta.getColumns(null, "org", "ORGANIZATION", "%");
 
             assert rs != null;
 
@@ -403,7 +411,9 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "PUBLIC.Quoted.Id.null",
                 "PUBLIC.Quoted.Name.null.50",
                 "PUBLIC.TEST_DECIMAL_COLUMN.ID.null",
-                "PUBLIC.TEST_DECIMAL_COLUMN.DEC_COL.null.8.3"
+                "PUBLIC.TEST_DECIMAL_COLUMN.DEC_COL.null.8.3",
+                "PUBLIC.TEST_DECIMAL_COLUMN_PRECISION.ID.null",
+                "PUBLIC.TEST_DECIMAL_COLUMN_PRECISION.DEC_COL.null.8"
             ));
 
             Set<String> actualCols = new HashSet<>(expectedCols.size());
@@ -555,7 +565,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "PUBLIC.TEST.PK_PUBLIC_TEST.ID",
                 "PUBLIC.TEST.PK_PUBLIC_TEST.NAME",
                 "PUBLIC.Quoted.PK_PUBLIC_Quoted.Id",
-                "PUBLIC.TEST_DECIMAL_COLUMN.ID.ID"));
+                "PUBLIC.TEST_DECIMAL_COLUMN.ID.ID",
+                "PUBLIC.TEST_DECIMAL_COLUMN_PRECISION.ID.ID"));
 
             Set<String> actualPks = new HashSet<>(expectedPks.size());
 
@@ -609,11 +620,63 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             while (rs.next()) {
                 schemas.add(rs.getString(1));
 
-                assert rs.getString(2) == null;
+                assertEquals("There is only one possible catalog.",
+                    JdbcThinDatabaseMetadata.CATALOG_NAME, rs.getString(2));
             }
 
             assert expectedSchemas.equals(schemas) : "Unexpected schemas: " + schemas +
                 ". Expected schemas: " + expectedSchemas;
+        }
+    }
+    /**
+     * Negative scenarios for catalog name.
+     * Perform metadata lookups, that use incorrect catalog names.
+     */
+    public void testCatalogWithNotExistingName() throws SQLException {
+        checkNoEntitiesFoundForCatalog("");
+        checkNoEntitiesFoundForCatalog("NOT_EXISTING_CATALOG");
+    }
+
+    /**
+     * Check that lookup in the metadata have been performed using specified catalog name (that is neither {@code null}
+     * nor correct catalog name), empty result set is returned.
+     *
+     * @param invalidCat catalog name that is not either
+     */
+    private void checkNoEntitiesFoundForCatalog(String invalidCat) throws SQLException {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            DatabaseMetaData meta = conn.getMetaData();
+
+            // Intention: we set the other arguments that way, the values to have as many results as possible.
+            assertIsEmpty(meta.getTables(invalidCat, null, "%", new String[] {"TABLE"}));
+            assertIsEmpty(meta.getColumns(invalidCat, null, "%", "%"));
+            assertIsEmpty(meta.getColumnPrivileges(invalidCat, "pers", "PERSON", "%"));
+            assertIsEmpty(meta.getTablePrivileges(invalidCat, null, "%"));
+            assertIsEmpty(meta.getPrimaryKeys(invalidCat, "pers", "PERSON"));
+            assertIsEmpty(meta.getImportedKeys(invalidCat, "pers", "PERSON"));
+            assertIsEmpty(meta.getExportedKeys(invalidCat, "pers", "PERSON"));
+            // meta.getCrossReference(...) doesn't make sense because we don't have FK constraint.
+            assertIsEmpty(meta.getIndexInfo(invalidCat, null, "%", false, true));
+            assertIsEmpty(meta.getSuperTables(invalidCat, "%", "%"));
+            assertIsEmpty(meta.getSchemas(invalidCat, null));
+            assertIsEmpty(meta.getPseudoColumns(invalidCat, null, "%", ""));
+        }
+    }
+
+    /**
+     * Assert that specified ResultSet contains no rows.
+     *
+     * @param rs result set to check.
+     * @throws SQLException on error.
+     */
+    private static void assertIsEmpty(ResultSet rs) throws SQLException {
+        try {
+            boolean empty = !rs.next();
+
+            assertTrue("Result should be empty because invalid catalog is specified.", empty);
+        }
+        finally {
+            rs.close();
         }
     }
 
@@ -641,7 +704,6 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * Person.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Person implements Serializable {
         /** Name. */
         private final String name;
@@ -671,7 +733,6 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * Organization.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Organization implements Serializable {
         /** ID. */
         private final int id;
@@ -692,7 +753,6 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * Organization.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Department implements Serializable {
         /** ID. */
         @QuerySqlField

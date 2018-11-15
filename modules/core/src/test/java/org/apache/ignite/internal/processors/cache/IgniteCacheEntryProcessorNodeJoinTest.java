@@ -42,6 +42,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -61,10 +62,13 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
     private static final int GRID_CNT = 2;
 
     /** Number of increment iterations. */
-    private static final int INCREMENTS = 100;
+    private final int INCREMENTS = SF.apply(100);
+
+    /** Number of test iterations. */
+    private final int ITERATIONS = SF.applyLB(10, 2);
 
     /** */
-    private static final int KEYS = 50;
+    private final int KEYS = SF.apply(50);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -160,7 +164,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
 
             final int RESTART_IDX = GRID_CNT + 1;
 
-            for (int iter = 0; iter < 10; iter++) {
+            for (int iter = 0; iter < ITERATIONS; iter++) {
                 log.info("Iteration: " + iter);
 
                 startGrid(RESTART_IDX);
@@ -179,7 +183,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
                     }
                 }, "stop-thread");
 
-                int increments = checkIncrement(cacheName, iter % 2 == 2, fut, latch);
+                int increments = checkIncrement(cacheName, iter % 2 == 1, fut, latch);
 
                 assert increments >= INCREMENTS;
 
@@ -257,8 +261,8 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
      * @param invokeAll If {@code true} tests invokeAll operation.
      * @param fut If not null then executes updates while future is not done.
      * @param latch Latch to count down when first update is done.
-     * @throws Exception If failed.
      * @return Number of increments.
+     * @throws Exception If failed.
      */
     private int checkIncrement(
         String cacheName,
@@ -289,7 +293,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
                     EntryProcessorResult<Integer> res = resMap.get(key);
 
                     assertNotNull(res);
-                    assertEquals(k + 1, (Object) res.get());
+                    assertEquals(k + 1, (Object)res.get());
                 }
             }
             else {
@@ -362,7 +366,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
                     info("Will put: " + (updVal + 1));
 
                     for (int i = 0; i < keys; i++)
-                        assertTrue("Failed [key=" + i + ", oldVal=" + updVal+ ']',
+                        assertTrue("Failed [key=" + i + ", oldVal=" + updVal + ']',
                             ignite(0).cache(DEFAULT_CACHE_NAME).replace(i, updVal, updVal + 1));
 
                     updVal++;

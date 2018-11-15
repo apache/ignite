@@ -370,7 +370,8 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
                     -1,
                     this.tx.subjectId(),
                     this.tx.taskNameHash(),
-                    false);
+                    false,
+                    null);
 
                 dhtTx.mvccSnapshot(new MvccSnapshotWithoutTxs(mvccSnapshot.coordinatorVersion(),
                     mvccSnapshot.counter(), MVCC_OP_COUNTER_NA, mvccSnapshot.cleanupVersion()));
@@ -567,7 +568,6 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
      * @param err Exception.
      * @return {@code True} if future was completed by this call.
      */
-    @SuppressWarnings("unchecked")
     public boolean checkResponse(UUID nodeId, GridNearTxEnlistResponse res, Throwable err) {
         assert res != null || err != null : this;
 

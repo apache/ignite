@@ -952,10 +952,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         timeout = threshold - U.currentTimeMillis();
                     }
-                    catch (InterruptedException ignored) {
+                    catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
 
-                        throw new IgniteSpiException("Thread has been interrupted.");
+                        throw new IgniteSpiException("Thread has been interrupted.", e);
                     }
                 }
 
@@ -1038,7 +1038,6 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @return {@code true} if send succeeded.
      * @throws IgniteSpiException If any error occurs.
      */
-    @SuppressWarnings({"BusyWait"})
     private boolean sendJoinRequestMessage(DiscoveryDataPacket discoveryData) throws IgniteSpiException {
         TcpDiscoveryAbstractMessage joinReq = new TcpDiscoveryJoinRequestMessage(locNode, discoveryData);
 
@@ -5351,7 +5350,6 @@ class ServerImpl extends TcpDiscoveryImpl {
          *
          * @param msg Discard message.
          */
-        @SuppressWarnings("StatementWithEmptyBody")
         private void processDiscardMessage(TcpDiscoveryDiscardMessage msg) {
             assert msg != null;
 
@@ -6871,7 +6869,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param msgBytes Optional message bytes.
          */
         void addMessage(TcpDiscoveryAbstractMessage msg, @Nullable byte[] msgBytes) {
-            T2 t = new T2<>(msg, msgBytes);
+            T2<TcpDiscoveryAbstractMessage, byte[]> t = new T2<>(msg, msgBytes);
 
             if (msg.highPriority())
                 queue.addFirst(t);

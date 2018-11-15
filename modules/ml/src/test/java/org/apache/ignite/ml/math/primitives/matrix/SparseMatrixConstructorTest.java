@@ -48,7 +48,6 @@ public class SparseMatrixConstructorTest {
         SparseMatrix m = new SparseMatrix(1, 1);
         //noinspection EqualsWithItself
         assertTrue("Matrix is expected to be equal to self.", m.equals(m));
-        //noinspection ObjectEqualsNull
         assertFalse("Matrix is expected to be not equal to null.", m.equals(null));
     }
 }
