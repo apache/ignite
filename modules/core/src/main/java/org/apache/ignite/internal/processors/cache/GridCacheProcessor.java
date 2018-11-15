@@ -2157,7 +2157,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
         else {
-            Map<StartCacheInfo, GridCacheContextInfo> cacheContexts = new ConcurrentHashMap<>();
+            Map<StartCacheInfo, GridCacheContext> cacheContexts = new ConcurrentHashMap<>();
 
             int parallelismLvl = sharedCtx.kernalContext().config().getSystemThreadPoolSize();
 
@@ -2172,7 +2172,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     cacheStartFailHandler.handle(
                         startCacheInfo,
                         cacheInfo -> {
-                            GridCacheContextInfo cacheCtx = prepareCacheContext(
+                            GridCacheContext cacheCtx = prepareCacheContext(
                                 cacheInfo.getCacheDescriptor().cacheConfiguration(),
                                 cacheInfo.getCacheDescriptor(),
                                 cacheInfo.getReqNearCfg(),
@@ -2208,16 +2208,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 cacheStartFailHandler.handle(
                     startCacheInfo,
                     cacheInfo -> {
-                        GridCacheContextInfo cctx = cacheContexts.get(cacheInfo);
+                        GridCacheContext cctx = cacheContexts.get(cacheInfo);
 
                         if (!cctx.isRecoveryMode()) {
-                            ctx.query().onCacheStart(
-                                cctx,
-                                cacheInfo.getCacheDescriptor().schema() != null
-                                    ? cacheInfo.getCacheDescriptor().schema()
-                                    : new QuerySchema(),
-                                cacheInfo.getCacheDescriptor().sql()
-                            );
+                            GridCacheContextInfo lazyCacheCtx = lazyCacheMap.remove(cctx.cacheId());
+
+                            if (lazyCacheCtx != null)
+                                lazyCacheCtx.initLazyCacheContext(cctx);
+                            else
+                                ctx.query().onCacheStart(
+                                    new GridCacheContextInfo(cctx),
+                                    cacheInfo.getCacheDescriptor().schema() != null
+                                        ? cacheInfo.getCacheDescriptor().schema()
+                                        : new QuerySchema(),
+                                    cacheInfo.getCacheDescriptor().sql()
+                                );
                         }
 
                         context().exchange().exchangerUpdateHeartbeat();
@@ -2235,12 +2240,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     cacheStartFailHandler.handle(
                         cacheCtxEntry.getKey(),
                         cacheInfo -> {
-                            GridCacheContextInfo<?, ?> cacheContext = cacheCtxEntry.getValue();
+                            GridCacheContext<?, ?> cacheContext = cacheCtxEntry.getValue();
 
                             if (cacheContext.isRecoveryMode())
                                 finishRecovery(cacheInfo.getExchangeTopVer(), cacheContext);
                             else
-                                onCacheStarted(cacheCtxEntry.getValue().gridCacheContext());
+                                onCacheStarted(cacheCtxEntry.getValue());
 
                             context().exchange().exchangerUpdateHeartbeat();
 
@@ -2270,15 +2275,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         AffinityTopologyVersion exchTopVer,
         boolean disabledAfterStart
     ) throws IgniteCheckedException {
-        GridCacheContextInfo cacheCtx = prepareCacheContext(startCfg, desc, reqNearCfg, exchTopVer, disabledAfterStart);
+        GridCacheContext cacheCtx = prepareCacheContext(startCfg, desc, reqNearCfg, exchTopVer, disabledAfterStart);
 
-        if (!isCacheLazy(cacheCtx.name()))
-            ctx.query().onCacheStart(cacheCtx, desc.schema() != null ? desc.schema() : new QuerySchema(), desc.sql());
+        GridCacheContextInfo lazyCacheCtx = lazyCacheMap.remove(cacheCtx.cacheId());
+
+        if (lazyCacheCtx != null)
+            lazyCacheCtx.initLazyCacheContext(cacheCtx);
+        else
+            ctx.query().onCacheStart(new GridCacheContextInfo(cacheCtx), desc.schema() != null ? desc.schema() : new QuerySchema(), desc.sql());
 
         if (cacheCtx.isRecoveryMode())
             finishRecovery(exchTopVer, cacheCtx);
         else
-            onCacheStarted(cacheCtx.gridCacheContext());
+            onCacheStarted(cacheCtx);
     }
 
     /**
@@ -2290,10 +2299,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param exchTopVer Current exchange version.
      * @param disabledAfterStart If true, then we will discard restarting state from proxies. If false then we will change
      *  state of proxies to restarting
-     * @return Created {@link GridCacheContextInfo}.
+     * @return Created {@link GridCacheContext}.
      * @throws IgniteCheckedException if failed.
      */
-    private GridCacheContextInfo prepareCacheContext(
+    private GridCacheContext prepareCacheContext(
         CacheConfiguration startCfg,
         DynamicCacheDescriptor desc,
         @Nullable NearCacheConfiguration reqNearCfg,
@@ -2315,7 +2324,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (!localSchemaPatch.isEmpty() || localSchemaPatch.hasConflicts())
                 stopCacheSafely(cctx);
             else
-                return new GridCacheContextInfo(existingCache.context());
+                return existingCache.context();
         }
 
         assert !caches.containsKey(startCfg.getName()) : startCfg.getName();
@@ -2342,7 +2351,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         initCacheContext(cacheCtx, ccfg, desc.deploymentId());
 
-        return new GridCacheContextInfo(cacheCtx);
+        return cacheCtx;
     }
 
     /**
@@ -2369,12 +2378,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * Finishes recovery for given cache context.
      *
      * @param cacheStartVer Cache join to topology version.
-     * @param cacheContextInfo Cache context info.
+     * @param cacheContext Cache context.
      * @throws IgniteCheckedException If failed.
      */
     private void finishRecovery(AffinityTopologyVersion cacheStartVer,
-        GridCacheContextInfo<?, ?> cacheContextInfo) throws IgniteCheckedException {
-        GridCacheContext cacheContext = cacheContextInfo.gridCacheContext();
+        GridCacheContext<?, ?> cacheContext) throws IgniteCheckedException {
 
         CacheGroupContext groupContext = cacheContext.group();
 

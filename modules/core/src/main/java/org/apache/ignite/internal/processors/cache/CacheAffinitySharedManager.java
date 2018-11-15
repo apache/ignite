@@ -925,7 +925,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 );
             }
             else if (cctx.localNode().isClient())
-//                ToDo: need to start in parallel mode for client too.
                 cctx.kernalContext().cache().createLazyCache(cacheDesc);
         }
 
