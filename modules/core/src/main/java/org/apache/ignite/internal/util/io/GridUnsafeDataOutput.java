@@ -514,7 +514,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
 
         if (!canBeAllocated(bytesToAlloc))
             throw new IOException("Failed to allocate required memory for " + type + " array " +
-                "(byte array size overflow detected) [length=" + arrLen + ", offset=" + off + ']');
+                "(byte array size overflow detected) [length=" + arrLen + ']');
     }
 
     /**
