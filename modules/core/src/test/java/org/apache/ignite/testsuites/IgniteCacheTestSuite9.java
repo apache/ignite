@@ -28,7 +28,6 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCachePrim
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCacheWriteSynchronizationModesMultithreadedTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxConcurrentRemoveObjectsTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxDataConsistencyOnCommitFailureTest;
-import org.apache.ignite.testframework.junits.GridAbstractTest;
 
 /**
  * Test suite.
@@ -39,8 +38,6 @@ public class IgniteCacheTestSuite9 extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        System.setProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, "false");
-
         TestSuite suite = new TestSuite("IgniteCache Test Suite part 9");
 
         suite.addTestSuite(IgniteCacheGetCustomCollectionsSelfTest.class);

@@ -1478,6 +1478,8 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                 @Override public boolean apply(Event evt) {
                     assert evt instanceof CacheQueryExecutedEvent;
 
+                    System.out.println(">>> EVENT");
+
                     if (evtsDisabled)
                         fail("Cache events are disabled");
 

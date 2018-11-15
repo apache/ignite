@@ -279,7 +279,9 @@ public class SqlFieldsQuery extends Query<List<?>> {
      *
      * @param replicatedOnly The query contains only replicated tables.
      * @return {@code this} For chaining.
+     * @deprecated No longer used as of Apache Ignite 2.8.
      */
+    @Deprecated
     public SqlFieldsQuery setReplicatedOnly(boolean replicatedOnly) {
         this.replicatedOnly = replicatedOnly;
 
@@ -290,7 +292,9 @@ public class SqlFieldsQuery extends Query<List<?>> {
      * Check is the query contains only replicated tables.
      *
      * @return {@code true} If the query contains only replicated tables.
+     * @deprecated No longer used as of Apache Ignite 2.8.
      */
+    @Deprecated
     public boolean isReplicatedOnly() {
         return replicatedOnly;
     }

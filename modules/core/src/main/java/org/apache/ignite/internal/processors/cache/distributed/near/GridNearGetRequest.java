@@ -108,6 +108,9 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
     /** TTL for read operation. */
     private long accessTtl;
 
+    /** Transaction label. */
+    private @Nullable String txLbl;
+
     /** */
     private MvccSnapshot mvccSnapshot;
 
@@ -133,6 +136,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
      * @param createTtl New TTL to set after entry is created, -1 to leave unchanged.
      * @param accessTtl New TTL to set after entry is accessed, -1 to leave unchanged.
      * @param addDepInfo Deployment info.
+     * @param txLbl Transaction label.
      * @param mvccSnapshot Mvcc snapshot.
      */
     public GridNearGetRequest(
@@ -151,6 +155,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
         boolean skipVals,
         boolean addDepInfo,
         boolean recovery,
+        @Nullable String txLbl,
         @Nullable MvccSnapshot mvccSnapshot
     ) {
         assert futId != null;
@@ -180,6 +185,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
         this.createTtl = createTtl;
         this.accessTtl = accessTtl;
         this.addDepInfo = addDepInfo;
+        this.txLbl = txLbl;
         this.mvccSnapshot = mvccSnapshot;
 
         if (readThrough)
@@ -297,6 +303,15 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
     }
 
     /**
+     * Get transaction label (may be null).
+     *
+     * @return Possible transaction label;
+     */
+    @Nullable public String txLabel() {
+        return txLbl;
+    }
+
+    /**
      * @param ctx Cache context.
      * @throws IgniteCheckedException If failed.
      */
@@ -397,37 +412,43 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeCollection("readersFlags", readersFlags, MessageCollectionItemType.BOOLEAN))
+                if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeUuid("subjId", subjId))
+                if (!writer.writeCollection("readersFlags", readersFlags, MessageCollectionItemType.BOOLEAN))
                     return false;
 
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeInt("taskNameHash", taskNameHash))
+                if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeMessage("topVer", topVer))
+                if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeMessage("ver", ver))
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
+                if (!writer.writeString("txLbl", txLbl))
+                    return false;
+
+                writer.incrementState();
+
+            case 15:
+                if (!writer.writeMessage("ver", ver))
                     return false;
 
                 writer.incrementState();
@@ -497,7 +518,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
                 reader.incrementState();
 
             case 9:
-                readersFlags = reader.readCollection("readersFlags", MessageCollectionItemType.BOOLEAN);
+                mvccSnapshot = reader.readMessage("mvccSnapshot");
 
                 if (!reader.isLastRead())
                     return false;
@@ -505,7 +526,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
                 reader.incrementState();
 
             case 10:
-                subjId = reader.readUuid("subjId");
+                readersFlags = reader.readCollection("readersFlags", MessageCollectionItemType.BOOLEAN);
 
                 if (!reader.isLastRead())
                     return false;
@@ -513,7 +534,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
                 reader.incrementState();
 
             case 11:
-                taskNameHash = reader.readInt("taskNameHash");
+                subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -521,7 +542,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
                 reader.incrementState();
 
             case 12:
-                topVer = reader.readMessage("topVer");
+                taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
                     return false;
@@ -529,7 +550,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
                 reader.incrementState();
 
             case 13:
-                ver = reader.readMessage("ver");
+                topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -537,7 +558,15 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
                 reader.incrementState();
 
             case 14:
-                mvccSnapshot = reader.readMessage("mvccSnapshot");
+                txLbl = reader.readString("txLbl");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 15:
+                ver = reader.readMessage("ver");
 
                 if (!reader.isLastRead())
                     return false;
@@ -556,7 +585,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 15;
+        return 16;
     }
 
     /** {@inheritDoc} */
