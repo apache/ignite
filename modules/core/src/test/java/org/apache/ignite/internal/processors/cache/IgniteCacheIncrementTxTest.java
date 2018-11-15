@@ -88,6 +88,8 @@ public class IgniteCacheIncrementTxTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testIncrementTxTopologyChange1() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10264");
+
         nodeJoin(cacheConfiguration(1));
     }
 
@@ -95,6 +97,8 @@ public class IgniteCacheIncrementTxTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testIncrementTxTopologyChange2() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10264");
+
         nodeJoin(cacheConfiguration(2));
     }
 
