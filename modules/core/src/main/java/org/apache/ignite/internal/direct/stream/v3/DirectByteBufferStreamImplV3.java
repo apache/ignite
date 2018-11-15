@@ -53,7 +53,7 @@ public class DirectByteBufferStreamImplV3 extends DirectByteBufferStreamImplV2 {
         if (val != null) {
             switch (topVerState) {
                 case 0:
-                    writeShort((short)(val.minorTopologyVersion() >>> 16));
+                    writeInt(val.minorTopologyVersion());
 
                     if (!lastFinished)
                         return;
@@ -61,14 +61,6 @@ public class DirectByteBufferStreamImplV3 extends DirectByteBufferStreamImplV2 {
                     topVerState++;
 
                 case 1:
-                    writeShort((short)(val.minorTopologyVersion() & 0xFFFF));
-
-                    if (!lastFinished)
-                        return;
-
-                    topVerState++;
-
-                case 2:
                     writeLong(val.topologyVersion());
 
                     if (!lastFinished)
@@ -78,33 +70,21 @@ public class DirectByteBufferStreamImplV3 extends DirectByteBufferStreamImplV2 {
             }
         }
         else
-            writeShort(Short.MIN_VALUE);
+            writeInt(-1);
     }
 
     /** {@inheritDoc} */
     @Override public AffinityTopologyVersion readAffinityTopologyVersion() {
         switch (topVerState) {
             case 0:
-                short major = readShort();
+                topVerMinor = readInt();
 
-                if (!lastFinished || major == Short.MIN_VALUE)
+                if (!lastFinished || topVerMinor == -1)
                     return null;
-
-                topVerMinor |= (major & 0xFFFF) << 16;
 
                 topVerState++;
 
             case 1:
-                short minor = readShort();
-
-                if (!lastFinished)
-                    return null;
-
-                topVerMinor |= (minor & 0xFFFF);
-
-                topVerState++;
-
-            case 2:
                 topVerMajor = readLong();
 
                 if (!lastFinished)
@@ -113,12 +93,7 @@ public class DirectByteBufferStreamImplV3 extends DirectByteBufferStreamImplV2 {
                 topVerState = 0;
         }
 
-        AffinityTopologyVersion val = new AffinityTopologyVersion(topVerMajor, topVerMinor);
-
-        topVerMajor = 0;
-        topVerMinor = 0;
-
-        return val;
+        return new AffinityTopologyVersion(topVerMajor, topVerMinor);
     }
 
     /** {@inheritDoc} */
