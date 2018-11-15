@@ -1092,7 +1092,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     private long maxConnTimeout = DFLT_MAX_CONN_TIMEOUT;
 
     /** Reconnect attempts count. */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     private int reconCnt = DFLT_RECONNECT_CNT;
 
     /** Socket send buffer. */
@@ -1844,7 +1843,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * When set to a positive number, communication SPI will monitor clients outbound message queue sizes and will drop
      * those clients whose queue exceeded this limit.
      * <p/>
-     * Usually this value should be set to the same value as {@link #getMessageQueueLimit()} which controls
+     * This value should be set to less or equal value than {@link #getMessageQueueLimit()} which controls
      * message back-pressure for server nodes. The default value for this parameter is {@code 0}
      * which means {@code unlimited}.
      *
@@ -2208,8 +2207,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 "since may produce significant delays with some scenarios.");
 
         if (slowClientQueueLimit > 0 && msgQueueLimit > 0 && slowClientQueueLimit >= msgQueueLimit) {
-            U.quietAndWarn(log, "Slow client queue limit is set to a value greater than message queue limit " +
-                "(slow client queue limit will have no effect) [msgQueueLimit=" + msgQueueLimit +
+            U.quietAndWarn(log, "Slow client queue limit is set to a value greater than or equal to message " +
+                "queue limit (slow client queue limit will have no effect) [msgQueueLimit=" + msgQueueLimit +
                 ", slowClientQueueLimit=" + slowClientQueueLimit + ']');
         }
 
@@ -4617,7 +4616,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("ThrowFromFinallyBlock")
         @Override public void applyx(InputStream in, OutputStream out) throws IgniteCheckedException {
             try {
                 // Handshake.

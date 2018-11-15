@@ -50,10 +50,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
-
 /**
  *
  */
@@ -286,11 +282,6 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
 
         /** Delegate factory. */
         private final FileIOFactory delegateFactory = new RandomAccessFileIOFactory();
-
-        /** {@inheritDoc} */
-        @Override public FileIO create(File file) throws IOException {
-            return create(file, CREATE, READ, WRITE);
-        }
 
         /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... openOption) throws IOException {

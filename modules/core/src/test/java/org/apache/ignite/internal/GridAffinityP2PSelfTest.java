@@ -79,7 +79,6 @@ public class GridAffinityP2PSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 

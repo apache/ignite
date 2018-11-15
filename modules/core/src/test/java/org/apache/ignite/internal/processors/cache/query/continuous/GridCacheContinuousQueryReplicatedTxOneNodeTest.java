@@ -21,7 +21,6 @@ import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.cache.Cache;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
@@ -41,7 +40,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Test for replicated cache with one node.
  */
-@SuppressWarnings("Duplicates")
 public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);

@@ -328,7 +328,6 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         Object key = new Object() {
             /** */
-            @SuppressWarnings("UnusedDeclaration")
             @AffinityKeyMapped
             private final Object key0 = affKey;
 

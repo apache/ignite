@@ -29,7 +29,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.InvalidEnvironmentException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFuture;
@@ -92,7 +91,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
     private boolean commit;
 
     /** Error. */
-    @SuppressWarnings("UnusedDeclaration")
     @GridToStringExclude
     private volatile Throwable err;
 
@@ -287,7 +285,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
      *
      * @param commit Commit flag.
      */
-    @SuppressWarnings({"SimplifiableIfStatement", "IfMayBeConditional"})
+    @SuppressWarnings({"SimplifiableIfStatement"})
     public void finish(boolean commit) {
         boolean sync;
 
