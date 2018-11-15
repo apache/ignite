@@ -15,28 +15,33 @@
  * limitations under the License.
  */
 
-import './style.scss';
+@import "./../../../public/stylesheets/variables.scss";
 
-import controller from './controller';
-import templateUrl from './template.tpl.pug';
-import {default as ActivitiesData} from 'app/core/activities/Activities.data';
+timed-redirection {
+  justify-content: center;
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 
-/**
- * @param {uirouter.UIRouter} $uiRouter
- * @param {ActivitiesData} ActivitiesData
- */
-function registerActivitiesHook($uiRouter, ActivitiesData) {
-    $uiRouter.transitionService.onSuccess({to: 'base.settings.**'}, (transition) => {
-        ActivitiesData.post({group: 'settings', action: transition.targetState().name()});
-    });
+  .timed-redirection--wrapper {
+      text-align: center;
+  }
+
+  h1, .sub-header {
+    color: $ignite-brand-primary;
+  }
+
+  h1 {
+    font-size: 64px;
+  }
+
+  .sub-header {
+    font-size: 30px;
+  }
+
+  .redirection-text {
+    margin-top: 30px;
+    font-size: 16px;
+  }
 }
-
-registerActivitiesHook.$inject = ['$uiRouter', 'IgniteActivitiesData'];
-
-export default angular
-    .module('ignite-console.page-admin', [])
-    .component('pageAdmin', {
-        controller,
-        templateUrl
-    })
-    .run(registerActivitiesHook);
