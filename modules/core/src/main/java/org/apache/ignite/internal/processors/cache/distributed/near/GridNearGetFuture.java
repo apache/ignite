@@ -319,6 +319,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         expiryPlc,
                         skipVals,
                         recovery,
+                        null,
                         null); // TODO IGNITE-7371
 
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
@@ -383,6 +384,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     skipVals,
                     cctx.deploymentEnabled(),
                     recovery,
+                    null,
                     null); // TODO IGNITE-7371
 
                 add(fut); // Append new future.

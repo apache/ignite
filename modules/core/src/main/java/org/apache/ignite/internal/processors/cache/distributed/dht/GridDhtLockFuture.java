@@ -945,7 +945,8 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                             skipStore,
                             cctx.store().configured(),
                             keepBinary,
-                            cctx.deploymentEnabled());
+                            cctx.deploymentEnabled(),
+                            inTx() ? tx.label() : null);
 
                         try {
                             for (ListIterator<GridDhtCacheEntry> it = dhtMapping.listIterator(); it.hasNext(); ) {
@@ -1320,8 +1321,8 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                                     replicate ? DR_PRELOAD : DR_NONE,
                                     false)) {
                                     if (rec && !entry.isInternal())
-                                        cctx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(),
-                                            (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
+                                        cctx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(), null,
+                                            null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
                                             false, null, null, null, false);
                                 }
                             }
