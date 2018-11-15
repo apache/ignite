@@ -132,6 +132,9 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     /** Post processing closure. */
     private volatile BackupPostProcessingClosure postProcessingClos;
 
+    /** Transaction label. */
+    private String txLbl;
+
     /**
      * @param cctx Context.
      * @param key Key.
@@ -145,6 +148,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
      * @param keepCacheObjects Keep cache objects flag.
+     * @param txLbl Transaction label.
      */
     public GridPartitionedSingleGetFuture(
         GridCacheContext cctx,
@@ -160,6 +164,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         boolean needVer,
         boolean keepCacheObjects,
         boolean recovery,
+        String txLbl,
         @Nullable MvccSnapshot mvccSnapshot
     ) {
         assert key != null;
@@ -189,6 +194,8 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         this.recovery = recovery;
         this.topVer = topVer;
         this.mvccSnapshot = mvccSnapshot;
+
+        this.txLbl = txLbl;
 
         futId = IgniteUuid.randomUuid();
 
@@ -244,6 +251,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 expiryPlc,
                 skipVals,
                 recovery,
+                txLbl,
                 mvccSnapshot);
 
             final Collection<Integer> invalidParts = fut.invalidPartitions();
@@ -315,6 +323,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 needVer,
                 cctx.deploymentEnabled(),
                 recovery,
+                txLbl,
                 mvccSnapshot);
 
             try {
@@ -406,6 +415,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                             if (evt) {
                                 cctx.events().readEvent(key,
                                     null,
+                                    txLbl,
                                     row.value(),
                                     subjId,
                                     taskName,
