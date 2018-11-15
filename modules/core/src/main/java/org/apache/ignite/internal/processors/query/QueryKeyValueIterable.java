@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.cache.query.QueryCursor;
-import org.jetbrains.annotations.NotNull;
 
 import javax.cache.Cache;
 import java.util.Iterator;

@@ -2307,11 +2307,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         ).get(0);
 
         // Convert.
-        final Iterable<Cache.Entry<K, V>> converted = new QueryKeyValueIterable<>(res);
+        QueryKeyValueIterable<K, V>converted = new QueryKeyValueIterable<>(res);
 
         return new QueryCursorImpl<Cache.Entry<K, V>>(converted) {
             @Override public void close() {
-                res.close();
+                converted.cursor().close();
             }
         };
     }
