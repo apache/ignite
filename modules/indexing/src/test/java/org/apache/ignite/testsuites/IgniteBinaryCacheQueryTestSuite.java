@@ -212,6 +212,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.ExplainSelfTest;
 import org.apache.ignite.internal.processors.query.h2.sql.GridQueryParsingTest;
 import org.apache.ignite.internal.processors.query.h2.sql.H2CompareBigQueryDistributedJoinsTest;
 import org.apache.ignite.internal.processors.query.h2.sql.H2CompareBigQueryTest;
+import org.apache.ignite.internal.processors.query.h2.twostep.AndOperationExtractPartitionSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.InOperationExtractPartitionSelfTest;
 import org.apache.ignite.internal.processors.sql.IgniteCachePartitionedAtomicColumnConstraintsTest;
 import org.apache.ignite.internal.processors.sql.IgniteCachePartitionedTransactionalColumnConstraintsTest;
@@ -530,6 +531,7 @@ public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
 
         // Partition pruning.
         suite.addTestSuite(InOperationExtractPartitionSelfTest.class);
+        suite.addTestSuite(AndOperationExtractPartitionSelfTest.class);
 
         return suite;
     }
