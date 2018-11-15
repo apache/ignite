@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.ReaderArguments;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFutureAdapter.LostPolicyValidator;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -53,6 +54,11 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static java.util.Collections.singleton;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFutureAdapter.OperationType.READ;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 
 /**
  *
@@ -172,6 +178,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
      * Initializes future.
      */
     void init() {
+        // TODO get rid of force keys request https://issues.apache.org/jira/browse/IGNITE-10251
         GridDhtFuture<Object> fut = cctx.group().preloader().request(cctx, keys.keySet(), topVer);
 
         if (fut != null) {
@@ -196,14 +203,14 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                         return;
                     }
 
-                    map0(keys);
+                    map0(keys, true);
 
                     markInitialized();
                 }
             });
         }
         else {
-            map0(keys);
+            map0(keys, false);
 
             markInitialized();
         }
@@ -244,7 +251,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     /**
      * @param keys Keys to map.
      */
-    private void map0(Map<KeyCacheObject, Boolean> keys) {
+    private void map0(Map<KeyCacheObject, Boolean> keys, boolean forceKeys) {
         Map<KeyCacheObject, Boolean> mappedKeys = null;
 
         // Assign keys to primary nodes.
@@ -252,7 +259,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
             int part = cctx.affinity().partition(key.getKey());
 
             if (retries == null || !retries.contains(part)) {
-                if (!map(key.getKey())) {
+                if (!map(key.getKey(), forceKeys)) {
                     if (retries == null)
                         retries = new HashSet<>();
 
@@ -296,7 +303,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
      * @param key Key.
      * @return {@code True} if mapped.
      */
-    private boolean map(KeyCacheObject key) {
+    private boolean map(KeyCacheObject key, boolean forceKeys) {
         try {
             int keyPart = cctx.affinity().partition(key);
 
@@ -307,14 +314,31 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
             if (part == null)
                 return false;
 
+            if (!forceKeys && part.state() == LOST && !recovery) {
+                Throwable error = LostPolicyValidator.validate(cctx, key, READ, singleton(part.id()));
+
+                if (error != null) {
+                    onDone(null, error);
+
+                    return false;
+                }
+            }
+
             if (parts == null || !F.contains(parts, part.id())) {
                 // By reserving, we make sure that partition won't be unloaded while processed.
                 if (part.reserve()) {
-                    parts = parts == null ? new int[1] : Arrays.copyOf(parts, parts.length + 1);
+                    if (forceKeys || (part.state() == OWNING || part.state() == LOST)) {
+                        parts = parts == null ? new int[1] : Arrays.copyOf(parts, parts.length + 1);
 
-                    parts[parts.length - 1] = part.id();
+                        parts[parts.length - 1] = part.id();
 
-                    return true;
+                        return true;
+                    }
+                    else {
+                        part.release();
+
+                        return false;
+                    }
                 }
                 else
                     return false;
