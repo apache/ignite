@@ -83,14 +83,13 @@ public class PartitionExtractor {
      */
     public static PartitionInfo[] derivePartitionsFromQuery(GridSqlQuery qry, GridKernalContext ctx)
         throws IgniteCheckedException {
-
         // No unions support yet.
         if (!(qry instanceof GridSqlSelect))
             return null;
 
         GridSqlSelect select = (GridSqlSelect)qry;
 
-        // no joins support yet.
+        // no joins support yet
         if (select.from() == null || select.from().size() != 1)
             return null;
 
@@ -127,7 +126,7 @@ public class PartitionExtractor {
                 PartitionInfo[] partsRight = extractPartition(op.child(1), ctx);
 
                 if (partsLeft != null && partsRight != null)
-                    return null; //kind of conflict (_key = 1) and (_key = 2)
+                    return intersectPartitionInfo(partsLeft, partsRight);
 
                 if (partsLeft != null)
                     return partsLeft;
@@ -304,8 +303,7 @@ public class PartitionExtractor {
      * @return partition info, or {@code null} if none identified
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable
-    private static PartitionInfo getCacheQueryPartitionInfo(
+    @Nullable private static PartitionInfo getCacheQueryPartitionInfo(
         Column leftCol,
         GridSqlConst rightConst,
         GridSqlParameter rightParam,
@@ -316,9 +314,6 @@ public class PartitionExtractor {
         assert leftCol.getTable() instanceof GridH2Table;
 
         GridH2Table tbl = (GridH2Table)leftCol.getTable();
-
-        if (!isAffinityKey(leftCol.getColumnId(), tbl))
-            return null;
 
         GridH2RowDescriptor desc = tbl.rowDescriptor();
 
@@ -372,6 +367,72 @@ public class PartitionExtractor {
         }
         catch(IllegalStateException e) {
             return false;
+        }
+    }
+
+    /**
+     * Find parametrized partitions.
+     *
+     * @param parts All partitions.
+     * @return Parametrized partitions.
+     */
+    private static ArrayList<PartitionInfo> findParameterized(PartitionInfo[] parts){
+        ArrayList<PartitionInfo> res = new ArrayList<>(parts.length);
+
+        for (PartitionInfo p : parts) {
+            if (p.partition() < 0)
+                res.add(p);
+        }
+
+        return res;
+    }
+
+    /**
+     * Merges two partition info arrays, removing duplicates
+     *
+     * @param a Partition info array.
+     * @param b Partition info array.
+     * @return Result.
+     */
+    private static PartitionInfo[] intersectPartitionInfo(
+        PartitionInfo[] a,
+        PartitionInfo[] b) {
+        assert a != null;
+        assert b != null;
+
+        if (a.length == 0 || b.length == 0)
+            return new PartitionInfo[0];
+
+        ArrayList<PartitionInfo> aWithParams = findParameterized(a);
+        ArrayList<PartitionInfo> bWithParams = findParameterized(b);
+
+        if (aWithParams.size() > 0 || bWithParams.size() > 0){
+            PartitionInfo[][] holder = new PartitionInfo[2][];
+
+            holder[0] = a;
+
+            holder[1] = b;
+
+            PartitionInfo[] res = new PartitionInfo[1];
+
+            res[0] = new PartitionInfo(holder);
+
+            return res;
+        }
+        // Here conjunction logic could be added to handle one-side parameterized cases to remove partitions in cases
+        // like [1,2,?] AND [2,3] where partition 1 could be calculated as not actually needed.
+        // NB! partition 2 should stay as it is playing role in case where parameter belongs to any other after binding
+        else {
+            ArrayList<PartitionInfo> list = new ArrayList<>(a.length + b.length);
+
+            for (PartitionInfo partA : a) {
+                for (PartitionInfo partB : b) {
+                    if (partA.equals(partB))
+                        list.add(partA);
+                }
+            }
+
+            return list.toArray(new PartitionInfo[0]);
         }
     }
 
