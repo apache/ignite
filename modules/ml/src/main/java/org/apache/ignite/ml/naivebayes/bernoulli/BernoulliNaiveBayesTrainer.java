@@ -35,7 +35,8 @@ import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
  * 1/k}, where {@code k} is classes count.
  */
 public class BernoulliNaiveBayesTrainer extends SingleLabelDatasetTrainer<BernoulliNaiveBayesModel> {
-
+    /** Precision to compare binarizeThresholds. */
+    private static final double PRECISION = 1e-10;
     /* Preset prior probabilities. */
     private double[] priorProbabilities;
     /* Sets equivalent probability for all classes. */
@@ -58,7 +59,7 @@ public class BernoulliNaiveBayesTrainer extends SingleLabelDatasetTrainer<Bernou
 
     /** {@inheritDoc} */
     @Override protected boolean checkState(BernoulliNaiveBayesModel mdl) {
-        return true;
+        return Math.abs(mdl.getBinarizeThreshold() - binarizeThreshold) < PRECISION;
     }
 
     /** {@inheritDoc} */
@@ -104,8 +105,7 @@ public class BernoulliNaiveBayesTrainer extends SingleLabelDatasetTrainer<Bernou
                     return a;
                 return a.merge(b);
             });
-            if (mdl != null && mdl.getSumsHolder() != null) {
-                assert mdl.getBinarizeThreshold() == binarizeThreshold;
+            if (mdl != null && checkState(mdl)) {
                 sumsHolder = sumsHolder.merge(mdl.getSumsHolder());
             }
 
