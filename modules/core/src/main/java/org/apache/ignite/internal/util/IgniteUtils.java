@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.util;
 
+import java.util.Objects;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
@@ -10782,38 +10785,95 @@ public abstract class IgniteUtils {
     ) throws IgniteCheckedException, IgniteInterruptedCheckedException {
         if(srcDatas.isEmpty())
             return Collections.emptyList();
+
         int[] batchSizes = calculateOptimalBatchSizes(parallelismLvl, srcDatas.size());
 
-        List<List<T>> batches = new ArrayList<>(batchSizes.length);
+        List<Batch<T>> batches = new ArrayList<>(batchSizes.length);
+
+        // Queue for sharing batches between executor and current thread.
+        // If executor cannot perform immediately, we will execute it in the current thread.
+        Queue<Batch<T>> queue = new ConcurrentLinkedQueue<>();
 
         Iterator<T> iterator = srcDatas.iterator();
 
-        for (int batchSize : batchSizes) {
-            List<T> batch = new ArrayList<>(batchSize);
+        for (int idx = 0; idx < batchSizes.length; idx++) {
+            int batchSize = batchSizes[idx];
+
+            Batch<T> batch = new Batch<>(idx, batchSize);
 
             for (int i = 0; i < batchSize; i++)
-                batch.add(iterator.next());
+                batch.tasks.add(iterator.next());
 
             batches.add(batch);
         }
 
         List<Future<Collection<R>>> consumerFutures = batches.stream()
-            .filter(batch -> !batch.isEmpty())
+            .filter(batch -> !batch.tasks.isEmpty())
+            .peek(queue::add)
             .map(batch -> executorSvc.submit(() -> {
-                Collection<R> results = new ArrayList<>(batch.size());
+                Batch<T> batch0 = queue.poll();
 
-                for (T item : batch)
+                if (batch0 == null) {
+                    return null;
+                }
+
+                Collection<R> results = new ArrayList<>(batch.tasks.size());
+
+                for (T item : batch0.tasks)
                     results.add(operation.accept(item));
 
                 return results;
             }))
             .collect(Collectors.toList());
 
-        Throwable error =null;
+        Throwable error = null;
 
+        // Collection of results which was completed in the current thread.
+        Collection<R> currentThreadResults = null;
+
+        // Stealing jobs if executor is busy and cannot process task immediately.
+        // Perform batches in a current thread.
+        while (!queue.isEmpty()) {
+            Batch<T> batch = queue.poll();
+
+            // Executor steal last task after isEmpty check.
+            if (batch == null)
+                break;
+
+            // Remove pending future associated with the batch, because current thread will execute this batch.
+            consumerFutures.set(batch.idx, null);
+
+            // Lazy init result current thread collection.
+            if (currentThreadResults == null)
+                currentThreadResults = new ArrayList<>(batch.tasks.size());
+
+            try {
+                for (T item : batch.tasks)
+                    currentThreadResults.add(operation.accept(item));
+            }
+            catch (IgniteCheckedException e) {
+                if (error == null)
+                    error = e;
+                else
+                    error.addSuppressed(e);
+            }
+        }
+
+        List<Future<Collection<R>>> futures;
+
+        // If currentThreadResults not need to filtered null value, none task completed in the current thread.
+        // Filter null value (null mean that batch was completed in the current thread).
+        // Need to wait only batches which was executed in the pool.
+        futures = currentThreadResults == null ? consumerFutures :
+            consumerFutures
+                .stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        // Final result collection.
         Collection<R> results = new ArrayList<>(srcDatas.size());
 
-        for (Future<Collection<R>> future : consumerFutures) {
+        for (Future<Collection<R>> future : futures) {
             try {
                 results.addAll(future.get());
             }
@@ -10836,6 +10896,8 @@ public abstract class IgniteUtils {
             }
         }
 
+        results.addAll(currentThreadResults);
+
         if (error != null) {
             if (error instanceof IgniteCheckedException)
                 throw (IgniteCheckedException)error;
@@ -10850,6 +10912,26 @@ public abstract class IgniteUtils {
         }
 
         return results;
+    }
+
+    /**
+     * The batch of tasks with a batch index in global array.
+     */
+    private static class Batch<T> {
+        /** Index in global batch array. */
+        private final int idx;
+
+        /** List tasks. */
+        private final List<T> tasks;
+
+        /**
+         * @param idx Index in array.
+         * @param batchSize Batch size.
+         */
+        private Batch(int idx, int batchSize) {
+            this.idx = idx;
+            this.tasks = new ArrayList<>(batchSize);
+        }
     }
 
     /**
