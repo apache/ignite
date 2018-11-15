@@ -50,14 +50,6 @@ public class GridPartitionedBackupLoadSelfTest extends GridCommonAbstractTest {
     private final AtomicInteger cnt = new AtomicInteger();
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        if (FORCE_MVCC)
-            fail("https://issues.apache.org/jira/browse/IGNITE-7955"); // Local peek is not supported yet.
-
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 

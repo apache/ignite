@@ -111,9 +111,6 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testManualPreload() throws Exception {
-        if (FORCE_MVCC)
-            fail("https://issues.apache.org/jira/browse/IGNITE-7955"); // Local peek is not supported yet.
-
         delay = -1;
 
         Ignite g0 = startGrid(0);
@@ -193,9 +190,6 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDelayedPreload() throws Exception {
-        if (FORCE_MVCC)
-            fail("https://issues.apache.org/jira/browse/IGNITE-7955"); // Local peek is not supported yet.
-
         delay = PRELOAD_DELAY;
 
         Ignite g0 = startGrid(0);
@@ -267,9 +261,6 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAutomaticPreload() throws Exception {
-        if (FORCE_MVCC)
-            fail("https://issues.apache.org/jira/browse/IGNITE-7955"); // Local peek is not supported yet.
-
         delay = 0;
         preloadMode = CacheRebalanceMode.SYNC;
 
@@ -303,9 +294,6 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAutomaticPreloadWithEmptyCache() throws Exception {
-        if (FORCE_MVCC)
-            fail("https://issues.apache.org/jira/browse/IGNITE-7955"); // Local peek is not supported yet.
-
         preloadMode = SYNC;
 
         delay = 0;
