@@ -10792,7 +10792,7 @@ public abstract class IgniteUtils {
 
         // Queue for sharing batches between executor and current thread.
         // If executor cannot perform immediately, we will execute it in the current thread.
-        Queue<Batch<T>> queue = new ConcurrentLinkedQueue<>();
+        Queue<Batch<T>> sharedBatchesQueue = new ConcurrentLinkedQueue<>();
 
         Iterator<T> iterator = srcDatas.iterator();
 
@@ -10807,12 +10807,13 @@ public abstract class IgniteUtils {
             batches.add(batch);
         }
 
-        List<Future<Collection<R>>> consumerFutures = batches.stream()
+        List<Future<Collection<R>>> poolFutures = batches.stream()
             .filter(batch -> !batch.tasks.isEmpty())
-            .peek(queue::add)
+            .peek(sharedBatchesQueue::add)
             .map(batch -> executorSvc.submit(() -> {
-                Batch<T> batch0 = queue.poll();
+                Batch<T> batch0 = sharedBatchesQueue.poll();
 
+                // Batch was stolen by the main stream
                 if (batch0 == null) {
                     return null;
                 }
@@ -10833,15 +10834,15 @@ public abstract class IgniteUtils {
 
         // Stealing jobs if executor is busy and cannot process task immediately.
         // Perform batches in a current thread.
-        while (!queue.isEmpty()) {
-            Batch<T> batch = queue.poll();
+        while (!sharedBatchesQueue.isEmpty()) {
+            Batch<T> batch = sharedBatchesQueue.poll();
 
             // Executor steal last task after isEmpty check.
             if (batch == null)
                 break;
 
             // Remove pending future associated with the batch, because current thread will execute this batch.
-            consumerFutures.set(batch.idx, null);
+            poolFutures.set(batch.idx, null);
 
             // Lazy init result current thread collection.
             if (currentThreadResults == null)
@@ -10864,8 +10865,8 @@ public abstract class IgniteUtils {
         // If currentThreadResults not need to filtered null value, none task completed in the current thread.
         // Filter null value (null mean that batch was completed in the current thread).
         // Need to wait only batches which was executed in the pool.
-        futures = currentThreadResults == null ? consumerFutures :
-            consumerFutures
+        futures = currentThreadResults == null ? poolFutures :
+            poolFutures
                 .stream()
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
