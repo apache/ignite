@@ -78,7 +78,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.query.CacheQueryPartitionInfo;
+import org.apache.ignite.internal.processors.query.h2.affinity.PartitionInfo;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
@@ -2190,9 +2190,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     Prepared prepared = GridSqlQueryParser.prepared(cachedStmt);
 
                     // We may use this cached statement only for local queries and non queries.
-                    if (qry.isLocal() || !prepared.isQuery())
+                    if (qry.isLocal() || !prepared.isQuery()) {
+                        if (GridSqlQueryParser.isExplainUpdate(prepared))
+                            throw new IgniteSQLException("Explains of update queries are not supported.",
+                                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
                         return (List<FieldsQueryCursor<List<?>>>)doRunPrepared(schemaName, prepared, qry, null, null,
                             keepBinary, startTx, tracker, cancel);
+                    }
                 }
             }
 
@@ -2394,6 +2399,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         Prepared prepared = prep.prepared();
 
+        if (GridSqlQueryParser.isExplainUpdate(prepared))
+            throw new IgniteSQLException("Explains of update queries are not supported.",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
         checkQueryType(qry, prepared.isQuery());
 
         String remainingSql = prep.remainingSql();
@@ -2434,7 +2443,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 // Legit assertion - we have H2 query flag above.
                 assert parsedStmt instanceof GridSqlQuery;
 
-                loc = parser.isLocalQuery(qry.isReplicatedOnly());
+                loc = parser.isLocalQuery();
             }
 
             if (loc) {
@@ -3691,12 +3700,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Partitions.
      * @throws IgniteCheckedException, If fails.
      */
-    private int[] calculateQueryPartitions(CacheQueryPartitionInfo[] partInfoList, Object[] params)
+    private int[] calculateQueryPartitions(PartitionInfo[] partInfoList, Object[] params)
         throws IgniteCheckedException {
 
         ArrayList<Integer> list = new ArrayList<>(partInfoList.length);
 
-        for (CacheQueryPartitionInfo partInfo: partInfoList) {
+        for (PartitionInfo partInfo: partInfoList) {
             int partId = (partInfo.partition() >= 0) ? partInfo.partition() :
                 bindPartitionInfoParameter(partInfo, params);
 
@@ -3729,7 +3738,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Partition.
      * @throws IgniteCheckedException, If fails.
      */
-    private int bindPartitionInfoParameter(CacheQueryPartitionInfo partInfo, Object[] params)
+    private int bindPartitionInfoParameter(PartitionInfo partInfo, Object[] params)
         throws IgniteCheckedException {
         assert partInfo != null;
         assert partInfo.partition() < 0;

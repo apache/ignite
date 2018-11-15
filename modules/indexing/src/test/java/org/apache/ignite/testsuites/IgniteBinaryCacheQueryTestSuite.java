@@ -169,6 +169,7 @@ import org.apache.ignite.internal.processors.cache.query.IgniteCacheQueryCacheDe
 import org.apache.ignite.internal.processors.cache.query.IndexingSpiQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.query.IndexingSpiQueryTxSelfTest;
 import org.apache.ignite.internal.processors.cache.query.IndexingSpiQueryWithH2IndexingSelfTest;
+import org.apache.ignite.internal.processors.cache.transaction.DmlInsideTransactionTest;
 import org.apache.ignite.internal.processors.client.ClientConnectorConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.database.baseline.IgniteStableBaselineBinObjFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.query.IgniteCachelessQueriesSelfTest;
@@ -191,7 +192,9 @@ import org.apache.ignite.internal.processors.query.IgniteSqlSkipReducerOnUpdateD
 import org.apache.ignite.internal.processors.query.IgniteSqlSplitterSelfTest;
 import org.apache.ignite.internal.processors.query.LazyQuerySelfTest;
 import org.apache.ignite.internal.processors.query.MultipleStatementsSqlQuerySelfTest;
+import org.apache.ignite.internal.processors.query.RunningQueriesTest;
 import org.apache.ignite.internal.processors.query.SqlIllegalSchemaSelfTest;
+import org.apache.ignite.internal.processors.query.SqlNestedQuerySelfTest;
 import org.apache.ignite.internal.processors.query.SqlPushDownFunctionTest;
 import org.apache.ignite.internal.processors.query.SqlSchemaSelfTest;
 import org.apache.ignite.internal.processors.query.SqlSystemViewsSelfTest;
@@ -205,6 +208,7 @@ import org.apache.ignite.internal.processors.query.h2.IgniteSqlQueryMinMaxTest;
 import org.apache.ignite.internal.processors.query.h2.PreparedStatementExSelfTest;
 import org.apache.ignite.internal.processors.query.h2.ThreadLocalObjectPoolSelfTest;
 import org.apache.ignite.internal.processors.query.h2.sql.BaseH2CompareQueryTest;
+import org.apache.ignite.internal.processors.query.h2.sql.ExplainSelfTest;
 import org.apache.ignite.internal.processors.query.h2.sql.GridQueryParsingTest;
 import org.apache.ignite.internal.processors.query.h2.sql.H2CompareBigQueryDistributedJoinsTest;
 import org.apache.ignite.internal.processors.query.h2.sql.H2CompareBigQueryTest;
@@ -241,6 +245,11 @@ public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
         IgniteTestSuite suite = new IgniteTestSuite("Ignite Cache Queries Test Suite");
 
         suite.addTestSuite(AffinityKeyNameAndValueFieldNameConflictTest.class);
+        suite.addTestSuite(DmlInsideTransactionTest.class);
+        suite.addTestSuite(ComplexPrimaryKeyUnwrapSelfTest.class);
+        suite.addTestSuite(SqlNestedQuerySelfTest.class);
+        suite.addTestSuite(ExplainSelfTest.class);
+        suite.addTestSuite(RunningQueriesTest.class);
 
         suite.addTestSuite(ComplexPrimaryKeyUnwrapSelfTest.class);
 

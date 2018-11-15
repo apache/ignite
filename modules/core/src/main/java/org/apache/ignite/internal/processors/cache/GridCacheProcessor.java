@@ -2195,12 +2195,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     ) throws IgniteCheckedException {
         GridCacheContext cacheCtx = prepareCacheContext(startCfg, desc, reqNearCfg, exchTopVer, disabledAfterStart);
 
-        ctx.query().onCacheStart(cacheCtx, desc.schema() != null ? desc.schema() : new QuerySchema(), desc.sql());
-
         if (cacheCtx.isRecoveryMode())
             finishRecovery(exchTopVer, cacheCtx);
-        else
+        else {
+            ctx.query().onCacheStart(cacheCtx, desc.schema() != null ? desc.schema() : new QuerySchema(), desc.sql());
+
             onCacheStarted(cacheCtx);
+        }
     }
 
     /**
