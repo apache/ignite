@@ -504,7 +504,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     /**
      * Check for possible arithmetic overflow when trying to serialize a humongous array.
      *
-     * @param bytes Number of bytes in single array elements.
+     * @param bytes Number of bytes in a single array element.
      * @param arrLen Array length.
      * @param type Type of an array.
      * @throws IOException If oveflow presents and data corruption can occur.
