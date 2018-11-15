@@ -43,24 +43,4 @@ public class PartitionedTransactionalOptimisticCacheGetsDistributionTest extends
     @Override protected TransactionConcurrency transactionConcurrency() {
         return OPTIMISTIC;
     }
-
-    /** {@inheritDoc}*/
-    @Override public void testGetRequestsGeneratorDistribution() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10252");
-    }
-
-    /** {@inheritDoc}*/
-    @Override public void testGetAllRequestsGeneratorDistribution() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10252");
-    }
-
-    /** {@inheritDoc}*/
-    @Override public void testGetRequestsDistribution() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10252");
-    }
-
-    /** {@inheritDoc}*/
-    @Override public void testGetAllRequestsDistribution() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10252");
-    }
 }
