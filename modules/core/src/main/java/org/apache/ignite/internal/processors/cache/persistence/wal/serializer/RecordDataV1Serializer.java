@@ -47,6 +47,7 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
 import org.apache.ignite.internal.pagemem.wal.record.WalRecordCacheGroupAware;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccMarkUpdatedRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccUpdateNewTxStateHintRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccUpdateTxStateHintRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
@@ -69,7 +70,6 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateLastSuc
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateLastSuccessfulSnapshotId;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateNextSnapshotId;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdatePartitionDataRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccMarkUpdatedRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.NewRootInitRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageListMetaResetCountRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListAddPageRecord;
@@ -107,6 +107,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.jetbrains.annotations.Nullable;
 
@@ -124,8 +125,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     /** Length of HEADER record data. */
     static final int HEADER_RECORD_DATA_SIZE = /*Magic*/8 + /*Version*/4;
 
-    /** Cache shared context */
-    private final GridCacheSharedContext cctx;
+    /** Cache shared context. */
+    protected final GridCacheSharedContext cctx;
 
     /** Size of page used for PageMemory regions. */
     private final int pageSize;
@@ -133,8 +134,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     /** Size of page without encryption overhead. */
     private final int realPageSize;
 
-    /** Cache object processor to reading {@link DataEntry DataEntries} */
-    private final IgniteCacheObjectProcessor co;
+    /** Cache object processor to reading {@link DataEntry DataEntries}. */
+    protected final IgniteCacheObjectProcessor co;
 
     /** Serializer of {@link TxRecord} records. */
     private TxRecordSerializer txRecordSerializer;
@@ -1126,7 +1127,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 throw new EOFException("END OF SEGMENT");
 
             case TX_RECORD:
-                res = txRecordSerializer.read(in);
+                res = txRecordSerializer.readTx(in);
 
                 break;
 
@@ -1798,7 +1799,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @param ver Version to write.
      * @param allowNull Is {@code null}version allowed.
      */
-    private static void putVersion(ByteBuffer buf, GridCacheVersion ver, boolean allowNull) {
+    static void putVersion(ByteBuffer buf, GridCacheVersion ver, boolean allowNull) {
         CacheVersionIO.write(buf, ver, allowNull);
     }
 
@@ -1981,7 +1982,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @param allowNull Is {@code null}version allowed.
      * @return Read cache version.
      */
-    private GridCacheVersion readVersion(ByteBufferBackedDataInput in, boolean allowNull) throws IOException {
+    GridCacheVersion readVersion(ByteBufferBackedDataInput in, boolean allowNull) throws IOException {
         // To be able to read serialization protocol version.
         in.ensure(1);
 
@@ -2002,7 +2003,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @return Full data record size.
      * @throws IgniteCheckedException If failed to obtain the length of one of the entries.
      */
-    private int dataSize(DataRecord dataRec) throws IgniteCheckedException {
+    protected int dataSize(DataRecord dataRec) throws IgniteCheckedException {
         boolean encrypted = isDataRecordEncrypted(dataRec);
 
         int sz = 0;
@@ -2028,7 +2029,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @return Entry size.
      * @throws IgniteCheckedException If failed to get key or value bytes length.
      */
-    private int entrySize(DataEntry entry) throws IgniteCheckedException {
+    protected int entrySize(DataEntry entry) throws IgniteCheckedException {
         GridCacheContext cctx = this.cctx.cacheContext(entry.cacheId());
         CacheObjectContext coCtx = cctx.cacheObjectContext();
 
@@ -2068,7 +2069,11 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         return size;
     }
 
+    /**
+     * Represents encrypted Data Entry ({@link #key}, {@link #val value}) pair.
+     */
     public static class EncryptedDataEntry extends DataEntry {
+        /** Constructor. */
         EncryptedDataEntry() {
             super(0, null, null, READ, null, null, 0, 0, 0);
         }
