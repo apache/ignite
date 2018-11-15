@@ -35,7 +35,6 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -529,6 +528,9 @@ public class GridSqlQueryParser {
      * deep subquery expression nesting.
      */
     private int parsingSubQryExpression;
+
+    /** Whether this is SELECT FOR UPDATE. */
+    private boolean selectForUpdate;
 
     /**
      * @param useOptimizedSubqry If we have to find correct order for table filters in FROM clause.
@@ -1711,13 +1713,13 @@ public class GridSqlQueryParser {
 
     /**
      * Check if query may be run locally on all caches mentioned in the query.
-     * @param replicatedOnlyQry replicated-only query flag from original {@link SqlFieldsQuery}.
+     *
      * @return {@code true} if query may be run locally on all caches mentioned in the query, i.e. there's no need
      *     to run distributed query.
-     * @see SqlFieldsQuery#isReplicatedOnly()
      */
-    public boolean isLocalQuery(boolean replicatedOnlyQry) {
-        boolean hasCaches = false;
+    public boolean isLocalQuery() {
+        if (selectForUpdate)
+            return false;
 
         for (Object o : h2ObjToGridObj.values()) {
             if (o instanceof GridSqlAlias)
@@ -1727,19 +1729,18 @@ public class GridSqlQueryParser {
                 GridH2Table tbl = ((GridSqlTable)o).dataTable();
 
                 if (tbl != null) {
-                    hasCaches = true;
-
                     GridCacheContext cctx = tbl.cache();
 
-                    if (!cctx.isLocal() && !(replicatedOnlyQry && cctx.isReplicatedAffinityNode()))
+                    if (cctx.isPartitioned())
+                        return false;
+
+                    if (cctx.isReplicated() && !cctx.isReplicatedAffinityNode())
                         return false;
                 }
             }
         }
 
-        // For consistency with old logic, let's not force locality in absence of caches -
-        // if there are no caches, original SqlFieldsQuery's isLocal flag will be used.
-        return hasCaches;
+        return true;
     }
 
     /**
@@ -1793,6 +1794,8 @@ public class GridSqlQueryParser {
         if (stmt instanceof Query) {
             if (optimizedTableFilterOrder != null)
                 collectOptimizedTableFiltersOrder((Query)stmt);
+
+            selectForUpdate = isForUpdateQuery(stmt);
 
             return parseQuery((Query)stmt);
         }
