@@ -390,7 +390,8 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
 
     /**
      * Tests checks for arithmetic overflow when trying to serialize huge object.
-     * WARNING! Requires a lot of heap space. Should not be run on CI. Minimal memory requirement is about -Xmx5400m.
+     * WARNING! Requires a lot of heap space. Should not be run on CI.
+     * Minimal memory requirement is about 6-7 gigabytes of heap.
      */
     public void _testAllocationOverflow() {
         allocationOverflowCheck(() -> marshaller().marshal(new HugeObject()));
@@ -406,6 +407,12 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
         allocationOverflowCheck(() -> marshaller().marshal(new long[1 << 28]));
 
         allocationOverflowCheck(() -> marshaller().marshal(new double[1 << 28]));
+
+        // This particular case requires about 13G of heap space.
+        // It failed because of bug in previous implementation of GridUnsafeDataOutput, mainly line
+        // "if (bytesToAlloc < arrLen)" in method "checkArrayAllocationOverflow". That check doesn't
+        // work as desired on the length in the example below.
+        allocationOverflowCheck(() -> marshaller().marshal(new long[0x2800_0000]));
     }
 
     /**

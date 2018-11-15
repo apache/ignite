@@ -131,7 +131,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
      */
     private void requestFreeSize(int size) throws IOException {
         if (!canBeAllocated(off + size))
-            throw new IOException("Failed to allocate required memory (array size overflow detected) " +
+            throw new IOException("Failed to allocate required memory (byte array size overflow detected) " +
                 "[length=" + size + ", offset=" + off + ']');
 
         size = off + size;
@@ -164,7 +164,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
      * @return true if {@code new byte[size]} won't throw {@link OutOfMemoryError} given enough heap space.
      * @see GridUnsafeDataOutput#MAX_BYTE_ARRAY_SIZE
      */
-    private boolean canBeAllocated(int size) {
+    private boolean canBeAllocated(long size) {
         return 0 <= size && size <= MAX_BYTE_ARRAY_SIZE;
     }
 
@@ -201,9 +201,9 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     @Override public void writeDoubleArray(double[] arr) throws IOException {
         writeInt(arr.length);
 
-        int bytesToCp = arr.length << 3;
+        checkArrayAllocationOverflow(8, arr.length, "double");
 
-        checkArrayAllocationOverflow(bytesToCp, arr.length, "double");
+        int bytesToCp = arr.length << 3;
 
         requestFreeSize(bytesToCp);
 
@@ -235,9 +235,9 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     @Override public void writeCharArray(char[] arr) throws IOException {
         writeInt(arr.length);
 
-        int bytesToCp = arr.length << 1;
+        checkArrayAllocationOverflow(2, arr.length, "char");
 
-        checkArrayAllocationOverflow(bytesToCp, arr.length, "char");
+        int bytesToCp = arr.length << 1;
 
         requestFreeSize(bytesToCp);
 
@@ -260,9 +260,9 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     @Override public void writeLongArray(long[] arr) throws IOException {
         writeInt(arr.length);
 
-        int bytesToCp = arr.length << 3;
+        checkArrayAllocationOverflow(8, arr.length, "long");
 
-        checkArrayAllocationOverflow(bytesToCp, arr.length, "long");
+        int bytesToCp = arr.length << 3;
 
         requestFreeSize(bytesToCp);
 
@@ -285,9 +285,9 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     @Override public void writeFloatArray(float[] arr) throws IOException {
         writeInt(arr.length);
 
-        int bytesToCp = arr.length << 2;
+        checkArrayAllocationOverflow(4, arr.length, "float");
 
-        checkArrayAllocationOverflow(bytesToCp, arr.length, "float");
+        int bytesToCp = arr.length << 2;
 
         requestFreeSize(bytesToCp);
 
@@ -328,9 +328,9 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     @Override public void writeShortArray(short[] arr) throws IOException {
         writeInt(arr.length);
 
-        int bytesToCp = arr.length << 1;
+        checkArrayAllocationOverflow(2, arr.length, "short");
 
-        checkArrayAllocationOverflow(bytesToCp, arr.length, "short");
+        int bytesToCp = arr.length << 1;
 
         requestFreeSize(bytesToCp);
 
@@ -353,9 +353,9 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     @Override public void writeIntArray(int[] arr) throws IOException {
         writeInt(arr.length);
 
-        int bytesToCp = arr.length << 2;
+        checkArrayAllocationOverflow(4, arr.length, "int");
 
-        checkArrayAllocationOverflow(bytesToCp, arr.length, "int");
+        int bytesToCp = arr.length << 2;
 
         requestFreeSize(bytesToCp);
 
@@ -504,16 +504,17 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     /**
      * Check for possible arithmetic overflow when trying to serialize a humongous array.
      *
-     * @param bytesToAlloc Bytes to allocate.
+     * @param bytes Number of bytes in single array elements.
      * @param arrLen Array length.
      * @param type Type of an array.
      * @throws IOException If oveflow presents and data corruption can occur.
      */
-    private void checkArrayAllocationOverflow(int bytesToAlloc, int arrLen, String type) throws IOException {
-        // If arithmetic overflow occurs, bytesToAlloc should be less than arrLen.
-        if (bytesToAlloc < arrLen)
+    private void checkArrayAllocationOverflow(int bytes, int arrLen, String type) throws IOException {
+        long bytesToAlloc = (long)arrLen * bytes;
+
+        if (!canBeAllocated(bytesToAlloc))
             throw new IOException("Failed to allocate required memory for " + type + " array " +
-                "(arithmetic overflow detected) [length=" + arrLen + ']');
+                "(byte array size overflow detected) [length=" + arrLen + ", offset=" + off + ']');
     }
 
     /**
