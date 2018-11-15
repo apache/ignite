@@ -61,9 +61,7 @@ public class DataEntry {
     @GridToStringInclude
     protected long partCnt;
 
-    /**
-     * Default constructor.
-     */
+    /** Constructor. */
     private DataEntry() {
         // No-op, used from factory methods.
     }

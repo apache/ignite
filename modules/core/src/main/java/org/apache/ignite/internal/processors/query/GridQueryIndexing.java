@@ -259,7 +259,7 @@ public interface GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      * @return {@code True} if type was registered, {@code false} if for some reason it was rejected.
      */
-    public boolean registerType(GridCacheContext cctx, GridQueryTypeDescriptor desc) throws IgniteCheckedException;
+    public boolean registerType(GridCacheContext cctx, GridQueryTypeDescriptor desc, boolean isSql) throws IgniteCheckedException;
 
     /**
      * Updates index. Note that key is unique for cache, so if cache contains multiple indexes
