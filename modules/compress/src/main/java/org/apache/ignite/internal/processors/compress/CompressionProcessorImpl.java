@@ -111,6 +111,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
 
         // Drop the garbage from the page.
         ((CompactablePageIO)io).compactPage(page, compactPage, pageSize);
+        page.clear();
 
         int compactSize = compactPage.limit();
 
@@ -130,7 +131,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
 
         if (freeCompactBlocks >= freeCompressedBlocks) {
             if (freeCompactBlocks == 0)
-                return (ByteBuffer)page.clear(); // No blocks will be released.
+                return page; // No blocks will be released.
 
             return setCompactionInfo(compactPage, compactSize);
         }
