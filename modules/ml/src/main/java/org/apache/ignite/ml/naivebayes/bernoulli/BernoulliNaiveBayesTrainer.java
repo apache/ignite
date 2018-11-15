@@ -20,6 +20,7 @@ package org.apache.ignite.ml.naivebayes.bernoulli;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
@@ -106,7 +107,9 @@ public class BernoulliNaiveBayesTrainer extends SingleLabelDatasetTrainer<Bernou
                 return a.merge(b);
             });
             if (mdl != null && checkState(mdl)) {
-                sumsHolder = sumsHolder.merge(mdl.getSumsHolder());
+                if (checkSumsHolder(sumsHolder, mdl.getSumsHolder())) {
+                    sumsHolder = sumsHolder.merge(mdl.getSumsHolder());
+                }
             }
 
             List<Double> sortedLabels = new ArrayList<>(sumsHolder.featureCountersPerLbl.keySet());
@@ -151,6 +154,28 @@ public class BernoulliNaiveBayesTrainer extends SingleLabelDatasetTrainer<Bernou
             throw new RuntimeException(e);
         }
 
+    }
+
+    /**Checks that two {@code BernoulliNaiveBayesSumsHolder} contain the same lengths of future vectors.*/
+    private boolean checkSumsHolder(BernoulliNaiveBayesSumsHolder holder1, BernoulliNaiveBayesSumsHolder holder2) {
+        if (holder1 == null || holder2 == null) {
+            return false;
+        }
+
+        Optional<long[]> optinalFirst = holder1.onesCountPerLbl.values().stream().findFirst();
+        Optional<long[]> optinalSecond = holder2.onesCountPerLbl.values().stream().findFirst();
+
+        if (optinalFirst.isPresent()) {
+            if (optinalSecond.isPresent()) {
+                return optinalFirst.get().length == optinalSecond.get().length;
+            }
+            else {
+                return false;
+            }
+        }
+        else {
+            return !optinalSecond.isPresent();
+        }
     }
 
     /** Sets equal probability for all classes. */
