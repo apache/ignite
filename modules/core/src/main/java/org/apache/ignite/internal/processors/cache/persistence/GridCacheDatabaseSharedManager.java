@@ -2421,7 +2421,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
 
             if (onWalPointerApplied != null)
-                onWalPointerApplied.apply(next.get1());
+                onWalPointerApplied.apply(rec.position());
         }
     }
 
