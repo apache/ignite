@@ -15,26 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+import * as angular from 'angular';
 
-import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.StartCachesInParallelTest;
-import org.apache.ignite.util.GridCommandHandlerIndexingTest;
+import {component} from './component';
 
-/**
- * Cache tests using indexing.
- */
-public class IgniteCacheWithIndexingAndPersistenceTestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Cache With Indexing And Persistence Test Suite");
-
-        suite.addTestSuite(GridCommandHandlerIndexingTest.class);
-        suite.addTestSuite(StartCachesInParallelTest.class);
-
-        return suite;
-    }
-}
+export default angular.module('ignite-console.timed-redirection', [])
+    .component('timedRedirection', component);

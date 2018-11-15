@@ -15,26 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+import template from './template.pug';
+import './style.scss';
+import {TimedRedirectionCtrl} from './controller';
 
-import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.StartCachesInParallelTest;
-import org.apache.ignite.util.GridCommandHandlerIndexingTest;
-
-/**
- * Cache tests using indexing.
- */
-public class IgniteCacheWithIndexingAndPersistenceTestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Cache With Indexing And Persistence Test Suite");
-
-        suite.addTestSuite(GridCommandHandlerIndexingTest.class);
-        suite.addTestSuite(StartCachesInParallelTest.class);
-
-        return suite;
+export const component: ng.IComponentOptions = {
+    template,
+    controller: TimedRedirectionCtrl,
+    bindings: {
+        headerText: '<',
+        subHeaderText: '<'
     }
-}
+};

@@ -55,5 +55,8 @@ export default class CacheMetrics {
         // Transaction metrics.
         this.commits = m.txCommits;
         this.rollbacks = m.txRollbacks;
+
+        // Admin metrics.
+        this.statisticsEnabled = m.statisticsEnabled;
     }
 }
