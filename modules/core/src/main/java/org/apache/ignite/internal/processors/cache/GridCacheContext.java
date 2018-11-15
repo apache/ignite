@@ -2249,7 +2249,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         int partitionId,
         boolean canRemap
     ) {
-        if (!readLoadBalancingEnabled || config().getCacheMode() == CacheMode.PARTITIONED) {
+        if (!readLoadBalancingEnabled) {
             if (!canRemap) {
                 for (ClusterNode node : affNodes) {
                     if (ctx.discovery().alive(node))
