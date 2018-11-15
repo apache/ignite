@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -30,6 +31,9 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersion
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 
 /**
  *
@@ -92,6 +96,11 @@ public class MetastorageTree extends BPlusTree<MetastorageSearchRow, Metastorage
      */
     public MetastorageRowStore rowStore() {
         return rowStore;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
+        return pageMem.allocatePage(grpId, PageIdAllocator.METASTORE_PARTITION, FLAG_DATA);
     }
 
     /**
