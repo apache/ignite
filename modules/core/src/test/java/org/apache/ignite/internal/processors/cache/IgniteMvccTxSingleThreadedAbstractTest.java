@@ -30,6 +30,8 @@ public abstract class IgniteMvccTxSingleThreadedAbstractTest extends IgniteTxAbs
      * @throws IgniteCheckedException If test failed.
      */
     public void testPessimisticRepeatableReadCommit() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10261");
+
         checkCommit(PESSIMISTIC, REPEATABLE_READ);
 
         finalChecks();
@@ -39,6 +41,8 @@ public abstract class IgniteMvccTxSingleThreadedAbstractTest extends IgniteTxAbs
      * @throws IgniteCheckedException If test failed.
      */
     public void testPessimisticRepeatableReadRollback() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10261");
+
         checkRollback(PESSIMISTIC, REPEATABLE_READ);
 
         finalChecks();

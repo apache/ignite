@@ -43,6 +43,8 @@ import org.apache.ignite.internal.processors.cache.IgniteCachePartitionMapUpdate
 import org.apache.ignite.internal.processors.cache.IgniteClientCacheStartFailoverTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheAndNodeStop;
 import org.apache.ignite.internal.processors.cache.IgniteNearClientCacheCloseTest;
+import org.apache.ignite.internal.processors.cache.IgniteOnePhaseCommitInvokeTest;
+import org.apache.ignite.internal.processors.cache.IgniteOnePhaseCommitNearReadersTest;
 import org.apache.ignite.internal.processors.cache.MemoryPolicyConfigValidationTest;
 import org.apache.ignite.internal.processors.cache.NonAffinityCoordinatorDynamicStartStopTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLoadingConcurrentGridStartSelfTest;
@@ -95,12 +97,24 @@ public class IgniteCacheMvccTestSuite2 extends TestSuite {
         System.setProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, "true");
 
         HashSet<Class> ignoredTests = new HashSet<>(128);
-        // Optimistic tx tests
+
+        // Skip classes that already contains Mvcc tests
+        ignoredTests.add(GridCacheTransformEventSelfTest.class);
+        ignoredTests.add(IgniteClientCacheStartFailoverTest.class);
+        ignoredTests.add(IgniteNearClientCacheCloseTest.class);
+        ignoredTests.add(IgniteCacheNoSyncForGetTest.class);
+        ignoredTests.add(CacheEnumOperationsSingleNodeTest.class);
+        ignoredTests.add(CacheEnumOperationsTest.class);
+        ignoredTests.add(NearCacheSyncUpdateTest.class);
+
+        // Optimistic tx tests.
         ignoredTests.add(GridCacheColocatedOptimisticTransactionSelfTest.class);
         ignoredTests.add(CacheOptimisticTransactionsWithFilterSingleServerTest.class);
         ignoredTests.add(CacheOptimisticTransactionsWithFilterTest.class);
 
-        // On-heap cache test.
+        // Irrelevant Tx tests.
+        ignoredTests.add(IgniteOnePhaseCommitInvokeTest.class);
+        ignoredTests.add(IgniteOnePhaseCommitNearReadersTest.class);
         ignoredTests.add(GridCacheDhtPreloadOnheapSelfTest.class);
 
         // Atomic cache tests.
@@ -154,15 +168,6 @@ public class IgniteCacheMvccTestSuite2 extends TestSuite {
         ignoredTests.add(CacheComparatorTest.class);
         ignoredTests.add(CachePartitionPartialCountersMapSelfTest.class);
         ignoredTests.add(IgniteReflectionFactorySelfTest.class);
-
-        // Skip classes that already contains Mvcc tests
-        ignoredTests.add(GridCacheTransformEventSelfTest.class);
-        ignoredTests.add(IgniteClientCacheStartFailoverTest.class);
-        ignoredTests.add(IgniteNearClientCacheCloseTest.class);
-        ignoredTests.add(IgniteCacheNoSyncForGetTest.class);
-        ignoredTests.add(CacheEnumOperationsSingleNodeTest.class);
-        ignoredTests.add(CacheEnumOperationsTest.class);
-        ignoredTests.add(NearCacheSyncUpdateTest.class);
 
         // Skip classes which Mvcc implementations are added in this method below.
         // TODO IGNITE-10175: refactor these tests (use assume) to support both mvcc and non-mvcc modes after moving to JUnit4/5.
