@@ -2162,6 +2162,66 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * Determines an affinity node to send get request to.
+     *
+     * @param affNodes All affinity nodes.
+     * @param canRemap Flag indicating that 'get' should be done on a locked topology version.
+     * @param partitionId Partition ID.
+     * @return Affinity node to get key from or {@code null} if there is no suitable alive node.
+     */
+    @Nullable public ClusterNode selectAffinityNodeBalanced(
+        List<ClusterNode> affNodes,
+        int partitionId,
+        boolean canRemap
+    ) {
+        if (!readLoadBalancingEnabled) {
+            if (!canRemap) {
+                for (ClusterNode node : affNodes) {
+                    if (ctx.discovery().alive(node))
+                        return node;
+                }
+
+                return null;
+            }
+            else
+                return affNodes.get(0);
+        }
+
+        if (!readFromBackup)
+            return affNodes.get(0);
+
+        assert locMacs != null;
+
+        int r = ThreadLocalRandom.current().nextInt(affNodes.size());
+
+        ClusterNode n0 = null;
+
+        for (ClusterNode node : affNodes) {
+            if ((canRemap || discovery().alive(node) && isOwner(node, partitionId))) {
+                if (locMacs.equals(node.attribute(ATTR_MACS)))
+                    return node;
+
+                if (r >= 0 || n0 == null)
+                    n0 = node;
+            }
+
+            r--;
+        }
+
+        return n0;
+    }
+
+    /**
+     *  Check that node is owner for partition.
+     * @param node Cluster node.
+     * @param partitionId Partition ID.
+     * @return {@code}
+     */
+    private boolean isOwner(ClusterNode node, int partitionId) {
+        return topology().partitionState(node.id(), partitionId) == OWNING;
+    }
+
+    /**
      * Prepare affinity field for builder (if possible).
      *
      * @param buider Builder.
