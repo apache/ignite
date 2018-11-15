@@ -2157,9 +2157,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     private static void validateSqlFieldsQuery(SqlFieldsQuery qry, GridKernalContext ctx,
         @Nullable GridCacheContext<?, ?> cctx) {
-        if (qry.isReplicatedOnly() && qry.getPartitions() != null)
-            throw new CacheException("Partitions are not supported in replicated only mode.");
-
         if (qry.isDistributedJoins() && qry.getPartitions() != null)
             throw new CacheException("Using both partitions and distributed JOINs is not supported for the same query");
 
