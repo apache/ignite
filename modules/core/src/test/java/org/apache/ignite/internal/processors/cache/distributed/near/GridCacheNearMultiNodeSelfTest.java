@@ -56,6 +56,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
@@ -81,8 +82,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void setUp() throws Exception {
-        if (FORCE_MVCC)
-            fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
 
         super.setUp();
     }

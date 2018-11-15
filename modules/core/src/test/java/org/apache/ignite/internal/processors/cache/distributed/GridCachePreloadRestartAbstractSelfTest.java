@@ -27,6 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -98,8 +99,8 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        if (FORCE_MVCC && nearEnabled())
-            fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+        if (nearEnabled())
+            MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
 
         super.beforeTestsStarted();
     }
@@ -205,7 +206,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
      * @throws Exception If failed.
      */
     public void testDisabledPreloadRestart() throws Exception {
-        if (FORCE_MVCC)
+        if (MvccFeatureChecker.FORCE_MVCC)
             fail("https://issues.apache.org/jira/browse/IGNITE-10261");
 
         preloadMode = NONE;

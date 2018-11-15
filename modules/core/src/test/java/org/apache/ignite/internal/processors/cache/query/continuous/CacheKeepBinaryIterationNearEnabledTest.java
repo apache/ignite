@@ -21,6 +21,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 
 /**
  *
@@ -41,11 +42,15 @@ public class CacheKeepBinaryIterationNearEnabledTest extends CacheKeepBinaryIter
 
     /** {@inheritDoc} */
     @Override public void testMvccTxOnHeap() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+
+        super.testMvccTxOnHeap();
     }
 
     /** {@inheritDoc} */
     @Override public void testMvccTxOnHeapLocalEntries() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+
+        super.testMvccTxOnHeapLocalEntries();
     }
 }

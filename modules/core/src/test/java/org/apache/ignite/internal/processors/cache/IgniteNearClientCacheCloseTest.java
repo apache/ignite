@@ -37,6 +37,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -112,7 +113,7 @@ public class IgniteNearClientCacheCloseTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNearCacheCloseMvccTx1() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
 
         nearCacheClose(1, false, TRANSACTIONAL_SNAPSHOT);
 
@@ -123,7 +124,7 @@ public class IgniteNearClientCacheCloseTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNearCacheCloseMvccTx2() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
 
         nearCacheClose(4, false, TRANSACTIONAL_SNAPSHOT);
 

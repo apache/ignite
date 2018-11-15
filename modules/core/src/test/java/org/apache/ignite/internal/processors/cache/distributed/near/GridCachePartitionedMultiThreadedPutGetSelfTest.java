@@ -98,9 +98,6 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        if(FORCE_MVCC)
-            fail("https://issues.apache.org/jira/browse/IGNITE-7952");
-
         for (int i = 0; i < GRID_CNT; i++)
             startGrid(i);
     }
@@ -180,9 +177,6 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
      */
     private void doTest(final TransactionConcurrency concurrency, final TransactionIsolation isolation)
         throws Exception {
-        if(FORCE_MVCC && (concurrency != PESSIMISTIC || isolation != REPEATABLE_READ))
-            fail("Mvcc tx mode is not supported.");
-
         final AtomicInteger cntr = new AtomicInteger();
 
         multithreaded(new CAX() {

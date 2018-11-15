@@ -197,11 +197,6 @@ public abstract class GridAbstractTest extends TestCase {
     /** Lazily initialized current test method. */
     private volatile Method currTestMtd;
 
-    /** */
-    protected static final boolean FORCE_MVCC =
-        IgniteSystemProperties.getBoolean(IGNITE_FORCE_MVCC_MODE_IN_TESTS, false);
-
-
     /**
      *
      */

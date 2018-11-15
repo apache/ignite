@@ -71,6 +71,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNea
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearTxForceKeyTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedAffinitySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedAtomicGetAndTransformStoreSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedMultiThreadedPutGetSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedMvccTxMultiThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedMvccTxSingleThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedMvccTxTimeoutSelfTest;
@@ -116,6 +117,7 @@ public class IgniteCacheMvccTestSuite2 extends TestSuite {
         ignoredTests.add(IgniteOnePhaseCommitInvokeTest.class);
         ignoredTests.add(IgniteOnePhaseCommitNearReadersTest.class);
         ignoredTests.add(GridCacheDhtPreloadOnheapSelfTest.class);
+        ignoredTests.add(GridCachePartitionedMultiThreadedPutGetSelfTest.class); // On-heap test.
 
         // Atomic cache tests.
         ignoredTests.add(GridCacheLocalAtomicBasicStoreSelfTest.class);
