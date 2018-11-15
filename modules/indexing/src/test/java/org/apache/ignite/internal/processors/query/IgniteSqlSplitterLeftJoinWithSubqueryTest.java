@@ -17,7 +17,16 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.locks.StampedLock;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -32,7 +41,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public class IgniteSqlSplitterLeftJoinWithSubqueryTest extends GridCommonAbstractTest {
     /** */
-    private static final int CLIENT = 7;
+    private static final int NODES_CNT = 2;
+
+    /** */
+    private static final int CLIENT = NODES_CNT;
 
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -54,7 +66,8 @@ public class IgniteSqlSplitterLeftJoinWithSubqueryTest extends GridCommonAbstrac
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGridsMultiThreaded(2, false);
+        startGridsMultiThreaded(NODES_CNT, false);
+
         Ignition.setClientMode(true);
         try {
             startGrid(CLIENT);
@@ -118,7 +131,6 @@ public class IgniteSqlSplitterLeftJoinWithSubqueryTest extends GridCommonAbstrac
     public void testSplitSubqueryWithChildrenNeedSplit() {
         try {
             sql("CREATE TABLE client (id int PRIMARY KEY, name varchar)");
-            sql("CREATE TABLE good (id int PRIMARY KEY, name varchar)");
             sql("CREATE TABLE orders (id int PRIMARY KEY, cliId int, goodId int, price int, comment varchar)");
             sql("CREATE TABLE special_offer (id int PRIMARY KEY, cliId int, detail varchar)");
 
@@ -138,11 +150,10 @@ public class IgniteSqlSplitterLeftJoinWithSubqueryTest extends GridCommonAbstrac
 
             List<List<?>> plan = sql("EXPLAIN " + qry);
 
-//            printPlan(plan);
+            printPlan(plan);
         }
         finally {
             sql("DROP TABLE client");
-            sql("DROP TABLE good");
             sql("DROP TABLE orders");
             sql("DROP TABLE special_offer");
         }
@@ -151,7 +162,64 @@ public class IgniteSqlSplitterLeftJoinWithSubqueryTest extends GridCommonAbstrac
     /**
      *
      */
-    public void testTwoJoinWithSubqueryPushDown() {
+    @SuppressWarnings("unchecked")
+    public void testSplitSubqueryWithChildrenNeedSplitWithData() {
+        try {
+            final int VALS = 100;
+
+            sql("CREATE TABLE A (id int PRIMARY KEY, name varchar)");
+            sql("CREATE TABLE VAL (id int, a_id int, val int, primary key (id, a_id)) with \"affinity_key=a_id\"");
+
+            int val_k = 0;
+
+            List<List<?>> expRes = new ArrayList<>();
+
+            for (int i = 0; i < VALS; ++i) {
+                sql(String.format("INSERT INTO A VALUES (%d, 'name_%d')", i, i));
+
+                for (int val = i; val < i + VALS; ++val, ++val_k)
+                    sql(String.format("INSERT INTO VAL VALUES (%d, %d, %d)", val_k, i, val));
+
+                expRes.add(Arrays.asList(
+                    i, i, i + VALS - 1, BigDecimal.valueOf((long)(2 * i + (VALS - 1)) * VALS / 2)));
+            }
+
+            String qry =
+                "SELECT allA.id, min_max_sum_T.min_val, min_max_sum_T.max_val, min_max_sum_T.sum_val " +
+                    "FROM " +
+                    "A as allA " +
+                    "LEFT JOIN (SELECT A.id as a_id, max_T0.max_val, min_sum_T.min_val, min_sum_T.sum_val " +
+                        "FROM A " +
+                        "LEFT JOIN (SELECT DISTINCT a_id, max(val) as max_val FROM VAL GROUP BY a_id) as max_T0 " +
+                                "ON A.id = max_T0.a_id " +
+                        "LEFT JOIN (SELECT A.id as a_id, min_T0.min_val as min_val, sum_T.sum_val as sum_val " +
+                            "FROM A " +
+                            "LEFT JOIN (SELECT DISTINCT a_id, min(val) as min_val FROM VAL GROUP BY a_id) as min_T0 " +
+                                    "ON A.id = min_T0.a_id " +
+                            "LEFT JOIN (SELECT A.id as a_id, sum_T0.sum_val as sum_val " +
+                                "FROM A " +
+                                "LEFT JOIN (SELECT DISTINCT a_id, SUM(val) as sum_val FROM VAL GROUP BY a_id) as sum_T0 " +
+                                        "ON A.id = sum_T0.a_id " +
+                                ") as sum_T ON A.id = sum_T.a_id " +
+                            ") as min_sum_T ON A.id = min_sum_T.a_id " +
+                        ") as min_max_sum_T ON allA.id = min_max_sum_T.a_id";
+
+            List<List<?>> res = sql(qry);
+
+            Collections.sort(res, Comparator.comparing(o -> ((Integer)(o.get(0)))));
+
+            assertEqualsCollections(expRes, res);
+        }
+        finally {
+            sql("DROP TABLE A");
+            sql("DROP TABLE VAL");
+        }
+    }
+
+    /**
+     *
+     */
+    public void testTreeJoinWithSubquery() {
         try {
             sql("CREATE TABLE product (id int PRIMARY KEY, name varchar)");
             sql("CREATE TABLE version (id int PRIMARY KEY, prodId int, name varchar)");
@@ -223,7 +291,7 @@ public class IgniteSqlSplitterLeftJoinWithSubqueryTest extends GridCommonAbstrac
      * @return Result.
      */
     private List<List<?>> sql(String sql) {
-        return grid(0).context().query().querySqlFields(
+        return grid(CLIENT).context().query().querySqlFields(
             new SqlFieldsQuery(sql), false).getAll();
     }
 }
