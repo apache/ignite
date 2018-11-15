@@ -644,6 +644,34 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     }
 
     /**
+     * Checks whether string matches table type pattern.
+     *
+     * @param str String.
+     * @param ptrn Pattern.
+     * @return Whether string matches pattern.
+     */
+    private static boolean matchesTableType(String str, String ptrn) {
+        if (F.isEmpty(ptrn))
+            return true;
+
+        if (str == null)
+            return false;
+
+        String pattern = OdbcUtils.preprocessPattern(ptrn);
+
+        String[] types = pattern.split(",");
+
+        for (String type0 : types) {
+            String type = OdbcUtils.removeQuotationMarksIfNeeded(type0.trim());
+
+            if (str.toUpperCase().matches(type))
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Checks whether string matches SQL pattern.
      *
      * @param str String.
@@ -657,10 +685,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         if (str == null)
             return false;
 
-        String pattern = ptrn.toUpperCase().replace("%", ".*").replace("_", ".");
-
-        if (pattern.length() >= 2 && pattern.matches("['\"].*['\"]"))
-            pattern = pattern.substring(1, pattern.length() - 1);
+        String pattern = OdbcUtils.preprocessPattern(ptrn);
 
         return str.toUpperCase().matches(pattern);
     }
