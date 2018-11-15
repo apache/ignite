@@ -315,13 +315,7 @@ public class PartitionExtractor {
 
         GridH2Table tbl = (GridH2Table)leftCol.getTable();
 
-        GridH2RowDescriptor desc = tbl.rowDescriptor();
-
-        IndexColumn affKeyCol = tbl.getAffinityKeyColumn();
-
-        int colId = leftCol.getColumnId();
-
-        if ((affKeyCol == null || colId != affKeyCol.column.getColumnId()) && !desc.isKeyColumn(colId))
+        if (!isAffinityKey(leftCol.getColumnId(), tbl))
             return null;
 
         if (rightConst != null) {
