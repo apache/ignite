@@ -571,7 +571,8 @@ public class IgniteWalIteratorFactory {
                 .marshallerMappingFileStoreDir(marshallerMappingFileStoreDir)
                 .from(lowBound)
                 .to(highBound)
-                .filter(filter);
+                .filter(filter)
+                .strictBoundsCheck(strictBoundsCheck);
         }
 
         /**
