@@ -47,7 +47,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
     private static final String PERSON_CACHE = "Person";
 
     /** SQL schema name. */
-    private static final String PERSON_SCHEMA = "test";
+    private static final String PERSON_SCHEMA = "TEST";
 
     /** Number of element to add into cache. */
     private static final int CACHE_ELEMENT_COUNT = 10;
@@ -207,6 +207,13 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
      */
     public void testClientSqlFieldsQuery() {
         SqlFieldsQuery qry = new SqlFieldsQuery("SELECT * FROM " + FULL_TABLE_NAME);
+
+        try {
+            Thread.sleep(5000);
+        }
+        catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
         Assert.assertEquals(CACHE_ELEMENT_COUNT, clientNode.cache(PERSON_CACHE).query(qry).getAll().size());
     }

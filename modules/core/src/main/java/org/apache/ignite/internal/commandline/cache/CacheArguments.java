@@ -18,6 +18,7 @@ package org.apache.ignite.internal.commandline.cache;
 
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.internal.commandline.OutputFormat;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheCmd;
 import org.jetbrains.annotations.Nullable;
 
@@ -53,7 +54,7 @@ public class CacheArguments {
     private int checkThrough = -1;
 
     /** Cache view command. */
-    private @Nullable VisorViewCacheCmd cacheCmd;
+    @Nullable private VisorViewCacheCmd cacheCmd;
 
     /** Calculate partition hash and print into standard output. */
     private boolean dump;
@@ -63,6 +64,26 @@ public class CacheArguments {
 
     /** Additional user attributes in result. Set of attribute names whose values will be searched in ClusterNode.attributes(). */
     private Set<String> userAttributes;
+
+    /** Output format. */
+    private OutputFormat outputFormat;
+
+    /** Full config flag. */
+    private boolean fullConfig;
+
+    /**
+     * @return Full config flag.
+     */
+    public boolean fullConfig() {
+        return fullConfig;
+    }
+
+    /**
+     * @param fullConfig New full config flag.
+     */
+    public void fullConfig(boolean fullConfig) {
+        this.fullConfig = fullConfig;
+    }
 
     /**
      * @return Command.
@@ -244,5 +265,19 @@ public class CacheArguments {
      */
     public void setUserAttributes(Set<String> userAttrs) {
         userAttributes = userAttrs;
+    }
+
+    /**
+     * @return Output format.
+     */
+    public OutputFormat outputFormat() {
+        return outputFormat;
+    }
+
+    /**
+     * @param outputFormat New output format.
+     */
+    public void outputFormat(OutputFormat outputFormat) {
+        this.outputFormat = outputFormat;
     }
 }

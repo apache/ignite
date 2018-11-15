@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.processors.bulkload.pipeline;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.jetbrains.annotations.NotNull;
-
 import java.util.regex.Pattern;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
  * A {@link PipelineBlock}, which splits line according to CSV format rules and unquotes fields.

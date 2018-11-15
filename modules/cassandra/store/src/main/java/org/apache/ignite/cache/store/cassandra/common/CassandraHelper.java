@@ -24,7 +24,6 @@ import com.datastax.driver.core.exceptions.DriverException;
 import com.datastax.driver.core.exceptions.InvalidQueryException;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.datastax.driver.core.exceptions.ReadTimeoutException;
-
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -105,7 +104,6 @@ public class CassandraHelper {
                 NoHostAvailableException ex = (NoHostAvailableException)e;
 
                 for (Map.Entry<InetSocketAddress, Throwable> entry : ex.getErrors().entrySet()) {
-                    //noinspection ThrowableResultOfMethodCallIgnored
                     Throwable error = entry.getValue();
 
                     if (error instanceof DriverException &&

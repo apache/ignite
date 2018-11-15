@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
@@ -26,23 +27,22 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.lang.IgniteBiInClosure;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * {@link TestCacheStoreStrategy} implemented as a wrapper around {@link #map}
  */
 public class MapCacheStoreStrategy implements TestCacheStoreStrategy {
     /** Removes counter. */
-    private final static AtomicInteger removes = new AtomicInteger();
+    private static final AtomicInteger removes = new AtomicInteger();
 
     /** Writes counter. */
-    private final static AtomicInteger writes = new AtomicInteger();
+    private static final AtomicInteger writes = new AtomicInteger();
 
     /** Reads counter. */
-    private final static AtomicInteger reads = new AtomicInteger();
+    private static final AtomicInteger reads = new AtomicInteger();
 
     /** Store map. */
-    private final static Map<Object, Object> map = new ConcurrentHashMap<>();
+    private static final Map<Object, Object> map = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override public int getReads() {

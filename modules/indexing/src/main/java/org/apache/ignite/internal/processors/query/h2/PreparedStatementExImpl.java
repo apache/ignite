@@ -283,8 +283,9 @@ final class PreparedStatementExImpl implements PreparedStatementEx {
         delegate.setSQLXML(parameterIndex, xmlObject);
     }
 
-    @Override
-    public void setObject(int parameterIndex, Object x, int targetSqlType, int scaleOrLength) throws SQLException {
+    /** {@inheritDoc} */
+    @Override public void setObject(int parameterIndex, Object x, int targetSqlType,
+        int scaleOrLength) throws SQLException {
         delegate.setObject(parameterIndex, x, targetSqlType, scaleOrLength);
     }
 
@@ -620,7 +621,7 @@ final class PreparedStatementExImpl implements PreparedStatementEx {
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable <T> T meta(int id) {
+    @Override @Nullable public <T> T meta(int id) {
         return meta != null && id < meta.length ? (T)meta[id] : null;
     }
 

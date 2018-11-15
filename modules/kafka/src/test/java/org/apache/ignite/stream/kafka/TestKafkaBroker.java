@@ -27,9 +27,9 @@ import java.util.Properties;
 import java.util.concurrent.TimeoutException;
 import kafka.server.KafkaConfig;
 import kafka.server.KafkaServer;
-import kafka.utils.SystemTime$;
 import kafka.utils.TestUtils;
 import kafka.utils.ZkUtils;
+import kafka.zk.KafkaZkClient;
 import org.I0Itec.zkclient.ZkClient;
 import org.I0Itec.zkclient.ZkConnection;
 import org.apache.curator.test.TestingServer;
@@ -39,6 +39,7 @@ import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.apache.kafka.common.utils.SystemTime;
 import scala.Tuple2;
 
 /**
@@ -101,7 +102,9 @@ public class TestKafkaBroker {
 
         servers.add(kafkaSrv);
 
-        TestUtils.createTopic(zkUtils, topic, partitions, replicationFactor,
+        KafkaZkClient client = kafkaSrv.zkClient();
+
+        TestUtils.createTopic(client, topic, partitions, replicationFactor,
             scala.collection.JavaConversions.asScalaBuffer(servers), new Properties());
     }
 
@@ -154,7 +157,7 @@ public class TestKafkaBroker {
     private void setupKafkaServer() throws IOException {
         kafkaCfg = new KafkaConfig(getKafkaConfig());
 
-        kafkaSrv = TestUtils.createServer(kafkaCfg, SystemTime$.MODULE$);
+        kafkaSrv = TestUtils.createServer(kafkaCfg, new SystemTime());
 
         kafkaSrv.startup();
     }

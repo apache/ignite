@@ -152,4 +152,69 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
             cache.put(0, 0);
         }
     }
+
+    /**
+     * Test checks that delayed full messages are processed correctly in case of changed coordinator.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDelayedFullMessageReplacedIfCoordinatorChanged() throws Exception {
+        IgniteEx crd = startGrid("crd");
+
+        IgniteEx newCrd = startGrid(1);
+
+        IgniteEx problemNode = startGrid(2);
+
+        crd.cluster().active(true);
+
+        awaitPartitionMapExchange();
+
+        blockSendingFullMessage(crd, problemNode);
+
+        IgniteInternalFuture joinNextNodeFut = GridTestUtils.runAsync(() -> startGrid(3));
+
+        joinNextNodeFut.get();
+
+        U.sleep(5000);
+
+        blockSendingFullMessage(newCrd, problemNode);
+
+        IgniteInternalFuture stopCoordinatorFut = GridTestUtils.runAsync(() -> stopGrid("crd"));
+
+        stopCoordinatorFut.get();
+
+        U.sleep(5000);
+
+        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(newCrd);
+
+        spi.stopBlock(true);
+
+        awaitPartitionMapExchange();
+    }
+
+    /**
+     * Blocks sending full message from coordinator to non-coordinator node.
+     *
+     * @param from Coordinator node.
+     * @param to Non-coordinator node.
+     */
+    private void blockSendingFullMessage(IgniteEx from, IgniteEx to) {
+        // Block FullMessage for newly joined nodes.
+        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(from);
+
+        // Delay sending full messages (without exchange id).
+        spi.blockMessages((node, msg) -> {
+            if (msg instanceof GridDhtPartitionsFullMessage) {
+                GridDhtPartitionsFullMessage fullMsg = (GridDhtPartitionsFullMessage)msg;
+
+                if (fullMsg.exchangeId() != null && node.order() == to.localNode().order()) {
+                    log.warning("Blocked sending " + msg + " to " + to.localNode());
+
+                    return true;
+                }
+            }
+
+            return false;
+        });
+    }
 }

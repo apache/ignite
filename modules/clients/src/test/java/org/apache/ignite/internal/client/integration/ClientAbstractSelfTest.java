@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.client.integration;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,8 +37,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import junit.framework.Assert;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.store.CacheStore;
@@ -645,7 +645,6 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         private final TestTask delegate = new TestTask();
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) {
             if (arg.endsWith("intercepted"))
                 arg = arg.substring(0, arg.length() - 11);
@@ -683,7 +682,6 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         private final SleepTestTask delegate = new SleepTestTask();
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) {
             try {
                 JsonNode json = JSON_MAPPER.readTree(arg);

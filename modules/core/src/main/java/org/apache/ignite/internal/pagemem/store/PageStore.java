@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.pagemem.store;
 
-import org.apache.ignite.IgniteCheckedException;
-
 import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 
 /**
  * Persistent store of pages.
@@ -101,4 +101,30 @@ public interface PageStore {
      * @return Page store version.
      */
     public int version();
+
+    /**
+     * @param cleanFile {@code True} to delete file.
+     * @throws StorageException If failed.
+     */
+    public void stop(boolean cleanFile) throws StorageException;
+
+    /**
+     * Starts recover process.
+     */
+    public void beginRecover();
+
+    /**
+     * Ends recover process.
+     *
+     * @throws StorageException If failed.
+     */
+    public void finishRecover() throws StorageException;
+
+    /**
+     * Truncates and deletes partition file.
+     *
+     * @param tag New partition tag.
+     * @throws StorageException If failed.
+     */
+    public void truncate(int tag) throws StorageException;
 }

@@ -99,6 +99,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
+import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
+import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.apache.ignite.spi.eventstorage.EventStorageSpi;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
@@ -220,6 +223,7 @@ public class PlatformConfigurationUtils {
         ccfg.setQueryDetailMetricsSize(in.readInt());
         ccfg.setQueryParallelism(in.readInt());
         ccfg.setSqlSchema(in.readString());
+        ccfg.setEncryptionEnabled(in.readBoolean());
 
         int qryEntCnt = in.readInt();
 
@@ -247,9 +251,8 @@ public class PlatformConfigurationUtils {
         if (keyCnt > 0) {
             CacheKeyConfiguration[] keys = new CacheKeyConfiguration[keyCnt];
 
-            for (int i = 0; i < keyCnt; i++) {
+            for (int i = 0; i < keyCnt; i++)
                 keys[i] = new CacheKeyConfiguration(in.readString(), in.readString());
-            }
 
             ccfg.setKeyConfiguration(keys);
         }
@@ -403,7 +406,6 @@ public class PlatformConfigurationUtils {
      * @param out Stream.
      * @param cfg NearCacheConfiguration.
      */
-    @SuppressWarnings("TypeMayBeWeakened")
     private static void writeNearConfiguration(BinaryRawWriter out, NearCacheConfiguration cfg) {
         assert cfg != null;
 
@@ -458,7 +460,6 @@ public class PlatformConfigurationUtils {
      * @param out Stream.
      * @param p Policy.
      */
-    @SuppressWarnings("TypeMayBeWeakened")
     private static void writeEvictionPolicy(BinaryRawWriter out, EvictionPolicy p) {
         if (p instanceof FifoEvictionPolicy) {
             out.writeByte((byte)1);
@@ -522,7 +523,7 @@ public class PlatformConfigurationUtils {
                 Object defVal = in.readObject();
                 if (defVal != null)
                     defVals.put(fieldName, defVal);
-                
+
                 if (ver.compareTo(VER_1_2_0) >= 0) {
                     int precision = in.readInt();
 
@@ -615,7 +616,7 @@ public class PlatformConfigurationUtils {
      * @param ver Client version.
      */
     @SuppressWarnings("deprecation")
-    public static void readIgniteConfiguration(BinaryRawReaderEx in, IgniteConfiguration cfg, 
+    public static void readIgniteConfiguration(BinaryRawReaderEx in, IgniteConfiguration cfg,
         ClientListenerProtocolVersion ver) {
         if (in.readBoolean())
             cfg.setClientMode(in.readBoolean());
@@ -658,6 +659,8 @@ public class PlatformConfigurationUtils {
             cfg.setMvccVacuumFrequency(in.readLong());
         if (in.readBoolean())
             cfg.setMvccVacuumThreadCount(in.readInt());
+        if (in.readBoolean())
+            cfg.setSystemWorkerBlockedTimeout(in.readLong());
 
         int sqlSchemasCnt = in.readInt();
 
@@ -702,6 +705,7 @@ public class PlatformConfigurationUtils {
 
         readCacheConfigurations(in, cfg, ver);
         readDiscoveryConfiguration(in, cfg);
+        readEncryptionConfiguration(in, cfg, ver);
 
         if (in.readBoolean()) {
             TcpCommunicationSpi comm = new TcpCommunicationSpi();
@@ -838,7 +842,7 @@ public class PlatformConfigurationUtils {
      * @param in Reader.
      * @param ver Client version.
      */
-    private static void readCacheConfigurations(BinaryRawReaderEx in, IgniteConfiguration cfg, 
+    private static void readCacheConfigurations(BinaryRawReaderEx in, IgniteConfiguration cfg,
         ClientListenerProtocolVersion ver) {
         int len = in.readInt();
 
@@ -943,13 +947,38 @@ public class PlatformConfigurationUtils {
     }
 
     /**
+     * Reads encryption configuration
+     *
+     * @param in Reader.
+     * @param cfg Configuration.
+     * @param ver Client version.
+     */
+    private static void readEncryptionConfiguration(BinaryRawReaderEx in, IgniteConfiguration cfg,
+        ClientListenerProtocolVersion ver) {
+        if (ver.compareTo(VER_1_2_0) < 0 || !in.readBoolean()) {
+            cfg.setEncryptionSpi(new NoopEncryptionSpi());
+
+            return;
+        }
+
+        KeystoreEncryptionSpi enc = new KeystoreEncryptionSpi();
+
+        enc.setMasterKeyName(in.readString());
+        enc.setKeySize(in.readInt());
+        enc.setKeyStorePath(in.readString());
+        enc.setKeyStorePassword(in.readCharArray());
+
+        cfg.setEncryptionSpi(enc);
+    }
+
+    /**
      * Writes cache configuration.
      *
      * @param writer Writer.
      * @param ccfg Configuration.
      * @param ver Client version.
      */
-    public static void writeCacheConfiguration(BinaryRawWriter writer, CacheConfiguration ccfg, 
+    public static void writeCacheConfiguration(BinaryRawWriter writer, CacheConfiguration ccfg,
         ClientListenerProtocolVersion ver) {
         assert writer != null;
         assert ccfg != null;
@@ -1003,6 +1032,7 @@ public class PlatformConfigurationUtils {
         writer.writeInt(ccfg.getQueryDetailMetricsSize());
         writer.writeInt(ccfg.getQueryParallelism());
         writer.writeString(ccfg.getSqlSchema());
+        writer.writeBoolean(ccfg.isEncryptionEnabled());
 
         Collection<QueryEntity> qryEntities = ccfg.getQueryEntities();
 
@@ -1069,7 +1099,7 @@ public class PlatformConfigurationUtils {
      * @param qryEntity Query entity.
      * @param ver Client version.
      */
-    public static void writeQueryEntity(BinaryRawWriter writer, QueryEntity qryEntity, 
+    public static void writeQueryEntity(BinaryRawWriter writer, QueryEntity qryEntity,
         ClientListenerProtocolVersion ver) {
         assert qryEntity != null;
 
@@ -1169,7 +1199,7 @@ public class PlatformConfigurationUtils {
      * @param ver Client version.
      */
     @SuppressWarnings("deprecation")
-    public static void writeIgniteConfiguration(BinaryRawWriter w, IgniteConfiguration cfg, 
+    public static void writeIgniteConfiguration(BinaryRawWriter w, IgniteConfiguration cfg,
         ClientListenerProtocolVersion ver) {
         assert w != null;
         assert cfg != null;
@@ -1209,6 +1239,13 @@ public class PlatformConfigurationUtils {
         w.writeLong(cfg.getMvccVacuumFrequency());
         w.writeBoolean(true);
         w.writeInt(cfg.getMvccVacuumThreadCount());
+        if (cfg.getSystemWorkerBlockedTimeout() != null) {
+            w.writeBoolean(true);
+            w.writeLong(cfg.getSystemWorkerBlockedTimeout());
+        }
+        else {
+            w.writeBoolean(false);
+        }
 
         if (cfg.getSqlSchemas() == null)
             w.writeInt(-1);
@@ -1253,6 +1290,7 @@ public class PlatformConfigurationUtils {
             w.writeInt(0);
 
         writeDiscoveryConfiguration(w, cfg.getDiscoverySpi());
+        writeEncryptionConfiguration(w, cfg.getEncryptionSpi(), ver);
 
         CommunicationSpi comm = cfg.getCommunicationSpi();
 
@@ -1459,6 +1497,34 @@ public class PlatformConfigurationUtils {
         w.writeLong(tcp.getIpFinderCleanFrequency());
         w.writeInt(tcp.getThreadPriority());
         w.writeInt((int)tcp.getTopHistorySize());
+    }
+
+    /**
+     * Writes encryption configuration.
+     *
+     * @param w Writer.
+     * @param enc Encryption Spi.
+     * @param ver Client version.
+     */
+    private static void writeEncryptionConfiguration(BinaryRawWriter w, EncryptionSpi enc,
+        ClientListenerProtocolVersion ver) {
+        if (ver.compareTo(VER_1_2_0) < 0)
+            return;
+
+        if (enc instanceof NoopEncryptionSpi) {
+            w.writeBoolean(false);
+
+            return;
+        }
+
+        KeystoreEncryptionSpi keystoreEnc = (KeystoreEncryptionSpi)enc;
+
+        w.writeBoolean(true);
+
+        w.writeString(keystoreEnc.getMasterKeyName());
+        w.writeInt(keystoreEnc.getKeySize());
+        w.writeString(keystoreEnc.getKeyStorePath());
+        w.writeCharArray(keystoreEnc.getKeyStorePwd());
     }
 
     /**
@@ -1835,21 +1901,22 @@ public class PlatformConfigurationUtils {
                 .setConcurrencyLevel(in.readInt())
                 .setWalAutoArchiveAfterInactivity(in.readLong());
 
+        if (in.readBoolean())
+            res.setCheckpointReadLockTimeout(in.readLong());
+
         int cnt = in.readInt();
 
         if (cnt > 0) {
             DataRegionConfiguration[] regs = new DataRegionConfiguration[cnt];
 
-            for (int i = 0; i < cnt; i++) {
+            for (int i = 0; i < cnt; i++)
                 regs[i] = readDataRegionConfiguration(in);
-            }
 
             res.setDataRegionConfigurations(regs);
         }
 
-        if (in.readBoolean()) {
+        if (in.readBoolean())
             res.setDefaultDataRegionConfiguration(readDataRegionConfiguration(in));
-        }
 
         return res;
     }
@@ -1963,25 +2030,31 @@ public class PlatformConfigurationUtils {
             w.writeInt(cfg.getConcurrencyLevel());
             w.writeLong(cfg.getWalAutoArchiveAfterInactivity());
 
+            if (cfg.getCheckpointReadLockTimeout() != null) {
+                w.writeBoolean(true);
+                w.writeLong(cfg.getCheckpointReadLockTimeout());
+            }
+            else
+                w.writeBoolean(false);
+
             if (cfg.getDataRegionConfigurations() != null) {
                 w.writeInt(cfg.getDataRegionConfigurations().length);
 
-                for (DataRegionConfiguration d : cfg.getDataRegionConfigurations()) {
+                for (DataRegionConfiguration d : cfg.getDataRegionConfigurations())
                     writeDataRegionConfiguration(w, d);
-                }
-            } else {
-                w.writeInt(0);
             }
+            else
+                w.writeInt(0);
 
             if (cfg.getDefaultDataRegionConfiguration() != null) {
                 w.writeBoolean(true);
                 writeDataRegionConfiguration(w, cfg.getDefaultDataRegionConfiguration());
-            } else {
-                w.writeBoolean(false);
             }
-        } else {
-            w.writeBoolean(false);
+            else
+                w.writeBoolean(false);
         }
+        else
+            w.writeBoolean(false);
     }
 
     /**

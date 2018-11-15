@@ -264,9 +264,9 @@ public class SimpleFileInput implements FileInput {
 
     /**
      * @param skipCheck If CRC check should be skipped.
-     * @return autoclosable fileInput, after its closing crc32 will be calculated and compared with saved one
+     * @return autoclosable fileInput, after its closing crc will be calculated and compared with saved one
      */
-    public Crc32CheckingFileInput startRead(boolean skipCheck) {
+    @Override public Crc32CheckingFileInput startRead(boolean skipCheck) {
         return new Crc32CheckingFileInput(this, skipCheck);
     }
 }

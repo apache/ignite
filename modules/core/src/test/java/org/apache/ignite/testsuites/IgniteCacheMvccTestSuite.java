@@ -26,10 +26,12 @@ import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccOperationChecks
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccPartitionedCoordinatorFailoverTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccProcessorLazyStartTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccProcessorTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccRemoteTxOnNearNodeStartTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccReplicatedCoordinatorFailoverTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccScanQueryWithConcurrentTransactionTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSizeWithConcurrentTransactionTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccTransactionsTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccTxFailoverTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccVacuumTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorMvccSelfTest;
 
@@ -52,6 +54,8 @@ public class IgniteCacheMvccTestSuite extends TestSuite {
         suite.addTestSuite(DataStreamProcessorMvccSelfTest.class);
         suite.addTestSuite(CacheMvccOperationChecksTest.class);
 
+        suite.addTestSuite(CacheMvccRemoteTxOnNearNodeStartTest.class);
+
         // Concurrent ops tests.
         suite.addTestSuite(CacheMvccIteratorWithConcurrentTransactionTest.class);
         suite.addTestSuite(CacheMvccLocalEntriesWithConcurrentTransactionTest.class);
@@ -59,6 +63,7 @@ public class IgniteCacheMvccTestSuite extends TestSuite {
         suite.addTestSuite(CacheMvccSizeWithConcurrentTransactionTest.class);
 
         // Failover tests.
+        suite.addTestSuite(CacheMvccTxFailoverTest.class);
         suite.addTestSuite(CacheMvccClusterRestartTest.class);
         suite.addTestSuite(CacheMvccPartitionedCoordinatorFailoverTest.class);
         suite.addTestSuite(CacheMvccReplicatedCoordinatorFailoverTest.class);

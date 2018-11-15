@@ -17,6 +17,13 @@
 
 package org.apache.ignite.internal.processors.platform.services;
 
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
@@ -43,18 +50,9 @@ import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.services.ServiceDescriptor;
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
 /**
  * Interop services.
  */
-@SuppressWarnings({"UnusedDeclaration"})
 public class PlatformServices extends PlatformAbstractTarget {
     /** */
     private static final int OP_DOTNET_DEPLOY = 1;
@@ -672,7 +670,6 @@ public class PlatformServices extends PlatformAbstractTarget {
          *
          * @return Primitive wrapper, or the same class.
          */
-        @SuppressWarnings("unchecked")
         private static Class wrap(Class c) {
             return c.isPrimitive() ? PRIMITIVES_TO_WRAPPERS.get(c) : c;
         }

@@ -17,6 +17,16 @@
 
 package org.apache.ignite.internal.processors.hadoop.shuffle;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.zip.GZIPInputStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -55,17 +65,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicReferenceArray;
-import java.util.zip.GZIPInputStream;
 
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.PARTITION_HASHMAP_SIZE;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_JOB_THROTTLE;
@@ -429,7 +428,6 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     /**
      * @param ack Shuffle ack.
      */
-    @SuppressWarnings("ConstantConditions")
     public void onShuffleAck(HadoopShuffleAck ack) {
         IgniteBiTuple<HadoopShuffleMessage, GridFutureAdapter<?>> tup = sentMsgs.get(ack.id());
 
@@ -473,7 +471,6 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @param dest Destination.
      * @param jobId Job ID.
      */
-    @SuppressWarnings("unchecked")
     private void sendFinishResponse(T dest, HadoopJobId jobId) {
         if (log.isDebugEnabled())
             log.debug("Sent shuffle finish response [jobId=" + jobId + ", dest=" + dest + ']');
@@ -913,7 +910,6 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
      * @return Input.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     public HadoopTaskInput input(HadoopTaskContext taskCtx) throws IgniteCheckedException {
         switch (taskCtx.taskInfo().type()) {
             case REDUCE:

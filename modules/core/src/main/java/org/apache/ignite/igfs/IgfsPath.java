@@ -25,7 +25,6 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
@@ -234,7 +233,6 @@ public final class IgfsPath implements Comparable<IgfsPath>, Externalizable, Bin
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("NullableProblems")
     @Override public int compareTo(IgfsPath o) {
         return path.compareTo(o.path);
     }

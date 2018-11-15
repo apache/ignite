@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.odbc.odbc.escape.OdbcEscapeUtils;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.util.concurrent.Callable;
 
 /**
  * Escape sequence parser tests.
@@ -894,7 +893,6 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
      *
      * @param qry Query.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void checkFail(final String qry) {
         GridTestUtils.assertThrows(null, new Callable<Void>() {
             @Override public Void call() throws Exception {

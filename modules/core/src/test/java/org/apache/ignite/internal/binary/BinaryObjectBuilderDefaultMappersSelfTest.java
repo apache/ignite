@@ -29,12 +29,12 @@ import java.util.UUID;
 import junit.framework.TestCase;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryBasicIdMapper;
+import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.binary.BinaryBasicNameMapper;
-import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
@@ -52,7 +52,6 @@ import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
 /**
  * Binary builder test.
  */
-@SuppressWarnings("ResultOfMethodCallIgnored")
 public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstractTest {
     /** */
     private static IgniteConfiguration cfg;
@@ -1025,7 +1024,6 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      *
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class CustomIdMapper {
         /** */
         private String str = "a";
@@ -1036,7 +1034,6 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
     /**
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Key {
         /** */
         private int i;
@@ -1075,7 +1072,6 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
     /**
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Value {
         /** */
         private int i;

@@ -60,7 +60,7 @@ public class DataPageMvccMarkUpdatedRecord extends PageDeltaRecord {
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
         DataPageIO io = PageIO.getPageIO(pageAddr);
 
-        io.updateNewVersion(pageAddr, itemId, pageMem.pageSize(), newMvccCrd, newMvccCntr, newMvccOpCntr);
+        io.updateNewVersion(pageAddr, itemId, pageMem.realPageSize(groupId()), newMvccCrd, newMvccCntr, newMvccOpCntr);
     }
 
     /** {@inheritDoc} */

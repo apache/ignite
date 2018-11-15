@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +36,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
@@ -136,7 +136,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
     protected final MvccSnapshot mvccSnapshot;
 
     /** New DHT nodes. */
-    protected Set<UUID> newDhtNodes = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    protected Set<UUID> newDhtNodes = new HashSet<>();
 
     /** Near node ID. */
     protected final UUID nearNodeId;
@@ -180,9 +180,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
     /** Batches already sent to remotes, but their acks are not received yet. */
     private ConcurrentMap<UUID, ConcurrentMap<Integer, Batch>> pending;
 
-    /** */
-    private WALPointer walPtr;
-
     /** Do not send DHT requests to near node. */
     protected boolean skipNearNodeUpdates;
 
@@ -191,6 +188,9 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
     /** Moving partitions. */
     private Map<Integer, Boolean> movingParts;
+
+    /** Map for tracking nodes to which first request was already sent in order to send smaller subsequent requests. */
+    private final Set<ClusterNode> firstReqSent = new HashSet<>();
 
     /**
      * @param nearNodeId Near node ID.
@@ -427,6 +427,8 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
                     tx.markQueryEnlisted(mvccSnapshot);
 
+                    boolean needOldVal = cctx.shared().mvccCaching().continuousQueryListeners(cctx, tx, key) != null;
+
                     GridCacheUpdateTxResult res;
 
                     while (true) {
@@ -441,6 +443,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                                         topVer,
                                         mvccSnapshot,
                                         isMoving(key.partition()),
+                                        needOldVal,
                                         filter,
                                         needResult());
 
@@ -462,6 +465,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                                         op.cacheOperation(),
                                         isMoving(key.partition()),
                                         op.noCreate(),
+                                        needOldVal,
                                         filter,
                                         needResult());
 
@@ -523,12 +527,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                 }
 
                 if (!hasNext0()) {
-                    if (walPtr != null && !cctx.tm().logTxRecords()) {
-                        cctx.shared().wal().flush(walPtr, true);
-
-                        walPtr = null; // Avoid additional flushing.
-                    }
-
                     if (!F.isEmpty(batches)) {
                         // Flush incomplete batches.
                         // Need to skip batches for nodes where first request (contains tx info) is still in-flight.
@@ -621,15 +619,14 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
         assert updRes != null && updRes.updateFuture() == null;
 
-        WALPointer ptr0 = updRes.loggedPointer();
-
-        if (ptr0 != null)
-            walPtr = ptr0;
-
         onEntryProcessed(entry.key(), updRes);
 
         if (!updRes.success())
             return;
+
+        if (!updRes.filtered())
+            cctx.shared().mvccCaching().addEnlisted(entry.key(), updRes.newValue(), 0, 0, lockVer,
+                updRes.oldValue(), tx.local(), tx.topologyVersion(), mvccSnapshot, cctx.cacheId(), tx, null, -1);
 
         if (op != EnlistOperation.LOCK)
             addToBatch(entry.key(), val, updRes.mvccHistory(), entry.context().cacheId());
@@ -814,8 +811,11 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
         GridDhtTxQueryEnlistRequest req;
 
-        if (newRemoteTx(node)) {
+        if (newRemoteTx(node))
             addNewRemoteTxNode(node);
+
+        if (!firstReqSent.contains(node)) {
+            firstReqSent.add(node);
 
             // If this is a first request to this node, send full info.
             req = new GridDhtTxQueryFirstEnlistRequest(cctx.cacheId(),
@@ -918,9 +918,10 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
             for (int i = 0; i < parts.length; i++) {
                 GridDhtLocalPartition p = top.localPartition(parts[i]);
 
-                if (p == null || p.state() != GridDhtPartitionState.OWNING)
+                if (p == null || p.state() != GridDhtPartitionState.OWNING) {
                     throw new ClusterTopologyCheckedException("Cannot run update query. " +
-                        "Node must own all the necessary partitions."); // TODO IGNITE-7185 Send retry instead.
+                        "Node must own all the necessary partitions.");
+                }
             }
         }
         finally {

@@ -17,14 +17,13 @@
 
 package org.apache.ignite.tests.pojos;
 
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
-
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Date;
 import java.util.List;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 
 /**
  * Simple POJO without getters/setters which could be stored as a value in Ignite cache
@@ -67,7 +66,6 @@ public class SimplePerson implements Externalizable {
     private List<String> phones;
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public SimplePerson() {
     }
 

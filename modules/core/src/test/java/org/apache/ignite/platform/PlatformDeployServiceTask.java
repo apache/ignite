@@ -17,6 +17,11 @@
 
 package org.apache.ignite.platform;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
@@ -30,12 +35,6 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Task that deploys a Java service.
@@ -60,7 +59,6 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         private final String serviceName;
 
         /** Ignite. */
-        @SuppressWarnings("UnusedDeclaration")
         @IgniteInstanceResource
         private Ignite ignite;
 
@@ -85,7 +83,6 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
     /**
      * Test service.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public static class PlatformTestService implements Service {
         /** */
         private boolean isCancelled;

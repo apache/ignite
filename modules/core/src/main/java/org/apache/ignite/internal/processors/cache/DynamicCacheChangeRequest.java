@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.Serializable;
+import java.util.UUID;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -24,9 +26,6 @@ import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.Serializable;
-import java.util.UUID;
 
 /**
  * Cache start/stop request.
@@ -94,6 +93,9 @@ public class DynamicCacheChangeRequest implements Serializable {
 
     /** */
     private transient boolean locallyConfigured;
+
+    /** Encryption key. */
+    @Nullable private byte[] encKey;
 
     /**
      * @param reqId Unique request ID.
@@ -422,6 +424,20 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public void disabledAfterStart(boolean disabledAfterStart) {
         this.disabledAfterStart = disabledAfterStart;
+    }
+
+    /**
+     * @param encKey Encryption key.
+     */
+    public void encryptionKey(@Nullable byte[] encKey) {
+        this.encKey = encKey;
+    }
+
+    /**
+     * @return Encryption key.
+     */
+    @Nullable public byte[] encryptionKey() {
+        return encKey;
     }
 
     /** {@inheritDoc} */

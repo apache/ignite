@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.hadoop.delegate;
 
+import java.lang.reflect.Constructor;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.hadoop.fs.BasicHadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.CachingHadoopFileSystemFactory;
@@ -25,10 +28,6 @@ import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
 import org.apache.ignite.hadoop.fs.KerberosHadoopFileSystemFactory;
 import org.apache.ignite.internal.processors.hadoop.HadoopClassLoader;
 import org.jetbrains.annotations.Nullable;
-
-import java.lang.reflect.Constructor;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Utility methods for Hadoop delegates.
@@ -80,7 +79,6 @@ public class HadoopDelegateUtils {
      * @param proxy Proxy.
      * @return Delegate.
      */
-    @SuppressWarnings("unchecked")
     public static HadoopFileSystemFactoryDelegate fileSystemFactoryDelegate(ClassLoader ldr, Object proxy) {
         String clsName = FACTORY_CLS_MAP.get(proxy.getClass().getName());
 

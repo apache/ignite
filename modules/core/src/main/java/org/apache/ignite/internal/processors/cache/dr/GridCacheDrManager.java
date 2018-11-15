@@ -22,7 +22,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheManager;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.jetbrains.annotations.Nullable;
@@ -57,43 +56,15 @@ public interface GridCacheDrManager extends GridCacheManager {
         AffinityTopologyVersion topVer)throws IgniteCheckedException;
 
     /**
-     * Enlist for DR.
-     *
-     * @param key Key.
-     * @param val Value.
-     * @param ttl TTL.
-     * @param expireTime Expire time.
-     * @param ver Version.
-     * @param drType Replication type.
-     * @param topVer Topology version.
-     * @param mvccVer Tx mvcc version.
-     * @throws IgniteCheckedException If failed.
-     */
-    void mvccReplicate(KeyCacheObject key,
-        @Nullable CacheObject val,
-        long ttl,
-        long expireTime,
-        GridCacheVersion ver,
-        GridDrType drType,
-        AffinityTopologyVersion topVer,
-        MvccVersion mvccVer) throws IgniteCheckedException;
-
-    /**
-     * @param mvccVer Tx mvcc version.
-     * @param commit {@code True} if tx committed, {@code False} otherwise.
-     * @param topVer Tx snapshot affinity version.
-     * @throws IgniteCheckedException If failed.
-     */
-    void onTxFinished(MvccVersion mvccVer, boolean commit, AffinityTopologyVersion topVer);
-
-    /**
      * Process partitions exchange event.
      *
      * @param topVer Topology version.
      * @param left {@code True} if exchange has been caused by node leave.
+     * @param activate {@code True} if exchange has been caused by cluster activation.
      * @throws IgniteCheckedException If failed.
      */
-    public void onExchange(AffinityTopologyVersion topVer, boolean left) throws IgniteCheckedException;
+    public void onExchange(AffinityTopologyVersion topVer, boolean left,
+        boolean activate) throws IgniteCheckedException;
 
     /**
      * @return {@code True} is DR is enabled.

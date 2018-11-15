@@ -18,8 +18,12 @@
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
 import java.io.File;
+import java.io.FilenameFilter;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -38,6 +42,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -53,9 +58,11 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.DiscoverySpiTestListener;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
@@ -67,15 +74,20 @@ import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntryType;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.typedef.CA;
+import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.PAX;
@@ -95,6 +107,8 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Assert;
 
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
@@ -115,6 +129,9 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
     /** */
     private static final String RENAMED_CACHE_NAME = "partitioned0";
+
+    /** */
+    private static final String CACHE_TO_DESTROY_NAME = "destroyCache";
 
     /** */
     private static final String LOC_CACHE_NAME = "local";
@@ -464,6 +481,110 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         finally {
             stopAllGrids();
         }
+    }
+
+    /**
+     * Check binary recover completes successfully when node stopped at the middle of checkpoint. Destroy cache_data.bin
+     * file for particular cache to emulate missing {@link DynamicCacheDescriptor} file (binary recovery should complete
+     * successfully in this case).
+     *
+     * @throws Exception if failed.
+     */
+    public void testBinaryRecoverBeforePMEWhenMiddleCheckpoint() throws Exception {
+        startGrids(3);
+
+        IgniteEx ig2 = grid(2);
+
+        ig2.cluster().active(true);
+
+        IgniteCache<Object, Object> cache = ig2.cache(CACHE_NAME);
+
+        for (int i = 1; i <= 4_000; i++)
+            cache.put(i, new BigObject(i));
+
+        BigObject objToCheck;
+
+        ig2.getOrCreateCache(CACHE_TO_DESTROY_NAME).put(1, objToCheck = new BigObject(1));
+
+        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)ig2
+            .context().cache().context().database();
+
+        IgniteInternalFuture<?> cpFinishFut = dbMgr.forceCheckpoint("force checkpoint").finishFuture();
+
+        // Delete checkpoint END file to emulate node stopped at the middle of checkpoint.
+        cpFinishFut.listen(new IgniteInClosureX<IgniteInternalFuture>() {
+            @Override public void applyx(IgniteInternalFuture fut0) throws IgniteCheckedException {
+                try {
+                    CheckpointEntry cpEntry = dbMgr.checkpointHistory().lastCheckpoint();
+
+                    String cpEndFileName = GridCacheDatabaseSharedManager.checkpointFileName(cpEntry,
+                        CheckpointEntryType.END);
+
+                    Files.delete(Paths.get(dbMgr.checkpointDirectory().getAbsolutePath(), cpEndFileName));
+
+                    log.info("Checkpoint marker removed [cpEndFileName=" + cpEndFileName + ']');
+                }
+                catch (IOException e) {
+                    throw new IgniteCheckedException(e);
+                }
+            }
+        });
+
+        // Resolve cache directory. Emulating cache destroy in the middle of checkpoint.
+        IgniteInternalCache<Object, Object> destoryCache = ig2.cachex(CACHE_TO_DESTROY_NAME);
+
+        FilePageStoreManager pageStoreMgr = (FilePageStoreManager)destoryCache.context().shared().pageStore();
+
+        File destroyCacheWorkDir = pageStoreMgr.cacheWorkDir(destoryCache.configuration());
+
+        // Stop the whole cluster
+        stopAllGrids();
+
+        // Delete cache_data.bin file for this cache. Binary recovery should complete successfully after it.
+        final File[] files = destroyCacheWorkDir.listFiles(new FilenameFilter() {
+            @Override public boolean accept(final File dir, final String name) {
+                return name.endsWith(CACHE_DATA_FILENAME);
+            }
+        });
+
+        assertTrue(files.length > 0);
+
+        for (final File file : files)
+            assertTrue("Can't remove " + file.getAbsolutePath(), file.delete());
+
+        startGrids(2);
+
+        // Preprare Ignite instance configuration with additional Discovery checks.
+        final String ig2Name = getTestIgniteInstanceName(2);
+
+        final IgniteConfiguration onJoinCfg = optimize(getConfiguration(ig2Name));
+
+        // Check restore beeing called before PME and joining node to cluster.
+        ((IgniteDiscoverySpi)onJoinCfg.getDiscoverySpi())
+            .setInternalListener(new DiscoverySpiTestListener() {
+                @Override public void beforeJoin(ClusterNode locNode, IgniteLogger log) {
+                    String nodeName = locNode.attribute(ATTR_IGNITE_INSTANCE_NAME);
+
+                    GridCacheSharedContext sharedCtx = ((IgniteEx)ignite(getTestIgniteInstanceIndex(nodeName)))
+                        .context()
+                        .cache()
+                        .context();
+
+                    if (nodeName.equals(ig2Name)) {
+                        // Checkpoint history initialized on node start.
+                        assertFalse(((GridCacheDatabaseSharedManager)sharedCtx.database())
+                            .checkpointHistory().checkpoints().isEmpty());
+                    }
+
+                    super.beforeJoin(locNode, log);
+                }
+            });
+
+        Ignite restoredIg2 = startGrid(ig2Name, onJoinCfg);
+
+        awaitPartitionMapExchange();
+
+        assertEquals(restoredIg2.cache(CACHE_TO_DESTROY_NAME).get(1), objToCheck);
     }
 
     /**

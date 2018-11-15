@@ -112,6 +112,13 @@ public class GridCacheContextInfo<K, V> {
     }
 
     /**
+     * @return {@code True} if cache is in recovery mode.
+     */
+    public boolean isRecoveryMode() {
+        return isCacheContextInited() && gridCacheContext.isRecoveryMode();
+    }
+
+    /**
      * @return {@code true} in case affinity node.
      */
     public boolean affinityNode() {
@@ -129,7 +136,7 @@ public class GridCacheContextInfo<K, V> {
      * @return Dynamic deployment ID.
      */
     public IgniteUuid dynamicDeploymentId() {
-        return dynamicDeploymentId;
+        return isCacheContextInited() ? gridCacheContext.dynamicDeploymentId() : dynamicDeploymentId;
     }
 
     /**

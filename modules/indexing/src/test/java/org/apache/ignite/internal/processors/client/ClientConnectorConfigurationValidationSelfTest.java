@@ -17,13 +17,20 @@
 
 package org.apache.ignite.internal.processors.client;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
 import junit.framework.TestCase;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -32,14 +39,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Client connector configuration validation tests.
@@ -277,7 +276,6 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testDisabled() throws Exception {
         IgniteConfiguration cfg = baseConfiguration();
 
@@ -317,7 +315,6 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testJdbcConnectionDisabled() throws Exception {
         IgniteConfiguration cfg = baseConfiguration();
 
@@ -342,7 +339,6 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testJdbcConnectionDisabledForDaemon() throws Exception {
         final IgniteConfiguration cfg = baseConfiguration().setDaemon(true);
 
@@ -395,7 +391,6 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
      * @param cliConnCfg Client connector configuration.
      * @param success Success flag. * @throws Exception If failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void check(ClientConnectorConfiguration cliConnCfg, boolean success) throws Exception {
         final IgniteConfiguration cfg = baseConfiguration();
 

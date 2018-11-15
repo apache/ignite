@@ -17,10 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.h2.database;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
@@ -42,6 +47,8 @@ import org.h2.result.SearchRow;
 import org.h2.table.IndexColumn;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.query.h2.database.InlineIndexHelper.CANT_BE_COMPARE;
 
 /**
  */
@@ -65,6 +72,21 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
     private final boolean mvccEnabled;
 
     /** */
+    private final boolean pk;
+
+    /** */
+    private final boolean affinityKey;
+
+    /** */
+    private final String cacheName;
+
+    /** */
+    private final String tblName;
+
+    /** */
+    private final String idxName;
+
+    /** */
     private final Comparator<Value> comp = new Comparator<Value>() {
         @Override public int compare(Value o1, Value o2) {
             return compareValues(o1, o2);
@@ -74,10 +96,27 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
     /** Row cache. */
     private final H2RowCache rowCache;
 
+    /** How often real invocation of inline size calculation will be skipped. */
+    private static final int THROTTLE_INLINE_SIZE_CALCULATION = 1_000;
+
+    /** Counter of inline size calculation for throttling real invocations. */
+    private final ThreadLocal<Long> inlineSizeCalculationCntr = ThreadLocal.withInitial(() -> 0L);
+
+    /** Keep max calculated inline size for current index. */
+    private final AtomicInteger maxCalculatedInlineSize;
+
+    /** */
+    private final IgniteLogger log;
+
+    private boolean unwrappedPk;
+
     /**
      * Constructor.
      *
      * @param name Tree name.
+     * @param idxName Name of index.
+     * @param cacheName Cache name.
+     * @param tblName Table name.
      * @param reuseList Reuse list.
      * @param grpId Cache group ID.
      * @param pageMem Page memory.
@@ -86,12 +125,18 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
      * @param metaPageId Meta page ID.
      * @param initNew Initialize new index.
      * @param rowCache Row cache.
+     * @param pk {@code true} for primary key.
+     * @param affinityKey {@code true} for affinity key.
      * @param mvccEnabled Mvcc flag.
      * @param failureProcessor if the tree is corrupted.
+     * @param log Logger.
      * @throws IgniteCheckedException If failed.
      */
     protected H2Tree(
         String name,
+        String idxName,
+        String cacheName,
+        String tblName,
         ReuseList reuseList,
         int grpId,
         PageMemory pageMem,
@@ -100,28 +145,48 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
         H2RowFactory rowStore,
         long metaPageId,
         boolean initNew,
-        IndexColumn[] cols,
-        List<InlineIndexHelper> inlineIdxs,
-        int inlineSize,
+        H2TreeIndex.IndexColumnsInfo unwrappedColsInfo,
+        H2TreeIndex.IndexColumnsInfo wrappedColsInfo,
+        AtomicInteger maxCalculatedInlineSize,
+        boolean pk,
+        boolean affinityKey,
         boolean mvccEnabled,
         @Nullable H2RowCache rowCache,
-        @Nullable FailureProcessor failureProcessor
+        @Nullable FailureProcessor failureProcessor,
+        IgniteLogger log
     ) throws IgniteCheckedException {
         super(name, grpId, pageMem, wal, globalRmvId, metaPageId, reuseList, failureProcessor);
 
         if (!initNew) {
-            // Page is ready - read inline size from it.
-            inlineSize = getMetaInlineSize();
+            // Page is ready - read meta information.
+            MetaPageInfo metaInfo = getMetaInfo();
+
+            inlineSize = metaInfo.inlineSize();
+
+            unwrappedPk = metaInfo.useUnwrappedPk();
+        }
+        else {
+            unwrappedPk = true;
+
+            inlineSize = unwrappedColsInfo.inlineSize();
         }
 
-        this.inlineSize = inlineSize;
+        this.idxName = idxName;
+        this.cacheName = cacheName;
+        this.tblName = tblName;
+
+        this.maxCalculatedInlineSize = maxCalculatedInlineSize;
+
+        this.pk = pk;
+        this.affinityKey = affinityKey;
+
         this.mvccEnabled = mvccEnabled;
 
         assert rowStore != null;
 
         this.rowStore = rowStore;
-        this.inlineIdxs = inlineIdxs;
-        this.cols = cols;
+        this.inlineIdxs = unwrappedPk ? unwrappedColsInfo.inlineIdx() : wrappedColsInfo.inlineIdx();
+        this.cols = unwrappedPk ? unwrappedColsInfo.cols() : wrappedColsInfo.cols();
 
         this.columnIds = new int[cols.length];
 
@@ -131,6 +196,8 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
         setIos(H2ExtrasInnerIO.getVersions(inlineSize, mvccEnabled), H2ExtrasLeafIO.getVersions(inlineSize, mvccEnabled));
 
         this.rowCache = rowCache;
+
+        this.log = log;
 
         initTree(initNew, inlineSize);
     }
@@ -163,7 +230,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
      * Create row from link.
      *
      * @param link Link.
-     * @param mvccOpCntr
+     * @param mvccOpCntr MVCC operation counter.
      * @return Row.
      * @throws IgniteCheckedException if failed.
      */
@@ -201,7 +268,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
      * @return Inline size.
      * @throws IgniteCheckedException If failed.
      */
-    private int getMetaInlineSize() throws IgniteCheckedException {
+    private MetaPageInfo getMetaInfo() throws IgniteCheckedException {
         final long metaPage = acquirePage(metaPageId);
 
         try {
@@ -213,7 +280,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
             try {
                 BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(pageAddr);
 
-                return io.getInlineSize(pageAddr);
+                return new MetaPageInfo(io.getInlineSize(pageAddr), io.unwrappedPk());
             }
             finally {
                 readUnlock(metaPageId, metaPage, pageAddr);
@@ -247,7 +314,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
 
                 int c = inlineIdx.compare(pageAddr, off + fieldOff, inlineSize() - fieldOff, v2, comp);
 
-                if (c == -2)
+                if (c == CANT_BE_COMPARE)
                     break;
 
                 lastIdxUsed++;
@@ -263,6 +330,8 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
 
             if (lastIdxUsed == cols.length)
                 return mvccCompare((H2RowLinkIO)io, pageAddr, idx, row);
+
+            inlineSizeRecomendation(row);
 
             SearchRow rowData = getRow(io, pageAddr, idx);
 
@@ -359,6 +428,125 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
             return c;
 
         return -Long.compare(r1.mvccCounter(), r2.mvccCounter());
+    }
+
+    /**
+     * Calculate aggregate inline size for given indexes and log recommendation in case calculated size more than
+     * current inline size.
+     *
+     * @param row Grid H2 row related to given inline indexes.
+     */
+    private void inlineSizeRecomendation(SearchRow row) {
+        //Do the check only for put operations.
+        if (!(row instanceof GridH2KeyValueRowOnheap))
+            return;
+
+        Long invokeCnt = inlineSizeCalculationCntr.get();
+
+        inlineSizeCalculationCntr.set(++invokeCnt);
+
+        boolean throttle = invokeCnt % THROTTLE_INLINE_SIZE_CALCULATION != 0;
+
+        if (throttle)
+            return;
+
+        int newSize = 0;
+
+        InlineIndexHelper idx;
+
+        List<String> colNames = new ArrayList<>();
+
+        for (InlineIndexHelper index : inlineIdxs) {
+            idx = index;
+
+            newSize += idx.inlineSizeOf(row.getValue(idx.columnIndex()));
+
+            colNames.add(index.colName());
+        }
+
+        if (newSize > inlineSize()) {
+            int oldSize;
+
+            while (true) {
+                oldSize = maxCalculatedInlineSize.get();
+
+                if (oldSize >= newSize)
+                    return;
+
+                if (maxCalculatedInlineSize.compareAndSet(oldSize, newSize))
+                    break;
+            }
+
+            String cols = colNames.stream().collect(Collectors.joining(", ", "(", ")"));
+
+            String idxType = pk ? "PRIMARY KEY" : affinityKey ? "AFFINITY KEY (implicit)" : "SECONDARY";
+
+            String recommendation;
+
+            if (pk || affinityKey) {
+                recommendation = "set system property "
+                    + IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE + " with recommended size " +
+                    "(be aware it will be used by default for all indexes without explicit inline size)";
+            }
+            else {
+                recommendation = "use INLINE_SIZE option for CREATE INDEX command, " +
+                    "QuerySqlField.inlineSize for annotated classes, or QueryIndex.inlineSize for explicit " +
+                    "QueryEntity configuration";
+            }
+
+            String warn = "Indexed columns of a row cannot be fully inlined into index " +
+                "what may lead to slowdown due to additional data page reads, increase index inline size if needed " +
+                "(" + recommendation + ") " +
+                "[cacheName=" + cacheName +
+                ", tableName=" + tblName +
+                ", idxName=" + idxName +
+                ", idxCols=" + cols +
+                ", idxType=" + idxType +
+                ", curSize=" + inlineSize() +
+                ", recommendedInlineSize=" + newSize + "]";
+
+            U.warn(log, warn);
+        }
+    }
+
+    /**
+     * @return {@code true} In case use unwrapped columns for PK
+     */
+    public boolean unwrappedPk() {
+        return unwrappedPk;
+    }
+
+    /**
+     *
+     */
+    private class MetaPageInfo {
+        /** */
+        int inlineSize;
+        /** */
+        boolean useUnwrappedPk;
+
+        /**
+         * @param inlineSize Inline size.
+         * @param useUnwrappedPk {@code true} In case use unwrapped PK for indexes.
+         */
+        public MetaPageInfo(int inlineSize, boolean useUnwrappedPk) {
+            this.inlineSize = inlineSize;
+            this.useUnwrappedPk = useUnwrappedPk;
+        }
+
+        /**
+         * @return Inline size.
+         */
+        public int inlineSize() {
+            return inlineSize;
+        }
+
+        /**
+         * @return {@code true} In case use unwrapped PK for indexes.
+         */
+        public boolean useUnwrappedPk() {
+            return useUnwrappedPk;
+        }
     }
 
     /**

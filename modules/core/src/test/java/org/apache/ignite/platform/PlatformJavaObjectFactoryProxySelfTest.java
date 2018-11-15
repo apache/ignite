@@ -17,6 +17,11 @@
 
 package org.apache.ignite.platform;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.GridKernalContext;
@@ -28,16 +33,9 @@ import org.apache.ignite.platform.javaobject.TestJavaObjectNoDefaultCtorFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.Callable;
-
 /**
  * Dedicated tests for {@link PlatformJavaObjectFactoryProxy}.
  */
-@SuppressWarnings("ThrowableResultOfMethodCallIgnored")
 public class PlatformJavaObjectFactoryProxySelfTest extends GridCommonAbstractTest {
     /** Name of the class. */
     private static final String CLS_NAME = TestJavaObject.class.getName();

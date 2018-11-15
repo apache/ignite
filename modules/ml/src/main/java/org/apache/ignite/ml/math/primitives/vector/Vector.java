@@ -127,6 +127,15 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
     public Vector sort();
 
     /**
+     * Copies the specified range of the vector into a new vector.
+     *
+     * @param from the initial index of the range to be copied, inclusive
+     * @param to the final index of the range to be copied, exclusive. (This index may lie outside the array.)
+     * @return A new vector containing the specified range from the original vector
+     */
+    public Vector copyOfRange(int from, int to);
+
+    /**
      * Gets element at the given index.
      *
      * NOTE: implementation can choose to reuse {@link Element} instance so you need to copy it

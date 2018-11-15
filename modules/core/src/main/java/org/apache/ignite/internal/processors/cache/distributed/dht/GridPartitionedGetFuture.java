@@ -443,7 +443,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
      * @param mapped Previously mapped.
      * @return {@code True} if has remote nodes.
      */
-    @SuppressWarnings("ConstantConditions")
     private boolean map(
         KeyCacheObject key,
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings,
@@ -461,7 +460,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             return false;
         }
 
-        boolean fastLocGet = (!forcePrimary || affNodes.get(0).isLocal()) &&
+        // Local get cannot be used with MVCC as local node can contain some visible version which is not latest.
+        boolean fastLocGet = !cctx.mvccEnabled() && (!forcePrimary || affNodes.get(0).isLocal()) &&
             cctx.reserveForFastLocalGet(part, topVer);
 
         if (fastLocGet) {
@@ -782,7 +782,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         /**
          * @param e Failure exception.
          */
-        @SuppressWarnings("UnusedParameters")
         synchronized void onNodeLeft(ClusterTopologyCheckedException e) {
             if (remapped)
                 return;
@@ -802,7 +801,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 AffinityTopologyVersion updTopVer =
                     new AffinityTopologyVersion(Math.max(topVer.topologyVersion() + 1, cctx.discovery().topologyVersion()));
 
-                cctx.affinity().affinityReadyFuture(updTopVer).listen(
+                cctx.shared().exchange().affinityReadyFuture(updTopVer).listen(
                     new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                         @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
                             try {
@@ -823,7 +822,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         /**
          * @param res Result callback.
          */
-        @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
         void onResult(final GridNearGetResponse res) {
             final Collection<Integer> invalidParts = res.invalidPartitions();
 
@@ -868,10 +866,9 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 }
 
                 // Need to wait for next topology version to remap.
-                IgniteInternalFuture<AffinityTopologyVersion> topFut = cctx.affinity().affinityReadyFuture(rmtTopVer);
+                IgniteInternalFuture<AffinityTopologyVersion> topFut = cctx.shared().exchange().affinityReadyFuture(rmtTopVer);
 
                 topFut.listen(new CIX1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                    @SuppressWarnings("unchecked")
                     @Override public void applyx(
                         IgniteInternalFuture<AffinityTopologyVersion> fut) throws IgniteCheckedException {
                         AffinityTopologyVersion topVer = fut.get();

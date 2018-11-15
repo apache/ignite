@@ -181,6 +181,13 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
         return dhtFutId;
     }
 
+    /**
+     * @return New DHT nodes involved into transaction.
+     */
+    public Collection<UUID> newDhtNodes() {
+        return newDhtNodes;
+    }
+
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 11;

@@ -17,6 +17,14 @@
 
 package org.apache.ignite.platform;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.math.BigDecimal;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
@@ -26,16 +34,7 @@ import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.math.BigDecimal;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
-@SuppressWarnings({"ConstantConditions", "UnusedDeclaration"})
+@SuppressWarnings({"ConstantConditions"})
 public class PlatformComputeDecimalTask extends ComputeTaskAdapter<Object[], BigDecimal> {
     /** {@inheritDoc} */
     @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object[] arg) {
@@ -43,7 +42,6 @@ public class PlatformComputeDecimalTask extends ComputeTaskAdapter<Object[], Big
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     @Nullable @Override public BigDecimal reduce(List<ComputeJobResult> results) {
         ComputeJobResult res = results.get(0);
 

@@ -24,7 +24,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.util.concurrent.Callable;
-
 import org.apache.ignite.hadoop.fs.KerberosHadoopFileSystemFactory;
 import org.apache.ignite.internal.processors.hadoop.delegate.HadoopDelegateUtils;
 import org.apache.ignite.internal.processors.hadoop.delegate.HadoopFileSystemFactoryDelegate;
@@ -60,7 +59,6 @@ public class KerberosHadoopFileSystemFactorySelfTest extends GridCommonAbstractT
      * @param keyTabPrincipal Key tab principal.
      * @param reloginInterval Re-login interval.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void checkParameters(String keyTab, String keyTabPrincipal, long reloginInterval) {
         final KerberosHadoopFileSystemFactory fac = new KerberosHadoopFileSystemFactory();
 

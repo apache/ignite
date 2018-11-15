@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.h2.dml;
 
+import java.sql.SQLException;
+import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import javax.cache.processor.EntryProcessor;
-import java.sql.SQLException;
 
 /**
  * Result of splitting keys whose processing resulted into an exception from those skipped by
@@ -41,7 +40,6 @@ public final class DmlPageProcessingErrorResult {
     private final SQLException ex;
 
     /** */
-    @SuppressWarnings("ConstantConditions")
     public DmlPageProcessingErrorResult(@NotNull Object[] errKeys, SQLException ex, int exCnt) {
         errKeys = U.firstNotNull(errKeys, X.EMPTY_OBJECT_ARRAY);
         // When exceptions count must be zero, exceptions chain must be not null, and vice versa.

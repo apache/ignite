@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.sql;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -39,6 +40,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
@@ -55,11 +57,30 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
 
     /** */
     private static final String STR_ORG_CACHE_NAME = "STR_ORG";
-    
+
+    /** */
     private static final String STR_ORG_WITH_FIELDS_CACHE_NAME = "STR_ORG_WITH_FIELDS";
 
     /** */
     private static final String OBJ_CACHE_NAME = "ORG_ADDRESS";
+
+    /** */
+    private static final String DEC_CACHE_NAME_FOR_SCALE = "DEC_DEC_FOR_SCALE";
+
+    /** */
+    private static final String OBJ_CACHE_NAME_FOR_SCALE = "ORG_EMPLOYEE_FOR_SCALE";
+
+    /** */
+    private static final String DEC_EMPL_CACHE_NAME_FOR_SCALE = "DEC_EMPLOYEE_FOR_SCALE";
+
+    /** */
+    private static final String DEC_CACHE_NAME_FOR_PREC = "DEC_DEC_FOR_PREC";
+
+    /** */
+    private static final String OBJ_CACHE_NAME_FOR_PREC = "ORG_EMPLOYEE_FOR_PREC";
+
+    /** */
+    private static final String DEC_EMPL_CACHE_NAME_FOR_PREC = "DEC_EMPLOYEE_FOR_PREC";
 
     /** */
     private Consumer<Runnable> shouldFail = (op) -> assertThrowsWithCause(op, IgniteException.class);
@@ -71,6 +92,15 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid(0);
 
+        createCachesForStringTests();
+
+        createCachesForDecimalPrecisionTests();
+
+        createCachesForDecimalScaleTests();
+    }
+
+    /** @throws Exception If failed. */
+    private void createCachesForStringTests() throws Exception {
         Map<String, Integer> strStrPrecision = new HashMap<>();
 
         strStrPrecision.put(KEY_FIELD_NAME, 5);
@@ -102,10 +132,88 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
             .setFieldsPrecision(strOrgPrecision)), STR_ORG_WITH_FIELDS_CACHE_NAME);
     }
 
+    /** @throws Exception If failed. */
+    private void createCachesForDecimalPrecisionTests() throws Exception {
+        Map<String, Integer> decDecPrecision = new HashMap<>();
+
+        decDecPrecision.put(KEY_FIELD_NAME, 4);
+        decDecPrecision.put(VAL_FIELD_NAME, 4);
+
+        jcache(grid(0), cacheConfiguration(new QueryEntity(BigDecimal.class.getName(), BigDecimal.class.getName())
+            .setFieldsPrecision(decDecPrecision)), DEC_CACHE_NAME_FOR_PREC);
+
+        Map<String, Integer> orgEmployeePrecision = new HashMap<>();
+
+        orgEmployeePrecision.put("id", 4);
+        orgEmployeePrecision.put("salary", 4);
+
+        jcache(grid(0), cacheConfiguration(new QueryEntity(DecOrganization.class.getName(), Employee.class.getName())
+            .addQueryField("id", "java.math.BigDecimal", "id")
+            .addQueryField("salary", "java.math.BigDecimal", "salary")
+            .setFieldsPrecision(orgEmployeePrecision)), OBJ_CACHE_NAME_FOR_PREC);
+
+        Map<String, Integer> decEmployeePrecision = new HashMap<>();
+
+        decEmployeePrecision.put(KEY_FIELD_NAME, 4);
+        decEmployeePrecision.put("salary", 4);
+
+        jcache(grid(0), cacheConfiguration(new QueryEntity(BigDecimal.class.getName(), Employee.class.getName())
+            .addQueryField("salary", "java.math.BigDecimal", "salary")
+            .setFieldsPrecision(decEmployeePrecision)), DEC_EMPL_CACHE_NAME_FOR_PREC);
+    }
+
+    /** @throws Exception If failed. */
+    private void createCachesForDecimalScaleTests() throws Exception {
+        Map<String, Integer> decDecPrecision = new HashMap<>();
+
+        decDecPrecision.put(KEY_FIELD_NAME, 4);
+        decDecPrecision.put(VAL_FIELD_NAME, 4);
+
+        Map<String, Integer> decDecScale = new HashMap<>();
+
+        decDecScale.put(KEY_FIELD_NAME, 2);
+        decDecScale.put(VAL_FIELD_NAME, 2);
+
+        jcache(grid(0), cacheConfiguration(new QueryEntity(BigDecimal.class.getName(), BigDecimal.class.getName())
+            .setFieldsScale(decDecScale)
+            .setFieldsPrecision(decDecPrecision)), DEC_CACHE_NAME_FOR_SCALE);
+
+        Map<String, Integer> orgEmployeePrecision = new HashMap<>();
+
+        orgEmployeePrecision.put("id", 4);
+        orgEmployeePrecision.put("salary", 4);
+
+        Map<String, Integer> orgEmployeeScale = new HashMap<>();
+
+        orgEmployeeScale.put("id", 2);
+        orgEmployeeScale.put("salary", 2);
+
+        jcache(grid(0), cacheConfiguration(new QueryEntity(DecOrganization.class.getName(), Employee.class.getName())
+            .addQueryField("id", "java.math.BigDecimal", "id")
+            .addQueryField("salary", "java.math.BigDecimal", "salary")
+            .setFieldsScale(orgEmployeeScale)
+            .setFieldsPrecision(orgEmployeePrecision)), OBJ_CACHE_NAME_FOR_SCALE);
+
+        Map<String, Integer> decEmployeePrecision = new HashMap<>();
+
+        decEmployeePrecision.put(KEY_FIELD_NAME, 4);
+        decEmployeePrecision.put("salary", 4);
+
+        Map<String, Integer> decEmployeeScale = new HashMap<>();
+
+        decEmployeeScale.put(KEY_FIELD_NAME, 2);
+        decEmployeeScale.put("salary", 2);
+
+        jcache(grid(0), cacheConfiguration(new QueryEntity(BigDecimal.class.getName(), Employee.class.getName())
+            .addQueryField("salary", "java.math.BigDecimal", "salary")
+            .setFieldsPrecision(decEmployeePrecision)
+            .setFieldsScale(decEmployeeScale)), DEC_EMPL_CACHE_NAME_FOR_SCALE);
+    }
+
     /**
      * @throws Exception If failed.
      */
-    public void testPutTooLongValueFail() throws Exception {
+    public void testPutTooLongStringValueFail() throws Exception {
         IgniteCache<String, String> cache = jcache(0, STR_CACHE_NAME);
 
         T2<String, String> val = new T2<>("3", "123456");
@@ -113,14 +221,14 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
         checkPutAll(shouldFail, cache, new T2<>("1", "1"), val);
 
         checkPutOps(shouldFail, cache, val);
-        
+
         checkReplaceOps(shouldFail, cache, val, "1");
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testPutTooLongKeyFail() throws Exception {
+    public void testPutTooLongStringKeyFail() throws Exception {
         IgniteCache<String, String> cache = jcache(0, STR_CACHE_NAME);
 
         T2<String, String> val = new T2<>("123456", "2");
@@ -133,7 +241,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
-    public void testPutTooLongValueFieldFail() throws Exception {
+    public void testPutTooLongStringValueFieldFail() throws Exception {
         IgniteCache<Organization, Address> cache = jcache(0, OBJ_CACHE_NAME);
 
         T2<Organization, Address> val = new T2<>(new Organization("3"), new Address("123456"));
@@ -148,7 +256,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
-    public void testPutTooLongKeyFieldFail() throws Exception {
+    public void testPutTooLongStringKeyFieldFail() throws Exception {
         IgniteCache<Organization, Address> cache = jcache(0, OBJ_CACHE_NAME);
 
         T2<Organization, Address> val = new T2<>(new Organization("123456"), new Address("2"));
@@ -161,19 +269,21 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
-    public void testPutTooLongKeyFail2() throws Exception {
-        doCheckPutTooLongKeyFail2(STR_ORG_CACHE_NAME);
+    public void testPutTooLongStringKeyFail2() throws Exception {
+        doCheckPutTooLongStringKeyFail2(STR_ORG_CACHE_NAME);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testPutTooLongKeyFail3() throws Exception {
-        doCheckPutTooLongKeyFail2(STR_ORG_WITH_FIELDS_CACHE_NAME);
+    public void testPutTooLongStringKeyFail3() throws Exception {
+        doCheckPutTooLongStringKeyFail2(STR_ORG_WITH_FIELDS_CACHE_NAME);
     }
 
-
-    private void doCheckPutTooLongKeyFail2(String cacheName) {
+    /**
+     * @throws Exception If failed.
+     */
+    private void doCheckPutTooLongStringKeyFail2(String cacheName) {
         IgniteCache<String, Organization> cache = jcache(0, cacheName);
 
         T2<String, Organization> val = new T2<>("123456", new Organization("1"));
@@ -186,7 +296,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
-    public void testPutLongValue() throws Exception {
+    public void testPutLongStringValue() throws Exception {
         IgniteCache<String, String> cache = jcache(0, STR_CACHE_NAME);
 
         T2<String, String> val = new T2<>("3", "12345");
@@ -201,7 +311,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
-    public void testPutLongKey() throws Exception {
+    public void testPutLongStringKey() throws Exception {
         IgniteCache<String, String> cache = jcache(0, STR_CACHE_NAME);
 
         T2<String, String> val = new T2<>("12345", "2");
@@ -214,7 +324,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
-    public void testPutLongValueField() throws Exception {
+    public void testPutLongStringValueField() throws Exception {
         IgniteCache<Organization, Address> cache = jcache(0, OBJ_CACHE_NAME);
 
         T2<Organization, Address> val = new T2<>(new Organization("3"), new Address("12345"));
@@ -229,7 +339,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
-    public void testPutLongKeyField() throws Exception {
+    public void testPutLongStringKeyField() throws Exception {
         IgniteCache<Organization, Address> cache = jcache(0, OBJ_CACHE_NAME);
 
         T2<Organization, Address> val = new T2<>(new Organization("12345"), new Address("2"));
@@ -242,18 +352,21 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
-    public void testPutLongKey2() throws Exception {
-        doCheckPutLongKey2(STR_ORG_CACHE_NAME);
+    public void testPutLongStringKey2() throws Exception {
+        doCheckPutLongStringKey2(STR_ORG_CACHE_NAME);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testPutLongKey3() throws Exception {
-        doCheckPutLongKey2(STR_ORG_WITH_FIELDS_CACHE_NAME);
+    public void testPutLongStringKey3() throws Exception {
+        doCheckPutLongStringKey2(STR_ORG_WITH_FIELDS_CACHE_NAME);
     }
 
-    private void doCheckPutLongKey2(String cacheName) {
+    /**
+     * @throws Exception If failed.
+     */
+    private void doCheckPutLongStringKey2(String cacheName) {
         IgniteCache<String, Organization> cache = jcache(0, cacheName);
 
         T2<String, Organization> key2 = new T2<>("12345", new Organization("1"));
@@ -261,6 +374,224 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
         checkPutAll(shouldSucceed, cache, new T2<>("1", new Organization("1")), key2);
 
         checkPutOps(shouldSucceed, cache, key2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutTooLongDecimalValueFail() throws Exception {
+        IgniteCache<BigDecimal, BigDecimal> cache = jcache(0, DEC_CACHE_NAME_FOR_PREC);
+
+        T2<BigDecimal, BigDecimal> val = new T2<>(d(12.36), d(123.45));
+
+        checkPutAll(shouldFail, cache, new T2<>(d(12.34), d(12.34)), val);
+
+        checkPutOps(shouldFail, cache, val);
+
+        checkReplaceOps(shouldFail, cache, val, d(12.34));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutTooLongDecimalKeyFail() throws Exception {
+        IgniteCache<BigDecimal, BigDecimal> cache = jcache(0, DEC_CACHE_NAME_FOR_PREC);
+
+        T2<BigDecimal, BigDecimal> val = new T2<>(d(123.45), d(12.34));
+
+        checkPutAll(shouldFail, cache, new T2<>(d(12.35), d(12.34)), val);
+
+        checkPutOps(shouldFail, cache, val);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutTooLongDecimalKeyFail2() throws Exception {
+        IgniteCache<BigDecimal, Employee> cache = jcache(0, DEC_EMPL_CACHE_NAME_FOR_PREC);
+
+        T2<BigDecimal, Employee> val = new T2<>(d(123.45), new Employee(d(12.34)));
+
+        checkPutAll(shouldFail, cache, new T2<>(d(12.35), new Employee(d(12.34))), val);
+
+        checkPutOps(shouldFail, cache, val);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutTooLongDecimalValueFieldFail() throws Exception {
+        IgniteCache<DecOrganization, Employee> cache = jcache(0, OBJ_CACHE_NAME_FOR_PREC);
+
+        T2<DecOrganization, Employee> val = new T2<>(new DecOrganization(d(12.36)), new Employee(d(123.45)));
+
+        checkPutAll(shouldFail, cache, new T2<>(new DecOrganization(d(12.34)), new Employee(d(12.34))), val);
+
+        checkPutOps(shouldFail, cache, val);
+
+        checkReplaceOps(shouldFail, cache, val, new Employee(d(12.34)));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutTooLongDecimalValueFieldFail2() throws Exception {
+        IgniteCache<BigDecimal, Employee> cache = jcache(0, DEC_EMPL_CACHE_NAME_FOR_PREC);
+
+        T2<BigDecimal, Employee> val = new T2<>(d(12.36), new Employee(d(123.45)));
+
+        checkPutAll(shouldFail, cache, new T2<>(d(12.34), new Employee(d(12.34))), val);
+
+        checkPutOps(shouldFail, cache, val);
+
+        checkReplaceOps(shouldFail, cache, val, new Employee(d(12.34)));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutTooLongDecimalKeyFieldFail() throws Exception {
+        IgniteCache<DecOrganization, Employee> cache = jcache(0, OBJ_CACHE_NAME_FOR_PREC);
+
+        T2<DecOrganization, Employee> val = new T2<>(new DecOrganization(d(123.45)), new Employee(d(12.34)));
+
+        checkPutAll(shouldFail, cache, new T2<>(new DecOrganization(d(12.35)), new Employee(d(12.34))), val);
+
+        checkPutOps(shouldFail, cache, val);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutTooLongDecimalValueScaleFail() throws Exception {
+        IgniteCache<BigDecimal, BigDecimal> cache = jcache(0, DEC_CACHE_NAME_FOR_SCALE);
+
+        T2<BigDecimal, BigDecimal> val = new T2<>(d(12.36), d(3.456));
+
+        checkPutAll(shouldFail, cache, new T2<>(d(12.34), d(12.34)), val);
+
+        checkPutOps(shouldFail, cache, val);
+
+        checkReplaceOps(shouldFail, cache, val, d(12.34));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutTooLongDecimalKeyScaleFail() throws Exception {
+        IgniteCache<BigDecimal, BigDecimal> cache = jcache(0, DEC_CACHE_NAME_FOR_SCALE);
+
+        T2<BigDecimal, BigDecimal> val = new T2<>(d(3.456), d(12.34));
+
+        checkPutAll(shouldFail, cache, new T2<>(d(12.35), d(12.34)), val);
+
+        checkPutOps(shouldFail, cache, val);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutTooLongDecimalKeyScaleFail2() throws Exception {
+        IgniteCache<BigDecimal, Employee> cache = jcache(0, DEC_EMPL_CACHE_NAME_FOR_SCALE);
+
+        T2<BigDecimal, Employee> val = new T2<>(d(3.456), new Employee(d(12.34)));
+
+        checkPutAll(shouldFail, cache, new T2<>(d(12.35), new Employee(d(12.34))), val);
+
+        checkPutOps(shouldFail, cache, val);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutTooLongDecimalValueFieldScaleFail() throws Exception {
+        IgniteCache<DecOrganization, Employee> cache = jcache(0, OBJ_CACHE_NAME_FOR_SCALE);
+
+        T2<DecOrganization, Employee> val = new T2<>(new DecOrganization(d(12.36)), new Employee(d(3.456)));
+
+        checkPutAll(shouldFail, cache, new T2<>(new DecOrganization(d(12.34)), new Employee(d(12.34))), val);
+
+        checkPutOps(shouldFail, cache, val);
+
+        checkReplaceOps(shouldFail, cache, val, new Employee(d(12.34)));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutTooLongDecimalValueFieldScaleFail2() throws Exception {
+        IgniteCache<BigDecimal, Employee> cache = jcache(0, DEC_EMPL_CACHE_NAME_FOR_SCALE);
+
+        T2<BigDecimal, Employee> val = new T2<>(d(12.36), new Employee(d(3.456)));
+
+        checkPutAll(shouldFail, cache, new T2<>(d(12.34), new Employee(d(12.34))), val);
+
+        checkPutOps(shouldFail, cache, val);
+
+        checkReplaceOps(shouldFail, cache, val, new Employee(d(12.34)));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutTooLongDecimalKeyFieldScaleFail() throws Exception {
+        IgniteCache<DecOrganization, Employee> cache = jcache(0, OBJ_CACHE_NAME_FOR_SCALE);
+
+        T2<DecOrganization, Employee> val = new T2<>(new DecOrganization(d(3.456)), new Employee(d(12.34)));
+
+        checkPutAll(shouldFail, cache, new T2<>(new DecOrganization(d(12.35)), new Employee(d(12.34))), val);
+
+        checkPutOps(shouldFail, cache, val);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutValidDecimalKeyAndValue() throws Exception {
+        IgniteCache<BigDecimal, BigDecimal> cache = jcache(0, DEC_CACHE_NAME_FOR_SCALE);
+
+        T2<BigDecimal, BigDecimal> val = new T2<>(d(12.37), d(12.34));
+
+        checkPutAll(shouldSucceed, cache, new T2<>(d(12.36), d(12.34)), val);
+
+        checkPutOps(shouldSucceed, cache, val);
+
+        checkReplaceOps(shouldSucceed, cache, val, d(12.34));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutValidDecimalKeyAndValueField() throws Exception {
+        IgniteCache<DecOrganization, Employee> cache = jcache(0, OBJ_CACHE_NAME_FOR_SCALE);
+
+        T2<DecOrganization, Employee> val = new T2<>(new DecOrganization(d(12.37)), new Employee(d(12.34)));
+
+        checkPutAll(shouldSucceed, cache, new T2<>(new DecOrganization(d(12.36)), new Employee(d(12.34))), val);
+
+        checkPutOps(shouldSucceed, cache, val);
+
+        checkReplaceOps(shouldSucceed, cache, val, new Employee(d(12.34)));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutValidDecimalKeyAndValueField2() throws Exception {
+        IgniteCache<BigDecimal, Employee> cache = jcache(0, DEC_EMPL_CACHE_NAME_FOR_SCALE);
+
+        T2<BigDecimal, Employee> val = new T2<>(d(12.37), new Employee(d(12.34)));
+
+        checkPutAll(shouldSucceed, cache, new T2<>(d(12.36), new Employee(d(12.34))), val);
+
+        checkPutOps(shouldSucceed, cache, val);
+
+        checkReplaceOps(shouldSucceed, cache, val, new Employee(d(12.34)));
+    }
+
+    /** */
+    private BigDecimal d(double val) {
+        return BigDecimal.valueOf(val);
     }
 
     /** */
@@ -352,8 +683,10 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
         cache.setAtomicityMode(atomicityMode());
         cache.setBackups(1);
         cache.setWriteSynchronizationMode(FULL_SYNC);
-
         cache.setQueryEntities(Collections.singletonList(qryEntity));
+
+        if (TRANSACTIONAL_SNAPSHOT.equals(atomicityMode()))
+            cache.setNearConfiguration(null);
 
         return cache;
     }
@@ -369,7 +702,6 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Organization implements Serializable {
         /** Name. */
         private final String name;
@@ -383,7 +715,6 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Address implements Serializable {
         /** Name. */
         private final String address;
@@ -393,6 +724,34 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
          */
         private Address(String address) {
             this.address = address;
+        }
+    }
+
+    /** */
+    @SuppressWarnings("UnusedDeclaration")
+    private static class DecOrganization implements Serializable {
+        /** Id. */
+        private final BigDecimal id;
+
+        /**
+         * @param id Id.
+         */
+        private DecOrganization(BigDecimal id) {
+            this.id = id;
+        }
+    }
+
+    /** */
+    @SuppressWarnings("UnusedDeclaration")
+    private static class Employee implements Serializable {
+        /** Salary. */
+        private final BigDecimal salary;
+
+        /**
+         * @param salary Salary.
+         */
+        private Employee(BigDecimal salary) {
+            this.salary = salary;
         }
     }
 }

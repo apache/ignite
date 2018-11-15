@@ -18,10 +18,11 @@
 package org.apache.ignite.spark.impl
 
 import org.apache.ignite.cache.query.SqlFieldsQuery
-import org.apache.ignite.spark.IgniteDataFrameSettings._
-import QueryUtils.{compileCreateTable, compileDropTable, compileInsert}
 import org.apache.ignite.internal.IgniteEx
+import org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA
 import org.apache.ignite.spark.IgniteContext
+import org.apache.ignite.spark.IgniteDataFrameSettings._
+import org.apache.ignite.spark.impl.QueryUtils.{compileCreateTable, compileDropTable, compileInsert}
 import org.apache.ignite.{Ignite, IgniteException}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Row}
@@ -72,6 +73,11 @@ private[apache] object QueryHelper {
         if (!params.contains(OPTION_TABLE) && !params.contains("path"))
             throw new IgniteException("'table' must be specified.")
 
+        if (params.contains(OPTION_SCHEMA) && !params(OPTION_SCHEMA).equalsIgnoreCase(DFLT_SCHEMA)) {
+            throw new IgniteException("Creating new tables in schema " + params(OPTION_SCHEMA) + " is not valid, tables"
+                + " must only be created in " + DFLT_SCHEMA)
+        }
+
         params.get(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS)
             .map(_.split(','))
             .getOrElse(throw new IgniteException("Can't create table! Primary key fields has to be specified."))
@@ -89,14 +95,14 @@ private[apache] object QueryHelper {
     /**
       * Saves data to the table.
       *
-      * @param data Data.
-      * @param tblName Table name.
-      * @param ctx Ignite context.
-      * @param streamerAllowOverwrite Flag enabling overwriting existing values in cache.
-      * @param streamerFlushFrequency Insert query streamer automatic flush frequency.
-      * @param streamerPerNodeBufferSize Insert query streamer size of per node query buffer.
+      * @param data                              Data.
+      * @param tblName                           Table name.
+      * @param schemaName                        Optional schema name.
+      * @param ctx                               Ignite context.
+      * @param streamerAllowOverwrite            Flag enabling overwriting existing values in cache.
+      * @param streamerFlushFrequency            Insert query streamer automatic flush frequency.
+      * @param streamerPerNodeBufferSize         Insert query streamer size of per node query buffer.
       * @param streamerPerNodeParallelOperations Insert query streamer maximum number of parallel operations for a single node.
-      *
       * @see [[org.apache.ignite.IgniteDataStreamer]]
       * @see [[org.apache.ignite.IgniteDataStreamer#allowOverwrite(boolean)]]
       * @see [[org.apache.ignite.IgniteDataStreamer#autoFlushFrequency(long)]]
@@ -105,6 +111,7 @@ private[apache] object QueryHelper {
       */
     def saveTable(data: DataFrame,
         tblName: String,
+        schemaName: Option[String],
         ctx: IgniteContext,
         streamerAllowOverwrite: Option[Boolean],
         streamerFlushFrequency: Option[Long],
@@ -117,6 +124,7 @@ private[apache] object QueryHelper {
             savePartition(iterator,
                 insertQry,
                 tblName,
+                schemaName,
                 ctx,
                 streamerAllowOverwrite,
                 streamerFlushFrequency,
@@ -128,15 +136,15 @@ private[apache] object QueryHelper {
     /**
       * Saves partition data to the Ignite table.
       *
-      * @param iterator Data iterator.
-      * @param insertQry Insert query.
-      * @param tblName Table name.
-      * @param ctx Ignite context.
-      * @param streamerAllowOverwrite Flag enabling overwriting existing values in cache.
-      * @param streamerFlushFrequency Insert query streamer automatic flush frequency.
-      * @param streamerPerNodeBufferSize Insert query streamer size of per node query buffer.
+      * @param iterator                          Data iterator.
+      * @param insertQry                         Insert query.
+      * @param tblName                           Table name.
+      * @param schemaName                        Optional schema name.
+      * @param ctx                               Ignite context.
+      * @param streamerAllowOverwrite            Flag enabling overwriting existing values in cache.
+      * @param streamerFlushFrequency            Insert query streamer automatic flush frequency.
+      * @param streamerPerNodeBufferSize         Insert query streamer size of per node query buffer.
       * @param streamerPerNodeParallelOperations Insert query streamer maximum number of parallel operations for a single node.
-      *
       * @see [[org.apache.ignite.IgniteDataStreamer]]
       * @see [[org.apache.ignite.IgniteDataStreamer#allowOverwrite(boolean)]]
       * @see [[org.apache.ignite.IgniteDataStreamer#autoFlushFrequency(long)]]
@@ -146,13 +154,14 @@ private[apache] object QueryHelper {
     private def savePartition(iterator: Iterator[Row],
         insertQry: String,
         tblName: String,
+        schemaName: Option[String],
         ctx: IgniteContext,
         streamerAllowOverwrite: Option[Boolean],
         streamerFlushFrequency: Option[Long],
         streamerPerNodeBufferSize: Option[Int],
         streamerPerNodeParallelOperations: Option[Int]
     ): Unit = {
-        val tblInfo = sqlTableInfo[Any, Any](ctx.ignite(), tblName).get
+        val tblInfo = sqlTableInfo[Any, Any](ctx.ignite(), tblName, schemaName).get
 
         val streamer = ctx.ignite().dataStreamer(tblInfo._1.getName)
 

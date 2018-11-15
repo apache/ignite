@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -43,7 +44,6 @@ import org.apache.ignite.spi.deployment.DeploymentResourceAdapter;
 import org.apache.ignite.spi.deployment.DeploymentSpi;
 import org.apache.ignite.spi.deployment.IgnoreIfPeerClassLoadingDisabled;
 import org.jetbrains.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
 import org.jsr166.ConcurrentLinkedHashMap;
 
 /**
@@ -76,7 +76,6 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSp
         IgniteSystemProperties.getBoolean(IGNITE_DEPLOYMENT_ADDITIONAL_CHECK);
 
     /** */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     @LoggerResource
     private IgniteLogger log;
 

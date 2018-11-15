@@ -44,6 +44,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterGroup;
@@ -302,7 +308,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * Test job to test possible indefinite recursion in detecting peer deploy aware.
      */
-    @SuppressWarnings({"UnusedDeclaration"})
     private class SelfReferencedJob extends ComputeJobAdapter implements GridPeerDeployAware {
         /** */
         private SelfReferencedJob ref;
@@ -874,6 +879,171 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         assertFalse(U.isOldestNodeVersionAtLeast(v241, Arrays.asList(node240, node241, node250, node250ts)));
         assertTrue(U.isOldestNodeVersionAtLeast(v250, Arrays.asList(node250, node250ts)));
         assertTrue(U.isOldestNodeVersionAtLeast(v250ts, Arrays.asList(node250, node250ts)));
+    }
+
+    /**
+     *
+     */
+    public void testDoInParallel() throws Throwable {
+        CyclicBarrier barrier = new CyclicBarrier(3);
+
+        ExecutorService executorService = Executors.newFixedThreadPool(3);
+
+        try {
+            IgniteUtils.doInParallel(3,
+                executorService,
+                Arrays.asList(1, 2, 3),
+                i -> {
+                    try {
+                        barrier.await(1, TimeUnit.SECONDS);
+                    }
+                    catch (Exception e) {
+                        throw new IgniteCheckedException(e);
+                    }
+
+                    return null;
+                }
+            );
+        }
+        finally {
+            executorService.shutdownNow();
+        }
+    }
+
+    /**
+     *
+     */
+    public void testDoInParallelBatch() {
+        CyclicBarrier barrier = new CyclicBarrier(3);
+
+        ExecutorService executorService = Executors.newFixedThreadPool(3);
+
+        try {
+            IgniteUtils.doInParallel(2,
+                executorService,
+                Arrays.asList(1, 2, 3),
+                i -> {
+                    try {
+                        barrier.await(400, TimeUnit.MILLISECONDS);
+                    }
+                    catch (Exception e) {
+                        throw new IgniteCheckedException(e);
+                    }
+
+                    return null;
+                }
+            );
+
+            fail("Should throw timeout exception");
+        }
+        catch (Exception e) {
+            assertTrue(e.toString(), X.hasCause(e, TimeoutException.class));
+        }
+        finally {
+            executorService.shutdownNow();
+        }
+    }
+
+    /**
+     * Test parallel execution in order.
+     */
+    public void testDoInParallelResultsOrder() throws IgniteCheckedException {
+        ExecutorService executorService = Executors.newFixedThreadPool(4);
+
+        try {
+            testOrder(executorService, 1, 1);
+            testOrder(executorService, 2, 1);
+            testOrder(executorService, 3, 1);
+            testOrder(executorService, 9, 1);
+            testOrder(executorService, 10, 1);
+            testOrder(executorService, 9999, 1);
+
+            testOrder(executorService, 1, 2);
+            testOrder(executorService, 2, 2);
+            testOrder(executorService, 3, 2);
+            testOrder(executorService, 9, 2);
+            testOrder(executorService, 10, 2);
+            testOrder(executorService, 9999, 2);
+
+            testOrder(executorService, 1, 3);
+            testOrder(executorService, 2, 3);
+            testOrder(executorService, 3, 3);
+            testOrder(executorService, 3, 3);
+            testOrder(executorService, 10, 3);
+            testOrder(executorService, 9999, 3);
+
+            testOrder(executorService, 1, 4);
+            testOrder(executorService, 2, 4);
+            testOrder(executorService, 3, 4);
+            testOrder(executorService, 9, 4);
+            testOrder(executorService, 10, 4);
+            testOrder(executorService, 9999, 4);
+        }
+        finally {
+            executorService.shutdownNow();
+        }
+    }
+
+    /**
+     * Template method to test parallel execution
+     *
+     * @param executorService ExecutorService.
+     * @param size Size.
+     * @param parallelism Parallelism.
+     * @throws IgniteCheckedException Exception.
+     */
+    private void testOrder(ExecutorService executorService, int size, int parallelism) throws IgniteCheckedException {
+        List<Integer> list = new ArrayList<>();
+        for (int i = 0; i < size; i++)
+            list.add(i);
+
+        Collection<Integer> results = IgniteUtils.doInParallel(
+            parallelism,
+            executorService,
+            list,
+            i -> i * 2
+        );
+
+        assertEquals(list.size(), results.size());
+
+        final int[] i = {0};
+        results.forEach(new Consumer<Integer>() {
+            @Override public void accept(Integer integer) {
+                assertEquals(2 * list.get(i[0]), integer.intValue());
+                i[0]++;
+            }
+        });
+    }
+
+    /**
+     *
+     */
+    public void testDoInParallelException() {
+        String expectedException = "ExpectedException";
+
+        ExecutorService executorService = Executors.newFixedThreadPool(1);
+
+        try {
+            IgniteUtils.doInParallel(
+                1,
+                executorService,
+                Arrays.asList(1, 2, 3),
+                i -> {
+                    if (Integer.valueOf(1).equals(i))
+                        throw new IgniteCheckedException(expectedException);
+
+                    return null;
+                }
+            );
+
+            fail("Should throw ParallelExecutionException");
+        }
+        catch (IgniteCheckedException e) {
+            assertEquals(expectedException, e.getMessage());
+        }
+        finally {
+            executorService.shutdownNow();
+        }
     }
 
     /**

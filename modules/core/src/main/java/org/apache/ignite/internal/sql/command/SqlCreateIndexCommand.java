@@ -17,20 +17,19 @@
 
 package org.apache.ignite.internal.sql.command;
 
-import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.internal.sql.SqlLexer;
-import org.apache.ignite.internal.sql.SqlLexerTokenType;
-import org.apache.ignite.internal.sql.SqlLexerToken;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Set;
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.internal.sql.SqlLexer;
+import org.apache.ignite.internal.sql.SqlLexerToken;
+import org.apache.ignite.internal.sql.SqlLexerTokenType;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.sql.SqlKeyword.ASC;
 import static org.apache.ignite.internal.sql.SqlKeyword.DESC;
@@ -179,7 +178,7 @@ public class SqlCreateIndexCommand implements SqlCommand {
      * @param lex Lexer.
      * @return Index name.
      */
-    private static @Nullable String parseIndexName(SqlLexer lex) {
+    @Nullable private static String parseIndexName(SqlLexer lex) {
         if (matchesKeyword(lex.lookAhead(), ON))
             return null;
 

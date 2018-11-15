@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -36,12 +41,6 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Tests service proxy timeouts.
@@ -102,7 +101,7 @@ public class IgniteServiceProxyTimeoutInitializedTest extends GridCommonAbstract
      *
      * @throws Exception If fail.
      */
-    @SuppressWarnings({"Convert2Lambda", "ThrowableResultOfMethodCallIgnored"})
+    @SuppressWarnings({"Convert2Lambda"})
     public void testUnavailableService() throws Exception {
         srvc = new TestWaitServiceImpl();
 
@@ -142,7 +141,7 @@ public class IgniteServiceProxyTimeoutInitializedTest extends GridCommonAbstract
      *
      * @throws Exception If fail.
      */
-    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "Convert2Lambda"})
+    @SuppressWarnings({"Convert2Lambda"})
     public void testServiceException() throws Exception {
         srvc = new HangServiceImpl();
 
