@@ -27,6 +27,7 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
@@ -48,14 +49,17 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Object[]
     private EncoderType encoderType = EncoderType.ONE_HOT_ENCODER;
 
     /** {@inheritDoc} */
-    @Override public EncoderPreprocessor<K, V> fit(DatasetBuilder<K, V> datasetBuilder,
-                                                   IgniteBiFunction<K, V, Object[]> basePreprocessor) {
+    @Override public EncoderPreprocessor<K, V> fit(
+        LearningEnvironmentBuilder envBuilder,
+        DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Object[]> basePreprocessor) {
         if (handledIndices.isEmpty())
             throw new RuntimeException("Add indices of handled features");
 
         try (Dataset<EmptyContext, EncoderPartitionData> dataset = datasetBuilder.build(
-            (upstream, upstreamSize) -> new EmptyContext(),
-            (upstream, upstreamSize, ctx) -> {
+            envBuilder,
+            (env, upstream, upstreamSize) -> new EmptyContext(),
+            (env, upstream, upstreamSize, ctx) -> {
                 // This array will contain not null values for handled indices
                 Map<String, Integer>[] categoryFrequencies = null;
 

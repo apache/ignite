@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
 /**
@@ -37,24 +38,31 @@ public interface PreprocessingTrainer<K, V, T, R> {
     /**
      * Fits preprocessor.
      *
+     * @param envBuilder Learning environment builder.
      * @param datasetBuilder Dataset builder.
      * @param basePreprocessor Base preprocessor.
      * @return Preprocessor.
      */
-    public IgniteBiFunction<K, V, R> fit(DatasetBuilder<K, V> datasetBuilder,
+    public IgniteBiFunction<K, V, R> fit(
+        LearningEnvironmentBuilder envBuilder,
+        DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, T> basePreprocessor);
 
     /**
      * Fits preprocessor.
      *
+     * @param envBuilder Learning environment builder.
      * @param ignite Ignite instance.
      * @param cache Ignite cache.
      * @param basePreprocessor Base preprocessor.
      * @return Preprocessor.
      */
-    public default IgniteBiFunction<K, V, R> fit(Ignite ignite, IgniteCache<K, V> cache,
+    public default IgniteBiFunction<K, V, R> fit(
+        LearningEnvironmentBuilder envBuilder,
+        Ignite ignite, IgniteCache<K, V> cache,
         IgniteBiFunction<K, V, T> basePreprocessor) {
         return fit(
+            envBuilder,
             new CacheBasedDatasetBuilder<>(ignite, cache),
             basePreprocessor
         );
@@ -68,9 +76,13 @@ public interface PreprocessingTrainer<K, V, T, R> {
      * @param basePreprocessor Base preprocessor.
      * @return Preprocessor.
      */
-    public default IgniteBiFunction<K, V, R> fit(Map<K, V> data, int parts,
+    public default IgniteBiFunction<K, V, R> fit(
+        LearningEnvironmentBuilder envBuilder,
+        Map<K, V> data,
+        int parts,
         IgniteBiFunction<K, V, T> basePreprocessor) {
         return fit(
+            envBuilder,
             new LocalDatasetBuilder<>(data, parts),
             basePreprocessor
         );

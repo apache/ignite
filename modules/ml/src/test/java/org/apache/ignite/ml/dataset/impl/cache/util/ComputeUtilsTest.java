@@ -33,6 +33,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
+import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -181,14 +182,15 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
                     datasetCacheName,
                     datasetId,
                     0,
-                    (upstream, upstreamSize, ctx) -> {
+                    (env, upstream, upstreamSize, ctx) -> {
                         cnt.incrementAndGet();
 
                         assertEquals(1, upstreamSize);
 
                         UpstreamEntry<Integer, Integer> e = upstream.next();
                         return new TestPartitionData(e.getKey() + e.getValue());
-                    }
+                    },
+                    LearningEnvironment.builder(123L)
                 ),
                 0
             );
@@ -228,13 +230,14 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
             upstreamCacheName,
             (k, v) -> true,
             datasetCacheName,
-            (upstream, upstreamSize) -> {
+            (env, upstream, upstreamSize) -> {
 
                 assertEquals(1, upstreamSize);
 
                 UpstreamEntry<Integer, Integer> e = upstream.next();
                 return e.getKey() + e.getValue();
             },
+            LearningEnvironment.builder(789L),
             0
         );
 

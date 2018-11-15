@@ -26,6 +26,8 @@ import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
+import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
@@ -52,6 +54,8 @@ public class Pipeline<K, V, R> {
 
     /** Final trainer stage. */
     private DatasetTrainer finalStage;
+
+    private LearningEnvironmentBuilder envBuilder = LearningEnvironment.builder();
 
     /**
      * Adds feature extractor as a zero stage.
@@ -110,6 +114,15 @@ public class Pipeline<K, V, R> {
     }
 
     /**
+     * Set learning environment builder.
+     *
+     * @param envBuilder Learning environment builder.
+     */
+    public void setEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
+        this.envBuilder = envBuilder;
+    }
+
+    /**
      * Fits the pipeline to the input mock data.
      *
      * @param data Data.
@@ -132,6 +145,7 @@ public class Pipeline<K, V, R> {
         preprocessors.forEach(e -> {
 
             finalFeatureExtractor = e.fit(
+                envBuilder,
                 datasetBuilder,
                 finalFeatureExtractor
             );

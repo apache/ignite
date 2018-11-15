@@ -20,6 +20,7 @@ package org.apache.ignite.ml.dataset;
 import java.io.Serializable;
 import java.util.Iterator;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
+import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
@@ -38,11 +39,12 @@ public interface PartitionContextBuilder<K, V, C extends Serializable> extends S
     /**
      * Builds a new partition {@code context} from an {@code upstream} data.
      *
+     * @param env Learning environment.
      * @param upstreamData Partition {@code upstream} data.
      * @param upstreamDataSize Partition {@code upstream} data size.
      * @return Partition {@code context}.
      */
-    public C build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize);
+    public C build(LearningEnvironment env, Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize);
 
     /**
      * Makes a composed partition {@code context} builder that first builds a {@code context} and then applies the
@@ -53,6 +55,6 @@ public interface PartitionContextBuilder<K, V, C extends Serializable> extends S
      * @return Composed partition {@code context} builder.
      */
     public default <C2 extends Serializable> PartitionContextBuilder<K, V, C2> andThen(IgniteFunction<C, C2> fun) {
-        return (upstreamData, upstreamDataSize) -> fun.apply(build(upstreamData, upstreamDataSize));
+        return (env, upstreamData, upstreamDataSize) -> fun.apply(build(env, upstreamData, upstreamDataSize));
     }
 }

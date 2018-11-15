@@ -25,6 +25,8 @@ import org.apache.ignite.ml.dataset.primitive.FeatureMatrixWithLabelsOnHeapData;
 import org.apache.ignite.ml.dataset.primitive.FeatureMatrixWithLabelsOnHeapDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Assert;
 import org.junit.Test;
@@ -42,10 +44,14 @@ public class MedianOfMedianConvergenceCheckerTest extends ConvergenceCheckerTest
 
         double error = checker.computeError(VectorUtils.of(1, 2), 4.0, notConvergedMdl);
         Assert.assertEquals(1.9, error, 0.01);
-        Assert.assertFalse(checker.isConverged(datasetBuilder, notConvergedMdl));
-        Assert.assertTrue(checker.isConverged(datasetBuilder, convergedMdl));
+
+        LearningEnvironmentBuilder envBuilder = LearningEnvironment.builder(777L);
+
+        Assert.assertFalse(checker.isConverged(envBuilder, datasetBuilder, notConvergedMdl));
+        Assert.assertTrue(checker.isConverged(envBuilder, datasetBuilder, convergedMdl));
 
         try(LocalDataset<EmptyContext, FeatureMatrixWithLabelsOnHeapData> dataset = datasetBuilder.build(
+            envBuilder,
             new EmptyContextBuilder<>(), new FeatureMatrixWithLabelsOnHeapDataBuilder<>(fExtr, lbExtr))) {
 
             double onDSError = checker.computeMeanErrorOnDataset(dataset, notConvergedMdl);

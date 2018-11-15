@@ -17,6 +17,8 @@
 
 package org.apache.ignite.ml.environment;
 
+import java.util.Random;
+import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
 
@@ -26,7 +28,7 @@ import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
  */
 public interface LearningEnvironment {
     /** Default environment */
-    public static final LearningEnvironment DEFAULT = builder().build();
+    public static final LearningEnvironment DEFAULT = builder().build(-1);
 
     /**
      * Returns Parallelism Strategy instance.
@@ -37,6 +39,13 @@ public interface LearningEnvironment {
      * Returns an instance of logger.
      */
     public MLLogger logger();
+
+    /**
+     * Random numbers generator.
+     *
+     * @return Random numbers generator.
+     */
+    public Random randomNumbersGenerator();
 
     /**
      * Returns an instance of logger for specific class.
@@ -51,4 +60,20 @@ public interface LearningEnvironment {
     public static LearningEnvironmentBuilder builder() {
         return new LearningEnvironmentBuilder();
     }
+
+    /**
+     * Creates an instance of LearningEnvironmentBuilder with a given seed.
+     *
+     * @param seed Seed.
+     */
+    public static LearningEnvironmentBuilder builder(long seed) {
+        return new LearningEnvironmentBuilder(seed);
+    }
+
+    /**
+     * Gets current partition. If this is called not in one of compute tasks of {@link Dataset}, will return -1.
+     *
+     * @return Partition.
+     */
+    public int partition();
 }

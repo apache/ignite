@@ -180,7 +180,8 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
         );
 
         try (Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset = datasetBuilder.build(
-            (upstream, upstreamSize) -> new EmptyContext(),
+            envBuilder,
+            (env, upstream, upstreamSize) -> new EmptyContext(),
             partDataBuilder
         )) {
             return dataset.compute(data -> {

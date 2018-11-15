@@ -40,6 +40,8 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.ml.dataset.PartitionContextBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
+import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
@@ -140,15 +142,21 @@ public class ComputeUtils {
      * @param datasetId Dataset ID.
      * @param part Partition index.
      * @param partDataBuilder Partition data builder.
+     * @param envBuilder Learning environment builder.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @param <C> Type of a partition {@code context}.
      * @param <D> Type of a partition {@code data}.
      * @return Partition {@code data}.
      */
-    public static <K, V, C extends Serializable, D extends AutoCloseable> D getData(Ignite ignite,
-        String upstreamCacheName, IgniteBiPredicate<K, V> filter, String datasetCacheName, UUID datasetId, int part,
-        PartitionDataBuilder<K, V, C, D> partDataBuilder) {
+    public static <K, V, C extends Serializable, D extends AutoCloseable> D getData(
+        Ignite ignite,
+        String upstreamCacheName, IgniteBiPredicate<K, V> filter,
+        String datasetCacheName,
+        UUID datasetId,
+        int part,
+        PartitionDataBuilder<K, V, C, D> partDataBuilder,
+        LearningEnvironmentBuilder envBuilder) {
 
         PartitionDataStorage dataStorage = (PartitionDataStorage)ignite
             .cluster()
@@ -156,6 +164,7 @@ public class ComputeUtils {
             .computeIfAbsent(String.format(DATA_STORAGE_KEY_TEMPLATE, datasetId), key -> new PartitionDataStorage());
 
         return dataStorage.computeDataIfAbsent(part, () -> {
+            LearningEnvironment env = envBuilder.build(part);
             IgniteCache<Integer, C> learningCtxCache = ignite.cache(datasetCacheName);
             C ctx = learningCtxCache.get(part);
 
@@ -175,7 +184,7 @@ public class ComputeUtils {
                     Iterator<UpstreamEntry<K, V>> iter = new IteratorWithConcurrentModificationChecker<>(cursor.iterator(), cnt,
                         "Cache expected to be not modified during dataset data building [partition=" + part + ']');
 
-                    return partDataBuilder.build(iter, cnt, ctx);
+                    return partDataBuilder.build(env, iter, cnt, ctx);
                 }
             }
 
@@ -202,15 +211,21 @@ public class ComputeUtils {
      * @param filter Filter for {@code upstream} data.
      * @param datasetCacheName Name of a partition {@code context} cache.
      * @param ctxBuilder Partition {@code context} builder.
+     * @param envBuilder Environment builder.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @param <C> Type of a partition {@code context}.
      */
-    public static <K, V, C extends Serializable> void initContext(Ignite ignite, String upstreamCacheName,
-        IgniteBiPredicate<K, V> filter, String datasetCacheName, PartitionContextBuilder<K, V, C> ctxBuilder, int retries,
+    public static <K, V, C extends Serializable> void initContext(
+        Ignite ignite, String upstreamCacheName,
+        IgniteBiPredicate<K, V> filter,
+        String datasetCacheName, PartitionContextBuilder<K, V, C> ctxBuilder,
+        LearningEnvironmentBuilder envBuilder,
+        int retries,
         int interval) {
         affinityCallWithRetries(ignite, Arrays.asList(datasetCacheName, upstreamCacheName), part -> {
             Ignite locIgnite = Ignition.localIgnite();
+            LearningEnvironment env = envBuilder.build(part);
 
             IgniteCache<K, V> locUpstreamCache = locIgnite.cache(upstreamCacheName);
 
@@ -228,7 +243,7 @@ public class ComputeUtils {
                 Iterator<UpstreamEntry<K, V>> iter = new IteratorWithConcurrentModificationChecker<>(cursor.iterator(), cnt,
                     "Cache expected to be not modified during dataset data building [partition=" + part + ']');
 
-                ctx = ctxBuilder.build(iter, cnt);
+                ctx = ctxBuilder.build(env, iter, cnt);
             }
 
             IgniteCache<Integer, C> datasetCache = locIgnite.cache(datasetCacheName);
@@ -247,15 +262,21 @@ public class ComputeUtils {
      * @param filter Filter for {@code upstream} data.
      * @param datasetCacheName Name of a partition {@code context} cache.
      * @param ctxBuilder Partition {@code context} builder.
+     * @param envBuilder Environment builder.
      * @param retries Number of retries for the case when one of partitions not found on the node.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @param <C> Type of a partition {@code context}.
      */
-    public static <K, V, C extends Serializable> void initContext(Ignite ignite, String upstreamCacheName,
-        IgniteBiPredicate<K, V> filter, String datasetCacheName, PartitionContextBuilder<K, V, C> ctxBuilder,
+    public static <K, V, C extends Serializable> void initContext(
+        Ignite ignite,
+        String upstreamCacheName,
+        IgniteBiPredicate<K, V> filter,
+        String datasetCacheName,
+        PartitionContextBuilder<K, V, C> ctxBuilder,
+        LearningEnvironmentBuilder envBuilder,
         int retries) {
-        initContext(ignite, upstreamCacheName, filter, datasetCacheName, ctxBuilder, retries, 0);
+        initContext(ignite, upstreamCacheName, filter, datasetCacheName, ctxBuilder, envBuilder, retries, 0);
     }
 
     /**

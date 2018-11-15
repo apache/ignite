@@ -48,13 +48,14 @@ public class LearningEnvironmentTest {
             .withSubSampleSize(0.3)
             .withSeed(0);
 
-        LearningEnvironment environment = LearningEnvironment.builder()
+        LearningEnvironmentBuilder envBuilder = LearningEnvironment.builder()
             .withParallelismStrategy(ParallelismStrategy.Type.ON_DEFAULT_POOL)
-            .withLoggingFactory(ConsoleLogger.factory(MLLogger.VerboseLevel.LOW))
-            .build();
-        trainer.setEnvironment(environment);
-        assertEquals(DefaultParallelismStrategy.class, environment.parallelismStrategy().getClass());
-        assertEquals(ConsoleLogger.class, environment.logger().getClass());
+            .withLoggingFactory(ConsoleLogger.factory(MLLogger.VerboseLevel.LOW));
+
+        trainer.setEnvironmentBuilder(envBuilder);
+
+        assertEquals(DefaultParallelismStrategy.class, trainer.learningEnvironment().parallelismStrategy().getClass());
+        assertEquals(ConsoleLogger.class, trainer.learningEnvironment().logger().getClass());
     }
 }
 

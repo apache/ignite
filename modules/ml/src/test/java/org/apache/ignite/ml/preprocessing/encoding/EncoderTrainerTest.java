@@ -51,6 +51,7 @@ public class EncoderTrainerTest extends TrainerTest {
             .withEncodedFeature(1);
 
         EncoderPreprocessor<Integer, String[]> preprocessor = strEncoderTrainer.fit(
+            testEnvBuilder(),
             datasetBuilder,
             (k, v) -> v
         );
@@ -77,6 +78,7 @@ public class EncoderTrainerTest extends TrainerTest {
             .withEncodedFeature(1);
 
         EncoderPreprocessor<Integer, Object[]> preprocessor = strEncoderTrainer.fit(
+            testEnvBuilder(),
             datasetBuilder,
             (k, v) -> v
         );
@@ -103,6 +105,7 @@ public class EncoderTrainerTest extends TrainerTest {
             .withEncodedFeature(1);
 
         EncoderPreprocessor<Integer, Object[]> preprocessor = strEncoderTrainer.fit(
+            testEnvBuilder(),
             datasetBuilder,
             (k, v) -> v
         );

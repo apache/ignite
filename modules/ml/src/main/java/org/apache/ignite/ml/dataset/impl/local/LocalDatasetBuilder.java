@@ -28,6 +28,8 @@ import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionContextBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
+import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
@@ -73,6 +75,7 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
 
     /** {@inheritDoc} */
     @Override public <C extends Serializable, D extends AutoCloseable> LocalDataset<C, D> build(
+        LearningEnvironmentBuilder envBuilder,
         PartitionContextBuilder<K, V, C> partCtxBuilder, PartitionDataBuilder<K, V, C, D> partDataBuilder) {
         List<C> ctxList = new ArrayList<>();
         List<D> dataList = new ArrayList<>();
@@ -91,13 +94,16 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
         int ptr = 0;
         for (int part = 0; part < partitions; part++) {
             int cnt = part == partitions - 1 ? filteredMap.size() - ptr : Math.min(partSize, filteredMap.size() - ptr);
+            LearningEnvironment env = envBuilder.build(part);
 
             C ctx = cnt > 0 ? partCtxBuilder.build(
+                env,
                 new IteratorWindow<>(firstKeysIter, k -> new UpstreamEntry<>(k, filteredMap.get(k)), cnt),
                 cnt
             ) : null;
 
             D data = cnt > 0 ? partDataBuilder.build(
+                env,
                 new IteratorWindow<>(secondKeysIter, k -> new UpstreamEntry<>(k, filteredMap.get(k)), cnt),
                 cnt,
                 ctx

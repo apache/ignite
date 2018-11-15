@@ -46,7 +46,7 @@ public class KNNClassificationTrainer extends SingleLabelDatasetTrainer<KNNClass
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
-        KNNClassificationModel res = new KNNClassificationModel(KNNUtils.buildDataset(datasetBuilder,
+        KNNClassificationModel res = new KNNClassificationModel(KNNUtils.buildDataset(envBuilder, datasetBuilder,
             featureExtractor, lbExtractor));
         if (mdl != null)
             res.copyStateFrom(mdl);

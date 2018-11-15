@@ -50,6 +50,7 @@ public class NormalizationTrainerTest extends TrainerTest {
         assertEquals(3., normalizationTrainer.p(), 0);
 
         NormalizationPreprocessor<Integer, double[]> preprocessor = normalizationTrainer.fit(
+            testEnvBuilder(),
             datasetBuilder,
             (k, v) -> VectorUtils.of(v)
         );

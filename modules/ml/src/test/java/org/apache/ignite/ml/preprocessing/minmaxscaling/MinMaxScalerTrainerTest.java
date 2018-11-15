@@ -46,6 +46,7 @@ public class MinMaxScalerTrainerTest extends TrainerTest {
         MinMaxScalerTrainer<Integer, Vector> standardizationTrainer = new MinMaxScalerTrainer<>();
 
         MinMaxScalerPreprocessor<Integer, Vector> preprocessor = standardizationTrainer.fit(
+            testEnvBuilder(),
             datasetBuilder,
             (k, v) -> v
         );

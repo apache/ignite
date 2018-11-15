@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.Iterator;
 import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleDatasetDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetDataBuilder;
+import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
 /**
@@ -41,12 +42,13 @@ public interface PartitionDataBuilder<K, V, C extends Serializable, D extends Au
     /**
      * Builds a new partition {@code data} from a partition {@code upstream} data and partition {@code context}
      *
+     * @param env Learning environment.
      * @param upstreamData Partition {@code upstream} data.
      * @param upstreamDataSize Partition {@code upstream} data size.
      * @param ctx Partition {@code context}.
      * @return Partition {@code data}.
      */
-    public D build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize, C ctx);
+    public D build(LearningEnvironment env, Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize, C ctx);
 
     /**
      * Makes a composed partition {@code data} builder that first builds a {@code data} and then applies the specified
@@ -58,6 +60,7 @@ public interface PartitionDataBuilder<K, V, C extends Serializable, D extends Au
      */
     public default <D2 extends AutoCloseable> PartitionDataBuilder<K, V, C, D2> andThen(
         IgniteBiFunction<D, C, D2> fun) {
-        return (upstreamData, upstreamDataSize, ctx) -> fun.apply(build(upstreamData, upstreamDataSize, ctx), ctx);
+        return (env, upstreamData, upstreamDataSize, ctx) ->
+            fun.apply(build(env, upstreamData, upstreamDataSize, ctx), ctx);
     }
 }

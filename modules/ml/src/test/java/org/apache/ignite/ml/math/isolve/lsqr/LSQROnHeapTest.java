@@ -47,6 +47,7 @@ public class LSQROnHeapTest extends TrainerTest {
 
         LSQROnHeap<Integer, double[]> lsqr = new LSQROnHeap<>(
             datasetBuilder,
+            testEnvBuilder(),
             new SimpleLabeledDatasetDataBuilder<>(
                 (k, v) -> VectorUtils.of(Arrays.copyOf(v, v.length - 1)),
                 (k, v) -> new double[]{v[3]}
@@ -80,6 +81,7 @@ public class LSQROnHeapTest extends TrainerTest {
 
         LSQROnHeap<Integer, double[]> lsqr = new LSQROnHeap<>(
             datasetBuilder,
+            testEnvBuilder(),
             new SimpleLabeledDatasetDataBuilder<>(
                 (k, v) -> VectorUtils.of(Arrays.copyOf(v, v.length - 1)),
                 (k, v) -> new double[]{v[3]}
@@ -113,6 +115,7 @@ public class LSQROnHeapTest extends TrainerTest {
 
         try (LSQROnHeap<Integer, double[]> lsqr = new LSQROnHeap<>(
             datasetBuilder,
+            testEnvBuilder(),
             new SimpleLabeledDatasetDataBuilder<>(
                 (k, v) -> VectorUtils.of(Arrays.copyOf(v, v.length - 1)),
                 (k, v) -> new double[]{v[4]}

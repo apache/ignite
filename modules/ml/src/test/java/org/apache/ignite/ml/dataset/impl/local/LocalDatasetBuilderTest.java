@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.ml.dataset.PartitionContextBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
+import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -91,10 +92,10 @@ public class LocalDatasetBuilderTest {
     /** */
     private LocalDataset<Serializable, TestPartitionData> buildDataset(
         LocalDatasetBuilder<Integer, Integer> builder) {
-        PartitionContextBuilder<Integer, Integer, Serializable> partCtxBuilder = (upstream, upstreamSize) -> null;
+        PartitionContextBuilder<Integer, Integer, Serializable> partCtxBuilder = (env, upstream, upstreamSize) -> null;
 
         PartitionDataBuilder<Integer, Integer, Serializable, TestPartitionData> partDataBuilder
-            = (upstream, upstreamSize, ctx) -> {
+            = (env, upstream, upstreamSize, ctx) -> {
             int[] arr = new int[Math.toIntExact(upstreamSize)];
 
             int ptr = 0;
@@ -105,6 +106,7 @@ public class LocalDatasetBuilderTest {
         };
 
         return builder.build(
+            LearningEnvironment.builder(123L),
             partCtxBuilder.andThen(x -> null),
             partDataBuilder.andThen((x, y) -> x)
         );

@@ -69,7 +69,10 @@ public abstract class GDBBinaryClassifierTrainer extends GDBTrainer {
         IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lExtractor) {
 
-        Set<Double> uniqLabels = builder.build(new EmptyContextBuilder<>(), new LabeledDatasetPartitionDataBuilderOnHeap<>(featureExtractor, lExtractor))
+        Set<Double> uniqLabels = builder.build(
+            envBuilder,
+            new EmptyContextBuilder<>(),
+            new LabeledDatasetPartitionDataBuilderOnHeap<>(featureExtractor, lExtractor))
             .compute((IgniteFunction<LabeledVectorSet<Double, LabeledVector>, Set<Double>>)x ->
                     Arrays.stream(x.labels()).boxed().collect(Collectors.toSet()), (a, b) -> {
                     if (a == null)

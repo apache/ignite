@@ -23,6 +23,8 @@ import org.apache.commons.math3.distribution.PoissonDistribution;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
@@ -69,12 +71,16 @@ public class BootstrappedDatasetBuilder<K,V> implements PartitionDataBuilder<K,V
     }
 
     /** {@inheritDoc} */
-    @Override public BootstrappedDatasetPartition build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize,
+    @Override public BootstrappedDatasetPartition build(
+        LearningEnvironment env,
+        Iterator<UpstreamEntry<K, V>> upstreamData,
+        long upstreamDataSize,
         EmptyContext ctx) {
 
         BootstrappedVector[] dataset = new BootstrappedVector[Math.toIntExact(upstreamDataSize)];
 
         int cntr = 0;
+        // TODO: use rng from env.
         PoissonDistribution poissonDistribution = new PoissonDistribution(subsampleSize);
         while(upstreamData.hasNext()) {
             UpstreamEntry<K, V> nextRow = upstreamData.next();

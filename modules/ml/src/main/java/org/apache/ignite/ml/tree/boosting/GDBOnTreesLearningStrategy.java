@@ -70,6 +70,7 @@ public class GDBOnTreesLearningStrategy  extends GDBLearningStrategy {
             externalLbToInternalMapping, loss, datasetBuilder, featureExtractor, lbExtractor);
 
         try (Dataset<EmptyContext, DecisionTreeData> dataset = datasetBuilder.build(
+            envBuilder,
             new EmptyContextBuilder<>(),
             new DecisionTreeDataBuilder<>(featureExtractor, lbExtractor, useIdx)
         )) {

@@ -22,6 +22,7 @@ import java.util.Map;
 import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
+import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Test;
@@ -47,6 +48,7 @@ public class ImputerTrainerTest extends TrainerTest {
             .withImputingStrategy(ImputingStrategy.MOST_FREQUENT);
 
         ImputerPreprocessor<Integer, Vector> preprocessor = imputerTrainer.fit(
+            testEnvBuilder(),
             datasetBuilder,
             (k, v) -> v
         );

@@ -28,6 +28,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.impl.cache.util.ComputeUtils;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
@@ -68,6 +69,9 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
     /** Dataset ID that is used to identify dataset in local storage on the node where computation is performed. */
     private final UUID datasetId;
 
+    /** Learning environment builder. */
+    private final LearningEnvironmentBuilder envBuilder;
+
     /**
      * Constructs a new instance of dataset based on Ignite Cache, which is used as {@code upstream} and as reliable storage for
      * partition {@code context} as well.
@@ -80,13 +84,14 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
      * @param datasetId Dataset ID.
      */
     public CacheBasedDataset(Ignite ignite, IgniteCache<K, V> upstreamCache, IgniteBiPredicate<K, V> filter,
-        IgniteCache<Integer, C> datasetCache, PartitionDataBuilder<K, V, C, D> partDataBuilder,
+        IgniteCache<Integer, C> datasetCache, LearningEnvironmentBuilder envBuilder, PartitionDataBuilder<K, V, C, D> partDataBuilder,
         UUID datasetId) {
         this.ignite = ignite;
         this.upstreamCache = upstreamCache;
         this.filter = filter;
         this.datasetCache = datasetCache;
         this.partDataBuilder = partDataBuilder;
+        this.envBuilder = envBuilder;
         this.datasetId = datasetId;
     }
 
@@ -105,7 +110,8 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
                 datasetCacheName,
                 datasetId,
                 part,
-                partDataBuilder
+                partDataBuilder,
+                envBuilder
             );
 
             if (data != null) {
@@ -134,7 +140,8 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
                 datasetCacheName,
                 datasetId,
                 part,
-                partDataBuilder
+                partDataBuilder,
+                envBuilder
             );
 
             return data != null ? map.apply(data, part) : null;

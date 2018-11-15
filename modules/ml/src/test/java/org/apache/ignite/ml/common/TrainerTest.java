@@ -19,6 +19,8 @@ package org.apache.ignite.ml.common;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -1158,4 +1160,8 @@ public class TrainerTest {
         {3, 9.959296741639132, -9.762961500922069},
         {3, 9.882357321966778, -9.069477551120192}
     };
+
+    protected LearningEnvironmentBuilder testEnvBuilder() {
+        return LearningEnvironment.builder(123456L);
+    }
 }

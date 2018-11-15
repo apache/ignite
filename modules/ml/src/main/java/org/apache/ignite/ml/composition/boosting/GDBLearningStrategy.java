@@ -29,6 +29,7 @@ import org.apache.ignite.ml.composition.boosting.loss.Loss;
 import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregator;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
@@ -41,6 +42,9 @@ import org.jetbrains.annotations.NotNull;
  * Learning strategy for gradient boosting.
  */
 public class GDBLearningStrategy {
+    /** Learning environment builder. */
+    protected LearningEnvironmentBuilder envBuilder;
+
     /** Learning environment. */
     protected LearningEnvironment environment;
 
@@ -113,7 +117,7 @@ public class GDBLearningStrategy {
 
             WeightedPredictionsAggregator aggregator = new WeightedPredictionsAggregator(weights, meanLbVal);
             ModelsComposition currComposition = new ModelsComposition(models, aggregator);
-            if (convCheck.isConverged(datasetBuilder, currComposition))
+            if (convCheck.isConverged(envBuilder, datasetBuilder, currComposition))
                 break;
 
             IgniteBiFunction<K, V, Double> lbExtractorWrap = (k, v) -> {
@@ -157,10 +161,11 @@ public class GDBLearningStrategy {
     /**
      * Sets learning environment.
      *
-     * @param environment Learning Environment.
+     * @param envBuilder Learning Environment.
      */
-    public GDBLearningStrategy withEnvironment(LearningEnvironment environment) {
-        this.environment = environment;
+    public GDBLearningStrategy withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
+        this.envBuilder = envBuilder;
+        this.environment = envBuilder.build();
         return this;
     }
 

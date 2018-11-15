@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.environment;
 
+import java.util.Random;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.environment.logging.NoOpLogger;
 import org.apache.ignite.ml.environment.parallelism.DefaultParallelismStrategy;
@@ -32,12 +33,19 @@ public class LearningEnvironmentBuilder {
     /** Logging factory. */
     private MLLogger.Factory loggingFactory;
 
+    private long seed;
+
     /**
      * Creates an instance of LearningEnvironmentBuilder.
      */
     LearningEnvironmentBuilder() {
+        this(new Random().nextLong());
+    }
+
+    LearningEnvironmentBuilder(long seed) {
         parallelismStgy = NoParallelismStrategy.INSTANCE;
         loggingFactory = NoOpLogger.factory();
+        this.seed = seed;
     }
 
     /**
@@ -80,11 +88,21 @@ public class LearningEnvironmentBuilder {
     }
 
     /**
-     * Create an instance of LearningEnvironment.
+     * Create an instance of LearningEnvironment for given partition.
+     *
+     * @param part Partition.
+     */
+    public LearningEnvironment build(int part) {
+        return new LearningEnvironmentImpl(part, seed, parallelismStgy, loggingFactory);
+    }
+
+    /**
+     * Create an instance of LearningEnvironment for given partition.
      */
     public LearningEnvironment build() {
-        return new LearningEnvironmentImpl(parallelismStgy, loggingFactory);
+        return new LearningEnvironmentImpl(-1, seed, parallelismStgy, loggingFactory);
     }
+
 
     /**
      * Default LearningEnvironment implementation.
@@ -94,17 +112,27 @@ public class LearningEnvironmentBuilder {
         private final ParallelismStrategy parallelismStgy;
         /** Logging factory. */
         private final MLLogger.Factory loggingFactory;
+        /** Partition. */
+        private final int part;
+        /** Random numbers generator. */
+        private final Random randomNumGen;
 
         /**
          * Creates an instance of LearningEnvironmentImpl.
          *
+         * @param part Partition.
          * @param parallelismStgy Parallelism strategy.
          * @param loggingFactory Logging factory.
          */
-        private LearningEnvironmentImpl(ParallelismStrategy parallelismStgy,
+        private LearningEnvironmentImpl(
+            int part,
+            long seed,
+            ParallelismStrategy parallelismStgy,
             MLLogger.Factory loggingFactory) {
+            this.part = part;
             this.parallelismStgy = parallelismStgy;
             this.loggingFactory = loggingFactory;
+            randomNumGen = new Random(seed + part);
         }
 
         /** {@inheritDoc} */
@@ -118,8 +146,18 @@ public class LearningEnvironmentBuilder {
         }
 
         /** {@inheritDoc} */
+        @Override public Random randomNumbersGenerator() {
+            return randomNumGen;
+        }
+
+        /** {@inheritDoc} */
         @Override public <T> MLLogger logger(Class<T> clazz) {
             return loggingFactory.create(clazz);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int partition() {
+            return part;
         }
     }
 }
