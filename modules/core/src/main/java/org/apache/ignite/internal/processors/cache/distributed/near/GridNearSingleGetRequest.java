@@ -83,6 +83,9 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
     /** TTL for read operation. */
     private long accessTtl;
 
+    /** Transaction label. */
+    private @Nullable String txLbl;
+
     /** */
     private MvccSnapshot mvccSnapshot;
 
@@ -108,6 +111,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
      * @param addReader Add reader flag.
      * @param needVer {@code True} if entry version is needed.
      * @param addDepInfo Deployment info.
+     * @param txLbl Transaction label.
      * @param mvccSnapshot MVCC snapshot.
      */
     public GridNearSingleGetRequest(
@@ -125,6 +129,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
         boolean needVer,
         boolean addDepInfo,
         boolean recovery,
+        @Nullable String txLbl,
         MvccSnapshot mvccSnapshot
     ) {
         assert key != null;
@@ -138,6 +143,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
         this.createTtl = createTtl;
         this.accessTtl = accessTtl;
         this.addDepInfo = addDepInfo;
+        this.txLbl = txLbl;
         this.mvccSnapshot = mvccSnapshot;
 
         if (readThrough)
@@ -219,6 +225,15 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
         assert key != null;
 
         return key.partition();
+    }
+
+    /**
+     * Get transaction label (may be null).
+     *
+     * @return Transaction label;
+     */
+    @Nullable public String txLabel() {
+        return txLbl;
     }
 
     /**
@@ -337,7 +352,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
                 reader.incrementState();
 
             case 8:
-                subjId = reader.readUuid("subjId");
+                mvccSnapshot = reader.readMessage("mvccSnapshot");
 
                 if (!reader.isLastRead())
                     return false;
@@ -345,7 +360,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
                 reader.incrementState();
 
             case 9:
-                taskNameHash = reader.readInt("taskNameHash");
+                subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -353,7 +368,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
                 reader.incrementState();
 
             case 10:
-                topVer = reader.readMessage("topVer");
+                taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
                     return false;
@@ -361,7 +376,15 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
                 reader.incrementState();
 
             case 11:
-                mvccSnapshot = reader.readMessage("mvccSnapshot");
+                topVer = reader.readMessage("topVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 12:
+                txLbl = reader.readString("txLbl");
 
                 if (!reader.isLastRead())
                     return false;
@@ -419,25 +442,31 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeUuid("subjId", subjId))
+                if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeInt("taskNameHash", taskNameHash))
+                if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeMessage("topVer", topVer))
+                if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
+                if (!writer.writeMessage("topVer", topVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 12:
+                if (!writer.writeString("txLbl", txLbl))
                     return false;
 
                 writer.incrementState();
@@ -459,7 +488,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 12;
+        return 13;
     }
 
     /** {@inheritDoc} */

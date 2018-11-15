@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.StartCachesInParallelTest;
 import org.apache.ignite.util.GridCommandHandlerIndexingTest;
 
 /**
@@ -32,6 +33,7 @@ public class IgniteCacheWithIndexingAndPersistenceTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Ignite Cache With Indexing And Persistence Test Suite");
 
         suite.addTestSuite(GridCommandHandlerIndexingTest.class);
+        suite.addTestSuite(StartCachesInParallelTest.class);
 
         return suite;
     }

@@ -444,7 +444,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
 
             // We can cleanup previous row only if it was deleted by another
             // transaction and delete version is less or equal to cleanup one
-            if (rowNewCrd < mvccCoordinatorVersion() || Long.compare(cleanupVer, rowNewCntr) >= 0)
+            if (rowNewCrd < mvccCoordinatorVersion() || cleanupVer >= rowNewCntr)
                 setFlags(CAN_CLEANUP);
         }
 
