@@ -24,7 +24,7 @@ import org.apache.ignite.ml.math.util.MapUtil;
 /** Service class is used to calculate amount of values which are below the threshold. */
 public class BernoulliNaiveBayesSumsHolder implements AutoCloseable, Serializable {
     /** Serial version uid. */
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = -2059362365851744206L;
     /** Sum of all values above threshold for all features for each label */
     Map<Double, long[]> onesCountPerLbl = new HashMap<>();
     /** Rows count for each label */
