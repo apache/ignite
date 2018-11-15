@@ -44,7 +44,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
-import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -53,7 +52,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
-import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
@@ -62,8 +60,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
-import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -209,7 +205,6 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkAc
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
-import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
@@ -1568,111 +1563,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         return cursor;
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public <K, V> QueryCursor<Cache.Entry<K,V>> queryLocalSql(String schemaName, String cacheName,
-        final SqlQuery qry, final IndexingQueryFilter filter, final boolean keepBinary) throws IgniteCheckedException {
-        String type = qry.getType();
-        String sqlQry = qry.getSql();
-        String alias = qry.getAlias();
-        Object[] params = qry.getArgs();
-
-        GridQueryCancel cancel = new GridQueryCancel();
-
-        final GridCloseableIterator<IgniteBiTuple<K, V>> i = queryLocalSql(schemaName, cacheName, sqlQry, alias,
-            F.asList(params), type, filter, cancel);
-
-        return new QueryCursorImpl<>(new Iterable<Cache.Entry<K, V>>() {
-            @SuppressWarnings("NullableProblems")
-            @Override public Iterator<Cache.Entry<K, V>> iterator() {
-                return new ClIter<Cache.Entry<K, V>>() {
-                    @Override public void close() throws Exception {
-                        i.close();
-                    }
-
-                    @Override public boolean hasNext() {
-                        return i.hasNext();
-                    }
-
-                    @Override public Cache.Entry<K, V> next() {
-                        IgniteBiTuple<K, V> t = i.next();
-
-                        K key = (K)CacheObjectUtils.unwrapBinaryIfNeeded(objectContext(), t.get1(), keepBinary, false);
-                        V val = (V)CacheObjectUtils.unwrapBinaryIfNeeded(objectContext(), t.get2(), keepBinary, false);
-
-                        return new CacheEntryImpl<>(key, val);
-                    }
-
-                    @Override public void remove() {
-                        throw new UnsupportedOperationException();
-                    }
-                };
-            }
-        }, cancel);
-    }
-
-    /**
-     * Executes regular query.
-     *
-     * @param schemaName Schema name.
-     * @param cacheName Cache name.
-     * @param qry Query.
-     * @param alias Table alias.
-     * @param params Query parameters.
-     * @param type Query return type.
-     * @param filter Cache name and key filter.
-     * @param cancel Cancel object.
-     * @return Queried rows.
-     * @throws IgniteCheckedException If failed.
-     */
-    @SuppressWarnings("unchecked")
-    <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalSql(String schemaName, String cacheName,
-        final String qry, String alias, @Nullable final Collection<Object> params, String type,
-        final IndexingQueryFilter filter, GridQueryCancel cancel) throws IgniteCheckedException {
-        final H2TableDescriptor tbl = tableDescriptor(schemaName, cacheName, type);
-
-        if (tbl == null)
-            throw new IgniteSQLException("Failed to find SQL table for type: " + type,
-                IgniteQueryErrorCode.TABLE_NOT_FOUND);
-
-        String sql = generateQuery(qry, alias, tbl);
-
-        Connection conn = connectionForThread(tbl.schemaName());
-
-        H2Utils.setupConnection(conn, false, false);
-
-        GridH2QueryContext qctx = new GridH2QueryContext(nodeId, nodeId, 0, LOCAL).filter(filter)
-            .distributedJoinMode(OFF);
-
-        PreparedStatement stmt = preparedStatementWithParams(conn, sql, params, true);
-
-        MvccQueryTracker mvccTracker = mvccTracker(stmt, false);
-
-        if (mvccTracker != null)
-            qctx.mvccSnapshot(mvccTracker.snapshot());
-
-        GridH2QueryContext.set(qctx);
-
-        GridRunningQueryInfo run = new GridRunningQueryInfo(qryIdGen.incrementAndGet(), qry, SQL, schemaName,
-            U.currentTimeMillis(), null, true);
-
-        runs.put(run.id(), run);
-
-        try {
-            ResultSet rs = executeSqlQueryWithTimer(stmt, conn, sql, params, 0, cancel);
-
-            return new H2KeyValueIterator(rs);
-        }
-        finally {
-            GridH2QueryContext.clearThreadLocal();
-
-            if (mvccTracker != null)
-                mvccTracker.onDone();
-
-            runs.remove(run.id());
-        }
-    }
-
     /**
      * Initialises MVCC filter and returns MVCC query tracker if needed.
      * @param stmt Prepared statement.
@@ -1754,8 +1644,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             PreparedStatementEx stmtEx = stmt.unwrap(PreparedStatementEx.class);
 
             if (mvccEnabled) {
-                assert mvccCacheId != null;
-
                 stmtEx.putMeta(MVCC_CACHE_ID, mvccCacheId);
                 stmtEx.putMeta(MVCC_STATE, Boolean.TRUE);
             }
@@ -1840,9 +1728,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public <K, V> QueryCursor<Cache.Entry<K, V>> queryDistributedSql(String schemaName, String cacheName,
-        SqlQuery qry, boolean keepBinary) {
+    @Override public SqlFieldsQuery generateFieldsQuery(String cacheName, SqlQuery qry) {
+        String schemaName = schema(cacheName);
+
         String type = qry.getType();
 
         H2TableDescriptor tblDesc = tableDescriptor(schemaName, cacheName, type);
@@ -1860,58 +1748,80 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteException(e);
         }
 
-        SqlFieldsQuery fqry = new SqlFieldsQuery(sql);
+        SqlFieldsQuery res = new SqlFieldsQuery(sql);
 
-        fqry.setArgs(qry.getArgs());
-        fqry.setPageSize(qry.getPageSize());
-        fqry.setDistributedJoins(qry.isDistributedJoins());
-        fqry.setPartitions(qry.getPartitions());
-        fqry.setLocal(qry.isLocal());
+        res.setArgs(qry.getArgs());
+        res.setDistributedJoins(qry.isDistributedJoins());
+        res.setLocal(qry.isLocal());
+        res.setPageSize(qry.getPageSize());
+        res.setPartitions(qry.getPartitions());
+        res.setReplicatedOnly(qry.isReplicatedOnly());
+        res.setSchema(schemaName);
+        res.setSql(sql);
 
         if (qry.getTimeout() > 0)
-            fqry.setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS);
+            res.setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS);
 
-        final QueryCursor<List<?>> res =
-            querySqlFields(schemaName, fqry, null, keepBinary, true, null, null).get(0);
+        return res;
+    }
 
-        final Iterable<Cache.Entry<K, V>> converted = new Iterable<Cache.Entry<K, V>>() {
-            @Override public Iterator<Cache.Entry<K, V>> iterator() {
-                final Iterator<List<?>> iter0 = res.iterator();
+    /**
+     * Prepares statement for query.
+     *
+     * @param qry Query string.
+     * @param tableAlias table alias.
+     * @param tbl Table to use.
+     * @return Prepared statement.
+     * @throws IgniteCheckedException In case of error.
+     */
+    private static String generateQuery(String qry, String tableAlias, H2TableDescriptor tbl)
+        throws IgniteCheckedException {
+        assert tbl != null;
 
-                return new Iterator<Cache.Entry<K, V>>() {
-                    @Override public boolean hasNext() {
-                        return iter0.hasNext();
-                    }
+        final String qry0 = qry;
 
-                    @Override public Cache.Entry<K, V> next() {
-                        List<?> l;
+        String t = tbl.fullTableName();
 
-                        try {
-                            l = iter0.next();
-                        }
-                        catch (CacheException e) {
-                            throw e;
-                        }
-                        catch (Exception e) {
-                            throw new CacheException(e);
-                        }
+        String from = " ";
 
-                        return new CacheEntryImpl<>((K)l.get(0), (V)l.get(1));
-                    }
+        qry = qry.trim();
 
-                    @Override public void remove() {
-                        throw new UnsupportedOperationException();
-                    }
-                };
+        String upper = qry.toUpperCase();
+
+        if (upper.startsWith("SELECT")) {
+            qry = qry.substring(6).trim();
+
+            final int star = qry.indexOf('*');
+
+            if (star == 0)
+                qry = qry.substring(1).trim();
+            else if (star > 0) {
+                if (F.eq('.', qry.charAt(star - 1))) {
+                    t = qry.substring(0, star - 1);
+
+                    qry = qry.substring(star + 1).trim();
+                }
+                else
+                    throw new IgniteCheckedException("Invalid query (missing alias before asterisk): " + qry0);
             }
-        };
+            else
+                throw new IgniteCheckedException("Only queries starting with 'SELECT *' and 'SELECT alias.*' " +
+                    "are supported (rewrite your query or use SqlFieldsQuery instead): " + qry0);
 
-        // No metadata for SQL queries.
-        return new QueryCursorImpl<Cache.Entry<K, V>>(converted) {
-            @Override public void close() {
-                res.close();
-            }
-        };
+            upper = qry.toUpperCase();
+        }
+
+        if (!upper.startsWith("FROM"))
+            from = " FROM " + t + (tableAlias != null ? " as " + tableAlias : "") +
+                (upper.startsWith("WHERE") || upper.startsWith("ORDER") || upper.startsWith("LIMIT") ?
+                    " " : " WHERE ");
+
+        if(tableAlias != null)
+            t = tableAlias;
+
+        qry = "SELECT " + t + "." + KEY_FIELD_NAME + ", " + t + "." + VAL_FIELD_NAME + from + qry;
+
+        return qry;
     }
 
     /**
@@ -2771,64 +2681,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 throw new IgniteSQLException("SELECT FOR UPDATE query requires transactional cache " +
                     "with MVCC enabled.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
-    }
-
-    /**
-     * Prepares statement for query.
-     *
-     * @param qry Query string.
-     * @param tableAlias table alias.
-     * @param tbl Table to use.
-     * @return Prepared statement.
-     * @throws IgniteCheckedException In case of error.
-     */
-    private String generateQuery(String qry, String tableAlias, H2TableDescriptor tbl) throws IgniteCheckedException {
-        assert tbl != null;
-
-        final String qry0 = qry;
-
-        String t = tbl.fullTableName();
-
-        String from = " ";
-
-        qry = qry.trim();
-
-        String upper = qry.toUpperCase();
-
-        if (upper.startsWith("SELECT")) {
-            qry = qry.substring(6).trim();
-
-            final int star = qry.indexOf('*');
-
-            if (star == 0)
-                qry = qry.substring(1).trim();
-            else if (star > 0) {
-                if (F.eq('.', qry.charAt(star - 1))) {
-                    t = qry.substring(0, star - 1);
-
-                    qry = qry.substring(star + 1).trim();
-                }
-                else
-                    throw new IgniteCheckedException("Invalid query (missing alias before asterisk): " + qry0);
-            }
-            else
-                throw new IgniteCheckedException("Only queries starting with 'SELECT *' and 'SELECT alias.*' " +
-                    "are supported (rewrite your query or use SqlFieldsQuery instead): " + qry0);
-
-            upper = qry.toUpperCase();
-        }
-
-        if (!upper.startsWith("FROM"))
-            from = " FROM " + t + (tableAlias != null ? " as " + tableAlias : "") +
-                (upper.startsWith("WHERE") || upper.startsWith("ORDER") || upper.startsWith("LIMIT") ?
-                    " " : " WHERE ");
-
-        if(tableAlias != null)
-            t = tableAlias;
-
-        qry = "SELECT " + t + "." + KEY_FIELD_NAME + ", " + t + "." + VAL_FIELD_NAME + from + qry;
-
-        return qry;
     }
 
     /**
@@ -3841,12 +3693,5 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         return false;
-    }
-
-    /**
-     * Closeable iterator.
-     */
-    private interface ClIter<X> extends AutoCloseable, Iterator<X> {
-        // No-op.
     }
 }
