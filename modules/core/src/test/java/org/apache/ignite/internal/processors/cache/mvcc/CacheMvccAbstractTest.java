@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -687,19 +686,19 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                                 }
 
                                 case SQL_SUM: {
-                                    BigDecimal sum;
+                                    Long sum;
 
                                     if (rnd.nextBoolean()) {
                                         List<List<?>> res =  cache.cache.query(sumQry).getAll();
 
                                         assertEquals(1, res.size());
 
-                                        sum = (BigDecimal)res.get(0).get(0);
+                                        sum = (Long)res.get(0).get(0);
                                     }
                                     else {
                                         Map res = readAllByMode(cache.cache, keys, readMode, ACCOUNT_CODEC);
 
-                                        sum = (BigDecimal)((Map.Entry)res.entrySet().iterator().next()).getValue();
+                                        sum = (Long)((Map.Entry)res.entrySet().iterator().next()).getValue();
                                     }
 
                                     assertEquals(ACCOUNT_START_VAL * ACCOUNTS, sum.intValue());
