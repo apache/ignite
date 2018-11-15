@@ -112,7 +112,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
      * @return Atomicity mode.
      */
     protected CacheAtomicityMode atomicityMode() {
-        return TRANSACTIONAL_SNAPSHOT;
+        return TRANSACTIONAL;
     }
 
     /** {@inheritDoc} */
