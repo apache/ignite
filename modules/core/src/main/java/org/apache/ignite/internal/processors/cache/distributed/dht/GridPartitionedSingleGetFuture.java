@@ -367,7 +367,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
             }
         }
 
-        ClusterNode affNode = cctx.selectAffinityNodeBalanced(affNodes, canRemap);
+        ClusterNode affNode = cctx.selectAffinityNodeBalanced(affNodes, part, canRemap);
 
         if (affNode == null) {
             onDone(serverNotFoundError(part, topVer));
@@ -775,6 +775,13 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     private void remap(final AffinityTopologyVersion topVer) {
         cctx.closures().runLocalSafe(new Runnable() {
             @Override public void run() {
+                GridDhtTopologyFuture lastFut = cctx.shared().exchange().lastFinishedFuture();
+
+                Throwable error = lastFut.validateCache(cctx, recovery, true, key, null);
+
+                if (error != null)
+                    onDone(error);
+
                 map(topVer);
             }
         });
