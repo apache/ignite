@@ -443,7 +443,6 @@ class OptimizedObjectInputStream extends ObjectInputStream {
      * @throws ClassNotFoundException If class not found.
      * @throws IOException In case of error.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     void readFields(Object obj, OptimizedClassDescriptor.ClassFields fieldOffs) throws ClassNotFoundException,
         IOException {
         for (int i = 0; i < fieldOffs.size(); i++) {
@@ -579,7 +578,6 @@ class OptimizedObjectInputStream extends ObjectInputStream {
      * @throws ClassNotFoundException If class not found.
      * @throws IOException In case of error.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     Object readSerializable(Class<?> cls, List<Method> mtds, Method readResolveMtd,
         OptimizedClassDescriptor.Fields fields) throws ClassNotFoundException, IOException {
         Object obj;
@@ -1135,7 +1133,6 @@ class OptimizedObjectInputStream extends ObjectInputStream {
          * @throws IOException In case of error.
          * @throws ClassNotFoundException If class not found.
          */
-        @SuppressWarnings("ForLoopReplaceableByForEach")
         private GetFieldImpl(OptimizedObjectInputStream in) throws IOException, ClassNotFoundException {
             fieldInfo = in.curFields;
 

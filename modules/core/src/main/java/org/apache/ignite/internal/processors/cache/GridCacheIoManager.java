@@ -300,7 +300,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param cacheMsg Message.
      * @param plc Message policy.
      */
-    @SuppressWarnings("unchecked")
     private void handleMessage(UUID nodeId, GridCacheMessage cacheMsg, byte plc) {
         handleMessage(nodeId, cacheMsg, cacheMsg.cacheGroupMessage() ? grpHandlers : cacheHandlers, plc);
     }
@@ -557,7 +556,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param c Handler closure.
      * @param plc Message policy.
      */
-    @SuppressWarnings({"unchecked", "ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
+    @SuppressWarnings({"ConstantConditions"})
     private void onMessage0(final UUID nodeId, final GridCacheMessage cacheMsg,
         final IgniteBiInClosure<UUID, GridCacheMessage> c, byte plc) {
         try {
@@ -1150,7 +1149,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @throws IgniteCheckedException If sending failed.
      * @throws ClusterTopologyCheckedException If receiver left.
      */
-    @SuppressWarnings("unchecked")
     public void send(ClusterNode node, GridCacheMessage msg, byte plc) throws IgniteCheckedException {
         assert !node.isLocal() : node;
 
@@ -1502,7 +1500,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param nodeId Sender node ID.
      * @param cacheMsg Message.
      */
-    @SuppressWarnings({"ErrorNotRethrown", "unchecked"})
+    @SuppressWarnings({"ErrorNotRethrown"})
     private void unmarshall(UUID nodeId, GridCacheMessage cacheMsg) {
         if (cctx.localNodeId().equals(nodeId))
             return;
@@ -1597,7 +1595,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings({"CatchGenericClass", "unchecked"})
         @Override public void onMessage(final UUID nodeId, Object msg, byte plc) {
             if (log.isDebugEnabled())
                 log.debug("Received cache ordered message [nodeId=" + nodeId + ", msg=" + msg + ']');

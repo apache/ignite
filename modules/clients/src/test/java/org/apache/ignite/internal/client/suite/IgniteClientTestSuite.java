@@ -67,6 +67,7 @@ import org.apache.ignite.internal.processors.rest.protocols.tcp.TcpRestParserSel
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolConnectSelfTest;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolGetAllAsArrayTest;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolServerSelfTest;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolStringAtomicDatastructuresSelfTest;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolStringSelfTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
 
@@ -108,6 +109,7 @@ public class IgniteClientTestSuite extends TestSuite {
         suite.addTestSuite(RedisProtocolGetAllAsArrayTest.class);
         suite.addTestSuite(RedisProtocolConnectSelfTest.class);
         suite.addTestSuite(RedisProtocolServerSelfTest.class);
+        suite.addTestSuite(RedisProtocolStringAtomicDatastructuresSelfTest.class);
 
         suite.addTestSuite(RestProcessorStartSelfTest.class);
 

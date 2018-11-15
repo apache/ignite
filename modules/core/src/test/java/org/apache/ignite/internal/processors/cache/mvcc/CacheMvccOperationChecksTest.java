@@ -106,14 +106,6 @@ public class CacheMvccOperationChecksTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
-    public void testPeekOperationsUnsupported() throws Exception {
-        checkOperationUnsupported("localPeek", m("Peek"), t(Object.class, CachePeekMode[].class), 1,
-            new CachePeekMode[]{CachePeekMode.NEAR});
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
     public void testEvictOperationsUnsupported() throws Exception {
         checkOperationUnsupported("localEvict", m("Evict"), t(Collection.class), Collections.singleton(1));
     }
@@ -162,7 +154,6 @@ public class CacheMvccOperationChecksTest extends CacheMvccAbstractTest {
 
             try (IgniteCache<Integer, String> cache = node.createCache(cfg)) {
                 GridTestUtils.assertThrows(log, new Callable<Void>() {
-                    @SuppressWarnings("unchecked")
                     @Override public Void call() throws Exception {
                         try {
                             Object o = U.invoke(null, cache, mtdName, paramTypes, args);
