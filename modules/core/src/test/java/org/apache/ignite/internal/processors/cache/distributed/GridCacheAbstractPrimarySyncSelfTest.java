@@ -47,7 +47,8 @@ public abstract class GridCacheAbstractPrimarySyncSelfTest extends GridCommonAbs
 
     /** {@inheritDoc} */
     @Override protected void setUp() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+        if (nearConfiguration() != null)
+            MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
 
         super.setUp();
     }
