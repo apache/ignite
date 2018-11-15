@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Iterator;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -115,10 +115,9 @@ public class CacheGroupContext {
     /** */
     private final boolean storeCacheId;
 
-    /** */
-    private volatile List<GridCacheContext> caches;
+    /** We modify content under lock, by making defencive copy, field always contains unmodifiable list. */
+    private volatile List<GridCacheContext> caches = Collections.unmodifiableList(new ArrayList<>());
 
-    /** */
     private volatile List<GridCacheContext> contQryCaches;
 
     /** */
@@ -152,16 +151,16 @@ public class CacheGroupContext {
     private final ReuseList reuseList;
 
     /** */
-    private boolean drEnabled;
+    private volatile boolean drEnabled;
 
     /** */
-    private boolean qryEnabled;
+    private volatile boolean qryEnabled;
 
     /** */
-    private boolean mvccEnabled;
+    private final boolean mvccEnabled;
 
     /** MXBean. */
-    private CacheGroupMetricsMXBean mxBean;
+    private final CacheGroupMetricsMXBean mxBean;
 
     /** */
     private volatile boolean localWalEnabled;
@@ -236,8 +235,6 @@ public class CacheGroupContext {
 
         log = ctx.kernalContext().log(getClass());
 
-        caches = new ArrayList<>();
-
         mxBean = new CacheGroupMetricsMXBeanImpl(this);
     }
 
@@ -307,10 +304,9 @@ public class CacheGroupContext {
     public boolean hasCache(String cacheName) {
         List<GridCacheContext> caches = this.caches;
 
-        for (int i = 0; i < caches.size(); i++) {
-            if (caches.get(i).name().equals(cacheName))
+        for (GridCacheContext cacheContext : caches)
+            if (cacheContext.name().equals(cacheName))
                 return true;
-        }
 
         return false;
     }
@@ -322,11 +318,17 @@ public class CacheGroupContext {
         assert cacheType.userCache() == cctx.userCache() : cctx.name();
         assert grpId == cctx.groupId() : cctx.name();
 
-        ArrayList<GridCacheContext> caches = new ArrayList<>(this.caches);
+        final boolean add;
 
-        assert sharedGroup() || caches.isEmpty();
+        synchronized (this) {
+            List<GridCacheContext> copy = new ArrayList<>(caches);
 
-        boolean add = caches.add(cctx);
+            assert sharedGroup() || copy.isEmpty();
+
+            add = copy.add(cctx);
+
+            caches = Collections.unmodifiableList(copy);
+        }
 
         assert add : cctx.name();
 
@@ -335,39 +337,39 @@ public class CacheGroupContext {
 
         if (!drEnabled && cctx.isDrEnabled())
             drEnabled = true;
-
-        this.caches = caches;
     }
 
     /**
      * @param cctx Cache context.
      */
     private void removeCacheContext(GridCacheContext cctx) {
-        ArrayList<GridCacheContext> caches = new ArrayList<>(this.caches);
+        final List<GridCacheContext> copy;
 
-        // It is possible cache was not added in case of errors on cache start.
-        for (Iterator<GridCacheContext> it = caches.iterator(); it.hasNext();) {
-            GridCacheContext next = it.next();
+        synchronized (this) {
+            copy = new ArrayList<>(caches);
 
-            if (next == cctx) {
-                assert sharedGroup() || caches.size() == 1 : caches.size();
+            for (GridCacheContext next : copy) {
+                if (next == cctx) {
+                    assert sharedGroup() || copy.size() == 1 : copy.size();
 
-                it.remove();
+                    copy.remove(next);
 
-                break;
+                    break;
+                }
             }
+
+            caches = Collections.unmodifiableList(copy);
         }
 
         if (QueryUtils.isEnabled(cctx.config())) {
             boolean qryEnabled = false;
 
-            for (int i = 0; i < caches.size(); i++) {
-                if (QueryUtils.isEnabled(caches.get(i).config())) {
+            for (GridCacheContext cacheContext : copy)
+                if (QueryUtils.isEnabled(cacheContext.config())) {
                     qryEnabled = true;
 
                     break;
                 }
-            }
 
             this.qryEnabled = qryEnabled;
         }
@@ -375,18 +377,15 @@ public class CacheGroupContext {
         if (cctx.isDrEnabled()) {
             boolean drEnabled = false;
 
-            for (int i = 0; i < caches.size(); i++) {
-                if (caches.get(i).isDrEnabled()) {
+            for (GridCacheContext cacheContext : copy)
+                if (QueryUtils.isEnabled(cacheContext.config())) {
                     drEnabled = true;
 
                     break;
                 }
-            }
 
             this.drEnabled = drEnabled;
         }
-
-        this.caches = caches;
     }
 
     /**
@@ -408,11 +407,8 @@ public class CacheGroupContext {
     public void unwindUndeploys() {
         List<GridCacheContext> caches = this.caches;
 
-        for (int i = 0; i < caches.size(); i++) {
-            GridCacheContext cctx = caches.get(i);
-
+        for (GridCacheContext cctx : caches)
             cctx.deploy().unwind(cctx);
-        }
     }
 
     /**
@@ -450,9 +446,7 @@ public class CacheGroupContext {
 
         List<GridCacheContext> caches = this.caches;
 
-        for (int i = 0; i < caches.size(); i++) {
-            GridCacheContext cctx = caches.get(i);
-
+        for (GridCacheContext cctx : caches)
             if (!cctx.config().isEventsDisabled() && cctx.recordEvent(type)) {
                 cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(),
                     cctx.localNode(),
@@ -463,7 +457,6 @@ public class CacheGroupContext {
                     discoType,
                     discoTs));
             }
-        }
     }
 
     /**
@@ -478,9 +471,7 @@ public class CacheGroupContext {
 
         List<GridCacheContext> caches = this.caches;
 
-        for (int i = 0; i < caches.size(); i++) {
-            GridCacheContext cctx = caches.get(i);
-
+        for (GridCacheContext cctx : caches)
             if (!cctx.config().isEventsDisabled())
                 cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(),
                     cctx.localNode(),
@@ -490,7 +481,6 @@ public class CacheGroupContext {
                     null,
                     0,
                     0));
-        }
     }
 
     /**
@@ -517,9 +507,7 @@ public class CacheGroupContext {
     ) {
         List<GridCacheContext> caches = this.caches;
 
-        for (int i = 0; i < caches.size(); i++) {
-            GridCacheContext cctx = caches.get(i);
-
+        for (GridCacheContext cctx : caches)
             if (!cctx.config().isEventsDisabled())
                 cctx.events().addEvent(part,
                     key,
@@ -535,7 +523,6 @@ public class CacheGroupContext {
                     null,
                     null,
                     keepBinary);
-        }
     }
 
     /**
@@ -976,17 +963,19 @@ public class CacheGroupContext {
 
         Set<Integer> ids = U.newHashSet(caches.size());
 
-        for (int i = 0; i < caches.size(); i++)
-            ids.add(caches.get(i).cacheId());
+        for (GridCacheContext cctx : caches)
+            ids.add(cctx.cacheId());
 
         return ids;
     }
 
     /**
      * @return Caches in this group.
+     *
+     * caches is already Unmodifiable list, so we don't need to explicitly wrap it here.
      */
     public List<GridCacheContext> caches() {
-        return this.caches;
+        return caches;
     }
 
     /**
@@ -1004,9 +993,7 @@ public class CacheGroupContext {
     public void onPartitionEvicted(int part) {
         List<GridCacheContext> caches = this.caches;
 
-        for (int i = 0; i < caches.size(); i++) {
-            GridCacheContext cctx = caches.get(i);
-
+        for (GridCacheContext cctx : caches) {
             if (cctx.isDrEnabled())
                 cctx.dr().partitionEvicted(part);
 
