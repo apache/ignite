@@ -232,7 +232,7 @@ public class GridCacheTtlUpdateRequest extends GridCacheIdMessage {
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeMessage("topVer", topVer))
+                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -290,7 +290,7 @@ public class GridCacheTtlUpdateRequest extends GridCacheIdMessage {
                 reader.incrementState();
 
             case 7:
-                topVer = reader.readMessage("topVer");
+                topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
                     return false;

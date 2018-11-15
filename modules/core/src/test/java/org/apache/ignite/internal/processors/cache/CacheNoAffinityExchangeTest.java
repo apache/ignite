@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
@@ -45,8 +44,7 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
     private volatile boolean startClient;
 
     /** */
-    private final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true)
-        .setAddresses(Collections.singleton("127.0.0.1:47500"));
+    private final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

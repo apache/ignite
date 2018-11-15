@@ -50,41 +50,62 @@ public class DirectByteBufferStreamImplV3 extends DirectByteBufferStreamImplV2 {
 
     /** {@inheritDoc} */
     @Override public void writeAffinityTopologyVersion(AffinityTopologyVersion val) {
-        if (val == null)
-            val = AffinityTopologyVersion.ZERO;
+        if (val != null) {
+            switch (topVerState) {
+                case 0:
+                    writeShort((short)(val.minorTopologyVersion() >>> 16));
 
-        switch (topVerState) {
-            case 0:
-                writeLong(val.topologyVersion());
+                    if (!lastFinished)
+                        return;
 
-                if (!lastFinished)
-                    return;
+                    topVerState++;
 
-                topVerState++;
+                case 1:
+                    writeShort((short)(val.minorTopologyVersion() & 0xFFFF));
 
-            case 1:
-                writeInt(val.minorTopologyVersion());
+                    if (!lastFinished)
+                        return;
 
-                if (!lastFinished)
-                    return;
+                    topVerState++;
 
-                topVerState = 0;
+                case 2:
+                    writeLong(val.topologyVersion());
+
+                    if (!lastFinished)
+                        return;
+
+                    topVerState = 0;
+            }
         }
+        else
+            writeShort(Short.MIN_VALUE);
     }
 
     /** {@inheritDoc} */
     @Override public AffinityTopologyVersion readAffinityTopologyVersion() {
         switch (topVerState) {
             case 0:
-                topVerMajor = readLong();
+                short major = readShort();
 
-                if (!lastFinished)
+                if (!lastFinished || major == Short.MIN_VALUE)
                     return null;
+
+                topVerMinor |= (major & 0xFFFF) << 16;
 
                 topVerState++;
 
             case 1:
-                topVerMinor = readInt();
+                short minor = readShort();
+
+                if (!lastFinished)
+                    return null;
+
+                topVerMinor |= (minor & 0xFFFF);
+
+                topVerState++;
+
+            case 2:
+                topVerMajor = readLong();
 
                 if (!lastFinished)
                     return null;

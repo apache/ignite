@@ -434,7 +434,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeMessage("remapTopVer", remapTopVer))
+                if (!writer.writeAffinityTopologyVersion("remapTopVer", remapTopVer))
                     return false;
 
                 writer.incrementState();
@@ -502,7 +502,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
                 reader.incrementState();
 
             case 9:
-                remapTopVer = reader.readMessage("remapTopVer");
+                remapTopVer = reader.readAffinityTopologyVersion("remapTopVer");
 
                 if (!reader.isLastRead())
                     return false;

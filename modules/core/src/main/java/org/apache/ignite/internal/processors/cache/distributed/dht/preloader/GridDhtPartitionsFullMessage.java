@@ -694,13 +694,13 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 writer.incrementState();
 
             case 16:
-                if (!writer.writeMessage("resTopVer", resTopVer))
+                if (!writer.writeAffinityTopologyVersion("resTopVer", resTopVer))
                     return false;
 
                 writer.incrementState();
 
             case 17:
-                if (!writer.writeMessage("topVer", topVer))
+                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -802,7 +802,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 reader.incrementState();
 
             case 16:
-                resTopVer = reader.readMessage("resTopVer");
+                resTopVer = reader.readAffinityTopologyVersion("resTopVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -810,7 +810,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 reader.incrementState();
 
             case 17:
-                topVer = reader.readMessage("topVer");
+                topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
                     return false;

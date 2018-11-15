@@ -428,7 +428,7 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
                 writer.incrementState();
 
             case 20:
-                if (!writer.writeMessage("topVer", topVer))
+                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -584,7 +584,7 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
                 reader.incrementState();
 
             case 20:
-                topVer = reader.readMessage("topVer");
+                topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
                     return false;

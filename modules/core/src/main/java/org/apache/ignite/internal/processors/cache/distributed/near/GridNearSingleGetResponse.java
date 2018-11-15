@@ -231,7 +231,7 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeMessage("topVer", topVer))
+                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -285,7 +285,7 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
                 reader.incrementState();
 
             case 8:
-                topVer = reader.readMessage("topVer");
+                topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
                     return false;

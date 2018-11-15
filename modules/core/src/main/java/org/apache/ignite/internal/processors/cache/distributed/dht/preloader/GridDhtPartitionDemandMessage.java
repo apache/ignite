@@ -274,7 +274,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeMessage("topVer", topVer))
+                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -330,7 +330,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
                 reader.incrementState();
 
             case 6:
-                topVer = reader.readMessage("topVer");
+                topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
                     return false;

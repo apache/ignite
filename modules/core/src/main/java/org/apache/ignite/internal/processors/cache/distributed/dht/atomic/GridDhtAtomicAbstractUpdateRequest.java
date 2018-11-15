@@ -545,7 +545,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeMessage("topVer", topVer))
+                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -633,7 +633,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
                 reader.incrementState();
 
             case 11:
-                topVer = reader.readMessage("topVer");
+                topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
                     return false;
