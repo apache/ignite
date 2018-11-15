@@ -1730,6 +1730,9 @@ public class GridSqlQueryParser {
                 if (tbl != null) {
                     GridCacheContext cctx = tbl.cache();
 
+                    if (cctx.mvccEnabled())
+                        return false;
+
                     if (cctx.isPartitioned())
                         return false;
 
