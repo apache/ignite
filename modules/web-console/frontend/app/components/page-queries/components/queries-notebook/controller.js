@@ -1038,7 +1038,7 @@ export class NotebookCtrl {
         $scope.addQuery = function() {
             const sz = $scope.notebook.paragraphs.length;
 
-            ActivitiesData.post({ action: '/queries/add/query' });
+            ActivitiesData.post({ group: 'sql', action: '/queries/add/query' });
 
             const paragraph = _newParagraph({
                 name: 'Query' + (sz === 0 ? '' : sz),
@@ -1067,7 +1067,7 @@ export class NotebookCtrl {
         $scope.addScan = function() {
             const sz = $scope.notebook.paragraphs.length;
 
-            ActivitiesData.post({ action: '/queries/add/scan' });
+            ActivitiesData.post({ group: 'sql', action: '/queries/add/scan' });
 
             const paragraph = _newParagraph({
                 name: 'Scan' + (sz === 0 ? '' : sz),
@@ -1503,7 +1503,7 @@ export class NotebookCtrl {
                                 collocated
                             };
 
-                            ActivitiesData.post({ action: '/queries/execute' });
+                            ActivitiesData.post({ group: 'sql', action: '/queries/execute' });
 
                             const qry = args.maxPages ? addLimit(args.query, args.pageSize * args.maxPages) : query;
 
@@ -1562,7 +1562,7 @@ export class NotebookCtrl {
                         pageSize: paragraph.pageSize
                     };
 
-                    ActivitiesData.post({ action: '/queries/explain' });
+                    ActivitiesData.post({ group: 'sql', action: '/queries/explain' });
 
                     return agentMgr.querySql(nid, args.cacheName, args.query, nonCollocatedJoins, enforceJoinOrder, false, false, args.pageSize, false, collocated);
                 })
@@ -1606,7 +1606,7 @@ export class NotebookCtrl {
                                 localNid: local ? nid : null
                             };
 
-                            ActivitiesData.post({ action: '/queries/scan' });
+                            ActivitiesData.post({ group: 'sql', action: '/queries/scan' });
 
                             return agentMgr.queryScan(nid, cacheName, filter, false, caseSensitive, false, local, pageSize);
                         })
