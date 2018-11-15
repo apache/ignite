@@ -49,7 +49,7 @@ public class JdbcOrderedBatchExecuteRequest extends JdbcBatchExecuteRequest
      */
     public JdbcOrderedBatchExecuteRequest(String schemaName, List<JdbcQuery> queries,
         boolean autoCommit, boolean lastStreamBatch, long order) {
-        super(BATCH_EXEC_ORDERED, schemaName, queries, autoCommit, lastStreamBatch, 0);
+        super(BATCH_EXEC_ORDERED, schemaName, queries, autoCommit, lastStreamBatch);
 
         this.order = order;
     }

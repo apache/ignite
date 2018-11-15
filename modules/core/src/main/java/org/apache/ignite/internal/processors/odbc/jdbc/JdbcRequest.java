@@ -17,12 +17,15 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestNoId;
+
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_8_0;
 
 /**
  * JDBC request.
@@ -70,26 +73,44 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
     /** Execute cancel request. */
     static final byte QRY_CANCEL = 15;
 
+    /** Request Id generator. */
+    static final AtomicLong REQ_ID_GENERATOR = new AtomicLong();
+
     /** Request type. */
     private byte type;
+
+    /** Request id. */
+    private long reqId;
 
     /**
      * @param type Command type.
      */
     public JdbcRequest(byte type) {
         this.type = type;
+        this.reqId = REQ_ID_GENERATOR.incrementAndGet();
     }
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer,
         ClientListenerProtocolVersion ver) throws BinaryObjectException {
         writer.writeByte(type);
+
+        if (ver.compareTo(VER_2_8_0) >= 0)
+            writer.writeLong(reqId);
+
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader,
         ClientListenerProtocolVersion ver) throws BinaryObjectException {
-        // No-op.
+
+        if (ver.compareTo(VER_2_8_0) >= 0)
+            reqId = reader.readLong();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long requestId() {
+        return reqId;
     }
 
     /**

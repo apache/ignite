@@ -83,7 +83,7 @@ public class JdbcThinConnection implements Connection {
     private String schema;
 
     /** Closed flag. */
-    private boolean closed;
+    private volatile boolean closed;
 
     /** Current transaction isolation. */
     private int txIsolation;
@@ -177,7 +177,7 @@ public class JdbcThinConnection implements Connection {
      * @param cmd Parsed form of {@code sql}.
      * @throws SQLException if failed.
      */
-    void executeNative(String sql, SqlCommand cmd, long reqId) throws SQLException {
+    void executeNative(String sql, SqlCommand cmd) throws SQLException {
         if (cmd instanceof SqlSetStreamingCommand) {
             SqlSetStreamingCommand cmd0 = (SqlSetStreamingCommand)cmd;
 
@@ -197,10 +197,10 @@ public class JdbcThinConnection implements Connection {
                         + cliIo.igniteVersion() + ']', SqlStateCode.INTERNAL_ERROR);
                 }
 
-                sendRequest(new JdbcQueryExecuteRequest(JdbcStatementType.ANY_STATEMENT_TYPE,
-                    schema, 1, 1, autoCommit, sql, null, reqId));
-
                 streamState = new StreamState((SqlSetStreamingCommand)cmd);
+
+                sendRequest(new JdbcQueryExecuteRequest(JdbcStatementType.ANY_STATEMENT_TYPE,
+                    schema, 1, 1, autoCommit, sql, null));
             }
         }
         else

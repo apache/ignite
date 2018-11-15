@@ -28,8 +28,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class JdbcQueryCancelRequest extends JdbcRequest {
 
-    /** Request ID. */
-    private long reqId;
+    /** Id of a request to be cancelled. */
+    private long reqIdToCancel;
 
     /**
      */
@@ -38,19 +38,19 @@ public class JdbcQueryCancelRequest extends JdbcRequest {
     }
 
     /**
-     * @param reqId Request Id to cancel.
+     * @param reqIdToCancel Id of a request to be cancelled.
      */
-    public JdbcQueryCancelRequest(long reqId) {
+    public JdbcQueryCancelRequest(long reqIdToCancel) {
         super(QRY_CANCEL);
 
-        this.reqId = reqId;
+        this.reqIdToCancel = reqIdToCancel;
     }
 
     /**
-     * @return Request id.
+     * @return Id of a request to be cancelled.
      */
-    public long reqId() {
-        return reqId;
+    public long requestIdToBeCancelled() {
+        return reqIdToCancel;
     }
 
     /** {@inheritDoc} */
@@ -58,7 +58,7 @@ public class JdbcQueryCancelRequest extends JdbcRequest {
         ClientListenerProtocolVersion ver) throws BinaryObjectException {
         super.writeBinary(writer, ver);
 
-        writer.writeLong(reqId);
+        writer.writeLong(reqIdToCancel);
     }
 
     /** {@inheritDoc} */
@@ -66,7 +66,7 @@ public class JdbcQueryCancelRequest extends JdbcRequest {
         ClientListenerProtocolVersion ver) throws BinaryObjectException {
         super.readBinary(reader, ver);
 
-        reqId = reader.readLong();
+        reqIdToCancel = reader.readLong();
     }
 
     /** {@inheritDoc} */

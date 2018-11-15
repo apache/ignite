@@ -44,7 +44,7 @@ class JdbcQueryCursor {
     private final QueryCursorImpl<List<Object>> cur;
 
     /** Query results iterator. */
-    private final Iterator<List<Object>> iter;
+    private Iterator<List<Object>> iter;
 
     /**
      * @param cursorId Cursor ID.
@@ -57,9 +57,23 @@ class JdbcQueryCursor {
         this.pageSize = pageSize;
         this.maxRows = maxRows;
         this.cur = cur;
+    }
+
+    /**
+     * Open iterator;
+     */
+    void openIterator (){
 
         iter = cur.iterator();
     }
+
+    /**
+     * @return Update count for not SELECT queries.
+     */
+    long updateCount() {
+        return (Long)((List<?>)cur.getAll().get(0)).get(0);
+    }
+
 
     /**
      * @return List of the rows.

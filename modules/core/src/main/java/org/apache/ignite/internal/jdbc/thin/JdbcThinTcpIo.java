@@ -28,7 +28,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -37,7 +36,6 @@ import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
-import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcOrderedBatchExecuteRequest;
@@ -132,9 +130,6 @@ public class JdbcThinTcpIo {
 
     /** Server index. */
     private volatile int srvIdx;
-
-    /** Flag indicating whether the request has been canceled. */
-    private boolean canceled;
 
     /**
      * Constructor.
@@ -517,16 +512,14 @@ public class JdbcThinTcpIo {
 
             JdbcResponse response = readResponse();
 
-            if (canceled)
-                throw new SQLException("The query was cancelled while executing.", SqlStateCode.QUERY_CANCELED,
-                    ClientListenerResponse.STATUS_FAILED);
-            else
-                return response;
+            while (req.requestId() != response.requestId())
+                response = readResponse();
+
+            return response;
         }
         finally {
             synchronized (mux) {
                 ownThread = null;
-                canceled = false;
             }
         }
     }
@@ -537,10 +530,6 @@ public class JdbcThinTcpIo {
      * @throws IOException In case of IO error.
      */
     void sendCancelRequest(JdbcQueryCancelRequest cancellationRequest) throws IOException {
-        synchronized (mux) {
-            canceled = true;
-        }
-
         sendRequestRaw(cancellationRequest);
     }
 
@@ -608,16 +597,18 @@ public class JdbcThinTcpIo {
      * @throws IOException On error.
      */
     private void send(byte[] req) throws IOException {
-        int size = req.length;
+        synchronized (mux) {
+            int size = req.length;
 
-        out.write(size & 0xFF);
-        out.write((size >> 8) & 0xFF);
-        out.write((size >> 16) & 0xFF);
-        out.write((size >> 24) & 0xFF);
+            out.write(size & 0xFF);
+            out.write((size >> 8) & 0xFF);
+            out.write((size >> 16) & 0xFF);
+            out.write((size >> 24) & 0xFF);
 
-        out.write(req);
+            out.write(req);
 
-        out.flush();
+            out.flush();
+        }
     }
 
     /**

@@ -58,9 +58,6 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
     /** Client auto commit flag state. */
     private boolean autoCommit;
 
-    /** Request id. */
-    private long reqId;
-
     /**
      */
     JdbcQueryExecuteRequest() {
@@ -79,7 +76,7 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
      * @param args Arguments list.
      */
     public JdbcQueryExecuteRequest(JdbcStatementType stmtType, String schemaName, int pageSize, int maxRows,
-        boolean autoCommit, String sqlQry, Object[] args, long reqId) {
+        boolean autoCommit, String sqlQry, Object[] args) {
         super(QRY_EXEC);
 
         this.schemaName = F.isEmpty(schemaName) ? null : schemaName;
@@ -89,7 +86,6 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
         this.args = args;
         this.stmtType = stmtType;
         this.autoCommit = autoCommit;
-        this.reqId = reqId;
     }
 
     /**
@@ -142,17 +138,10 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
     }
 
     /**
-     * @return Request Id.
-     */
-    public long reqId() {
-        return reqId;
-    }
-
-    /**
      * @return true if this query supports cancellation; false otherwise.
      */
     public boolean isCancellationSupported(){
-        return reqId != 0;
+        return requestId() != 0;
     }
 
     /** {@inheritDoc} */
@@ -176,9 +165,6 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
             writer.writeBoolean(autoCommit);
 
         writer.writeByte((byte)stmtType.ordinal());
-
-        if (ver.compareTo(VER_2_8_0) >= 0)
-            writer.writeLong(reqId);
     }
 
     /** {@inheritDoc} */
@@ -210,9 +196,6 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
         catch (IOException e) {
             throw new BinaryObjectException(e);
         }
-
-        if (ver.compareTo(VER_2_8_0) >= 0)
-            reqId = reader.readLong();
     }
 
     /** {@inheritDoc} */
