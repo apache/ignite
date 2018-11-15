@@ -57,7 +57,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.jetbrains.annotations.Nullable;
 
@@ -502,7 +501,8 @@ public class CacheGroupContext {
                 cctx.events().addEvent(part,
                     key,
                     evtNodeId,
-                    (IgniteUuid)null,
+                    null,
+                    null,
                     null,
                     type,
                     newVal,

@@ -167,6 +167,8 @@ public class RetryCauseMessageSelfTest extends GridCommonAbstractTest {
      * Failed to reserve partitions for query (partition of REPLICATED cache is not in OWNING state)
      */
     public void testReplicatedCacheReserveFailureMessage() {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7039");
+
         GridMapQueryExecutor mapQryExec = GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "mapQryExec");
 
         final GridKernalContext ctx = GridTestUtils.getFieldValue(mapQryExec, GridMapQueryExecutor.class, "ctx");
@@ -197,6 +199,7 @@ public class RetryCauseMessageSelfTest extends GridCommonAbstractTest {
         SqlQuery<String, Organization> qry = new SqlQuery<>(Organization.class, ORG_SQL);
 
         qry.setDistributedJoins(true);
+
         try {
             orgCache.query(qry).getAll();
         }
