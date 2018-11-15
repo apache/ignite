@@ -174,7 +174,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         }
 
         if (idx == walFiles.size())
-            throw new StrictBoundsCheckException("Wal segments not in bounds. loBoundIndex=" + lowBound.index() +
+            throw new IgniteCheckedException("Wal segments not in bounds. loBoundIndex=" + lowBound.index() +
                                                 ", indexes=" + printIndexes(walFiles));
 
         long curWalSegmIdx = walFiles.get(idx).idx();
@@ -185,11 +185,11 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             assert desc != null;
 
             if (curWalSegmIdx != desc.idx())
-                throw new StrictBoundsCheckException("Wal segment " + curWalSegmIdx + " not found in files " + printIndexes(walFiles));
+                throw new IgniteCheckedException("Wal segment " + curWalSegmIdx + " not found in files " + printIndexes(walFiles));
         }
 
         if (highBound.index() < Long.MAX_VALUE && curWalSegmIdx <= highBound.index())
-            throw new StrictBoundsCheckException("Wal segments not in bounds. hiBoundIndex=" + highBound.index() +
+            throw new IgniteCheckedException("Wal segments not in bounds. hiBoundIndex=" + highBound.index() +
                                                 ", indexes=" + printIndexes(walFiles));
     }
 
