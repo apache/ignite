@@ -225,10 +225,10 @@ public class PageMemoryImpl implements PageMemoryEx {
     private IgniteWriteAheadLogManager walMgr;
 
     /** */
-    private GridEncryptionManager encMgr;
+    private final GridEncryptionManager encMgr;
 
     /** */
-    private EncryptionSpi encSpi;
+    private final EncryptionSpi encSpi;
 
     /** */
     private final IgniteLogger log;
