@@ -90,14 +90,6 @@ function run($root, $transitions, AclService, User, Activities) {
                 return $state.target(trans.to().failState || '403');
             });
     });
-
-    $transitions.onFinish({}, (trans) => {
-        const $state = trans.router.stateService;
-        const {name, permission} = trans.to();
-
-        if (AclService.can(permission))
-            Activities.post({action: $state.href(name, trans.params('to'))});
-    });
 }
 
 run.$inject = ['$rootScope', '$transitions', 'AclService', 'User', 'IgniteActivitiesData'];
