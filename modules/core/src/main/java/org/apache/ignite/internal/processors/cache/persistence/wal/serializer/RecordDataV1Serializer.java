@@ -107,6 +107,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD;
@@ -226,6 +227,9 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @return {@code True} if this record should be encrypted.
      */
     private boolean needEncryption(WALRecord rec) {
+        if (encSpi instanceof NoopEncryptionSpi)
+            return false;
+
         if (!(rec instanceof WalRecordCacheGroupAware))
             return false;
 
@@ -237,7 +241,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @return {@code True} if this record should be encrypted.
      */
     private boolean needEncryption(int grpId) {
-        return false; //encMgr.groupKey(grpId) != null;
+        return encMgr.groupKey(grpId) != null;
     }
 
     /**
