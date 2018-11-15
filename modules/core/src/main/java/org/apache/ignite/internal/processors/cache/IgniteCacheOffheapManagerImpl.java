@@ -2590,19 +2590,19 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                     assert oldRow != null && oldRow.link() != 0 : oldRow;
 
-                    rowStore.updateDataRow(oldRow.link(), mvccUpdateMarker, mvccSnapshot);
+                    rowStore.updateDataRow(oldRow.link(), mvccUpdateMarker, mvccSnapshot, grp.statisticsHolderData());
                 }
 
                 if (val != null) {
                     if (!grp.storeCacheIdInDataPage() && updateRow.cacheId() != CU.UNDEFINED_CACHE_ID) {
                         updateRow.cacheId(CU.UNDEFINED_CACHE_ID);
 
-                        rowStore.addRow(updateRow);
+                        rowStore.addRow(updateRow, grp.statisticsHolderData());
 
                         updateRow.cacheId(cctx.cacheId());
                     }
                     else
-                        rowStore.addRow(updateRow);
+                        rowStore.addRow(updateRow, grp.statisticsHolderData());
 
                     boolean old = dataTree.putx(updateRow);
 
