@@ -17,19 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import java.util.Collection;
-import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.GridProcessor;
-import org.apache.ignite.internal.processors.cache.ExchangeContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.GridLongList;
@@ -40,29 +37,18 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface MvccProcessor extends GridProcessor {
     /**
-     * Exchange start callback.
+     * Local join callback.
      *
-     * @param exchCtx Exchange context.
-     * @param exchCrd Exchange coordinator.
+     * @param evt Discovery event.
      */
-    void onExchangeStart(ExchangeContext exchCtx, ClusterNode exchCrd);
+    void onLocalJoin(DiscoveryEvent evt);
 
     /**
      * Exchange done callback.
      *
-     * @param newCoord New coordinator flag.
      * @param discoCache Disco cache.
-     * @param activeQueries Active queries.
      */
-    void onExchangeDone(boolean newCoord, DiscoCache discoCache, Map<UUID, GridLongList> activeQueries);
-
-    /**
-     * Node left during exchange callback.
-     *
-     * @param node Node.
-     * @param cache Disco cache.
-     */
-    void onNodeLeft(ClusterNode node, DiscoCache cache);
+    void onExchangeDone(DiscoCache discoCache);
 
     /**
      * @param nodeId Node ID
@@ -79,13 +65,6 @@ public interface MvccProcessor extends GridProcessor {
      * @return Current coordinator node ID.
      */
     UUID currentCoordinatorId();
-
-    /**
-     * @param curCrd Coordinator.
-     * @return {@code Null} if coordinator has not been changed and the given coordinator is not actual anymore.
-     * If coordinator has been updated this method returns {@link GridLongList} with active query trackers ids.
-     */
-    GridLongList updateCoordinator(MvccCoordinator curCrd);
 
     /**
      * @param crdVer Mvcc coordinator version.
@@ -258,14 +237,4 @@ public interface MvccProcessor extends GridProcessor {
      * @throws IgniteCheckedException If failed to initialize.
      */
     void ensureStarted() throws IgniteCheckedException;
-
-    /**
-     * Picks mvcc coordinator from the given list of nodes.
-     *
-     * @param evtType Event type.
-     * @param nodes List of nodes.
-     * @param topVer Topology version.
-     * @return Chosen mvcc coordinator.
-     */
-    MvccCoordinator pickMvccCoordinator(int evtType, Collection<ClusterNode> nodes, long topVer);
 }

@@ -29,7 +29,6 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -66,20 +65,10 @@ public class ExchangeDiscoveryEvents {
     /** Sever left flag. */
     private boolean srvLeft;
 
-    /** Last MVCC coordinator. */
-    private MvccCoordinator mvccCrd;
-
-    /** Flag whether mvcc coordinator has been changed during current exchange. */
-    private boolean newMvccCrd;
-
     /**
      * @param fut Current exchange future.
      */
     ExchangeDiscoveryEvents(GridDhtPartitionsExchangeFuture fut) {
-        MvccCoordinator crd0 = fut.firstEventCache().mvccCoordinator();
-
-        newMvccCrd = crd0 != null && (crd0.topologyVersion().equals(fut.initialVersion()) || fut.activateCluster());
-
         addEvent(fut.initialVersion(), fut.firstEvent(), fut.firstEventCache());
     }
 
@@ -133,8 +122,6 @@ public class ExchangeDiscoveryEvents {
         this.topVer = topVer;
         this.lastEvt = evt;
         this.discoCache = cache;
-        this.mvccCrd  = cache == null ? null : cache.mvccCoordinator();
-        this.newMvccCrd |= mvccCrd != null && mvccCrd.topologyVersion().equals(topVer);
 
         ClusterNode node = evt.eventNode();
 
@@ -267,20 +254,6 @@ public class ExchangeDiscoveryEvents {
 
             U.quietAndWarn(log, "Must have server nodes for caches to operate.");
         }
-    }
-
-    /**
-     * @return Mvcc coordinator for the last event.
-     */
-    public MvccCoordinator mvccCoordinator() {
-        return mvccCrd;
-    }
-
-    /**
-     * @return {@code True} if a new mvcc coordinator was assigned.
-     */
-    public boolean newMvccCoordinator() {
-        return newMvccCrd;
     }
 
     /** {@inheritDoc} */

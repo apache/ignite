@@ -286,7 +286,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 else
                     processEventInactive(evt, cache);
 
-                notifyNodeFail(evt, cache);
+                notifyNodeFail(evt);
             }
             finally {
                 leaveBusy();
@@ -297,14 +297,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /**
      * @param evt Event.
      */
-    private void notifyNodeFail(DiscoveryEvent evt, DiscoCache cache) {
+    private void notifyNodeFail(DiscoveryEvent evt) {
         if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED) {
             final ClusterNode n = evt.eventNode();
 
             assert cctx.discovery().node(n.id()) == null;
 
             for (GridDhtPartitionsExchangeFuture f : exchFuts.values())
-                f.onNodeLeft(n, cache);
+                f.onNodeLeft(n);
         }
     }
 
@@ -582,7 +582,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 log.debug("Do not start exchange for discovery event: " + evt);
         }
 
-        notifyNodeFail(evt, cache);
+        notifyNodeFail(evt);
 
         // Notify indexing engine about node leave so that we can re-map coordinator accordingly.
         if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED) {

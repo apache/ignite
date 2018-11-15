@@ -98,7 +98,6 @@ import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
-import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -690,13 +689,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             cctx.exchange().exchangerBlockingSectionBegin();
 
-            try {
-                cctx.kernalContext().coordinators().onExchangeStart(exchCtx, crd);
-            }
-            finally {
-                cctx.exchange().exchangerBlockingSectionEnd();
-            }
-
             assert state == null : state;
 
             if (crdNode)
@@ -706,8 +698,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             if (exchLog.isInfoEnabled()) {
                 exchLog.info("Started exchange init [topVer=" + topVer +
-                    ", mvccCrd=" + exchCtx.events().mvccCoordinator() +
-                    ", mvccCrdChange=" + exchCtx.events().newMvccCoordinator() +
                     ", crd=" + crdNode +
                     ", evt=" + IgniteUtils.gridEventName(firstDiscoEvt.type()) +
                     ", evtNode=" + firstDiscoEvt.eventNode().id() +
@@ -1816,12 +1806,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 msg.partitionHistoryCounters(partHistReserved0);
         }
 
-        if (exchCtx.events().newMvccCoordinator() && cctx.coordinators().currentCoordinatorId().equals(node.id())) {
-            Map<UUID, GridLongList> activeQueries = exchCtx.activeQueries();
-
-            msg.activeQueries(activeQueries != null ? activeQueries.get(cctx.localNodeId()) : null);
-        }
-
         if ((stateChangeExchange() || dynamicCacheStartExchange()) && exchangeLocE != null)
             msg.setError(exchangeLocE);
         else if (localJoinExchange())
@@ -2080,8 +2064,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             tryToPerformLocalSnapshotOperation();
 
         if (err == null)
-            cctx.coordinators().onExchangeDone(exchCtx.events().newMvccCoordinator(), exchCtx.events().discoveryCache(),
-                exchCtx.activeQueries());
+            cctx.coordinators().onExchangeDone(exchCtx.events().discoveryCache());
 
         // Create and destory caches and cache proxies.
         cctx.cache().onExchangeDone(initialVersion(), exchActions, err);
@@ -2656,9 +2639,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      */
     private void processSingleMessage(UUID nodeId, GridDhtPartitionsSingleMessage msg) {
         if (msg.client()) {
-            if (msg.activeQueries() != null)
-                cctx.coordinators().processClientActiveQueries(nodeId, msg.activeQueries());
-
             waitAndReplyToNode(nodeId, msg);
 
             return;
@@ -3214,9 +3194,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : msgs.entrySet()) {
                 GridDhtPartitionsSingleMessage msg = e.getValue();
-
-                if (exchCtx.events().newMvccCoordinator())
-                    exchCtx.addActiveQueries(e.getKey(), msg.activeQueries());
 
                 // Apply update counters after all single messages are received.
                 for (Map.Entry<Integer, GridDhtPartitionMap> entry : msg.partitions().entrySet()) {
@@ -4196,7 +4173,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      *
      * @param node Left node.
      */
-    public void onNodeLeft(final ClusterNode node, DiscoCache cache) {
+    public void onNodeLeft(final ClusterNode node) {
         if (isDone() || !enterBusy())
             return;
 
@@ -4215,8 +4192,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         ClusterNode crd0;
 
                         events().discoveryCache().updateAlives(node);
-
-                        cctx.kernalContext().coordinators().onNodeLeft(node, cache);
 
                         InitNewCoordinatorFuture newCrdFut0;
 
