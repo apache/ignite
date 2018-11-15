@@ -52,7 +52,7 @@ public abstract class GridCacheEvictionEventAbstractTest extends GridCommonAbstr
 
     /** {@inheritDoc} */
     @Override protected void setUp() throws Exception {
-        MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.EVICTION);
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
 
         super.setUp();

@@ -83,6 +83,8 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void setUp() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
         super.setUp();
     }

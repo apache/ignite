@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryAbstractSelfTest;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 
@@ -49,9 +48,7 @@ public abstract class CacheMvccAbstractContinuousQuerySelfTest extends GridCache
 
     /** {@inheritDoc} */
     public void testExpired() throws Exception {
-        MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.EXPIRATION);
-
-        super.testExpired();
+        fail("https://issues.apache.org/jira/browse/IGNITE-7311");
     }
 
     /** {@inheritDoc} */
@@ -61,8 +58,6 @@ public abstract class CacheMvccAbstractContinuousQuerySelfTest extends GridCache
 
     /** {@inheritDoc} */
     public void testEvents() throws Exception {
-        MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
-
-        super.testEvents();
+        fail("https://issues.apache.org/jira/browse/IGNITE-9321");
     }
 }

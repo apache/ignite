@@ -68,6 +68,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAto
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicNearReadersSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearClientHitTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearJobExecutionSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearMultiGetSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearTxForceKeyTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedAffinitySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedAtomicGetAndTransformStoreSelfTest;
@@ -107,6 +108,7 @@ public class IgniteCacheMvccTestSuite2 extends TestSuite {
         ignoredTests.add(CacheEnumOperationsSingleNodeTest.class);
         ignoredTests.add(CacheEnumOperationsTest.class);
         ignoredTests.add(NearCacheSyncUpdateTest.class);
+        ignoredTests.add(GridCacheNearMultiGetSelfTest.class);
 
         // Optimistic tx tests.
         ignoredTests.add(GridCacheColocatedOptimisticTransactionSelfTest.class);
