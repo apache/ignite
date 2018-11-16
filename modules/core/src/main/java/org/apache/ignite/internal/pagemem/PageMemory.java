@@ -19,7 +19,6 @@ package org.apache.ignite.internal.pagemem;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.lifecycle.LifecycleAware;
 
 /**
  */

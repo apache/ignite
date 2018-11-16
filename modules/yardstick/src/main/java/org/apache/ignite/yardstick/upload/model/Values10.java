@@ -20,8 +20,7 @@ package org.apache.ignite.yardstick.upload.model;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Describes data model.
- * Matches data model, defined in {@link QueryFactory#createTable()}
+ * Describes value_type for data model, defined in {@link QueryFactory#createTable()}.
  */
 public class Values10 {
     /** */
@@ -55,7 +54,7 @@ public class Values10 {
     final long val10;
 
     /** Creates new object with randomly initialized fields */
-    public Values10(){
+    public Values10() {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
         val1 = String.valueOf(rnd.nextLong());
@@ -72,5 +71,21 @@ public class Values10 {
 
         val9 = String.valueOf(rnd.nextLong());
         val10 = rnd.nextLong();
+    }
+
+    public Object[] toArgs(long id) {
+        return new Object[] {id, val1, val2, val3, val4, val5, val6, val7, val8, val9, val10};
+    }
+
+    /**
+     * @param valIdx index of field (value).
+     * @return name of the field.
+     */
+    public static String fieldName(int valIdx) {
+        if (valIdx > 10 || valIdx < 1)
+            throw new IllegalArgumentException("Incorrect value index [" + valIdx + "]." +
+                " Value index should be in range [1..10].");
+
+        return "val" + valIdx;
     }
 }
