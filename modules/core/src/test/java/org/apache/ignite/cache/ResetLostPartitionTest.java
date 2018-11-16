@@ -18,21 +18,27 @@
 package org.apache.ignite.cache;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -44,9 +50,14 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import static java.util.function.Predicate.isEqual;
+import static java.util.stream.Collectors.toList;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PRELOAD_RESEND_TIMEOUT;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  *
@@ -62,6 +73,13 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
 
     /** */
     private boolean persistenceEnabled = true;
+
+    /** */
+    CacheConfiguration[] ccfg = new CacheConfiguration[] {
+        cacheConfiguration(CACHE_NAMES[0], CacheAtomicityMode.ATOMIC),
+        cacheConfiguration(CACHE_NAMES[1], CacheAtomicityMode.ATOMIC),
+        cacheConfiguration(CACHE_NAMES[2], CacheAtomicityMode.TRANSACTIONAL)
+    };
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -97,12 +115,6 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
             .setMaxSize(500L * 1024 * 1024);
 
         cfg.setDataStorageConfiguration(storageCfg);
-
-        CacheConfiguration[] ccfg = new CacheConfiguration[] {
-            cacheConfiguration(CACHE_NAMES[0], CacheAtomicityMode.ATOMIC),
-            cacheConfiguration(CACHE_NAMES[1], CacheAtomicityMode.ATOMIC),
-            cacheConfiguration(CACHE_NAMES[2], CacheAtomicityMode.TRANSACTIONAL)
-        };
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
@@ -251,40 +263,82 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
     public void testDuplicateOwners() throws Exception {
         persistenceEnabled = false;
 
-        int gridCnt = 4;
+        ccfg = null;
 
-        Ignite node = startGridsMultiThreaded(gridCnt);
+        System.setProperty(IGNITE_PRELOAD_RESEND_TIMEOUT, "0");
 
-        IgniteCache<Integer, Integer> cache = node.createCache(
-            new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME)
-                .setBackups(0)
-                .setPartitionLossPolicy(PartitionLossPolicy.READ_WRITE_SAFE));
+        try {
+            int gridCnt = 4;
 
-        for (int i = 0; i < CACHE_SIZE; i++)
-            cache.put(i, i);
+            long timeout = 3_000;
 
-        stopGrid(gridCnt - 1);
+            Ignite node = startGridsMultiThreaded(gridCnt);
 
-        startGrid(gridCnt - 1);
+            IgniteCache<Integer, Integer> cache = node.createCache(
+                new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME)
+                    .setBackups(0)
+                    .setPartitionLossPolicy(PartitionLossPolicy.READ_WRITE_SAFE));
 
-        // todo
-        U.sleep(5_000);
+            for (int i = 0; i < CACHE_SIZE; i++)
+                cache.put(i, i);
 
-        grid(0).resetLostPartitions(Collections.singleton(DEFAULT_CACHE_NAME));
+            int failedNodeIdx = gridCnt - 1;
 
-        // todo
-        U.sleep(5_000);
+            int lostPartsCnt = count(DEFAULT_CACHE_NAME, OWNING, failedNodeIdx);
 
-        int parts = grid(0).cachex(DEFAULT_CACHE_NAME).configuration().getAffinity().partitions();
+            grid(0).affinity(DEFAULT_CACHE_NAME).partitions();
 
-        int owners = 0;
+            stopGrid(failedNodeIdx);
 
-        for (int i = 0; i < gridCnt; i++) {
-            owners += getPartitionsStates(i, DEFAULT_CACHE_NAME).stream().
-                filter(Predicate.isEqual(GridDhtPartitionState.OWNING)).collect(Collectors.toList()).size();
+            boolean allLostPartsDetected = waitForCondition(() -> {
+                for (Ignite grid : G.allGrids()) {
+                    if (grid.cache(DEFAULT_CACHE_NAME).lostPartitions().size() != lostPartsCnt)
+                        return false;
+                }
+
+                return true;
+            }, timeout);
+
+            assertTrue(allLostPartsDetected);
+
+            startGrid(failedNodeIdx);
+
+            boolean victimLostPartsDetected =
+                waitForCondition(() -> lostPartsCnt == count(DEFAULT_CACHE_NAME, LOST, failedNodeIdx), timeout);
+
+            assertTrue(victimLostPartsDetected);
+
+            // Wait for rebalance.
+            for (Ignite grid : G.allGrids()) {
+                GridCacheSharedContext cctx = ((IgniteEx)grid).context().cache().context();
+
+                cctx.exchange().affinityReadyFuture(new AffinityTopologyVersion(6, 0)).get(timeout);
+
+                for (GridCacheContext ctx : (Collection<GridCacheContext>)cctx.cacheContexts())
+                    ctx.preloader().rebalanceFuture().get(timeout);
+
+                AtomicReference<?> ref = getFieldValue(cctx.exchange(), "pendingResend");
+
+                assert waitForCondition(() -> ref == null || ref.get() == null, 5_000);
+            }
+
+            grid(0).resetLostPartitions(Collections.singleton(DEFAULT_CACHE_NAME));
+
+            boolean victimPartsDetected =
+                waitForCondition(() -> lostPartsCnt == count(DEFAULT_CACHE_NAME, OWNING, failedNodeIdx), timeout);
+
+            assertTrue(victimPartsDetected);
+
+            int parts = grid(0).cachex(DEFAULT_CACHE_NAME).configuration().getAffinity().partitions();
+
+            int[] idxs = IntStream.range(0, gridCnt).toArray();
+
+            waitForCondition(() -> count(DEFAULT_CACHE_NAME, OWNING, idxs) == parts, timeout);
+
+            assertEquals(parts, count(DEFAULT_CACHE_NAME, OWNING, idxs));
+        } finally {
+            System.clearProperty(IGNITE_PRELOAD_RESEND_TIMEOUT);
         }
-
-        assertEquals(parts, owners);
     }
 
     /**
@@ -299,7 +353,13 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
 
         return top.localPartitions().stream()
             .map(GridDhtLocalPartition::state)
-            .collect(Collectors.toList());
+            .collect(toList());
+    }
+
+    /** */
+    private int count(String cacheName, GridDhtPartitionState state, int ... gridIdx) {
+        return Arrays.stream(gridIdx).map(idx ->
+            getPartitionsStates(idx, cacheName).stream().filter(isEqual(state)).collect(toList()).size()).sum();
     }
 
     /**
