@@ -10921,7 +10921,7 @@ public abstract class IgniteUtils {
         private Throwable error;
 
         /** */
-        private volatile Future<Collection<R>> future;
+        private Future<Collection<R>> future;
 
         /**
          * @param batchSize Batch size.
