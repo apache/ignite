@@ -2096,7 +2096,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
 
             {
-                // Second, let's check if we already have a parsed statement...
+                // Second, let's check if we already have a parsed statement.
                 PreparedStatement cachedStmt;
 
                 if ((cachedStmt = cachedStatement(connectionForSchema(schemaName), qry.getSql())) != null) {
