@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageP
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.SimpleDataPageIO;
 import org.apache.ignite.internal.util.GridIntList;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -874,6 +875,8 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
 
     private void checkCompressDecompress(ByteBuffer page, Function<ByteBuffer, ?> getPageContents, boolean fullPage)
         throws IgniteCheckedException {
+        PageIO.setCrc(page, 0xABCDEF13);
+
         long pageId = PageIO.getPageId(page);
         PageIO io = PageIO.getPageIO(page);
 
@@ -916,10 +919,20 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
         assertEquals(0, PageIO.getCompressedSize(page));
         assertEquals(0, PageIO.getCompactedSize(page));
 
-        if (getPageContents != null)
-            assertEquals(getPageContents.apply(page), getPageContents.apply(decompress));
+        assertTrue(Arrays.equals(getPageCommonHeader(page), getPageCommonHeader(decompress)));
+        assertEquals(getPageContents.apply(page), getPageContents.apply(decompress));
     }
 
+    /**
+     * @param page Page.
+     * @return Page header.
+     */
+    private static byte[] getPageCommonHeader(ByteBuffer page) {
+        return PageUtils.getBytes(GridUnsafe.bufferAddress(page), 0, PageIO.COMMON_HEADER_END);
+    }
+
+    /**
+     */
     private static class Bytes {
         /** */
         private final byte[] bytes;
