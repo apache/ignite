@@ -10807,9 +10807,11 @@ public abstract class IgniteUtils {
             batches.add(batch);
         }
 
-        List<Batch<T, R>> batchesInPool = batches.stream()
+        batches = batches.stream()
             .filter(batch -> !batch.tasks.isEmpty())
+            // Add to set only after check that batch is not empty.
             .peek(sharedBatchesSet::add)
+            // Setup future in batch for waiting result.
             .peek(batch -> batch.future = executorSvc.submit(() -> {
                 // Batch was stolen by the main stream
                 if (!sharedBatchesSet.remove(batch)) {
@@ -10830,7 +10832,7 @@ public abstract class IgniteUtils {
         // Stealing jobs if executor is busy and cannot process task immediately.
         // Perform batches in a current thread.
         for (Batch<T, R> batch : sharedBatchesSet) {
-            // Executor steal last task after isEmpty check.
+            // Executor steal task.
             if (!sharedBatchesSet.remove(batch))
                 break;
 
@@ -10853,11 +10855,11 @@ public abstract class IgniteUtils {
         // Final result collection.
         Collection<R> results = new ArrayList<>(srcDatas.size());
 
-        for (Batch<T, R> batch: batchesInPool) {
+        for (Batch<T, R> batch: batches) {
             try {
                 Collection<R> res = batch.result();
 
-                assert res != null;
+                assert res != null && error == null;
 
                 results.addAll(res);
             }
