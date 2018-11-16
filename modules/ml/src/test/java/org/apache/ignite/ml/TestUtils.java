@@ -326,4 +326,23 @@ public class TestUtils {
 
         }
     }
+
+    /**
+     * Gets test learning environment builder.
+     *
+     * @return test learning environment builder.
+     */
+    public static LearningEnvironmentBuilder testEnvBuilder() {
+        return testEnvBuilder(123L);
+    }
+
+    /**
+     * Gets test learning environment builder with a given seed.
+     *
+     * @param seed Seed.
+     * @return test learning environment builder.
+     */
+    public static LearningEnvironmentBuilder testEnvBuilder(long seed) {
+        return LearningEnvironmentBuilder.defaultBuilder().withRNGSeed(seed);
+    }
 }

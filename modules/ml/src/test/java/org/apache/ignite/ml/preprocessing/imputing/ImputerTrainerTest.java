@@ -19,6 +19,7 @@ package org.apache.ignite.ml.preprocessing.imputing;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
@@ -48,7 +49,7 @@ public class ImputerTrainerTest extends TrainerTest {
             .withImputingStrategy(ImputingStrategy.MOST_FREQUENT);
 
         ImputerPreprocessor<Integer, Vector> preprocessor = imputerTrainer.fit(
-            testEnvBuilder(),
+            TestUtils.testEnvBuilder(),
             datasetBuilder,
             (k, v) -> v
         );

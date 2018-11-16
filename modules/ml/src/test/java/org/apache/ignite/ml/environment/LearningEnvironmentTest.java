@@ -48,7 +48,7 @@ public class LearningEnvironmentTest {
             .withSubSampleSize(0.3)
             .withSeed(0);
 
-        LearningEnvironmentBuilder envBuilder = LearningEnvironment.builder()
+        LearningEnvironmentBuilder envBuilder = LearningEnvironmentBuilder.defaultBuilder()
             .withParallelismStrategy(ParallelismStrategy.Type.ON_DEFAULT_POOL)
             .withLoggingFactory(ConsoleLogger.factory(MLLogger.VerboseLevel.LOW));
 

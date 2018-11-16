@@ -40,8 +40,8 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.ml.dataset.PartitionContextBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
-import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
+import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
@@ -164,7 +164,7 @@ public class ComputeUtils {
             .computeIfAbsent(String.format(DATA_STORAGE_KEY_TEMPLATE, datasetId), key -> new PartitionDataStorage());
 
         return dataStorage.computeDataIfAbsent(part, () -> {
-            LearningEnvironment env = envBuilder.build(part);
+            LearningEnvironment env = envBuilder.buildForWorker(part);
             IgniteCache<Integer, C> learningCtxCache = ignite.cache(datasetCacheName);
             C ctx = learningCtxCache.get(part);
 
@@ -225,7 +225,7 @@ public class ComputeUtils {
         int interval) {
         affinityCallWithRetries(ignite, Arrays.asList(datasetCacheName, upstreamCacheName), part -> {
             Ignite locIgnite = Ignition.localIgnite();
-            LearningEnvironment env = envBuilder.build(part);
+            LearningEnvironment env = envBuilder.buildForWorker(part);
 
             IgniteCache<K, V> locUpstreamCache = locIgnite.cache(upstreamCacheName);
 

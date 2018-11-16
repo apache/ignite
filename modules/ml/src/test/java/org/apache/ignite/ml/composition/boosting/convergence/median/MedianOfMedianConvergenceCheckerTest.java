@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.composition.boosting.convergence.median;
 
+import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceChecker;
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckerTest;
 import org.apache.ignite.ml.dataset.impl.local.LocalDataset;
@@ -25,7 +26,6 @@ import org.apache.ignite.ml.dataset.primitive.FeatureMatrixWithLabelsOnHeapData;
 import org.apache.ignite.ml.dataset.primitive.FeatureMatrixWithLabelsOnHeapDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Assert;
@@ -45,7 +45,7 @@ public class MedianOfMedianConvergenceCheckerTest extends ConvergenceCheckerTest
         double error = checker.computeError(VectorUtils.of(1, 2), 4.0, notConvergedMdl);
         Assert.assertEquals(1.9, error, 0.01);
 
-        LearningEnvironmentBuilder envBuilder = LearningEnvironment.builder(777L);
+        LearningEnvironmentBuilder envBuilder = TestUtils.testEnvBuilder();
 
         Assert.assertFalse(checker.isConverged(envBuilder, datasetBuilder, notConvergedMdl));
         Assert.assertTrue(checker.isConverged(envBuilder, datasetBuilder, convergedMdl));

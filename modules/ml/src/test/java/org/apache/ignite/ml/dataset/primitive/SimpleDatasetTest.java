@@ -19,6 +19,7 @@ package org.apache.ignite.ml.dataset.primitive;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.dataset.DatasetFactory;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
@@ -44,7 +45,7 @@ public class SimpleDatasetTest {
         try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(
             dataPoints,
             2,
-            LearningEnvironment.builder(567L),
+            TestUtils.testEnvBuilder(),
             (k, v) -> VectorUtils.of(v.getAge(), v.getSalary())
         )) {
             assertArrayEquals("Mean values.", new double[] {37.75, 66000.0}, dataset.mean(), 0);

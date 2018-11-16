@@ -28,8 +28,8 @@ import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionContextBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
-import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
+import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
@@ -94,7 +94,7 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
         int ptr = 0;
         for (int part = 0; part < partitions; part++) {
             int cnt = part == partitions - 1 ? filteredMap.size() - ptr : Math.min(partSize, filteredMap.size() - ptr);
-            LearningEnvironment env = envBuilder.build(part);
+            LearningEnvironment env = envBuilder.buildForWorker(part);
 
             C ctx = cnt > 0 ? partCtxBuilder.build(
                 env,

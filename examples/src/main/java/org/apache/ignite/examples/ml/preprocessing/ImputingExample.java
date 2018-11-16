@@ -60,7 +60,7 @@ public class ImputingExample {
             );
 
             // Defines second preprocessor that imputing features.
-            LearningEnvironmentBuilder envBuilder = new LearningEnvironmentBuilder();
+            LearningEnvironmentBuilder envBuilder = LearningEnvironmentBuilder.defaultBuilder();
             IgniteBiFunction<Integer, Person, Vector> preprocessor = new ImputerTrainer<Integer, Person>()
                 .fit(envBuilder, ignite, persons, featureExtractor);
 

@@ -30,7 +30,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderTrainer;
@@ -49,6 +48,7 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
 
+import static org.apache.ignite.ml.TestUtils.testEnvBuilder;
 import static org.junit.Assert.assertArrayEquals;
 
 /**
@@ -290,7 +290,7 @@ public class EvaluatorTest extends GridCommonAbstractTest {
                 .withEncodedFeature(1)
                 .withEncodedFeature(6) // <--- Changed index here
                 .fit(
-                    LearningEnvironment.builder(123L),
+                    testEnvBuilder(123L),
                     ignite,
                     cache,
                     featureExtractor
@@ -298,7 +298,7 @@ public class EvaluatorTest extends GridCommonAbstractTest {
 
             IgniteBiFunction<Integer, Object[], Vector> imputingPreprocessor = new ImputerTrainer<Integer, Object[]>()
                 .fit(
-                    LearningEnvironment.builder(124L),
+                    testEnvBuilder(124L),
                     ignite,
                     cache,
                     strEncoderPreprocessor
@@ -306,7 +306,7 @@ public class EvaluatorTest extends GridCommonAbstractTest {
 
             IgniteBiFunction<Integer, Object[], Vector> minMaxScalerPreprocessor = new MinMaxScalerTrainer<Integer, Object[]>()
                 .fit(
-                    LearningEnvironment.builder(125L),
+                    testEnvBuilder(125L),
                     ignite,
                     cache,
                     imputingPreprocessor
@@ -315,7 +315,7 @@ public class EvaluatorTest extends GridCommonAbstractTest {
             return new NormalizationTrainer<Integer, Object[]>()
                 .withP(2)
                 .fit(
-                    LearningEnvironment.builder(126L),
+                    testEnvBuilder(126L),
                     ignite,
                     cache,
                     minMaxScalerPreprocessor

@@ -25,6 +25,7 @@ import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.environment.logging.MLLogger;
@@ -40,9 +41,9 @@ import org.jetbrains.annotations.NotNull;
  */
 public abstract class DatasetTrainer<M extends Model, L> {
     /** Learning environment builder. */
-    protected LearningEnvironmentBuilder envBuilder = LearningEnvironment.builder();
+    protected LearningEnvironmentBuilder envBuilder = LearningEnvironmentBuilder.defaultBuilder();
     /** Learning Environment. */
-    protected LearningEnvironment environment = envBuilder.build();
+    protected LearningEnvironment environment = envBuilder.buildForTrainer();
 
     /**
      * Trains model based on the specified data.
@@ -297,7 +298,7 @@ public abstract class DatasetTrainer<M extends Model, L> {
      */
     public void setEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
         this.envBuilder  = envBuilder;
-        this.environment = envBuilder.build();
+        this.environment = envBuilder.buildForTrainer();
     }
 
     /**

@@ -26,7 +26,6 @@ import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
-import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -55,7 +54,7 @@ public class Pipeline<K, V, R> {
     /** Final trainer stage. */
     private DatasetTrainer finalStage;
 
-    private LearningEnvironmentBuilder envBuilder = LearningEnvironment.builder();
+    private LearningEnvironmentBuilder envBuilder = LearningEnvironmentBuilder.defaultBuilder();
 
     /**
      * Adds feature extractor as a zero stage.

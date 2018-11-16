@@ -19,6 +19,7 @@ package org.apache.ignite.ml.dataset.primitive;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.dataset.DatasetFactory;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
@@ -48,7 +49,7 @@ public class SimpleLabeledDatasetTest {
         // Creates a local simple dataset containing features and providing standard dataset API.
         try (SimpleLabeledDataset<?> dataset = DatasetFactory.createSimpleLabeledDataset(
             dataPoints,
-            LearningEnvironment.builder(123L),
+            TestUtils.testEnvBuilder(),
             2,
             (k, v) -> VectorUtils.of(v.getAge(), v.getSalary()),
             (k, v) -> new double[] {k, v.getAge(), v.getSalary()}

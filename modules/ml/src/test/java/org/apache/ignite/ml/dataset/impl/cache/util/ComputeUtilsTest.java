@@ -32,6 +32,7 @@ import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -190,7 +191,7 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
                         UpstreamEntry<Integer, Integer> e = upstream.next();
                         return new TestPartitionData(e.getKey() + e.getValue());
                     },
-                    LearningEnvironment.builder(123L)
+                    TestUtils.testEnvBuilder()
                 ),
                 0
             );
@@ -237,7 +238,7 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
                 UpstreamEntry<Integer, Integer> e = upstream.next();
                 return e.getKey() + e.getValue();
             },
-            LearningEnvironment.builder(789L),
+            TestUtils.testEnvBuilder(),
             0
         );
 

@@ -165,7 +165,7 @@ public class GDBLearningStrategy {
      */
     public GDBLearningStrategy withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
         this.envBuilder = envBuilder;
-        this.environment = envBuilder.build();
+        this.environment = envBuilder.buildForTrainer();
         return this;
     }
 

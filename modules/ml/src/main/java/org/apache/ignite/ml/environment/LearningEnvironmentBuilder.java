@@ -17,147 +17,65 @@
 
 package org.apache.ignite.ml.environment;
 
-import java.util.Random;
 import org.apache.ignite.ml.environment.logging.MLLogger;
-import org.apache.ignite.ml.environment.logging.NoOpLogger;
-import org.apache.ignite.ml.environment.parallelism.DefaultParallelismStrategy;
-import org.apache.ignite.ml.environment.parallelism.NoParallelismStrategy;
 import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
 
-/**
- * Builder for LearningEnvironment.
- */
-public class LearningEnvironmentBuilder {
-    /** Parallelism strategy. */
-    private ParallelismStrategy parallelismStgy;
-    /** Logging factory. */
-    private MLLogger.Factory loggingFactory;
-
-    private long seed;
-
+public interface LearningEnvironmentBuilder {
     /**
-     * Creates an instance of LearningEnvironmentBuilder.
-     */
-    LearningEnvironmentBuilder() {
-        this(new Random().nextLong());
-    }
-
-    LearningEnvironmentBuilder(long seed) {
-        parallelismStgy = NoParallelismStrategy.INSTANCE;
-        loggingFactory = NoOpLogger.factory();
-        this.seed = seed;
-    }
-
-    /**
-     * Specifies Parallelism Strategy for LearningEnvironment.
+     * Builds {@link LearningEnvironment} for worker on given partition.
      *
-     * @param stgy Parallelism Strategy.
+     * @param part Partition.
+     * @return {@link LearningEnvironment} for worker on given partition.
      */
-    public <T> LearningEnvironmentBuilder withParallelismStrategy(ParallelismStrategy stgy) {
-        this.parallelismStgy = stgy;
+    public LearningEnvironment buildForWorker(int part);
 
-        return this;
+    /**
+     * Builds learning environment for trainer.
+     *
+     * @return Learning environment for trainer.
+     */
+    default public LearningEnvironment buildForTrainer() {
+        return buildForWorker(-1);
     }
 
     /**
      * Specifies Parallelism Strategy for LearningEnvironment.
      *
      * @param stgyType Parallelism Strategy Type.
+     * @return This object.
      */
-    public LearningEnvironmentBuilder withParallelismStrategy(ParallelismStrategy.Type stgyType) {
-        switch (stgyType) {
-            case NO_PARALLELISM:
-                this.parallelismStgy = NoParallelismStrategy.INSTANCE;
-                break;
-            case ON_DEFAULT_POOL:
-                this.parallelismStgy = new DefaultParallelismStrategy();
-                break;
-        }
-        return this;
-    }
-
+    public LearningEnvironmentBuilder withParallelismStrategy(ParallelismStrategy.Type stgyType);
 
     /**
-     * Specifies Logging factory for LearningEnvironment.
+     * Specifies Parallelism Strategy for LearningEnvironment.
      *
-     * @param loggingFactory Logging Factory.
+     * @param stgy Parallelism Strategy.
+     * @return This object.
      */
-    public LearningEnvironmentBuilder withLoggingFactory(MLLogger.Factory loggingFactory) {
-        this.loggingFactory = loggingFactory;
-        return this;
-    }
+    public LearningEnvironmentBuilder withParallelismStrategy(ParallelismStrategy stgy);
 
     /**
-     * Create an instance of LearningEnvironment for given partition.
+     * Specify logging factory.
      *
-     * @param part Partition.
+     * @param loggingFactory Logging factory.
+     * @return This object.
      */
-    public LearningEnvironment build(int part) {
-        return new LearningEnvironmentImpl(part, seed, parallelismStgy, loggingFactory);
-    }
+    public LearningEnvironmentBuilder withLoggingFactory(MLLogger.Factory loggingFactory);
 
     /**
-     * Create an instance of LearningEnvironment for given partition.
+     * Specify seed for random number generator.
+     *
+     * @param seed Seed for random number generator.
+     * @return This object.
      */
-    public LearningEnvironment build() {
-        return new LearningEnvironmentImpl(-1, seed, parallelismStgy, loggingFactory);
-    }
-
+    public LearningEnvironmentBuilder withRNGSeed(long seed);
 
     /**
-     * Default LearningEnvironment implementation.
+     * Get default {@link LearningEnvironmentBuilder}.
+     *
+     * @return Default {@link LearningEnvironmentBuilder}.
      */
-    private class LearningEnvironmentImpl implements LearningEnvironment {
-        /** Parallelism strategy. */
-        private final ParallelismStrategy parallelismStgy;
-        /** Logging factory. */
-        private final MLLogger.Factory loggingFactory;
-        /** Partition. */
-        private final int part;
-        /** Random numbers generator. */
-        private final Random randomNumGen;
-
-        /**
-         * Creates an instance of LearningEnvironmentImpl.
-         *
-         * @param part Partition.
-         * @param parallelismStgy Parallelism strategy.
-         * @param loggingFactory Logging factory.
-         */
-        private LearningEnvironmentImpl(
-            int part,
-            long seed,
-            ParallelismStrategy parallelismStgy,
-            MLLogger.Factory loggingFactory) {
-            this.part = part;
-            this.parallelismStgy = parallelismStgy;
-            this.loggingFactory = loggingFactory;
-            randomNumGen = new Random(seed + part);
-        }
-
-        /** {@inheritDoc} */
-        @Override public ParallelismStrategy parallelismStrategy() {
-            return parallelismStgy;
-        }
-
-        /** {@inheritDoc} */
-        @Override public MLLogger logger() {
-            return loggingFactory.create(getClass());
-        }
-
-        /** {@inheritDoc} */
-        @Override public Random randomNumbersGenerator() {
-            return randomNumGen;
-        }
-
-        /** {@inheritDoc} */
-        @Override public <T> MLLogger logger(Class<T> clazz) {
-            return loggingFactory.create(clazz);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int partition() {
-            return part;
-        }
+    public static LearningEnvironmentBuilder defaultBuilder() {
+        return new DefaultLearningEnvironmentBuilder();
     }
 }

@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.dataset.PartitionContextBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironment;
@@ -106,7 +107,7 @@ public class LocalDatasetBuilderTest {
         };
 
         return builder.build(
-            LearningEnvironment.builder(123L),
+            TestUtils.testEnvBuilder(),
             partCtxBuilder.andThen(x -> null),
             partDataBuilder.andThen((x, y) -> x)
         );

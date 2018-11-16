@@ -38,9 +38,9 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleDatasetData;
 import org.apache.ignite.ml.environment.LearningEnvironment;
-import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -85,7 +85,7 @@ public class CacheBasedDatasetTest extends GridCommonAbstractTest {
         CacheBasedDatasetBuilder<Integer, String> builder = new CacheBasedDatasetBuilder<>(ignite, upstreamCache);
 
         CacheBasedDataset<Integer, String, Long, SimpleDatasetData> dataset = builder.build(
-            LearningEnvironment.builder(12345L),
+            TestUtils.testEnvBuilder(),
             (env, upstream, upstreamSize) -> upstreamSize,
             (env, upstream, upstreamSize, ctx) -> new SimpleDatasetData(new double[0], 0)
         );
@@ -141,7 +141,7 @@ public class CacheBasedDatasetTest extends GridCommonAbstractTest {
         CacheBasedDatasetBuilder<Integer, String> builder = new CacheBasedDatasetBuilder<>(ignite, upstreamCache);
 
         CacheBasedDataset<Integer, String, Long, SimpleDatasetData> dataset = builder.build(
-            LearningEnvironment.builder(123L),
+            TestUtils.testEnvBuilder(),
             (env, upstream, upstreamSize) -> upstreamSize,
             (env, upstream, upstreamSize, ctx) -> new SimpleDatasetData(new double[0], 0)
         );

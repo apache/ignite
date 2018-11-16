@@ -26,6 +26,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -67,7 +68,7 @@ public class CacheBasedDatasetBuilderTest extends GridCommonAbstractTest {
         CacheBasedDatasetBuilder<Integer, String> builder = new CacheBasedDatasetBuilder<>(ignite, upstreamCache);
 
         CacheBasedDataset<Integer, String, Long, AutoCloseable> dataset = builder.build(
-            LearningEnvironment.builder(123L),
+            TestUtils.testEnvBuilder(),
             (env, upstream, upstreamSize) -> upstreamSize,
             (env, upstream, upstreamSize, ctx) -> null
         );
@@ -107,7 +108,7 @@ public class CacheBasedDatasetBuilderTest extends GridCommonAbstractTest {
         );
 
         CacheBasedDataset<Integer, Integer, Long, AutoCloseable> dataset = builder.build(
-            LearningEnvironment.builder(789L),
+            TestUtils.testEnvBuilder(),
             (env, upstream, upstreamSize) -> {
                 UpstreamEntry<Integer, Integer> entry = upstream.next();
                 assertEquals(Integer.valueOf(2), entry.getKey());

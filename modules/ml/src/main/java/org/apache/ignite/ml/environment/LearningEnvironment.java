@@ -28,7 +28,7 @@ import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
  */
 public interface LearningEnvironment {
     /** Default environment */
-    public static final LearningEnvironment DEFAULT = builder().build(-1);
+    public static final LearningEnvironment DEFAULT_TRAINER_ENV = LearningEnvironmentBuilder.defaultBuilder().buildForTrainer();
 
     /**
      * Returns Parallelism Strategy instance.
@@ -53,22 +53,6 @@ public interface LearningEnvironment {
      * @param forCls Logging class context.
      */
     public <T> MLLogger logger(Class<T> forCls);
-
-    /**
-     * Creates an instance of LearningEnvironmentBuilder.
-     */
-    public static LearningEnvironmentBuilder builder() {
-        return new LearningEnvironmentBuilder();
-    }
-
-    /**
-     * Creates an instance of LearningEnvironmentBuilder with a given seed.
-     *
-     * @param seed Seed.
-     */
-    public static LearningEnvironmentBuilder builder(long seed) {
-        return new LearningEnvironmentBuilder(seed);
-    }
 
     /**
      * Gets current partition. If this is called not in one of compute tasks of {@link Dataset}, will return -1.
