@@ -53,7 +53,7 @@ public class CacheCompressionManager extends GridCacheManagerAdapter {
 
         if (diskPageCompression != null) {
             if (!cctx.dataRegion().config().isPersistenceEnabled())
-                throw new IgniteCheckedException("Page compression makes sense only with enabled persistence.");
+                throw new IgniteCheckedException("Disk page compression makes sense only with enabled persistence.");
 
             Integer lvl = cfg.getDiskPageCompressionLevel();
             diskPageCompressLevel = lvl != null ?
