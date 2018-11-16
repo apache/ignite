@@ -69,8 +69,8 @@ public class CacheCompressionManager extends GridCacheManagerAdapter {
             compressProc.checkPageCompressionSupported(dbPath.toPath(), dsCfg.getPageSize());
 
             if (log.isInfoEnabled()) {
-                log.info("Disk page compression is enabled [cache='" + cctx.name() +
-                    "', compression=" + diskPageCompression + ", level=" + diskPageCompressLevel + "]");
+                log.info("Disk page compression is enabled [cache=" + cctx.name() +
+                    ", compression=" + diskPageCompression + ", level=" + diskPageCompressLevel + "]");
             }
         }
     }
