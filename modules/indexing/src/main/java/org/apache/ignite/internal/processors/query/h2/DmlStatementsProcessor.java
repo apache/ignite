@@ -39,6 +39,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.query.BulkLoadContextCursor;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -119,6 +120,16 @@ public class DmlStatementsProcessor {
 
     /** Default size for update plan cache. */
     private static final int PLAN_CACHE_SIZE = 1024;
+
+    /** Cached value of {@code IgniteSystemProperties.IGNITE_ALLOW_DML_INSIDE_TRANSACTION}. */
+    private final boolean isDmlAllowedOverride;
+
+    /**
+     * Default constructor.
+     */
+    public DmlStatementsProcessor() {
+        isDmlAllowedOverride = Boolean.getBoolean(IgniteSystemProperties.IGNITE_ALLOW_DML_INSIDE_TRANSACTION);
+    }
 
     /** Update plans cache. */
     private final ConcurrentMap<H2CachedStatementKey, UpdatePlan> planCache =
@@ -737,7 +748,7 @@ public class DmlStatementsProcessor {
         if (res != null)
             return res;
 
-        res = UpdatePlanBuilder.planForStatement(p, loc, idx, conn, fieldsQry, errKeysPos);
+        res = UpdatePlanBuilder.planForStatement(p, loc, idx, conn, fieldsQry, errKeysPos, isDmlAllowedOverride);
 
         // Don't cache re-runs
         if (errKeysPos == null)
