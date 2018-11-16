@@ -66,6 +66,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
@@ -675,9 +676,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * Use with {@link #busyLock} where appropriate.
      * @param cctx Cache context.
      * @param schema Initial schema.
+     * @param isSql {@code true} in case create cache initialized from SQL.
      * @throws IgniteCheckedException If failed.
      */
-    public void onCacheStart0(GridCacheContext<?, ?> cctx, QuerySchema schema)
+    public void onCacheStart0(GridCacheContext<?, ?> cctx, QuerySchema schema, boolean isSql)
         throws IgniteCheckedException {
 
         cctx.shared().database().checkpointReadLock();
@@ -798,7 +800,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 }
 
                 // Ready to register at this point.
-                registerCache0(cacheName, schemaName, cctx, cands);
+                registerCache0(cacheName, schemaName, cctx, cands, isSql);
 
                 // Warn about possible implicit deserialization.
                 if (!mustDeserializeClss.isEmpty()) {
@@ -849,9 +851,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param cctx Cache context.
      * @param schema Index states.
+     * @param isSql {@code true} in case create cache initialized from SQL.
      * @throws IgniteCheckedException If failed.
      */
-    public void onCacheStart(GridCacheContext cctx, QuerySchema schema) throws IgniteCheckedException {
+    public void onCacheStart(GridCacheContext cctx, QuerySchema schema, boolean isSql) throws IgniteCheckedException {
         if (idx == null)
             return;
 
@@ -859,7 +862,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return;
 
         try {
-            onCacheStart0(cctx, schema);
+            onCacheStart0(cctx, schema, isSql);
         }
         finally {
             busyLock.leaveBusy();
@@ -1582,13 +1585,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param schemaName Schema name.
      * @param cctx Cache context.
      * @param cands Candidates.
+     * @param isSql {@code true} in case create cache initialized from SQL.
      * @throws IgniteCheckedException If failed.
      */
     private void registerCache0(
         String cacheName,
         String schemaName,
         GridCacheContext<?, ?> cctx,
-        Collection<QueryTypeCandidate> cands
+        Collection<QueryTypeCandidate> cands,
+        boolean isSql
     ) throws IgniteCheckedException {
         synchronized (stateMux) {
             if (idx != null)
@@ -1623,7 +1628,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     }
 
                     if (idx != null)
-                        idx.registerType(cctx, desc);
+                        idx.registerType(cctx, desc, isSql);
                 }
 
                 cacheNames.add(CU.mask(cacheName));
@@ -2074,7 +2079,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public List<FieldsQueryCursor<List<?>>> querySqlFields(final SqlFieldsQuery qry, final boolean keepBinary,
         final boolean failOnMultipleStmts) {
-        return querySqlFields(null, qry, null, keepBinary, failOnMultipleStmts);
+        return querySqlFields(
+            null,
+            qry,
+            null,
+            keepBinary,
+            failOnMultipleStmts
+        );
     }
 
     /**
@@ -2085,7 +2096,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Cursor.
      */
     public FieldsQueryCursor<List<?>> querySqlFields(final SqlFieldsQuery qry, final boolean keepBinary) {
-        return querySqlFields(null, qry, null, keepBinary, true).get(0);
+        return querySqlFields(
+            null,
+            qry,
+            null,
+            keepBinary,
+            true
+        ).get(0);
     }
 
     /**
@@ -2099,40 +2116,92 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *      more then one SQL statement.
      * @return Cursor.
      */
-    public List<FieldsQueryCursor<List<?>>> querySqlFields(@Nullable final GridCacheContext<?, ?> cctx,
-        final SqlFieldsQuery qry, final SqlClientContext cliCtx, final boolean keepBinary,
-        final boolean failOnMultipleStmts) {
+    public List<FieldsQueryCursor<List<?>>> querySqlFields(
+        @Nullable final GridCacheContext<?, ?> cctx,
+        final SqlFieldsQuery qry,
+        final SqlClientContext cliCtx,
+        final boolean keepBinary,
+        final boolean failOnMultipleStmts
+    ) {
+        return querySqlFields(
+            cctx,
+            qry,
+            cliCtx,
+            keepBinary,
+            failOnMultipleStmts,
+            GridCacheQueryType.SQL_FIELDS
+        );
+    }
+
+    /**
+     * Query SQL fields.
+     *
+     * @param cctx Cache context.
+     * @param qry Query.
+     * @param cliCtx Client context.
+     * @param keepBinary Keep binary flag.
+     * @param failOnMultipleStmts If {@code true} the method must throws exception when query contains
+     *      more then one SQL statement.
+     * @param qryType Real query type.
+     * @return Cursor.
+     */
+    public List<FieldsQueryCursor<List<?>>> querySqlFields(
+        @Nullable final GridCacheContext<?, ?> cctx,
+        final SqlFieldsQuery qry,
+        final SqlClientContext cliCtx,
+        final boolean keepBinary,
+        final boolean failOnMultipleStmts,
+        GridCacheQueryType qryType
+    ) {
+        // Validate.
         checkxEnabled();
 
-        validateSqlFieldsQuery(qry, ctx, cctx);
+        if (qry.isDistributedJoins() && qry.getPartitions() != null)
+            throw new CacheException("Using both partitions and distributed JOINs is not supported for the same query");
 
-        if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to execute query (grid is stopping).");
+        if (qry.isLocal() && ctx.clientNode() && (cctx == null || cctx.config().getCacheMode() != CacheMode.LOCAL))
+            throw new CacheException("Execution of local SqlFieldsQuery on client node disallowed.");
 
+        return executeQuerySafe(cctx, () -> {
+            final String schemaName = qry.getSchema() != null ? qry.getSchema()
+                : (cctx != null ? idx.schema(cctx.name()) : QueryUtils.DFLT_SCHEMA);
+
+            IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>> clo =
+                new IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>>() {
+                    @Override public List<FieldsQueryCursor<List<?>>> applyx() {
+                        GridQueryCancel cancel = new GridQueryCancel();
+
+                        List<FieldsQueryCursor<List<?>>> res =
+                            idx.querySqlFields(schemaName, qry, cliCtx, keepBinary, failOnMultipleStmts, null, cancel);
+
+                        if (cctx != null)
+                            sendQueryExecutedEvent(qry.getSql(), qry.getArgs(), cctx);
+
+                        return res;
+                    }
+                };
+
+            return executeQuery(qryType, qry.getSql(), cctx, clo, true);
+        });
+    }
+
+    /**
+     * Execute query setting busy lock, preserving current cache context and properly handling checked exceptions.
+     *
+     * @param cctx Cache context.
+     * @param supplier Code to be executed.
+     * @return Result.
+     */
+    private <T> T executeQuerySafe(@Nullable final GridCacheContext<?, ?> cctx, SupplierX<T> supplier) {
         GridCacheContext oldCctx = curCache.get();
 
         curCache.set(cctx);
 
-        final String schemaName = qry.getSchema() != null ? qry.getSchema()
-            : (cctx != null ? idx.schema(cctx.name()) : QueryUtils.DFLT_SCHEMA);
+        if (!busyLock.enterBusy())
+            throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
-            IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>> clo =
-                new IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>>() {
-                @Override public List<FieldsQueryCursor<List<?>>> applyx() throws IgniteCheckedException {
-                    GridQueryCancel cancel = new GridQueryCancel();
-
-                    List<FieldsQueryCursor<List<?>>> res =
-                        idx.querySqlFields(schemaName, qry, cliCtx, keepBinary, failOnMultipleStmts, null, cancel);
-
-                    if (cctx != null)
-                        sendQueryExecutedEvent(qry.getSql(), qry.getArgs(), cctx);
-
-                    return res;
-                }
-            };
-
-            return executeQuery(GridCacheQueryType.SQL_FIELDS, qry.getSql(), cctx, clo, true);
+            return supplier.get();
         }
         catch (IgniteCheckedException e) {
             throw new CacheException(e);
@@ -2142,37 +2211,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             busyLock.leaveBusy();
         }
-    }
-
-    /**
-     * Validate SQL fields query.
-     *
-     * @param qry Query.
-     * @param ctx Kernal context.
-     * @param cctx Cache context.
-     */
-    private static void validateSqlFieldsQuery(SqlFieldsQuery qry, GridKernalContext ctx,
-        @Nullable GridCacheContext<?, ?> cctx) {
-        if (qry.isReplicatedOnly() && qry.getPartitions() != null)
-            throw new CacheException("Partitions are not supported in replicated only mode.");
-
-        if (qry.isDistributedJoins() && qry.getPartitions() != null)
-            throw new CacheException("Using both partitions and distributed JOINs is not supported for the same query");
-
-        if (qry.isLocal() && ctx.clientNode() && (cctx == null || cctx.config().getCacheMode() != CacheMode.LOCAL))
-            throw new CacheException("Execution of local SqlFieldsQuery on client node disallowed.");
-    }
-
-    /**
-     * Validate SQL query.
-     *
-     * @param qry Query.
-     * @param ctx Kernal context.
-     * @param cctx Cache context.
-     */
-    private static void validateSqlQuery(SqlQuery qry, GridKernalContext ctx, GridCacheContext<?, ?> cctx) {
-        if (qry.isLocal() && ctx.clientNode() && cctx.config().getCacheMode() != CacheMode.LOCAL)
-            throw new CacheException("Execution of local SqlQuery on client node disallowed.");
     }
 
     /**
@@ -2241,99 +2279,38 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param keepBinary Keep binary flag.
      * @return Cursor.
      */
-    public <K, V> QueryCursor<Cache.Entry<K,V>> querySql(final GridCacheContext<?,?> cctx, final SqlQuery qry,
-        boolean keepBinary) {
-        validateSqlQuery(qry, ctx, cctx);
+    public <K, V> QueryCursor<Cache.Entry<K,V>> querySql(
+        final GridCacheContext<?,?> cctx,
+        final SqlQuery qry,
+        boolean keepBinary
+    ) {
+        // Generate.
+        String type = qry.getType();
 
-        if (qry.isReplicatedOnly() && qry.getPartitions() != null)
-            throw new CacheException("Partitions are not supported in replicated only mode.");
+        String typeName = typeName(cctx.name(), type);
 
-        if (qry.isDistributedJoins() && qry.getPartitions() != null)
-            throw new CacheException(
-                "Using both partitions and distributed JOINs is not supported for the same query");
+        qry.setType(typeName);
 
-        if ((qry.isReplicatedOnly() && cctx.isReplicatedAffinityNode()) || cctx.isLocal() || qry.isLocal())
-            return queryLocalSql(cctx, qry, keepBinary);
+        SqlFieldsQuery fieldsQry = idx.generateFieldsQuery(cctx.name(), qry);
 
-        return queryDistributedSql(cctx, qry, keepBinary);
-    }
+        // Execute.
+        FieldsQueryCursor<List<?>> res = querySqlFields(
+            cctx,
+            fieldsQry,
+            null,
+            keepBinary,
+            true,
+            GridCacheQueryType.SQL
+        ).get(0);
 
-    /**
-     * @param cctx Cache context.
-     * @param qry Query.
-     * @param keepBinary Keep binary flag.
-     * @return Cursor.
-     */
-    private <K,V> QueryCursor<Cache.Entry<K,V>> queryDistributedSql(final GridCacheContext<?,?> cctx,
-        final SqlQuery qry, final boolean keepBinary) {
-        checkxEnabled();
+        // Convert.
+        QueryKeyValueIterable<K, V>converted = new QueryKeyValueIterable<>(res);
 
-        if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to execute query (grid is stopping).");
-
-        try {
-            final String schemaName = idx.schema(cctx.name());
-
-            return executeQuery(GridCacheQueryType.SQL, qry.getSql(), cctx,
-                new IgniteOutClosureX<QueryCursor<Cache.Entry<K, V>>>() {
-                    @Override public QueryCursor<Cache.Entry<K, V>> applyx() throws IgniteCheckedException {
-                        return idx.queryDistributedSql(schemaName, cctx.name(), qry, keepBinary);
-                    }
-                }, true);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
-    }
-
-    /**
-     * @param cctx Cache context.
-     * @param qry Query.
-     * @param keepBinary Keep binary flag.
-     * @return Cursor.
-     */
-    private <K, V> QueryCursor<Cache.Entry<K, V>> queryLocalSql(final GridCacheContext<?, ?> cctx, final SqlQuery qry,
-        final boolean keepBinary) {
-        if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to execute query (grid is stopping).");
-
-        final String schemaName = idx.schema(cctx.name());
-
-        try {
-            return executeQuery(GridCacheQueryType.SQL, qry.getSql(), cctx,
-                new IgniteOutClosureX<QueryCursor<Cache.Entry<K, V>>>() {
-                    @Override public QueryCursor<Cache.Entry<K, V>> applyx() throws IgniteCheckedException {
-                        String type = qry.getType();
-
-                        String typeName = typeName(cctx.name(), type);
-
-                        qry.setType(typeName);
-
-                        sendQueryExecutedEvent(
-                            qry.getSql(),
-                            qry.getArgs(),
-                            cctx);
-
-                        if (cctx.config().getQueryParallelism() > 1) {
-                            qry.setDistributedJoins(true);
-
-                            return idx.queryDistributedSql(schemaName, cctx.name(), qry, keepBinary);
-                        }
-                        else
-                            return idx.queryLocalSql(schemaName, cctx.name(), qry, idx.backupFilter(requestTopVer.get(),
-                                qry.getPartitions()), keepBinary);
-                    }
-                }, true);
-        }
-        catch (IgniteCheckedException e) {
-            throw new CacheException(e);
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
+        return new QueryCursorImpl<Cache.Entry<K, V>>(converted) {
+            @Override public void close() {
+                converted.cursor().close();
+            }
+        };
     }
 
     /**
@@ -2666,13 +2643,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cacheName Cache name.
      * @param typeName Type name.
      * @return Type descriptor.
-     * @throws IgniteCheckedException If failed.
      */
-    private String typeName(@Nullable String cacheName, String typeName) throws IgniteCheckedException {
+    private String typeName(@Nullable String cacheName, String typeName) throws IgniteException {
         QueryTypeDescriptorImpl type = typesByName.get(new QueryTypeNameKey(cacheName, typeName));
 
         if (type == null)
-            throw new IgniteCheckedException("Failed to find SQL table for type: " + typeName);
+            throw new IgniteException("Failed to find SQL table for type: " + typeName);
 
         return type.name();
     }
@@ -3142,5 +3118,19 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         @Override public String toString() {
             return S.toString(TableCacheFilter.class, this);
         }
+    }
+
+    /**
+     * Function which can throw exception.
+     */
+    @FunctionalInterface
+    private interface SupplierX<T> {
+        /**
+         * Get value.
+         *
+         * @return Value.
+         * @throws IgniteCheckedException If failed.
+         */
+        T get() throws IgniteCheckedException;
     }
 }

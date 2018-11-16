@@ -821,9 +821,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
-        //TODO IGNITE-7955
-        MvccUtils.verifyMvccOperationSupport(ctx, "Peek");
-
         PeekModes modes = parsePeekModes(peekModes, false);
 
         KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
@@ -895,7 +892,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     ctx.shared().database().checkpointReadLock();
 
                     try {
-                        cacheVal = e.peek(modes.heap, modes.offheap, topVer, plc);
+                        cacheVal = ctx.mvccEnabled()
+                            ? e.mvccPeek(modes.heap && !modes.offheap)
+                            : e.peek(modes.heap, modes.offheap, topVer, plc);
                     }
                     catch (GridCacheEntryRemovedException ignore) {
                         if (log.isDebugEnabled())
@@ -1927,6 +1926,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             /*keep cache objects*/false,
             recovery,
             needVer,
+            null,
             null); // TODO IGNITE-7371
     }
 
@@ -1942,6 +1942,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param skipVals Skip values flag.
      * @param keepCacheObjects Keep cache objects.
      * @param needVer If {@code true} returns values as tuples containing value and version.
+     * @param txLbl Transaction label.
      * @param mvccSnapshot MVCC snapshot.
      * @return Future.
      */
@@ -1958,6 +1959,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         final boolean keepCacheObjects,
         final boolean recovery,
         final boolean needVer,
+        @Nullable String txLbl,
         MvccSnapshot mvccSnapshot
     ) {
         if (F.isEmpty(keys))
@@ -2043,6 +2045,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                     if (evt) {
                                         ctx.events().readEvent(key,
                                             null,
+                                            txLbl,
                                             row.value(),
                                             subjId,
                                             taskName,

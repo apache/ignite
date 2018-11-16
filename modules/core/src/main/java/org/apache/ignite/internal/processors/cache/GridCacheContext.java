@@ -1267,21 +1267,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      *
      * @param e Element.
      * @param p Predicates.
-     * @return {@code True} if predicates passed.
-     * @throws IgniteCheckedException If failed.
-     */
-    public <K1, V1> boolean isAll(
-        GridCacheEntryEx e,
-        @Nullable IgnitePredicate<Cache.Entry<K1, V1>>[] p
-    ) throws IgniteCheckedException {
-        return F.isEmpty(p) || isAll(e.<K1, V1>wrapLazyValue(keepBinary()), p);
-    }
-
-    /**
-     * Same as {@link GridFunc#isAll(Object, IgnitePredicate[])}, but safely unwraps exceptions.
-     *
-     * @param e Element.
-     * @param p Predicates.
      * @param <E> Element type.
      * @return {@code True} if predicates passed.
      * @throws IgniteCheckedException If failed.
@@ -2254,9 +2239,14 @@ public class GridCacheContext<K, V> implements Externalizable {
      *
      * @param affNodes All affinity nodes.
      * @param canRemap Flag indicating that 'get' should be done on a locked topology version.
+     * @param partitionId Partition ID.
      * @return Affinity node to get key from or {@code null} if there is no suitable alive node.
      */
-    @Nullable public ClusterNode selectAffinityNodeBalanced(List<ClusterNode> affNodes, boolean canRemap) {
+    @Nullable public ClusterNode selectAffinityNodeBalanced(
+        List<ClusterNode> affNodes,
+        int partitionId,
+        boolean canRemap
+    ) {
         if (!readLoadBalancingEnabled) {
             if (!canRemap) {
                 for (ClusterNode node : affNodes) {
@@ -2280,7 +2270,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         ClusterNode n0 = null;
 
         for (ClusterNode node : affNodes) {
-            if (canRemap || discovery().alive(node)) {
+            if ((canRemap || discovery().alive(node) && isOwner(node, partitionId))) {
                 if (locMacs.equals(node.attribute(ATTR_MACS)))
                     return node;
 
@@ -2292,6 +2282,16 @@ public class GridCacheContext<K, V> implements Externalizable {
         }
 
         return n0;
+    }
+
+    /**
+     *  Check that node is owner for partition.
+     * @param node Cluster node.
+     * @param partitionId Partition ID.
+     * @return {@code}
+     */
+    private boolean isOwner(ClusterNode node, int partitionId) {
+        return topology().partitionState(node.id(), partitionId) == OWNING;
     }
 
     /**

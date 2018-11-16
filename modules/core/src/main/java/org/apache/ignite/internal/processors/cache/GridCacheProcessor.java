@@ -1257,7 +1257,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     boolean rmvIdx = !cache.context().group().persistenceEnabled();
 
                     ctx.query().onCacheStop0(cctx, rmvIdx);
-                    ctx.query().onCacheStart0(cctx, desc.schema());
+                    ctx.query().onCacheStart0(cctx, desc.schema(), desc.sql());
                 }
             }
         }
@@ -2141,7 +2141,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 cctx,
                                 cacheInfo.getCacheDescriptor().schema() != null
                                     ? cacheInfo.getCacheDescriptor().schema()
-                                    : new QuerySchema()
+                                    : new QuerySchema(),
+                                cacheInfo.getCacheDescriptor().sql()
                             );
                         }
 
@@ -2197,12 +2198,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     ) throws IgniteCheckedException {
         GridCacheContext cacheCtx = prepareCacheContext(startCfg, desc, reqNearCfg, exchTopVer, disabledAfterStart);
 
-        ctx.query().onCacheStart(cacheCtx, desc.schema() != null ? desc.schema() : new QuerySchema());
-
         if (cacheCtx.isRecoveryMode())
             finishRecovery(exchTopVer, cacheCtx);
-        else
+        else {
+            ctx.query().onCacheStart(cacheCtx, desc.schema() != null ? desc.schema() : new QuerySchema(), desc.sql());
+
             onCacheStarted(cacheCtx);
+        }
     }
 
     /**
@@ -2558,7 +2560,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         grp.onCacheStarted(cacheCtx);
 
-        ctx.query().onCacheStart(cacheCtx, desc.schema() != null ? desc.schema() : new QuerySchema());
+        ctx.query().onCacheStart(cacheCtx, desc.schema() != null ? desc.schema() : new QuerySchema(), desc.sql());
 
         if (log.isInfoEnabled()) {
             log.info("Started cache in recovery mode [name=" + cfg.getName() +

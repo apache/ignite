@@ -30,10 +30,6 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
-
 /**
  * Direct native IO factory for block IO operations on aligned memory structures.<br>
  * This limited functionality is used for page store operations.<br>

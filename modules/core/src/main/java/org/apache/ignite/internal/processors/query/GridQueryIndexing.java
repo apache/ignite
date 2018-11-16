@@ -21,11 +21,9 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
-import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.GridKernalContext;
@@ -70,16 +68,13 @@ public interface GridQueryIndexing {
     public void onClientDisconnect() throws IgniteCheckedException;
 
     /**
-     * Parses SQL query into two step query and executes it.
+     * Generate SqlFieldsQuery from SqlQuery.
      *
-     * @param schemaName Schema name.
      * @param cacheName Cache name.
      * @param qry Query.
-     * @param keepBinary Keep binary flag.
-     * @throws IgniteCheckedException If failed.
+     * @return Fields query.
      */
-    public <K, V> QueryCursor<Cache.Entry<K, V>> queryDistributedSql(String schemaName, String cacheName, SqlQuery qry,
-        boolean keepBinary) throws IgniteCheckedException;
+    public SqlFieldsQuery generateFieldsQuery(String cacheName, SqlQuery qry);
 
     /**
      * Detect whether SQL query should be executed in distributed or local manner and execute it.
@@ -119,18 +114,6 @@ public interface GridQueryIndexing {
      */
     public List<Long> streamBatchedUpdateQuery(String schemaName, String qry, List<Object[]> params,
         SqlClientContext cliCtx) throws IgniteCheckedException;
-
-    /**
-     * Executes regular query.
-     *
-     * @param schemaName Schema name.
-     * @param cacheName Cache name.
-     * @param qry Query.
-     * @param filter Cache name and key filter.
-     * @param keepBinary Keep binary flag.    @return Cursor.
-     */
-    public <K, V> QueryCursor<Cache.Entry<K,V>> queryLocalSql(String schemaName, String cacheName, SqlQuery qry,
-        IndexingQueryFilter filter, boolean keepBinary) throws IgniteCheckedException;
 
     /**
      * Queries individual fields (generally used by JDBC drivers).
@@ -259,7 +242,7 @@ public interface GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      * @return {@code True} if type was registered, {@code false} if for some reason it was rejected.
      */
-    public boolean registerType(GridCacheContext cctx, GridQueryTypeDescriptor desc) throws IgniteCheckedException;
+    public boolean registerType(GridCacheContext cctx, GridQueryTypeDescriptor desc, boolean isSql) throws IgniteCheckedException;
 
     /**
      * Updates index. Note that key is unique for cache, so if cache contains multiple indexes
