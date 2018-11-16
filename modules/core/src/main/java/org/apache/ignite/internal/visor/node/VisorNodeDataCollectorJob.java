@@ -335,7 +335,8 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
         if (debug)
             start0 = log(ignite.log(), "Collected memory metrics", getClass(), start0);
 
-        caches(res, arg);
+        if (ignite.cluster().active())
+            caches(res, arg);
 
         if (debug)
             start0 = log(ignite.log(), "Collected caches", getClass(), start0);

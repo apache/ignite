@@ -319,6 +319,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         expiryPlc,
                         skipVals,
                         recovery,
+                        null,
                         null); // TODO IGNITE-7371
 
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
@@ -383,6 +384,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     skipVals,
                     cctx.deploymentEnabled(),
                     recovery,
+                    null,
                     null); // TODO IGNITE-7371
 
                 add(fut); // Append new future.
@@ -411,7 +413,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
      * @param saved Reserved near cache entries.
      * @return Map.
      */
-    @SuppressWarnings("unchecked")
     private Map<KeyCacheObject, GridNearCacheEntry> map(
         KeyCacheObject key,
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings,
@@ -424,7 +425,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         List<ClusterNode> affNodes = cctx.affinity().nodesByPartition(part, topVer);
 
         if (affNodes.isEmpty()) {
-            onDone(serverNotFoundError(topVer));
+            onDone(serverNotFoundError(part, topVer));
 
             return null;
         }
@@ -493,10 +494,10 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         }
                     }
 
-                    ClusterNode affNode = cctx.selectAffinityNodeBalanced(affNodes, canRemap);
+                    ClusterNode affNode = cctx.selectAffinityNodeBalanced(affNodes, part, canRemap);
 
                     if (affNode == null) {
-                        onDone(serverNotFoundError(topVer));
+                        onDone(serverNotFoundError(part, topVer));
 
                         return saved;
                     }
