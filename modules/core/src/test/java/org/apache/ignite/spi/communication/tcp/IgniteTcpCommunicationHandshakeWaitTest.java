@@ -83,6 +83,8 @@ public class IgniteTcpCommunicationHandshakeWaitTest extends GridCommonAbstractT
      */
     @Test
     public void testHandshakeOnNodeJoining() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL, "true");
+
         IgniteEx ignite = startGrid("srv1");
 
         startGrid("srv2");
@@ -102,6 +104,11 @@ public class IgniteTcpCommunicationHandshakeWaitTest extends GridCommonAbstractT
         startGrid("srv3");
 
         fut.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
     }
 
     /** */

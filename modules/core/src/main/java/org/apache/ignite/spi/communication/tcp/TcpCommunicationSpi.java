@@ -23,7 +23,6 @@ import java.io.OutputStream;
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -393,7 +392,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
     /** */
     private boolean enableForcibleNodeKill = IgniteSystemProperties
-        .getBoolean(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
+        .getBoolean(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL, false);
 
     /** */
     private boolean enableTroubleshootingLog = IgniteSystemProperties
@@ -1117,8 +1116,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** Reconnect attempts count. */
     private int reconCnt = DFLT_RECONNECT_CNT;
 
-    /** Node left topology on reconnect count. */
-    private int reconDelayCnt = DFLT_RECONNECT_DELAY_CNT;
+    /** Node left topology detection on reconnect retries. */
+    private int nodeOutOfTopologyRetries = DFLT_RECONNECT_DELAY_CNT;
 
     /** Minimum time waiting node left topology on reconnect attempt. */
     private int minDetectNodeOutOfTopologyMs = DFLT_MIN_DETECT_NODE_OUT_OF_TOPOLOGY_MS;
@@ -3509,21 +3508,21 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     errs.addSuppressed(new IgniteCheckedException("Failed to connect to address " +
                         "[addr=" + addr + ", err=" + e.getMessage() + ']', e));
 
-                    if (!failureDetThrReached && connectAttempts < reconCnt) {
+                    if (connectionError(errs) && !failureDetThrReached && connectAttempts < reconCnt) {
                         // Wait a bit before next retry to mitigate short network or node problems.
                         long delay = failureDetectionTimeoutEnabled() ?
                             timeoutHelper.remainingTime(U.currentTimeMillis()) / (reconCnt - connectAttempts) :
                             connTimeout0 - (U.currentTimeMillis() - start);
 
                         long delayInterval = Math.round(
-                            Math.max(delay, minDetectNodeOutOfTopologyMs) / (double) reconDelayCnt
+                            Math.max(delay, minDetectNodeOutOfTopologyMs) / (double)nodeOutOfTopologyRetries
                         );
 
                         // Reconnect again if connection was not established within current timeout chunk.
                         connectAttempts++;
 
                         int delayRetry = 0;
-                        while (delayRetry < reconDelayCnt) {
+                        while (delayRetry < nodeOutOfTopologyRetries) {
                             // Stop waiting if node is out of topology.
                             if (getSpiContext().node(node.id()) == null)
                                 break;
