@@ -2469,7 +2469,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 null,
                 null,
                 params,
-                null,
+                ctx.localNodeId(),
                 null));
         }
     }
