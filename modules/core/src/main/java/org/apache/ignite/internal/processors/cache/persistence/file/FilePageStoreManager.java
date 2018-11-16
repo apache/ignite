@@ -467,6 +467,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         try {
             store.read(pageId, pageBuf, keepCrc);
 
+            assert keepCrc || PageIO.getCrc(pageBuf) == 0: store.size() - store.pageOffset(pageId);
+
             cctx.kernalContext().compress().decompressPage(pageBuf, store.getPageSize());
         }
         catch (StorageException e) {
@@ -540,15 +542,12 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
                     compressedPageSize = PageIO.getCompressedSize(compressedPageBuf);
 
-                    assert compressedPageSize < pageSize;
-
                     if (!calculateCrc) {
                         calculateCrc = true;
                         PageIO.setCrc(compressedPageBuf, 0); // It will be recalculated over compressed data further.
                     }
 
                     PageIO.setCrc(pageBuf, 0); // It is expected to be reset to 0 after each write.
-
                     pageBuf = compressedPageBuf;
                 }
             }
