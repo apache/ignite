@@ -10863,7 +10863,6 @@ public abstract class IgniteUtils {
                     results.addAll(res);
                 else
                     assert error != null;
-
             }
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
