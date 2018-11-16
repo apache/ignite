@@ -56,7 +56,7 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setFailureDetectionTimeout(5000);
+        cfg.setFailureDetectionTimeout(120000);
         cfg.setClientFailureDetectionTimeout(120000);
         cfg.setClientMode("client".equals(gridName));
 
@@ -147,8 +147,10 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
                 query(new ScanQuery<Integer, byte[]>().setPageSize(100000)).iterator();
 
             while (it.hasNext()) {
+                Cache.Entry<Integer, byte[]> entry = it.next();
+
                 // Trigger STW.
-                ManagementFactory.getThreadMXBean().findDeadlockedThreads();
+                final long[] tids = ManagementFactory.getThreadMXBean().findDeadlockedThreads();
 
                 cnt++;
             }
