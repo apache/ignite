@@ -29,7 +29,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 /**
  * Handshake message.
  */
-public class HandshakeMessage implements Message {
+public class HandshakeMessage implements Message, NotRecoverable {
     /** */
     private static final long serialVersionUID = 0L;
 

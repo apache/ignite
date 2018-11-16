@@ -122,6 +122,9 @@ public class GridNioServer<T> {
     /** Selection key meta key. */
     private static final int WORKER_IDX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
+    /** Session future meta key. */
+    private static final int SESSION_FUT_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+
     /** */
     private static final boolean DISABLE_KEYSET_OPTIMIZATION =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_NO_SELECTOR_OPTS);
@@ -993,8 +996,9 @@ public class GridNioServer<T> {
     /**
      * @param req Request to balance.
      * @param meta Session metadata.
+     * @return Worker index.
      */
-    private synchronized void offerBalanced(NioOperationFuture req, @Nullable Map<Integer, Object> meta) {
+    private int offerBalanced(NioOperationFuture req, @Nullable Map<Integer, Object> meta) {
         assert req.operation() == NioOperation.REGISTER || req.operation() == NioOperation.CONNECT : req;
         assert req.socketChannel() != null : req;
 
@@ -1037,6 +1041,8 @@ public class GridNioServer<T> {
             meta.put(WORKER_IDX_META_KEY, balanceIdx);
 
         clientWorkers.get(balanceIdx).offer(req);
+
+        return balanceIdx;
     }
 
     /** {@inheritDoc} */

@@ -27,7 +27,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 /**
  * Recovery acknowledgment message.
  */
-public class RecoveryLastReceivedMessage implements Message {
+public class RecoveryLastReceivedMessage implements Message, NotRecoverable {
     /** */
     private static final long serialVersionUID = 0L;
 

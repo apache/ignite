@@ -1655,6 +1655,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     ((TcpCommunicationSpi)(CommunicationSpi)getSpi()).sendMessage(node, ioMsg, ackC);
                 else
                     getSpi().sendMessage(node, ioMsg);
+
+                if (ctx.discovery().node(node.id()) == null)
+                    throw new ClusterTopologyCheckedException("Failed to send message to node, node left: " + node);
             }
             catch (IgniteSpiException e) {
                 if (e.getCause() instanceof ClusterTopologyCheckedException)

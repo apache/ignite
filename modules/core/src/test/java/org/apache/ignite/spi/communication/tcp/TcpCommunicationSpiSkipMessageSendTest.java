@@ -34,6 +34,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
@@ -214,7 +215,7 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
         }
 
         /** {@inheritDoc} */
-        @Override protected GridCommunicationClient createTcpClient(ClusterNode node,
+        @Override protected IgniteInternalFuture<GridCommunicationClient> createTcpClient(ClusterNode node,
             int connIdx) throws IgniteCheckedException {
             log.info(String.format("CustomCommunicationSpi.createTcpClient [networkDisabled=%s, node=%s]",
                 netDisabled, node));

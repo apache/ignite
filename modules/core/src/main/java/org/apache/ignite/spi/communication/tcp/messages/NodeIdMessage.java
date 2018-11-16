@@ -29,7 +29,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 /**
  * Node ID message.
  */
-public class NodeIdMessage implements Message {
+public class NodeIdMessage implements Message, NotRecoverable {
     /** */
     private static final long serialVersionUID = 0L;
 
