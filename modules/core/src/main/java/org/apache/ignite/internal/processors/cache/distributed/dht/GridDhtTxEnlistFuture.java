@@ -122,7 +122,7 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<G
         if(txRes.invokeResult() != null)
             res.invokeResult(true);
 
-        if (needRes && txRes.success()) {
+        if (needRes) {
             CacheInvokeResult invokeRes = txRes.invokeResult();
 
             if (invokeRes != null) {
