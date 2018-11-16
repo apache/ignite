@@ -20,6 +20,7 @@ package org.apache.ignite.cache;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -280,7 +281,7 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < gridCnt; i++) {
             owners += getPartitionsStates(i, DEFAULT_CACHE_NAME).stream().
-                filter(v -> v == GridDhtPartitionState.OWNING).collect(Collectors.toList()).size();
+                filter(Predicate.isEqual(GridDhtPartitionState.OWNING)).collect(Collectors.toList()).size();
         }
 
         assertEquals(parts, owners);
