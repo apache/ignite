@@ -10792,7 +10792,7 @@ public abstract class IgniteUtils {
 
         // Set for sharing batches between executor and current thread.
         // If executor cannot perform immediately, we will execute task in the current thread.
-        Set<Batch<T, R>> sharedBatchesSet = new GridConcurrentHashSet<>();
+        Set<Batch<T, R>> sharedBatchesSet = new GridConcurrentHashSet<>(batchSizes.length);
 
         Iterator<T> iterator = srcDatas.iterator();
 
@@ -10813,7 +10813,7 @@ public abstract class IgniteUtils {
             .peek(sharedBatchesSet::add)
             // Setup future in batch for waiting result.
             .peek(batch -> batch.future = executorSvc.submit(() -> {
-                // Batch was stolen by the main stream
+                // Batch was stolen by the main stream.
                 if (!sharedBatchesSet.remove(batch)) {
                     return null;
                 }
