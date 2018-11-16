@@ -70,15 +70,18 @@ module.exports = merge(commonCfg, {
         inline: true,
         proxy: {
             '/socket.io': {
-                target: `http://localhost:${backendPort}`,
-                ws: true
+                target: `https://localhost:${backendPort}`,
+                ws: true,
+                secure: false
             },
             '/agents': {
-                target: `http://localhost:${backendPort}`,
-                ws: true
+                target: `https://localhost:${backendPort}`,
+                ws: true,
+                secure: false
             },
             '/api/*': {
-                target: `http://localhost:${backendPort}`
+                target: `https://localhost:${backendPort}`,
+                secure: false
             }
         },
         watchOptions: {

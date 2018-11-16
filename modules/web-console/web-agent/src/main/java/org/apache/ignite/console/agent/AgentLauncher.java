@@ -71,7 +71,7 @@ import static io.socket.client.Socket.EVENT_DISCONNECT;
 import static io.socket.client.Socket.EVENT_ERROR;
 import static org.apache.ignite.console.agent.AgentUtils.fromJSON;
 import static org.apache.ignite.console.agent.AgentUtils.toJSON;
-import static org.apache.ignite.console.agent.AgentUtils.trustManager;
+import static org.apache.ignite.console.agent.AgentUtils.disabledTrustManager;
 
 /**
  * Ignite Web Agent launcher.
@@ -209,31 +209,29 @@ public class AgentLauncher {
         return new Scanner(System.in).nextLine().toCharArray();
     }
 
-    private static OkHttpClient sOkHttpClient;
-
-    private static void prepareOkHttpClient() throws GeneralSecurityException, IOException {
-        KeyStore ks = KeyStore.getInstance("JKS");
-        File file = new File("src/test/resources/keystore.jks");
-        ks.load(new FileInputStream(file), "123456".toCharArray());
+    /** */
+    private static OkHttpClient prepareOkHttpClient() throws GeneralSecurityException, IOException {
+        KeyStore ks = AgentUtils.keyStore(
+            "C:/GridGain/GitHub/ignite/ggprivate/modules/visor-tester/keystore/client.jks",
+            "123456".toCharArray()
+        );
 
         KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
-        kmf.init(ks, "password".toCharArray());
+        kmf.init(ks, "123456".toCharArray());
 
         TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
         tmf.init(ks);
 
-        SSLContext sslContext = SSLContext.getInstance("TLSv1");
+        SSLContext sslContext = SSLContext.getInstance("TLS");
         sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
 
-        sOkHttpClient = new OkHttpClient.Builder()
-            .hostnameVerifier(new HostnameVerifier(){
-                public boolean verify(String hostname, SSLSession sslSession) {
-                    return hostname.equals("localhost");
-                }
-            })
+        OkHttpClient sOkHttpClient = new OkHttpClient.Builder()
+            .hostnameVerifier((hostname, session) -> true)
             .sslSocketFactory(sslContext.getSocketFactory(),
-                (X509TrustManager) tmf.getTrustManagers()[0])
+                (X509TrustManager)tmf.getTrustManagers()[0])
             .build();
+
+        return sOkHttpClient;
     }
 
     /**
@@ -353,22 +351,13 @@ public class AgentLauncher {
 
         cfg.nodeURIs(nodeURIs);
 
-        IO.Options opts = new IO.Options();
+        OkHttpClient sOkHttpClient = prepareOkHttpClient();
 
+        IO.Options opts = new IO.Options();
+        opts.callFactory = sOkHttpClient;
+        opts.webSocketFactory = sOkHttpClient;
         opts.path = "/agents";
         opts.secure = true;
-
-        // Workaround for use self-signed certificate
-        if (Boolean.getBoolean("trust.all")) {
-            log.info("Trust to all certificates mode is enabled.");
-
-            SSLContext ctx = SSLContext.getInstance("TLS");
-
-            // Create an SSLContext that uses our TrustManager
-            ctx.init(null, new TrustManager[] {trustManager()}, null);
-
-            // TODO IGNITE-5617 Check SSL for socket-io 1.0.0 opts.sslContext = ctx;
-        }
 
         final Socket client = IO.socket(uri, opts);
 

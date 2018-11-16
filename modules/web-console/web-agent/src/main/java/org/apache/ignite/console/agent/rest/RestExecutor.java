@@ -17,11 +17,9 @@
 
 package org.apache.ignite.console.agent.rest;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.net.ConnectException;
-import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.util.Arrays;
 import java.util.List;
@@ -51,6 +49,7 @@ import okhttp3.Request;
 import okhttp3.Response;
 
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.console.agent.AgentUtils;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -60,7 +59,7 @@ import org.slf4j.LoggerFactory;
 import static com.fasterxml.jackson.core.JsonToken.END_ARRAY;
 import static com.fasterxml.jackson.core.JsonToken.END_OBJECT;
 import static com.fasterxml.jackson.core.JsonToken.START_ARRAY;
-import static org.apache.ignite.console.agent.AgentUtils.trustManager;
+import static org.apache.ignite.console.agent.AgentUtils.disabledTrustManager;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_AUTH_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
@@ -83,20 +82,6 @@ public class RestExecutor implements AutoCloseable {
 
     /** Index of alive node URI. */
     private final Map<List<String>, Integer> startIdxs = U.newHashMap(2);
-
-    /**
-     * @param pathToJks Path to java key store file.
-     * @param pwd Key store password.
-     * @return Key store.
-     * @throws GeneralSecurityException If failed to load key store.
-     * @throws IOException If failed to load java key store file content.
-     */
-    private static KeyStore keyStore(String pathToJks, char[] pwd) throws GeneralSecurityException, IOException {
-        KeyStore keyStore = KeyStore.getInstance("JKS");
-        keyStore.load(new FileInputStream(pathToJks), pwd);
-
-        return keyStore;
-    }
 
     /**
      * Constructor.
@@ -122,9 +107,9 @@ public class RestExecutor implements AutoCloseable {
                 SSLContext ctx = SSLContext.getInstance("TLS");
 
                 // Create an SSLContext that uses our TrustManager
-                ctx.init(null, new TrustManager[] {trustManager()}, null);
+                ctx.init(null, new TrustManager[] {disabledTrustManager()}, null);
 
-                builder.sslSocketFactory(ctx.getSocketFactory(), trustManager());
+                builder.sslSocketFactory(ctx.getSocketFactory(), disabledTrustManager());
 
                 builder.hostnameVerifier((hostname, session) -> true);
             }
@@ -135,7 +120,7 @@ public class RestExecutor implements AutoCloseable {
         else if (trustStore != null) {
             try {
                 char[] trustPwd = trustStorePwd != null ? trustStorePwd.toCharArray() : EMPTY_PWD;
-                KeyStore trustKeyStore = keyStore(trustStore, trustPwd);
+                KeyStore trustKeyStore = AgentUtils.keyStore(trustStore, trustPwd);
 
                 TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
                 tmf.init(trustKeyStore);
@@ -154,7 +139,7 @@ public class RestExecutor implements AutoCloseable {
                 if (clientStore != null) {
                     char[] pwd = clientPwd != null ? clientPwd.toCharArray() : EMPTY_PWD;
 
-                    KeyStore keyStore = keyStore(clientStore, pwd);
+                    KeyStore keyStore = AgentUtils.keyStore(clientStore, pwd);
 
                     KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
                     kmf.init(keyStore, pwd);

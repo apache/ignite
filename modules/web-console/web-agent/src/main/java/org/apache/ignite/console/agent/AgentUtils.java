@@ -21,8 +21,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule;
 import io.socket.client.Ack;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
 import java.security.ProtectionDomain;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
@@ -186,9 +190,23 @@ public class AgentUtils {
     }
 
     /**
+     * @param pathToJks Path to java key store file.
+     * @param pwd Key store password.
+     * @return Key store.
+     * @throws GeneralSecurityException If failed to load key store.
+     * @throws IOException If failed to load java key store file content.
+     */
+    public static KeyStore keyStore(String pathToJks, char[] pwd) throws GeneralSecurityException, IOException {
+        KeyStore keyStore = KeyStore.getInstance("JKS");
+        keyStore.load(new FileInputStream(pathToJks), pwd);
+
+        return keyStore;
+    }
+
+    /**
      * Create a trust manager that trusts all certificates It is not using a particular keyStore
      */
-    public static X509TrustManager trustManager() {
+    public static X509TrustManager disabledTrustManager() {
         return new X509TrustManager() {
             /** {@inheritDoc} */
             @Override public X509Certificate[] getAcceptedIssuers() {
