@@ -2404,7 +2404,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             Object rest, GridCacheContext cctx, VacuumMetrics metrics) throws IgniteCheckedException {
             assert key != null && cctx != null && (!F.isEmpty(cleanupRows) || rest != null);
 
-            cctx.gate().enter();
+            if (!cctx.gate().enterIfNotStopped())
+                return; // Skip entries belonged to stopped cache.
 
             try {
                 long cleanupStartNanoTime = System.nanoTime();
@@ -2433,9 +2434,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
                         if (rest != null) {
                             if (rest.getClass() == ArrayList.class) {
-                                for (MvccDataRow row : ((List<MvccDataRow>) rest)) {
+                                for (MvccDataRow row : ((List<MvccDataRow>) rest))
                                     part.dataStore().updateTxState(cctx, row);
-                                }
                             } else
                                 part.dataStore().updateTxState(cctx, (MvccDataRow) rest);
                         }
