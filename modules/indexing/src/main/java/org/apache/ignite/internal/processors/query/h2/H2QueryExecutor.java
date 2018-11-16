@@ -251,25 +251,16 @@ public class H2QueryExecutor {
             throw new IgniteCheckedException("Failed to get DB connection for thread (check log for details).");
 
         if (schema != null && !F.eq(c.schema(), schema)) {
-            Statement stmt = null;
-
             try {
-                stmt = c.connection().createStatement();
-
-                // TODO: Could we use c.connection().schema() instead?
-                stmt.executeUpdate("SET SCHEMA " + H2Utils.withQuotes(schema));
+                c.connection().setSchema(schema);
+                c.schema(schema);
 
                 if (log.isDebugEnabled())
                     log.debug("Set schema: " + schema);
-
-                c.schema(schema);
             }
             catch (SQLException e) {
                 throw new IgniteSQLException("Failed to set schema for DB connection for thread [schema=" +
                     schema + "]", e);
-            }
-            finally {
-                U.close(stmt, log);
             }
         }
 
