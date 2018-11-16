@@ -1157,7 +1157,12 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<UUID, Set<Integer>> resetOwners(Map<Integer, Set<UUID>> ownersByUpdCounters, Set<Integer> haveHistory) {
+    @Override public Map<UUID, Set<Integer>> resetOwners(
+        Map<Integer, Set<UUID>> ownersByUpdCounters,
+        Set<Integer> haveHistory,
+        Set<UUID> joinedNodes,
+        boolean skipResetOwners
+    ) {
         Map<UUID, Set<Integer>> result = new HashMap<>();
 
         lock.writeLock().lock();

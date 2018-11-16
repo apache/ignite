@@ -417,9 +417,15 @@ public interface GridDhtPartitionTopology {
      * @param ownersByUpdCounters Map (partition, set of node IDs that have most actual state about partition
      *                            (update counter is maximal) and should hold OWNING state for such partition).
      * @param haveHistory Set of partitions which have WAL history to rebalance.
+     * @param joinedNodes Set of nodes that joined topology in case of distributed exchange.
+     * @param skipResetOwners If true, resetting owner will skipped for all nodes except joined ones.
      * @return Map (nodeId, set of partitions that should be rebalanced <b>fully</b> by this node).
      */
-    public Map<UUID, Set<Integer>> resetOwners(Map<Integer, Set<UUID>> ownersByUpdCounters, Set<Integer> haveHistory);
+    public Map<UUID, Set<Integer>> resetOwners(
+        Map<Integer, Set<UUID>> ownersByUpdCounters,
+        Set<Integer> haveHistory,
+        Set<UUID> joinedNodes,
+        boolean skipResetOwners);
 
     /**
      * Callback on exchange done.
