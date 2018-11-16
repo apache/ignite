@@ -1563,6 +1563,12 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                             changed = true;
                         }
+                        else if (state == LOST && exchangeVer.equals(grp.localStartVersion())) {
+                            if (lostParts == null)
+                                lostParts = new TreeSet<>();
+
+                            lostParts.add(p);
+                        }
                     }
                 }
 
@@ -2242,6 +2248,16 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             + ", nodeId=" + nodeId
                             + ", partsFull=" + S.compact(rebalancedParts)
                             + ", partsHistorical=" + S.compact(historical) + "]");
+                    }
+                }
+
+                if (lostParts != null) {
+                    for (Map.Entry<UUID, GridDhtPartitionMap> e : node2part.entrySet()) {
+                        if (e.getKey().equals(ctx.localNodeId()))
+                            continue;
+
+                        for (Integer part : lostParts)
+                            e.getValue().put(part, LOST);
                     }
                 }
 

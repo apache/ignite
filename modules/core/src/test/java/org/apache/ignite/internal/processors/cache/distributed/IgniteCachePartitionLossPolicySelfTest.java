@@ -519,8 +519,12 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
             info("Newly started node: " + grd.cluster().localNode().id());
 
+            verifyLostPartitions(grd, lostParts);
+
             // Check that partition state does not change after we start each node.
             for (Ignite ig : G.allGrids()) {
+                verifyLostPartitions(grd, lostParts);
+
                 verifyCacheOps(canWrite, safe, ig);
 
                 // TODO Query effectively waits for rebalance due to https://issues.apache.org/jira/browse/IGNITE-10057
