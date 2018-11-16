@@ -71,16 +71,20 @@ public class TrainerTransformers {
      * @param ensembleSize Size of ensemble.
      * @param subsampleRatio Subsample ratio to whole dataset.
      * @param aggregator Aggregator.
+     * @param featureVectorSize Feature vector dimensionality.
+     * @param featuresSubspaceDim Feature subspace dimensionality.
+     * @param transformationSeed Transformations seed.
      * @param <M> Type of one model in ensemble.
      * @param <L> Type of labels.
      * @return Bagged trainer.
      */
+    // TODO: IGNITE-10296: Inject capabilities of seeding through learning environment (remove).
     public static <M extends Model<Vector, Double>, L> DatasetTrainer<ModelsComposition, L> makeBagged(
         DatasetTrainer<M, L> trainer,
         int ensembleSize,
         double subsampleRatio,
         int featureVectorSize,
-        int maxFeaturesCntPerMdl,
+        int featuresSubspaceDim,
         PredictionsAggregator aggregator,
         Long transformationSeed) {
         return new DatasetTrainer<ModelsComposition, L>() {
@@ -100,7 +104,7 @@ public class TrainerTransformers {
                     ensembleSize,
                     subsampleRatio,
                     featureVectorSize,
-                    maxFeaturesCntPerMdl,
+                    featuresSubspaceDim,
                     featureExtractor,
                     aggregator,
                     environment);
@@ -127,7 +131,7 @@ public class TrainerTransformers {
                     ensembleSize,
                     subsampleRatio,
                     featureVectorSize,
-                    maxFeaturesCntPerMdl,
+                    featuresSubspaceDim,
                     featureExtractor,
                     aggregator,
                     environment);
@@ -143,6 +147,8 @@ public class TrainerTransformers {
      * @param datasetBuilder Dataset builder.
      * @param ensembleSize Size of ensemble.
      * @param subsampleRatio Ratio (subsample size) / (initial dataset size).
+     * @param featuresVectorSize Dimensionality of feature vector.
+     * @param featureSubspaceDim Dimensionality of feature subspace.
      * @param aggregator Aggregator of models.
      * @param environment Environment.
      * @param <K> Type of keys in dataset builder.
@@ -156,7 +162,7 @@ public class TrainerTransformers {
         int ensembleSize,
         double subsampleRatio,
         int featuresVectorSize,
-        int maximumFeaturesCntPerMdl,
+        int featureSubspaceDim,
         IgniteBiFunction<K, V, Vector> extractor,
         PredictionsAggregator aggregator,
         LearningEnvironment environment) {
@@ -169,7 +175,7 @@ public class TrainerTransformers {
             mappings = IntStream.range(0, ensembleSize).mapToObj(
                 modelIdx -> getMapping(
                     featuresVectorSize,
-                    maximumFeaturesCntPerMdl,
+                    featureSubspaceDim,
                     datasetBuilder.upstreamTransformersChain().seed() + modelIdx))
                 .collect(Collectors.toList());
         }

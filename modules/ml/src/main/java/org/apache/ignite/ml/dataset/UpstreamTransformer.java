@@ -36,5 +36,7 @@ public interface UpstreamTransformer<K, V> extends Serializable {
      * @param upstream Upstream.
      * @return Transformed upstream.
      */
+    // TODO: IGNITE-10296: Inject capabilities of randomization through learning environment.
+    // TODO: IGNITE-10297: Investigate possibility of API change.
     public Stream<UpstreamEntry<K, V>> transform(Random rnd, Stream<UpstreamEntry<K, V>> upstream);
 }
