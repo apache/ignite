@@ -209,6 +209,7 @@ public class IgnitePdsCacheRestoreTest extends GridCommonAbstractTest {
         ccfgs[2] = cacheConfiguration("c3");
 
         ccfgs[2].setDataRegionName(NO_PERSISTENCE_REGION);
+        ccfgs[2].setDiskPageCompression(null);
 
         return ccfgs;
     }

@@ -1330,6 +1330,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         ccfgs[4] = cacheConfiguration(CACHE_NAME_PREFIX + 4, TRANSACTIONAL);
 
         ccfgs[4].setDataRegionName(NO_PERSISTENCE_REGION);
+        ccfgs[4].setDiskPageCompression(null);
 
         return ccfgs;
     }
