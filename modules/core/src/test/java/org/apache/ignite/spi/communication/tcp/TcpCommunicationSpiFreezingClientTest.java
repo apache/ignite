@@ -36,6 +36,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -44,6 +47,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests that freezing due to JVM STW client will be failed if connection can't be established.
  */
+@RunWith(JUnit4.class)
 public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -52,7 +56,7 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setFailureDetectionTimeout(120000);
+        cfg.setFailureDetectionTimeout(5000);
         cfg.setClientFailureDetectionTimeout(120000);
         cfg.setClientMode("client".equals(gridName));
 
@@ -77,20 +81,6 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL, "true");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
-    }
-
 
     /** {@inheritDoc} */
     @Override protected boolean isMultiJvm() {
@@ -100,11 +90,12 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFreezingClient() throws Exception {
         try {
             final IgniteEx srv = startGrid(0);
 
-            final IgniteEx client = (IgniteEx)startGrid("client");
+            final IgniteEx client = startGrid("client");
 
             final int keysCnt = 100_000;
 
@@ -156,10 +147,8 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
                 query(new ScanQuery<Integer, byte[]>().setPageSize(100000)).iterator();
 
             while (it.hasNext()) {
-                Cache.Entry<Integer, byte[]> entry = it.next();
-
                 // Trigger STW.
-                final long[] tids = ManagementFactory.getThreadMXBean().findDeadlockedThreads();
+                ManagementFactory.getThreadMXBean().findDeadlockedThreads();
 
                 cnt++;
             }

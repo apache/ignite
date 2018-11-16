@@ -318,6 +318,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** Default reconnect attempts count (value is <tt>10</tt>). */
     public static final int DFLT_RECONNECT_CNT = 10;
 
+    /** Default delay between reconnect attemps(value is <tt>3</tt>). */
+    public static final int DFLT_RECONNECT_DELAY_CNT = 3;
+
     /** Default message queue limit per connection (for incoming and outgoing . */
     public static final int DFLT_MSG_QUEUE_LIMIT = GridNioServer.DFLT_SEND_QUEUE_LIMIT;
 
@@ -378,6 +381,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
     /** Handshake wait message type. */
     public static final short HANDSHAKE_WAIT_MSG_TYPE = -28;
+
+    /** Minimum time waiting node left topology on reconnect attempt. */
+    private static final int DFLT_MIN_DETECT_NODE_OUT_OF_TOPOLOGY_MS = 200;
 
     /** */
     private ConnectGateway connectGate;
@@ -1110,6 +1116,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
     /** Reconnect attempts count. */
     private int reconCnt = DFLT_RECONNECT_CNT;
+
+    /** Node left topology on reconnect count. */
+    private int reconDelayCnt = DFLT_RECONNECT_DELAY_CNT;
+
+    /** Minimum time waiting node left topology on reconnect attempt. */
+    private int minDetectNodeOutOfTopologyMs = DFLT_MIN_DETECT_NODE_OUT_OF_TOPOLOGY_MS;
 
     /** Socket send buffer. */
     private int sockSndBuf = DFLT_SOCK_BUF_SIZE;
@@ -3260,11 +3272,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
         GridCommunicationClient client = null;
         IgniteCheckedException errs = null;
+        SocketChannel ch = null;
 
         for (InetSocketAddress addr : addrs) {
             long connTimeout0 = connTimeout;
 
-            int attempt = 1;
+            int connectAttempts = 1;
 
             IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(this, !node.isClient());
 
@@ -3287,7 +3300,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 long start = U.currentTimeMillis();
 
                 try {
-                    SocketChannel ch = SocketChannel.open();
+                    ch = SocketChannel.open();
 
                     ch.configureBlocking(true);
 
@@ -3396,7 +3409,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         client.forceClose();
 
                         client = null;
-                    }
+                    } else
+                        U.closeQuiet(ch);
 
                     if (timeoutHelper.checkFailureTimeoutReached(e)) {
                         String msg = "Handshake timed out (failure detection timeout is reached) " +
@@ -3428,11 +3442,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             "Handshake timed out (will retry with increased timeout) [timeout=" + connTimeout0 +
                                 ", addr=" + addr + ", err=" + e + ']');
 
-                    if (attempt == reconCnt || connTimeout0 > maxConnTimeout) {
+                    if (connectAttempts == reconCnt || connTimeout0 > maxConnTimeout) {
                         U.warn(log, "Handshake timedout (will stop attempts to perform the handshake) " +
                             "[node=" + node.id() + ", timeout=" + connTimeout0 +
                             ", maxConnTimeout=" + maxConnTimeout +
-                            ", attempt=" + attempt + ", reconCnt=" + reconCnt +
+                            ", attempt=" + connectAttempts + ", reconCnt=" + reconCnt +
                             ", err=" + e.getMessage() + ", addr=" + addr + ']');
 
                         if (errs == null)
@@ -3446,7 +3460,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         break;
                     }
                     else {
-                        attempt++;
+                        connectAttempts++;
 
                         connTimeout0 *= 2;
 
@@ -3454,6 +3468,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     }
                 }
                 catch (ClusterTopologyCheckedException e) {
+                    U.closeQuiet(ch);
+
                     throw e;
                 }
                 catch (Exception e) { // Most probably IO error on socket connect or handshake.
@@ -3461,7 +3477,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         client.forceClose();
 
                         client = null;
-                    }
+                    } else
+                        U.closeQuiet(ch);
 
                     onException("Client creation failed [addr=" + addr + ", err=" + e + ']', e);
 
@@ -3472,7 +3489,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                     if (enableTroubleshootingLog)
                         U.error(log, "Failed to establish connection to a remote node [node=" + node +
-                            ", addr=" + addr + ", connectAttempts=" + attempt +
+                            ", addr=" + addr + ", connectAttempts=" + connectAttempts +
                             ", failureDetThrReached=" + failureDetThrReached + ']', e);
 
                     if (failureDetThrReached)
@@ -3492,28 +3509,29 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     errs.addSuppressed(new IgniteCheckedException("Failed to connect to address " +
                         "[addr=" + addr + ", err=" + e.getMessage() + ']', e));
 
-                    if (X.hasCause(e, ConnectException.class, HandshakeException.class, SocketTimeoutException.class) &&
-                        !failureDetThrReached && attempt < reconCnt) {
-
+                    if (!failureDetThrReached && connectAttempts < reconCnt) {
                         // Wait a bit before next retry to mitigate short network or node problems.
                         long delay = failureDetectionTimeoutEnabled() ?
-                            timeoutHelper.remainingTime(U.currentTimeMillis()) / (reconCnt - attempt) :
+                            timeoutHelper.remainingTime(U.currentTimeMillis()) / (reconCnt - connectAttempts) :
                             connTimeout0 - (U.currentTimeMillis() - start);
 
+                        long delayInterval = Math.round(
+                            Math.max(delay, minDetectNodeOutOfTopologyMs) / (double) reconDelayCnt
+                        );
+
                         // Reconnect again if connection was not established within current timeout chunk.
-                        attempt++;
+                        connectAttempts++;
 
-                        if (delay > 0 && delay < 200) delay = 200;
-
-                        while (delay > 0) {
+                        int delayRetry = 0;
+                        while (delayRetry < reconDelayCnt) {
                             // Stop waiting if node is out of topology.
                             if (getSpiContext().node(node.id()) == null)
                                 break;
 
                             try {
-                                U.sleep(200);
+                                U.sleep(delayInterval);
 
-                                delay -= 200;
+                                delayRetry++;
                             }
                             catch (IgniteInterruptedCheckedException e1) {
                                 break;
