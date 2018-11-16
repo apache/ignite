@@ -219,7 +219,8 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
         ignite.services(ignite.cluster().forLocal()).deployClusterSingleton(name, new MapServiceImpl<String, Integer>());
 
         for (int i = 1; i < nodeCount(); i++) {
-            MapService<Integer, String> svc =  grid(i).services().serviceProxy(name, MapService.class, false);
+            MapService<Integer, String> svc =  grid(i).services()
+                .serviceProxy(name, MapService.class, false, 1_000L);
 
             // Make sure service is a proxy.
             assertFalse(svc instanceof Service);

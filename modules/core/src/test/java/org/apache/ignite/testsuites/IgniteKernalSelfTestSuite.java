@@ -50,9 +50,11 @@ import org.apache.ignite.internal.managers.events.GridEventStorageManagerSelfTes
 import org.apache.ignite.internal.processors.cluster.GridAddressResolverSelfTest;
 import org.apache.ignite.internal.processors.cluster.GridUpdateNotifierSelfTest;
 import org.apache.ignite.internal.processors.port.GridPortProcessorSelfTest;
+import org.apache.ignite.internal.processors.service.DynamicServiceChangeRequestTest;
 import org.apache.ignite.internal.processors.service.GridServiceClientNodeTest;
 import org.apache.ignite.internal.processors.service.GridServiceContinuousQueryRedeployTest;
 import org.apache.ignite.internal.processors.service.GridServiceDeploymentCompoundFutureSelfTest;
+import org.apache.ignite.internal.processors.service.GridServiceDeploymentExceptionPropagationTest;
 import org.apache.ignite.internal.processors.service.GridServicePackagePrivateSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceProcessorBatchDeploySelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceProcessorMultiNodeConfigSelfTest;
@@ -73,7 +75,13 @@ import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentClas
 import org.apache.ignite.internal.processors.service.IgniteServiceDynamicCachesSelfTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceProxyTimeoutInitializedTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceReassignmentTest;
+import org.apache.ignite.internal.processors.service.IgniteServicesDeploymentFailuresPolicySelfTest;
+import org.apache.ignite.internal.processors.service.ServiceDeploymentOnClientDisconnectTest;
+import org.apache.ignite.internal.processors.service.ServiceDeploymentProcessingOnCoordinatorChangeTest;
+import org.apache.ignite.internal.processors.service.ServiceInfoSelfTest;
 import org.apache.ignite.internal.processors.service.ServicePredicateAccessCacheTest;
+import org.apache.ignite.internal.processors.service.ServiceReassignmentFunctionSelfTest;
+import org.apache.ignite.internal.processors.service.ServicesDeploymentExchangeIdSelfTest;
 import org.apache.ignite.internal.processors.service.SystemCacheNotConfiguredTest;
 import org.apache.ignite.internal.util.GridStartupWithUndefinedIgniteHomeSelfTest;
 import org.apache.ignite.services.ServiceThreadPoolSelfTest;
@@ -159,8 +167,7 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridServiceProcessorBatchDeploySelfTest.class);
         suite.addTestSuite(GridServiceDeploymentCompoundFutureSelfTest.class);
         suite.addTestSuite(SystemCacheNotConfiguredTest.class);
-        // IGNITE-3392
-        //suite.addTestSuite(GridServiceDeploymentExceptionPropagationTest.class);
+        suite.addTestSuite(GridServiceDeploymentExceptionPropagationTest.class);
 
         suite.addTestSuite(IgniteServiceDeploymentClassLoadingDefaultMarshallerTest.class);
         suite.addTestSuite(IgniteServiceDeploymentClassLoadingJdkMarshallerTest.class);
@@ -168,6 +175,14 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest.class);
         suite.addTestSuite(IgniteServiceDeployment2ClassLoadersJdkMarshallerTest.class);
         suite.addTestSuite(IgniteServiceDeployment2ClassLoadersOptimizedMarshallerTest.class);
+
+        suite.addTestSuite(ServiceDeploymentProcessingOnCoordinatorChangeTest.class);
+        suite.addTestSuite(IgniteServicesDeploymentFailuresPolicySelfTest.class);
+        suite.addTestSuite(ServiceDeploymentOnClientDisconnectTest.class);
+        suite.addTest(new junit.framework.JUnit4TestAdapter(ServiceReassignmentFunctionSelfTest.class));
+        suite.addTest(new junit.framework.JUnit4TestAdapter(ServiceInfoSelfTest.class));
+        suite.addTest(new junit.framework.JUnit4TestAdapter(ServicesDeploymentExchangeIdSelfTest.class));
+        suite.addTest(new junit.framework.JUnit4TestAdapter(DynamicServiceChangeRequestTest.class));
 
         return suite;
     }

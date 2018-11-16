@@ -23,6 +23,7 @@ import java.util.Collections;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDeploymentException;
 import org.jetbrains.annotations.Nullable;
@@ -34,8 +35,8 @@ import org.jetbrains.annotations.Nullable;
  * configurations of failed services.
  */
 public class GridServiceDeploymentCompoundFuture extends GridCompoundFuture<Object, Object> {
-    /** Names of services written to cache during current deployment. */
-    private Collection<String> svcsToRollback;
+    /** Ids of services written to cache during current deployment. */
+    private Collection<IgniteUuid> svcsToRollback;
 
     /** */
     private volatile ServiceDeploymentException err;
@@ -78,14 +79,14 @@ public class GridServiceDeploymentCompoundFuture extends GridCompoundFuture<Obje
             if (svcsToRollback == null)
                 svcsToRollback = new ArrayList<>();
 
-            svcsToRollback.add(fut.configuration().getName());
+            svcsToRollback.add(fut.serviceId());
         }
     }
 
     /**
-     * @return Collection of names of services that were written to cache during current deployment.
+     * @return Collection of ids of services that were written to cache during current deployment.
      */
-    public Collection<String> servicesToRollback() {
+    public Collection<IgniteUuid> servicesToRollback() {
         if (svcsToRollback != null)
             return svcsToRollback;
         else

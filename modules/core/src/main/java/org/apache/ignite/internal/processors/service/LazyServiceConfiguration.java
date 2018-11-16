@@ -64,6 +64,7 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
         this.srvcBytes = srvcBytes;
         srvc = cfg.getService();
         srvcClsName = srvc.getClass().getName();
+        plc = cfg.getPolicy();
     }
 
     /**

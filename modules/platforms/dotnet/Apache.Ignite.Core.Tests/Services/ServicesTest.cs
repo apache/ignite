@@ -273,12 +273,12 @@ namespace Apache.Ignite.Core.Tests.Services
             var ex = Assert.Throws<IgniteException>(()=> Services.GetServiceProxy<ITestIgniteService>(SvcName));
             Assert.AreEqual("Failed to find deployed service: " + SvcName, ex.Message);
 
-            // Deploy to grid2 & grid3
+            // Deploy to grid1 & grid2
             var svc = binarizable
                 ? new TestIgniteServiceBinarizable {TestProperty = 17}
                 : new TestIgniteServiceSerializable {TestProperty = 17};
 
-            Grid1.GetCluster().ForNodeIds(Grid2.GetCluster().GetLocalNode().Id, Grid1.GetCluster().GetLocalNode().Id)
+            Grid3.GetCluster().ForNodeIds(Grid2.GetCluster().GetLocalNode().Id, Grid1.GetCluster().GetLocalNode().Id)
                 .GetServices().DeployNodeSingleton(SvcName, svc);
 
             // Make sure there is no local instance on grid3
@@ -326,13 +326,13 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             // Deploy to remotes.
             var svc = new TestIgniteServiceSerializable { TestProperty = 37 };
-            Grid1.GetCluster().ForRemotes().GetServices().DeployNodeSingleton(SvcName, svc);
+            Grid3.GetCluster().ForRemotes().GetServices().DeployNodeSingleton(SvcName, svc);
 
             // Make sure there is no local instance on grid3
             Assert.IsNull(Grid3.GetServices().GetService<ITestIgniteService>(SvcName));
 
             // Get proxy.
-            dynamic prx = Grid3.GetServices().GetDynamicServiceProxy(SvcName, false);
+            dynamic prx = Grid3.GetServices().GetDynamicServiceProxy(SvcName, true);
 
             // Property getter.
             Assert.AreEqual(37, prx.TestProperty);
@@ -578,8 +578,10 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.IsNotNull(firstFailedSvc);
             Assert.IsNotNull(secondFailedSvc);
 
-            Assert.AreEqual(firstFailedIdx, firstFailedSvc.TestProperty);
-            Assert.AreEqual(secondFailedIdx, secondFailedSvc.TestProperty);
+            int[] properties = { firstFailedSvc.TestProperty, secondFailedSvc.TestProperty };
+
+            Assert.IsTrue(properties.Contains(firstFailedIdx));
+            Assert.IsTrue(properties.Contains(secondFailedIdx));
 
             for (var i = 0; i < num; i++)
             {

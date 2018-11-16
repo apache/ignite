@@ -144,16 +144,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
 
             CountDownLatch latch = new CountDownLatch(numServices);
 
-            IgnitePredicate<ClusterNode> depPred = client.cluster().forServers()
-                .forPredicate(new IgnitePredicate<ClusterNode>() {
-                    @Override public boolean apply(ClusterNode node) {
-                        String gridName = node.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME);
-
-                        assert gridName != null;
-
-                        return gridName.startsWith(getTestIgniteInstanceName());
-                    }
-                }).predicate();
+            IgnitePredicate<ClusterNode> depPred = new TestPredicate(getTestIgniteInstanceName());
 
             List<ServiceConfiguration> cfgs = getConfigs(depPred, numServices);
 
@@ -196,16 +187,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
 
             CountDownLatch latch = new CountDownLatch(numServices);
 
-            IgnitePredicate<ClusterNode> depPred = client.cluster().forServers()
-                .forPredicate(new IgnitePredicate<ClusterNode>() {
-                    @Override public boolean apply(ClusterNode node) {
-                        String gridName = node.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME);
-
-                        assert gridName != null;
-
-                        return gridName.startsWith(getTestIgniteInstanceName());
-                    }
-                }).predicate();
+            IgnitePredicate<ClusterNode> depPred = new TestPredicate(getTestIgniteInstanceName());
 
             List<ServiceConfiguration> cfgs = getConfigs(depPred, numServices);
 
@@ -435,8 +417,6 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testCancelAllTopologyChange() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10021");
-
         Ignite client = grid(CLIENT_NODE_NAME);
 
         int numServices = 500;
@@ -663,5 +643,29 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
                 return null;
             }
         });
+    }
+
+    /**
+     * Test predicate.
+     */
+    private static class TestPredicate implements IgnitePredicate<ClusterNode> {
+        /** */
+        private final String namePrefix;
+
+        /**
+         * @param namePrefix Prefix to match instances name.
+         */
+        public TestPredicate(String namePrefix) {
+            this.namePrefix = namePrefix;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(ClusterNode node) {
+            String gridName = node.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME);
+
+            assert gridName != null;
+
+            return !node.isClient() && gridName.startsWith(namePrefix);
+        }
     }
 }

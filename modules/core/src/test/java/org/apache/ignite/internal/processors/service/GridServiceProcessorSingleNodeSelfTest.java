@@ -29,7 +29,6 @@ public class GridServiceProcessorSingleNodeSelfTest extends GridServiceProcessor
         return 1;
     }
 
-
     /**
      * @throws Exception If failed.
      */
@@ -38,16 +37,9 @@ public class GridServiceProcessorSingleNodeSelfTest extends GridServiceProcessor
 
         Ignite ignite = randomGrid();
 
-        // Deploy only on remote nodes.
-        ignite.services(ignite.cluster().forRemotes()).deployNodeSingleton(name, new CounterServiceImpl());
-
-        info("Deployed service: " + name);
-
-        // Get local proxy.
-        CounterService svc = ignite.services().serviceProxy(name, CounterService.class, false);
-
         try {
-            svc.increment();
+            // Deploy only on remote nodes.
+            ignite.services(ignite.cluster().forRemotes()).deployNodeSingleton(name, new CounterServiceImpl());
 
             fail("Should never reach here.");
         }

@@ -77,6 +77,9 @@ public class ServiceConfiguration implements Serializable {
     @GridToStringExclude
     protected IgnitePredicate<ClusterNode> nodeFilter;
 
+    /** Service deployment failures policy. */
+    protected ServiceDeploymentFailuresPolicy plc = ServiceDeploymentFailuresPolicy.IGNORE;
+
     /**
      * Gets service name.
      * <p>
@@ -254,6 +257,27 @@ public class ServiceConfiguration implements Serializable {
         return this;
     }
 
+    /**
+     * Gets services deployment policy used to handle deployment errors.
+     *
+     * @return Service deployment failures policy.
+     */
+    public ServiceDeploymentFailuresPolicy getPolicy() {
+        return plc;
+    }
+
+    /**
+     * Sets services deployment policy used to handle deployment errors.
+     *
+     * @param plc Service deployment failures policy.
+     * @return {@code this} for chaining.
+     */
+    public ServiceConfiguration setPolicy(ServiceDeploymentFailuresPolicy plc) {
+        this.plc = plc;
+
+        return this;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (!equalsIgnoreNodeFilter(o))
@@ -287,6 +311,9 @@ public class ServiceConfiguration implements Serializable {
             return false;
 
         ServiceConfiguration that = (ServiceConfiguration)o;
+
+        if (plc != that.plc)
+            return false;
 
         if (maxPerNodeCnt != that.maxPerNodeCnt)
             return false;

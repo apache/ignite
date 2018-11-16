@@ -23,6 +23,7 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -183,35 +184,41 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
      * @throws Exception If failed.
      */
     public void testAffinityUpdateTopology() throws Exception {
-        Ignite g = randomGrid();
+        IgniteEx g = randomGrid();
 
-        checkCount(AFFINITY, g.services().serviceDescriptors(), 1);
+        checkCount(AFFINITY, g, 1);
+
+        checkAffinityServiceDeployment(g, AFFINITY);
 
         int nodeCnt = 2;
 
         startExtraNodes(nodeCnt);
 
         try {
-            checkCount(AFFINITY, g.services().serviceDescriptors(), 1);
+            checkCount(AFFINITY, g, 1);
+
+            checkAffinityServiceDeployment(g, AFFINITY);
         }
         finally {
             stopExtraNodes(nodeCnt);
         }
 
-        checkCount(AFFINITY, g.services().serviceDescriptors(), 1);
+        checkCount(AFFINITY, g, 1);
+
+        checkAffinityServiceDeployment(g, AFFINITY);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testDeployLimits() throws Exception {
-        final Ignite g = randomGrid();
+        final IgniteEx g = randomGrid();
 
         final String name = NODE_SINGLE_WITH_LIMIT;
 
         waitForDeployment(name, nodeCount());
 
-        checkCount(name, g.services().serviceDescriptors(), nodeCount());
+        checkCount(name, g, nodeCount());
 
         CountDownLatch latch = new CountDownLatch(1);
 
@@ -226,7 +233,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
 
             waitForDeployment(name, nodeCount() + 1);
 
-            checkCount(name, g.services().serviceDescriptors(), nodeCount() + 1);
+            checkCount(name, g, nodeCount() + 1);
         }
         finally {
             stopExtraNodes(extraNodes);
@@ -237,7 +244,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
         // Service can be redeployed when nodes is stopping one-by-one.
         assertEquals(0, DummyService.started(name) - DummyService.cancelled(name));
 
-        checkCount(name, g.services().serviceDescriptors(), nodeCount());
+        checkCount(name, g, nodeCount());
     }
 
     /**
@@ -245,7 +252,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
      * @throws Exception If failed.
      */
     private void checkSingletonUpdateTopology(String name) throws Exception {
-        Ignite g = randomGrid();
+        IgniteEx g = randomGrid();
 
         startExtraNodes(2, 2);
 
@@ -255,7 +262,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
 
             info(">>> Passed checks.");
 
-            checkCount(name, g.services().serviceDescriptors(), 1);
+            checkCount(name, g, 1);
         }
         finally {
             stopExtraNodes(4);
@@ -267,7 +274,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
      * @throws Exception If failed.
      */
     private void checkDeployOnEachNodeUpdateTopology(String name) throws Exception {
-        Ignite g = randomGrid();
+        IgniteEx g = randomGrid();
 
         int newNodes = 4;
 
@@ -287,7 +294,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
             // not start and cancel events individually.
             assertEquals(name, newNodes,  DummyService.started(name) - DummyService.cancelled(name));
 
-            checkCount(name, g.services().serviceDescriptors(), nodeCount() + newNodes);
+            checkCount(name, g, nodeCount() + newNodes);
         }
         finally {
             stopExtraNodes(newNodes);
@@ -295,7 +302,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
 
         waitForDeployment(name, nodeCount());
 
-        checkCount(name, g.services().serviceDescriptors(), nodeCount());
+        checkCount(name, g, nodeCount());
     }
 
     /**
@@ -303,7 +310,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
      * @throws Exception If failed.
      */
     private void checkDeployOnEachNodeButClientUpdateTopology(String name) throws Exception {
-        Ignite g = randomGrid();
+        IgniteEx g = randomGrid();
 
         int servers = 2;
 
@@ -325,7 +332,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
             // not start and cancel events individually.
             assertEquals(name, servers,  DummyService.started(name) - DummyService.cancelled(name));
 
-            checkCount(name, g.services().serviceDescriptors(), nodeCount() + servers);
+            checkCount(name, g, nodeCount() + servers);
         }
         finally {
             stopExtraNodes(servers + clients);
@@ -333,6 +340,6 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
 
         waitForDeployment(name, nodeCount());
 
-        checkCount(name, g.services().serviceDescriptors(), nodeCount());
+        checkCount(name, g, nodeCount());
     }
 }

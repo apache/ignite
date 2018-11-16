@@ -30,7 +30,9 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.typedef.CA;
@@ -147,7 +149,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * @return Random grid.
      */
-    protected Ignite randomGrid() {
+    protected IgniteEx randomGrid() {
         return grid(RAND.nextInt(nodeCount()));
     }
 
@@ -253,11 +255,11 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         info("Deployed service: " + name);
 
-        fut1.get();
-
-        info("Finished waiting for service future: " + name);
-
         try {
+            fut1.get();
+
+            info("Finished waiting for service future: " + name);
+
             fut2.get();
 
             fail("Failed to receive mismatching configuration exception.");
@@ -752,6 +754,19 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
     /**
      * @param svcName Service name.
+     * @param ignite Ignite instance.
+     * @param cnt Expected count.
+     */
+    protected void checkCount(String svcName, IgniteEx ignite, int cnt) throws IgniteInterruptedCheckedException {
+        AffinityTopologyVersion topVer = ignite.context().discovery().topologyVersionEx();
+
+        waitForServicesReadyTopology(ignite, topVer);
+
+        assertEquals(cnt, actualCount(svcName, ignite.services().serviceDescriptors()));
+    }
+
+    /**
+     * @param svcName Service name.
      * @param descs Descriptors.
      * @param cnt Expected count.
      */
@@ -813,6 +828,32 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     }
 
     /**
+     * @param ignite Ignite instance.
+     * @param srvcName Affinity service name.
+     */
+    protected void checkAffinityServiceDeployment(Ignite ignite, String srvcName) {
+        ServiceDescriptor desc = null;
+
+        for (ServiceDescriptor d : ignite.services().serviceDescriptors()) {
+            if (d.name().equals(srvcName)) {
+                desc = d;
+
+                break;
+            }
+        }
+
+        assertNotNull(desc);
+
+        assertEquals(1, desc.topologySnapshot().size());
+
+        ClusterNode n = ignite.affinity(desc.cacheName()).mapKeyToNode(desc.affinityKey());
+
+        assertNotNull(n);
+
+        assertTrue(desc.topologySnapshot().containsKey(n.id()));
+    }
+
+    /**
      * Affinity service.
      */
     protected static class AffinityService implements Service {
@@ -841,11 +882,6 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         /** {@inheritDoc} */
         @Override public void init(ServiceContext ctx) throws Exception {
             X.println("Initializing affinity service for key: " + affKey);
-
-            ClusterNode n = g.affinity(CACHE_NAME).mapKeyToNode(affKey);
-
-            assertNotNull(n);
-            assertTrue(n.isLocal());
         }
 
         /** {@inheritDoc} */

@@ -18,10 +18,9 @@
 package org.apache.ignite.internal.processors.service;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
-import org.apache.ignite.testframework.GridStringLogger;
+import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /** */
@@ -31,15 +30,15 @@ public class GridServiceDeploymentExceptionPropagationTest extends GridCommonAbs
     public void testExceptionPropagation() throws Exception {
         try (Ignite srv = startGrid("server")) {
 
-            GridStringLogger log = new GridStringLogger();
-
-            try (Ignite client = startGrid("client", getConfiguration("client").setGridLogger(log).setClientMode(true))) {
+            try (Ignite client = startGrid("client", getConfiguration("client").setClientMode(true))) {
 
                 try {
                     client.services().deployClusterSingleton("my-service", new ServiceImpl());
+
+                    fail("Deployment exception has been expected.");
                 }
-                catch (IgniteException ignored) {
-                    assertTrue(log.toString().contains("ServiceImpl init exception"));
+                catch (ServiceDeploymentException ex) {
+                    assertTrue(ex.getSuppressed()[0].getMessage().contains("ServiceImpl init exception"));
 
                     return; // Exception is what we expect.
                 }

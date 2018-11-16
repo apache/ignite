@@ -78,7 +78,7 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
         for (Ignite node : G.allGrids()) {
             GridContinuousProcessor proc = ((IgniteEx)node).context().continuous();
 
-            assertEquals(1, ((Map)U.field(proc, "locInfos")).size());
+            assertEquals(0, ((Map)U.field(proc, "locInfos")).size());
             assertEquals(0, ((Map)U.field(proc, "rmtInfos")).size());
             assertEquals(0, ((Map)U.field(proc, "startFuts")).size());
             assertEquals(0, ((Map)U.field(proc, "stopFuts")).size());

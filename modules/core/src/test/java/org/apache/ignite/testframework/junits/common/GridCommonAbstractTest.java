@@ -131,6 +131,9 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /** Cache peek modes array that consist of only ONHEAP mode. */
     protected static final CachePeekMode[] ONHEAP_PEEK_MODES = new CachePeekMode[] {CachePeekMode.ONHEAP};
 
+    /** Service deployment wait timeout. */
+    protected static final int SERVICE_DEPLOYMENT_WAIT_TIMEOUT = 10_000;
+
     /**
      * @param startGrid If {@code true}, then grid node will be auto-started.
      */
@@ -2020,5 +2023,20 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             if (!txs.isEmpty())
                 fail("Some transaction are not finished");
         }
+    }
+
+    /**
+     * @param ignite Ignite instance.
+     * @param topVer Topology version to wait.
+     * @return If given topology ready.
+     * @throws IgniteInterruptedCheckedException If interrupted.
+     */
+    protected boolean waitForServicesReadyTopology(final IgniteEx ignite,
+        final AffinityTopologyVersion topVer) throws IgniteInterruptedCheckedException {
+        return GridTestUtils.waitForCondition(() -> {
+            AffinityTopologyVersion readyTopVer = ignite.context().service().exchange().readyTopologyVersion();
+
+            return topVer.compareTo(readyTopVer) <= 0;
+        }, SERVICE_DEPLOYMENT_WAIT_TIMEOUT);
     }
 }

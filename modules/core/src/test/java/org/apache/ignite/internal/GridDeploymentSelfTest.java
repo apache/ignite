@@ -471,7 +471,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public boolean register(ClassLoader ldr, Class rsrc) throws IgniteSpiException {
-            if (super.register(ldr, rsrc)) {
+            if (super.register(ldr, rsrc) && ComputeTaskAdapter.class.isAssignableFrom(rsrc)) {
                 deployCnt++;
 
                 return true;

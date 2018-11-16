@@ -127,11 +127,7 @@ public class GridServiceContinuousQueryRedeployTest extends GridCommonAbstractTe
         svcCfg.setName(SERVICE_NAME);
         svcCfg.setTotalCount(1);
         svcCfg.setMaxPerNodeCount(1);
-        svcCfg.setNodeFilter(new IgnitePredicate<ClusterNode>() {
-            @Override public boolean apply(ClusterNode node) {
-                return !node.isClient();
-            }
-        });
+        svcCfg.setNodeFilter((IgnitePredicate<ClusterNode>)node -> !node.isClient());
 
         ignite.services().deploy(svcCfg);
     }

@@ -24,7 +24,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
@@ -125,6 +124,7 @@ public class IgniteClientReconnectServicesTest extends IgniteClientReconnectAbst
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testReconnectInDeploying() throws Exception {
         Ignite client = grid(serverCount());
 
@@ -133,10 +133,6 @@ public class IgniteClientReconnectServicesTest extends IgniteClientReconnectAbst
         final IgniteServices services = client.services();
 
         Ignite srv = ignite(0);
-
-        BlockTcpCommunicationSpi commSpi = commSpi(srv);
-
-        commSpi.blockMessage(GridNearTxPrepareResponse.class);
 
         final IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -153,18 +149,17 @@ public class IgniteClientReconnectServicesTest extends IgniteClientReconnectAbst
             }
         });
 
-        // Check that client waiting operation.
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                return fut.get(200);
+        reconnectClientNode(client, srv, () -> {
+            // Check that client waiting operation.
+            GridTestUtils.assertThrows(log, () -> fut.get(200), IgniteFutureTimeoutCheckedException.class, null);
+
+            try {
+                assertNotDone(fut);
             }
-        }, IgniteFutureTimeoutCheckedException.class, null);
-
-        assertNotDone(fut);
-
-        commSpi.unblockMessage();
-
-        reconnectClientNode(client, srv, null);
+            catch (Exception e) {
+                fail("Unexpected exception has been thrown, err=" + e.getMessage());
+            }
+        });
 
         assertTrue((Boolean)fut.get(2, TimeUnit.SECONDS));
     }

@@ -1122,8 +1122,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 try {
                     cctx.kernalContext().dataStructures().onDeActivate(cctx.kernalContext());
 
-                    cctx.kernalContext().service().onDeActivate(cctx.kernalContext());
-
                     assert registerCachesFuture == null : "No caches registration should be scheduled before new caches have started.";
 
                     registerCachesFuture = cctx.affinity().onCacheChangeRequest(this, crd, exchActions);

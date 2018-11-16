@@ -26,6 +26,7 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -108,6 +109,7 @@ public class IgniteServiceDynamicCachesSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testDeployCalledBeforeCacheStart() throws Exception {
         String cacheName = "cache";
 
@@ -128,11 +130,17 @@ public class IgniteServiceDynamicCachesSelfTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        svcs.deployKeyAffinitySingleton(svcName, new TestService(), cacheName, key);
+        GridTestUtils.assertThrowsWithCause(() -> {
+            svcs.deployKeyAffinitySingleton(svcName, new TestService(), cacheName, key);
 
-        assert svcs.service(svcName) == null;
+            return null;
+        }, ServiceDeploymentException.class);
+
+        assertNull(svcs.service(svcName));
 
         ig.createCache(ccfg);
+
+        svcs.deployKeyAffinitySingleton(svcName, new TestService(), cacheName, key);
 
         try {
             boolean res = GridTestUtils.waitForCondition(new PA() {

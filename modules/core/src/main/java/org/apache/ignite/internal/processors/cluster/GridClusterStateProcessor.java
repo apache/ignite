@@ -1160,10 +1160,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 Exception e = null;
 
                 try {
-                    ctx.service().onUtilityCacheStarted();
-
-                    ctx.service().onActivate(ctx);
-
                     ctx.dataStructures().onActivate(ctx);
 
                     ctx.igfs().onActivate(ctx);

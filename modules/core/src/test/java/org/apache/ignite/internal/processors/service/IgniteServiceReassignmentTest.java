@@ -92,6 +92,8 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
 
         Ignite node1 = startGrid(1);
 
+        waitForService(node1);
+
         assertEquals(42, serviceProxy(node1).foo());
 
         srvcCfg = serviceConfiguration();
@@ -121,6 +123,7 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
         node2.close();
 
         waitForService(node1);
+        waitForService(node3);
 
         assertEquals(42, serviceProxy(node1).foo());
         assertEquals(42, serviceProxy(node3).foo());
@@ -185,100 +188,6 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
             for (int nodeIdx = 0; nodeIdx < NODES; nodeIdx++)
                 assertEquals(42, serviceProxy(ignite(nodeIdx)).foo());
         }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testZombieAssignmentsCleanup() throws Exception {
-        useStrLog = true;
-
-        final int nodesCnt = 2;
-        final int maxSvc = 30;
-
-        try {
-            startGridsMultiThreaded(nodesCnt);
-
-            IgniteEx ignite = grid(0);
-
-            IgniteInternalCache<GridServiceAssignmentsKey, Object> sysCache = ignite.utilityCache();
-
-            List<GridServiceAssignmentsKey> zombieAssignmentsKeys = new ArrayList<>(maxSvc);
-
-            // Adding some assignments without deployments.
-            for (int i = 0; i < maxSvc; i++) {
-                String name = "svc-" + i;
-
-                ServiceConfiguration svcCfg = new ServiceConfiguration();
-
-                svcCfg.setName(name);
-
-                GridServiceAssignmentsKey key = new GridServiceAssignmentsKey(name);
-
-                UUID nodeId = grid(i % nodesCnt).localNode().id();
-
-                sysCache.put(key, new GridServiceAssignments(svcCfg, nodeId, ignite.cluster().topologyVersion()));
-
-                zombieAssignmentsKeys.add(key);
-            }
-
-            // Simulate exchange with merge.
-            GridTestUtils.runAsync(() -> startGrid(nodesCnt));
-            GridTestUtils.runAsync(() -> startGrid(nodesCnt + 1));
-            startGrid(nodesCnt + 2);
-
-            awaitPartitionMapExchange();
-
-            // Checking that all our assignments was removed.
-            for (GridServiceAssignmentsKey key : zombieAssignmentsKeys)
-                assertNull("Found assignment for undeployed service " + key.name(), sysCache.get(key));
-
-            for (IgniteLogger logger : strLoggers)
-                assertFalse(logger.toString().contains("Getting affinity for topology version earlier than affinity is " +
-                    "calculated"));
-        } finally {
-            useStrLog = false;
-
-            strLoggers.clear();
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testNodeStopWhileThereAreCacheActivitiesInServiceProcessor() throws Exception {
-        final int nodesCnt = 2;
-        final int maxSvc = 1024;
-
-        startGridsMultiThreaded(nodesCnt);
-
-        IgniteEx ignite = grid(0);
-
-        IgniteInternalCache<GridServiceAssignmentsKey, Object> sysCache = ignite.utilityCache();
-
-        // Adding some assignments without deployments.
-        for (int i = 0; i < maxSvc; i++) {
-            String name = "svc-" + i;
-
-            ServiceConfiguration svcCfg = new ServiceConfiguration();
-
-            svcCfg.setName(name);
-
-            GridServiceAssignmentsKey key = new GridServiceAssignmentsKey(name);
-
-            UUID nodeId = grid(i % nodesCnt).localNode().id();
-
-            sysCache.put(key, new GridServiceAssignments(svcCfg, nodeId, ignite.cluster().topologyVersion()));
-        }
-
-        // Simulate exchange with merge.
-        GridTestUtils.runAsync(() -> startGrid(nodesCnt));
-        GridTestUtils.runAsync(() -> startGrid(nodesCnt + 1));
-        startGrid(nodesCnt + 2);
-
-        Thread.sleep((int)(1000 * ThreadLocalRandom.current().nextDouble()));
-
-        stopAllGrids();
     }
 
     /**

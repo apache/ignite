@@ -25,6 +25,7 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.service.ServicesExchangeActions;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -64,6 +65,10 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     /** */
     @GridToStringExclude
     private transient ExchangeActions exchangeActions;
+
+    /** Services deployment actions to be processed on services deployment exchange. */
+    @GridToStringExclude
+    @Nullable private transient ServicesExchangeActions servicesExchangeActions;
 
     /**
      * @param reqId State change request ID.
@@ -115,6 +120,20 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
         assert exchangeActions != null && !exchangeActions.empty() : exchangeActions;
 
         this.exchangeActions = exchangeActions;
+    }
+
+    /**
+     * @return Services deployment actions to be processed on services deployment exchange.
+     */
+    @Nullable public ServicesExchangeActions servicesExchangeActions() {
+        return servicesExchangeActions;
+    }
+
+    /**
+     * @param servicesExchangeActions Services deployment actions to be processed on services deployment exchange.
+     */
+    public void servicesExchangeActions(ServicesExchangeActions servicesExchangeActions) {
+        this.servicesExchangeActions = servicesExchangeActions;
     }
 
     /** {@inheritDoc} */

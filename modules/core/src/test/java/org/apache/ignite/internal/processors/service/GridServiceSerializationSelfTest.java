@@ -65,7 +65,7 @@ public class GridServiceSerializationSelfTest extends GridCommonAbstractTest {
             server.services(server.cluster().forServers())
                 .deployClusterSingleton("my-service", new MyServiceImpl());
 
-            MyService svc = client.services().serviceProxy("my-service", MyService.class, false);
+            MyService svc = client.services().serviceProxy("my-service", MyService.class, false, 2_000);
 
             svc.hello();
 
