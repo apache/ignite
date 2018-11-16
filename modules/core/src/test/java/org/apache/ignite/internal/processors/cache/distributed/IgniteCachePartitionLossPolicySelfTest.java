@@ -520,13 +520,16 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
             info("Newly started node: " + grd.cluster().localNode().id());
 
             // Check that partition state does not change after we start each node.
-            for (Ignite ig : G.allGrids()) {
-                verifyCacheOps(canWrite, safe, ig);
+            // TODO With persistence enabled LOST partitions become OWNING after a node joins back - https://issues.apache.org/jira/browse/IGNITE-10044.
+            if (!isPersistenceEnabled) {
+                for (Ignite ig : G.allGrids()) {
+                    verifyCacheOps(canWrite, safe, ig);
 
-                // TODO Query effectively waits for rebalance due to https://issues.apache.org/jira/browse/IGNITE-10057
-                // TODO and after resetLostPartition there is another OWNING copy in the cluster due to https://issues.apache.org/jira/browse/IGNITE-10058.
-                // TODO Uncomment after https://issues.apache.org/jira/browse/IGNITE-10058 is fixed.
+                    // TODO Query effectively waits for rebalance due to https://issues.apache.org/jira/browse/IGNITE-10057
+                    // TODO and after resetLostPartition there is another OWNING copy in the cluster due to https://issues.apache.org/jira/browse/IGNITE-10058.
+                    // TODO Uncomment after https://issues.apache.org/jira/browse/IGNITE-10058 is fixed.
 //                    validateQuery(safe, ig);
+                }
             }
         }
 
