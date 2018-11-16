@@ -462,7 +462,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param schema Schema name.
      */
     private void createSchema0(String schema) {
-        executeSystemStatement("CREATE SCHEMA IF NOT EXISTS " + H2Utils.withQuotes(schema));
+        exec.executeSystemStatement("CREATE SCHEMA IF NOT EXISTS " + H2Utils.withQuotes(schema));
 
         if (log.isDebugEnabled())
             log.debug("Created H2 schema for index database: " + schema);
@@ -474,7 +474,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param schema Schema name.
      */
     private void dropSchema(String schema) {
-        executeSystemStatement("DROP SCHEMA IF EXISTS " + H2Utils.withQuotes(schema));
+        exec.executeSystemStatement("DROP SCHEMA IF EXISTS " + H2Utils.withQuotes(schema));
 
         if (log.isDebugEnabled())
             log.debug("Dropped H2 schema for index database: " + schema);
@@ -492,30 +492,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             Connection c = exec.connectionForThread(schema);
 
             stmt = c.createStatement();
-
-            stmt.executeUpdate(sql);
-        }
-        catch (SQLException e) {
-            exec.onSqlException();
-
-            throw new IgniteSQLException("Failed to execute statement: " + sql, e);
-        }
-        finally {
-            U.close(stmt, log);
-        }
-    }
-
-    /**
-     * Execute statement on H2 INFORMATION_SCHEMA.
-     * @param sql SQL statement.
-     */
-    private void executeSystemStatement(String sql) {
-        assert Thread.holdsLock(schemaMux);
-
-        Statement stmt = null;
-
-        try {
-            stmt = exec.systemConnection().createStatement();
 
             stmt.executeUpdate(sql);
         }

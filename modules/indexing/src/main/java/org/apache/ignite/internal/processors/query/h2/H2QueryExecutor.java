@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2PlainRowFactory;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
@@ -86,6 +87,7 @@ public class H2QueryExecutor {
     private final ConcurrentMap<Thread, H2ConnectionWrapper> threadConns = new ConcurrentHashMap<>();
 
     /** Connection cache. */
+    // TODO: No anonymous stuff.
     private final ThreadLocal<ThreadLocalObjectPool.Reusable<H2ConnectionWrapper>> threadConn = new ThreadLocal<ThreadLocalObjectPool.Reusable<H2ConnectionWrapper>>() {
         @Override public ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> get() {
             ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> reusable = super.get();
@@ -126,9 +128,8 @@ public class H2QueryExecutor {
     /** Statement cleanup task. */
     private final GridTimeoutProcessor.CancelableTask stmtCleanupTask;
 
-    /** H2 JDBC connection for INFORMATION_SCHEMA. Holds H2 open until node is stopped. */
-    // TODO: Do we need it cached?
-    private Connection sysConn;
+    /** H2 connection for INFORMATION_SCHEMA. Holds H2 open until node is stopped. */
+    private volatile Connection sysConn;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -139,36 +140,15 @@ public class H2QueryExecutor {
      * @param ctx Context.
      */
     public H2QueryExecutor(GridKernalContext ctx) throws IgniteCheckedException {
-        log = ctx.log(H2QueryExecutor.class);
-
         dbUrl = "jdbc:h2:mem:" + ctx.localNodeId() + DB_OPTIONS;
+
+        log = ctx.log(H2QueryExecutor.class);
 
         org.h2.Driver.load();
 
-        try {
-            if (getString(IGNITE_H2_DEBUG_CONSOLE) != null) {
-                Connection c = DriverManager.getConnection(dbUrl);
+        sysConn = connectionNoCache(QueryUtils.SCHEMA_IS);
 
-                int port = getInteger(IGNITE_H2_DEBUG_CONSOLE_PORT, 0);
-
-                WebServer webSrv = new WebServer();
-                Server web = new Server(webSrv, "-webPort", Integer.toString(port));
-                web.start();
-                String url = webSrv.addSession(c);
-
-                U.quietAndInfo(log, "H2 debug console URL: " + url);
-
-                try {
-                    Server.openBrowser(url);
-                }
-                catch (Exception e) {
-                    U.warn(log, "Failed to open browser: " + e.getMessage());
-                }
-            }
-        }
-        catch (SQLException e) {
-            throw new IgniteCheckedException(e);
-        }
+        startDebugConsole();
 
         stmtCleanupTask = ctx.timeout().schedule(new Runnable() {
             @Override public void run() {
@@ -315,9 +295,31 @@ public class H2QueryExecutor {
     public Connection systemConnection() {
         // TODO: Initialize in ctor
         if (sysConn == null)
-            sysConn = connectionNoCache("INFORMATION_SCHEMA");
+            sysConn = connectionNoCache(QueryUtils.SCHEMA_IS);
 
         return sysConn;
+    }
+
+    /**
+     * Execute statement on H2 INFORMATION_SCHEMA.
+     * @param sql SQL statement.
+     */
+    public void executeSystemStatement(String sql) {
+        Statement stmt = null;
+
+        try {
+            stmt = sysConn.createStatement();
+
+            stmt.executeUpdate(sql);
+        }
+        catch (SQLException e) {
+            onSqlException();
+
+            throw new IgniteSQLException("Failed to execute system statement: " + sql, e);
+        }
+        finally {
+            U.close(stmt, log);
+        }
     }
 
     /**
@@ -406,10 +408,43 @@ public class H2QueryExecutor {
      * Close system connection.
      */
     public void closeSystemConnection() {
+        // TODO: Merge.
         if (sysConn != null) {
             U.close(sysConn, log);
 
             sysConn = null;
+        }
+    }
+
+    /**
+     * Start debug console if needed.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    private void startDebugConsole() throws IgniteCheckedException {
+        try {
+            if (getString(IGNITE_H2_DEBUG_CONSOLE) != null) {
+                Connection c = DriverManager.getConnection(dbUrl);
+
+                int port = getInteger(IGNITE_H2_DEBUG_CONSOLE_PORT, 0);
+
+                WebServer webSrv = new WebServer();
+                Server web = new Server(webSrv, "-webPort", Integer.toString(port));
+                web.start();
+                String url = webSrv.addSession(c);
+
+                U.quietAndInfo(log, "H2 debug console URL: " + url);
+
+                try {
+                    Server.openBrowser(url);
+                }
+                catch (Exception e) {
+                    U.warn(log, "Failed to open browser: " + e.getMessage());
+                }
+            }
+        }
+        catch (SQLException e) {
+            throw new IgniteCheckedException(e);
         }
     }
 }
