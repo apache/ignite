@@ -109,10 +109,8 @@ public class MnistUtils {
 
             for (int imgNum = 0; imgNum < numOfImages; imgNum++) {
                 double[] pixels = new double[numOfPixels];
-                for (int p = 0; p < numOfPixels; p++) {
-                    int c = 128 - isImages.read();
-                    pixels[p] = ((double)c) / 128;
-                }
+                for (int p = 0; p < numOfPixels; p++)
+                    pixels[p] = (float)(1.0 * (isImages.read() & 0xFF) / 255);
                 res.add(new MnistLabeledImage(pixels, isLabels.read()));
             }
         }
