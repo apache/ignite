@@ -86,6 +86,9 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     /** */
     private byte flags;
 
+    /** Transaction label. */
+    private String txLbl;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -116,6 +119,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
      * @param skipStore Skip store flag.
      * @param firstClientReq {@code True} if first lock request for lock operation sent from client node.
      * @param addDepInfo Deployment info flag.
+     * @param txLbl Transaction label.
      */
     public GridNearLockRequest(
         int cacheId,
@@ -141,7 +145,8 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         boolean keepBinary,
         boolean firstClientReq,
         boolean nearCache,
-        boolean addDepInfo
+        boolean addDepInfo,
+        @Nullable String txLbl
     ) {
         super(
             cacheId,
@@ -168,6 +173,8 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         this.taskNameHash = taskNameHash;
         this.createTtl = createTtl;
         this.accessTtl = accessTtl;
+
+        this.txLbl = txLbl;
 
         dhtVers = new GridCacheVersion[keyCnt];
 
@@ -320,6 +327,13 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         return accessTtl;
     }
 
+    /**
+     * @return Transaction label.
+     */
+    @Nullable public String txLabel() {
+        return txLbl;
+    }
+
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
@@ -417,6 +431,11 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
                 writer.incrementState();
 
+            case 29:
+                if(!writer.writeString("txLbl", txLbl))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -505,6 +524,14 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
+            case 29:
+                txLbl = reader.readString("txLbl");
+
+                if(!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridNearLockRequest.class);
@@ -517,7 +544,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 29;
+        return 30;
     }
 
     /** {@inheritDoc} */

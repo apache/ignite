@@ -53,6 +53,9 @@ import static org.apache.ignite.internal.jdbc2.JdbcUtils.convertToSqlException;
  * JDBC database metadata implementation.
  */
 public class JdbcDatabaseMetadata implements DatabaseMetaData {
+    /** The only possible name for catalog. */
+    public static final String CATALOG_NAME = "IGNITE";
+
     /** Driver name. */
     public static final String DRIVER_NAME = "Apache Ignite JDBC Driver";
 
@@ -714,7 +717,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
 
         List<List<?>> rows = new LinkedList<>();
 
-        if (validCatalogPattern(catalog) && (tblTypes == null || Arrays.asList(tblTypes).contains("TABLE"))) {
+        if (isValidCatalog(catalog) && (tblTypes == null || Arrays.asList(tblTypes).contains("TABLE"))) {
             for (Map.Entry<String, Map<String, Map<String, ColumnInfo>>> schema : meta.entrySet()) {
                 if (matches(schema.getKey(), schemaPtrn)) {
                     for (String tbl : schema.getValue().keySet()) {
@@ -745,7 +748,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     private List<Object> tableRow(String schema, String tbl) {
         List<Object> row = new ArrayList<>(10);
 
-        row.add(null);
+        row.add(CATALOG_NAME);
         row.add(schema);
         row.add(tbl.toUpperCase());
         row.add("TABLE");
@@ -771,7 +774,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
             Collections.<String>emptyList(),
             Collections.singletonList("TABLE_CAT"),
             Collections.singletonList(String.class.getName()),
-            Collections.<List<?>>emptyList(),
+            Collections.singletonList(Collections.singletonList(CATALOG_NAME)),
             true
         );
     }
@@ -796,7 +799,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
 
         int cnt = 0;
 
-        if (validCatalogPattern(catalog)) {
+        if (isValidCatalog(catalog)) {
             for (Map.Entry<String, Map<String, Map<String, ColumnInfo>>> schema : meta.entrySet()) {
                 if (matches(schema.getKey(), schemaPtrn)) {
                     for (Map.Entry<String, Map<String, ColumnInfo>> tbl : schema.getValue().entrySet()) {
@@ -881,9 +884,9 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
      */
     private List<Object> columnRow(String schema, String tbl, String col, int type, String typeName,
         boolean nullable, int pos) {
-        List<Object> row = new ArrayList<>(20);
+        List<Object> row = new ArrayList<>(24);
 
-        row.add(null);                  // 1. TABLE_CAT
+        row.add(CATALOG_NAME);          // 1. TABLE_CAT
         row.add(schema);                // 2. TABLE_SCHEM
         row.add(tbl);                   // 3. TABLE_NAME
         row.add(col);                   // 4. COLUMN_NAME
@@ -969,12 +972,12 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
 
         List<List<?>> rows = new LinkedList<>();
 
-        if (validCatalogPattern(catalog)) {
+        if (isValidCatalog(catalog)) {
             for (Map.Entry<String, Map<String, Map<String, ColumnInfo>>> schema : meta.entrySet()) {
                 if (matches(schema.getKey(), schemaPtrn)) {
                     for (Map.Entry<String, Map<String, ColumnInfo>> tbl : schema.getValue().entrySet()) {
                         if (matches(tbl.getKey(), tblNamePtrn))
-                            rows.add(Arrays.<Object>asList(null, schema.getKey(), tbl.getKey(), "_KEY", 1, "_KEY"));
+                            rows.add(Arrays.<Object>asList(CATALOG_NAME, schema.getKey(), tbl.getKey(), "_KEY", 1, "_KEY"));
                     }
                 }
             }
@@ -1046,7 +1049,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
 
         List<List<?>> rows = new ArrayList<>(indexes.size());
 
-        if (validCatalogPattern(catalog)) {
+        if (isValidCatalog(catalog)) {
             for (List<Object> idx : indexes) {
                 String idxSchema = (String)idx.get(0);
                 String idxTbl = (String)idx.get(1);
@@ -1054,7 +1057,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
                 if ((schema == null || schema.equals(idxSchema)) && (tbl == null || tbl.equals(idxTbl))) {
                     List<Object> row = new ArrayList<>(13);
 
-                    row.add(null);
+                    row.add(CATALOG_NAME);
                     row.add(idxSchema);
                     row.add(idxTbl);
                     row.add(idx.get(2));
@@ -1270,10 +1273,10 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
 
         List<List<?>> rows = new ArrayList<>(meta.size());
 
-        if (validCatalogPattern(catalog)) {
+        if (isValidCatalog(catalog)) {
             for (String schema : meta.keySet()) {
                 if (matches(schema, schemaPtrn))
-                    rows.add(Arrays.<Object>asList(schema, null));
+                    rows.add(Arrays.<Object>asList(schema, CATALOG_NAME));
             }
         }
 
@@ -1452,14 +1455,14 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     }
 
     /**
-     * Checks whether pattern matches any catalog.
+     * Checks if specified catalog matches the only possible catalog value. See {@link #CATALOG_NAME}.
      *
-     * @param catalog Catalog pattern.
-     * @return {@code true} If patter is valid for Ignite (null, empty, or '%' wildcard).
+     * @param catalog Catalog name or {@code null}.
+     * @return {@code true} If catalog equal ignoring case to {@link #CATALOG_NAME} or null (which means any catalog).
      *  Otherwise returns {@code false}.
      */
-    private static boolean validCatalogPattern(String catalog) {
-        return F.isEmpty(catalog) || "%".equals(catalog);
+    private static boolean isValidCatalog(String catalog) {
+        return catalog == null || catalog.equalsIgnoreCase(CATALOG_NAME);
     }
 
     /**

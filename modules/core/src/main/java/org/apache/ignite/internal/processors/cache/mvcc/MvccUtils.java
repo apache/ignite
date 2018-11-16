@@ -184,7 +184,14 @@ public class MvccUtils {
         if ((mvccOpCntr & MVCC_HINTS_MASK) != 0)
             return (byte)(mvccOpCntr >>> MVCC_HINTS_BIT_OFF);
 
-        return proc.state(mvccCrd, mvccCntr);
+        byte state = proc.state(mvccCrd, mvccCntr);
+
+        if ((state == TxState.NA || state == TxState.PREPARED)
+            && (proc.currentCoordinator() == null // Recovery from WAL.
+            || mvccCrd < proc.currentCoordinator().coordinatorVersion()))
+            state = TxState.ABORTED;
+
+        return state;
     }
 
     /**
