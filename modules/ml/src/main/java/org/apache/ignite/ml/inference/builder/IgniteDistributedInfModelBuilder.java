@@ -330,6 +330,8 @@ public class IgniteDistributedInfModelBuilder implements AsyncInfModelBuilder {
         private void stopReceiver() {
             if (receiverFut != null && !receiverFut.isDone())
                 receiverFut.cancel(true);
+            // The receiver thread pool is not reused, so it should be closed here.
+            receiverThreadPool.shutdown();
         }
 
         /**
