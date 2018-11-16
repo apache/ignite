@@ -157,6 +157,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
+import static org.apache.ignite.internal.util.nio.GridNioServer.RECOVERY_DESC_META_KEY;
 import static org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationConnectionCheckFuture.SES_FUT_META;
 import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage.ALREADY_CONNECTED;
 import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage.NEED_WAIT;
@@ -332,9 +333,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
     /** Message tracker meta for session. */
     private static final int TRACKER_META = GridNioSessionMetaKey.nextUniqueKey();
-
-    /** Recovery descriptor meta key. */
-    private static final int RECOVERY_DESC_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
     /** Connection context meta key. */
     private static final int CONN_CTX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
