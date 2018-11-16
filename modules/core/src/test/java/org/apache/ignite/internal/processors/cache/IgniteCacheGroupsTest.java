@@ -98,6 +98,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
@@ -1289,7 +1290,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStartManyCaches() throws Exception {
-        final int CACHES = 5_000;
+        final int CACHES =  SF.apply(5_000);
 
         final int NODES = 4;
 
@@ -3722,7 +3723,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         client = false;
 
-        final int CACHES = 10;
+        final int CACHES = SF.applyLB(10, 2);
 
         final AtomicReferenceArray<IgniteCache> caches = new AtomicReferenceArray<>(CACHES);
 
@@ -3737,7 +3738,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         final AtomicInteger cacheCntr = new AtomicInteger();
 
         try {
-            for (int i = 0; i < 10; i++) {
+            final int ITERATIONS_COUNT = SF.applyLB(10, 1);
+            for (int i = 0; i < ITERATIONS_COUNT; i++) {
                 stop.set(false);
 
                 final AtomicReference<Exception> err = new AtomicReference<>();
@@ -3858,7 +3860,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                     }
                 }, 8, "op-thread");
 
-                Thread.sleep(10_000);
+                Thread.sleep(SF.applyLB(10_000, 1_000));
 
                 stop.set(true);
 
