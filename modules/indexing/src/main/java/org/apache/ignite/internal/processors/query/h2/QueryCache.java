@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -27,6 +28,7 @@ import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.command.Prepared;
 import org.jetbrains.annotations.Nullable;
@@ -50,8 +52,12 @@ public class QueryCache {
     /** Indexing. */
     private final IgniteH2Indexing idx;
 
+    /** */
+    private volatile GridBoundedConcurrentLinkedHashMap<H2TwoStepCachedQueryKey, H2TwoStepCachedQuery> twoStepCache =
+        new GridBoundedConcurrentLinkedHashMap<>(PLAN_CACHE_SIZE);
+
     /** Update plans cache. */
-    private final ConcurrentMap<H2CachedStatementKey, UpdatePlan> planCache =
+    private final ConcurrentMap<H2CachedStatementKey, UpdatePlan> dmlCache =
         new GridBoundedConcurrentLinkedHashMap<>(PLAN_CACHE_SIZE);
 
     /**
@@ -80,7 +86,7 @@ public class QueryCache {
 
         H2CachedStatementKey planKey = H2CachedStatementKey.forDmlStatement(schema, p.getSQL(), fieldsQry, loc);
 
-        UpdatePlan res = (errKeysPos == null ? planCache.get(planKey) : null);
+        UpdatePlan res = (errKeysPos == null ? dmlCache.get(planKey) : null);
 
         if (res != null)
             return res;
@@ -89,7 +95,7 @@ public class QueryCache {
 
         // Don't cache re-runs
         if (errKeysPos == null)
-            return U.firstNotNull(planCache.putIfAbsent(planKey, res), res);
+            return U.firstNotNull(dmlCache.putIfAbsent(planKey, res), res);
         else
             return res;
     }
@@ -111,7 +117,21 @@ public class QueryCache {
      * @param cacheName Cache name.
      */
     public void onCacheStop(String cacheName) {
-        Iterator<Map.Entry<H2CachedStatementKey, UpdatePlan>> iter = planCache.entrySet().iterator();
+        // Clear SQL cache.
+        int cacheId = CU.cacheId(cacheName);
+
+        for (Iterator<Map.Entry<H2TwoStepCachedQueryKey, H2TwoStepCachedQuery>> it =
+             twoStepCache.entrySet().iterator(); it.hasNext();) {
+            Map.Entry<H2TwoStepCachedQueryKey, H2TwoStepCachedQuery> e = it.next();
+
+            GridCacheTwoStepQuery qry = e.getValue().query();
+
+            if (!F.isEmpty(qry.cacheIds()) && qry.cacheIds().contains(cacheId))
+                it.remove();
+        }
+
+        // Clear DML cache.
+        Iterator<Map.Entry<H2CachedStatementKey, UpdatePlan>> iter = dmlCache.entrySet().iterator();
 
         while (iter.hasNext()) {
             UpdatePlan plan = iter.next().getValue();
@@ -119,5 +139,32 @@ public class QueryCache {
             if (F.eq(cacheName, plan.cacheContext().name()))
                 iter.remove();
         }
+    }
+
+    /**
+     * Remove all cached queries from cached two-steps queries.
+     */
+    public void clearCachedQueries() {
+        twoStepCache = new GridBoundedConcurrentLinkedHashMap<>(PLAN_CACHE_SIZE);
+    }
+
+    /**
+     * Get query plan.
+     *
+     * @param key Key.
+     * @return Plan.
+     */
+    public H2TwoStepCachedQuery queryPlan(H2TwoStepCachedQueryKey key) {
+        return twoStepCache.get(key);
+    }
+
+    /**
+     * Save plan if it doesn't exist.
+     *
+     * @param key Key.
+     * @param plan Plan.
+     */
+    public void queryPlan(H2TwoStepCachedQueryKey key, H2TwoStepCachedQuery plan) {
+        twoStepCache.putIfAbsent(key, plan);
     }
 }

@@ -157,7 +157,6 @@ import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
-import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
@@ -261,9 +260,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** Dummy metadata for update result. */
     public static final List<GridQueryFieldMetadata> UPDATE_RESULT_META = Collections.<GridQueryFieldMetadata>
         singletonList(new H2SqlFieldMetadata(null, null, "UPDATED", Long.class.getName(), -1, -1));
-
-    /** */
-    private static final int TWO_STEP_QRY_CACHE_SIZE = 1024;
 
     /** The period of clean up the statement cache. */
     private final Long CLEANUP_STMT_CACHE_PERIOD = Long.getLong(IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD, 10_000);
@@ -377,10 +373,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** */
     private final ConcurrentMap<QueryTable, GridH2Table> dataTables = new ConcurrentHashMap<>();
-
-    /** */
-    private volatile GridBoundedConcurrentLinkedHashMap<H2TwoStepCachedQueryKey, H2TwoStepCachedQuery> twoStepCache =
-        new GridBoundedConcurrentLinkedHashMap<>(TWO_STEP_QRY_CACHE_SIZE);
 
     /** */
     private final IgniteInClosure<? super IgniteInternalFuture<?>> logger = new IgniteInClosure<IgniteInternalFuture<?>>() {
@@ -940,7 +932,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         desc.table().addColumns(cols, ifColNotExists);
 
-        clearCachedQueries();
+        planCache.clearCachedQueries();
     }
 
     /** {@inheritDoc} */
@@ -961,7 +953,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         desc.table().dropColumns(cols, ifColExists);
 
-        clearCachedQueries();
+        planCache.clearCachedQueries();
     }
 
     /**
@@ -1738,6 +1730,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("deprecation")
     @Override public SqlFieldsQuery generateFieldsQuery(String cacheName, SqlQuery qry) {
         String schemaName = schema(cacheName);
 
@@ -2079,13 +2072,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             List<FieldsQueryCursor<List<?>>> res;
 
             {
-                // First, let's check if we already have a two-step query for this statement...
+                // First, let's check if we already have a two-step query for this statement.
                 H2TwoStepCachedQueryKey cachedQryKey = new H2TwoStepCachedQueryKey(schemaName, qry.getSql(),
                     qry.isCollocated(), qry.isDistributedJoins(), qry.isEnforceJoinOrder(), qry.isLocal());
 
                 H2TwoStepCachedQuery cachedQry;
 
-                if ((cachedQry = twoStepCache.get(cachedQryKey)) != null) {
+                if ((cachedQry = planCache.queryPlan(cachedQryKey)) != null) {
                     checkQueryType(qry, true);
 
                     GridCacheTwoStepQuery twoStepQry = cachedQry.query().copy();
@@ -2096,7 +2089,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         startTx, tracker, cancel));
 
                     if (!twoStepQry.explain())
-                        twoStepCache.putIfAbsent(cachedQryKey, new H2TwoStepCachedQuery(meta, twoStepQry.copy()));
+                        planCache.queryPlan(cachedQryKey, new H2TwoStepCachedQuery(meta, twoStepQry.copy()));
 
                     return res;
                 }
@@ -2153,7 +2146,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 // We cannot cache two-step query for multiple statements query except the last statement
                 if (parseRes.twoStepQuery() != null && parseRes.twoStepQueryKey() != null &&
                     !parseRes.twoStepQuery().explain() && remainingSql == null)
-                    twoStepCache.putIfAbsent(parseRes.twoStepQueryKey(), new H2TwoStepCachedQuery(meta,
+                    planCache.queryPlan(parseRes.twoStepQueryKey(), new H2TwoStepCachedQuery(meta,
                         twoStepQry.copy()));
             }
 
@@ -2403,7 +2396,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         H2TwoStepCachedQuery cachedQry;
 
-        if ((cachedQry = twoStepCache.get(cachedQryKey)) != null) {
+        if ((cachedQry = planCache.queryPlan(cachedQryKey)) != null) {
             checkQueryType(qry, true);
 
             GridCacheTwoStepQuery twoStepQry = cachedQry.query().copy();
@@ -3445,7 +3438,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         if (schema != null) {
             mapQryExec.onCacheStop(cacheName);
-            planCache.onCacheStop(cacheName);
 
             // Remove this mapping only after callback to DML proc - it needs that mapping internally
             cacheName2schema.remove(cacheName);
@@ -3490,25 +3482,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     idx.close(null);
             }
 
-            int cacheId = CU.cacheId(cacheName);
-
-            for (Iterator<Map.Entry<H2TwoStepCachedQueryKey, H2TwoStepCachedQuery>> it =
-                twoStepCache.entrySet().iterator(); it.hasNext();) {
-                Map.Entry<H2TwoStepCachedQueryKey, H2TwoStepCachedQuery> e = it.next();
-
-                GridCacheTwoStepQuery qry = e.getValue().query();
-
-                if (!F.isEmpty(qry.cacheIds()) && qry.cacheIds().contains(cacheId))
-                    it.remove();
-            }
+            planCache.onCacheStop(cacheName);
         }
-    }
-
-    /**
-     * Remove all cached queries from cached two-steps queries.
-     */
-    private void clearCachedQueries() {
-        twoStepCache = new GridBoundedConcurrentLinkedHashMap<>(TWO_STEP_QRY_CACHE_SIZE);
     }
 
     /** {@inheritDoc} */
