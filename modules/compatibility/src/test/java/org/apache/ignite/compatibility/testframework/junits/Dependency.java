@@ -24,6 +24,9 @@ import org.jetbrains.annotations.Nullable;
  * Module dependency: Should be filtered out from current test classpath for separate JVM classpath.
  */
 public class Dependency {
+    /** Default value of group id. */
+    private static final String DEFAULT_GROUP_ID = "org.apache.ignite";
+
     /** Local module name. Folder name where module is located. */
     private final String locModuleName;
 
@@ -34,16 +37,16 @@ public class Dependency {
     private final String artifactId;
 
     /** Version. {@code null} means default Ignite version is to be used. May be used for 3rd party dependencies. */
-    @Nullable private final String version;
+    @Nullable private final String ver;
 
     /** Test flag. Test jar should have {@code true} value. */
     private final boolean test;
 
     /**
-     * Creates dependency with "org.apache.ignite" as group id.
+     * Creates dependency with {@link #DEFAULT_GROUP_ID} as group id.
      *
      * @param locModuleName Local module name. Folder name where module is located.
-     * @param artifactId Artifact id, without group name.
+     * @param artifactId Artifact id.
      * @param test Test flag. Test jar should have {@code true} value.
      */
     public Dependency(String locModuleName, String artifactId, boolean test) {
@@ -51,15 +54,15 @@ public class Dependency {
     }
 
     /**
-     * Creates dependency with "org.apache.ignite" as group id.
+     * Creates dependency with {@link #DEFAULT_GROUP_ID} as group id.
      *
      * @param locModuleName Local module name. Folder name where module is located.
-     * @param artifactId Artifact id, without group name.
-     * @param version Version, {@code null} means default Ignite version is to be used.
+     * @param artifactId Artifact id.
+     * @param ver Version, {@code null} means default Ignite version is to be used.
      * @param test Test flag. Test jar should have {@code true} value.
      */
-    public Dependency(String locModuleName, String artifactId, String version, boolean test) {
-        this(locModuleName, "org.apache.ignite", artifactId, version, test);
+    public Dependency(String locModuleName, String artifactId, String ver, boolean test) {
+        this(locModuleName, DEFAULT_GROUP_ID, artifactId, ver, test);
     }
 
     /**
@@ -67,16 +70,16 @@ public class Dependency {
      *
      * @param locModuleName Local module name. Folder name where module is located.
      * @param groupId Group id.
-     * @param artifactId Artifact id, without group name.
-     * @param version Dependency version, {@code null} means default Ignite version is to be used.
+     * @param artifactId Artifact id.
+     * @param ver Dependency version, {@code null} means default Ignite version is to be used.
      * @param test Test flag. Test jar should have {@code true} value.
      */
     public Dependency(@NotNull String locModuleName, @NotNull String groupId, @NotNull String artifactId,
-        @Nullable String version, boolean test) {
+        @Nullable String ver, boolean test) {
         this.locModuleName = locModuleName;
         this.groupId = groupId;
         this.artifactId = artifactId;
-        this.version = version;
+        this.ver = ver;
         this.test = test;
     }
 
@@ -115,7 +118,7 @@ public class Dependency {
      * @return Dependency version.
      */
     @Nullable public String version() {
-        return version;
+        return ver;
     }
 
     /**
