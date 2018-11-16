@@ -58,26 +58,35 @@ public class H2QueryExecutor {
         ";ROW_FACTORY=\"" + GridH2PlainRowFactory.class.getName() + "\"" +
         ";DEFAULT_TABLE_ENGINE=" + GridH2DefaultTableEngine.class.getName();
 
-    /** The period of clean up the statement cache. */
-    @SuppressWarnings("FieldCanBeLocal")
-    private final Long CLEANUP_STMT_CACHE_PERIOD = Long.getLong(IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD, 10_000);
+    /** The period of clean up the {@link #threadConns}. */
+    private static final Long CONN_CLEANUP_PERIOD = 2000L;
 
-    /** The period of clean up the {@link #conns}. */
-    @SuppressWarnings("FieldCanBeLocal")
-    private final Long CLEANUP_CONNECTIONS_PERIOD = 2000L;
+    /** The period of clean up the statement cache. */
+    private static final Long STMT_CLEANUP_PERIOD = Long.getLong(IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD, 10_000);
 
     /** The timeout to remove entry from the statement cache if the thread doesn't perform any queries. */
-    private final Long STATEMENT_CACHE_THREAD_USAGE_TIMEOUT =
-        Long.getLong(IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT, 600 * 1000);
+    private static final Long STMT_TIMEOUT = Long.getLong(IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT, 600 * 1000);
+
+    /*
+     * Initialize system properties for H2.
+     */
+    static {
+        System.setProperty("h2.objectCache", "false");
+        System.setProperty("h2.serializeJavaObject", "false");
+        System.setProperty("h2.objectCacheMaxPerElementSize", "0"); // Avoid ValueJavaObject caching.
+        System.setProperty("h2.optimizeTwoEquals", "false"); // Makes splitter fail on subqueries in WHERE.
+        System.setProperty("h2.dropRestrict", "false"); // Drop schema with cascade semantics.
+    }
 
     /** Shared connection pool. */
-    private final ThreadLocalObjectPool<H2ConnectionWrapper> connectionPool = new ThreadLocalObjectPool<>(this::newConnectionWrapper, 5);
+    private final ThreadLocalObjectPool<H2ConnectionWrapper> connPool =
+        new ThreadLocalObjectPool<>(this::newConnectionWrapper, 5);
 
-    /** Per-thread connection. */
-    private final ConcurrentMap<Thread, H2ConnectionWrapper> conns = new ConcurrentHashMap<>();
+    /** Per-thread connections. */
+    private final ConcurrentMap<Thread, H2ConnectionWrapper> threadConns = new ConcurrentHashMap<>();
 
     /** Connection cache. */
-    private final ThreadLocal<ThreadLocalObjectPool.Reusable<H2ConnectionWrapper>> connCache = new ThreadLocal<ThreadLocalObjectPool.Reusable<H2ConnectionWrapper>>() {
+    private final ThreadLocal<ThreadLocalObjectPool.Reusable<H2ConnectionWrapper>> threadConn = new ThreadLocal<ThreadLocalObjectPool.Reusable<H2ConnectionWrapper>>() {
         @Override public ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> get() {
             ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> reusable = super.get();
 
@@ -100,9 +109,9 @@ public class H2QueryExecutor {
         }
 
         @Override protected ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> initialValue() {
-            ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> reusableConnection = connectionPool.borrow();
+            ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> reusableConnection = connPool.borrow();
 
-            conns.put(Thread.currentThread(), reusableConnection.object());
+            threadConns.put(Thread.currentThread(), reusableConnection.object());
 
             return reusableConnection;
         }
@@ -111,28 +120,18 @@ public class H2QueryExecutor {
     /** Database URL. */
     private final String dbUrl;
 
-    /** */
-    private GridTimeoutProcessor.CancelableTask stmtCacheCleanupTask;
+    /** Connection cleanup task. */
+    private final GridTimeoutProcessor.CancelableTask connCleanupTask;
 
-    /** */
-    private GridTimeoutProcessor.CancelableTask connCleanupTask;
+    /** Statement cleanup task. */
+    private final GridTimeoutProcessor.CancelableTask stmtCleanupTask;
 
     /** H2 JDBC connection for INFORMATION_SCHEMA. Holds H2 open until node is stopped. */
+    // TODO: Do we need it cached?
     private Connection sysConn;
 
     /** Logger. */
     private final IgniteLogger log;
-
-    /*
-     * Initialize system properties for H2.
-     */
-    static {
-        System.setProperty("h2.objectCache", "false");
-        System.setProperty("h2.serializeJavaObject", "false");
-        System.setProperty("h2.objectCacheMaxPerElementSize", "0"); // Avoid ValueJavaObject caching.
-        System.setProperty("h2.optimizeTwoEquals", "false"); // Makes splitter fail on subqueries in WHERE.
-        System.setProperty("h2.dropRestrict", "false"); // Drop schema with cascade semantics.
-    }
 
     /**
      * Constructor.
@@ -171,17 +170,17 @@ public class H2QueryExecutor {
             throw new IgniteCheckedException(e);
         }
 
-        stmtCacheCleanupTask = ctx.timeout().schedule(new Runnable() {
+        stmtCleanupTask = ctx.timeout().schedule(new Runnable() {
             @Override public void run() {
                 cleanupStatementCache();
             }
-        }, CLEANUP_STMT_CACHE_PERIOD, CLEANUP_STMT_CACHE_PERIOD);
+        }, STMT_CLEANUP_PERIOD, STMT_CLEANUP_PERIOD);
 
         connCleanupTask = ctx.timeout().schedule(new Runnable() {
             @Override public void run() {
                 cleanupConnections();
             }
-        }, CLEANUP_CONNECTIONS_PERIOD, CLEANUP_CONNECTIONS_PERIOD);
+        }, CONN_CLEANUP_PERIOD, CONN_CLEANUP_PERIOD);
     }
 
     /** */
@@ -198,7 +197,7 @@ public class H2QueryExecutor {
      * Cancel all queries.
      */
     public void cancelAllQueries() {
-        for (H2ConnectionWrapper c : conns.values())
+        for (H2ConnectionWrapper c : threadConns.values())
             U.close(c, log);
     }
 
@@ -206,14 +205,14 @@ public class H2QueryExecutor {
      * @return Per-thread connections (for testing purposes only).
      */
     public Map<Thread, ?> perThreadConnections() {
-        return conns;
+        return threadConns;
     }
 
     /**
-     * Called periodically by {@link GridTimeoutProcessor} to clean up the {@link #conns}.
+     * Called periodically by {@link GridTimeoutProcessor} to clean up the {@link #threadConns}.
      */
     private void cleanupConnections() {
-        for (Iterator<Map.Entry<Thread, H2ConnectionWrapper>> it = conns.entrySet().iterator(); it.hasNext(); ) {
+        for (Iterator<Map.Entry<Thread, H2ConnectionWrapper>> it = threadConns.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<Thread, H2ConnectionWrapper> entry = it.next();
 
             Thread t = entry.getKey();
@@ -232,7 +231,7 @@ public class H2QueryExecutor {
     private void cleanupStatementCache() {
         long now = U.currentTimeMillis();
 
-        for (Iterator<Map.Entry<Thread, H2ConnectionWrapper>> it = conns.entrySet().iterator(); it.hasNext(); ) {
+        for (Iterator<Map.Entry<Thread, H2ConnectionWrapper>> it = threadConns.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<Thread, H2ConnectionWrapper> entry = it.next();
 
             Thread t = entry.getKey();
@@ -242,7 +241,7 @@ public class H2QueryExecutor {
 
                 it.remove();
             }
-            else if (now - entry.getValue().statementCache().lastUsage() > STATEMENT_CACHE_THREAD_USAGE_TIMEOUT)
+            else if (now - entry.getValue().statementCache().lastUsage() > STMT_TIMEOUT)
                 entry.getValue().clearStatementCache();
         }
     }
@@ -251,7 +250,7 @@ public class H2QueryExecutor {
      * @return {@link H2StatementCache} associated with current thread.
      */
     public H2StatementCache getStatementsCacheForCurrentThread() {
-        H2StatementCache statementCache = connCache.get().object().statementCache();
+        H2StatementCache statementCache = threadConn.get().object().statementCache();
 
         statementCache.updateLastUsage();
 
@@ -266,7 +265,7 @@ public class H2QueryExecutor {
      * @throws IgniteCheckedException In case of error.
      */
     public Connection connectionForThread(@Nullable String schema) throws IgniteCheckedException {
-        H2ConnectionWrapper c = connCache.get().object();
+        H2ConnectionWrapper c = threadConn.get().object();
 
         if (c == null)
             throw new IgniteCheckedException("Failed to get DB connection for thread (check log for details).");
@@ -324,12 +323,12 @@ public class H2QueryExecutor {
      * Handles SQL exception.
      */
     public void onSqlException() {
-        Connection conn = connCache.get().object().connection();
+        Connection conn = threadConn.get().object().connection();
 
-        connCache.set(null);
+        threadConn.set(null);
 
         if (conn != null) {
-            conns.remove(Thread.currentThread());
+            threadConns.remove(Thread.currentThread());
 
             // Reset connection to receive new one at next call.
             U.close(conn, log);
@@ -343,11 +342,11 @@ public class H2QueryExecutor {
     public ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> detach() {
         Thread key = Thread.currentThread();
 
-        ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> reusableConnection = connCache.get();
+        ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> reusableConnection = threadConn.get();
 
-        H2ConnectionWrapper connection = conns.remove(key);
+        H2ConnectionWrapper connection = threadConns.remove(key);
 
-        connCache.remove();
+        threadConn.remove();
 
         assert reusableConnection.object().connection() == connection.connection();
 
@@ -374,14 +373,14 @@ public class H2QueryExecutor {
     }
 
     public void clearStatementCache() {
-        conns.values().forEach(H2ConnectionWrapper::clearStatementCache);
+        threadConns.values().forEach(H2ConnectionWrapper::clearStatementCache);
     }
 
     public void closeConnections() {
-        for (H2ConnectionWrapper c : conns.values())
+        for (H2ConnectionWrapper c : threadConns.values())
             U.close(c, log);
 
-        conns.clear();
+        threadConns.clear();
     }
 
     /**
@@ -395,8 +394,8 @@ public class H2QueryExecutor {
             U.error(log, "Failed to shutdown database.", e);
         }
 
-        if (stmtCacheCleanupTask != null)
-            stmtCacheCleanupTask.close();
+        if (stmtCleanupTask != null)
+            stmtCleanupTask.close();
 
         if (connCleanupTask != null)
             connCleanupTask.close();
