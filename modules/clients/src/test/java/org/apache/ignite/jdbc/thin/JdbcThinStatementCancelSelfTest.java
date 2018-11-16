@@ -76,7 +76,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);
         cache.setWriteSynchronizationMode(FULL_SYNC);
-        cache.setSqlFunctionClasses(JdbcThinStatementTimeoutSelfTest.class);
+        cache.setSqlFunctionClasses(JdbcThinStatementCancelSelfTest.class);
         cache.setIndexedTypes(Integer.class, Integer.class, Long.class, Long.class, String.class,
             JdbcThinAbstractDmlStatementSelfTest.Person.class);
 
@@ -288,8 +288,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     // Execute long running query
-                    stmt.executeQuery("SELECT * FROM Integer I1 JOIN Integer I2 JOIN Integer I3 JOIN" +
-                        " Integer I4 JOIN Integer I5");
+                    stmt.executeQuery("SELECT * FROM Integer I1 JOIN Integer I2 JOIN Integer I3 JOIN Integer I4");
 
                     return null;
                 }
