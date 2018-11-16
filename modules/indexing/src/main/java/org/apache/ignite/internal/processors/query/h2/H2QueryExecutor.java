@@ -368,18 +368,16 @@ public class H2QueryExecutor {
         threadConns.values().forEach(H2ConnectionWrapper::clearStatementCache);
     }
 
-    public void closeConnections() {
-        for (H2ConnectionWrapper c : threadConns.values())
-            U.close(c, log);
-
-        threadConns.clear();
-    }
-
     /**
      * Close executor.
      */
     public void close() {
-        try (Connection c = DriverManager.getConnection(dbUrl); Statement s = c.createStatement()) {
+        for (H2ConnectionWrapper c : threadConns.values())
+            U.close(c, log);
+
+        threadConns.clear();
+
+        try (Connection c = connectionNoCache(QueryUtils.SCHEMA_INFORMATION); Statement s = c.createStatement()) {
             s.execute("SHUTDOWN");
         }
         catch (SQLException e) {
@@ -391,13 +389,7 @@ public class H2QueryExecutor {
 
         if (connCleanupTask != null)
             connCleanupTask.close();
-    }
 
-    /**
-     * Close system connection.
-     */
-    public void closeSystemConnection() {
-        // TODO: Merge.
         if (sysConn != null) {
             U.close(sysConn, log);
 

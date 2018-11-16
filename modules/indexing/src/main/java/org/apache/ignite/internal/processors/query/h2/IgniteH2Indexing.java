@@ -3018,22 +3018,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         mapQryExec.cancelLazyWorkers();
 
-        exec.closeConnections();
-
         schemas.clear();
         cacheName2schema.clear();
 
-        exec.close();
-
         GridH2QueryContext.clearLocalNodeStop(nodeId);
-
-        if (log.isDebugEnabled())
-            log.debug("Cache query index stopped.");
 
         // Close system H2 connection to INFORMATION_SCHEMA
         synchronized (schemaMux) {
-            exec.closeSystemConnection();
+            exec.close();
         }
+
+        if (log.isDebugEnabled())
+            log.debug("Cache query index stopped.");
     }
 
     /** {@inheritDoc} */
