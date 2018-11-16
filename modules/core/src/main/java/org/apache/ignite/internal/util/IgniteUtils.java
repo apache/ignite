@@ -10859,9 +10859,11 @@ public abstract class IgniteUtils {
             try {
                 Collection<R> res = batch.result();
 
-                assert res != null && error == null;
+                if (res != null)
+                    results.addAll(res);
+                else
+                    assert error != null;
 
-                results.addAll(res);
             }
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
