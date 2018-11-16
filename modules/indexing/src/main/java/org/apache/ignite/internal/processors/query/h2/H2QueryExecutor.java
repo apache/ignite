@@ -313,6 +313,7 @@ public class H2QueryExecutor {
      * @return H2 JDBC connection to INFORMATION_SCHEMA.
      */
     public Connection systemConnection() {
+        // TODO: Initialize in ctor
         if (sysConn == null)
             sysConn = connectionNoCache("INFORMATION_SCHEMA");
 

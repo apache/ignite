@@ -509,7 +509,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * Execute statement on H2 INFORMATION_SCHEMA.
      * @param sql SQL statement.
      */
-    public void executeSystemStatement(String sql) {
+    private void executeSystemStatement(String sql) {
         assert Thread.holdsLock(schemaMux);
 
         Statement stmt = null;
