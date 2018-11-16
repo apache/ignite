@@ -344,7 +344,6 @@ public class H2QueryExecutor {
     /**
      * Handles SQL exception.
      */
-    // TODO: To private
     public void onSqlException() {
         Connection conn = threadConn.get().object().connection();
 
