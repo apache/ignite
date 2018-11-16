@@ -701,8 +701,12 @@ public class JdbcThinStatement implements Statement {
             return new int[0];
 
         try {
-            JdbcBatchExecuteResult res = conn.sendRequest(new JdbcBatchExecuteRequest( conn.getSchema(), batch,
-                conn.getAutoCommit(), false));
+            JdbcBatchExecuteRequest request = new JdbcBatchExecuteRequest( conn.getSchema(), batch,
+                conn.getAutoCommit(), false);
+
+            currReqId = request.requestId();
+
+            JdbcBatchExecuteResult res = conn.sendRequest(request);
 
             if (res.errorCode() != ClientListenerResponse.STATUS_SUCCESS) {
                 throw new BatchUpdateException(res.errorMessage(), IgniteQueryErrorCode.codeToSqlState(res.errorCode()),

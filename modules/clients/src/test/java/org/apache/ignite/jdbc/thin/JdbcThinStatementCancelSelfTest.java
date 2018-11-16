@@ -140,9 +140,6 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
                 return null;
             }
         }, SQLException.class, "There is no request to cancel.");
-
-
-        stmt.close();
     }
 
     /**
@@ -166,9 +163,9 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     public void testExpectSQLExceptionOnResultSetNextAfterCancelingStmt() throws Exception {
         stmt.setFetchSize(10);
 
-        ResultSet rs = stmt.executeQuery("SELECT * from Integer");
+        ResultSet rs = stmt.executeQuery("select * from Integer");
 
-        rs.next();
+        assert rs.next();
 
         stmt.cancel();
 
@@ -179,8 +176,6 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
                 return null;
             }
         }, SQLException.class, "The query was cancelled while executing.");
-
-        stmt.close();
     }
 
     /**
@@ -207,7 +202,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     // Execute long running query
-                    stmt.executeQuery("select sleep_func(3)");
+                    stmt.executeQuery("select sleep_func(3000)");
 
                     return null;
                 }
@@ -216,8 +211,6 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
 
         //ensure that the client receives the control before the initial request is executed
         res.get(2, TimeUnit.SECONDS);
-
-        stmt.close();
     }
 
     /**
@@ -226,42 +219,38 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     public void testExpectQueryAfterCancellationPreviousQueryWorksFine() throws Exception {
         stmt.setFetchSize(10);
 
-        ResultSet rs = stmt.executeQuery("SELECT * from Integer");
+        ResultSet rs = stmt.executeQuery("select * from Integer");
 
-        rs.next();
+        assert rs.next();
 
         stmt.cancel();
 
-        ResultSet rs2 = stmt.executeQuery("SELECT * from Integer order by _val");
+        ResultSet rs2 = stmt.executeQuery("select * from Integer order by _val");
 
-        rs2.next();
-
-        assertEquals(0, rs2.getInt(1));
-
-        stmt.close();
+        assert rs2.next() : "The other cursor mustn't be closed";
     }
 
     /**
      *
      */
     public void testExpectResultSet1CancellationDoesNotEffectResultSet2() throws Exception {
-        Statement anotherStmt = conn.createStatement();
+        try (Statement anotherStmt = conn.createStatement()) {
+            ResultSet rs1 = stmt.executeQuery("select * from Integer WHERE _key % 2 = 0");
 
-        ResultSet rs1 = stmt.executeQuery("SELECT * FROM Integer WHERE _key % 2 = 0");
+            ResultSet rs2 = anotherStmt.executeQuery("select * from Integer  WHERE _key % 2 <> 0");
 
-        ResultSet rs2 = anotherStmt.executeQuery("SELECT * FROM Integer  WHERE _key % 2 <> 0");
+            stmt.cancel();
 
-        stmt.cancel();
+            GridTestUtils.assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    rs1.next();
 
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                rs1.next();
+                    return null;
+                }
+            }, SQLException.class, "The query was cancelled while executing.");
 
-                return null;
-            }
-        }, SQLException.class, "The query was cancelled while executing.");
-
-        rs2.next();
+            assert rs2.next() : "The other cursor mustn't be closed";
+        }
     }
 
     /**
@@ -272,7 +261,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
         GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(100);
 
                     stmt.cancel();
                 }
@@ -288,7 +277,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     // Execute long running query
-                    stmt.executeQuery("SELECT * FROM Integer I1 JOIN Integer I2 JOIN Integer I3 JOIN Integer I4");
+                    stmt.executeQuery("select * from Integer I1 join Integer I2 join Integer I3 join Integer I4");
 
                     return null;
                 }
@@ -297,8 +286,6 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
 
         //ensure that the client receives the control before the initial request is executed
         res.get(2, TimeUnit.SECONDS);
-
-        stmt.close();
     }
 
     /**
@@ -306,6 +293,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
      */
     @SuppressWarnings("unchecked")
     public void testExpectSQLExceptionAndAFAPControlRetrievalAfterCancelingLongRunningFileUpload() throws Exception {
+        //fail Data streamer has been closed instead of queryExecutionException
         GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
                 try {
@@ -334,14 +322,103 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
             }, SQLException.class, "The query was cancelled while executing.");
         });
 
-        stmt.close();
+        res.get(300, TimeUnit.MILLISECONDS);
     }
 
+    /**
+     *
+     */
+    @SuppressWarnings("unchecked")
+    public void testExpectSQLExceptionAndAFAPControlRetrievalAfterCancelingMultipleStatementsQuery() throws Exception {
+        try (Statement anotherStatment = conn.createStatement();){
+            anotherStatment.setFetchSize(1);
+            // Open the second cursor
+            ResultSet rs = anotherStatment.executeQuery("select * from Integer");
+
+            assert rs.next();
+
+            GridTestUtils.runAsync(new Runnable() {
+                @Override public void run() {
+                    try {
+                        Thread.sleep(500);
+                        stmt.cancel();
+                    }
+                    catch (Exception e) {
+                        log.error("Unexpected exception.", e);
+                        fail("Unexpected exception");
+                    }
+                }
+            });
+
+            IgniteInternalFuture<Object> res = GridTestUtils.runAsync(() -> {
+                GridTestUtils.assertThrows(log, new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        // Execute long running query
+                        stmt.execute(
+                            "update Long set _val = _val + 1 where _key < sleep_func (101);"
+                                + "update Long set _val = _val + 1 where _key < sleep_func (102);"
+                                + "update Long set _val = _val + 1 where _key < sleep_func (103);"
+                                + "update Long set _val = _val + 1 where _key < sleep_func (104);"
+                                + "select _val, sleep_func(500) as s from Integer limit 10");
+                        return null;
+                    }
+                }, SQLException.class, "The query was cancelled while executing");
+            });
+
+            res.get(700, TimeUnit.MILLISECONDS);
+
+            assert rs.next() : "The other cursor mustn't be closed";
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCancelBatch() throws Exception {
+        try (Statement stmt2 = conn.createStatement()) {
+            stmt2.setFetchSize(1);
+            // Open the second cursor
+            ResultSet rs = stmt2.executeQuery("SELECT * from Integer");
+            assert rs.next();
+            GridTestUtils.runAsync(new Runnable() {
+                @Override public void run() {
+                    try {
+                        Thread.sleep(1000);
+                        stmt.cancel();
+                    }
+                    catch (Exception e) {
+                        log.error("Unexpected exception.", e);
+                        fail("Unexpected exception");
+                    }
+                }
+            });
+            GridTestUtils.assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    // Execute long running query
+                    stmt.addBatch("update Long set _val = _val + 1 where _key < sleep_func (30)");
+                    stmt.addBatch("update Long set _val = _val + 1 where _key < sleep_func (30)");
+                    stmt.addBatch("update Long set _val = _val + 1 where _key < sleep_func (30)");
+                    stmt.addBatch("update Long set _val = _val + 1 where _key < sleep_func (30)");
+                    stmt.addBatch("update Long set _val = _val + 1 where _key < sleep_func (30)");
+                    stmt.addBatch("update Long set _val = _val + 1 where _key < sleep_func (30)");
+                    stmt.executeBatch();
+                    return null;
+                }
+            }, java.sql.SQLException.class, "The query was cancelled while executing");
+            assert rs.next() : "The other cursor mustn't be closed";
+        }
+    }
+
+    /**
+     *
+     * @param v amount of milliseconds to sleep
+     * @return amount of milliseconds to sleep
+     */
     @SuppressWarnings("unused")
     @QuerySqlFunction
     public static int sleep_func(int v) {
         try {
-            Thread.sleep(v * 1000);
+            Thread.sleep(v);
         }
         catch (InterruptedException ignored) {
             // No-op
