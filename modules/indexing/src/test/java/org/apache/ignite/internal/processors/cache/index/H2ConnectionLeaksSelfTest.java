@@ -108,7 +108,7 @@ public class H2ConnectionLeaksSelfTest extends GridCommonAbstractTest {
                     try {
                         IgniteH2Indexing idx = (IgniteH2Indexing)grid(1).context().query().getIndexing();
 
-                        idx.executor().executeStatement(CACHE_NAME, "select *");
+                        idx.connections().executeStatement(CACHE_NAME, "select *");
                     }
                     catch (Exception e) {
                         // No-op.
@@ -172,6 +172,6 @@ public class H2ConnectionLeaksSelfTest extends GridCommonAbstractTest {
      * @return Per-thread connections.
      */
     private Map<Thread, ?> perThreadConnections(int nodeIdx) {
-        return ((IgniteH2Indexing)grid(nodeIdx).context().query().getIndexing()).executor().connectionsForThread();
+        return ((IgniteH2Indexing)grid(nodeIdx).context().query().getIndexing()).connections().connectionsForThread();
     }
 }

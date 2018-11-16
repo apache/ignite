@@ -48,9 +48,9 @@ import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.IgniteSystemProperties.getString;
 
 /**
- * H2 query executor.
+ * H2 connection manager.
  */
-public class H2QueryExecutor {
+public class ConnectionManager {
     /** Default DB options. */
     private static final String DB_OPTIONS = ";LOCK_MODE=3;MULTI_THREADED=1;DB_CLOSE_ON_EXIT=FALSE" +
         ";DEFAULT_LOCK_TIMEOUT=10000;FUNCTIONS_IN_SCHEMA=true;OPTIMIZE_REUSE_RESULTS=0;QUERY_CACHE_SIZE=0" +
@@ -138,10 +138,10 @@ public class H2QueryExecutor {
      *
      * @param ctx Context.
      */
-    public H2QueryExecutor(GridKernalContext ctx) throws IgniteCheckedException {
+    public ConnectionManager(GridKernalContext ctx) throws IgniteCheckedException {
         dbUrl = "jdbc:h2:mem:" + ctx.localNodeId() + DB_OPTIONS;
 
-        log = ctx.log(H2QueryExecutor.class);
+        log = ctx.log(ConnectionManager.class);
 
         org.h2.Driver.load();
 

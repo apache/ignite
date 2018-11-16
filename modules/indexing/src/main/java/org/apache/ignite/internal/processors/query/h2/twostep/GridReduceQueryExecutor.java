@@ -656,7 +656,7 @@ public class GridReduceQueryExecutor {
             }
 
             final ReduceQueryRun r = new ReduceQueryRun(qryReqId, qry.originalSql(), schemaName,
-                h2.executor().connectionForThread(schemaName), qry.mapQueries().size(), qry.pageSize(),
+                h2.connections().connectionForThread(schemaName), qry.mapQueries().size(), qry.pageSize(),
                 U.currentTimeMillis(), sfuFut, cancel);
 
             Collection<ClusterNode> nodes;
