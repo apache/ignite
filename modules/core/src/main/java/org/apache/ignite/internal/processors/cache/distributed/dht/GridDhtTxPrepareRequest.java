@@ -114,6 +114,10 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** {@code True} if remote tx should skip adding itself to completed versions map on finish. */
     private boolean skipCompletedVers;
 
+    /** Transaction label. */
+    @GridToStringInclude
+    @Nullable private String txLbl;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -188,6 +192,8 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         nearNodeId = tx.nearNodeId();
 
         skipCompletedVers = tx.xidVersion() == tx.nearXidVersion();
+
+        txLbl = tx.label();
     }
 
     /**
@@ -330,6 +336,13 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
      */
     public boolean skipCompletedVersion() {
         return skipCompletedVers;
+    }
+
+    /**
+     * @return Transaction label.
+     */
+    @Nullable public String txLabel() {
+        return txLbl;
     }
 
     /**
@@ -508,6 +521,12 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 writer.incrementState();
 
             case 35:
+                if (!writer.writeString("txLbl", txLbl))
+                    return false;
+
+                writer.incrementState();
+
+            case 36:
                 if (!writer.writeCollection("updCntrs", updCntrs, MessageCollectionItemType.MSG))
                     return false;
 
@@ -642,6 +661,14 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 35:
+                txLbl = reader.readString("txLbl");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 36:
                 updCntrs = reader.readCollection("updCntrs", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -661,7 +688,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 36;
+        return 37;
     }
 
     /** {@inheritDoc} */

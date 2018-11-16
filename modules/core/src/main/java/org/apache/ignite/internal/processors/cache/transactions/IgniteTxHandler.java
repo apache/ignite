@@ -509,7 +509,8 @@ public class IgniteTxHandler {
                     req.txSize(),
                     req.transactionNodes(),
                     req.subjectId(),
-                    req.taskNameHash()
+                    req.taskNameHash(),
+                    req.txLabel()
                 );
 
                 tx = ctx.tm().onCreated(null, tx);
@@ -1687,7 +1688,8 @@ public class IgniteTxHandler {
                     req.subjectId(),
                     req.taskNameHash(),
                     single,
-                    req.storeWriteThrough());
+                    req.storeWriteThrough(),
+                    req.txLabel());
 
                 tx.onePhaseCommit(req.onePhaseCommit());
                 tx.writeVersion(req.writeVersion());
@@ -2028,7 +2030,8 @@ public class IgniteTxHandler {
                     req.nearWrites(),
                     req.txSize(),
                     req.subjectId(),
-                    req.taskNameHash()
+                    req.taskNameHash(),
+                    req.txLabel()
                 );
 
                 tx.writeVersion(req.writeVersion());

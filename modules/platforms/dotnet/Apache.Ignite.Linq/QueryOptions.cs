@@ -99,6 +99,7 @@ namespace Apache.Ignite.Linq
         /// Gets or sets a value indicating whether this query contains only replicated tables.
         /// This is a hint for potentially more effective execution.
         /// </summary>
+        [Obsolete("No longer used as of Apache Ignite 2.8.")]
         public bool ReplicatedOnly { get; set; }
 
         /// <summary>

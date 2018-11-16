@@ -92,6 +92,9 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     /** TTL for read operation. */
     private long accessTtl;
 
+    /** Transaction label. */
+    private String txLbl;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -123,6 +126,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
      * @param storeUsed Cache store used flag.
      * @param keepBinary Keep binary flag.
      * @param addDepInfo Deployment info flag.
+     * @param txLbl Transaction label.
      */
     public GridDhtLockRequest(
         int cacheId,
@@ -147,7 +151,8 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
         boolean skipStore,
         boolean storeUsed,
         boolean keepBinary,
-        boolean addDepInfo
+        boolean addDepInfo,
+        String txLbl
     ) {
         super(cacheId,
             nodeId,
@@ -179,6 +184,8 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
         this.accessTtl = accessTtl;
+
+        this.txLbl = txLbl;
     }
 
     /**
@@ -309,6 +316,13 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
         return accessTtl;
     }
 
+    /**
+     * @return Transaction label.
+     */
+    @Nullable public String txLabel() {
+        return txLbl;
+    }
+
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
@@ -423,6 +437,12 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
                 writer.incrementState();
 
+            case 30:
+                if (!writer.writeString("txLbl", txLbl))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -513,6 +533,14 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
             case 30:
                 topVer = reader.readAffinityTopologyVersion("topVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 30:
+                txLbl = reader.readString("txLbl");
 
                 if (!reader.isLastRead())
                     return false;

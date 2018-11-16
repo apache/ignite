@@ -83,6 +83,9 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
     /** TTL for read operation. */
     private long accessTtl;
 
+    /** Transaction label. */
+    private @Nullable String txLbl;
+
     /** */
     private MvccSnapshot mvccSnapshot;
 
@@ -108,6 +111,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
      * @param addReader Add reader flag.
      * @param needVer {@code True} if entry version is needed.
      * @param addDepInfo Deployment info.
+     * @param txLbl Transaction label.
      * @param mvccSnapshot MVCC snapshot.
      */
     public GridNearSingleGetRequest(
@@ -125,6 +129,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
         boolean needVer,
         boolean addDepInfo,
         boolean recovery,
+        @Nullable String txLbl,
         MvccSnapshot mvccSnapshot
     ) {
         assert key != null;
@@ -138,6 +143,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
         this.createTtl = createTtl;
         this.accessTtl = accessTtl;
         this.addDepInfo = addDepInfo;
+        this.txLbl = txLbl;
         this.mvccSnapshot = mvccSnapshot;
 
         if (readThrough)
@@ -219,6 +225,15 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
         assert key != null;
 
         return key.partition();
+    }
+
+    /**
+     * Get transaction label (may be null).
+     *
+     * @return Transaction label;
+     */
+    @Nullable public String txLabel() {
+        return txLbl;
     }
 
     /**
@@ -368,6 +383,14 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
 
                 reader.incrementState();
 
+            case 13:
+                txLbl = reader.readString("txLbl");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridNearSingleGetRequest.class);
@@ -442,6 +465,12 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
 
                 writer.incrementState();
 
+            case 13:
+                if (!writer.writeString("txLbl", txLbl))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -459,7 +488,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 13;
+        return 14;
     }
 
     /** {@inheritDoc} */
