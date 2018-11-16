@@ -241,6 +241,9 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @return {@code True} if this record should be encrypted.
      */
     private boolean needEncryption(int grpId) {
+        if (encSpi instanceof NoopEncryptionSpi)
+            return false;
+
         return encMgr.groupKey(grpId) != null;
     }
 
