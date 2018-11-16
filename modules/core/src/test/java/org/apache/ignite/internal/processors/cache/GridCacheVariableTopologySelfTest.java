@@ -55,7 +55,7 @@ public class GridCacheVariableTopologySelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void setUp() throws Exception {
-        if (MvccFeatureChecker.FORCE_MVCC)
+        if (MvccFeatureChecker.forcedMvcc())
             fail("https://issues.apache.org/jira/browse/IGNITE-7388");
 
         super.setUp();

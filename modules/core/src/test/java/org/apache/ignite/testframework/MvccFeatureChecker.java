@@ -30,7 +30,7 @@ import static org.junit.Assert.fail;
  */
 public class MvccFeatureChecker {
     /** */
-    public static final boolean FORCE_MVCC =
+    private static final boolean FORCE_MVCC =
         IgniteSystemProperties.getBoolean(IGNITE_FORCE_MVCC_MODE_IN_TESTS, false);
 
     /** */
@@ -51,10 +51,17 @@ public class MvccFeatureChecker {
      * @throws AssertionError If failed.
      */
     public static void failIfNotSupported(Feature f) {
-        if (!FORCE_MVCC)
+        if (!forcedMvcc())
             return;
 
         validateFeature(f);
+    }
+
+    /**
+     * @return {@code True} if Mvcc mode is forced.
+     */
+    public static boolean forcedMvcc() {
+        return FORCE_MVCC;
     }
 
     /**
@@ -64,9 +71,6 @@ public class MvccFeatureChecker {
      * @return {@code True} if feature is supported, {@code False} otherwise.
      */
     public static boolean isSupported(Feature f) {
-        if (!FORCE_MVCC)
-            return true;
-
         try {
             validateFeature(f);
 

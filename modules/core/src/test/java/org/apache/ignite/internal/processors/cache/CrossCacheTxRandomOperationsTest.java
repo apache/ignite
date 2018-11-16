@@ -198,7 +198,7 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
     private void txOperations(CacheMode cacheMode,
         CacheWriteSynchronizationMode writeSync,
         boolean crossCacheTx) throws Exception {
-        if (MvccFeatureChecker.FORCE_MVCC) {
+        if (MvccFeatureChecker.forcedMvcc()) {
             assert !nearCacheEnabled();
 
             if(writeSync != CacheWriteSynchronizationMode.FULL_SYNC)
@@ -214,7 +214,7 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
             txOperations(PESSIMISTIC, REPEATABLE_READ, crossCacheTx, false);
             txOperations(PESSIMISTIC, REPEATABLE_READ, crossCacheTx, true);
 
-            if(!MvccFeatureChecker.FORCE_MVCC) {
+            if(!MvccFeatureChecker.forcedMvcc()) {
                 txOperations(OPTIMISTIC, REPEATABLE_READ, crossCacheTx, false);
                 txOperations(OPTIMISTIC, REPEATABLE_READ, crossCacheTx, true);
 

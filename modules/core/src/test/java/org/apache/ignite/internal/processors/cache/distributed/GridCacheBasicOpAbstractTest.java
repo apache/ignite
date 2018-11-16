@@ -76,7 +76,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
     @Override protected void beforeTestsStarted() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
 
-        if (MvccFeatureChecker.FORCE_MVCC)
+        if (MvccFeatureChecker.forcedMvcc())
             fail("https://issues.apache.org/jira/browse/IGNITE-7952");
 
         startGridsMultiThreaded(3);

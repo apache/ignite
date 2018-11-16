@@ -130,7 +130,8 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testGetFromBackupNode() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10274");
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10274");
 
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
 

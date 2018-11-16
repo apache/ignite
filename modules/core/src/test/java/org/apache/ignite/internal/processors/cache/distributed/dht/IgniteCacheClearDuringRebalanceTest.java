@@ -45,7 +45,7 @@ public class IgniteCacheClearDuringRebalanceTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        if(MvccFeatureChecker.FORCE_MVCC)
+        if(MvccFeatureChecker.forcedMvcc())
             fail("https://issues.apache.org/jira/browse/IGNITE-7952");
 
         super.beforeTestsStarted();

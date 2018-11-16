@@ -164,7 +164,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPutGetNone1() throws Exception {
-        if (MvccFeatureChecker.FORCE_MVCC)
+        if (MvccFeatureChecker.forcedMvcc())
             fail("https://issues.apache.org/jira/browse/IGNITE-10261");
 
         preloadMode = NONE;
@@ -177,7 +177,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPutGetNone2() throws Exception {
-        if (MvccFeatureChecker.FORCE_MVCC)
+        if (MvccFeatureChecker.forcedMvcc())
             fail("https://issues.apache.org/jira/browse/IGNITE-10261");
 
         preloadMode = NONE;

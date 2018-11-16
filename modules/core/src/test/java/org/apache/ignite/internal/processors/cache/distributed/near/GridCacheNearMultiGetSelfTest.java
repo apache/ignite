@@ -59,6 +59,8 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
 
     /** */
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
     private CacheAtomicityMode atomicityMode;
 
     /** {@inheritDoc} */
@@ -245,7 +247,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
     private void checkDoubleGet(TransactionConcurrency concurrency, TransactionIsolation isolation, boolean put)
         throws Exception {
         IgniteEx ignite = grid(0);
-        IgniteCache<Integer, String> cache = ignite.createCache(cacheConfiguration());
+        IgniteCache<Integer, String> cache = ignite.getOrCreateCache(cacheConfiguration());
 
         Integer key = 1;
 
