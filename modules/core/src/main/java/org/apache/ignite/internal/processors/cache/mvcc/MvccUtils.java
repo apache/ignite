@@ -681,10 +681,10 @@ public class MvccUtils {
             return currentTx(ctx, txId);
         }
         catch (UnsupportedTxModeException e) {
-            throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.UNSUPPORTED_OPERATION, e);
+            throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
         catch (NonMvccTransactionException e) {
-            throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH, e);
+            throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH);
         }
     }
 
