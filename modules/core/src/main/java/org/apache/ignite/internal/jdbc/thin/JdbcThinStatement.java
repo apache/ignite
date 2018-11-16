@@ -110,7 +110,7 @@ public class JdbcThinStatement implements Statement {
     private final Object cancellationProcessingMutex = new Object();
 
     /** Cancelled flag. */
-    private static AtomicBoolean canceled = new AtomicBoolean(false);
+    private AtomicBoolean canceled = new AtomicBoolean(false);
 
     /**
      * Creates new statement.
@@ -181,110 +181,101 @@ public class JdbcThinStatement implements Statement {
      * @throws SQLException Onj error.
      */
     protected void execute0(JdbcStatementType stmtType, String sql, List<Object> args) throws SQLException {
-        try {
-            SqlCommand nativeCmd = null;
-            JdbcQueryExecuteRequest request = null;
+        SqlCommand nativeCmd = null;
+        JdbcQueryExecuteRequest request = null;
 
-            synchronized (cancellationProcessingMutex) {
-                canceled.set(false);
+        synchronized (cancellationProcessingMutex) {
+            canceled.set(false);
 
-                ensureNotClosed();
+            ensureNotClosed();
 
-                closeResults();
+            closeResults();
 
-                if (sql == null || sql.isEmpty())
-                    throw new SQLException("SQL query is empty.");
+            if (sql == null || sql.isEmpty())
+                throw new SQLException("SQL query is empty.");
 
-                checkStatementBatchEmpty();
+            checkStatementBatchEmpty();
 
-                if (stmtType != JdbcStatementType.SELECT_STATEMENT_TYPE && isEligibleForNativeParsing(sql))
-                    nativeCmd = tryParseNative(sql);
+            if (stmtType != JdbcStatementType.SELECT_STATEMENT_TYPE && isEligibleForNativeParsing(sql))
+                nativeCmd = tryParseNative(sql);
 
-                if (nativeCmd == null && !conn.isStream()) {
-                    request = new JdbcQueryExecuteRequest(stmtType, schema, pageSize,
-                        maxRows, conn.getAutoCommit(), sql, args == null ? null : args.toArray(new Object[args.size()]));
+            if (nativeCmd == null && !conn.isStream()) {
+                request = new JdbcQueryExecuteRequest(stmtType, schema, pageSize,
+                    maxRows, conn.getAutoCommit(), sql, args == null ? null : args.toArray(new Object[args.size()]));
 
-                    currReqId = request.requestId();
-                }
+                currReqId = request.requestId();
             }
+        }
 
-            if (nativeCmd != null) {
-                conn.executeNative(sql, nativeCmd);
+        if (nativeCmd != null) {
+            conn.executeNative(sql, nativeCmd);
 
-                resultSets = Collections.singletonList(resultSetForUpdate(0));
+            resultSets = Collections.singletonList(resultSetForUpdate(0));
 
-                // If this command should be executed as native one, we do not treat it
-                // as an ordinary batch citizen.
-                return;
-            }
+            // If this command should be executed as native one, we do not treat it
+            // as an ordinary batch citizen.
+            return;
+        }
 
-            if (conn.isStream()) {
-                if (stmtType == JdbcStatementType.SELECT_STATEMENT_TYPE)
-                    throw new SQLException("executeQuery() method is not allowed in streaming mode.",
-                        SqlStateCode.INTERNAL_ERROR,
-                        IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        if (conn.isStream()) {
+            if (stmtType == JdbcStatementType.SELECT_STATEMENT_TYPE)
+                throw new SQLException("executeQuery() method is not allowed in streaming mode.",
+                    SqlStateCode.INTERNAL_ERROR,
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-                conn.addBatch(sql, args);
+            conn.addBatch(sql, args);
 
-                resultSets = Collections.singletonList(resultSetForUpdate(0));
+            resultSets = Collections.singletonList(resultSetForUpdate(0));
 
-                return;
-            }
+            return;
+        }
 
-            JdbcResult res0 = conn.sendRequest(request);
+        JdbcResult res0 = conn.sendRequest(request);
 
-            assert res0 != null;
+        assert res0 != null;
 
-            if (res0 instanceof JdbcBulkLoadAckResult)
-                res0 = sendFile((JdbcBulkLoadAckResult)res0);
+        if (res0 instanceof JdbcBulkLoadAckResult)
+            res0 = sendFile((JdbcBulkLoadAckResult)res0);
 
-            if (res0 instanceof JdbcQueryExecuteResult) {
-                JdbcQueryExecuteResult res = (JdbcQueryExecuteResult)res0;
+        if (res0 instanceof JdbcQueryExecuteResult) {
+            JdbcQueryExecuteResult res = (JdbcQueryExecuteResult)res0;
 
-                resultSets = Collections.singletonList(new JdbcThinResultSet(this, res.cursorId(), pageSize,
-                    res.last(), res.items(), res.isQuery(), conn.autoCloseServerCursor(), res.updateCount(),
-                    closeOnCompletion));
-            }
-            else if (res0 instanceof JdbcQueryExecuteMultipleStatementsResult) {
-                JdbcQueryExecuteMultipleStatementsResult res = (JdbcQueryExecuteMultipleStatementsResult)res0;
+            resultSets = Collections.singletonList(new JdbcThinResultSet(this, res.cursorId(), pageSize,
+                res.last(), res.items(), res.isQuery(), conn.autoCloseServerCursor(), res.updateCount(),
+                closeOnCompletion));
+        }
+        else if (res0 instanceof JdbcQueryExecuteMultipleStatementsResult) {
+            JdbcQueryExecuteMultipleStatementsResult res = (JdbcQueryExecuteMultipleStatementsResult)res0;
 
-                List<JdbcResultInfo> resInfos = res.results();
+            List<JdbcResultInfo> resInfos = res.results();
 
-                resultSets = new ArrayList<>(resInfos.size());
+            resultSets = new ArrayList<>(resInfos.size());
 
-                boolean firstRes = true;
+            boolean firstRes = true;
 
-                for(JdbcResultInfo rsInfo : resInfos) {
-                    if (!rsInfo.isQuery())
-                        resultSets.add(resultSetForUpdate(rsInfo.updateCount()));
+            for (JdbcResultInfo rsInfo : resInfos) {
+                if (!rsInfo.isQuery())
+                    resultSets.add(resultSetForUpdate(rsInfo.updateCount()));
+                else {
+                    if (firstRes) {
+                        firstRes = false;
+
+                        resultSets.add(new JdbcThinResultSet(this, rsInfo.cursorId(), pageSize,
+                            res.isLast(), res.items(), true,
+                            conn.autoCloseServerCursor(), -1, closeOnCompletion));
+                    }
                     else {
-                        if (firstRes) {
-                            firstRes = false;
-
-                            resultSets.add(new JdbcThinResultSet(this, rsInfo.cursorId(), pageSize,
-                                res.isLast(), res.items(), true,
-                                conn.autoCloseServerCursor(), -1, closeOnCompletion));
-                        }
-                        else {
-                            resultSets.add(new JdbcThinResultSet(this, rsInfo.cursorId(), pageSize,
-                                false, null, true,
-                                conn.autoCloseServerCursor(), -1, closeOnCompletion));
-                        }
+                        resultSets.add(new JdbcThinResultSet(this, rsInfo.cursorId(), pageSize,
+                            false, null, true,
+                            conn.autoCloseServerCursor(), -1, closeOnCompletion));
                     }
                 }
             }
-            else
-                throw new SQLException("Unexpected result [res=" + res0 + ']');
+        }
+        else
+            throw new SQLException("Unexpected result [res=" + res0 + ']');
 
-            assert !resultSets.isEmpty() : "At least one results set is expected";
-        }
-        finally {
-            synchronized (cancellationProcessingMutex) {
-                if (resultSets == null) {
-                    currReqId = 0;
-                }
-            }
-        }
+        assert !resultSets.isEmpty() : "At least one results set is expected";
     }
 
     /**
@@ -499,6 +490,7 @@ public class JdbcThinStatement implements Statement {
 
             if (currReqId != 0) {
                 canceled.set(true);
+
                 conn.sendQueryCancelRequest(new JdbcQueryCancelRequest(currReqId));
             }
             else

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
+import java.io.Closeable;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -27,7 +28,7 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 /**
  * SQL listener query fetch result.
  */
-class JdbcQueryCursor {
+class JdbcQueryCursor implements Closeable {
     /** Cursor ID. */
     private final long cursorId;
 
@@ -128,7 +129,7 @@ class JdbcQueryCursor {
     /**
      * Close the cursor.
      */
-    public void close() {
+    @Override public void close() {
         cur.close();
     }
 
