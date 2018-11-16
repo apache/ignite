@@ -36,6 +36,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 
@@ -88,7 +89,8 @@ public class IgniteCacheIncrementTxTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testIncrementTxTopologyChange1() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10264");
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10264");
 
         nodeJoin(cacheConfiguration(1));
     }
@@ -97,7 +99,8 @@ public class IgniteCacheIncrementTxTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testIncrementTxTopologyChange2() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10264");
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10264");
 
         nodeJoin(cacheConfiguration(2));
     }
