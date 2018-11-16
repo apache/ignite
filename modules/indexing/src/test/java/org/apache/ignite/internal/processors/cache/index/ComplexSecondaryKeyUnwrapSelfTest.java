@@ -13,6 +13,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
 package org.apache.ignite.internal.processors.cache.index;
@@ -20,19 +21,16 @@ package org.apache.ignite.internal.processors.cache.index;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * Test of creating and using PK indexes for tables created through SQL.
+ * Test of creating and using secondary indexes for tables created through SQL.
  */
 @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
-public class ComplexPrimaryKeyUnwrapSelfTest extends GridCommonAbstractTest {
+public class ComplexSecondaryKeyUnwrapSelfTest extends GridCommonAbstractTest {
 
     /** Counter to generate unique table names. */
     private static int tblCnt = 0;
@@ -52,21 +50,23 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test using PK indexes for complex primary key.
+     * Test secondary index with complex PK. Columns for secondary and PK indexes are intersect.
      */
-    public void testComplexPk() {
+    public void testSecondaryIndexWithIntersectColumnsComplexPk() {
         String tblName = createTableName();
 
         executeSql("CREATE TABLE " + tblName + " (id int, name varchar, age int, company varchar, city varchar, " +
-            "primary key (id, name, city))");
+            "primary key (name, city))");
 
-        checkUsingIndexes(tblName, "1");
+        executeSql("CREATE INDEX ON " + tblName + "(id, name, city)");
+
+        checkUsingIndexes(tblName, "'1'");
     }
 
     /**
-     * Test using PK indexes for simple primary key.
+     * Test using secondary index with simple PK.
      */
-    public void testSimplePk() {
+    public void testSecondaryIndexSimplePk() {
         //ToDo: IGNITE-8386: need to add DATE type into the test.
         HashMap<String, String> types = new HashMap() {
             {
@@ -97,139 +97,50 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends GridCommonAbstractTest {
             String val = entry.getValue();
 
             executeSql("CREATE TABLE " + tblName +
-                " (id " + type + " , name varchar, age int, company varchar, city varchar," +
-                " primary key (id))");
+                " (id int, name " + type + ", age int, company varchar, city varchar," +
+                " primary key (name))");
+
+            executeSql("CREATE INDEX ON " + tblName + "(id, name, city)");
 
             checkUsingIndexes(tblName, val);
         }
     }
 
     /**
-     * Test using PK indexes for simple primary key and affinity key.
-     */
-    public void testSimplePkWithAffinityKey() {
-        //ToDo: IGNITE-8386: need to add DATE type into the test.
-        HashMap<String, String> types = new HashMap() {
-            {
-                put("boolean", "1");
-                put("char", "'1'");
-                put("varchar", "'1'");
-                put("real", "1");
-                put("number", "1");
-                put("int", "1");
-                put("long", "1");
-                put("float", "1");
-                put("double", "1");
-                put("tinyint", "1");
-                put("smallint", "1");
-                put("bigint", "1");
-                put("varchar_ignorecase", "'1'");
-                put("time", "'11:11:11'");
-                put("timestamp", "'20018-11-02 11:11:11'");
-                put("uuid", "'1'");
-            }
-        };
-
-        for (Map.Entry<String, String> entry : types.entrySet()) {
-
-            String tblName = createTableName();
-
-            String type = entry.getKey();
-            String val = entry.getValue();
-
-            executeSql("CREATE TABLE " + tblName +
-                " (id " + type + " , name varchar, age int, company varchar, city varchar," +
-                " primary key (id)) WITH \"affinity_key=id\"");
-
-            checkUsingIndexes(tblName, val);
-        }
-    }
-
-    /**
-     * Test using PK indexes for wrapped primary key.
-     */
-    public void testWrappedPk() {
-        String tblName = createTableName();
-
-        executeSql("CREATE TABLE " + tblName + " (id int, name varchar, age int, company varchar, city varchar, " +
-            "primary key (id)) WITH \"wrap_key=true\"");
-
-        checkUsingIndexes(tblName, "1");
-    }
-
-    /**
-     * Check using PK indexes for few cases.
+     * Check using secondary indexes for few cases.
      *
-     * @param tblName name of table which should be checked to using PK indexes.
+     * @param tblName name of table which should be checked to using secondary indexes.
+     * @param nameVal Value for name param.
      */
-    private void checkUsingIndexes(String tblName, String idVal) {
+    private void checkUsingIndexes(String tblName, String nameVal) {
         String explainSQL = "explain SELECT * FROM " + tblName + " WHERE ";
 
-        List<List<?>> results = executeSql(explainSQL + "id=" + idVal);
+        List<List<?>> results = executeSql(explainSQL + "id=1");
 
-        assertUsingPkIndex(results);
+        assertUsingSecondaryIndex(results);
 
-        results = executeSql(explainSQL + "id=" + idVal + " and name=''");
+        results = executeSql(explainSQL + "id=1 and name=" + nameVal);
 
-        assertUsingPkIndex(results);
+        assertUsingSecondaryIndex(results);
 
-        results = executeSql(explainSQL + "id=" + idVal + " and name='' and city='' and age=0");
+        results = executeSql(explainSQL + "id=1 and name=" + nameVal + " and age=0");
 
-        assertUsingPkIndex(results);
+        assertUsingSecondaryIndex(results);
     }
 
     /**
-     * Test don't using PK indexes for table created through cache API.
-     */
-    public void testIndexesForCachesCreatedThroughCashApi() {
-        String tblName = TestValue.class.getSimpleName();
-
-        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
-
-        ccfg.setSqlSchema("PUBLIC");
-        ccfg.setName(tblName);
-
-        QueryEntity qryEntity = new QueryEntity(TestKey.class, TestValue.class);
-
-        ccfg.setQueryEntities(F.asList(qryEntity));
-
-        node().createCache(ccfg);
-
-        List<List<?>> results = executeSql("explain SELECT * FROM " + tblName + " WHERE id=1");
-
-        assertDontUsingPkIndex(results);
-    }
-
-    /**
-     * Check that explain plan result shown using PK index and don't use scan.
+     * Check that explain plan result shown using Secondary index and don't use scan.
      *
      * @param results result of execut explain plan query.
      */
-    private void assertUsingPkIndex(List<List<?>> results) {
+    private void assertUsingSecondaryIndex(List<List<?>> results) {
         assertEquals(2, results.size());
 
         String explainPlan = (String)results.get(0).get(0);
 
-        assertTrue(explainPlan.contains("\"_key_PK"));
+        assertTrue(explainPlan, explainPlan.contains("_idx\": "));
 
-        assertFalse(explainPlan.contains("_SCAN_"));
-    }
-
-    /**
-     * Check that explain plan result shown don't use PK index and use scan.
-     *
-     * @param results result of execut explain plan query.
-     */
-    private void assertDontUsingPkIndex(List<List<?>> results) {
-        assertEquals(2, results.size());
-
-        String explainPlan = (String)results.get(0).get(0);
-
-        System.out.println(explainPlan);
-
-        assertFalse(explainPlan.contains("\"_key_PK\""));
-
-        assertTrue(explainPlan.contains("_SCAN_"));
+        assertFalse(explainPlan, explainPlan.contains("_SCAN_"));
     }
 
     /**
