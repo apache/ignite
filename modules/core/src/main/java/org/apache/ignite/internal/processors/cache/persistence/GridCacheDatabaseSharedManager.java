@@ -2062,8 +2062,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         long res = 0;
 
         try {
-            for (PageStore store : storeMgr.getStores(groupId))
-                res += f.applyAsLong(store);
+            Collection<PageStore> stores = storeMgr.getStores(groupId);
+
+            if (stores != null) {
+                for (PageStore store : stores)
+                    res += f.applyAsLong(store);
+            }
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
