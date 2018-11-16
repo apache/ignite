@@ -3025,7 +3025,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         // Close system H2 connection to INFORMATION_SCHEMA
         synchronized (schemaMux) {
-            exec.close();
+            exec.stop();
         }
 
         if (log.isDebugEnabled())
@@ -3107,7 +3107,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
             }
 
-            exec.clearStatementCache();
+            exec.onCacheUnregistered();
 
             for (H2TableDescriptor tbl : rmvTbls) {
                 for (Index idx : tbl.table().getIndexes())
@@ -3264,9 +3264,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void cancelAllQueries() {
+    @Override public void onKernalStop() {
         mapQryExec.cancelLazyWorkers();
-        exec.cancelAllQueries();
+
+        exec.onKernalStop();
     }
 
     /**

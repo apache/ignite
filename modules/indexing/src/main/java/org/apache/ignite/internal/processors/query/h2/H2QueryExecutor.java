@@ -199,68 +199,11 @@ public class H2QueryExecutor {
     }
 
     /**
-     * @return {@link H2StatementCache} associated with current thread.
-     */
-    public H2StatementCache statementCacheForThread() {
-        H2StatementCache statementCache = threadConn.get().object().statementCache();
-
-        statementCache.updateLastUsage();
-
-        return statementCache;
-    }
-
-    /**
-     * Cancel all queries.
-     */
-    public void cancelAllQueries() {
-        for (H2ConnectionWrapper c : threadConns.values())
-            U.close(c, log);
-    }
-
-    /**
-     * Execute statement on H2 INFORMATION_SCHEMA.
-     *
-     * @param sql SQL statement.
-     */
-    public void executeSystemStatement(String sql) {
-        Statement stmt = null;
-
-        try {
-            stmt = sysConn.createStatement();
-
-            stmt.executeUpdate(sql);
-        }
-        catch (SQLException e) {
-            onSqlException();
-
-            throw new IgniteSQLException("Failed to execute system statement: " + sql, e);
-        }
-        finally {
-            U.close(stmt, log);
-        }
-    }
-
-    /**
-     * Handles SQL exception.
-     */
-    public void onSqlException() {
-        Connection conn = threadConn.get().object().connection();
-
-        threadConn.set(null);
-
-        if (conn != null) {
-            threadConns.remove(Thread.currentThread());
-
-            // Reset connection to receive new one at next call.
-            U.close(conn, log);
-        }
-    }
-
-    /**
      * Removes from cache and returns associated with current thread connection.
+     *
      * @return Connection associated with current thread.
      */
-    public ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> detach() {
+    public ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> detachThreadConnection() {
         Thread key = Thread.currentThread();
 
         ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> reusableConnection = threadConn.get();
@@ -294,16 +237,85 @@ public class H2QueryExecutor {
     }
 
     /**
-     * Clear statement cache.
+     * @return {@link H2StatementCache} associated with current thread.
      */
-    public void clearStatementCache() {
+    public H2StatementCache statementCacheForThread() {
+        H2StatementCache statementCache = threadConn.get().object().statementCache();
+
+        statementCache.updateLastUsage();
+
+        return statementCache;
+    }
+
+    /**
+     * Execute SQL statement on specific schema.
+     *
+     * @param schema Schema
+     * @param sql SQL statement.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void executeStatement(String schema, String sql) throws IgniteCheckedException {
+        Statement stmt = null;
+
+        try {
+            Connection c = connectionForThread(schema);
+
+            stmt = c.createStatement();
+
+            stmt.executeUpdate(sql);
+        }
+        catch (SQLException e) {
+            onSqlException();
+
+            throw new IgniteSQLException("Failed to execute statement: " + sql, e);
+        }
+        finally {
+            U.close(stmt, log);
+        }
+    }
+
+    /**
+     * Execute statement on H2 INFORMATION_SCHEMA.
+     *
+     * @param sql SQL statement.
+     */
+    public void executeSystemStatement(String sql) {
+        Statement stmt = null;
+
+        try {
+            stmt = sysConn.createStatement();
+
+            stmt.executeUpdate(sql);
+        }
+        catch (SQLException e) {
+            onSqlException();
+
+            throw new IgniteSQLException("Failed to execute system statement: " + sql, e);
+        }
+        finally {
+            U.close(stmt, log);
+        }
+    }
+
+    /**
+     * Clear statement cache when cache is unregistered..
+     */
+    public void onCacheUnregistered() {
         threadConns.values().forEach(H2ConnectionWrapper::clearStatementCache);
+    }
+
+    /**
+     * Cancel all queries.
+     */
+    public void onKernalStop() {
+        for (H2ConnectionWrapper c : threadConns.values())
+            U.close(c, log);
     }
 
     /**
      * Close executor.
      */
-    public void close() {
+    public void stop() {
         for (H2ConnectionWrapper c : threadConns.values())
             U.close(c, log);
 
@@ -326,6 +338,23 @@ public class H2QueryExecutor {
             U.close(sysConn, log);
 
             sysConn = null;
+        }
+    }
+
+    /**
+     * Handles SQL exception.
+     */
+    // TODO: To private
+    public void onSqlException() {
+        Connection conn = threadConn.get().object().connection();
+
+        threadConn.set(null);
+
+        if (conn != null) {
+            threadConns.remove(Thread.currentThread());
+
+            // Reset connection to receive new one at next call.
+            U.close(conn, log);
         }
     }
 
@@ -358,31 +387,6 @@ public class H2QueryExecutor {
         }
         catch (SQLException e) {
             throw new IgniteCheckedException(e);
-        }
-    }
-
-    /**
-     * @param schema Schema
-     * @param sql SQL statement.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void executeStatement(String schema, String sql) throws IgniteCheckedException {
-        Statement stmt = null;
-
-        try {
-            Connection c = connectionForThread(schema);
-
-            stmt = c.createStatement();
-
-            stmt.executeUpdate(sql);
-        }
-        catch (SQLException e) {
-            onSqlException();
-
-            throw new IgniteSQLException("Failed to execute statement: " + sql, e);
-        }
-        finally {
-            U.close(stmt, log);
         }
     }
 
