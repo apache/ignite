@@ -304,6 +304,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     /**
      *
      */
+    @SuppressWarnings("unchecked")
     public void testExpectSQLExceptionAndAFAPControlRetrievalAfterCancelingLongRunningFileUpload() throws Exception {
         GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
