@@ -24,6 +24,7 @@ import io.socket.client.IO;
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.Authenticator;
 import java.net.ConnectException;
@@ -32,6 +33,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -40,9 +43,15 @@ import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLHandshakeException;
+import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
+import okhttp3.OkHttpClient;
 import org.apache.ignite.console.agent.handlers.ClusterListener;
 import org.apache.ignite.console.agent.handlers.DatabaseListener;
 import org.apache.ignite.console.agent.handlers.RestListener;
@@ -200,6 +209,33 @@ public class AgentLauncher {
         return new Scanner(System.in).nextLine().toCharArray();
     }
 
+    private static OkHttpClient sOkHttpClient;
+
+    private static void prepareOkHttpClient() throws GeneralSecurityException, IOException {
+        KeyStore ks = KeyStore.getInstance("JKS");
+        File file = new File("src/test/resources/keystore.jks");
+        ks.load(new FileInputStream(file), "123456".toCharArray());
+
+        KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
+        kmf.init(ks, "password".toCharArray());
+
+        TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
+        tmf.init(ks);
+
+        SSLContext sslContext = SSLContext.getInstance("TLSv1");
+        sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
+
+        sOkHttpClient = new OkHttpClient.Builder()
+            .hostnameVerifier(new HostnameVerifier(){
+                public boolean verify(String hostname, SSLSession sslSession) {
+                    return hostname.equals("localhost");
+                }
+            })
+            .sslSocketFactory(sslContext.getSocketFactory(),
+                (X509TrustManager) tmf.getTrustManagers()[0])
+            .build();
+    }
+
     /**
      * @param args Args.
      */
@@ -320,6 +356,7 @@ public class AgentLauncher {
         IO.Options opts = new IO.Options();
 
         opts.path = "/agents";
+        opts.secure = true;
 
         // Workaround for use self-signed certificate
         if (Boolean.getBoolean("trust.all")) {

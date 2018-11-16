@@ -61,7 +61,7 @@ module.exports = {
             return v === 'true' || v === true;
         };
 
-        return {
+        const settings = {
             agent: {
                 dists: nconf.get('agent:dists') || dfltAgentDists
             },
@@ -84,5 +84,7 @@ module.exports = {
             sessionSecret: nconf.get('server:sessionSecret') || 'keyboard cat',
             tokenLength: 20
         };
+
+        return settings;
     }
 };
