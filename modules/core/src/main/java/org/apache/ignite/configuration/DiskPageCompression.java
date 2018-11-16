@@ -18,7 +18,7 @@
 package org.apache.ignite.configuration;
 
 /**
- * Page compression options.
+ * Disk page compression options.
  *
  * @see CacheConfiguration#setDiskPageCompression
  * @see CacheConfiguration#setDiskPageCompressionLevel

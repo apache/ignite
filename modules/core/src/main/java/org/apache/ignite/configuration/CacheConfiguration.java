@@ -2310,9 +2310,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Gets page compression algorithm. Makes sense only with enabled {@link DataRegionConfiguration#setPersistenceEnabled persistence}.
+     * Gets disk page compression algorithm.
+     * Makes sense only with enabled {@link DataRegionConfiguration#setPersistenceEnabled persistence}.
      *
-     * @return Page compression algorithm.
+     * @return Disk page compression algorithm.
      * @see #getDiskPageCompressionLevel
      */
     public DiskPageCompression getDiskPageCompression() {
@@ -2320,9 +2321,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Sets page compression algorithm. Makes sense only with enabled {@link DataRegionConfiguration#setPersistenceEnabled persistence}.
+     * Sets disk page compression algorithm.
+     * Makes sense only with enabled {@link DataRegionConfiguration#setPersistenceEnabled persistence}.
      *
-     * @param diskPageCompression Page compression algorithm.
+     * @param diskPageCompression Disk page compression algorithm.
      * @return {@code this} for chaining.
      * @see #setDiskPageCompressionLevel
      */
@@ -2333,18 +2335,18 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Gets {@link #getDiskPageCompression algorithm} specific page compression level.
+     * Gets {@link #getDiskPageCompression algorithm} specific disk page compression level.
      *
-     * @return Page compression level or {@code null} for default.
+     * @return Disk page compression level or {@code null} for default.
      */
     public Integer getDiskPageCompressionLevel() {
         return diskPageCompressionLevel;
     }
 
     /**
-     * Sets {@link #setDiskPageCompression algorithm} specific page compression level.
+     * Sets {@link #setDiskPageCompression algorithm} specific disk page compression level.
      *
-     * @param diskPageCompressionLevel Page compression level or {@code null} to use default.
+     * @param diskPageCompressionLevel Disk page compression level or {@code null} to use default.
      *                             {@link DiskPageCompression#ZSTD Zstd}: from {@code -131072} to {@code 22} (default {@code 3}).
      *                             {@link DiskPageCompression#LZ4 LZ4}: from {@code 0} to {@code 17} (default {@code 0}).
      * @return {@code this} for chaining.

@@ -271,10 +271,12 @@ public class DataStorageMetricsSnapshot implements DataStorageMetrics {
         return checkpointBufferSize;
     }
 
+    /** {@inheritDoc} */
     @Override public long getStorageSize() {
         return storageSize;
     }
 
+    /** {@inheritDoc} */
     @Override public long getSparseStorageSize() {
         return sparseStorageSize;
     }

@@ -1040,12 +1040,12 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_ALLOW_START_CACHES_IN_PARALLEL = "IGNITE_ALLOW_START_CACHES_IN_PARALLEL";
 
     /**
-     * Sets default disk page compression for {@link CacheConfiguration}.
+     * Sets default {@link CacheConfiguration#setDiskPageCompression disk page compression}.
      */
     public static final String IGNITE_DEFAULT_DISK_PAGE_COMPRESSION = "IGNITE_DEFAULT_DISK_PAGE_COMPRESSION";
 
     /**
-     * Sets default storage page size for {@link DataStorageConfiguration}.
+     * Sets default {@link DataStorageConfiguration#setPageSize storage page size}.
      */
     public static final String IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE = "IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE";
 
