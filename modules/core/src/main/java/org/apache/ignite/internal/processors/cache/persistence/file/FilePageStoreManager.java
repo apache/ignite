@@ -77,7 +77,6 @@ import org.jetbrains.annotations.Nullable;
 import static java.nio.file.Files.delete;
 import static java.nio.file.Files.newDirectoryStream;
 import static java.util.Objects.requireNonNull;
-import static org.apache.ignite.internal.processors.compress.CompressionProcessor.UNCOMPRESSED_PAGE;
 
 /**
  * File page store manager.
@@ -538,8 +537,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 ByteBuffer compressedPageBuf = cctx0.compress().compressPage(pageBuf, store);
 
                 if (compressedPageBuf != pageBuf) {
-                    assert PageIO.getCompressionType(compressedPageBuf) != UNCOMPRESSED_PAGE;
-
                     compressedPageSize = PageIO.getCompressedSize(compressedPageBuf);
 
                     if (!calculateCrc) {
