@@ -10876,7 +10876,11 @@ public abstract class IgniteUtils {
 
         for (Future<Collection<R>> future : futures) {
             try {
-                results.addAll(future.get());
+                Collection<R> res = future.get();
+
+                assert res != null;
+
+                results.addAll(res);
             }
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -10897,7 +10901,9 @@ public abstract class IgniteUtils {
             }
         }
 
-        results.addAll(currentThreadResults);
+        // Add all results which was completed in current thread to final result set.
+        if (currentThreadResults != null)
+            results.addAll(currentThreadResults);
 
         if (error != null) {
             if (error instanceof IgniteCheckedException)
