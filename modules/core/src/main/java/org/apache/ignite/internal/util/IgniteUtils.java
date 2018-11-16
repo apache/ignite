@@ -10842,13 +10842,10 @@ public abstract class IgniteUtils {
                 for (T item : batch.tasks)
                     res.add(operation.accept(item));
 
-                batch.result = res;
+                batch.result(res);
             }
             catch (IgniteCheckedException e) {
-                if (error == null)
-                    error = e;
-                else
-                    error.addSuppressed(e);
+                batch.result(e);
             }
         }
 
@@ -10857,6 +10854,17 @@ public abstract class IgniteUtils {
 
         for (Batch<T, R> batch: batches) {
             try {
+                Throwable err = batch.error;
+
+                if (err != null) {
+                    if (error == null)
+                        error = err;
+                    else
+                        error.addSuppressed(err);
+
+                    continue;
+                }
+
                 Collection<R> res = batch.result();
 
                 if (res != null)
@@ -10907,7 +10915,10 @@ public abstract class IgniteUtils {
         private final List<T> tasks;
 
         /** */
-        private volatile Collection<R> result;
+        private Collection<R> result;
+
+        /** */
+        private Throwable error;
 
         /** */
         private volatile Future<Collection<R>> future;
@@ -10927,10 +10938,17 @@ public abstract class IgniteUtils {
         }
 
         /**
-         * @param res Setup results for tasks..
+         * @param res Setup results for tasks.
          */
         public void result(Collection<R> res) {
             this.result = res;
+        }
+
+        /**
+         * @param e Throwable if task was completed with error.
+         */
+        public void result(Throwable e) {
+            this.error = e;
         }
 
         /**
