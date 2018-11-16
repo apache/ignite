@@ -145,7 +145,7 @@ public class DmlStatementsProcessor {
 
         long items = 0;
 
-        UpdatePlan plan = idx.planCache().planForDmlStatement(schemaName, conn, prepared, fieldsQry, loc, null);
+        UpdatePlan plan = idx.planCache().planForDml(schemaName, conn, prepared, fieldsQry, loc, null);
 
         GridCacheContext<?, ?> cctx = plan.cacheContext();
 
@@ -196,7 +196,7 @@ public class DmlStatementsProcessor {
         throws IgniteCheckedException {
         List<Object[]> argss = fieldsQry.batchedArguments();
 
-        UpdatePlan plan = idx.planCache().planForDmlStatement(schemaName, conn, prepared, fieldsQry, loc, null);
+        UpdatePlan plan = idx.planCache().planForDml(schemaName, conn, prepared, fieldsQry, loc, null);
 
         GridCacheContext<?, ?> cctx = plan.cacheContext();
 
@@ -383,7 +383,7 @@ public class DmlStatementsProcessor {
 
         assert p != null;
 
-        final UpdatePlan plan = idx.planCache().planForDmlStatement(schemaName, null, p, null, true, null);
+        final UpdatePlan plan = idx.planCache().planForDml(schemaName, null, p, null, true, null);
 
         assert plan.isLocalSubquery();
 
@@ -1056,7 +1056,7 @@ public class DmlStatementsProcessor {
 
         Prepared prepared = GridSqlQueryParser.prepared(stmt);
 
-        UpdatePlan plan = idx.planCache().planForDmlStatement(schema, conn, prepared, qry, local, null);
+        UpdatePlan plan = idx.planCache().planForDml(schema, conn, prepared, qry, local, null);
 
         GridCacheContext cctx = plan.cacheContext();
 

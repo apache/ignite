@@ -932,7 +932,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         desc.table().addColumns(cols, ifColNotExists);
 
-        planCache.clearCachedQueries();
+        planCache.clear();
     }
 
     /** {@inheritDoc} */
@@ -953,7 +953,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         desc.table().dropColumns(cols, ifColExists);
 
-        planCache.clearCachedQueries();
+        planCache.clear();
     }
 
     /**
@@ -1325,7 +1325,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         Prepared p = GridSqlQueryParser.prepared(stmt);
 
-        UpdatePlan plan = planCache.planForDmlStatement(schemaName, conn, p, null, true, null);
+        UpdatePlan plan = planCache.planForDml(schemaName, conn, p, null, true, null);
 
         IgniteDataStreamer<?, ?> streamer = cliCtx.streamerForCache(plan.cacheContext().name());
 
@@ -2078,7 +2078,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 H2TwoStepCachedQuery cachedQry;
 
-                if ((cachedQry = planCache.queryPlan(cachedQryKey)) != null) {
+                if ((cachedQry = planCache.planForSelect(cachedQryKey)) != null) {
                     checkQueryType(qry, true);
 
                     GridCacheTwoStepQuery twoStepQry = cachedQry.query().copy();
@@ -2089,7 +2089,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         startTx, tracker, cancel));
 
                     if (!twoStepQry.explain())
-                        planCache.queryPlan(cachedQryKey, new H2TwoStepCachedQuery(meta, twoStepQry.copy()));
+                        planCache.planForSelect(cachedQryKey, new H2TwoStepCachedQuery(meta, twoStepQry.copy()));
 
                     return res;
                 }
@@ -2146,7 +2146,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 // We cannot cache two-step query for multiple statements query except the last statement
                 if (parseRes.twoStepQuery() != null && parseRes.twoStepQueryKey() != null &&
                     !parseRes.twoStepQuery().explain() && remainingSql == null)
-                    planCache.queryPlan(parseRes.twoStepQueryKey(), new H2TwoStepCachedQuery(meta,
+                    planCache.planForSelect(parseRes.twoStepQueryKey(), new H2TwoStepCachedQuery(meta,
                         twoStepQry.copy()));
             }
 
@@ -2396,7 +2396,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         H2TwoStepCachedQuery cachedQry;
 
-        if ((cachedQry = planCache.queryPlan(cachedQryKey)) != null) {
+        if ((cachedQry = planCache.planForSelect(cachedQryKey)) != null) {
             checkQueryType(qry, true);
 
             GridCacheTwoStepQuery twoStepQry = cachedQry.query().copy();

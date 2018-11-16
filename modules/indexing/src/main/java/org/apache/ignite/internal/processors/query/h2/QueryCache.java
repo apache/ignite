@@ -70,6 +70,26 @@ public class QueryCache {
     }
 
     /**
+     * Get query plan.
+     *
+     * @param key Key.
+     * @return Plan.
+     */
+    public H2TwoStepCachedQuery planForSelect(H2TwoStepCachedQueryKey key) {
+        return twoStepCache.get(key);
+    }
+
+    /**
+     * Save plan if it doesn't exist.
+     *
+     * @param key Key.
+     * @param plan Plan.
+     */
+    public void planForSelect(H2TwoStepCachedQueryKey key, H2TwoStepCachedQuery plan) {
+        twoStepCache.putIfAbsent(key, plan);
+    }
+
+    /**
      * Generate SELECT statements to retrieve data for modifications from and find fast UPDATE or DELETE args,
      * if available.
      *
@@ -80,7 +100,7 @@ public class QueryCache {
      * @param loc Local query flag.
      * @return Update plan.
      */
-    public UpdatePlan planForDmlStatement(String schema, Connection conn, Prepared p, SqlFieldsQuery fieldsQry,
+    public UpdatePlan planForDml(String schema, Connection conn, Prepared p, SqlFieldsQuery fieldsQry,
         boolean loc, @Nullable Integer errKeysPos) throws IgniteCheckedException {
         isDmlOnSchemaSupported(schema);
 
@@ -98,17 +118,6 @@ public class QueryCache {
             return U.firstNotNull(dmlCache.putIfAbsent(planKey, res), res);
         else
             return res;
-    }
-
-    /**
-     * Check if schema supports DDL statement.
-     *
-     * @param schemaName Schema name.
-     */
-    private static void isDmlOnSchemaSupported(String schemaName) {
-        if (F.eq(QueryUtils.SCHEMA_SYS, schemaName))
-            throw new IgniteSQLException("DML statements are not supported on " + schemaName + " schema",
-                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
     /**
@@ -144,27 +153,20 @@ public class QueryCache {
     /**
      * Remove all cached queries from cached two-steps queries.
      */
-    public void clearCachedQueries() {
+    public void clear() {
         twoStepCache = new GridBoundedConcurrentLinkedHashMap<>(PLAN_CACHE_SIZE);
+
+        // TODO: Clear DML.
     }
 
     /**
-     * Get query plan.
+     * Check if schema supports DDL statement.
      *
-     * @param key Key.
-     * @return Plan.
+     * @param schemaName Schema name.
      */
-    public H2TwoStepCachedQuery queryPlan(H2TwoStepCachedQueryKey key) {
-        return twoStepCache.get(key);
-    }
-
-    /**
-     * Save plan if it doesn't exist.
-     *
-     * @param key Key.
-     * @param plan Plan.
-     */
-    public void queryPlan(H2TwoStepCachedQueryKey key, H2TwoStepCachedQuery plan) {
-        twoStepCache.putIfAbsent(key, plan);
+    private static void isDmlOnSchemaSupported(String schemaName) {
+        if (F.eq(QueryUtils.SCHEMA_SYS, schemaName))
+            throw new IgniteSQLException("DML statements are not supported on " + schemaName + " schema",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 }
