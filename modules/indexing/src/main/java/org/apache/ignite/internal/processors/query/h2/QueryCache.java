@@ -52,12 +52,12 @@ public class QueryCache {
     /** Indexing. */
     private final IgniteH2Indexing idx;
 
-    /** */
-    private volatile GridBoundedConcurrentLinkedHashMap<H2TwoStepCachedQueryKey, H2TwoStepCachedQuery> twoStepCache =
+    /** SELECT plan cache */
+    private volatile GridBoundedConcurrentLinkedHashMap<H2TwoStepCachedQueryKey, H2TwoStepCachedQuery> queryCache =
         new GridBoundedConcurrentLinkedHashMap<>(PLAN_CACHE_SIZE);
 
-    /** Update plans cache. */
-    private final ConcurrentMap<H2CachedStatementKey, UpdatePlan> dmlCache =
+    /** DML plan cache. */
+    private volatile ConcurrentMap<H2CachedStatementKey, UpdatePlan> dmlCache =
         new GridBoundedConcurrentLinkedHashMap<>(PLAN_CACHE_SIZE);
 
     /**
@@ -76,7 +76,7 @@ public class QueryCache {
      * @return Plan.
      */
     public H2TwoStepCachedQuery planForSelect(H2TwoStepCachedQueryKey key) {
-        return twoStepCache.get(key);
+        return queryCache.get(key);
     }
 
     /**
@@ -86,7 +86,7 @@ public class QueryCache {
      * @param plan Plan.
      */
     public void planForSelect(H2TwoStepCachedQueryKey key, H2TwoStepCachedQuery plan) {
-        twoStepCache.putIfAbsent(key, plan);
+        queryCache.putIfAbsent(key, plan);
     }
 
     /**
@@ -130,7 +130,7 @@ public class QueryCache {
         int cacheId = CU.cacheId(cacheName);
 
         for (Iterator<Map.Entry<H2TwoStepCachedQueryKey, H2TwoStepCachedQuery>> it =
-             twoStepCache.entrySet().iterator(); it.hasNext();) {
+             queryCache.entrySet().iterator(); it.hasNext();) {
             Map.Entry<H2TwoStepCachedQueryKey, H2TwoStepCachedQuery> e = it.next();
 
             GridCacheTwoStepQuery qry = e.getValue().query();
@@ -154,9 +154,8 @@ public class QueryCache {
      * Remove all cached queries from cached two-steps queries.
      */
     public void clear() {
-        twoStepCache = new GridBoundedConcurrentLinkedHashMap<>(PLAN_CACHE_SIZE);
-
-        // TODO: Clear DML.
+        queryCache = new GridBoundedConcurrentLinkedHashMap<>(PLAN_CACHE_SIZE);
+        dmlCache = new GridBoundedConcurrentLinkedHashMap<>(PLAN_CACHE_SIZE);
     }
 
     /**
