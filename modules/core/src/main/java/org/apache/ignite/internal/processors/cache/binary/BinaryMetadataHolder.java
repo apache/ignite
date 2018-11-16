@@ -39,8 +39,8 @@ final class BinaryMetadataHolder implements Serializable {
 
     /**
      * @param metadata Metadata.
-     * @param pendingVer Version of this metadata - how many updates were issued for this type.
-     * @param acceptedVer Pending updates count.
+     * @param pendingVer Pending updates count.
+     * @param acceptedVer Version of this metadata - how many updates were issued for this type.
      */
     BinaryMetadataHolder(BinaryMetadata metadata, int pendingVer, int acceptedVer) {
         assert metadata != null;
