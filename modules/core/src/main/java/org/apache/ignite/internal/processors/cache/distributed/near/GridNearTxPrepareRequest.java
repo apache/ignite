@@ -368,7 +368,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
                 writer.incrementState();
 
-            case 26:
+            case 27:
                 if (!writer.writeString("txLbl", txLbl))
                     return false;
 
@@ -438,7 +438,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
                 reader.incrementState();
 
-            case 26:
+            case 27:
                 txLbl = reader.readString("txLbl");
 
                 if (!reader.isLastRead())
@@ -458,7 +458,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 27;
+        return 28;
     }
 
     /** {@inheritDoc} */

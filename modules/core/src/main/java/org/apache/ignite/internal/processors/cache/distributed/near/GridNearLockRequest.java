@@ -431,7 +431,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
                 writer.incrementState();
 
-            case 29:
+            case 30:
                 if(!writer.writeString("txLbl", txLbl))
                     return false;
 
@@ -524,7 +524,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 29:
+            case 30:
                 txLbl = reader.readString("txLbl");
 
                 if(!reader.isLastRead())
@@ -544,7 +544,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 30;
+        return 31;
     }
 
     /** {@inheritDoc} */
