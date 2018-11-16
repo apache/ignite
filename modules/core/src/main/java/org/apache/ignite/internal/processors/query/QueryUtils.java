@@ -81,7 +81,7 @@ public class QueryUtils {
     public static final String SCHEMA_SYS = "IGNITE";
 
     /** Schema for system view. */
-    public static final String SCHEMA_IS = "INFORMATION_SCHEMA";
+    public static final String SCHEMA_INFORMATION = "INFORMATION_SCHEMA";
 
     /** Field name for key. */
     public static final String KEY_FIELD_NAME = "_KEY";

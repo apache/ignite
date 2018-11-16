@@ -146,7 +146,7 @@ public class H2QueryExecutor {
 
         org.h2.Driver.load();
 
-        sysConn = connectionNoCache(QueryUtils.SCHEMA_IS);
+        sysConn = connectionNoCache(QueryUtils.SCHEMA_INFORMATION);
 
         startDebugConsole();
 
@@ -287,17 +287,6 @@ public class H2QueryExecutor {
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
-    }
-
-    /**
-     * @return H2 JDBC connection to INFORMATION_SCHEMA.
-     */
-    public Connection systemConnection() {
-        // TODO: Initialize in ctor
-        if (sysConn == null)
-            sysConn = connectionNoCache(QueryUtils.SCHEMA_IS);
-
-        return sysConn;
     }
 
     /**
@@ -445,6 +434,31 @@ public class H2QueryExecutor {
         }
         catch (SQLException e) {
             throw new IgniteCheckedException(e);
+        }
+    }
+
+    /**
+     * @param schema Schema
+     * @param sql SQL statement.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void executeStatement(String schema, String sql) throws IgniteCheckedException {
+        Statement stmt = null;
+
+        try {
+            Connection c = connectionForThread(schema);
+
+            stmt = c.createStatement();
+
+            stmt.executeUpdate(sql);
+        }
+        catch (SQLException e) {
+            onSqlException();
+
+            throw new IgniteSQLException("Failed to execute statement: " + sql, e);
+        }
+        finally {
+            U.close(stmt, log);
         }
     }
 }
