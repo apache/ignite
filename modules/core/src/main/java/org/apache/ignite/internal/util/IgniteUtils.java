@@ -10834,7 +10834,7 @@ public abstract class IgniteUtils {
         for (Batch<T, R> batch : sharedBatchesSet) {
             // Executor steal task.
             if (!sharedBatchesSet.remove(batch))
-                break;
+                continue;
 
             Collection<R> res = new ArrayList<>(batch.tasks.size());
 
