@@ -30,7 +30,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
@@ -39,7 +38,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.query.BulkLoadContextCursor;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -66,7 +64,6 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlBatchSender;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlDistributedPlanInfo;
@@ -79,7 +76,6 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
-import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
 import org.apache.ignite.internal.util.typedef.F;
@@ -94,7 +90,6 @@ import org.h2.command.dml.Delete;
 import org.h2.command.dml.Insert;
 import org.h2.command.dml.Merge;
 import org.h2.command.dml.Update;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkActive;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccTracker;
@@ -118,23 +113,6 @@ public class DmlStatementsProcessor {
     /** Logger. */
     private IgniteLogger log;
 
-    /** Default size for update plan cache. */
-    private static final int PLAN_CACHE_SIZE = 1024;
-
-    /** Cached value of {@code IgniteSystemProperties.IGNITE_ALLOW_DML_INSIDE_TRANSACTION}. */
-    private final boolean isDmlAllowedOverride;
-
-    /**
-     * Default constructor.
-     */
-    public DmlStatementsProcessor() {
-        isDmlAllowedOverride = Boolean.getBoolean(IgniteSystemProperties.IGNITE_ALLOW_DML_INSIDE_TRANSACTION);
-    }
-
-    /** Update plans cache. */
-    private final ConcurrentMap<H2CachedStatementKey, UpdatePlan> planCache =
-        new GridBoundedConcurrentLinkedHashMap<>(PLAN_CACHE_SIZE);
-
     /**
      * Constructor.
      *
@@ -145,22 +123,6 @@ public class DmlStatementsProcessor {
         this.idx = idx;
 
         log = ctx.log(DmlStatementsProcessor.class);
-    }
-
-    /**
-     * Handle cache stop.
-     *
-     * @param cacheName Cache name.
-     */
-    public void onCacheStop(String cacheName) {
-        Iterator<Map.Entry<H2CachedStatementKey, UpdatePlan>> iter = planCache.entrySet().iterator();
-
-        while (iter.hasNext()) {
-            UpdatePlan plan = iter.next().getValue();
-
-            if (F.eq(cacheName, plan.cacheContext().name()))
-                iter.remove();
-        }
     }
 
     /**
@@ -183,7 +145,7 @@ public class DmlStatementsProcessor {
 
         long items = 0;
 
-        UpdatePlan plan = getPlanForStatement(schemaName, conn, prepared, fieldsQry, loc, null);
+        UpdatePlan plan = idx.planCache().planForDmlStatement(schemaName, conn, prepared, fieldsQry, loc, null);
 
         GridCacheContext<?, ?> cctx = plan.cacheContext();
 
@@ -234,7 +196,7 @@ public class DmlStatementsProcessor {
         throws IgniteCheckedException {
         List<Object[]> argss = fieldsQry.batchedArguments();
 
-        UpdatePlan plan = getPlanForStatement(schemaName, conn, prepared, fieldsQry, loc, null);
+        UpdatePlan plan = idx.planCache().planForDmlStatement(schemaName, conn, prepared, fieldsQry, loc, null);
 
         GridCacheContext<?, ?> cctx = plan.cacheContext();
 
@@ -421,7 +383,7 @@ public class DmlStatementsProcessor {
 
         assert p != null;
 
-        final UpdatePlan plan = getPlanForStatement(schemaName, null, p, null, true, null);
+        final UpdatePlan plan = idx.planCache().planForDmlStatement(schemaName, null, p, null, true, null);
 
         assert plan.isLocalSubquery();
 
@@ -724,37 +686,6 @@ public class DmlStatementsProcessor {
                 throw new IgniteSQLException("Unexpected DML operation [mode=" + plan.mode() + ']',
                     IgniteQueryErrorCode.UNEXPECTED_OPERATION);
         }
-    }
-
-    /**
-     * Generate SELECT statements to retrieve data for modifications from and find fast UPDATE or DELETE args,
-     * if available.
-     *
-     * @param schema Schema.
-     * @param conn Connection.
-     * @param p Prepared statement.
-     * @param fieldsQry Original fields query.
-     * @param loc Local query flag.
-     * @return Update plan.
-     */
-    UpdatePlan getPlanForStatement(String schema, Connection conn, Prepared p, SqlFieldsQuery fieldsQry,
-        boolean loc, @Nullable Integer errKeysPos) throws IgniteCheckedException {
-        isDmlOnSchemaSupported(schema);
-
-        H2CachedStatementKey planKey = H2CachedStatementKey.forDmlStatement(schema, p.getSQL(), fieldsQry, loc);
-
-        UpdatePlan res = (errKeysPos == null ? planCache.get(planKey) : null);
-
-        if (res != null)
-            return res;
-
-        res = UpdatePlanBuilder.planForStatement(p, loc, idx, conn, fieldsQry, errKeysPos, isDmlAllowedOverride);
-
-        // Don't cache re-runs
-        if (errKeysPos == null)
-            return U.firstNotNull(planCache.putIfAbsent(planKey, res), res);
-        else
-            return res;
     }
 
     /**
@@ -1125,7 +1056,7 @@ public class DmlStatementsProcessor {
 
         Prepared prepared = GridSqlQueryParser.prepared(stmt);
 
-        UpdatePlan plan = getPlanForStatement(schema, conn, prepared, qry, local, null);
+        UpdatePlan plan = idx.planCache().planForDmlStatement(schema, conn, prepared, qry, local, null);
 
         GridCacheContext cctx = plan.cacheContext();
 
@@ -1344,17 +1275,6 @@ public class DmlStatementsProcessor {
      */
     static boolean isDmlStatement(Prepared stmt) {
         return stmt instanceof Merge || stmt instanceof Insert || stmt instanceof Update || stmt instanceof Delete;
-    }
-
-    /**
-     * Check if schema supports DDL statement.
-     *
-     * @param schemaName Schema name.
-     */
-    private static void isDmlOnSchemaSupported(String schemaName) {
-        if (F.eq(QueryUtils.SCHEMA_SYS, schemaName))
-            throw new IgniteSQLException("DML statements are not supported on " + schemaName + " schema",
-                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
     /**

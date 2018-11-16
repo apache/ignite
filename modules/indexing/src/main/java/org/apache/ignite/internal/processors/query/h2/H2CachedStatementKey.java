@@ -54,7 +54,7 @@ class H2CachedStatementKey {
      * @param loc DML {@code SELECT} Locality flag.
      * @return Statement key.
      * @see UpdatePlanBuilder
-     * @see DmlStatementsProcessor#getPlanForStatement
+     * @see DmlStatementsProcessor#planForDmlStatement
      */
     static H2CachedStatementKey forDmlStatement(String schemaName, String sql, SqlFieldsQuery fieldsQry, boolean loc) {
         return new H2CachedStatementKey(schemaName, sql, fieldsQry, loc);

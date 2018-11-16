@@ -397,6 +397,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** H2 JDBC connection for INFORMATION_SCHEMA. Holds H2 open until node is stopped. */
     private Connection sysConn;
 
+    /** Query cache. */
+    private QueryCache planCache;
+
     /**
      * @return Kernal context.
      */
@@ -1330,7 +1333,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         Prepared p = GridSqlQueryParser.prepared(stmt);
 
-        UpdatePlan plan = dmlProc.getPlanForStatement(schemaName, conn, p, null, true, null);
+        UpdatePlan plan = planCache.planForDmlStatement(schemaName, conn, p, null, true, null);
 
         IgniteDataStreamer<?, ?> streamer = cliCtx.streamerForCache(plan.cacheContext().name());
 
@@ -1342,6 +1345,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             res.add(dmlProc.streamUpdateQuery(schemaName, streamer, stmt, params.get(i)));
 
         return res;
+    }
+
+    /**
+     * @return Query cache.
+     */
+    public QueryCache planCache() {
+        return planCache;
     }
 
     /**
@@ -3135,6 +3145,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
             }, CLEANUP_STMT_CACHE_PERIOD, CLEANUP_STMT_CACHE_PERIOD);
 
+            planCache = new QueryCache(this);
+
             dmlProc = new DmlStatementsProcessor();
             ddlProc = new DdlStatementsProcessor();
 
@@ -3433,7 +3445,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         if (schema != null) {
             mapQryExec.onCacheStop(cacheName);
-            dmlProc.onCacheStop(cacheName);
+            planCache.onCacheStop(cacheName);
 
             // Remove this mapping only after callback to DML proc - it needs that mapping internally
             cacheName2schema.remove(cacheName);
