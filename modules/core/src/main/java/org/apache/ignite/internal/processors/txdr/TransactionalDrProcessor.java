@@ -53,4 +53,11 @@ public interface TransactionalDrProcessor extends GridProcessor, IgniteChangeGlo
      * @param fut Current exchange future.
      */
     public boolean shouldIgnoreAssignPartitionStates(GridDhtPartitionsExchangeFuture fut);
+
+    /**
+     * Returns true if we should schedule rebalance for MOVING partitions even if ideal assignment wasn't changed.
+     *
+     * @param fut Current exchange future.
+     */
+    public boolean shouldScheduleRebalance(GridDhtPartitionsExchangeFuture fut);
 }

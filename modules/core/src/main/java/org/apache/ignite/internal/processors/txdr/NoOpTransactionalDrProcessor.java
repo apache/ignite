@@ -58,4 +58,9 @@ public class NoOpTransactionalDrProcessor extends GridProcessorAdapter implement
     @Override public boolean shouldIgnoreAssignPartitionStates(GridDhtPartitionsExchangeFuture fut) {
         return false;
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean shouldScheduleRebalance(GridDhtPartitionsExchangeFuture fut) {
+        return false;
+    }
 }
