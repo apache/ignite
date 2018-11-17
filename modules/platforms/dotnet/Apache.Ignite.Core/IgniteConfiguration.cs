@@ -933,6 +933,7 @@ namespace Apache.Ignite.Core
             PeerAssemblyLoadingMode = cfg.PeerAssemblyLoadingMode;
             LocalEventListeners = cfg.LocalEventListeners;
             RedirectJavaConsoleOutput = cfg.RedirectJavaConsoleOutput;
+            ClientConnectorConfiguration = cfg.ClientConnectorConfiguration;
 
             if (CacheConfiguration != null && cfg.CacheConfiguration != null)
             {
