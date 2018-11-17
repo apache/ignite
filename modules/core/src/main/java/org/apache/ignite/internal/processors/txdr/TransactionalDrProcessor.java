@@ -20,6 +20,7 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.SnapshotRecord;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperation;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
@@ -43,4 +44,20 @@ public interface TransactionalDrProcessor extends GridProcessor, IgniteChangeGlo
      */
     public void onPartitionsFullMessagePrepared(@Nullable GridDhtPartitionExchangeId exchId,
         GridDhtPartitionsFullMessage fullMsg);
+
+    /**
+     * Returns true if we should skip assigning MOVING state to partitions due to outdated counters.
+     * The idea is to avoid redundant rebalance in case of random discovery events on REPLICA cluster.
+     * If event is "special" and rebalance really should happen according to REPLICA lifecycle, method will return true.
+     *
+     * @param fut Current exchange future.
+     */
+    public boolean shouldIgnoreAssignPartitionStates(GridDhtPartitionsExchangeFuture fut);
+
+    /**
+     * Returns true if we should schedule rebalance for MOVING partitions even if ideal assignment wasn't changed.
+     *
+     * @param fut Current exchange future.
+     */
+    public boolean shouldScheduleRebalance(GridDhtPartitionsExchangeFuture fut);
 }
