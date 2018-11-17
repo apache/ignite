@@ -1168,7 +1168,6 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
-    @SuppressWarnings("AssertEqualsBetweenInconvertibleTypes")
     public void testDateArrayOverride() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
 
@@ -1187,7 +1186,6 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
-    @SuppressWarnings("AssertEqualsBetweenInconvertibleTypes")
     public void testTimestampArrayOverride() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
 

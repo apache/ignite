@@ -872,7 +872,8 @@
                                         <exclude>**/books/*.txt</exclude><!--books examples-->
                                         <exclude>src/main/java/org/apache/ignite/examples/streaming/wordcount/*.txt</exclude><!--books examples-->
                                         <exclude>examples/src/main/java/org/apache/ignite/examples/streaming/wordcount/*.txt</exclude><!--books examples-->
-                                        <exclude>**/resources/datasets/**/*</exclude><!--KNN Datasets in ml module-->
+                                        <exclude>**/resources/datasets/**/*</exclude><!--Datasets in ml module-->
+                                        <exclude>**/ml/util/datasets/**/*</exclude><!--Datasets in ml examples-->
                                         <exclude>src/main/java/org/jetbrains/annotations/*.java</exclude><!--copyright-->
                                         <exclude>dev-tools/IGNITE-*.patch</exclude>
                                         <exclude>dev-tools/.gradle/**/*</exclude>
