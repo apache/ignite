@@ -62,10 +62,11 @@ public class ConnectionManager {
     private static final Long CONN_CLEANUP_PERIOD = 2000L;
 
     /** The period of clean up the statement cache. */
-    private static final Long STMT_CLEANUP_PERIOD = Long.getLong(IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD, 10_000);
+    @SuppressWarnings("FieldCanBeLocal")
+    private final Long stmtCleanupPeriod = Long.getLong(IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD, 10_000);
 
     /** The timeout to remove entry from the statement cache if the thread doesn't perform any queries. */
-    private static final Long STMT_TIMEOUT = Long.getLong(IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT, 600 * 1000);
+    private final Long stmtTimeout = Long.getLong(IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT, 600 * 1000);
 
     /*
      * Initialize system properties for H2.
@@ -151,7 +152,7 @@ public class ConnectionManager {
             @Override public void run() {
                 cleanupStatements();
             }
-        }, STMT_CLEANUP_PERIOD, STMT_CLEANUP_PERIOD);
+        }, stmtCleanupPeriod, stmtCleanupPeriod);
 
         connCleanupTask = ctx.timeout().schedule(new Runnable() {
             @Override public void run() {
@@ -436,7 +437,7 @@ public class ConnectionManager {
 
                 it.remove();
             }
-            else if (now - entry.getValue().statementCache().lastUsage() > STMT_TIMEOUT)
+            else if (now - entry.getValue().statementCache().lastUsage() > stmtTimeout)
                 entry.getValue().clearStatementCache();
         }
     }
