@@ -40,6 +40,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.FactoryBuilder;
@@ -165,6 +166,12 @@ public abstract class GridAbstractTest extends TestCase {
 
     /** */
     protected static final String DEFAULT_CACHE_NAME = "default";
+
+    /** */
+    private static final AtomicLong overhead = new AtomicLong();
+
+    /** */
+    private static final AtomicLong countedDuration = new AtomicLong();
 
     /** */
     private transient boolean startGrid;
@@ -738,16 +745,26 @@ public abstract class GridAbstractTest extends TestCase {
     protected Ignite startGridsMultiThreaded(int cnt) throws Exception {
         assert cnt > 0 : "Number of grids must be a positive number";
 
-        Ignite ignite = startGrids(1);
+        long t0 = System.currentTimeMillis();
+        startInProgress.set(true);
+        try {
+            Ignite ignite = startGrids(1);
 
-        if (cnt > 1) {
-            startGridsMultiThreaded(1, cnt - 1);
+            if (cnt > 1) {
+                startGridsMultiThreaded(1, cnt - 1);
 
-            if (checkTopology())
-                checkTopology(cnt);
+                if (checkTopology())
+                    checkTopology(cnt);
+            }
+
+            return ignite;
         }
-
-        return ignite;
+        finally {
+            startInProgress.set(false);
+            String tn = Thread.currentThread().getName();
+            if (tn.contains("main") || tn.contains("test-runner"))
+                overhead.addAndGet(System.currentTimeMillis() - t0);
+        }
     }
 
     /**
@@ -898,6 +915,9 @@ public abstract class GridAbstractTest extends TestCase {
         }
     }
 
+    /** */
+    private static ThreadLocal<Boolean> startInProgress = ThreadLocal.withInitial(() -> false);
+
     /**
      * Starts new grid with given name.
      *
@@ -908,48 +928,56 @@ public abstract class GridAbstractTest extends TestCase {
      */
     protected Ignite startGrid(String igniteInstanceName, IgniteConfiguration cfg, GridSpringResourceContext ctx)
         throws Exception {
-        if (!isRemoteJvm(igniteInstanceName)) {
-            IgniteUtils.setCurrentIgniteName(igniteInstanceName);
+        long t0 = System.currentTimeMillis();
+        try {
+            if (!isRemoteJvm(igniteInstanceName)) {
+                IgniteUtils.setCurrentIgniteName(igniteInstanceName);
 
-            try {
-                String cfgProcClsName = System.getProperty(IGNITE_CFG_PREPROCESSOR_CLS);
+                try {
+                    String cfgProcClsName = System.getProperty(IGNITE_CFG_PREPROCESSOR_CLS);
 
-                if (cfgProcClsName != null) {
-                    try {
-                        Class<?> cfgProc = Class.forName(cfgProcClsName);
+                    if (cfgProcClsName != null) {
+                        try {
+                            Class<?> cfgProc = Class.forName(cfgProcClsName);
 
-                        Method method = cfgProc.getMethod("preprocessConfiguration", IgniteConfiguration.class);
+                            Method method = cfgProc.getMethod("preprocessConfiguration", IgniteConfiguration.class);
 
-                        if (!Modifier.isStatic(method.getModifiers()))
-                            throw new Exception("Non-static pre-processor method in pre-processor class: " + cfgProcClsName);
+                            if (!Modifier.isStatic(method.getModifiers()))
+                                throw new Exception("Non-static pre-processor method in pre-processor class: " + cfgProcClsName);
 
-                        method.invoke(null, cfg);
+                            method.invoke(null, cfg);
+                        }
+                        catch (Exception e) {
+                            log.error("Failed to pre-process IgniteConfiguration using pre-processor class: " + cfgProcClsName);
+
+                            throw new IgniteException(e);
+                        }
                     }
-                    catch (Exception e) {
-                        log.error("Failed to pre-process IgniteConfiguration using pre-processor class: " + cfgProcClsName);
 
-                        throw new IgniteException(e);
-                    }
+                    Ignite node = IgnitionEx.start(cfg, ctx);
+
+                    IgniteConfiguration nodeCfg = node.configuration();
+
+                    log.info("Node started with the following configuration [id=" + node.cluster().localNode().id()
+                        + ", marshaller=" + nodeCfg.getMarshaller()
+                        + ", discovery=" + nodeCfg.getDiscoverySpi()
+                        + ", binaryCfg=" + nodeCfg.getBinaryConfiguration()
+                        + ", lateAff=" + nodeCfg.isLateAffinityAssignment() + "]");
+
+                    return node;
                 }
-
-                Ignite node = IgnitionEx.start(cfg, ctx);
-
-                IgniteConfiguration nodeCfg = node.configuration();
-
-                log.info("Node started with the following configuration [id=" + node.cluster().localNode().id()
-                    + ", marshaller=" + nodeCfg.getMarshaller()
-                    + ", discovery=" + nodeCfg.getDiscoverySpi()
-                    + ", binaryCfg=" + nodeCfg.getBinaryConfiguration()
-                    + ", lateAff=" + nodeCfg.isLateAffinityAssignment() + "]");
-
-                return node;
+                finally {
+                    IgniteUtils.setCurrentIgniteName(null);
+                }
             }
-            finally {
-                IgniteUtils.setCurrentIgniteName(null);
-            }
+            else
+                return startRemoteGrid(igniteInstanceName, null, ctx);
         }
-        else
-            return startRemoteGrid(igniteInstanceName, null, ctx);
+        finally {
+            String tn = Thread.currentThread().getName();
+            if (!startInProgress.get() && (tn.contains("main") || tn.contains("test-runner")))
+                overhead.addAndGet(System.currentTimeMillis() - t0);
+        }
     }
 
     /**
@@ -1127,6 +1155,7 @@ public abstract class GridAbstractTest extends TestCase {
      */
     @SuppressWarnings({"deprecation"})
     protected void stopGrid(@Nullable String igniteInstanceName, boolean cancel, boolean awaitTop) {
+        long t0 = System.currentTimeMillis();
         try {
             IgniteEx ignite = grid(igniteInstanceName);
 
@@ -1151,6 +1180,11 @@ public abstract class GridAbstractTest extends TestCase {
             error("Failed to stop grid [igniteInstanceName=" + igniteInstanceName + ", cancel=" + cancel + ']', e);
 
             stopGridErr = true;
+        }
+        finally {
+            String tn = Thread.currentThread().getName();
+            if ("main".equals(tn) || "test-runner".equals(tn))
+                overhead.addAndGet(System.currentTimeMillis() - t0);
         }
     }
 
@@ -1748,6 +1782,7 @@ public abstract class GridAbstractTest extends TestCase {
     /** {@inheritDoc} */
     @Override protected void tearDown() throws Exception {
         long dur = System.currentTimeMillis() - ts;
+        countedDuration.addAndGet(dur);
 
         info(">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
 
@@ -1767,6 +1802,8 @@ public abstract class GridAbstractTest extends TestCase {
 
             if (isLastTest()) {
                 info(">>> Stopping test class: " + testClassDescription() + " <<<");
+                System.out.println("DURATION SO FAR " + countedDuration);
+                System.out.println("OVERHEAD SO FAR " + overhead);
 
                 TestCounters counters = getTestCounters();
 
