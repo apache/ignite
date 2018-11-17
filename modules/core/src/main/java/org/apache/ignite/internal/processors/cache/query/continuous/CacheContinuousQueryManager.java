@@ -235,8 +235,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         int partId,
         long updCntr,
         boolean primary,
-        AffinityTopologyVersion topVer,
-        boolean forceAsyncCb) {
+        AffinityTopologyVersion topVer) {
         assert lsnrs != null;
 
         for (CacheContinuousQueryListener lsnr : lsnrs.values()) {
@@ -255,7 +254,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
             CacheContinuousQueryEvent evt = new CacheContinuousQueryEvent<>(
                 cctx.kernalContext().cache().jcache(cctx.name()), cctx, e0);
 
-            lsnr.skipUpdateEvent(evt, topVer, primary, forceAsyncCb);
+            lsnr.skipUpdateEvent(evt, topVer, primary);
         }
     }
 
@@ -297,7 +296,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
             long gapStop = gaps.get(i * 2 + 1);
 
             for (long cntr = gapStart; cntr <= gapStop; cntr++)
-                skipUpdateEvent(lsnrs, null, part, cntr, false, topVer, true);
+                skipUpdateEvent(lsnrs, null, part, cntr, false, topVer);
         }
     }
 
@@ -400,7 +399,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         boolean hasOldVal = oldVal != null;
 
         if (!hasNewVal && !hasOldVal) {
-            skipUpdateEvent(lsnrCol, key, partId, updateCntr, primary, topVer, false);
+            skipUpdateEvent(lsnrCol, key, partId, updateCntr, primary, topVer);
 
             return;
         }
@@ -450,7 +449,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
             CacheContinuousQueryEvent evt = new CacheContinuousQueryEvent<>(jcache, cctx, e0);
 
-            lsnr.onEntryUpdated(evt, primary, recordIgniteEvt, fut, false);
+            lsnr.onEntryUpdated(evt, primary, recordIgniteEvt, fut);
         }
     }
 
@@ -506,7 +505,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 CacheContinuousQueryEvent evt = new CacheContinuousQueryEvent(
                     cctx.kernalContext().cache().jcache(cctx.name()), cctx, e0);
 
-                lsnr.onEntryUpdated(evt, primary, recordIgniteEvt, null, false);
+                lsnr.onEntryUpdated(evt, primary, recordIgniteEvt, null);
             }
         }
     }

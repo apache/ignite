@@ -393,8 +393,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             @Override public void onEntryUpdated(final CacheContinuousQueryEvent<K, V> evt,
                 boolean primary,
                 final boolean recordIgniteEvt,
-                GridDhtAtomicAbstractUpdateFuture fut,
-                boolean forceAsyncCb) {
+                GridDhtAtomicAbstractUpdateFuture fut) {
                 if (ignoreExpired && evt.getEventType() == EventType.EXPIRED)
                     return;
 
@@ -427,19 +426,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                             + ", notify=" + notify + ']');
 
                     if (primary || skipPrimaryCheck) {
-                        if (fut == null) {
-                            if (!forceAsyncCb)
-                                onEntryUpdate(evt, notify, loc, recordIgniteEvt);
-                            else {
-                                ContinuousQueryAsyncClosure clsr = new ContinuousQueryAsyncClosure(
-                                    primary,
-                                    evt,
-                                    recordIgniteEvt,
-                                    fut);
-
-                                ctx.asyncCallbackPool().execute(clsr, evt.partitionId());
-                            }
-                        }
+                        if (fut == null)
+                            onEntryUpdate(evt, notify, loc, recordIgniteEvt);
                         else {
                             fut.addContinuousQueryClosure(new CI1<Boolean>() {
                                 @Override public void apply(Boolean suc) {
@@ -507,15 +495,14 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
             @Override public void skipUpdateEvent(CacheContinuousQueryEvent<K, V> evt,
                 AffinityTopologyVersion topVer,
-                boolean primary,
-                boolean forceAsyncCb) {
+                boolean primary) {
                 assert evt != null;
 
                 CacheContinuousQueryEntry e = evt.entry();
 
                 e.markFiltered();
 
-                onEntryUpdated(evt, primary, false, null, forceAsyncCb);
+                onEntryUpdated(evt, primary, false, null);
             }
 
             @Override public CounterSkipContext skipUpdateCounter(final GridCacheContext cctx,
