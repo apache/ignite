@@ -3332,9 +3332,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (!exchCtx.mergeExchanges() && forceAffReassignment)
                 idealAffDiff = cctx.affinity().onCustomEventWithEnforcedAffinityReassignment(this);
 
-            for (CacheGroupContext grpCtx : cctx.cache().cacheGroups()) {
-                if (!grpCtx.isLocal())
-                    grpCtx.topology().applyUpdateCounters();
+            TransactionalDrProcessor txDrProc = cctx.kernalContext().txDr();
+
+            boolean skipResetOwners = txDrProc != null && txDrProc.shouldIgnoreAssignPartitionStates(this);
+
+            if (!skipResetOwners) {
+                for (CacheGroupContext grpCtx : cctx.cache().cacheGroups()) {
+                    if (!grpCtx.isLocal())
+                        grpCtx.topology().applyUpdateCounters();
+                }
             }
 
             updateLastVersion(cctx.versions().last());
