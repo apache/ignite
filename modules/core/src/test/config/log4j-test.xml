@@ -112,7 +112,7 @@
         <level value="INFO"/>
 
         <!-- Append to file and console. -->
-        <appender-ref ref="FILE"/>
+        <!--<appender-ref ref="FILE"/>-->
         <!--<appender-ref ref="CONSOLE"/>-->
         <!--<appender-ref ref="CONSOLE_ERR"/>-->
     </root>
