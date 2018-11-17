@@ -2250,6 +2250,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             break;
 
                         case MVCC_TX_RECORD:
+                            checkpointReadLock();
+
                             try {
                                 MvccTxRecord txRecord = (MvccTxRecord)rec;
 
@@ -2259,6 +2261,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             }
                             catch (IgniteCheckedException e) {
                                 throw new IgniteException(e);
+                            }
+                            finally {
+                                checkpointReadUnlock();
                             }
 
                             break;
