@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 
@@ -31,7 +32,7 @@ import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProces
  * Represents Data Entry ({@link #key}, {@link #val value}) pair update {@link #op operation}. <br>
  * This Data entry was not converted to key, value pair during record deserialization.
  */
-public class LazyDataEntry extends DataEntry {
+public class LazyMvccDataEntry extends MvccDataEntry {
     /** */
     private GridCacheSharedContext cctx;
 
@@ -60,8 +61,9 @@ public class LazyDataEntry extends DataEntry {
      * @param expireTime Expire time.
      * @param partId Partition ID.
      * @param partCnt Partition counter.
+     * @param mvccVer Mvcc version.
      */
-    public LazyDataEntry(
+    public LazyMvccDataEntry(
         GridCacheSharedContext cctx,
         int cacheId,
         byte keyType,
@@ -73,9 +75,10 @@ public class LazyDataEntry extends DataEntry {
         GridCacheVersion writeVer,
         long expireTime,
         int partId,
-        long partCnt
+        long partCnt,
+        MvccVersion mvccVer
     ) {
-        super(cacheId, null, null, op, nearXidVer, writeVer, expireTime, partId, partCnt);
+        super(cacheId, null, null, op, nearXidVer, writeVer, expireTime, partId, partCnt, mvccVer);
 
         this.cctx = cctx;
         this.keyType = keyType;
