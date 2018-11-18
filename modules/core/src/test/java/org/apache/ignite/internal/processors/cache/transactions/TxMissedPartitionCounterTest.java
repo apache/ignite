@@ -4,8 +4,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Exchanger;
+import java.util.concurrent.TimeUnit;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -16,12 +24,18 @@ import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.pagemem.wal.WALWriteListener;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRebalanceTest;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -32,6 +46,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.eclipse.jetty.util.ConcurrentHashSet;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -119,6 +134,57 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
 
     /** */
     public void testMissedPartitionCounter() throws Exception {
+        Map<UUID, T2<CountDownLatch, Set<Long>>> latches = new ConcurrentHashMap<>();
+
+        for (Ignite ignite : G.allGrids()) {
+            IgniteEx igniteEx = (IgniteEx)ignite;
+
+            GridCacheSharedContext<Object, Object> ctx = igniteEx.context().cache().context();
+
+            IgniteTxManager tm = ctx.tm();
+
+            tm.walWriteListener(new WALWriteListener() {
+                @Override public void beforeWrite(List<DataEntry> entries) {
+                    try {
+                        long cntr = entries.get(0).partitionCounter();
+
+                        T2<CountDownLatch, Set<Long>> val = new T2<>(new CountDownLatch(2), new ConcurrentSkipListSet<>());
+                        T2<CountDownLatch, Set<Long>> oldVal = latches.putIfAbsent(ignite.cluster().localNode().id(), val);
+
+                        if (oldVal != null)
+                            val = oldVal;
+
+                        val.get2().add(cntr);
+
+                        val.get1().countDown();
+                        assertTrue(U.await(val.get1(), 10, TimeUnit.SECONDS));
+
+                        // Compute max counter and fail nodes with lesser counter before writing to WAL.
+                        long maxCntr = 0;
+
+                        for (Long cntr0 : val.get2()) {
+                            if (cntr0 > maxCntr)
+                                maxCntr = cntr0;
+                        }
+
+                        // Fail node with lowest counter
+                        if (cntr < maxCntr) {
+                            U.sleep(5000); // Give time to commit.
+
+                            throw new RuntimeException("Fail node");
+                        }
+                    }
+                    catch (IgniteInterruptedCheckedException e) {
+                        fail();
+                    }
+                }
+
+                @Override public void afterWrite(List<DataEntry> entries) {
+
+                }
+            });
+        }
+
         IgniteEx client = startGrid("client");
 
         assertNotNull(client.cache(DEFAULT_CACHE_NAME));

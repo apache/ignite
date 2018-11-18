@@ -26,18 +26,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Exchanger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.WALWriteListener;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -773,34 +771,20 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                         cctx.mvccCaching().onTxFinished(this, true);
 
                         if (!near() && !F.isEmpty(dataEntries) && cctx.wal() != null) {
-                            T2<CountDownLatch, Exchanger<Long>> newVal = new T2<>(new CountDownLatch(2), new Exchanger<Long>());
-                            T2<CountDownLatch, Exchanger<Long>> val = Ignition.latches.putIfAbsent(cctx.localNodeId(), newVal);
-
-                            if (val == null)
-                                val = newVal;
-
-                            val.get1().countDown();
-                            val.get1().await();
-
-                            long cntr = dataEntries.get(0).get2().updateCounter();
-
-                            Long otherCntr = val.get2().exchange(cntr);
-
-                            assert cntr != otherCntr;
-
-                            // Fail node with lowest counter
-                            if (cntr < otherCntr) {
-                                U.sleep(5000); // Give time to commit.
-
-                                throw new RuntimeException("Fail node");
-                            }
-
                             // Set new update counters for data entries received from persisted tx entries.
                             List<DataEntry> entriesWithCounters = dataEntries.stream()
                                 .map(tuple -> tuple.get1().partitionCounter(tuple.get2().updateCounter()))
                                 .collect(Collectors.toList());
 
+                            WALWriteListener lsnr = cctx.tm().walWriteListener();
+
+                            if (lsnr != null)
+                                lsnr.beforeWrite(entriesWithCounters);
+
                             cctx.wal().log(new DataRecord(entriesWithCounters));
+
+                            if (lsnr != null)
+                                lsnr.afterWrite(entriesWithCounters);
                         }
 
                         if (ptr != null && !cctx.tm().logTxRecords())
