@@ -195,20 +195,6 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
 
         forceCheckpoint();
 
-        TestRecordingCommunicationSpi spi0 = TestRecordingCommunicationSpi.spi(grid(0));
-
-        spi0.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
-            @Override public boolean apply(ClusterNode node, Message msg) {
-                if (msg instanceof GridDhtTxFinishRequest) {
-                    GridDhtTxFinishRequest m = (GridDhtTxFinishRequest)msg;
-
-                    return true;
-                }
-
-                return false;
-            }
-        });
-
         // Start two tx mapped to same primary partition.
         IgniteInternalFuture fut0 = runAsync(new Runnable() {
             @Override public void run() {
@@ -229,9 +215,6 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
                 }
             }
         });
-
-        spi0.waitForBlocked(4);
-        spi0.stopBlock();
 
         fut0.get();
         fut1.get();
