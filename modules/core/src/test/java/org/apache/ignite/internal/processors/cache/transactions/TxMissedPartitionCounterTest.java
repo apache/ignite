@@ -138,11 +138,26 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
 
     /** */
     public void testMissedPartitionCounter() throws Exception {
-        Map<UUID, T3<CountDownLatch, Set<Long>, Boolean>> latches = new ConcurrentHashMap<>();
+        IgniteEx client = startGrid("client");
+
+        assertNotNull(client.cache(DEFAULT_CACHE_NAME));
+
+        int part = 0;
 
         final int txCnt = 2;
 
+        List<Integer> keys = loadDataToPartition(part, DEFAULT_CACHE_NAME, 5000, 0, txCnt);
+
+        forceCheckpoint();
+
+        Ignite backupNode = backupNode(keys.get(0), DEFAULT_CACHE_NAME);
+
+        Map<UUID, T3<CountDownLatch, Set<Long>, Boolean>> latches = new ConcurrentHashMap<>();
+
         for (Ignite ignite : G.allGrids()) {
+            if (ignite != backupNode)
+                continue;
+
             IgniteEx igniteEx = (IgniteEx)ignite;
 
             GridCacheSharedContext<Object, Object> ctx = igniteEx.context().cache().context();
@@ -201,16 +216,6 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
             });
         }
 
-        IgniteEx client = startGrid("client");
-
-        assertNotNull(client.cache(DEFAULT_CACHE_NAME));
-
-        int part = 0;
-
-        List<Integer> keys = loadDataToPartition(part, DEFAULT_CACHE_NAME, 5000, 0, txCnt);
-
-        forceCheckpoint();
-
         AtomicInteger id = new AtomicInteger();
 
         IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
@@ -226,7 +231,7 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
         fut.get();
 
         // Wait for backups stop.
-        waitForTopology(2);
+        waitForTopology(GRID_CNT);
 
         awaitPartitionMapExchange();
 
@@ -237,10 +242,7 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        IgniteEx ex = startGrid(0);
-        startGrid(1);
-
-        ex.cluster().active(true);
+        Ignite ex = startGridsMultiThreaded(GRID_CNT);
 
         awaitPartitionMapExchange();
 

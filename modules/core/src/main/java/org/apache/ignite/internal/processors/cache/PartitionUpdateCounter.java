@@ -38,6 +38,10 @@ public class PartitionUpdateCounter {
     /** Initial counter. */
     private long initCntr;
 
+    /** For tracking gaps on recovery. */
+    private long hwm;
+    private long gapCnt;
+
     /**
      * @param log Logger.
      */
@@ -51,7 +55,9 @@ public class PartitionUpdateCounter {
      * @param updateCntr Init counter valus.
      */
     public void init(long updateCntr) {
-        initCntr = updateCntr;
+        initCntr = hwm = updateCntr;
+
+        gapCnt = 0;
 
         cntr.set(updateCntr);
     }
@@ -150,10 +156,19 @@ public class PartitionUpdateCounter {
      * @param cntr Sets initial counter.
      */
     public void updateInitial(long cntr) {
-        if (get() < cntr)
-            update(cntr);
+        gapCnt++;
 
-        initCntr = cntr;
+        if (cntr > hwm)
+            hwm = cntr;
+
+        if (initCntr + gapCnt == hwm) {
+            initCntr = hwm;
+
+            if (this.cntr.get() < cntr)
+                this.cntr.set(cntr);
+
+            gapCnt = 0;
+        }
     }
 
     /**
