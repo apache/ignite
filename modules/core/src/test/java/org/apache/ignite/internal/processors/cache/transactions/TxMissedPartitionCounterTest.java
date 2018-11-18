@@ -1,6 +1,7 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -36,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalR
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -49,6 +51,7 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 
+import static java.util.Collections.max;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
@@ -135,7 +138,7 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
 
     /** */
     public void testMissedPartitionCounter() throws Exception {
-        Map<UUID, T2<CountDownLatch, Set<Long>>> latches = new ConcurrentHashMap<>();
+        Map<UUID, T3<CountDownLatch, Set<Long>, Boolean>> latches = new ConcurrentHashMap<>();
 
         final int txCnt = 2;
 
@@ -151,8 +154,8 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
                     try {
                         long cntr = entries.get(0).partitionCounter();
 
-                        T2<CountDownLatch, Set<Long>> val = new T2<>(new CountDownLatch(txCnt), new ConcurrentSkipListSet<>());
-                        T2<CountDownLatch, Set<Long>> oldVal = latches.putIfAbsent(ignite.cluster().localNode().id(), val);
+                        T3<CountDownLatch, Set<Long>, Boolean> val = new T3<>(new CountDownLatch(txCnt), new ConcurrentSkipListSet<>(), Boolean.FALSE);
+                        T3<CountDownLatch, Set<Long>, Boolean> oldVal = latches.putIfAbsent(ignite.cluster().localNode().id(), val);
 
                         if (oldVal != null)
                             val = oldVal;
@@ -163,16 +166,15 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
                         assertTrue(U.await(val.get1(), 10, TimeUnit.SECONDS));
 
                         // Compute max counter and fail nodes with lesser counter before writing to WAL.
-                        long maxCntr = 0;
+                        long maxCntr = max(val.get2());
 
-                        for (Long cntr0 : val.get2()) {
-                            if (cntr0 > maxCntr)
-                                maxCntr = cntr0;
-                        }
-
-                        // Fail node with lowest counter
+                        // Fail nodes with lowest counters.
                         if (cntr < maxCntr) {
-                            U.sleep(5000); // Give time to commit.
+                            // Wait until max counter is written.
+                            synchronized (val) {
+                                while (val.get3() != Boolean.TRUE)
+                                    U.wait(val);
+                            }
 
                             throw new RuntimeException("Fail node");
                         }
@@ -183,7 +185,18 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
                 }
 
                 @Override public void afterWrite(List<DataEntry> entries) {
+                    T3<CountDownLatch, Set<Long>, Boolean> val = latches.get(ignite.cluster().localNode().id());
 
+                    long maxCntr = max(val.get2());
+
+                    // Unblock waiters after write of max counter.
+                    if (entries.get(0).partitionCounter() == maxCntr) {
+                        synchronized (val) {
+                            val.set3(Boolean.TRUE);
+
+                            val.notifyAll();
+                        }
+                    }
                 }
             });
         }
