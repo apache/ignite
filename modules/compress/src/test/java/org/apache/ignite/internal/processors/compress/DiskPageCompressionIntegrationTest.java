@@ -28,15 +28,17 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.DiskPageCompression;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
@@ -285,6 +287,49 @@ public class DiskPageCompressionIntegrationTest extends GridCommonAbstractTest {
         }
 
         fail("No files were compacted.");
+    }
+
+    /**
+     */
+    public void _testCompressionRatio() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        ignite.cluster().active(true);
+
+        String cacheName = "test";
+
+        CacheConfiguration<Integer,TestVal> ccfg = new CacheConfiguration<Integer,TestVal>()
+            .setName(cacheName)
+            .setBackups(0)
+            .setAtomicityMode(ATOMIC)
+            .setIndexedTypes(Integer.class, TestVal.class)
+            .setAffinity(new RendezvousAffinityFunction().setPartitions(10))
+            .setDiskPageCompression(ZSTD);
+//            .setDiskPageCompressionLevel(compressionLevel);
+
+        ignite.getOrCreateCache(ccfg);
+
+        IgniteInternalCache<Integer,TestVal> cache = ignite.cachex(cacheName);
+
+        CacheGroupMetricsMXBean mx = cache.context().group().mxBean();
+
+        GridCacheDatabaseSharedManager dbMgr = ((GridCacheDatabaseSharedManager)ignite.context()
+            .cache().context().database());
+
+        int cnt = 20_000_000;
+
+        for (int i = 0; i < cnt; i++) {
+            assertTrue(cache.putIfAbsent(i, new TestVal(i)));
+
+            if (i % 50_000 == 0) {
+                dbMgr.forceCheckpoint("test").finishFuture().get();
+
+                long sparse = mx.getSparseStorageSize();
+                long size = mx.getStorageSize();
+
+                System.out.println(i + " >> " + sparse + " / " + size + " = " + ((double)sparse / size));
+            }
+        }
     }
 
     /**
