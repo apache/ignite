@@ -435,15 +435,6 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    @Override public void testSqlQueryEvents() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8765");
-
-        super.testSqlQueryEvents();
-    }
-
-    /**
      * Cache key.
      */
     public static class CacheKey implements Externalizable {
