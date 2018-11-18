@@ -480,4 +480,22 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
         pageReplaceRate = new HitRateMetrics((int)rateTimeInterval, subInts);
         pageReplaceAge = new HitRateMetrics((int)rateTimeInterval, subInts);
     }
+
+    /**
+     * Clear metrics.
+     */
+    public void clear() {
+        totalAllocatedPages.reset();
+        largeEntriesPages.reset();
+        dirtyPages.reset();
+        readPages.reset();
+        writtenPages.reset();
+        replacedPages.reset();
+        offHeapSize.set(0);
+        checkpointBufferSize.set(0);
+        allocRate.clear();
+        evictRate.clear();
+        pageReplaceRate.clear();
+        pageReplaceAge.clear();
+    }
 }
