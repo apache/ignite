@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteSystemProperties;
@@ -136,6 +137,8 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
     public void testMissedPartitionCounter() throws Exception {
         Map<UUID, T2<CountDownLatch, Set<Long>>> latches = new ConcurrentHashMap<>();
 
+        final int txCnt = 2;
+
         for (Ignite ignite : G.allGrids()) {
             IgniteEx igniteEx = (IgniteEx)ignite;
 
@@ -148,7 +151,7 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
                     try {
                         long cntr = entries.get(0).partitionCounter();
 
-                        T2<CountDownLatch, Set<Long>> val = new T2<>(new CountDownLatch(2), new ConcurrentSkipListSet<>());
+                        T2<CountDownLatch, Set<Long>> val = new T2<>(new CountDownLatch(txCnt), new ConcurrentSkipListSet<>());
                         T2<CountDownLatch, Set<Long>> oldVal = latches.putIfAbsent(ignite.cluster().localNode().id(), val);
 
                         if (oldVal != null)
@@ -191,41 +194,31 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
 
         int part = 0;
 
-        List<Integer> keys = loadDataToPartition(part, DEFAULT_CACHE_NAME, 5000, 0, 2);
+        List<Integer> keys = loadDataToPartition(part, DEFAULT_CACHE_NAME, 5000, 0, txCnt);
 
         forceCheckpoint();
 
-        // Start two tx mapped to same primary partition.
-        IgniteInternalFuture fut0 = runAsync(new Runnable() {
-            @Override public void run() {
-                try(Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
-                    client.cache(DEFAULT_CACHE_NAME).put(keys.get(0), 0);
+        AtomicInteger id = new AtomicInteger();
 
-                    tx.commit();
-                }
+        IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
+            try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
+                int idx = id.getAndIncrement();
+
+                client.cache(DEFAULT_CACHE_NAME).put(keys.get(idx), idx);
+
+                tx.commit();
             }
-        });
+        }, txCnt, "tx-thread");
 
-        IgniteInternalFuture fut1 = runAsync(new Runnable() {
-            @Override public void run() {
-                try(Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
-                    client.cache(DEFAULT_CACHE_NAME).put(keys.get(1), 1);
-
-                    tx.commit();
-                }
-            }
-        });
-
-        fut0.get();
-        fut1.get();
+        fut.get();
 
         // Wait for backups stop.
         waitForTopology(2);
 
         awaitPartitionMapExchange();
 
-        assertEquals(0, client.cache(DEFAULT_CACHE_NAME).get(keys.get(0)));
-        assertEquals(1, client.cache(DEFAULT_CACHE_NAME).get(keys.get(1)));
+        for (int i = 0; i < txCnt; i++)
+            assertEquals(i, client.cache(DEFAULT_CACHE_NAME).get(keys.get(i)));
 
         forceCheckpoint();
 
