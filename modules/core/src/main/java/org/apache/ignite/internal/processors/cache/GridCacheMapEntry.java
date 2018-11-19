@@ -2523,7 +2523,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     topVer);
             }
 
-            if (intercept && !c.disableInterceptAfterFlag) {
+            if (intercept && !c.wasIntercepted) {
                 if (c.op == GridCacheOperation.UPDATE) {
                     cctx.config().getInterceptor().onAfterPut(new CacheLazyEntry(
                         cctx,
@@ -5849,7 +5849,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         private boolean oldRowExpiredFlag = false;
 
         /** Disable interceptor invocation onAfter* methods flag. */
-        private boolean disableInterceptAfterFlag = false;
+        private boolean wasIntercepted = false;
 
         AtomicCacheUpdateClosure(
             GridCacheMapEntry entry,
@@ -6281,8 +6281,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 Object interceptorVal = updated0;
 
-                if (!(disableInterceptAfterFlag = cctx.dr().cacheInterceptorDisabled() && conflictVer != null))
+                if (conflictVer == null || !cctx.dr().cacheInterceptorDisabled()) {
                     interceptorVal = cctx.config().getInterceptor().onBeforePut(interceptEntry, updated0);
+
+                    wasIntercepted = true;
+                }
 
                 if (interceptorVal == null) {
                     treeOp = IgniteTree.OperationType.NOOP;
@@ -6390,10 +6393,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     null,
                     keepBinary);
 
-                if (disableInterceptAfterFlag = cctx.dr().cacheInterceptorDisabled() && conflictVer != null)
-                    interceptRes = new IgniteBiTuple<>(false, intercepEntry.getValue());
-                else
+                if (conflictVer == null || !cctx.dr().cacheInterceptorDisabled()) {
                     interceptRes = cctx.config().getInterceptor().onBeforeRemove(intercepEntry);
+
+                    wasIntercepted = true;
+                } else
+                    interceptRes = new IgniteBiTuple<>(false, intercepEntry.getValue());
 
                 if (cctx.cancelRemove(interceptRes)) {
                     treeOp = IgniteTree.OperationType.NOOP;
