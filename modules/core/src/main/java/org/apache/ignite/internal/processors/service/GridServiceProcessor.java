@@ -21,13 +21,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
@@ -609,8 +607,6 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
             GridServiceDeploymentCompoundFuture res = new GridServiceDeploymentCompoundFuture();
 
             if (!cfgsCp.isEmpty()) {
-                cfgsCp.sort(Comparator.comparing(ServiceConfiguration::getName));
-
                 try {
                     Collection<DynamicServiceChangeRequest> reqs = new ArrayList<>();
 
@@ -835,8 +831,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
         try {
             ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE, null);
 
-            Collection<ServiceContextImpl> ctxs = Optional.ofNullable(lookupDeployedServiceId(name))
-                .map(locServices::get).orElse(null);
+            Collection<ServiceContextImpl> ctxs = serviceContexts(name);
 
             if (F.isEmpty(ctxs))
                 return null;
@@ -864,8 +859,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
             return null;
 
         try {
-            Collection<ServiceContextImpl> ctxs = Optional.ofNullable(lookupDeployedServiceId(name))
-                .map(locServices::get).orElse(null);
+            Collection<ServiceContextImpl> ctxs = serviceContexts(name);
 
             if (F.isEmpty(ctxs))
                 return null;
@@ -880,6 +874,19 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
         finally {
             leaveBusy();
         }
+    }
+
+    /**
+     * @param name Service name.
+     * @return Collection of locally deployed instance if present.
+     */
+    @Nullable private Collection<ServiceContextImpl> serviceContexts(String name) {
+        IgniteUuid srvcId = lookupDeployedServiceId(name);
+
+        if (srvcId == null)
+            return null;
+
+        return locServices.get(srvcId);
     }
 
     /**
@@ -942,8 +949,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
         try {
             ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE, null);
 
-            Collection<ServiceContextImpl> ctxs = Optional.ofNullable(lookupDeployedServiceId(name))
-                .map(locServices::get).orElse(null);
+            Collection<ServiceContextImpl> ctxs = serviceContexts(name);
 
             if (F.isEmpty(ctxs))
                 return null;
