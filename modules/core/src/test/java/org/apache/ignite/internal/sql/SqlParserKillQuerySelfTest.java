@@ -18,7 +18,6 @@
 
 package org.apache.ignite.internal.sql;
 
-import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlKillQueryCommand;
@@ -29,43 +28,45 @@ import org.junit.Assert;
  */
 public class SqlParserKillQuerySelfTest extends SqlParserAbstractSelfTest {
     /** */
-    private static final String TEST_UUID = "b3c0624a-122c-46ea-9d65-67b56df00001";
-    /** */
     private static final long TEST_QRY_ID = 341;
 
     /**
      * Tests for KILL QUERY command.
      */
     public void testKillQuery() {
-        UUID uuid = UUID.randomUUID();
+        int nodeId = ThreadLocalRandom.current().nextInt();
 
         long qryId = ThreadLocalRandom.current().nextLong();
 
-        assertKillQuery("KILL QUERY " + uuid.toString() + " " + qryId, uuid, qryId);
+        assertKillQuery("KILL QUERY '" + nodeId + "." + qryId + "'", nodeId, qryId);
 
-        assertKillQuery("KILL QUERY " + TEST_UUID + " " + TEST_QRY_ID, UUID.fromString(TEST_UUID), TEST_QRY_ID);
+        assertKillQuery("KILL QUERY '" + nodeId + "." + TEST_QRY_ID + "'", nodeId, TEST_QRY_ID);
 
-        assertKillQuery("kill query " + TEST_UUID + " " + TEST_QRY_ID, UUID.fromString(TEST_UUID), TEST_QRY_ID);
+        assertKillQuery("kill query '" + nodeId + "." + TEST_QRY_ID + "'", nodeId, TEST_QRY_ID);
 
-        assertKillQuery("kIlL qUeRy " + TEST_UUID + " " + TEST_QRY_ID, UUID.fromString(TEST_UUID), TEST_QRY_ID);
+        assertKillQuery("kIlL qUeRy '" + nodeId + "." + TEST_QRY_ID + "'", nodeId, TEST_QRY_ID);
 
-        assertKillQuery("KILL QUERY " + TEST_UUID.toUpperCase() + " " + TEST_QRY_ID, UUID.fromString(TEST_UUID), TEST_QRY_ID);
+        assertKillQuery("KILL QUERY '" + nodeId + "." + TEST_QRY_ID + "'", nodeId, TEST_QRY_ID);
 
-        assertParseError("KILL " + TEST_UUID + " " + TEST_QRY_ID, "Unexpected token: \"B3C0624A\" (expected: \"QUERY\")");
+        assertKillQuery("KILL QUERY '" + nodeId + ".*'", nodeId, SqlKillQueryCommand.ALL_QUERIES);
 
-        assertParseError("KILL QUERY", "Unexpected end of command (expected: \"[UUID]\")");
+        assertParseError("KILL QUERY '321.*1'", "Unexpected token: \"321.*1\" (expected: \"[global query id]\")");
 
-        assertParseError("KILL QUERY b3c0624a122c-46ea-9d65-67b56df00001 123", "Unexpected token: \"67B56DF00001\" (expected: \"[UUID]");
+        assertParseError("KILL QUERY '321.123' 1", "Unexpected token: \"1\"");
 
-        assertParseError("KILL QUERY b3c0624a-122c1-46ea-9d65-67b56df00001 123", "Unexpected token: \"67B56DF00001\" (expected: \"[UUID]\"");
+        assertParseError("KILL QUERY '321.123 1'", "Unexpected token: \"321.123 1\" (expected: \"[global query id]\")");
 
-        assertParseError("KILL QUERY " + TEST_UUID, "Unexpected end of command (expected: \"[long]\")");
+        assertParseError("KILL '" + nodeId + "." + TEST_QRY_ID + "'", "Unexpected token: \"" + nodeId + ".341\" (expected: \"QUERY\")");
 
-        assertParseError("KILL QUERY " + TEST_UUID + " ", "Unexpected end of command (expected: \"[long]\")");
+        assertParseError("KILL QUERY", "Unexpected end of command (expected: \"[global query id]\")");
 
-        assertParseError("KILL QUERY " + TEST_UUID + " aaa", "Unexpected token: \"AAA\" (expected: \"[long]\")");
+        assertParseError("KILL QUERY 321.123", "Unexpected token: \"321\" (expected: \"[global query id]\")");
 
-        assertParseError("KILL QUERY " + TEST_UUID + " " + TEST_QRY_ID + " " + 1, "Unexpected token: \"1\"");
+        assertParseError("KILL QUERY 321 123", "Unexpected token: \"321\" (expected: \"[global query id]\")");
+
+        assertParseError("KILL QUERY '321 123'", "Unexpected token: \"321 123\" (expected: \"[global query id]\")");
+
+        assertParseError("KILL QUERY 123", "Unexpected token: \"123\" (expected: \"[global query id]\")");
 
     }
 
@@ -83,17 +84,17 @@ public class SqlParserKillQuerySelfTest extends SqlParserAbstractSelfTest {
      * Test that given SQL is parsed as a KILL QUERY command and all parsed parameters have expected values.
      *
      * @param sql command.
-     * @param uuidExp Expected UUID.
+     * @param nodeIdExp Expected UUID.
      * @param qryIdExp Expected query id.
      */
-    private static void assertKillQuery(String sql, UUID uuidExp, long qryIdExp) {
+    private static void assertKillQuery(String sql, int nodeIdExp, long qryIdExp) {
         SqlCommand cmd = parse(sql);
 
         Assert.assertTrue(cmd instanceof SqlKillQueryCommand);
 
         SqlKillQueryCommand killQryCmd = (SqlKillQueryCommand)cmd;
 
-        Assert.assertEquals(uuidExp, killQryCmd.getNodeId());
+        Assert.assertEquals(nodeIdExp, killQryCmd.getNodeId());
 
         Assert.assertEquals(qryIdExp, killQryCmd.getNodeQryId());
     }

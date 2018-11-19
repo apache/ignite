@@ -19,6 +19,8 @@ package org.apache.ignite.internal.sql;
 
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.sql.command.SqlGlobalQueryId;
+import org.apache.ignite.internal.sql.command.SqlKillQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlQualifiedName;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -254,6 +256,39 @@ public class SqlParserUtils {
             return lex.token();
 
         throw errorUnexpectedToken(lex, "[string]", additionalExpTokens);
+    }
+
+    /**
+     * Process global query id.
+     *
+     * @param lex Lexer.
+     * @return Global query id.
+     */
+    public static SqlGlobalQueryId parseGlobalQueryId(SqlLexer lex) {
+        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.STRING) {
+            String token = lex.token();
+
+            String[] ids = token.split("\\.");
+
+            if (ids.length == 2) {
+                try {
+                    int nodeOrderId = Integer.parseInt(ids[0]);
+                    long qryId;
+
+                    if (ids[1].trim().equals("*"))
+                        qryId = SqlKillQueryCommand.ALL_QUERIES;
+                    else
+                        qryId = Long.parseLong(ids[1]);
+
+                    return new SqlGlobalQueryId(nodeOrderId, qryId);
+                }
+                catch (NumberFormatException e) {
+                    // Fall through.
+                }
+            }
+        }
+
+        throw errorUnexpectedToken(lex, "[global query id]");
     }
 
     /**

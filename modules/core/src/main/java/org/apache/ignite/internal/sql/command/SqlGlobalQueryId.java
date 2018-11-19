@@ -18,59 +18,53 @@
 
 package org.apache.ignite.internal.sql.command;
 
-import org.apache.ignite.internal.sql.SqlLexer;
-import org.apache.ignite.internal.sql.SqlParserUtils;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
-/**
- * KILL QUERY command.
- */
-public class SqlKillQueryCommand implements SqlCommand {
-    /** Special value to math all query ids. */
-    public static final long ALL_QUERIES = Long.MIN_VALUE;
+public class SqlGlobalQueryId {
     /** Node order id. */
     private int nodeOrderId;
     /** Node query id. */
     private long nodeQryId;
 
-    /** {@inheritDoc} */
-    @Override public SqlCommand parse(SqlLexer lex) {
-        SqlGlobalQueryId globalQryId = SqlParserUtils.parseGlobalQueryId(lex);
-
-        nodeOrderId = globalQryId.nodeOrderId();
-
-        nodeQryId = globalQryId.nodeQryId();
-
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String schemaName() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void schemaName(String schemaName) {
-        // No-op.
-    }
-
     /**
-     * @return Node query id.
+     * @param nodeQryId Node query id.
+     * @param nodeOrderId Node order id.
      */
-    public long getNodeQryId() {
-        return nodeQryId;
-    }
-
-    /**
-     * @return {@code true} in case all queries on a node.
-     */
-    public boolean isAllQueries() {
-        return nodeQryId == ALL_QUERIES;
+    public SqlGlobalQueryId(int nodeOrderId, long nodeQryId) {
+        this.nodeOrderId = nodeOrderId;
+        this.nodeQryId = nodeQryId;
     }
 
     /**
      * @return Node order id.
      */
-    public int getNodeId() {
+    public int nodeOrderId() {
         return nodeOrderId;
+    }
+
+    /**
+     * @param nodeOrderId Node order id.
+     */
+    public void nodeOrderId(int nodeOrderId) {
+        this.nodeOrderId = nodeOrderId;
+    }
+
+    /**
+     * @return Node query id.
+     */
+    public long nodeQryId() {
+        return nodeQryId;
+    }
+
+    /**
+     * @param nodeQryId Node query id.
+     */
+    public void nodeQryId(long nodeQryId) {
+        this.nodeQryId = nodeQryId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(SqlGlobalQueryId.class, this);
     }
 }
