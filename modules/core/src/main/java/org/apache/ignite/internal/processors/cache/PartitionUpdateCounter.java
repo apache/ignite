@@ -159,6 +159,10 @@ public class PartitionUpdateCounter {
         if (cntr <= initCntr)
             return;
 
+        // 0 mean counter reset.
+        if (cntr == 0)
+            initCntr = 0;
+
         gapCnt++;
 
         if (cntr > hwm)
