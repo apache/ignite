@@ -21,8 +21,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -31,7 +29,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -52,11 +49,9 @@ import org.junit.runners.JUnit4;
 
 import static java.util.function.Predicate.isEqual;
 import static java.util.stream.Collectors.toList;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_PRELOAD_RESEND_TIMEOUT;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
-import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -73,13 +68,6 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
 
     /** */
     private boolean persistenceEnabled = true;
-
-    /** */
-    CacheConfiguration[] ccfg = new CacheConfiguration[] {
-        cacheConfiguration(CACHE_NAMES[0], CacheAtomicityMode.ATOMIC),
-        cacheConfiguration(CACHE_NAMES[1], CacheAtomicityMode.ATOMIC),
-        cacheConfiguration(CACHE_NAMES[2], CacheAtomicityMode.TRANSACTIONAL)
-    };
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -117,6 +105,12 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
         cfg.setDataStorageConfiguration(storageCfg);
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
+
+        CacheConfiguration[] ccfg = new CacheConfiguration[] {
+            cacheConfiguration(CACHE_NAMES[0], CacheAtomicityMode.ATOMIC),
+            cacheConfiguration(CACHE_NAMES[1], CacheAtomicityMode.ATOMIC),
+            cacheConfiguration(CACHE_NAMES[2], CacheAtomicityMode.TRANSACTIONAL)
+        };
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -256,89 +250,65 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
     }
 
     /**
-     * todo
+     * Check that there is no duplicate partition owners after reset lost partitions.
      *
      * @throws Exception if fail.
      */
     public void testDuplicateOwners() throws Exception {
         persistenceEnabled = false;
 
-        ccfg = null;
+        int gridCnt = 4;
 
-        System.setProperty(IGNITE_PRELOAD_RESEND_TIMEOUT, "0");
+        long timeout = 5_000;
 
-        try {
-            int gridCnt = 4;
+        Ignite node = startGridsMultiThreaded(gridCnt);
 
-            long timeout = 3_000;
+        IgniteCache<Integer, Integer> cache = node.createCache(
+            new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME)
+                .setPartitionLossPolicy(PartitionLossPolicy.READ_WRITE_SAFE));
 
-            Ignite node = startGridsMultiThreaded(gridCnt);
+        for (int i = 0; i < CACHE_SIZE; i++)
+            cache.put(i, i);
 
-            IgniteCache<Integer, Integer> cache = node.createCache(
-                new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME)
-                    .setBackups(0)
-                    .setPartitionLossPolicy(PartitionLossPolicy.READ_WRITE_SAFE));
+        int failedNodeIdx = gridCnt - 1;
 
-            for (int i = 0; i < CACHE_SIZE; i++)
-                cache.put(i, i);
+        int lostPartsCnt = count(DEFAULT_CACHE_NAME, OWNING, failedNodeIdx);
 
-            int failedNodeIdx = gridCnt - 1;
+        stopGrid(failedNodeIdx);
 
-            int lostPartsCnt = count(DEFAULT_CACHE_NAME, OWNING, failedNodeIdx);
+        int[] liveIdxs = new int[] {0, 1, 2};
 
-            grid(0).affinity(DEFAULT_CACHE_NAME).partitions();
+        waitForCondition(() -> lostPartsCnt == count(DEFAULT_CACHE_NAME, LOST, liveIdxs), timeout);
+        assertEquals(lostPartsCnt, count(DEFAULT_CACHE_NAME, LOST, liveIdxs));
 
-            stopGrid(failedNodeIdx);
+        startGrid(failedNodeIdx);
 
-            boolean allLostPartsDetected = waitForCondition(() -> {
-                for (Ignite grid : G.allGrids()) {
-                    if (grid.cache(DEFAULT_CACHE_NAME).lostPartitions().size() != lostPartsCnt)
-                        return false;
-                }
+        waitForCondition(() -> lostPartsCnt == count(DEFAULT_CACHE_NAME, LOST, failedNodeIdx), timeout);
+        assertEquals(lostPartsCnt, count(DEFAULT_CACHE_NAME, LOST, failedNodeIdx));
 
-                return true;
-            }, timeout);
+        waitForCondition(() -> 0 == count(DEFAULT_CACHE_NAME, LOST, liveIdxs), timeout);
+        assertEquals(0, count(DEFAULT_CACHE_NAME, LOST, liveIdxs));
 
-            assertTrue(allLostPartsDetected);
+        for (Ignite grid : G.allGrids()) {
+            GridCacheSharedContext cctx = ((IgniteEx)grid).context().cache().context();
 
-            startGrid(failedNodeIdx);
+            cctx.exchange().affinityReadyFuture(cctx.discovery().topologyVersionEx()).get(timeout);
 
-            boolean victimLostPartsDetected =
-                waitForCondition(() -> lostPartsCnt == count(DEFAULT_CACHE_NAME, LOST, failedNodeIdx), timeout);
-
-            assertTrue(victimLostPartsDetected);
-
-            // Wait for rebalance.
-            for (Ignite grid : G.allGrids()) {
-                GridCacheSharedContext cctx = ((IgniteEx)grid).context().cache().context();
-
-                cctx.exchange().affinityReadyFuture(new AffinityTopologyVersion(6, 0)).get(timeout);
-
-                for (GridCacheContext ctx : (Collection<GridCacheContext>)cctx.cacheContexts())
-                    ctx.preloader().rebalanceFuture().get(timeout);
-
-                AtomicReference<?> ref = getFieldValue(cctx.exchange(), "pendingResend");
-
-                assert waitForCondition(() -> ref == null || ref.get() == null, 5_000);
-            }
-
-            grid(0).resetLostPartitions(Collections.singleton(DEFAULT_CACHE_NAME));
-
-            boolean victimPartsDetected =
-                waitForCondition(() -> lostPartsCnt == count(DEFAULT_CACHE_NAME, OWNING, failedNodeIdx), timeout);
-
-            assertTrue(victimPartsDetected);
-
-            int parts = grid(0).cachex(DEFAULT_CACHE_NAME).configuration().getAffinity().partitions();
-
-            int[] idxs = IntStream.range(0, gridCnt).toArray();
-
-            waitForCondition(() -> count(DEFAULT_CACHE_NAME, OWNING, idxs) == parts, timeout);
-
-            assertEquals(parts, count(DEFAULT_CACHE_NAME, OWNING, idxs));
-        } finally {
-            System.clearProperty(IGNITE_PRELOAD_RESEND_TIMEOUT);
+            for (GridCacheContext ctx : (Collection<GridCacheContext>)cctx.cacheContexts())
+                ctx.preloader().rebalanceFuture().get(timeout);
         }
+
+        node.resetLostPartitions(Collections.singleton(DEFAULT_CACHE_NAME));
+
+        waitForCondition(() -> lostPartsCnt == count(DEFAULT_CACHE_NAME, OWNING, failedNodeIdx), timeout);
+        assertEquals(lostPartsCnt, count(DEFAULT_CACHE_NAME, OWNING, failedNodeIdx));
+
+        int parts = grid(0).affinity(DEFAULT_CACHE_NAME).partitions();
+
+        int[] allIdxs = new int[] {0, 1, 2, 3};
+
+        waitForCondition(() -> parts == count(DEFAULT_CACHE_NAME, OWNING, allIdxs), timeout);
+        assertEquals(parts, count(DEFAULT_CACHE_NAME, OWNING, allIdxs));
     }
 
     /**
