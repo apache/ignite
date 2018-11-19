@@ -18,7 +18,6 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-
 import org.apache.ignite.cache.affinity.rendezvous.ClusterNodeAttributeAffinityBackupFilterSelfTest;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionBackupFilterSelfTest;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionExcludeNeighborsSelfTest;
@@ -145,7 +144,6 @@ import org.apache.ignite.internal.processors.cache.local.GridCacheLocalTxSingleT
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalTxTimeoutSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicyInitializationTest;
 import org.apache.ignite.internal.processors.continuous.IgniteNoCustomEventsOnNodeStart;
-import org.apache.ignite.testframework.junits.GridAbstractTest;
 
 /**
  * Test suite.
@@ -156,8 +154,6 @@ public class IgniteCacheTestSuite2 extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        System.setProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, "false");
-
         TestSuite suite = new TestSuite("IgniteCache Test Suite part 2");
 
         // Local cache.

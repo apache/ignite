@@ -345,17 +345,20 @@ public interface GridDhtPartitionTopology {
     public Collection<Integer> lostPartitions();
 
     /**
+     * Pre-processes partition update counters before exchange.
+     */
+    void finalizeUpdateCounters();
+
+    /**
      * @return Partition update counters.
      */
     public CachePartitionFullCountersMap fullUpdateCounters();
 
     /**
      * @param skipZeros {@code True} for adding zero counter to map.
-     * @param finalizeCntrsBeforeCollecting {@code True} indicates that partition counters should be finalized.
      * @return Partition update counters.
      */
-    public CachePartitionPartialCountersMap localUpdateCounters(boolean skipZeros,
-        boolean finalizeCntrsBeforeCollecting);
+    public CachePartitionPartialCountersMap localUpdateCounters(boolean skipZeros);
 
     /**
      * @return Partition cache sizes.

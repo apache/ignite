@@ -134,6 +134,7 @@ import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.PARTIAL_COUNTERS_MAP_SINCE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture.nextDumpTimeout;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader.DFLT_PRELOAD_RESEND_TIMEOUT;
 
@@ -1335,7 +1336,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         @NotNull Collection<CacheGroupContext> grps
     ) {
         GridDhtPartitionsSingleMessage m =
-            createPartitionsSingleMessage(id, cctx.kernalContext().clientNode(), false, false, null, grps);
+            createPartitionsSingleMessage(id,
+                cctx.kernalContext().clientNode(),
+                false,
+                node.version().compareToIgnoreTimestamp(PARTIAL_COUNTERS_MAP_SINCE) >= 0,
+                null,
+                grps);
 
         if (log.isTraceEnabled())
             log.trace("Sending local partitions [nodeId=" + node.id() + ", msg=" + m + ']');
@@ -1411,7 +1417,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     grp.affinity().similarAffinityKey());
 
                 if (sndCounters) {
-                    CachePartitionPartialCountersMap cntrsMap = grp.topology().localUpdateCounters(true, true);
+                    CachePartitionPartialCountersMap cntrsMap = grp.topology().localUpdateCounters(true);
 
                     m.addPartitionUpdateCounters(grp.groupId(),
                         newCntrMap ? cntrsMap : CachePartitionPartialCountersMap.toCountersMap(cntrsMap));
@@ -1435,7 +1441,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 top.similarAffinityKey());
 
             if (sndCounters) {
-                CachePartitionPartialCountersMap cntrsMap = top.localUpdateCounters(true, true);
+                CachePartitionPartialCountersMap cntrsMap = top.localUpdateCounters(true);
 
                 m.addPartitionUpdateCounters(top.groupId(),
                     newCntrMap ? cntrsMap : CachePartitionPartialCountersMap.toCountersMap(cntrsMap));

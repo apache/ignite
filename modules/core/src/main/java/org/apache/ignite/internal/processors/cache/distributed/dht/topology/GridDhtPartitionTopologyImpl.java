@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridAtomicLong;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -68,7 +69,6 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -887,8 +887,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             locParts.set(p, part);
 
-            ctx.pageStore().onPartitionCreated(grp.groupId(), p);
-
             return part;
         }
         finally {
@@ -1349,7 +1347,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     @Override public boolean update(
         @Nullable AffinityTopologyVersion exchangeVer,
         GridDhtPartitionFullMap partMap,
@@ -1723,7 +1720,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     @Override public boolean update(
         @Nullable GridDhtPartitionExchangeId exchId,
         GridDhtPartitionMap parts,
@@ -2135,8 +2131,15 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         if (locPart != null && locPart.state() == LOST) {
                             boolean marked = locPart.own();
 
-                            if (marked)
+                            if (marked) {
                                 updateLocal(locPart.id(), locPart.state(), updSeq, resTopVer);
+
+                                long updateCntr = locPart.updateCounter();
+
+                                //Set update counters to 0, for full rebalance.
+                                locPart.updateCounter(updateCntr, -updateCntr);
+                                locPart.initialUpdateCounter(0);
+                            }
                         }
                     }
                 }
@@ -2437,7 +2440,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * @param affVer Affinity version.
      * @return Update sequence.
      */
-    @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     private long updateLocal(int p, GridDhtPartitionState state, long updateSeq, AffinityTopologyVersion affVer) {
         assert lock.isWriteLockedByCurrentThread();
 
@@ -2646,6 +2648,49 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         }
     }
 
+    /**
+     * Pre-processes partition update counters before exchange.
+     */
+    @Override public void finalizeUpdateCounters() {
+        if (!grp.mvccEnabled())
+            return;
+
+        // It is need to acquire checkpoint lock before topology lock acquiring.
+        ctx.database().checkpointReadLock();
+
+        try {
+            lock.readLock().lock();
+
+            try {
+                for (int i = 0; i < locParts.length(); i++) {
+                    GridDhtLocalPartition part = locParts.get(i);
+
+                    if (part != null && part.state().active()) {
+                        // We need to close all gaps in partition update counters sequence. We assume this finalizing is
+                        // happened on exchange and hence all txs are completed. Therefore each gap in update counters
+                        // sequence is a result of undelivered DhtTxFinishMessage on backup (sequences on primary nodes
+                        // do not have gaps). Here we close these gaps and asynchronously notify continuous query engine
+                        // about the skipped events.
+                        AffinityTopologyVersion topVer = ctx.exchange().readyAffinityVersion();
+
+                        GridLongList gaps = part.finalizeUpdateCounters();
+
+                        if (gaps != null) {
+                            for (GridCacheContext ctx0 : grp.caches())
+                                ctx0.continuousQueries().closeBackupUpdateCountersGaps(ctx0, part.id(), topVer, gaps);
+                        }
+                    }
+                }
+            }
+            finally {
+                lock.readLock().unlock();
+            }
+        }
+        finally {
+            ctx.database().checkpointReadUnlock();
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public CachePartitionFullCountersMap fullUpdateCounters() {
         lock.readLock().lock();
@@ -2659,8 +2704,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public CachePartitionPartialCountersMap localUpdateCounters(boolean skipZeros,
-        boolean finalizeCntrsBeforeCollecting) {
+    @Override public CachePartitionPartialCountersMap localUpdateCounters(boolean skipZeros) {
         lock.readLock().lock();
 
         try {
@@ -2680,22 +2724,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 if (part == null)
                     continue;
-
-                if (finalizeCntrsBeforeCollecting && grp.mvccEnabled()) {
-                    // We need to close all gaps in partition update counters sequence. We assume this finalizing is
-                    // happened on exchange and hence all txs are completed. Therefore each gap in update counters
-                    // sequence is a result of undelivered DhtTxFinishMessage on backup (sequences on primary nodes
-                    // do not have gaps). Here we close these gaps and asynchronously notify continuous query engine
-                    // about the skipped events.
-                    AffinityTopologyVersion topVer = ctx.exchange().readyAffinityVersion();
-
-                    part.finalizeUpdateCounters(new IgniteInClosure<Long>() {
-                        @Override public void apply(Long cntr) {
-                            for (GridCacheContext ctx0 : grp.caches())
-                                ctx0.continuousQueries().skipUpdateCounter(null, part.id(), cntr, topVer, false);
-                        }
-                    });
-                }
 
                 long updCntr = part.updateCounter();
                 long initCntr = part.initialUpdateCounter();

@@ -27,13 +27,11 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
  */
 public class GridCacheMultinodeUpdateNearEnabledSelfTest extends GridCacheMultinodeUpdateAbstractSelfTest {
     /** {@inheritDoc} */
-    @SuppressWarnings("RedundantMethodOverride")
     @Override protected NearCacheConfiguration nearConfiguration() {
         return new NearCacheConfiguration();
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("RedundantMethodOverride")
     @Override protected CacheAtomicityMode atomicityMode() {
         return TRANSACTIONAL;
     }

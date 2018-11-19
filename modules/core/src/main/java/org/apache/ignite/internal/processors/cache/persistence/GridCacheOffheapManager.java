@@ -96,7 +96,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
@@ -1723,12 +1722,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public void finalizeUpdateCounters(IgniteInClosure<Long> onGapClose) {
+        @Override public GridLongList finalizeUpdateCounters() {
             try {
                 CacheDataStore delegate0 = init0(true);
 
-                if (delegate0 != null)
-                    delegate0.finalizeUpdateCounters(onGapClose);
+                return delegate0 != null ? delegate0.finalizeUpdateCounters() : null;
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -1927,6 +1925,14 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             CacheDataStore delegate = init0(false);
 
             delegate.mvccRemoveAll(cctx, key);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void mvccApplyUpdate(GridCacheContext cctx, KeyCacheObject key, CacheObject val, GridCacheVersion ver,
+            long expireTime, MvccVersion mvccVer) throws IgniteCheckedException {
+            CacheDataStore delegate = init0(false);
+
+            delegate.mvccApplyUpdate(cctx, key, val, ver, expireTime, mvccVer);
         }
 
         /** {@inheritDoc} */

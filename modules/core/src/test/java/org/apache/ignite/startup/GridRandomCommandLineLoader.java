@@ -299,7 +299,6 @@ public final class GridRandomCommandLineLoader {
      * @return List of configurations.
      * @throws IgniteCheckedException If an error occurs.
      */
-    @SuppressWarnings("unchecked")
     private static IgniteConfiguration getConfiguration(String springCfgPath, @Nullable String logCfgPath)
         throws IgniteCheckedException {
         assert springCfgPath != null;

@@ -45,9 +45,11 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterGroup;
@@ -306,7 +308,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * Test job to test possible indefinite recursion in detecting peer deploy aware.
      */
-    @SuppressWarnings({"UnusedDeclaration"})
     private class SelfReferencedJob extends ComputeJobAdapter implements GridPeerDeployAware {
         /** */
         private SelfReferencedJob ref;
@@ -886,18 +887,26 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     public void testDoInParallel() throws Throwable {
         CyclicBarrier barrier = new CyclicBarrier(3);
 
-        IgniteUtils.doInParallel(3,
-            Executors.newFixedThreadPool(3),
-            Arrays.asList(1, 2, 3),
-            i -> {
-                try {
-                    barrier.await(1, TimeUnit.SECONDS);
+        ExecutorService executorService = Executors.newFixedThreadPool(3);
+
+        try {
+            IgniteUtils.doInParallel(3,
+                executorService,
+                Arrays.asList(1, 2, 3),
+                i -> {
+                    try {
+                        barrier.await(1, TimeUnit.SECONDS);
+                    }
+                    catch (Exception e) {
+                        throw new IgniteCheckedException(e);
+                    }
+
+                    return null;
                 }
-                catch (Exception e) {
-                    throw new IgniteCheckedException(e);
-                }
-            }
-        );
+            );
+        } finally {
+            executorService.shutdownNow();
+        }
     }
 
     /**
@@ -906,9 +915,11 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     public void testDoInParallelBatch() {
         CyclicBarrier barrier = new CyclicBarrier(3);
 
+        ExecutorService executorService = Executors.newFixedThreadPool(3);
+
         try {
             IgniteUtils.doInParallel(2,
-                Executors.newFixedThreadPool(3),
+                executorService,
                 Arrays.asList(1, 2, 3),
                 i -> {
                     try {
@@ -917,6 +928,8 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
                     catch (Exception e) {
                         throw new IgniteCheckedException(e);
                     }
+
+                    return null;
                 }
             );
 
@@ -924,7 +937,85 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         }
         catch (Exception e) {
             assertTrue(e.toString(), X.hasCause(e, TimeoutException.class));
+        } finally {
+            executorService.shutdownNow();
         }
+    }
+
+    /**
+     * Test optimal splitting on batch sizes.
+     */
+    public void testOptimalBatchSize() {
+        assertArrayEquals(new int[]{1}, IgniteUtils.calculateOptimalBatchSizes(1, 1));
+
+        assertArrayEquals(new int[]{2}, IgniteUtils.calculateOptimalBatchSizes(1, 2));
+
+        assertArrayEquals(new int[]{1, 1, 1, 1}, IgniteUtils.calculateOptimalBatchSizes(6, 4));
+
+        assertArrayEquals(new int[]{1}, IgniteUtils.calculateOptimalBatchSizes(4, 1));
+
+        assertArrayEquals(new int[]{1, 1}, IgniteUtils.calculateOptimalBatchSizes(4, 2));
+
+        assertArrayEquals(new int[]{1, 1, 1}, IgniteUtils.calculateOptimalBatchSizes(4, 3));
+
+        assertArrayEquals(new int[]{1, 1, 1, 1}, IgniteUtils.calculateOptimalBatchSizes(4, 4));
+
+        assertArrayEquals(new int[]{2, 1, 1, 1}, IgniteUtils.calculateOptimalBatchSizes(4, 5));
+
+        assertArrayEquals(new int[]{2, 2, 1, 1}, IgniteUtils.calculateOptimalBatchSizes(4, 6));
+
+        assertArrayEquals(new int[]{2, 2, 2, 1}, IgniteUtils.calculateOptimalBatchSizes(4, 7));
+
+        assertArrayEquals(new int[]{2, 2, 2, 2}, IgniteUtils.calculateOptimalBatchSizes(4, 8));
+
+        assertArrayEquals(new int[]{3, 2, 2, 2}, IgniteUtils.calculateOptimalBatchSizes(4, 9));
+
+        assertArrayEquals(new int[]{3, 3, 2, 2}, IgniteUtils.calculateOptimalBatchSizes(4, 10));
+    }
+
+    /**
+     * Test parallel execution in order.
+     */
+    public void testDoInParallelResultsOrder() throws IgniteCheckedException {
+        ExecutorService executorService = Executors.newFixedThreadPool(4);
+
+        try {
+            for(int parallelism = 1; parallelism < 16; parallelism++)
+                for(int size = 0; size < 10_000; size++)
+                    testOrder(executorService, size, parallelism);
+        } finally {
+            executorService.shutdownNow();
+        }
+    }
+
+    /**
+     * Template method to test parallel execution
+     * @param executorService ExecutorService.
+     * @param size Size.
+     * @param parallelism Parallelism.
+     * @throws IgniteCheckedException Exception.
+     */
+    private void testOrder(ExecutorService executorService, int size, int parallelism) throws IgniteCheckedException {
+        List<Integer> list = new ArrayList<>();
+        for(int i = 0; i < size; i++)
+            list.add(i);
+
+        Collection<Integer> results = IgniteUtils.doInParallel(
+            parallelism,
+            executorService,
+            list,
+            i -> i * 2
+        );
+
+        assertEquals(list.size(), results.size());
+
+        final int[] i = {0};
+        results.forEach(new Consumer<Integer>() {
+            @Override public void accept(Integer integer) {
+                assertEquals(2 * list.get(i[0]), integer.intValue());
+                i[0]++;
+            }
+        });
     }
 
     /**
@@ -933,13 +1024,18 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     public void testDoInParallelException() {
         String expectedException = "ExpectedException";
 
+        ExecutorService executorService = Executors.newFixedThreadPool(1);
+
         try {
-            IgniteUtils.doInParallel(3,
-                Executors.newFixedThreadPool(1),
+            IgniteUtils.doInParallel(
+                1,
+                executorService,
                 Arrays.asList(1, 2, 3),
                 i -> {
-                    if (i == 1)
+                    if (Integer.valueOf(1).equals(i))
                         throw new IgniteCheckedException(expectedException);
+
+                    return  null;
                 }
             );
 
@@ -947,6 +1043,8 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         }
         catch (IgniteCheckedException e) {
             assertEquals(expectedException, e.getMessage());
+        } finally {
+            executorService.shutdownNow();
         }
     }
 
