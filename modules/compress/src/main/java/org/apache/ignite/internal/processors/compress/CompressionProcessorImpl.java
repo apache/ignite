@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.xerial.snappy.Snappy;
 
+import static org.apache.ignite.configuration.DataStorageConfiguration.MAX_PAGE_SIZE;
 import static org.apache.ignite.configuration.DiskPageCompression.SKIP_GARBAGE;
 import static org.apache.ignite.internal.util.GridUnsafe.NATIVE_BYTE_ORDER;
 
@@ -43,15 +44,16 @@ public class CompressionProcessorImpl extends CompressionProcessor {
     /** */
     static boolean testMode = false;
 
-    /** A bit more than max page size. */
-    private static final int THREAD_LOCAL_BUF_SIZE = 18 * 1024;
+    /** Max page size. */
+    private final ThreadLocalByteBuffer compactBuf = new ThreadLocalByteBuffer(MAX_PAGE_SIZE);
 
-    /** */
-    private final ThreadLocalByteBuffer tmp = new ThreadLocalByteBuffer(THREAD_LOCAL_BUF_SIZE);
+    /** A bit more than max page size. */
+    private final ThreadLocalByteBuffer compressBuf = new ThreadLocalByteBuffer(MAX_PAGE_SIZE + 1024);
 
     /**
      * @param ctx Kernal context.
      */
+    @SuppressWarnings("WeakerAccess")
     public CompressionProcessorImpl(GridKernalContext ctx) {
         super(ctx);
     }
@@ -107,7 +109,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
         if (!(io instanceof CompactablePageIO))
             return page;
 
-        ByteBuffer compactPage = tmp.get();
+        ByteBuffer compactPage = compactBuf.get();
 
         // Drop the garbage from the page.
         ((CompactablePageIO)io).compactPage(page, compactPage, pageSize);
@@ -196,8 +198,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
     private ByteBuffer compressPageLz4(ByteBuffer compactPage, int compactSize, int compressLevel) {
         LZ4Compressor compressor = Lz4.getCompressor(compressLevel);
 
-        ByteBuffer compressedPage = allocateDirectBuffer(PageIO.COMMON_HEADER_END +
-            compressor.maxCompressedLength(compactSize - PageIO.COMMON_HEADER_END));
+        ByteBuffer compressedPage = compressBuf.get();
 
         copyPageHeader(compactPage, compressedPage, compactSize);
         compressor.compress(compactPage, compressedPage);
@@ -215,8 +216,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
      * @return Compressed page.
      */
     private ByteBuffer compressPageZstd(ByteBuffer compactPage, int compactSize, int compressLevel) {
-        ByteBuffer compressedPage = allocateDirectBuffer((int)(PageIO.COMMON_HEADER_END +
-            Zstd.compressBound(compactSize - PageIO.COMMON_HEADER_END)));
+        ByteBuffer compressedPage = compressBuf.get();
 
         copyPageHeader(compactPage, compressedPage, compactSize);
         Zstd.compress(compressedPage, compactPage, compressLevel);
@@ -233,8 +233,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
      * @return Compressed page.
      */
     private ByteBuffer compressPageSnappy(ByteBuffer compactPage, int compactSize) {
-        ByteBuffer compressedPage = allocateDirectBuffer(PageIO.COMMON_HEADER_END +
-            Snappy.maxCompressedLength(compactSize - PageIO.COMMON_HEADER_END));
+        ByteBuffer compressedPage = compressBuf.get();
 
         copyPageHeader(compactPage, compressedPage, compactSize);
 
@@ -302,7 +301,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
         assert compactSize <= pageSize && compactSize >= compressedSize;
 
         if (compressType != COMPACTED_PAGE) {
-            ByteBuffer dst = tmp.get();
+            ByteBuffer dst = compressBuf.get();
 
             // Position on a part that needs to be decompressed.
             page.limit(compressedSize)
@@ -374,7 +373,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
 
     /**
      */
-    static class ThreadLocalByteBuffer extends ThreadLocal<ByteBuffer> {
+    static final class ThreadLocalByteBuffer extends ThreadLocal<ByteBuffer> {
         /** */
         final int size;
 

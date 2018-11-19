@@ -89,6 +89,12 @@ public class DataStorageConfiguration implements Serializable {
     /** Default memory page size. */
     public static final int DFLT_PAGE_SIZE = 4 * 1024;
 
+    /** Max memory page size. */
+    public static final int MAX_PAGE_SIZE = 16 * 1024;
+
+    /** Min memory page size. */
+    public static final int MIN_PAGE_SIZE = 1024;
+
     /** This name is assigned to default Dataregion if no user-defined default MemPlc is specified */
     public static final String DFLT_DATA_REG_DEFAULT_NAME = "default";
 
@@ -349,10 +355,13 @@ public class DataStorageConfiguration implements Serializable {
      * Changes the page size.
      *
      * @param pageSize Page size in bytes. If value is not set (or zero), {@link #DFLT_PAGE_SIZE} will be used.
+     * @see #MIN_PAGE_SIZE
+     * @see #MAX_PAGE_SIZE
      */
     public DataStorageConfiguration setPageSize(int pageSize) {
         if (pageSize != 0) {
-            A.ensure(pageSize >= 1024 && pageSize <= 16 * 1024, "Page size must be between 1kB and 16kB.");
+            A.ensure(pageSize >= MIN_PAGE_SIZE && pageSize <= MAX_PAGE_SIZE,
+                "Page size must be between 1kB and 16kB.");
             A.ensure(U.isPow2(pageSize), "Page size must be a power of 2.");
         }
 

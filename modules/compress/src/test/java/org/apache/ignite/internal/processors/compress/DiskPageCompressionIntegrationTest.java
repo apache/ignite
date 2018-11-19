@@ -50,6 +50,7 @@ import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.configuration.DataStorageConfiguration.MAX_PAGE_SIZE;
 import static org.apache.ignite.configuration.DiskPageCompression.LZ4;
 import static org.apache.ignite.configuration.DiskPageCompression.SKIP_GARBAGE;
 import static org.apache.ignite.configuration.DiskPageCompression.SNAPPY;
@@ -105,7 +106,7 @@ public class DiskPageCompressionIntegrationTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
             .setMetricsEnabled(true)
-            .setPageSize(16 * 1024)
+            .setPageSize(MAX_PAGE_SIZE)
             .setDefaultDataRegionConfiguration(drCfg)
             .setFileIOFactory(U.isLinux() ? factory : new PunchFileIOFactory(factory));
 
