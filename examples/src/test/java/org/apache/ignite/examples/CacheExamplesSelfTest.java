@@ -35,7 +35,7 @@ public class CacheExamplesSelfTest extends GridAbstractExamplesTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testCacheAffinityExample() throws Exception {
+    public void cacheAffinityExample() throws Exception {
         CacheAffinityExample.main(EMPTY_ARGS);
     }
 
@@ -43,7 +43,7 @@ public class CacheExamplesSelfTest extends GridAbstractExamplesTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testCacheEntryProcessorExample() throws Exception {
+    public void cacheEntryProcessorExample() throws Exception {
         CacheEntryProcessorExample.main(EMPTY_ARGS);
     }
 
@@ -116,7 +116,7 @@ public class CacheExamplesSelfTest extends GridAbstractExamplesTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testCacheApiExample() throws Exception {
+    public void cacheApiExample() throws Exception {
         CacheApiExample.main(EMPTY_ARGS);
     }
 

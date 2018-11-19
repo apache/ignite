@@ -33,7 +33,7 @@ public class BasicExamplesSelfTest extends GridAbstractExamplesTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testBroadcastExample() throws Exception {
+    public void broadcastExample() throws Exception {
         ComputeBroadcastExample.main(EMPTY_ARGS);
     }
 
@@ -41,7 +41,7 @@ public class BasicExamplesSelfTest extends GridAbstractExamplesTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testCallableExample() throws Exception {
+    public void callableExample() throws Exception {
         ComputeCallableExample.main(EMPTY_ARGS);
     }
 
@@ -49,7 +49,7 @@ public class BasicExamplesSelfTest extends GridAbstractExamplesTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testClosureExample() throws Exception {
+    public void closureExample() throws Exception {
         ComputeClosureExample.main(EMPTY_ARGS);
     }
 
@@ -57,7 +57,7 @@ public class BasicExamplesSelfTest extends GridAbstractExamplesTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testExecutorExample() throws Exception {
+    public void executorExample() throws Exception {
         IgniteExecutorServiceExample.main(EMPTY_ARGS);
     }
 
@@ -73,7 +73,7 @@ public class BasicExamplesSelfTest extends GridAbstractExamplesTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testRunnableExample() throws Exception {
+    public void runnableExample() throws Exception {
         ComputeRunnableExample.main(EMPTY_ARGS);
     }
 

@@ -31,7 +31,7 @@ public class SqlExamplesSelfTest extends GridAbstractExamplesTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testSqlJavaExample() throws Exception {
+    public void sqlJavaExample() throws Exception {
         SqlQueriesExample.main(EMPTY_ARGS);
     }
 
@@ -39,7 +39,7 @@ public class SqlExamplesSelfTest extends GridAbstractExamplesTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testSqlDmlExample() throws Exception {
+    public void sqlDmlExample() throws Exception {
         SqlDmlExample.main(EMPTY_ARGS);
     }
 
@@ -47,7 +47,7 @@ public class SqlExamplesSelfTest extends GridAbstractExamplesTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testSqlDdlExample() throws Exception {
+    public void sqlDdlExample() throws Exception {
         SqlDdlExample.main(EMPTY_ARGS);
     }
 }
