@@ -307,7 +307,7 @@ public class QuerySchema implements Serializable {
                     entity.getFieldsPrecision().remove(field);
                 }
             }
-            if (!F.isEmpty(entities))
+            if (!F.isEmpty(entities) && !G.localIgnite().cluster().localNode().isClient())
                 G.localIgnite().cache(op.cacheName()).getConfiguration(CacheConfiguration.class).clearQueryEntities().setQueryEntities(entities);
         }
     }
