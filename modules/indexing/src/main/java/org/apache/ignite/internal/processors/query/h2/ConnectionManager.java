@@ -92,7 +92,7 @@ public class ConnectionManager {
     };
 
     /** All connections are used by Ignite instance. Map of (H2ConnectionWrapper, Boolean) is used as a Set. */
-    private final ConcurrentMap<Thread, ConcurrentMap<H2ConnectionWrapper, Boolean>> threadConns = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Thread, ConcurrentMap<Connection, H2ConnectionWrapper>> threadConns = new ConcurrentHashMap<>();
 
     /** Connection cache. */
     private final ThreadLocal<ObjectPoolReusable<H2ConnectionWrapper>> connCache
@@ -123,15 +123,15 @@ public class ConnectionManager {
 
             ObjectPoolReusable<H2ConnectionWrapper> reusableConnection = pool.borrow();
 
-            ConcurrentMap<H2ConnectionWrapper, Boolean> newMap = new ConcurrentHashMap<>();
+            ConcurrentMap<Connection, H2ConnectionWrapper> newMap = new ConcurrentHashMap<>();
 
-            ConcurrentMap<H2ConnectionWrapper, Boolean> perThreadConns = threadConns.putIfAbsent(
+            ConcurrentMap<Connection, H2ConnectionWrapper> perThreadConns = threadConns.putIfAbsent(
                 Thread.currentThread(), newMap);
 
             if (perThreadConns == null)
                 perThreadConns = newMap;
 
-            perThreadConns.put(reusableConnection.object(), false);
+            perThreadConns.put(reusableConnection.object().connection(), reusableConnection.object());
 
             return reusableConnection;
         }
@@ -214,7 +214,7 @@ public class ConnectionManager {
     /**
      * @return Per-thread connections (for testing purposes only).
      */
-    public ConcurrentMap<Thread, ConcurrentMap<H2ConnectionWrapper, Boolean>> connectionsForThread() {
+    public ConcurrentMap<Thread, ConcurrentMap<Connection, H2ConnectionWrapper>> connectionsForThread() {
         return threadConns;
     }
 
@@ -274,15 +274,17 @@ public class ConnectionManager {
     public void executeStatement(String schema, String sql) throws IgniteCheckedException {
         Statement stmt = null;
 
+        Connection c = null;
+
         try {
-            Connection c = connectionForThread(schema);
+            c = connectionForThread(schema);
 
             stmt = c.createStatement();
 
             stmt.executeUpdate(sql);
         }
         catch (SQLException e) {
-            onSqlException();
+            onSqlException(c);
 
             throw new IgniteSQLException("Failed to execute statement: " + sql, e);
         }
@@ -297,6 +299,8 @@ public class ConnectionManager {
      * @param sql SQL statement.
      */
     public void executeSystemStatement(String sql) {
+        assert sysConn != null;
+
         Statement stmt = null;
 
         try {
@@ -305,9 +309,20 @@ public class ConnectionManager {
             stmt.executeUpdate(sql);
         }
         catch (SQLException e) {
-            onSqlException();
+            U.close(sysConn, log);
 
-            throw new IgniteSQLException("Failed to execute system statement: " + sql, e);
+            IgniteSQLException ex = new IgniteSQLException("Failed to execute system statement: " + sql, e);
+
+            try {
+                sysConn = connectionNoCache(QueryUtils.SCHEMA_INFORMATION);
+            }
+            catch (IgniteSQLException exOnReopenSysConn) {
+                sysConn = null;
+
+                ex.addSuppressed(exOnReopenSysConn);
+            }
+
+            throw ex;
         }
         finally {
             U.close(stmt, log);
@@ -318,15 +333,15 @@ public class ConnectionManager {
      * Clear statement cache when cache is unregistered..
      */
     public void onCacheUnregistered() {
-        threadConns.values().forEach(map -> map.keySet().forEach(H2ConnectionWrapper::clearStatementCache));
+        threadConns.values().forEach(map -> map.values().forEach(H2ConnectionWrapper::clearStatementCache));
     }
 
     /**
      * Cancel all queries.
      */
     public void onKernalStop() {
-        for (ConcurrentMap<H2ConnectionWrapper, Boolean> perThreadConns : threadConns.values()) {
-            for (H2ConnectionWrapper c : perThreadConns.keySet())
+        for (ConcurrentMap<Connection, H2ConnectionWrapper> perThreadConns : threadConns.values()) {
+            for (Connection c : perThreadConns.keySet())
                 U.close(c, log);
         }
     }
@@ -335,8 +350,8 @@ public class ConnectionManager {
      * Close executor.
      */
     public void stop() {
-        for (ConcurrentMap<H2ConnectionWrapper, Boolean> perThreadConns : threadConns.values()) {
-            for (H2ConnectionWrapper c : perThreadConns.keySet())
+        for (ConcurrentMap<Connection, H2ConnectionWrapper> perThreadConns : threadConns.values()) {
+            for (Connection c : perThreadConns.keySet())
                 U.close(c, log);
         }
 
@@ -364,18 +379,20 @@ public class ConnectionManager {
 
     /**
      * Handles SQL exception.
+     * @param c H2 Connection.
      */
-    public void onSqlException() {
-        // TODO: now INVALID!!! don't remove from pool, don't handle detached.
+    public void onSqlException(Connection c) {
         H2ConnectionWrapper conn = connCache.get().object();
 
-        connCache.set(null);
+        // Clear thread local cache if connection not detached.
+        if (conn.connection() == c)
+            connCache.set(null);
 
-        if (conn != null) {
-            threadConns.get(Thread.currentThread()).remove(conn);
+        if (c != null) {
+            threadConns.get(Thread.currentThread()).remove(c);
 
             // Reset connection to receive new one at next call.
-            U.close(conn, log);
+            U.close(c, log);
         }
     }
 
@@ -439,11 +456,11 @@ public class ConnectionManager {
      * @param conn Recycled connection.
      */
     private void recycleConnection(H2ConnectionWrapper conn) {
-        ConcurrentMap<H2ConnectionWrapper, Boolean> perThreadConns = threadConns.get(conn.initialThread());
+        ConcurrentMap<Connection, H2ConnectionWrapper> perThreadConns = threadConns.get(conn.initialThread());
 
-        // Mau be null when node is stopping.
+        // May be null when node is stopping.
         if (perThreadConns != null)
-            perThreadConns.put(conn, false);
+            perThreadConns.put(conn.connection(), conn);
     }
 
 
@@ -451,14 +468,14 @@ public class ConnectionManager {
      * Called periodically to cleanup connections.
      */
     private void cleanupConnections() {
-        for (Iterator<Map.Entry<Thread, ConcurrentMap<H2ConnectionWrapper, Boolean>>> it
+        for (Iterator<Map.Entry<Thread, ConcurrentMap<Connection, H2ConnectionWrapper>>> it
             = threadConns.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<Thread, ConcurrentMap<H2ConnectionWrapper, Boolean>> entry = it.next();
+            Map.Entry<Thread, ConcurrentMap<Connection, H2ConnectionWrapper>> entry = it.next();
 
             Thread t = entry.getKey();
 
             if (t.getState() == Thread.State.TERMINATED) {
-                for (H2ConnectionWrapper c : entry.getValue().keySet())
+                for (H2ConnectionWrapper c : entry.getValue().values())
                     U.close(c, log);
 
                 it.remove();
@@ -472,20 +489,20 @@ public class ConnectionManager {
     private void cleanupStatements() {
         long now = U.currentTimeMillis();
 
-        for (Iterator<Map.Entry<Thread, ConcurrentMap<H2ConnectionWrapper, Boolean>>> it
+        for (Iterator<Map.Entry<Thread, ConcurrentMap<Connection, H2ConnectionWrapper>>> it
             = threadConns.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<Thread, ConcurrentMap<H2ConnectionWrapper, Boolean>> entry = it.next();
+            Map.Entry<Thread, ConcurrentMap<Connection, H2ConnectionWrapper>> entry = it.next();
 
             Thread t = entry.getKey();
 
             if (t.getState() == Thread.State.TERMINATED) {
-                for (H2ConnectionWrapper c : entry.getValue().keySet())
+                for (H2ConnectionWrapper c : entry.getValue().values())
                     U.close(c, log);
 
                 it.remove();
             }
             else {
-                for (H2ConnectionWrapper c : entry.getValue().keySet()) {
+                for (H2ConnectionWrapper c : entry.getValue().values()) {
                     if (now - c.statementCache().lastUsage() > stmtCleanupPeriod)
                         c.clearStatementCache();
                 }

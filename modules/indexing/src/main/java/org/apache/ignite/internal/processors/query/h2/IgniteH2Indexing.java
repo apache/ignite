@@ -580,7 +580,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             stmt.executeUpdate(sql);
         }
         catch (SQLException e) {
-            connMgr.onSqlException();
+            connMgr.onSqlException(c);
 
             throw new IgniteSQLException("Failed to drop database index table [type=" + tbl.type().name() +
                 ", table=" + tbl.fullTableName() + "]", IgniteQueryErrorCode.TABLE_DROP_FAILED, e);
@@ -1243,7 +1243,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return rs;
         }
         catch (SQLException e) {
-            connMgr.onSqlException();
+            connMgr.onSqlException(conn);
 
             throw new IgniteCheckedException(e);
         }
@@ -2440,15 +2440,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         H2TableDescriptor tbl = new H2TableDescriptor(this, schema, type, cctx, isSql);
 
+        Connection conn = null;
+
         try {
-            Connection conn = connMgr.connectionForThread(schemaName);
+            conn = connMgr.connectionForThread(schemaName);
 
             createTable(schemaName, schema, tbl, conn);
 
             schema.add(tbl);
         }
         catch (SQLException e) {
-            connMgr.onSqlException();
+            connMgr.onSqlException(conn);
 
             throw new IgniteCheckedException("Failed to register query type: " + type, e);
         }
