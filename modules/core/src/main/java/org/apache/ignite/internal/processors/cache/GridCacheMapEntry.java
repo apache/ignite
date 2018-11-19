@@ -6276,23 +6276,15 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 newSysExpireTime = newExpireTime = conflictCtx.expireTime();
             }
 
-            if (intercept) {
+            if (intercept && (conflictVer == null || interceptOnDrEvents)) {
                 Object updated0 = cctx.unwrapBinaryIfNeeded(updated, keepBinary, false);
 
-                CacheLazyEntry<Object, Object> interceptEntry = new CacheLazyEntry<>(cctx,
-                    entry.key,
-                    null,
-                    oldVal,
-                    null,
-                    keepBinary);
+                CacheLazyEntry<Object, Object> interceptEntry =
+                    new CacheLazyEntry<>(cctx, entry.key, null, oldVal, null, keepBinary);
 
-                Object interceptorVal = updated0;
+                Object interceptorVal = cctx.config().getInterceptor().onBeforePut(interceptEntry, updated0);
 
-                if (conflictVer == null || interceptOnDrEvents) {
-                    interceptorVal = cctx.config().getInterceptor().onBeforePut(interceptEntry, updated0);
-
-                    wasIntercepted = true;
-                }
+                wasIntercepted = true;
 
                 if (interceptorVal == null) {
                     treeOp = IgniteTree.OperationType.NOOP;
@@ -6392,20 +6384,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             IgniteBiTuple<Boolean, Object> interceptRes = null;
 
-            if (intercept) {
-                CacheLazyEntry<Object, Object> intercepEntry = new CacheLazyEntry<>(cctx,
-                    entry.key,
-                    null,
-                    oldVal,
-                    null,
-                    keepBinary);
+            if (intercept && (conflictVer == null || interceptOnDrEvents)) {
+                CacheLazyEntry<Object, Object> interceptEntry =
+                    new CacheLazyEntry<>(cctx, entry.key, null, oldVal, null, keepBinary);
 
-                if (conflictVer == null || interceptOnDrEvents) {
-                    interceptRes = cctx.config().getInterceptor().onBeforeRemove(intercepEntry);
+                interceptRes = cctx.config().getInterceptor().onBeforeRemove(interceptEntry);
 
-                    wasIntercepted = true;
-                } else
-                    interceptRes = new IgniteBiTuple<>(false, intercepEntry.getValue());
+                wasIntercepted = true;
 
                 if (cctx.cancelRemove(interceptRes)) {
                     treeOp = IgniteTree.OperationType.NOOP;
