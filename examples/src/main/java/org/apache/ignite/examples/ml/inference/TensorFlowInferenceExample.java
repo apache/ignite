@@ -18,6 +18,7 @@
 package org.apache.ignite.examples.ml.inference;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -37,11 +38,28 @@ import org.apache.ignite.ml.inference.reader.InfModelReader;
 import org.apache.ignite.ml.util.MnistUtils;
 import org.tensorflow.Tensor;
 
+/**
+ * This example demonstrates how to: load TensorFlow model into Java, make inference using this model in one thread,
+ * multiple threads and in distributed environment using Apache Ignite.
+ */
 public class TensorFlowInferenceExample {
+    /** Path to the directory with saved TensorFlow model. */
+    private static final String MODEL_PATH = "ml/mnist_tf_model";
 
+    /** Path to the MNIST images data. */
+    private static final String MNIST_IMG_PATH = "org/apache/ignite/examples/ml/util/datasets/t10k-images-idx3-ubyte";
+
+    /** Path to the MNIST labels data. */
+    private static final String MNIST_LBL_PATH = "org/apache/ignite/examples/ml/util/datasets/t10k-labels-idx1-ubyte";
+
+    /** Run example. */
     public static void main(String[] args) throws IOException, ExecutionException, InterruptedException {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            InfModelReader reader = new DirectoryInfModelReader("/home/gridgain/model/1541682474/");
+            URL mdlRsrc = TensorFlowInferenceExample.class.getClassLoader().getResource(MODEL_PATH);
+            if (mdlRsrc == null)
+                throw new IllegalArgumentException("Resource not found [resource_path=" + MODEL_PATH + "]");
+
+            InfModelReader reader = new DirectoryInfModelReader(mdlRsrc.getPath());
 
             InfModelParser<double[], Long> parser = new TensorFlowSavedModelInfModelParser<double[], Long>("serve")
 
@@ -56,14 +74,14 @@ public class TensorFlowInferenceExample {
                     return collectedTensors.get("ArgMax").copyTo(new long[1])[0];
                 });
 
-            List<MnistUtils.MnistLabeledImage> images = MnistUtils.mnistAsList(
-                "/home/gridgain/test-tensorflow-server/src/main/resources/train-images-idx3-ubyte",
-                "/home/gridgain/test-tensorflow-server/src/main/resources/train-labels-idx1-ubyte",
+            List<MnistUtils.MnistLabeledImage> images = MnistUtils.mnistAsListFromResource(
+                MNIST_IMG_PATH,
+                MNIST_LBL_PATH,
                 new Random(0),
                 10000
             );
 
-            // -------------------- TEST LOCAL MODEL --------------------
+            System.out.println("Testing local model...");
             long t1 = System.currentTimeMillis();
 
             try (InfModel<double[], Long> locMdl = new SingleInfModelBuilder().build(reader, parser)) {
@@ -73,9 +91,8 @@ public class TensorFlowInferenceExample {
 
             long t2 = System.currentTimeMillis();
             System.out.println("Local model time: " + (t2 - t1) / 1000 + " s");
-            // -------------------- TEST LOCAL MODEL END ----------------
 
-            // -------------------- TEST DISTRIBUTED MODEL --------------
+            System.out.println("Testing distributed model...");
             try (InfModel<double[], Future<Long>> distributedMdl = new IgniteDistributedInfModelBuilder(ignite, 4)
                          .build(reader, parser)) {
                 List<Future<?>> futures = new ArrayList<>(images.size());
@@ -87,9 +104,8 @@ public class TensorFlowInferenceExample {
 
             long t3 = System.currentTimeMillis();
             System.out.println("Distributed model time: " + (t3 - t2) / 1000 + " s");
-            // -------------------- TEST DISTRIBUTED MODEL END ----------
 
-            // -------------------- TEST THREADED MODEL -----------------
+            System.out.println("Testing threaded model...");
             try (InfModel<double[], Future<Long>> threadedMdl = new ThreadedInfModelBuilder(8)
                 .build(reader, parser)) {
                 List<Future<?>> futures = new ArrayList<>(images.size());
@@ -101,7 +117,6 @@ public class TensorFlowInferenceExample {
 
             long t4 = System.currentTimeMillis();
             System.out.println("Threaded model time: " + (t4 - t3) / 1000 + " s");
-            // -------------------- TEST THREADED MODEL END -------------
         }
     }
 }
