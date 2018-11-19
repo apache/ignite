@@ -18,20 +18,12 @@
 export default {
     '/agent/start': 'Agent start',
     '/agent/download': 'Agent download',
-    'base.configuration.overview': 'Cluster configurations',
     '/configuration/overview': 'Cluster configurations',
-    'base.configuration.edit.basic': 'Basic cluster configuration edit',
     '/configuration/new': 'Cluster configuration create',
     '/configuration/new/basic': 'Basic cluster configuration create',
     '/configuration/new/advanced/cluster': 'Advanced cluster configuration create',
-    'base.configuration.edit.advanced.cluster': 'Advanced cluster configuration edit',
-    'base.configuration.edit.advanced.caches': 'Advanced cluster caches',
-    'base.configuration.edit.advanced.caches.cache': 'Advanced cluster cache edit',
-    'base.configuration.edit.advanced.models': 'Advanced cluster models',
-    'base.configuration.edit.advanced.models.model': 'Advanced cluster model edit',
-    'base.configuration.edit.advanced.igfs': 'Advanced cluster IGFSs',
-    'base.configuration.edit.advanced.igfs.igfs': 'Advanced cluster IGFS edit',
     '/configuration/download': 'Download project',
+    'configuration/import/model': 'Import cluster models',
     '/demo/resume': 'Demo resume',
     '/demo/reset': 'Demo reset',
     '/queries/execute': 'Query execute',
@@ -45,6 +37,20 @@ export default {
     '/settings/admin': 'Admin panel',
     '/logout': 'Logout',
 
+    'base.configuration.overview': 'Cluster configurations',
+    'base.configuration.edit.basic': 'Basic cluster configuration edit',
+    'base.configuration.edit.advanced.cluster': 'Advanced cluster configuration edit',
+    'base.configuration.edit.advanced.caches': 'Advanced cluster caches',
+    'base.configuration.edit.advanced.caches.cache': 'Advanced cluster cache edit',
+    'base.configuration.edit.advanced.models': 'Advanced cluster models',
+    'base.configuration.edit.advanced.models.model': 'Advanced cluster model edit',
+    'base.configuration.edit.advanced.igfs': 'Advanced cluster IGFSs',
+    'base.configuration.edit.advanced.igfs.igfs': 'Advanced cluster IGFS edit',
+    'base.sql.tabs.notebooks-list': 'Query notebooks',
+    'base.sql.notebook': 'Query notebook',
+    'base.settings.profile': 'User profile',
+    'base.settings.admin': 'Admin panel',
+
     // app/components/page-signin/template.pug
     'app.components.page-signin.m1': 'Sign In',
     'app.components.page-signin.m2': 'Email:',
@@ -54,6 +60,7 @@ export default {
     'app.components.page-signin.m6': 'Forgot password?',
     'app.components.page-signin.m7': 'Sign In',
     'app.components.page-signin.m8': 'Don\'t have an account? #[a(ui-sref=\'signup\') Get started]',
+
     // app/components/page-signin/run.js
     'app.components.page-signin.m9': 'Sign In',
 

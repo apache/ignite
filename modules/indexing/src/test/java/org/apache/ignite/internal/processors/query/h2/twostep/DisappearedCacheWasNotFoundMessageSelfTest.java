@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import javax.cache.CacheException;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;

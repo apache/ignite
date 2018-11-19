@@ -22,7 +22,6 @@ import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -44,7 +43,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
-import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -53,7 +51,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
-import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
@@ -62,9 +59,8 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
-import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
@@ -77,7 +73,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.query.CacheQueryPartitionInfo;
+import org.apache.ignite.internal.processors.query.h2.affinity.PartitionInfo;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
@@ -85,6 +81,7 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.query.CacheQueryObjectValueContext;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
@@ -114,9 +111,7 @@ import org.apache.ignite.internal.processors.query.h2.database.io.H2MvccLeafIO;
 import org.apache.ignite.internal.processors.query.h2.ddl.DdlStatementsProcessor;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlUtils;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2PlainRowFactory;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
@@ -131,6 +126,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
 import org.apache.ignite.internal.processors.query.h2.sys.SqlSystemTableEngine;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemView;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewBaselineNodes;
+import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewCacheGroups;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewCaches;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeAttributes;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeMetrics;
@@ -142,7 +138,6 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryReq
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
-import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.sql.SqlParseException;
 import org.apache.ignite.internal.sql.SqlParser;
 import org.apache.ignite.internal.sql.SqlStrictParseException;
@@ -177,6 +172,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
@@ -188,24 +184,15 @@ import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
 import org.h2.index.Index;
 import org.h2.jdbc.JdbcStatement;
-import org.h2.server.web.WebServer;
 import org.h2.table.IndexColumn;
-import org.h2.tools.Server;
 import org.h2.util.JdbcUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_DEBUG_CONSOLE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_DEBUG_CONSOLE_PORT;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT;
-import static org.apache.ignite.IgniteSystemProperties.getInteger;
-import static org.apache.ignite.IgniteSystemProperties.getString;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkActive;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
-import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
@@ -238,26 +225,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     static {
         PageIO.registerH2(H2InnerIO.VERSIONS, H2LeafIO.VERSIONS, H2MvccInnerIO.VERSIONS, H2MvccLeafIO.VERSIONS);
+
         H2ExtrasInnerIO.register();
         H2ExtrasLeafIO.register();
-
-        // Initialize system properties for H2.
-        System.setProperty("h2.objectCache", "false");
-        System.setProperty("h2.serializeJavaObject", "false");
-        System.setProperty("h2.objectCacheMaxPerElementSize", "0"); // Avoid ValueJavaObject caching.
-        System.setProperty("h2.optimizeTwoEquals", "false"); // Makes splitter fail on subqueries in WHERE.
-        System.setProperty("h2.dropRestrict", "false"); // Drop schema with cascade semantics.
     }
-
-    /** Default DB options. */
-    private static final String DB_OPTIONS = ";LOCK_MODE=3;MULTI_THREADED=1;DB_CLOSE_ON_EXIT=FALSE" +
-        ";DEFAULT_LOCK_TIMEOUT=10000;FUNCTIONS_IN_SCHEMA=true;OPTIMIZE_REUSE_RESULTS=0;QUERY_CACHE_SIZE=0" +
-        ";MAX_OPERATION_MEMORY=0;BATCH_JOINS=1" +
-        ";ROW_FACTORY=\"" + GridH2PlainRowFactory.class.getName() + "\"" +
-        ";DEFAULT_TABLE_ENGINE=" + GridH2DefaultTableEngine.class.getName();
-
-        // Uncomment this setting to get debug output from H2 to sysout.
-//        ";TRACE_LEVEL_SYSTEM_OUT=3";
 
     /** Dummy metadata for update result. */
     public static final List<GridQueryFieldMetadata> UPDATE_RESULT_META = Collections.<GridQueryFieldMetadata>
@@ -265,23 +236,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** */
     private static final int TWO_STEP_QRY_CACHE_SIZE = 1024;
-
-    /** The period of clean up the statement cache. */
-    private final Long CLEANUP_STMT_CACHE_PERIOD = Long.getLong(IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD, 10_000);
-
-    /** The period of clean up the {@link #conns}. */
-    @SuppressWarnings("FieldCanBeLocal")
-    private final Long CLEANUP_CONNECTIONS_PERIOD = 2000L;
-
-    /** The timeout to remove entry from the statement cache if the thread doesn't perform any queries. */
-    private final Long STATEMENT_CACHE_THREAD_USAGE_TIMEOUT =
-        Long.getLong(IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT, 600 * 1000);
-
-    /** */
-    private GridTimeoutProcessor.CancelableTask stmtCacheCleanupTask;
-
-    /** */
-    private GridTimeoutProcessor.CancelableTask connCleanupTask;
 
     /** Logger. */
     @LoggerResource
@@ -295,13 +249,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** Collection of schemaNames and registered tables. */
     private final ConcurrentMap<String, H2Schema> schemas = new ConcurrentHashMap<>();
-
-    /** */
-    private String dbUrl = "jdbc:h2:mem:";
-
-    /** */
-    // TODO https://issues.apache.org/jira/browse/IGNITE-9062
-    private final ConcurrentMap<Thread, H2ConnectionWrapper> conns = new ConcurrentHashMap<>();
 
     /** */
     private GridMapQueryExecutor mapQryExec;
@@ -326,43 +273,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** Row cache. */
     private final H2RowCacheRegistry rowCache = new H2RowCacheRegistry();
-
-    /** */
-    // TODO https://issues.apache.org/jira/browse/IGNITE-9062
-    private final ThreadLocalObjectPool<H2ConnectionWrapper> connectionPool = new ThreadLocalObjectPool<>(IgniteH2Indexing.this::newConnectionWrapper, 5);
-
-    /** */
-    // TODO https://issues.apache.org/jira/browse/IGNITE-9062
-    private final ThreadLocal<ThreadLocalObjectPool.Reusable<H2ConnectionWrapper>> connCache = new ThreadLocal<ThreadLocalObjectPool.Reusable<H2ConnectionWrapper>>() {
-        @Override public ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> get() {
-            ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> reusable = super.get();
-
-            boolean reconnect = true;
-
-            try {
-                reconnect = reusable == null || reusable.object().connection().isClosed();
-            }
-            catch (SQLException e) {
-                U.warn(log, "Failed to check connection status.", e);
-            }
-
-            if (reconnect) {
-                reusable = initialValue();
-
-                set(reusable);
-            }
-
-            return reusable;
-        }
-
-        @Override protected ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> initialValue() {
-            ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> reusableConnection = connectionPool.borrow();
-
-            conns.put(Thread.currentThread(), reusableConnection.object());
-
-            return reusableConnection;
-        }
-    };
 
     /** */
     protected volatile GridKernalContext ctx;
@@ -395,56 +305,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
     };
 
-    /** H2 JDBC connection for INFORMATION_SCHEMA. Holds H2 open until node is stopped. */
-    private Connection sysConn;
+    /** Query executor. */
+    private ConnectionManager connMgr;
 
     /**
      * @return Kernal context.
      */
     public GridKernalContext kernalContext() {
         return ctx;
-    }
-
-    /**
-     * @param schema Schema.
-     * @return Connection.
-     */
-    public Connection connectionForSchema(String schema) {
-        try {
-            return connectionForThread(schema);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-    }
-
-    /**
-     * @return H2 JDBC connection to INFORMATION_SCHEMA.
-     */
-    private Connection systemConnection() {
-        assert Thread.holdsLock(schemaMux);
-
-        if (sysConn == null) {
-            try {
-                sysConn = DriverManager.getConnection(dbUrl);
-
-                sysConn.setSchema("INFORMATION_SCHEMA");
-            }
-            catch (SQLException e) {
-                throw new IgniteSQLException("Failed to initialize system DB connection: " + dbUrl, e);
-            }
-        }
-
-        return sysConn;
-    }
-
-    /** */
-    private H2ConnectionWrapper newConnectionWrapper() {
-        try {
-            return new H2ConnectionWrapper(DriverManager.getConnection(dbUrl));
-        } catch (SQLException e) {
-            throw new IgniteSQLException("Failed to initialize DB connection: " + dbUrl, e);
-        }
     }
 
     /**
@@ -490,7 +358,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         assert useStmtCache || !cachedOnly;
 
         if (useStmtCache) {
-            H2StatementCache cache = getStatementsCacheForCurrentThread();
+            H2StatementCache cache = connMgr.statementCacheForThread();
 
             H2CachedStatementKey key = new H2CachedStatementKey(c.getSchema(), sql);
 
@@ -539,60 +407,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return c.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
     }
 
-    /**
-     * @return {@link H2StatementCache} associated with current thread.
-     */
-    @NotNull private H2StatementCache getStatementsCacheForCurrentThread() {
-        H2StatementCache statementCache = connCache.get().object().statementCache();
-
-        statementCache.updateLastUsage();
-
-        return statementCache;
-    }
-
     /** {@inheritDoc} */
     @Override public PreparedStatement prepareNativeStatement(String schemaName, String sql) {
-        Connection conn = connectionForSchema(schemaName);
+        Connection conn = connMgr.connectionForThread(schemaName);
 
         return prepareStatementAndCaches(conn, sql);
-    }
-
-    /**
-     * Gets DB connection.
-     *
-     * @param schema Whether to set schema for connection or not.
-     * @return DB connection.
-     * @throws IgniteCheckedException In case of error.
-     */
-    private Connection connectionForThread(@Nullable String schema) throws IgniteCheckedException {
-        H2ConnectionWrapper c = connCache.get().object();
-
-        if (c == null)
-            throw new IgniteCheckedException("Failed to get DB connection for thread (check log for details).");
-
-        if (schema != null && !F.eq(c.schema(), schema)) {
-            Statement stmt = null;
-
-            try {
-                stmt = c.connection().createStatement();
-
-                stmt.executeUpdate("SET SCHEMA " + H2Utils.withQuotes(schema));
-
-                if (log.isDebugEnabled())
-                    log.debug("Set schema: " + schema);
-
-                c.schema(schema);
-            }
-            catch (SQLException e) {
-                throw new IgniteSQLException("Failed to set schema for DB connection for thread [schema=" +
-                    schema + "]", e);
-            }
-            finally {
-                U.close(stmt, log);
-            }
-        }
-
-        return c.connection();
     }
 
     /**
@@ -643,7 +462,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param schema Schema name.
      */
     private void createSchema0(String schema) {
-        executeSystemStatement("CREATE SCHEMA IF NOT EXISTS " + H2Utils.withQuotes(schema));
+        connMgr.executeSystemStatement("CREATE SCHEMA IF NOT EXISTS " + H2Utils.withQuotes(schema));
 
         if (log.isDebugEnabled())
             log.debug("Created H2 schema for index database: " + schema);
@@ -655,59 +474,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param schema Schema name.
      */
     private void dropSchema(String schema) {
-        executeSystemStatement("DROP SCHEMA IF EXISTS " + H2Utils.withQuotes(schema));
+        connMgr.executeSystemStatement("DROP SCHEMA IF EXISTS " + H2Utils.withQuotes(schema));
 
         if (log.isDebugEnabled())
             log.debug("Dropped H2 schema for index database: " + schema);
-    }
-
-    /**
-     * @param schema Schema
-     * @param sql SQL statement.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void executeStatement(String schema, String sql) throws IgniteCheckedException {
-        Statement stmt = null;
-
-        try {
-            Connection c = connectionForThread(schema);
-
-            stmt = c.createStatement();
-
-            stmt.executeUpdate(sql);
-        }
-        catch (SQLException e) {
-            onSqlException();
-
-            throw new IgniteSQLException("Failed to execute statement: " + sql, e);
-        }
-        finally {
-            U.close(stmt, log);
-        }
-    }
-
-    /**
-     * Execute statement on H2 INFORMATION_SCHEMA.
-     * @param sql SQL statement.
-     */
-    public void executeSystemStatement(String sql) {
-        assert Thread.holdsLock(schemaMux);
-
-        Statement stmt = null;
-
-        try {
-            stmt = systemConnection().createStatement();
-
-            stmt.executeUpdate(sql);
-        }
-        catch (SQLException e) {
-            onSqlException();
-
-            throw new IgniteSQLException("Failed to execute statement: " + sql, e);
-        }
-        finally {
-            U.close(stmt, log);
-        }
     }
 
     /**
@@ -732,22 +502,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         catch (SQLException e) {
             throw new IgniteCheckedException("Failed to bind parameter [idx=" + idx + ", obj=" + obj + ", stmt=" +
                 stmt + ']', e);
-        }
-    }
-
-    /**
-     * Handles SQL exception.
-     */
-    private void onSqlException() {
-        Connection conn = connCache.get().object().connection();
-
-        connCache.set(null);
-
-        if (conn != null) {
-            conns.remove(Thread.currentThread());
-
-            // Reset connection to receive new one at next call.
-            U.close(conn, log);
         }
     }
 
@@ -812,7 +566,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (log.isDebugEnabled())
             log.debug("Removing query index table: " + tbl.fullTableName());
 
-        Connection c = connectionForThread(tbl.schemaName());
+        Connection c = connMgr.connectionForThread(tbl.schemaName());
 
         Statement stmt = null;
 
@@ -827,7 +581,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             stmt.executeUpdate(sql);
         }
         catch (SQLException e) {
-            onSqlException();
+            connMgr.onSqlException();
 
             throw new IgniteSQLException("Failed to drop database index table [type=" + tbl.type().name() +
                 ", table=" + tbl.fullTableName() + "]", IgniteQueryErrorCode.TABLE_DROP_FAILED, e);
@@ -913,7 +667,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     @Override public void dynamicIndexDrop(final String schemaName, String idxName, boolean ifExists)
         throws IgniteCheckedException{
         String sql = H2Utils.indexDropSql(schemaName, idxName, ifExists);
@@ -972,7 +725,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private void executeSql(String schemaName, String sql) throws IgniteCheckedException {
         try {
-            Connection conn = connectionForSchema(schemaName);
+            Connection conn = connMgr.connectionForThread(schemaName);
 
             try (PreparedStatement stmt = prepareStatement(conn, sql, false)) {
                 stmt.execute();
@@ -990,13 +743,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param tbl Table.
      * @param pk Primary key flag.
      * @param affinityKey Affinity key flag.
-     * @param cols Columns.
+     * @param unwrappedCols Unwrapped index columns for complex types.
+     * @param wrappedCols Index columns as is complex types.
      * @param inlineSize Index inline size.
      * @return Index.
      */
     GridH2IndexBase createSortedIndex(String name, GridH2Table tbl, boolean pk, boolean affinityKey,
-        List<IndexColumn> cols,
-        int inlineSize) {
+        List<IndexColumn> unwrappedCols, List<IndexColumn> wrappedCols, int inlineSize) {
         try {
             GridCacheContext cctx = tbl.cache();
 
@@ -1007,7 +760,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             H2RowCache cache = rowCache.forGroup(cctx.groupId());
 
-            return new H2TreeIndex(cctx, cache, tbl, name, pk, affinityKey, cols, inlineSize, segments);
+            return new H2TreeIndex(cctx, cache, tbl, name, pk, affinityKey, unwrappedCols, wrappedCols, inlineSize, segments);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -1015,7 +768,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(String schemaName,
         String cacheName, String qry, String typeName, IndexingQueryFilter filters) throws IgniteCheckedException {
         H2TableDescriptor tbl = tableDescriptor(schemaName, cacheName, typeName);
@@ -1051,7 +803,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     public GridQueryFieldsResult queryLocalSqlFields(String schemaName, String qry, @Nullable Collection<Object> params,
         IndexingQueryFilter filter, boolean enforceJoinOrder, boolean startTx, int timeout,
         GridQueryCancel cancel) throws IgniteCheckedException {
@@ -1073,7 +824,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     GridQueryFieldsResult queryLocalSqlFields(final String schemaName, String qry,
         @Nullable final Collection<Object> params, final IndexingQueryFilter filter, boolean enforceJoinOrder,
         boolean startTx, int qryTimeout, final GridQueryCancel cancel,
@@ -1086,7 +836,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         assert mvccEnabled || mvccTracker == null;
 
         try {
-            final Connection conn = connectionForSchema(schemaName);
+            final Connection conn = connMgr.connectionForThread(schemaName);
 
             H2Utils.setupConnection(conn, false, enforceJoinOrder);
 
@@ -1121,6 +871,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (forUpdate && !mvccEnabled)
                 throw new IgniteSQLException("SELECT FOR UPDATE query requires transactional " +
                     "cache with MVCC enabled.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+            if (this.ctx.security().enabled()) {
+                GridSqlQueryParser parser = new GridSqlQueryParser(false);
+
+                parser.parse(p);
+
+                checkSecurity(parser.cacheIds());
+            }
 
             GridNearTxSelectForUpdateFuture sfuFut = null;
 
@@ -1280,9 +1038,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     public static int operationTimeout(int qryTimeout, IgniteTxAdapter tx) {
         if (tx != null) {
-            int tm1 = (int)tx.remainingTime(), tm2 = qryTimeout;
+            int remaining = (int)tx.remainingTime();
 
-            return tm1 > 0 && tm2 > 0 ? Math.min(tm1, tm2) : Math.max(tm1, tm2);
+            return remaining > 0 && qryTimeout > 0 ? Math.min(remaining, qryTimeout) : Math.max(remaining, qryTimeout);
         }
 
         return qryTimeout;
@@ -1291,7 +1049,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public long streamUpdateQuery(String schemaName, String qry,
         @Nullable Object[] params, IgniteDataStreamer<?, ?> streamer) throws IgniteCheckedException {
-        final Connection conn = connectionForSchema(schemaName);
+        final Connection conn = connMgr.connectionForThread(schemaName);
 
         final PreparedStatement stmt;
 
@@ -1315,7 +1073,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return zeroBatchedStreamedUpdateResult(params.size());
         }
 
-        final Connection conn = connectionForSchema(schemaName);
+        final Connection conn = connMgr.connectionForThread(schemaName);
 
         final PreparedStatement stmt = prepareStatementAndCaches(conn, qry);
 
@@ -1509,7 +1267,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return rs;
         }
         catch (SQLException e) {
-            onSqlException();
+            connMgr.onSqlException();
 
             throw new IgniteCheckedException(e);
         }
@@ -1558,111 +1316,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         cursor.fieldsMeta(res.metaData());
 
         return cursor;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public <K, V> QueryCursor<Cache.Entry<K,V>> queryLocalSql(String schemaName, String cacheName,
-        final SqlQuery qry, final IndexingQueryFilter filter, final boolean keepBinary) throws IgniteCheckedException {
-        String type = qry.getType();
-        String sqlQry = qry.getSql();
-        String alias = qry.getAlias();
-        Object[] params = qry.getArgs();
-
-        GridQueryCancel cancel = new GridQueryCancel();
-
-        final GridCloseableIterator<IgniteBiTuple<K, V>> i = queryLocalSql(schemaName, cacheName, sqlQry, alias,
-            F.asList(params), type, filter, cancel);
-
-        return new QueryCursorImpl<>(new Iterable<Cache.Entry<K, V>>() {
-            @SuppressWarnings("NullableProblems")
-            @Override public Iterator<Cache.Entry<K, V>> iterator() {
-                return new ClIter<Cache.Entry<K, V>>() {
-                    @Override public void close() throws Exception {
-                        i.close();
-                    }
-
-                    @Override public boolean hasNext() {
-                        return i.hasNext();
-                    }
-
-                    @Override public Cache.Entry<K, V> next() {
-                        IgniteBiTuple<K, V> t = i.next();
-
-                        K key = (K)CacheObjectUtils.unwrapBinaryIfNeeded(objectContext(), t.get1(), keepBinary, false);
-                        V val = (V)CacheObjectUtils.unwrapBinaryIfNeeded(objectContext(), t.get2(), keepBinary, false);
-
-                        return new CacheEntryImpl<>(key, val);
-                    }
-
-                    @Override public void remove() {
-                        throw new UnsupportedOperationException();
-                    }
-                };
-            }
-        }, cancel);
-    }
-
-    /**
-     * Executes regular query.
-     *
-     * @param schemaName Schema name.
-     * @param cacheName Cache name.
-     * @param qry Query.
-     * @param alias Table alias.
-     * @param params Query parameters.
-     * @param type Query return type.
-     * @param filter Cache name and key filter.
-     * @param cancel Cancel object.
-     * @return Queried rows.
-     * @throws IgniteCheckedException If failed.
-     */
-    @SuppressWarnings("unchecked")
-    <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalSql(String schemaName, String cacheName,
-        final String qry, String alias, @Nullable final Collection<Object> params, String type,
-        final IndexingQueryFilter filter, GridQueryCancel cancel) throws IgniteCheckedException {
-        final H2TableDescriptor tbl = tableDescriptor(schemaName, cacheName, type);
-
-        if (tbl == null)
-            throw new IgniteSQLException("Failed to find SQL table for type: " + type,
-                IgniteQueryErrorCode.TABLE_NOT_FOUND);
-
-        String sql = generateQuery(qry, alias, tbl);
-
-        Connection conn = connectionForThread(tbl.schemaName());
-
-        H2Utils.setupConnection(conn, false, false);
-
-        GridH2QueryContext qctx = new GridH2QueryContext(nodeId, nodeId, 0, LOCAL).filter(filter)
-            .distributedJoinMode(OFF);
-
-        PreparedStatement stmt = preparedStatementWithParams(conn, sql, params, true);
-
-        MvccQueryTracker mvccTracker = mvccTracker(stmt, false);
-
-        if (mvccTracker != null)
-            qctx.mvccSnapshot(mvccTracker.snapshot());
-
-        GridH2QueryContext.set(qctx);
-
-        GridRunningQueryInfo run = new GridRunningQueryInfo(qryIdGen.incrementAndGet(), qry, SQL, schemaName,
-            U.currentTimeMillis(), null, true);
-
-        runs.put(run.id(), run);
-
-        try {
-            ResultSet rs = executeSqlQueryWithTimer(stmt, conn, sql, params, 0, cancel);
-
-            return new H2KeyValueIterator(rs);
-        }
-        finally {
-            GridH2QueryContext.clearThreadLocal();
-
-            if (mvccTracker != null)
-                mvccTracker.onDone();
-
-            runs.remove(run.id());
-        }
     }
 
     /**
@@ -1746,8 +1399,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             PreparedStatementEx stmtEx = stmt.unwrap(PreparedStatementEx.class);
 
             if (mvccEnabled) {
-                assert mvccCacheId != null;
-
                 stmtEx.putMeta(MVCC_CACHE_ID, mvccCacheId);
                 stmtEx.putMeta(MVCC_STATE, Boolean.TRUE);
             }
@@ -1832,9 +1483,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public <K, V> QueryCursor<Cache.Entry<K, V>> queryDistributedSql(String schemaName, String cacheName,
-        SqlQuery qry, boolean keepBinary) {
+    @SuppressWarnings("deprecation")
+    @Override public SqlFieldsQuery generateFieldsQuery(String cacheName, SqlQuery qry) {
+        String schemaName = schema(cacheName);
+
         String type = qry.getType();
 
         H2TableDescriptor tblDesc = tableDescriptor(schemaName, cacheName, type);
@@ -1852,72 +1504,101 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteException(e);
         }
 
-        SqlFieldsQuery fqry = new SqlFieldsQuery(sql);
+        SqlFieldsQuery res = new SqlFieldsQuery(sql);
 
-        fqry.setArgs(qry.getArgs());
-        fqry.setPageSize(qry.getPageSize());
-        fqry.setDistributedJoins(qry.isDistributedJoins());
-        fqry.setPartitions(qry.getPartitions());
-        fqry.setLocal(qry.isLocal());
+        res.setArgs(qry.getArgs());
+        res.setDistributedJoins(qry.isDistributedJoins());
+        res.setLocal(qry.isLocal());
+        res.setPageSize(qry.getPageSize());
+        res.setPartitions(qry.getPartitions());
+        res.setReplicatedOnly(qry.isReplicatedOnly());
+        res.setSchema(schemaName);
+        res.setSql(sql);
 
         if (qry.getTimeout() > 0)
-            fqry.setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS);
+            res.setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS);
 
-        final QueryCursor<List<?>> res =
-            querySqlFields(schemaName, fqry, null, keepBinary, true, null, null).get(0);
-
-        final Iterable<Cache.Entry<K, V>> converted = new Iterable<Cache.Entry<K, V>>() {
-            @Override public Iterator<Cache.Entry<K, V>> iterator() {
-                final Iterator<List<?>> iter0 = res.iterator();
-
-                return new Iterator<Cache.Entry<K, V>>() {
-                    @Override public boolean hasNext() {
-                        return iter0.hasNext();
-                    }
-
-                    @Override public Cache.Entry<K, V> next() {
-                        List<?> l = iter0.next();
-
-                        return new CacheEntryImpl<>((K)l.get(0), (V)l.get(1));
-                    }
-
-                    @Override public void remove() {
-                        throw new UnsupportedOperationException();
-                    }
-                };
-            }
-        };
-
-        // No metadata for SQL queries.
-        return new QueryCursorImpl<Cache.Entry<K, V>>(converted) {
-            @Override public void close() {
-                res.close();
-            }
-        };
+        return res;
     }
 
     /**
-     * Try executing query using native facilities.
+     * Prepares statement for query.
+     *
+     * @param qry Query string.
+     * @param tableAlias table alias.
+     * @param tbl Table to use.
+     * @return Prepared statement.
+     * @throws IgniteCheckedException In case of error.
+     */
+    private static String generateQuery(String qry, String tableAlias, H2TableDescriptor tbl)
+        throws IgniteCheckedException {
+        assert tbl != null;
+
+        final String qry0 = qry;
+
+        String t = tbl.fullTableName();
+
+        String from = " ";
+
+        qry = qry.trim();
+
+        String upper = qry.toUpperCase();
+
+        if (upper.startsWith("SELECT")) {
+            qry = qry.substring(6).trim();
+
+            final int star = qry.indexOf('*');
+
+            if (star == 0)
+                qry = qry.substring(1).trim();
+            else if (star > 0) {
+                if (F.eq('.', qry.charAt(star - 1))) {
+                    t = qry.substring(0, star - 1);
+
+                    qry = qry.substring(star + 1).trim();
+                }
+                else
+                    throw new IgniteCheckedException("Invalid query (missing alias before asterisk): " + qry0);
+            }
+            else
+                throw new IgniteCheckedException("Only queries starting with 'SELECT *' and 'SELECT alias.*' " +
+                    "are supported (rewrite your query or use SqlFieldsQuery instead): " + qry0);
+
+            upper = qry.toUpperCase();
+        }
+
+        if (!upper.startsWith("FROM"))
+            from = " FROM " + t + (tableAlias != null ? " as " + tableAlias : "") +
+                (upper.startsWith("WHERE") || upper.startsWith("ORDER") || upper.startsWith("LIMIT") ?
+                    " " : " WHERE ");
+
+        if(tableAlias != null)
+            t = tableAlias;
+
+        qry = "SELECT " + t + "." + KEY_FIELD_NAME + ", " + t + "." + VAL_FIELD_NAME + from + qry;
+
+        return qry;
+    }
+
+    /**
+     * Determines if a passed query can be executed natively.
      *
      * @param schemaName Schema name.
      * @param qry Query.
-     * @param cliCtx Client context, or {@code null} if not applicable.
-     * @return Result or {@code null} if cannot parse/process this query.
+     * @return Command or {@code null} if cannot parse this query.
      */
-    @SuppressWarnings({"ConstantConditions", "StatementWithEmptyBody"})
-    private List<FieldsQueryCursor<List<?>>> tryQueryDistributedSqlFieldsNative(String schemaName, SqlFieldsQuery qry,
-        @Nullable SqlClientContext cliCtx) {
+     @Nullable private SqlCommand parseQueryNative(String schemaName, SqlFieldsQuery qry) {
         // Heuristic check for fast return.
         if (!INTERNAL_CMD_RE.matcher(qry.getSql().trim()).find())
             return null;
 
-        // Parse.
-        SqlCommand cmd;
-
         try {
             SqlParser parser = new SqlParser(schemaName, qry.getSql());
 
-            cmd = parser.nextCommand();
+            SqlCommand cmd = parser.nextCommand();
+
+            // TODO support transansaction commands in multistatements
+            // https://issues.apache.org/jira/browse/IGNITE-10063
 
             // No support for multiple commands for now.
             if (parser.nextCommand() != null)
@@ -1935,6 +1616,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 || cmd instanceof SqlAlterUserCommand
                 || cmd instanceof SqlDropUserCommand))
                 return null;
+
+            return cmd;
         }
         catch (SqlStrictParseException e) {
             throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.PARSING, e);
@@ -1955,7 +1638,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteSQLException("Failed to parse DDL statement: " + qry.getSql() + ": " + e.getMessage(),
                 code, e);
         }
+    }
 
+    /**
+     * Executes a query natively.
+     *
+     * @param qry Query.
+     * @param cmd Parsed command corresponding to query.
+     * @param cliCtx Client context, or {@code null} if not applicable.
+     * @return Result cursors.
+     */
+    private List<FieldsQueryCursor<List<?>>> queryDistributedSqlFieldsNative(SqlFieldsQuery qry, SqlCommand cmd,
+        @Nullable SqlClientContext cliCtx) {
         // Execute.
         try {
             if (cmd instanceof SqlCreateIndexCommand
@@ -2011,16 +1705,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException if failed.
      */
     private void processTxCommand(SqlCommand cmd, SqlFieldsQuery qry) throws IgniteCheckedException {
-        if (!mvccEnabled(ctx))
-            throw new IgniteSQLException("MVCC must be enabled in order to invoke transactional operation: " +
-                qry.getSql(), IgniteQueryErrorCode.MVCC_DISABLED);
-
         NestedTxMode nestedTxMode = qry instanceof SqlFieldsQueryEx ? ((SqlFieldsQueryEx)qry).getNestedTxMode() :
             NestedTxMode.DEFAULT;
 
         GridNearTxLocal tx = tx(ctx);
 
         if (cmd instanceof SqlBeginTransactionCommand) {
+            if (!mvccEnabled(ctx))
+                throw new IgniteSQLException("MVCC must be enabled in order to start transaction.",
+                    IgniteQueryErrorCode.MVCC_DISABLED);
+
             if (tx != null) {
                 if (nestedTxMode == null)
                     nestedTxMode = NestedTxMode.DEFAULT;
@@ -2069,7 +1763,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param tx Transaction.
      * @throws IgniteCheckedException if failed.
      */
-    @SuppressWarnings("ThrowFromFinallyBlock")
     private void doCommit(@NotNull GridNearTxLocal tx) throws IgniteCheckedException {
         try {
             // TODO: Why checking for rollback only?
@@ -2086,7 +1779,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param tx Transaction.
      * @throws IgniteCheckedException if failed.
      */
-    @SuppressWarnings("ThrowFromFinallyBlock")
     private void doRollback(@NotNull GridNearTxLocal tx) throws IgniteCheckedException {
         try {
             tx.rollback();
@@ -2118,10 +1810,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         boolean mvccEnabled = mvccEnabled(ctx), startTx = autoStartTx(qry);
 
         try {
-            List<FieldsQueryCursor<List<?>>> res = tryQueryDistributedSqlFieldsNative(schemaName, qry, cliCtx);
+            SqlCommand nativeCmd = parseQueryNative(schemaName, qry);
 
-            if (res != null)
-                return res;
+            if (!(nativeCmd instanceof SqlCommitTransactionCommand || nativeCmd instanceof SqlRollbackTransactionCommand)
+                && !ctx.state().publicApiActiveState(true)) {
+                throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, that " +
+                    "the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes " +
+                    "join the cluster. To activate the cluster call Ignite.active(true).");
+            }
+
+            if (nativeCmd != null)
+                return queryDistributedSqlFieldsNative(qry, nativeCmd, cliCtx);
+
+            List<FieldsQueryCursor<List<?>>> res;
 
             {
                 // First, let's check if we already have a two-step query for this statement...
@@ -2151,13 +1852,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 // Second, let's check if we already have a parsed statement...
                 PreparedStatement cachedStmt;
 
-                if ((cachedStmt = cachedStatement(connectionForSchema(schemaName), qry.getSql())) != null) {
+                if ((cachedStmt = cachedStatement(connMgr.connectionForThread(schemaName), qry.getSql())) != null) {
                     Prepared prepared = GridSqlQueryParser.prepared(cachedStmt);
 
                     // We may use this cached statement only for local queries and non queries.
-                    if (qry.isLocal() || !prepared.isQuery())
+                    if (qry.isLocal() || !prepared.isQuery()) {
+                        if (GridSqlQueryParser.isExplainUpdate(prepared))
+                            throw new IgniteSQLException("Explains of update queries are not supported.",
+                                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
                         return (List<FieldsQueryCursor<List<?>>>)doRunPrepared(schemaName, prepared, qry, null, null,
                             keepBinary, startTx, tracker, cancel);
+                    }
                 }
             }
 
@@ -2190,8 +1896,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 res.addAll(doRunPrepared(schemaName, prepared, newQry, twoStepQry, meta, keepBinary, startTx, tracker,
                     cancel));
 
+                // We cannot cache two-step query for multiple statements query except the last statement
                 if (parseRes.twoStepQuery() != null && parseRes.twoStepQueryKey() != null &&
-                    !parseRes.twoStepQuery().explain())
+                    !parseRes.twoStepQuery().explain() && remainingSql == null)
                     twoStepCache.putIfAbsent(parseRes.twoStepQueryKey(), new H2TwoStepCachedQuery(meta,
                         twoStepQry.copy()));
             }
@@ -2201,8 +1908,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         catch (RuntimeException | Error e) {
             GridNearTxLocal tx;
 
-            if (mvccEnabled && (tx = tx(ctx)) != null)
+            if (mvccEnabled && (tx = tx(ctx)) != null &&
+                (!(e instanceof IgniteSQLException) || /* Parsing errors should not rollback Tx. */
+                    ((IgniteSQLException)e).sqlState() != SqlStateCode.PARSING_EXCEPTION) ) {
+
                 tx.setRollbackOnly();
+            }
 
             throw e;
         }
@@ -2234,7 +1945,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (!prepared.isQuery()) {
             if (DmlStatementsProcessor.isDmlStatement(prepared)) {
                 try {
-                    Connection conn = connectionForSchema(schemaName);
+                    Connection conn = connMgr.connectionForThread(schemaName);
 
                     if (!loc)
                         return dmlProc.updateSqlFieldsDistributed(schemaName, conn, prepared, qry, cancel);
@@ -2289,6 +2000,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             checkQueryType(qry, true);
 
+            if (ctx.security().enabled())
+                checkSecurity(twoStepQry.cacheIds());
+
             return Collections.singletonList(doRunDistributedQuery(schemaName, qry, twoStepQry, meta, keepBinary,
                 startTx, tracker, cancel));
         }
@@ -2304,6 +2018,23 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
+     * Check security access for caches.
+     *
+     * @param cacheIds Cache IDs.
+     */
+    private void checkSecurity(Collection<Integer> cacheIds) {
+        if (F.isEmpty(cacheIds))
+            return;
+
+        for (Integer cacheId : cacheIds) {
+            DynamicCacheDescriptor desc = ctx.cache().cacheDescriptor(cacheId);
+
+            if (desc != null)
+                ctx.security().authorize(desc.cacheName(), SecurityPermission.CACHE_READ, null);
+        }
+    }
+
+    /**
      * Parse and split query if needed, cache either two-step query or statement.
      * @param schemaName Schema name.
      * @param qry Query.
@@ -2312,7 +2043,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      *     metadata for two-step query (if needed), evaluated query local execution flag.
      */
     private ParsingResult parseAndSplit(String schemaName, SqlFieldsQuery qry, int firstArg) {
-        Connection c = connectionForSchema(schemaName);
+        Connection c = connMgr.connectionForThread(schemaName);
 
         // For queries that are explicitly local, we rely on the flag specified in the query
         // because this parsing result will be cached and used for queries directly.
@@ -2333,6 +2064,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridSqlQueryParser.PreparedWithRemaining prep = GridSqlQueryParser.preparedWithRemaining(stmt);
 
         Prepared prepared = prep.prepared();
+
+        if (GridSqlQueryParser.isExplainUpdate(prepared))
+            throw new IgniteSQLException("Explains of update queries are not supported.",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         checkQueryType(qry, prepared.isQuery());
 
@@ -2374,7 +2109,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 // Legit assertion - we have H2 query flag above.
                 assert parsedStmt instanceof GridSqlQuery;
 
-                loc = parser.isLocalQuery(qry.isReplicatedOnly());
+                loc = parser.isLocalQuery();
             }
 
             if (loc) {
@@ -2400,7 +2135,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         // Let's not cache multiple statements and distributed queries as whole two step query will be cached later on.
         if (remainingSql != null || hasTwoStep)
-            getStatementsCacheForCurrentThread().remove(schemaName, qry.getSql());
+            connMgr.statementCacheForThread().remove(schemaName, qry.getSql());
 
         if (!hasTwoStep)
             return new ParsingResult(prepared, newQry, remainingSql, null, null, null);
@@ -2469,7 +2204,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private GridCacheTwoStepQuery split(Prepared prepared, SqlFieldsQuery qry) throws IgniteCheckedException,
         SQLException {
-        GridCacheTwoStepQuery res = GridSqlQuerySplitter.split(connectionForThread(qry.getSchema()), prepared,
+        GridCacheTwoStepQuery res = GridSqlQuerySplitter.split(connMgr.connectionForThread(qry.getSchema()), prepared,
             qry.getArgs(), qry.isCollocated(), qry.isDistributedJoins(), qry.isEnforceJoinOrder(), this);
 
         List<Integer> cacheIds = collectCacheIds(null, res);
@@ -2495,6 +2230,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param qry Sql fields query.autoStartTx(qry)
      * @return {@code True} if need to start transaction.
      */
+    @SuppressWarnings("SimplifiableIfStatement")
     public boolean autoStartTx(SqlFieldsQuery qry) {
         if (!mvccEnabled(ctx))
             return false;
@@ -2533,7 +2269,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             loc = false;
         }
 
-        Connection conn = connectionForSchema(schema);
+        Connection conn = connMgr.connectionForThread(schema);
 
         H2Utils.setupConnection(conn, false, fldsQry.isEnforceJoinOrder());
 
@@ -2640,7 +2376,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     public UpdateResult mapDistributedUpdate(String schemaName, SqlFieldsQuery fldsQry, IndexingQueryFilter filter,
         GridQueryCancel cancel, boolean local) throws IgniteCheckedException {
-        Connection conn = connectionForSchema(schemaName);
+        Connection conn = connMgr.connectionForThread(schemaName);
 
         H2Utils.setupConnection(conn, false, fldsQry.isEnforceJoinOrder());
 
@@ -2705,72 +2441,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * Prepares statement for query.
-     *
-     * @param qry Query string.
-     * @param tableAlias table alias.
-     * @param tbl Table to use.
-     * @return Prepared statement.
-     * @throws IgniteCheckedException In case of error.
-     */
-    private String generateQuery(String qry, String tableAlias, H2TableDescriptor tbl) throws IgniteCheckedException {
-        assert tbl != null;
-
-        final String qry0 = qry;
-
-        String t = tbl.fullTableName();
-
-        String from = " ";
-
-        qry = qry.trim();
-
-        String upper = qry.toUpperCase();
-
-        if (upper.startsWith("SELECT")) {
-            qry = qry.substring(6).trim();
-
-            final int star = qry.indexOf('*');
-
-            if (star == 0)
-                qry = qry.substring(1).trim();
-            else if (star > 0) {
-                if (F.eq('.', qry.charAt(star - 1))) {
-                    t = qry.substring(0, star - 1);
-
-                    qry = qry.substring(star + 1).trim();
-                }
-                else
-                    throw new IgniteCheckedException("Invalid query (missing alias before asterisk): " + qry0);
-            }
-            else
-                throw new IgniteCheckedException("Only queries starting with 'SELECT *' and 'SELECT alias.*' " +
-                    "are supported (rewrite your query or use SqlFieldsQuery instead): " + qry0);
-
-            upper = qry.toUpperCase();
-        }
-
-        if (!upper.startsWith("FROM"))
-            from = " FROM " + t + (tableAlias != null ? " as " + tableAlias : "") +
-                (upper.startsWith("WHERE") || upper.startsWith("ORDER") || upper.startsWith("LIMIT") ?
-                    " " : " WHERE ");
-
-        if(tableAlias != null)
-            t = tableAlias;
-
-        qry = "SELECT " + t + "." + KEY_FIELD_NAME + ", " + t + "." + VAL_FIELD_NAME + from + qry;
-
-        return qry;
-    }
-
-    /**
      * Registers new class description.
      *
      * This implementation doesn't support type reregistration.
      *
      * @param type Type description.
+     * @param isSql {@code true} in case table has been created from SQL.
      * @throws IgniteCheckedException In case of error.
      */
-    @Override public boolean registerType(GridCacheContext cctx, GridQueryTypeDescriptor type)
+    @Override public boolean registerType(GridCacheContext cctx, GridQueryTypeDescriptor type, boolean isSql)
         throws IgniteCheckedException {
         validateTypeDescriptor(type);
 
@@ -2778,17 +2457,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         H2Schema schema = schemas.get(schemaName);
 
-        H2TableDescriptor tbl = new H2TableDescriptor(this, schema, type, cctx);
+        H2TableDescriptor tbl = new H2TableDescriptor(this, schema, type, cctx, isSql);
 
         try {
-            Connection conn = connectionForThread(schemaName);
+            Connection conn = connMgr.connectionForThread(schemaName);
 
             createTable(schemaName, schema, tbl, conn);
 
             schema.add(tbl);
         }
         catch (SQLException e) {
-            onSqlException();
+            connMgr.onSqlException();
 
             throw new IgniteCheckedException("Failed to register query type: " + type, e);
         }
@@ -3016,62 +2695,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * Called periodically by {@link GridTimeoutProcessor} to clean up the statement cache.
-     */
-    private void cleanupStatementCache() {
-        long now = U.currentTimeMillis();
-
-        for (Iterator<Map.Entry<Thread, H2ConnectionWrapper>> it = conns.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<Thread, H2ConnectionWrapper> entry = it.next();
-
-            Thread t = entry.getKey();
-
-            if (t.getState() == Thread.State.TERMINATED) {
-                U.close(entry.getValue(), log);
-
-                it.remove();
-            }
-            else if (now - entry.getValue().statementCache().lastUsage() > STATEMENT_CACHE_THREAD_USAGE_TIMEOUT)
-                entry.getValue().clearStatementCache();
-        }
-    }
-
-    /**
-     * Called periodically by {@link GridTimeoutProcessor} to clean up the {@link #conns}.
-     */
-    private void cleanupConnections() {
-        for (Iterator<Map.Entry<Thread, H2ConnectionWrapper>> it = conns.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<Thread, H2ConnectionWrapper> entry = it.next();
-
-            Thread t = entry.getKey();
-
-            if (t.getState() == Thread.State.TERMINATED) {
-                U.close(entry.getValue(), log);
-
-                it.remove();
-            }
-        }
-    }
-
-    /**
-     * Removes from cache and returns associated with current thread connection.
-     * @return Connection associated with current thread.
-     */
-    public ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> detach() {
-        Thread key = Thread.currentThread();
-
-        ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> reusableConnection = connCache.get();
-
-        H2ConnectionWrapper connection = conns.remove(key);
-
-        connCache.remove();
-
-        assert reusableConnection.object().connection() == connection.connection();
-
-        return reusableConnection;
-    }
-
-    /**
      * Rebuild indexes from hash index.
      *
      * @param cacheName Cache name.
@@ -3123,7 +2746,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"NonThreadSafeLazyInitialization", "deprecation"})
+    @SuppressWarnings({"deprecation"})
     @Override public void start(GridKernalContext ctx, GridSpinBusyLock busyLock) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Starting cache query index...");
@@ -3138,36 +2761,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             SysProperties.serializeJavaObject = false;
         }
 
-        String dbName = (ctx != null ? ctx.localNodeId() : UUID.randomUUID()).toString();
-
-        dbUrl = "jdbc:h2:mem:" + dbName + DB_OPTIONS;
-
-        org.h2.Driver.load();
-
-        try {
-            if (getString(IGNITE_H2_DEBUG_CONSOLE) != null) {
-                Connection c = DriverManager.getConnection(dbUrl);
-
-                int port = getInteger(IGNITE_H2_DEBUG_CONSOLE_PORT, 0);
-
-                WebServer webSrv = new WebServer();
-                Server web = new Server(webSrv, "-webPort", Integer.toString(port));
-                web.start();
-                String url = webSrv.addSession(c);
-
-                U.quietAndInfo(log, "H2 debug console URL: " + url);
-
-                try {
-                    Server.openBrowser(url);
-                }
-                catch (Exception e) {
-                    U.warn(log, "Failed to open browser: " + e.getMessage());
-                }
-            }
-        }
-        catch (SQLException e) {
-            throw new IgniteCheckedException(e);
-        }
+        connMgr = new ConnectionManager(ctx);
 
         if (ctx == null) {
             // This is allowed in some tests.
@@ -3207,12 +2801,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             mapQryExec.start(ctx, this);
             rdcQryExec.start(ctx, this);
 
-            stmtCacheCleanupTask = ctx.timeout().schedule(new Runnable() {
-                @Override public void run() {
-                    cleanupStatementCache();
-                }
-            }, CLEANUP_STMT_CACHE_PERIOD, CLEANUP_STMT_CACHE_PERIOD);
-
             dmlProc = new DmlStatementsProcessor();
             ddlProc = new DdlStatementsProcessor();
 
@@ -3228,17 +2816,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         createSchema0(QueryUtils.SCHEMA_SYS);
                     }
 
-                    Connection c = connectionForSchema(QueryUtils.SCHEMA_SYS);
-
-                    for (SqlSystemView view : systemViews(ctx))
-                        SqlSystemTableEngine.registerView(c, view);
+                    try (Connection c = connMgr.connectionNoCache(QueryUtils.SCHEMA_SYS)) {
+                        for (SqlSystemView view : systemViews(ctx))
+                            SqlSystemTableEngine.registerView(c, view);
+                    }
                 }
                 catch (SQLException e) {
                     throw new IgniteCheckedException("Failed to register system view.", e);
                 }
-
-                // Caching this connection in ThreadLocal may lead to memory leaks.
-                connCache.set(null);
             }
             else {
                 if (log.isDebugEnabled())
@@ -3253,12 +2838,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         JdbcUtils.serializer = h2Serializer();
 
         assert ctx != null;
-
-        connCleanupTask = ctx.timeout().schedule(new Runnable() {
-            @Override public void run() {
-                cleanupConnections();
-            }
-        }, CLEANUP_CONNECTIONS_PERIOD, CLEANUP_CONNECTIONS_PERIOD);
     }
 
     /**
@@ -3273,6 +2852,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         views.add(new SqlSystemViewBaselineNodes(ctx));
         views.add(new SqlSystemViewNodeMetrics(ctx));
         views.add(new SqlSystemViewCaches(ctx));
+        views.add(new SqlSystemViewCacheGroups(ctx));
 
         return views;
     }
@@ -3425,7 +3005,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         " FOR \"") +
                         cls.getName() + '.' + m.getName() + '"';
 
-                    executeStatement(schema, clause);
+                    connMgr.executeStatement(schema, clause);
                 }
             }
         }
@@ -3438,39 +3018,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         mapQryExec.cancelLazyWorkers();
 
-        for (H2ConnectionWrapper c : conns.values())
-            U.close(c, log);
-
-        conns.clear();
         schemas.clear();
         cacheName2schema.clear();
 
-        try (Connection c = DriverManager.getConnection(dbUrl); Statement s = c.createStatement()) {
-            s.execute("SHUTDOWN");
-        }
-        catch (SQLException e) {
-            U.error(log, "Failed to shutdown database.", e);
-        }
-
-        if (stmtCacheCleanupTask != null)
-            stmtCacheCleanupTask.close();
-
-        if (connCleanupTask != null)
-            connCleanupTask.close();
-
         GridH2QueryContext.clearLocalNodeStop(nodeId);
-
-        if (log.isDebugEnabled())
-            log.debug("Cache query index stopped.");
 
         // Close system H2 connection to INFORMATION_SCHEMA
         synchronized (schemaMux) {
-            if (sysConn != null) {
-                U.close(sysConn, log);
-
-                sysConn = null;
-            }
+            connMgr.stop();
         }
+
+        if (log.isDebugEnabled())
+            log.debug("Cache query index stopped.");
     }
 
     /** {@inheritDoc} */
@@ -3548,7 +3107,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
             }
 
-            conns.values().forEach(H2ConnectionWrapper::clearStatementCache);
+            connMgr.onCacheUnregistered();
 
             for (H2TableDescriptor tbl : rmvTbls) {
                 for (Index idx : tbl.table().getIndexes())
@@ -3629,12 +3188,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Partitions.
      * @throws IgniteCheckedException, If fails.
      */
-    private int[] calculateQueryPartitions(CacheQueryPartitionInfo[] partInfoList, Object[] params)
+    private int[] calculateQueryPartitions(PartitionInfo[] partInfoList, Object[] params)
         throws IgniteCheckedException {
 
         ArrayList<Integer> list = new ArrayList<>(partInfoList.length);
 
-        for (CacheQueryPartitionInfo partInfo: partInfoList) {
+        for (PartitionInfo partInfo: partInfoList) {
             int partId = (partInfo.partition() >= 0) ? partInfo.partition() :
                 bindPartitionInfoParameter(partInfo, params);
 
@@ -3667,7 +3226,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Partition.
      * @throws IgniteCheckedException, If fails.
      */
-    private int bindPartitionInfoParameter(CacheQueryPartitionInfo partInfo, Object[] params)
+    private int bindPartitionInfoParameter(PartitionInfo partInfo, Object[] params)
         throws IgniteCheckedException {
         assert partInfo != null;
         assert partInfo.partition() < 0;
@@ -3705,18 +3264,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void cancelAllQueries() {
+    @Override public void onKernalStop() {
         mapQryExec.cancelLazyWorkers();
 
-        for (H2ConnectionWrapper c : conns.values())
-            U.close(c, log);
+        connMgr.onKernalStop();
     }
 
     /**
-     * @return Per-thread connections.
+     * @return Query executor.
      */
-    public Map<Thread, ?> perThreadConnections() {
-        return conns;
+    public ConnectionManager connections() {
+        return connMgr;
     }
 
     /**
@@ -3770,12 +3328,5 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         return false;
-    }
-
-    /**
-     * Closeable iterator.
-     */
-    private interface ClIter<X> extends AutoCloseable, Iterator<X> {
-        // No-op.
     }
 }

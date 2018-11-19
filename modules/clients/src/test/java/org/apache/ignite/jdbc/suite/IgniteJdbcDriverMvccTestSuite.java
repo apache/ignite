@@ -25,24 +25,26 @@ import org.apache.ignite.jdbc.thin.JdbcThinTransactionsClientNoAutoCommitComplex
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsServerAutoCommitComplexSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsServerNoAutoCommitComplexSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsWithMvccEnabledSelfTest;
+import org.apache.ignite.jdbc.thin.MvccJdbcTransactionFinishOnDeactivatedClusterSelfTest;
 
+/** */
 public class IgniteJdbcDriverMvccTestSuite extends TestSuite {
     /**
      * @return JDBC Driver Test Suite.
-     * @throws Exception In case of error.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite JDBC Driver Test Suite");
 
-        suite.addTest(new TestSuite(JdbcThinConnectionMvccEnabledSelfTest.class));
-        suite.addTest(new TestSuite(JdbcVersionMismatchSelfTest.class));
-        
+        suite.addTestSuite(JdbcThinConnectionMvccEnabledSelfTest.class);
+        suite.addTestSuite(JdbcVersionMismatchSelfTest.class);
+
         // Transactions
-        suite.addTest(new TestSuite(JdbcThinTransactionsWithMvccEnabledSelfTest.class));
-        suite.addTest(new TestSuite(JdbcThinTransactionsClientAutoCommitComplexSelfTest.class));
-        suite.addTest(new TestSuite(JdbcThinTransactionsServerAutoCommitComplexSelfTest.class));
-        suite.addTest(new TestSuite(JdbcThinTransactionsClientNoAutoCommitComplexSelfTest.class));
-        suite.addTest(new TestSuite(JdbcThinTransactionsServerNoAutoCommitComplexSelfTest.class));
+        suite.addTestSuite(JdbcThinTransactionsWithMvccEnabledSelfTest.class);
+        suite.addTestSuite(JdbcThinTransactionsClientAutoCommitComplexSelfTest.class);
+        suite.addTestSuite(JdbcThinTransactionsServerAutoCommitComplexSelfTest.class);
+        suite.addTestSuite(JdbcThinTransactionsClientNoAutoCommitComplexSelfTest.class);
+        suite.addTestSuite(JdbcThinTransactionsServerNoAutoCommitComplexSelfTest.class);
+        suite.addTestSuite(MvccJdbcTransactionFinishOnDeactivatedClusterSelfTest.class);
 
         return suite;
     }

@@ -55,7 +55,6 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.DiscoverySpiTestListener;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cluster.NodeOrderComparator;
-import org.apache.ignite.internal.cluster.NodeOrderLegacyComparator;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgniteNodeAttributes;

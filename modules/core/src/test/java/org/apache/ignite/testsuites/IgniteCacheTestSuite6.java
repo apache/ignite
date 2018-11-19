@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.ReplicatedTransactionalOptimi
 import org.apache.ignite.internal.processors.cache.ReplicatedTransactionalPessimisticCacheGetsDistributionTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteExchangeLatchManagerCoordinatorFailTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheExchangeMergeTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheParallelStartTest;
 import org.apache.ignite.internal.processors.cache.distributed.CachePartitionStateTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheTryLockMultithreadedTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCachePartitionEvictionDuringReadThroughSelfTest;
@@ -35,7 +36,6 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheThread
 import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticTxSuspendResumeMultiServerTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticTxSuspendResumeTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgnitePessimisticTxSuspendResumeTest;
-import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingOrderingTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxLabelTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxMultiCacheAsyncOpsTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOnCachesStartTest;
@@ -46,10 +46,10 @@ import org.apache.ignite.internal.processors.cache.transactions.TxRollbackAsyncT
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnIncorrectParamsTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutNearCacheTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutNoDeadlockDetectionTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutOnePhaseCommitTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTopologyChangeTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxStateChangeEventTest;
-import org.apache.ignite.testframework.junits.GridAbstractTest;
 
 /**
  * Test suite.
@@ -60,8 +60,6 @@ public class IgniteCacheTestSuite6 extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        System.setProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, "false");
-
         TestSuite suite = new TestSuite("IgniteCache Test Suite part 6");
 
         suite.addTestSuite(CachePartitionStateTest.class);
@@ -80,6 +78,7 @@ public class IgniteCacheTestSuite6 extends TestSuite {
         suite.addTestSuite(TxRollbackAsyncTest.class);
         suite.addTestSuite(TxRollbackAsyncNearCacheTest.class);
         suite.addTestSuite(TxRollbackOnTopologyChangeTest.class);
+        suite.addTestSuite(TxRollbackOnTimeoutOnePhaseCommitTest.class);
 
         suite.addTestSuite(TxOptimisticPrepareOnUnstableTopologyTest.class);
 
@@ -110,6 +109,8 @@ public class IgniteCacheTestSuite6 extends TestSuite {
 
         suite.addTestSuite(PartitionsExchangeCoordinatorFailoverTest.class);
         suite.addTestSuite(CacheTryLockMultithreadedTest.class);
+
+        suite.addTestSuite(CacheParallelStartTest.class);
 
         //suite.addTestSuite(CacheClientsConcurrentStartTest.class);
         //suite.addTestSuite(GridCacheRebalancingOrderingTest.class);
