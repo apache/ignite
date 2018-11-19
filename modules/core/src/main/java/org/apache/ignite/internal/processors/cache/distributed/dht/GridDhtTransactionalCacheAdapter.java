@@ -338,7 +338,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     req.txSize(),
                                     req.subjectId(),
                                     req.taskNameHash(),
-                                    !req.skipStore() && req.storeUsed());
+                                    !req.skipStore() && req.storeUsed(),
+                                    req.txLabel());
 
                                 tx = ctx.tm().onCreated(null, tx);
 
@@ -1081,7 +1082,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             }
 
             try {
-                if (top != null && needRemap(req.topologyVersion(), top.readyTopologyVersion())) {
+                if (top != null && needRemap(req.topologyVersion(), top.readyTopologyVersion(), req.keys())) {
                     if (log.isDebugEnabled()) {
                         log.debug("Client topology version mismatch, need remap lock request [" +
                             "reqTopVer=" + req.topologyVersion() +
@@ -1120,7 +1121,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             req.txSize(),
                             null,
                             req.subjectId(),
-                            req.taskNameHash());
+                            req.taskNameHash(),
+                            req.txLabel());
 
                         if (req.syncCommit())
                             tx.syncMode(FULL_SYNC);
@@ -2120,7 +2122,10 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                 GridDhtTopologyFuture topFut = top.topologyVersionFuture();
 
-                if (!topFut.isDone() || !topFut.topologyVersion().equals(topVer)) {
+                boolean done = topFut.isDone();
+
+                if (!done || !(topFut.topologyVersion().compareTo(topVer) >= 0
+                    && ctx.shared().exchange().lastAffinityChangedTopologyVersion(topFut.initialVersion()).compareTo(topVer) <= 0)) {
                     // TODO IGNITE-7164 Wait for topology change, remap client TX in case affinity was changed.
                     top.readUnlock();
 
@@ -2151,7 +2156,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     -1,
                     null,
                     txSubjectId,
-                    txTaskNameHash);
+                    txTaskNameHash,
+                    null);
 
                 // if (req.syncCommit())
                 tx.syncMode(FULL_SYNC);
@@ -2278,7 +2284,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     -1,
                     req0.subjectId(),
                     req0.taskNameHash(),
-                    false);
+                    false,
+                    null);
 
                 tx.mvccSnapshot(new MvccSnapshotWithoutTxs(req0.coordinatorVersion(), req0.counter(),
                     MVCC_OP_COUNTER_NA, req0.cleanupVersion()));

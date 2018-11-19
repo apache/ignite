@@ -269,6 +269,9 @@ import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastRecei
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = false)
 public class TcpCommunicationSpi extends IgniteSpiAdapter implements CommunicationSpi<Message> {
+    /** Time threshold to log too long connection establish. */
+    private static final int CONNECTION_ESTABLISH_THRESHOLD_MS = 100;
+
     /** IPC error message. */
     public static final String OUT_OF_RESOURCES_TCP_MSG = "Failed to allocate shared memory segment " +
         "(switching to TCP, may be slower).";
@@ -2983,10 +2986,18 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         connectGate.enter();
 
         try {
+            final long start = System.currentTimeMillis();
+
             GridCommunicationClient client = createTcpClient(node, connIdx);
 
-            if (log.isDebugEnabled())
-                log.debug("TCP client created: " + client);
+            final long time = System.currentTimeMillis() - start;
+
+            if (time > CONNECTION_ESTABLISH_THRESHOLD_MS) {
+                if (log.isInfoEnabled())
+                    log.info("TCP client created [client=" + client + ", duration=" + time + "ms]");
+            }
+            else if (log.isDebugEnabled())
+                log.debug("TCP client created [client=" + client + ", duration=" + time + "ms]");
 
             return client;
         }
