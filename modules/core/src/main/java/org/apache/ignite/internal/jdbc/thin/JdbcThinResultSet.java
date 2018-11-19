@@ -1860,6 +1860,7 @@ public class JdbcThinResultSet implements ResultSet {
     private void ensureAlive() throws SQLException {
         if (closed)
             throw new SQLException("Result set is closed.", SqlStateCode.INVALID_CURSOR_STATE);
+
         if (stmt != null && stmt.cancelled())
             throw new SQLException("The query was cancelled while executing.", SqlStateCode.QUERY_CANCELLED);
     }

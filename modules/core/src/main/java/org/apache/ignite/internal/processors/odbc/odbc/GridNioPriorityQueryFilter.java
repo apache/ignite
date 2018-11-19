@@ -33,7 +33,6 @@ import org.apache.ignite.lang.IgniteInClosure;
  * and calls corresponding handle method with specified {@link GridNioParser}.
  */
 public class GridNioPriorityQueryFilter extends GridNioFilterAdapter {
-
     /**
      * Constructor
      */
@@ -67,10 +66,11 @@ public class GridNioPriorityQueryFilter extends GridNioFilterAdapter {
     @Override public void onMessageReceived(GridNioSession ses, Object msg) throws IgniteCheckedException {
         ClientListenerConnectionContext connCtx = ses.meta(ClientListenerNioListener.CONN_CTX_META_KEY);
 
-        if (connCtx != null && connCtx.parser() != null){
+        if (connCtx != null && connCtx.parser() != null) {
             byte[] inMsg = (byte[]) msg;
 
             int cmdId = connCtx.parser().decodeCommandType(inMsg);
+
             if (connCtx.handler().isSynchronousHandlingExpected(cmdId)){
                 ClientListenerResponse resp = connCtx.handler().handleSynchronously(connCtx.parser().decode(inMsg));
 
