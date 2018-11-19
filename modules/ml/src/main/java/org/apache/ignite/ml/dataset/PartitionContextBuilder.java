@@ -19,6 +19,7 @@ package org.apache.ignite.ml.dataset;
 
 import java.io.Serializable;
 import java.util.Iterator;
+import java.util.stream.Stream;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
@@ -38,6 +39,10 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 public interface PartitionContextBuilder<K, V, C extends Serializable> extends Serializable {
     /**
      * Builds a new partition {@code context} from an {@code upstream} data.
+     * Important: there is no guarantee that there will be no more than one UpstreamEntry with given key,
+     * UpstreamEntry should be thought rather as a container saving all data from upstream, but omitting uniqueness
+     * constraint. This constraint is omitted to allow upstream data transformers in {@link DatasetBuilder} replicating
+     * entries. For example it can be useful for bootstrapping.
      *
      * @param env Learning environment.
      * @param upstreamData Partition {@code upstream} data.
@@ -45,6 +50,23 @@ public interface PartitionContextBuilder<K, V, C extends Serializable> extends S
      * @return Partition {@code context}.
      */
     public C build(LearningEnvironment env, Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize);
+
+
+    /**
+     * Builds a new partition {@code context} from an {@code upstream} data.
+     * Important: there is no guarantee that there will be no more than one UpstreamEntry with given key,
+     * UpstreamEntry should be thought rather as a container saving all data from upstream, but omitting uniqueness
+     * constraint. This constraint is omitted to allow upstream data transformers in {@link DatasetBuilder} replicating
+     * entries. For example it can be useful for bootstrapping.
+     *
+     * @param env LEarning environment.
+     * @param upstreamData Partition {@code upstream} data.
+     * @param upstreamDataSize Partition {@code upstream} data size.
+     * @return Partition {@code context}.
+     */
+    public default C build(LearningEnvironment env, Stream<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize) {
+        return build(env, upstreamData.iterator(), upstreamDataSize);
+    }
 
     /**
      * Makes a composed partition {@code context} builder that first builds a {@code context} and then applies the

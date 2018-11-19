@@ -19,6 +19,7 @@ package org.apache.ignite.ml.dataset;
 
 import java.io.Serializable;
 import java.util.Iterator;
+import java.util.stream.Stream;
 import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleDatasetDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetDataBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironment;
@@ -40,7 +41,11 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 @FunctionalInterface
 public interface PartitionDataBuilder<K, V, C extends Serializable, D extends AutoCloseable> extends Serializable {
     /**
-     * Builds a new partition {@code data} from a partition {@code upstream} data and partition {@code context}
+     * Builds a new partition {@code data} from a partition {@code upstream} data and partition {@code context}.
+     * Important: there is no guarantee that there will be no more than one UpstreamEntry with given key,
+     * UpstreamEntry should be thought rather as a container saving all data from upstream, but omitting uniqueness
+     * constraint. This constraint is omitted to allow upstream data transformers in {@link DatasetBuilder} replicating
+     * entries. For example it can be useful for bootstrapping.
      *
      * @param env Learning environment.
      * @param upstreamData Partition {@code upstream} data.
@@ -49,6 +54,10 @@ public interface PartitionDataBuilder<K, V, C extends Serializable, D extends Au
      * @return Partition {@code data}.
      */
     public D build(LearningEnvironment env, Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize, C ctx);
+
+    public default D build(LearningEnvironment env, Stream<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize, C ctx) {
+        return build(env, upstreamData.iterator(), upstreamDataSize, ctx);
+    }
 
     /**
      * Makes a composed partition {@code data} builder that first builds a {@code data} and then applies the specified

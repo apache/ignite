@@ -34,7 +34,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
-import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.dataset.UpstreamTransformerBuildersChain;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -180,6 +180,7 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
                     ignite,
                     upstreamCacheName,
                     (k, v) -> true,
+                    UpstreamTransformerBuildersChain.empty(),
                     datasetCacheName,
                     datasetId,
                     0,
@@ -230,6 +231,7 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
             ignite,
             upstreamCacheName,
             (k, v) -> true,
+            UpstreamTransformerBuildersChain.empty(),
             datasetCacheName,
             (env, upstream, upstreamSize) -> {
 

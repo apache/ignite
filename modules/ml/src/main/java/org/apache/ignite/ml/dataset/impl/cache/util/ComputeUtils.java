@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.locks.LockSupport;
+import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -40,9 +41,12 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.ml.dataset.PartitionContextBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
+import org.apache.ignite.ml.dataset.UpstreamTransformer;
+import org.apache.ignite.ml.dataset.UpstreamTransformerBuildersChain;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.util.Utils;
 
 /**
  * Util class that provides common methods to perform computations on top of the Ignite Compute Grid.
@@ -138,6 +142,7 @@ public class ComputeUtils {
      * @param ignite Ignite instance.
      * @param upstreamCacheName Name of an {@code upstream} cache.
      * @param filter Filter for {@code upstream} data.
+     * @param transformersChain Upstream transformers.
      * @param datasetCacheName Name of a partition {@code context} cache.
      * @param datasetId Dataset ID.
      * @param part Partition index.
@@ -152,11 +157,11 @@ public class ComputeUtils {
     public static <K, V, C extends Serializable, D extends AutoCloseable> D getData(
         Ignite ignite,
         String upstreamCacheName, IgniteBiPredicate<K, V> filter,
-        String datasetCacheName,
-        UUID datasetId,
+        UpstreamTransformerBuildersChain<K, V> transformersChain,
+        String datasetCacheName, UUID datasetId,
         int part,
         PartitionDataBuilder<K, V, C, D> partDataBuilder,
-        LearningEnvironmentBuilder envBuilder) {
+    LearningEnvironmentBuilder envBuilder) {
 
         PartitionDataStorage dataStorage = (PartitionDataStorage)ignite
             .cluster()
@@ -175,13 +180,22 @@ public class ComputeUtils {
             qry.setPartition(part);
             qry.setFilter(filter);
 
-            long cnt = computeCount(upstreamCache, qry);
+            UpstreamTransformerBuildersChain<K, V> chainCopy = Utils.copy(transformersChain);
+            chainCopy.modifySeed(s -> s + part);
+
+            long cnt = computeCount(upstreamCache, qry, chainCopy);
 
             if (cnt > 0) {
                 try (QueryCursor<UpstreamEntry<K, V>> cursor = upstreamCache.query(qry,
                     e -> new UpstreamEntry<>(e.getKey(), e.getValue()))) {
 
-                    Iterator<UpstreamEntry<K, V>> iter = new IteratorWithConcurrentModificationChecker<>(cursor.iterator(), cnt,
+                    Iterator<UpstreamEntry<K, V>> it = cursor.iterator();
+                    if (!chainCopy.isEmpty()) {
+                        Stream<UpstreamEntry<K, V>> transformedStream = chainCopy.transform(Utils.asStream(it, cnt));
+                        it = transformedStream.iterator();
+                    }
+
+                    Iterator<UpstreamEntry<K, V>> iter = new IteratorWithConcurrentModificationChecker<>(it, cnt,
                         "Cache expected to be not modified during dataset data building [partition=" + part + ']');
 
                     return partDataBuilder.build(env, iter, cnt, ctx);
@@ -202,14 +216,15 @@ public class ComputeUtils {
         ignite.cluster().nodeLocalMap().remove(String.format(DATA_STORAGE_KEY_TEMPLATE, datasetId));
     }
 
-
     /**
      * Initializes partition {@code context} by loading it from a partition {@code upstream}.
-     *
+     *  @param <K> Type of a key in {@code upstream} data.
+     * @param <V> Type of a value in {@code upstream} data.
+     * @param <C> Type of a partition {@code context}.
      * @param ignite Ignite instance.
      * @param upstreamCacheName Name of an {@code upstream} cache.
      * @param filter Filter for {@code upstream} data.
-     * @param datasetCacheName Name of a partition {@code context} cache.
+     * @param transformersChain Upstream data {@link Stream} transformers chain.
      * @param ctxBuilder Partition {@code context} builder.
      * @param envBuilder Environment builder.
      * @param <K> Type of a key in {@code upstream} data.
@@ -217,9 +232,12 @@ public class ComputeUtils {
      * @param <C> Type of a partition {@code context}.
      */
     public static <K, V, C extends Serializable> void initContext(
-        Ignite ignite, String upstreamCacheName,
+        Ignite ignite,
+        String upstreamCacheName,
+//        UpstreamTransformerBuildersChain<K, V> transformersChain,
         IgniteBiPredicate<K, V> filter,
-        String datasetCacheName, PartitionContextBuilder<K, V, C> ctxBuilder,
+        String datasetCacheName,
+        PartitionContextBuilder<K, V, C> ctxBuilder,
         LearningEnvironmentBuilder envBuilder,
         int retries,
         int interval) {
@@ -234,13 +252,22 @@ public class ComputeUtils {
             qry.setPartition(part);
             qry.setFilter(filter);
 
-            long cnt = computeCount(locUpstreamCache, qry);
-
             C ctx;
+            UpstreamTransformer<K, V> transformer = transformersChain.build(env);
+
+            long cnt = computeCount(locUpstreamCache, qry, transformersChain);
+
             try (QueryCursor<UpstreamEntry<K, V>> cursor = locUpstreamCache.query(qry,
                 e -> new UpstreamEntry<>(e.getKey(), e.getValue()))) {
 
-                Iterator<UpstreamEntry<K, V>> iter = new IteratorWithConcurrentModificationChecker<>(cursor.iterator(), cnt,
+                Iterator<UpstreamEntry<K, V>> it = cursor.iterator();
+                if (!transformersChain.isEmpty()) {
+                    Stream<UpstreamEntry<K, V>> transformedStream = chainCopy.transform(Utils.asStream(it, cnt));
+                    it = transformedStream.iterator();
+                }
+                Iterator<UpstreamEntry<K, V>> iter = new IteratorWithConcurrentModificationChecker<>(
+                    it,
+                    cnt,
                     "Cache expected to be not modified during dataset data building [partition=" + part + ']');
 
                 ctx = ctxBuilder.build(env, iter, cnt);
@@ -260,6 +287,7 @@ public class ComputeUtils {
      * @param ignite Ignite instance.
      * @param upstreamCacheName Name of an {@code upstream} cache.
      * @param filter Filter for {@code upstream} data.
+     * @param transformersChain Transformers of upstream data.
      * @param datasetCacheName Name of a partition {@code context} cache.
      * @param ctxBuilder Partition {@code context} builder.
      * @param envBuilder Environment builder.
@@ -272,11 +300,12 @@ public class ComputeUtils {
         Ignite ignite,
         String upstreamCacheName,
         IgniteBiPredicate<K, V> filter,
+        UpstreamTransformerBuildersChain<K, V> transformersChain,
         String datasetCacheName,
         PartitionContextBuilder<K, V, C> ctxBuilder,
         LearningEnvironmentBuilder envBuilder,
         int retries) {
-        initContext(ignite, upstreamCacheName, filter, datasetCacheName, ctxBuilder, envBuilder, retries, 0);
+        initContext(ignite, upstreamCacheName, transformersChain, filter, datasetCacheName, ctxBuilder, envBuilder, retries, 0);
     }
 
     /**
@@ -311,14 +340,23 @@ public class ComputeUtils {
      *
      * @param cache Ignite cache with upstream data.
      * @param qry Cache query.
+     * @param transformersChain Transformers of stream of upstream data.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @return Number of entries supplied by the iterator.
      */
-    private static  <K, V> long computeCount(IgniteCache<K, V> cache, ScanQuery<K, V> qry) {
+    private static  <K, V> long computeCount(
+        IgniteCache<K, V> cache,
+        ScanQuery<K, V> qry,
+        UpstreamTransformerBuildersChain<K, V> transformersChain) {
         try (QueryCursor<UpstreamEntry<K, V>> cursor = cache.query(qry,
             e -> new UpstreamEntry<>(e.getKey(), e.getValue()))) {
-            return computeCount(cursor.iterator());
+
+            // 'If' statement below is just for optimization, to avoid unnecessary iterator -> stream -> iterator
+            // operations.
+            return transformersChain.isEmpty() ?
+                computeCount(cursor.iterator()) :
+                computeCount(transformersChain.transform(Utils.asStream(cursor.iterator())).iterator());
         }
     }
 
