@@ -155,6 +155,20 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     /**
      *
      */
+    public void testQ() throws Exception {
+        stmt.execute("SELECT 1; SELECT 2; SELECT 3");
+
+        assertNotNull(stmt.getResultSet());
+
+        stmt.cancel();
+
+        // TODO: close
+//        assertNull(stmt.getResultSet());
+    }
+
+    /**
+     *
+     */
     public void testExpectSQLExceptionOnCancelingStmtAgainstClosedStmt() throws Exception {
         stmt.close();
 
