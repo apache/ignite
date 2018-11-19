@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -70,6 +71,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
@@ -472,16 +474,16 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     /**
      * @param cfgs Service configurations.
      * @param dfltNodeFilter Default NodeFilter.
-     * @param checkMarshalling {@code true} if it is necessary to check marshalling of {@link
-     * ServiceConfiguration#getService()}, otherwise false.
+     * @param staticCfgs {@code true} to check statically defined services during node startup process, in this case
+     * {@link JdkMarshaller} (common marshaller for discovery layer) will be used to check services serialization
+     * because of {@link GridMarshallerMappingProcessor} is not started at this point, otherwise {@code false}.
      * @return Configurations to deploy.
      */
-    @SuppressWarnings("deprecation")
     private PreparedConfigurations prepareServiceConfigurations(Collection<ServiceConfiguration> cfgs,
-        IgnitePredicate<ClusterNode> dfltNodeFilter, boolean checkMarshalling) {
+        IgnitePredicate<ClusterNode> dfltNodeFilter, boolean staticCfgs) {
         List<ServiceConfiguration> cfgsCp = new ArrayList<>(cfgs.size());
 
-        Marshaller marsh = ctx.config().getMarshaller();
+        Marshaller marsh = !staticCfgs ? ctx.config().getMarshaller() : new JdkMarshaller();
 
         List<GridServiceDeploymentFuture> failedFuts = null;
 
@@ -489,7 +491,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
             Exception err = null;
 
             // Deploy to projection node by default
-            // or only on server nodes if no projection .
+            // or only on server nodes if no projection.
             if (cfg.getNodeFilter() == null && dfltNodeFilter != null)
                 cfg.setNodeFilter(dfltNodeFilter);
 
@@ -507,21 +509,20 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                 err = checkPermissions(cfg.getName(), SecurityPermission.SERVICE_DEPLOY);
 
             if (err == null) {
-                if (checkMarshalling) {
-                    try {
-                        byte[] srvcBytes = U.marshal(marsh, cfg.getService());
+                try {
+                    byte[] srvcBytes = U.marshal(marsh, cfg.getService());
 
+                    if (!staticCfgs)
                         cfgsCp.add(new LazyServiceConfiguration(cfg, srvcBytes));
-                    }
-                    catch (Exception e) {
-                        U.error(log, "Failed to marshal service with configured marshaller " +
-                            "[name=" + cfg.getName() + ", srvc=" + cfg.getService() + ", marsh=" + marsh + "]", e);
-
-                        err = e;
-                    }
+                    else
+                        cfgsCp.add(cfg);
                 }
-                else
-                    cfgsCp.add(cfg);
+                catch (Exception e) {
+                    U.error(log, "Failed to marshal service with configured marshaller " +
+                        "[name=" + cfg.getName() + ", srvc=" + cfg.getService() + ", marsh=" + marsh + "]", e);
+
+                    err = e;
+                }
             }
 
             if (err != null) {
@@ -599,7 +600,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
             if (cfgs.isEmpty())
                 return new GridFinishedFuture<>();
 
-            PreparedConfigurations srvCfg = prepareServiceConfigurations(cfgs, dfltNodeFilter, true);
+            PreparedConfigurations srvCfg = prepareServiceConfigurations(cfgs, dfltNodeFilter, false);
 
             List<ServiceConfiguration> cfgsCp = srvCfg.cfgs;
 
@@ -1498,9 +1499,8 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
         ArrayList<ServiceInfo> staticServicesInfo = new ArrayList<>();
 
         if (cfgs != null) {
-            // Skipped check of marshalling, because {@link GridMarshallerMappingProcessor} is not started at this point
             PreparedConfigurations prepCfgs = prepareServiceConfigurations(Arrays.asList(cfgs),
-                node -> !node.isClient(), false);
+                node -> !node.isClient(), true);
 
             if (logErrors) {
                 if (prepCfgs.failedFuts != null) {
