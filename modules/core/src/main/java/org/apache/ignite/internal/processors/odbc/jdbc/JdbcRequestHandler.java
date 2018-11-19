@@ -63,6 +63,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -102,6 +103,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
     /** Empty list stub. */
     private static final List<Closeable> QUERY_ALREADY_CANCELLED = Collections.emptyList();
+
+    /** The period of clean up the request to cursors mapping - 1 hour. */
+    private static final Long CONN_CLEANUP_PERIOD = 3_600_000L;
 
     /** Kernel context. */
     private final GridKernalContext ctx;
@@ -153,6 +157,12 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
     /** Mapping query to cursors using corresponding IDs. */
     private ConcurrentHashMap<Long, List<Closeable>> requestToCursorMapping = new ConcurrentHashMap<>();
+
+    /** Request to cursors mapping cleanup task. */
+    private final GridTimeoutProcessor.CancelableTask reqToCursorMappingCleanupTask;
+
+    /** List of request Ids detected within requestToCursorMapping. */
+    private List<Long> obsoleteRequestsMappings = new ArrayList<>();
 
     /**
      * Constructor.
@@ -206,6 +216,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
         // TODO IGNITE-9484 Do not create worker if there is a possibility to unbind TX from threads.
         worker = new JdbcRequestHandlerWorker(ctx.igniteInstanceName(), log, this, ctx);
+
+        reqToCursorMappingCleanupTask = ctx.timeout().schedule(() -> cleanupReqToCursorMappings(),
+            CONN_CLEANUP_PERIOD, CONN_CLEANUP_PERIOD);
     }
 
     /** {@inheritDoc} */
@@ -462,6 +475,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         bulkLoadRequests.clear();
 
         U.close(cliCtx, log);
+
+        if (reqToCursorMappingCleanupTask != null)
+            reqToCursorMappingCleanupTask.close();
     }
 
     /**
@@ -1256,6 +1272,20 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     "Failed to cancel request [reqId=" + req.requestIdToBeCancelled() + ']', req.requestId());
             else
                 return exceptionToResult(new QueryCancelledException(), req.requestIdToBeCancelled());
+        }
+    }
+
+    /**
+     * Called periodically to cleanup obsolete mappings from <code>requestToCursorMapping</code>.
+     */
+    private void cleanupReqToCursorMappings() {
+        synchronized (cancellationProcessingMux) {
+            for (Long reqId: obsoleteRequestsMappings)
+                requestToCursorMapping.remove(reqId);
+
+            obsoleteRequestsMappings.clear();
+
+            obsoleteRequestsMappings.addAll(requestToCursorMapping.keySet());
         }
     }
 }
