@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
@@ -44,7 +45,11 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
     private volatile boolean startClient;
 
     /** */
-    private final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+    private final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder().setShared(true);
+
+    /** */
+    private final TcpDiscoveryIpFinder CLIENT_IP_FINDER = new TcpDiscoveryVmIpFinder()
+        .setAddresses(Collections.singleton("127.0.0.1:47500"));
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -55,7 +60,8 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
         if (startClient) {
             cfg.setClientMode(true);
 
-            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
+            // It is necessary to ensure that client always connects to grid(0).
+            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(CLIENT_IP_FINDER);
         }
 
         return cfg;
