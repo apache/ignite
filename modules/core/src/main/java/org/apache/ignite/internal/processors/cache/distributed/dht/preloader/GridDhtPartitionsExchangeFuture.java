@@ -3568,7 +3568,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 U.doInParallel(parallelismLvl,
                     cctx.kernalContext().getSystemExecutorService(),
                     nonLocalCacheGroups(),
-                    grp -> grp.topology().finalizeUpdateCounters()
+                    grp -> {
+                        grp.topology().finalizeUpdateCounters();
+
+                        return null;
+                    }
                 );
             }
             else
