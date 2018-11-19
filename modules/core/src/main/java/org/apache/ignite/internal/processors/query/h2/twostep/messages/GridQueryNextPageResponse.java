@@ -217,7 +217,7 @@ public class GridQueryNextPageResponse implements Message {
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeMessage("retry", retry))
+                if (!writer.writeAffinityTopologyVersion("retry", retry))
                     return false;
 
                 writer.incrementState();
@@ -301,7 +301,7 @@ public class GridQueryNextPageResponse implements Message {
                 reader.incrementState();
 
             case 6:
-                retry = reader.readMessage("retry");
+                retry = reader.readAffinityTopologyVersion("retry");
 
                 if (!reader.isLastRead())
                     return false;

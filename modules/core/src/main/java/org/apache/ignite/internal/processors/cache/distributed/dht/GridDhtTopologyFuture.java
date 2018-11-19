@@ -92,10 +92,4 @@ public interface GridDhtTopologyFuture extends IgniteInternalFuture<AffinityTopo
      * @return {@code True} if this exchange changed affinity.
      */
     public boolean changedAffinity();
-
-    /**
-     *
-     * @return Topology version of last affinity change.
-     */
-    public AffinityTopologyVersion lastAffinityChangeTopologyVersion();
 }

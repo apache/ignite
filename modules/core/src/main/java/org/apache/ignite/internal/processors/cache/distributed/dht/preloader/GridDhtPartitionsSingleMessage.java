@@ -595,6 +595,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                     return false;
 
                 reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridDhtPartitionsSingleMessage.class);

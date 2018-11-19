@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -495,6 +496,11 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     }
 
     /** {@inheritDoc} */
+    @Override public void writeAffinityTopologyVersion(AffinityTopologyVersion val) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeMessage(Message msg, MessageWriter writer) {
         if (msg != null) {
             if (buf.hasRemaining()) {
@@ -809,6 +815,11 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
         byte[] arr = readByteArray();
 
         return arr != null ? U.bytesToIgniteUuid(arr, 0) : null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public AffinityTopologyVersion readAffinityTopologyVersion() {
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /** {@inheritDoc} */
@@ -1212,6 +1223,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
 
                 break;
 
+            case AFFINITY_TOPOLOGY_VERSION:
             case MSG:
                 try {
                     if (val != null)
@@ -1298,6 +1310,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
             case IGNITE_UUID:
                 return readIgniteUuid();
 
+            case AFFINITY_TOPOLOGY_VERSION:
             case MSG:
                 return readMessage(reader);
 

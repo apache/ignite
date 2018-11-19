@@ -28,6 +28,7 @@ import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectMap;
+import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -45,6 +46,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * Partition supply message.
  */
+@IgniteCodeGeneratingFail
 public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage implements GridCacheDeployable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -325,13 +327,14 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeLong("rebalanceId", rebalanceId))
+                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeMessage("topVer", topVer))
+                // Keep 'updateSeq' name for compatibility.
+                if (!writer.writeLong("updateSeq", rebalanceId))
                     return false;
 
                 writer.incrementState();
@@ -409,7 +412,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
                 reader.incrementState();
 
             case 11:
-                rebalanceId = reader.readLong("rebalanceId");
+                topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -417,7 +420,8 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
                 reader.incrementState();
 
             case 12:
-                topVer = reader.readMessage("topVer");
+                // Keep 'updateSeq' name for compatibility.
+                rebalanceId = reader.readLong("updateSeq");
 
                 if (!reader.isLastRead())
                     return false;

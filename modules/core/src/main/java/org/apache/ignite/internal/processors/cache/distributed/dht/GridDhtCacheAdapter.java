@@ -1230,7 +1230,12 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @return {@code True} if cache affinity changed and operation should be remapped.
      */
     protected final boolean needRemap(AffinityTopologyVersion expVer, AffinityTopologyVersion curVer,
-        AffinityTopologyVersion lastAffChangedTopVer, Collection<KeyCacheObject> keys) {
+        Collection<KeyCacheObject> keys) {
+        if (curVer.equals(expVer))
+            return false;
+
+        AffinityTopologyVersion lastAffChangedTopVer = ctx.shared().exchange().lastAffinityChangedTopologyVersion(expVer);
+
         if (curVer.compareTo(lastAffChangedTopVer) >= 0 && curVer.compareTo(expVer) <= 0)
             return false;
 
