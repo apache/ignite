@@ -17,6 +17,7 @@
 
 package org.apache.ignite.examples.ml.inference;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -27,6 +28,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.inference.InfModel;
 import org.apache.ignite.ml.inference.builder.IgniteDistributedInfModelBuilder;
 import org.apache.ignite.ml.inference.builder.SingleInfModelBuilder;
@@ -44,7 +46,7 @@ import org.tensorflow.Tensor;
  */
 public class TensorFlowInferenceExample {
     /** Path to the directory with saved TensorFlow model. */
-    private static final String MODEL_PATH = "ml/mnist_tf_model";
+    private static final String MODEL_PATH = "examples/src/main/resources/ml/mnist_tf_model";
 
     /** Path to the MNIST images data. */
     private static final String MNIST_IMG_PATH = "org/apache/ignite/examples/ml/util/datasets/t10k-images-idx3-ubyte";
@@ -55,7 +57,7 @@ public class TensorFlowInferenceExample {
     /** Run example. */
     public static void main(String[] args) throws IOException, ExecutionException, InterruptedException {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            URL mdlRsrc = TensorFlowInferenceExample.class.getClassLoader().getResource(MODEL_PATH);
+            File mdlRsrc = IgniteUtils.resolveIgnitePath(MODEL_PATH);
             if (mdlRsrc == null)
                 throw new IllegalArgumentException("Resource not found [resource_path=" + MODEL_PATH + "]");
 
