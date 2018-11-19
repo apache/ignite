@@ -512,9 +512,10 @@ public class JdbcThinTcpIo {
 
             JdbcResponse response = readResponse();
 
-            if (srvProtocolVer.compareTo(VER_2_8_0) >= 0)
+            if (srvProtocolVer.compareTo(VER_2_8_0) >= 0) {
                 while (req.requestId() != response.requestId())
                     response = readResponse();
+            }
 
             return response;
         }

@@ -108,6 +108,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
 
         for (int i = 0; i < MAX_ROWS; ++i)
             grid(0).cache(DEFAULT_CACHE_NAME).put(i, i);
+
         for (int i = 0; i < MAX_ROWS; ++i)
             grid(0).cache(DEFAULT_CACHE_NAME).put((long)i, (long)i);
     }
@@ -218,7 +219,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
             }, SQLException.class, "The query was cancelled while executing.");
         });
 
-        //ensure that the client receives the control before the initial request is executed
+        // Ensure that the client receives the control before the initial request is executed.
         res.get(2, TimeUnit.SECONDS);
     }
 
@@ -293,7 +294,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
             }, SQLException.class, "The query was cancelled while executing.");
         });
 
-        //ensure that the client receives the control before the initial request is executed
+        // Ensure that the client receives the control before the initial request is executed.
         res.get(2, TimeUnit.SECONDS);
     }
 

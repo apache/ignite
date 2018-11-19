@@ -776,6 +776,7 @@ public class JdbcThinConnection implements Connection {
         }
         catch (Exception e) {
             onDisconnect();
+
             throw new SQLException("Failed to communicate with Ignite cluster.", SqlStateCode.CONNECTION_FAILURE, e);
         }
     }
