@@ -1513,22 +1513,17 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             old = oldValPresent ? oldVal : this.val;
 
+            if(intercept)
+                intercept = !(changesGotByDr(explicitVer) && cctx.dr().cacheInterceptorDisabled());
+
             if (intercept) {
                 val0 = cctx.unwrapBinaryIfNeeded(val, keepBinary, false);
 
                 CacheLazyEntry e = new CacheLazyEntry(cctx, key, old, keepBinary);
 
-                Object interceptorVal = val0;
-
-                boolean interceptorDisabled = cctx.dr().cacheInterceptorDisabled() &&
-                    explicitVer != null && explicitVer.dataCenterId() != cctx.dr().dataCenterId();
-
-                if (intercept = !interceptorDisabled) {
-                    interceptorVal = cctx.config().getInterceptor().onBeforePut(
-                        new CacheLazyEntry(cctx, key, old, keepBinary), val0);
-                }
-
                 key0 = e.key();
+
+                Object interceptorVal = cctx.config().getInterceptor().onBeforePut(e, val0);
 
                 if (interceptorVal == null)
                     return new GridCacheUpdateTxResult(false, logPtr);
@@ -1747,17 +1742,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             old = oldValPresent ? oldVal : val;
 
+            if(intercept)
+                intercept = !(changesGotByDr(explicitVer) && cctx.dr().cacheInterceptorDisabled());
+
             if (intercept) {
                 entry0 = new CacheLazyEntry(cctx, key, old, keepBinary);
 
-                boolean interceptorDisabled = cctx.dr().cacheInterceptorDisabled() &&
-                    explicitVer != null && explicitVer.dataCenterId() != cctx.dr().dataCenterId();
-
-                if (intercept = !interceptorDisabled)
-                    interceptRes = cctx.config().getInterceptor().onBeforeRemove(entry0);
-                else
-                    interceptRes = new IgniteBiTuple<>(false, entry0.getValue());
-
+                interceptRes = cctx.config().getInterceptor().onBeforeRemove(entry0);
 
                 if (cctx.cancelRemove(interceptRes)) {
                     CacheObject ret = cctx.toCacheObject(cctx.unwrapTemporary(interceptRes.get2()));
@@ -2571,6 +2562,16 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             return val;
 
         return cctx.unwrapBinaryIfNeeded(cacheObj, keepBinary, cpy);
+    }
+
+    /**
+     * Checks, that changes were got by DR.
+     *
+     * @param explicitVer – Explicit version (if any).
+     * @return {@code true} if changes were got by DR and {@code false} otherwise.
+     */
+    private boolean changesGotByDr(@Nullable GridCacheVersion explicitVer) {
+        return explicitVer != null && explicitVer.dataCenterId() != cctx.dr().dataCenterId();
     }
 
     /**
