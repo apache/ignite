@@ -52,6 +52,7 @@ import javax.management.ObjectName;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryNTimes;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator.TestingCluster;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator.TestingZooKeeperServer;
 import org.apache.ignite.Ignite;
@@ -4066,7 +4067,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected GridCommunicationClient createTcpClient(
+        @Override protected IgniteInternalFuture<GridCommunicationClient> createTcpClient(
             ClusterNode node,
             int connIdx
         ) throws IgniteCheckedException {
@@ -4076,8 +4077,10 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
                 return null;
             }
 
-            return new FailingCommunicationClient(getLocalNode(), node,
-                super.createTcpClient(node, connIdx));
+            GridCommunicationClient delegate = super.createTcpClient(node, connIdx).get();
+
+            return new GridFinishedFuture<>(new FailingCommunicationClient(getLocalNode(), node,
+                delegate));
         }
 
         /**
