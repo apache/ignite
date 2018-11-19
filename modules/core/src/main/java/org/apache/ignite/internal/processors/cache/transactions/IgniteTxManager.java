@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -42,6 +43,8 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.MvccTxRecord;
 import org.apache.ignite.internal.pagemem.wal.WALWriteListener;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -75,6 +78,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccRecoveryFinished
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetection.TxDeadlockFuture;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
@@ -2429,8 +2433,24 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @throws IgniteCheckedException If failed to add version to TxLog.
      */
     public void mvccFinish(IgniteTxAdapter tx, boolean commit) throws IgniteCheckedException {
-        if (!cctx.kernalContext().clientNode() && tx.mvccSnapshot != null && !(tx.near() && tx.remote()))
-            cctx.coordinators().updateState(tx.mvccSnapshot, commit ? TxState.COMMITTED : TxState.ABORTED, tx.local());
+        if (!cctx.kernalContext().clientNode() && tx.mvccSnapshot != null && !(tx.near() && tx.remote())) {
+            WALPointer ptr = null;
+
+            cctx.database().checkpointReadLock();
+
+            try {
+                if (cctx.wal() != null)
+                    ptr = cctx.wal().log(newTxRecord(tx));
+
+                cctx.coordinators().updateState(tx.mvccSnapshot, commit ? TxState.COMMITTED : TxState.ABORTED, tx.local());
+            }
+            finally {
+                cctx.database().checkpointReadUnlock();
+            }
+
+            if (ptr != null)
+                cctx.wal().flush(ptr, true);
+        }
     }
 
     /**
@@ -2440,8 +2460,19 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @throws IgniteCheckedException If failed to add version to TxLog.
      */
     public void mvccPrepare(IgniteTxAdapter tx) throws IgniteCheckedException {
-        if (!cctx.kernalContext().clientNode() && tx.mvccSnapshot != null && !(tx.near() && tx.remote()))
-            cctx.coordinators().updateState(tx.mvccSnapshot, TxState.PREPARED);
+        if (!cctx.kernalContext().clientNode() && tx.mvccSnapshot != null && !(tx.near() && tx.remote())) {
+            cctx.database().checkpointReadLock();
+
+            try {
+                if (cctx.wal() != null)
+                    cctx.wal().log(newTxRecord(tx));
+
+                cctx.coordinators().updateState(tx.mvccSnapshot, TxState.PREPARED);
+            }
+            finally {
+                cctx.database().checkpointReadUnlock();
+            }
+        }
     }
 
     /**
@@ -2456,6 +2487,47 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     public void walWriteListener(WALWriteListener lsnr) {
         this.lsnr = lsnr;
+    }
+
+    /**
+     * Logs Tx state to WAL if needed.
+     *
+     * @param tx Transaction.
+     * @return WALPointer or {@code null} if nothing was logged.
+     */
+    @Nullable WALPointer logTxRecord(IgniteTxAdapter tx) {
+        // Log tx state change to WAL.
+        if (cctx.wal() != null && logTxRecords) {
+            TxRecord txRecord = newTxRecord(tx);
+
+            try {
+                return cctx.wal().log(txRecord);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to log TxRecord: " + txRecord, e);
+
+                throw new IgniteException("Failed to log TxRecord: " + txRecord, e);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Creates Tx state record for WAL.
+     *
+     * @param tx Transaction.
+     * @return Tx state record.
+     */
+    private TxRecord newTxRecord(IgniteTxAdapter tx) {
+        BaselineTopology baselineTop = cctx.kernalContext().state().clusterState().baselineTopology();
+
+        Map<Short, Collection<Short>> nodes = tx.consistentIdMapper.mapToCompactIds(tx.topVer, tx.txNodes, baselineTop);
+
+        if (tx.txState().mvccEnabled())
+            return new MvccTxRecord(tx.state(), tx.nearXidVersion(), tx.writeVersion(), nodes, tx.mvccSnapshot());
+        else
+            return new TxRecord(tx.state(), tx.nearXidVersion(), tx.writeVersion(), nodes);
     }
 
     /**
