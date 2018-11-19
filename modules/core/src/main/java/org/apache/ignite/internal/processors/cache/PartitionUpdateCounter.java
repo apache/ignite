@@ -156,6 +156,9 @@ public class PartitionUpdateCounter {
      * @param cntr Sets initial counter.
      */
     public void updateInitial(long cntr) {
+        if (cntr <= initCntr)
+            return;
+
         gapCnt++;
 
         if (cntr > hwm)
