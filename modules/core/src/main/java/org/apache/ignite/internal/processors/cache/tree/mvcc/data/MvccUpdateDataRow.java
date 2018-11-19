@@ -584,9 +584,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
 
     /** {@inheritDoc} */
     @Override public CacheObject oldValue() {
-        assert oldRow != null;
-
-        return oldRow.value();
+        return oldRow == null ? null : oldRow.value();
     }
 
     /** {@inheritDoc} */
