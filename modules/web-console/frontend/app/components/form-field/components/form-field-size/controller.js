@@ -141,6 +141,14 @@ export default class PCFormFieldSizeController {
         this.sizeScale = this.chooseSizeScale();
     }
 
+    notifyAboutError() {
+        if (this.$element) this.$element.find('.form-field__error [bs-tooltip]').trigger('mouseenter');
+    }
+
+    hideError() {
+        if (this.$element) this.$element.find('.form-field__error [bs-tooltip]').trigger('mouseleave');
+    }
+
     triggerBlur() {
         this.$element[0].dispatchEvent(new FocusEvent('blur', {relatedTarget: this.inputElement}));
     }
