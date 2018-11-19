@@ -2325,7 +2325,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 conflictVer,
                 conflictResolve,
                 intercept,
-                updateCntr);
+                updateCntr,
+                !cctx.dr().cacheInterceptorDisabled());
 
             key.valueBytes(cctx.cacheObjectContext());
 
@@ -5846,10 +5847,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         private CacheDataRow oldRow;
 
         /** OldRow expiration flag. */
-        private boolean oldRowExpiredFlag = false;
+        private boolean oldRowExpiredFlag;
 
         /** Disable interceptor invocation onAfter* methods flag. */
-        private boolean wasIntercepted = false;
+        private boolean wasIntercepted;
+
+        /** Invoke cache interceptor on DR events flag. */
+        private final boolean interceptOnDrEvents;
 
         AtomicCacheUpdateClosure(
             GridCacheMapEntry entry,
@@ -5870,7 +5874,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             @Nullable GridCacheVersion conflictVer,
             boolean conflictResolve,
             boolean intercept,
-            @Nullable Long updateCntr) {
+            @Nullable Long updateCntr,
+            boolean interceptOnDrEvents) {
             assert op == UPDATE || op == DELETE || op == TRANSFORM : op;
 
             this.entry = entry;
@@ -5892,6 +5897,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             this.conflictResolve = conflictResolve;
             this.intercept = intercept;
             this.updateCntr = updateCntr;
+            this.interceptOnDrEvents = interceptOnDrEvents;
 
             switch (op) {
                 case UPDATE:
@@ -6281,7 +6287,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 Object interceptorVal = updated0;
 
-                if (conflictVer == null || !cctx.dr().cacheInterceptorDisabled()) {
+                if (conflictVer == null || interceptOnDrEvents) {
                     interceptorVal = cctx.config().getInterceptor().onBeforePut(interceptEntry, updated0);
 
                     wasIntercepted = true;
@@ -6393,7 +6399,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     null,
                     keepBinary);
 
-                if (conflictVer == null || !cctx.dr().cacheInterceptorDisabled()) {
+                if (conflictVer == null || interceptOnDrEvents) {
                     interceptRes = cctx.config().getInterceptor().onBeforeRemove(intercepEntry);
 
                     wasIntercepted = true;
