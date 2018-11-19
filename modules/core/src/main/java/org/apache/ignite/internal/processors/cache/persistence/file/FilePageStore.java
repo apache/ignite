@@ -365,13 +365,23 @@ public class FilePageStore implements PageStore {
     }
 
     /**
+     * @param pageId Page ID.
      * @param pageBuf Page buffer.
      * @return Number of bytes to calculate CRC on.
      */
-    private int getCrcSize(ByteBuffer pageBuf) {
+    private int getCrcSize(long pageId, ByteBuffer pageBuf) throws IOException {
         int compressedSize = PageIO.getCompressedSize(pageBuf);
-        assert compressedSize >= 0 && compressedSize < pageSize: compressedSize;
-        return compressedSize == 0 ? pageSize : compressedSize;
+
+        if (compressedSize == 0)
+            return pageSize; // Page is not compressed.
+
+        if (compressedSize < 0 || compressedSize > pageSize) {
+            throw new IgniteDataIntegrityViolationException("Failed to read page (CRC validation failed) " +
+                "[id=" + U.hexLong(pageId) + ", file=" + cfgFile.getAbsolutePath() + ", fileSize=" + fileIO.size() +
+                ", page=" + U.toHexString(pageBuf) + "]");
+        }
+
+        return compressedSize;
     }
 
     /** {@inheritDoc} */
@@ -404,7 +414,7 @@ public class FilePageStore implements PageStore {
             pageBuf.position(0);
 
             if (!skipCrc) {
-                int curCrc32 = FastCrc.calcCrc(pageBuf, getCrcSize(pageBuf));
+                int curCrc32 = FastCrc.calcCrc(pageBuf, getCrcSize(pageId, pageBuf));
 
                 if ((savedCrc32 ^ curCrc32) != 0)
                     throw new IgniteDataIntegrityViolationException("Failed to read page (CRC validation failed) " +
@@ -599,7 +609,7 @@ public class FilePageStore implements PageStore {
                     if (calculateCrc && !skipCrc) {
                         assert PageIO.getCrc(pageBuf) == 0 : U.hexLong(pageId);
 
-                        PageIO.setCrc(pageBuf, calcCrc32(pageBuf, getCrcSize(pageBuf)));
+                        PageIO.setCrc(pageBuf, calcCrc32(pageBuf, getCrcSize(pageId, pageBuf)));
                     }
 
                     // Check whether crc was calculated somewhere above the stack if it is forcibly skipped.
