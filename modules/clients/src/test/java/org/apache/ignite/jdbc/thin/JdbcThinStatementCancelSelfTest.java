@@ -155,15 +155,20 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     /**
      *
      */
-    public void testQ() throws Exception {
-        stmt.execute("SELECT 1; SELECT 2; SELECT 3");
+    public void testExpectSQLExceptionOnRetrievingResultSetInCanceledStatement() throws Exception {
+        stmt.execute("SELECT 1; SELECT 2; SELECT 3;");
 
         assertNotNull(stmt.getResultSet());
 
         stmt.cancel();
 
-        // TODO: close
-//        assertNull(stmt.getResultSet());
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                stmt.getResultSet();
+
+                return null;
+            }
+        }, SQLException.class, "The query was cancelled while executing.");
     }
 
     /**
