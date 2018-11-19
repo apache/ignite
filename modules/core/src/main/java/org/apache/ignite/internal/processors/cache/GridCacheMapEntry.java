@@ -1514,7 +1514,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             old = oldValPresent ? oldVal : this.val;
 
             if(intercept)
-                intercept = !(changesGotByDr(explicitVer) && cctx.dr().cacheInterceptorDisabled());
+                intercept = !(isRemoteDrUpdate(explicitVer) && cctx.dr().cacheInterceptorDisabled());
 
             if (intercept) {
                 val0 = cctx.unwrapBinaryIfNeeded(val, keepBinary, false);
@@ -1743,7 +1743,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             old = oldValPresent ? oldVal : val;
 
             if(intercept)
-                intercept = !(changesGotByDr(explicitVer) && cctx.dr().cacheInterceptorDisabled());
+                intercept = !(isRemoteDrUpdate(explicitVer) && cctx.dr().cacheInterceptorDisabled());
 
             if (intercept) {
                 entry0 = new CacheLazyEntry(cctx, key, old, keepBinary);
@@ -2564,7 +2564,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @param explicitVer – Explicit version (if any).
      * @return {@code true} if changes were got by DR and {@code false} otherwise.
      */
-    private boolean changesGotByDr(@Nullable GridCacheVersion explicitVer) {
+    private boolean isRemoteDrUpdate(@Nullable GridCacheVersion explicitVer) {
         return explicitVer != null && explicitVer.dataCenterId() != cctx.dr().dataCenterId();
     }
 
