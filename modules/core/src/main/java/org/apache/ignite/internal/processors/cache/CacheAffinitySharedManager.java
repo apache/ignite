@@ -324,7 +324,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param waitNode Node rebalancing data.
      * @param p Parition id.
      * @param state Partition state.
-     * @return {@code True} If this partition is moving in LOST state.
+     * @return {@code True} if this partition is moving in LOST state.
      */
     private boolean lostPartitionMoving(
         GridDhtPartitionTopology top,
@@ -340,11 +340,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         assert !assignment.isEmpty();
 
-        UUID curPrimary = assignment.get(0).id();
+        UUID oldPrimary = assignment.get(0).id();
 
-        assert !waitNode.equals(curPrimary) : curPrimary;
+        assert !waitNode.equals(oldPrimary) : oldPrimary;
 
-        return top.partitionState(curPrimary, p) == GridDhtPartitionState.LOST;
+        return top.partitionState(oldPrimary, p) == GridDhtPartitionState.LOST;
     }
 
     /**

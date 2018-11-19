@@ -2092,7 +2092,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 if (e.getKey().equals(ctx.localNodeId()))
                                     continue;
 
-                                if (e.getValue().get(part) != EVICTED)
+                                GridDhtPartitionState state = e.getValue().get(part);
+
+                                if (state != null && state != EVICTED)
                                     e.getValue().put(part, LOST);
                             }
                         }
