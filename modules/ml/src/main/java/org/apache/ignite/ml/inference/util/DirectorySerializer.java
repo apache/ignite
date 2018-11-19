@@ -44,7 +44,7 @@ public class DirectorySerializer {
         File file = path.toFile();
 
         if (!file.isDirectory())
-            throw new IllegalStateException();
+            throw new IllegalStateException("Path is not directory [path=\"" + path + "\"]");
 
         Map<String, byte[]> data = new HashMap<>();
         serialize(data, path, file);

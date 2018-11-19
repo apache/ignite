@@ -150,7 +150,7 @@ public class IgniteDistributedInfModelBuilder implements AsyncInfModelBuilder {
 
         /** {@inheritDoc} */
         @Override public void init(ServiceContext ctx) {
-            Ignite ignite = Ignition.ignite();
+            Ignite ignite = Ignition.localIgnite();
 
             reqQueue = ignite.queue(String.format(INFERENCE_REQ_QUEUE_NAME_PATTERN, suffix), QUEUE_CAPACITY, queueCfg);
             resQueue = ignite.queue(String.format(INFERENCE_RES_QUEUE_NAME_PATTERN, suffix), QUEUE_CAPACITY, queueCfg);
