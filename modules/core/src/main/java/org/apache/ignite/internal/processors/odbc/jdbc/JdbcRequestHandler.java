@@ -1231,6 +1231,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @return <code>QueryCancelledException</code> wrapped with <code>JdbcResponse</code>
      */
     private JdbcResponse cancelQuery(JdbcQueryCancelRequest req) {
+        boolean exceptionFound = false;
+
         synchronized (cancellationProcessingMux) {
             List<Closeable> prevCursors = requestToCursorMapping.putIfAbsent(req.requestIdToBeCancelled(),
                 QUERY_ALREADY_CANCELLED);
@@ -1243,13 +1245,17 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     catch (Exception e) {
                         U.error(log, "Failed to close cursor [reqId=" + req.requestId() + ", cursor=" + cursor + ']', e);
 
-                        return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, e.getMessage(), req.requestId());
+                        exceptionFound = true;
                     }
 
                 requestToCursorMapping.remove(req.requestIdToBeCancelled());
             }
 
-            return exceptionToResult(new QueryCancelledException(), req.requestIdToBeCancelled());
+            if (exceptionFound)
+                return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN,
+                    "Failed to cancel request [reqId=" + req.requestIdToBeCancelled() + ']', req.requestId());
+            else
+                return exceptionToResult(new QueryCancelledException(), req.requestIdToBeCancelled());
         }
     }
 }
