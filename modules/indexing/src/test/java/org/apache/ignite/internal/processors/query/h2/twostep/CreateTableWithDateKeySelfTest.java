@@ -72,7 +72,7 @@ public class CreateTableWithDateKeySelfTest extends GridCommonAbstractTest {
 
         ent.put(java.sql.Date.valueOf("2018-09-03"), java.sql.Date.valueOf("2018-09-04"));
 
-        checkInsertUpdateDeleteDestroy(creationQry, "Tab1", ent);
+        checkInsertUpdateDelete(creationQry, "Tab1", ent);
     }
 
     /** */
@@ -86,7 +86,7 @@ public class CreateTableWithDateKeySelfTest extends GridCommonAbstractTest {
 
         ent.put(Time.valueOf(LocalTime.now().minusHours(2)), Time.valueOf(LocalTime.now().minusHours(3)));
 
-        checkInsertUpdateDeleteDestroy(creationQry, "Tab2", ent);
+        checkInsertUpdateDelete(creationQry, "Tab2", ent);
     }
 
     /** */
@@ -101,7 +101,7 @@ public class CreateTableWithDateKeySelfTest extends GridCommonAbstractTest {
         ent.put(Timestamp.valueOf(LocalDateTime.now().minusHours(2)),
             Timestamp.valueOf(LocalDateTime.now().minusHours(3)));
 
-        checkInsertUpdateDeleteDestroy(creationQry, "Tab3", ent);
+        checkInsertUpdateDelete(creationQry, "Tab3", ent);
     }
 
     /**
@@ -113,7 +113,7 @@ public class CreateTableWithDateKeySelfTest extends GridCommonAbstractTest {
      * @param <K> Type of key.
      * @param <V> Type of value.
      */
-    private <K, V> void checkInsertUpdateDeleteDestroy(
+    private <K, V> void checkInsertUpdateDelete(
         final String creationQry,
         final String tblName,
         final Map<K, V> entries
@@ -132,7 +132,7 @@ public class CreateTableWithDateKeySelfTest extends GridCommonAbstractTest {
             assertEquals(0L, rows.get(0).get(0));
         }
 
-        IgniteCache<K, V> cache = ignite.cache(cacheName);
+        IgniteCache<K, V> cache = ignite.getOrCreateCache(cacheName);
 
         for (Map.Entry<K, V> e : entries.entrySet()) {
             try (FieldsQueryCursor<List<?>> cur = cache.query(new SqlFieldsQuery(
@@ -186,8 +186,6 @@ public class CreateTableWithDateKeySelfTest extends GridCommonAbstractTest {
         assertAbsence(tblName, cache, key);
 
         assertFalse(cache.containsKey(key));
-
-        ignite.destroyCache(cacheName);
     }
 
     /**
