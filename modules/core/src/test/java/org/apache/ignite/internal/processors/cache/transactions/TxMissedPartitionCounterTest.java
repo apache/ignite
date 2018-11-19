@@ -41,7 +41,7 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
- * Test data loss on recovery due to missed partition counter on tx messages reorder.
+ * Test data loss on recovery due to missed updates with lower partition counter.
  */
 public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
     /** IP finder. */
@@ -95,201 +95,165 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
         super.beforeTest();
 
         cleanPersistenceDir();
-
-        startGridsMultiThreaded(GRID_CNT);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        IgniteWalRebalanceTest.WalRebalanceCheckingCommunicationSpi.cleanup();
-
-        stopAllGrids();
-
         cleanPersistenceDir();
     }
 
+    /**
+     * Tests partition consistency with lost update and historical rebalance.
+     */
     public void testMissedPartitionCounterWALRebalance() throws Exception {
         try {
             System.setProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
 
-            doTestMissedPartitionCounter();
+            testMissedPartitionCounter();
+
+            assertFalse(IgniteWalRebalanceTest.WalRebalanceCheckingCommunicationSpi.allRebalances().isEmpty());
         }
         finally {
-            assertFalse(IgniteWalRebalanceTest.WalRebalanceCheckingCommunicationSpi.allRebalances().isEmpty());
+            System.clearProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
 
             IgniteWalRebalanceTest.WalRebalanceCheckingCommunicationSpi.cleanup();
-
-            System.clearProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
         }
     }
 
-    public void testMissedPartitionCounterFullRebalance() throws Exception {
-        doTestMissedPartitionCounter();
-    }
+    /**
+     * Tests partition consistency with lost update and full rebalance.
+     */
+    public void testMissedPartitionCounter() throws Exception {
+        try {
+            startGridsMultiThreaded(GRID_CNT);
 
-    /** */
-    private void doTestMissedPartitionCounter() throws Exception {
-        IgniteEx client = startGrid("client");
+            IgniteEx client = startGrid("client");
 
-        assertNotNull(client.cache(DEFAULT_CACHE_NAME));
+            assertNotNull(client.cache(DEFAULT_CACHE_NAME));
 
-        int part = 0;
+            int part = 0;
 
-        final int txCnt = 2;
+            final int txCnt = 2;
 
-        List<Integer> keys = loadDataToPartition(part, DEFAULT_CACHE_NAME, 5000, 0, txCnt);
+            List<Integer> keys = loadDataToPartition(part, DEFAULT_CACHE_NAME, 5000, 0, txCnt);
 
-        forceCheckpoint();
+            forceCheckpoint();
 
-        Ignite backupNode = backupNode(keys.get(0), DEFAULT_CACHE_NAME);
+            Ignite backupNode = backupNode(keys.get(0), DEFAULT_CACHE_NAME);
 
-        Map<UUID, T3<CountDownLatch, Set<Long>, Boolean>> latches = new ConcurrentHashMap<>();
+            Map<UUID, T3<CountDownLatch, Set<Long>, Boolean>> latches = new ConcurrentHashMap<>();
 
-        for (Ignite ignite : G.allGrids()) {
-            if (ignite != backupNode)
-                continue;
+            for (Ignite ignite : G.allGrids()) {
+                if (ignite != backupNode)
+                    continue;
 
-            IgniteEx igniteEx = (IgniteEx)ignite;
+                IgniteEx igniteEx = (IgniteEx)ignite;
 
-            GridCacheSharedContext<Object, Object> ctx = igniteEx.context().cache().context();
+                GridCacheSharedContext<Object, Object> ctx = igniteEx.context().cache().context();
 
-            IgniteTxManager tm = ctx.tm();
+                IgniteTxManager tm = ctx.tm();
 
-            tm.walWriteListener(new WALWriteListener() {
-                @Override public void beforeWrite(List<DataEntry> entries) {
-                    try {
-                        long cntr = entries.get(0).partitionCounter();
+                tm.walWriteListener(new WALWriteListener() {
+                    @Override public void beforeWrite(List<DataEntry> entries) {
+                        try {
+                            long cntr = entries.get(0).partitionCounter();
 
-                        T3<CountDownLatch, Set<Long>, Boolean> val = new T3<>(new CountDownLatch(txCnt), new ConcurrentSkipListSet<>(), Boolean.FALSE);
-                        T3<CountDownLatch, Set<Long>, Boolean> oldVal = latches.putIfAbsent(ignite.cluster().localNode().id(), val);
+                            T3<CountDownLatch, Set<Long>, Boolean> val = new T3<>(new CountDownLatch(txCnt), new ConcurrentSkipListSet<>(), Boolean.FALSE);
+                            T3<CountDownLatch, Set<Long>, Boolean> oldVal = latches.putIfAbsent(ignite.cluster().localNode().id(), val);
 
-                        if (oldVal != null)
-                            val = oldVal;
+                            if (oldVal != null)
+                                val = oldVal;
 
-                        assertNotNull(val.get1());
+                            assertNotNull(val.get1());
+                            assertNotNull(val.get2());
+
+                            val.get2().add(cntr);
+
+                            val.get1().countDown();
+                            assertTrue(U.await(val.get1(), 10, TimeUnit.SECONDS));
+
+                            // Compute max counter and fail nodes with lesser counter before writing to WAL.
+                            long maxCntr = max(val.get2());
+
+                            // Fail nodes with lowest counters.
+                            if (cntr < maxCntr) {
+                                // Wait until max counter is written.
+                                synchronized (val) {
+                                    while (val.get3() != Boolean.TRUE)
+                                        U.wait(val);
+                                }
+
+                                throw new RuntimeException("Fail node");
+                            }
+                        }
+                        catch (IgniteInterruptedCheckedException e) {
+                            fail();
+                        }
+                    }
+
+                    @Override public void afterWrite(List<DataEntry> entries) {
+                        T3<CountDownLatch, Set<Long>, Boolean> val = latches.get(ignite.cluster().localNode().id());
+
                         assertNotNull(val.get2());
 
-                        val.get2().add(cntr);
-
-                        val.get1().countDown();
-                        assertTrue(U.await(val.get1(), 10, TimeUnit.SECONDS));
-
-                        // Compute max counter and fail nodes with lesser counter before writing to WAL.
                         long maxCntr = max(val.get2());
 
-                        // Fail nodes with lowest counters.
-                        if (cntr < maxCntr) {
-                            // Wait until max counter is written.
+                        // Unblock waiters after write of max counter.
+                        if (entries.get(0).partitionCounter() == maxCntr) {
                             synchronized (val) {
-                                while (val.get3() != Boolean.TRUE)
-                                    U.wait(val);
+                                val.set3(Boolean.TRUE);
+
+                                val.notifyAll();
                             }
-
-                            throw new RuntimeException("Fail node");
                         }
                     }
-                    catch (IgniteInterruptedCheckedException e) {
-                        fail();
-                    }
-                }
-
-                @Override public void afterWrite(List<DataEntry> entries) {
-                    T3<CountDownLatch, Set<Long>, Boolean> val = latches.get(ignite.cluster().localNode().id());
-
-                    assertNotNull(val.get2());
-
-                    long maxCntr = max(val.get2());
-
-                    // Unblock waiters after write of max counter.
-                    if (entries.get(0).partitionCounter() == maxCntr) {
-                        synchronized (val) {
-                            val.set3(Boolean.TRUE);
-
-                            val.notifyAll();
-                        }
-                    }
-                }
-            });
-        }
-
-        AtomicInteger id = new AtomicInteger();
-
-        IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
-            try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
-                int idx = id.getAndIncrement();
-
-                client.cache(DEFAULT_CACHE_NAME).put(keys.get(idx), idx);
-
-                tx.commit();
+                });
             }
-        }, txCnt, "tx-thread");
 
-        fut.get();
+            AtomicInteger id = new AtomicInteger();
 
-        // Wait for backups stop.
-        waitForTopology(GRID_CNT);
+            IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
+                try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
+                    int idx = id.getAndIncrement();
 
-        awaitPartitionMapExchange();
+                    client.cache(DEFAULT_CACHE_NAME).put(keys.get(idx), idx);
 
-        for (int i = 0; i < txCnt; i++)
-            assertEquals(i, client.cache(DEFAULT_CACHE_NAME).get(keys.get(i)));
+                    tx.commit();
+                }
+            }, txCnt, "tx-thread");
 
-        forceCheckpoint();
+            fut.get();
 
-        stopAllGrids();
+            // Wait for backups stop.
+            waitForTopology(GRID_CNT);
 
-        Ignite ex = startGridsMultiThreaded(GRID_CNT);
+            awaitPartitionMapExchange();
 
-        awaitPartitionMapExchange();
+            for (int i = 0; i < txCnt; i++)
+                assertEquals(i, client.cache(DEFAULT_CACHE_NAME).get(keys.get(i)));
 
-        Map<Integer, Set<Long>> map = IgniteWalRebalanceTest.WalRebalanceCheckingCommunicationSpi.allRebalances();
-        boolean walRebalanceInvoked = !map.isEmpty();
+            forceCheckpoint();
 
-        IgniteWalRebalanceTest.WalRebalanceCheckingCommunicationSpi.cleanup();
+            stopAllGrids();
 
-        IdleVerifyResultV2 res = idleVerify(grid(0), DEFAULT_CACHE_NAME);
+            Ignite ex = startGridsMultiThreaded(GRID_CNT);
 
-        if (res.hasConflicts()) {
-            StringBuilder b = new StringBuilder();
+            awaitPartitionMapExchange();
 
-            res.print(b::append);
+            IdleVerifyResultV2 res = idleVerify(grid(0), DEFAULT_CACHE_NAME);
 
-            fail(b.toString());
+            if (res.hasConflicts()) {
+                StringBuilder b = new StringBuilder();
+
+                res.print(b::append);
+
+                fail(b.toString());
+            }
         }
-    }
-
-    public void testHistory() throws Exception {
-        IgniteEx crd = startGrid(0);
-        startGrid(1);
-
-        crd.cluster().active(true);
-
-        awaitPartitionMapExchange();
-
-        int part = 0;
-
-        List<Integer> keys = loadDataToPartition(part, DEFAULT_CACHE_NAME, 100, 0, 1);
-
-        forceCheckpoint(); // Prevent IGNITE-10088
-
-        stopGrid(1);
-
-        awaitPartitionMapExchange();
-
-        List<Integer> keys1 = loadDataToPartition(part, DEFAULT_CACHE_NAME, 100, 100, 1);
-
-        startGrid(1);
-
-        awaitPartitionMapExchange();
-    }
-
-    public void testNodeRestartWithHolesDuringRebalance() {
-
-    }
-
-    @Override protected long getTestTimeout() {
-        return 10000000000000L;
+        finally {
+            stopAllGrids();
+        }
     }
 }
