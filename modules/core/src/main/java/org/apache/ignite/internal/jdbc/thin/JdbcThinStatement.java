@@ -681,31 +681,35 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public int[] executeBatch() throws SQLException {
-        canceled.set(false);
+        JdbcBatchExecuteRequest request = null;
 
-        ensureNotClosed();
+        synchronized (cancellationProcessingMutex) {
+            canceled.set(false);
 
-        closeResults();
+            ensureNotClosed();
 
-        checkStatementBatchEmpty();
+            closeResults();
 
-        if (conn.isStream()) {
-            int[] res = new int[batchSize];
+            checkStatementBatchEmpty();
 
-            batchSize = 0;
+            if (conn.isStream()) {
+                int[] res = new int[batchSize];
 
-            return res;
-        }
+                batchSize = 0;
 
-        if (F.isEmpty(batch))
-            return new int[0];
+                return res;
+            }
 
-        try {
-            JdbcBatchExecuteRequest request = new JdbcBatchExecuteRequest( conn.getSchema(), batch,
+            if (F.isEmpty(batch))
+                return new int[0];
+
+            request = new JdbcBatchExecuteRequest(conn.getSchema(), batch,
                 conn.getAutoCommit(), false);
 
             currReqId = request.requestId();
+        }
 
+        try {
             JdbcBatchExecuteResult res = conn.sendRequest(request);
 
             if (res.errorCode() != ClientListenerResponse.STATUS_SUCCESS) {

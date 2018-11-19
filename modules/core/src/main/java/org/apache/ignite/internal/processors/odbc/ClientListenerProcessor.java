@@ -44,7 +44,7 @@ import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.nio.GridNioAsyncNotifyFilter;
 import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
 import org.apache.ignite.internal.util.nio.GridNioFilter;
-import org.apache.ignite.internal.util.nio.GridNioPriorityQueryFilter;
+import org.apache.ignite.internal.processors.odbc.odbc.GridNioPriorityQueryFilter;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
@@ -279,15 +279,15 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
             sslFilter.needClientAuth(auth);
 
             return new GridNioFilter[] {
-                priorityFilter,
                 openSesFilter,
+                priorityFilter,
                 codecFilter,
                 sslFilter
             };
         } else {
             return new GridNioFilter[] {
-                priorityFilter,
                 openSesFilter,
+                priorityFilter,
                 codecFilter
             };
         }

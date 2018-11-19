@@ -22,11 +22,15 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -61,6 +65,9 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     /** Default table name. */
     private static final String TBL_NAME = "Person";
 
+    /** Server thread pull size. */
+    private static final int SERVER_THREAD_POOL_SIZE = 4;
+
     /** Connection. */
     private Connection conn;
 
@@ -87,6 +94,8 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
         disco.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(disco);
+
+        cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration().setThreadPoolSize(SERVER_THREAD_POOL_SIZE));
 
         return cfg;
     }
@@ -372,9 +381,9 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
-     * @throws Exception If failed.
+     *
      */
-    public void testCancelBatch() throws Exception {
+    public void testExpectSQLExceptionAndAFAPControlRetrievalAfterCancelinBatchQuery() throws Exception {
         try (Statement stmt2 = conn.createStatement()) {
             stmt2.setFetchSize(1);
             // Open the second cursor
@@ -406,6 +415,66 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
                 }
             }, java.sql.SQLException.class, "The query was cancelled while executing");
             assert rs.next() : "The other cursor mustn't be closed";
+        }
+    }
+
+    /**
+     *
+     */
+    @SuppressWarnings("unchecked")
+    public void testExpectSQLExceptionAndAFAPControlRetrievalAfterCancelinQueryWithinContextOfFullServerThreadPool()
+        throws Exception {
+        List<Statement> statements = Collections.synchronizedList(new ArrayList<>());
+        List<Connection> connections = Collections.synchronizedList(new ArrayList<>());
+
+        try {
+            GridTestUtils.runAsync(new Runnable() {
+                @Override public void run() {
+                    try {
+                        Thread.sleep(1000);
+
+                        for (int i = 0; i < SERVER_THREAD_POOL_SIZE; i++)
+                            statements.get(i).cancel();
+                    }
+                    catch (Exception e) {
+                        log.error("Unexpected exception.", e);
+
+                        fail("Unexpected exception");
+                    }
+                }
+            });
+
+            IgniteInternalFuture<Object> res = null;
+            for (int i = 0; i < SERVER_THREAD_POOL_SIZE; i++) {
+                res = GridTestUtils.runAsync(() -> {
+                    GridTestUtils.assertThrows(log, new Callable<Object>() {
+                        @Override public Object call() throws Exception {
+                            Connection yaConn = DriverManager.getConnection(URL);
+
+                            yaConn.setSchema('"' + DEFAULT_CACHE_NAME + '"');
+
+                            connections.add(yaConn);
+
+                            Statement yaStmt = yaConn.createStatement();
+
+                            statements.add(yaStmt);
+
+                            yaStmt.executeQuery("select sleep_func(10000)");
+
+                            return null;
+                        }
+                    }, SQLException.class, "The query was cancelled while executing.");
+                });
+            }
+
+            res.get(2, TimeUnit.SECONDS);
+        }
+        finally {
+            for (Statement statement : statements)
+                statement.close();
+
+            for (Connection connection : connections)
+                connection.close();
         }
     }
 

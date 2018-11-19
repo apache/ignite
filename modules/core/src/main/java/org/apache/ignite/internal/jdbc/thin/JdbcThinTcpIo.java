@@ -512,8 +512,9 @@ public class JdbcThinTcpIo {
 
             JdbcResponse response = readResponse();
 
-            while (req.requestId() != response.requestId())
-                response = readResponse();
+            if (srvProtocolVer.compareTo(VER_2_8_0) >= 0)
+                while (req.requestId() != response.requestId())
+                    response = readResponse();
 
             return response;
         }
@@ -579,7 +580,6 @@ public class JdbcThinTcpIo {
     /**
      * @param req Request.
      * @throws IOException In case of IO error.
-     * @throws SQLException On error.
      */
     private void sendRequestRaw(JdbcRequest req) throws IOException {
         int cap = guessCapacity(req);
