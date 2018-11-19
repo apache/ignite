@@ -29,6 +29,7 @@ import java.util.Set;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryEntityPatch;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableAddColumnOperation;
@@ -36,6 +37,7 @@ import org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterT
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexCreateOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexDropOperation;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -251,6 +253,7 @@ public class QuerySchema implements Serializable {
 
                 for (QueryField field : op0.columns()) {
                     target.getFields().put(field.name(), field.typeName());
+                    target.getAliases().put(field.name(), field.name());
 
                     if (!field.isNullable()) {
                         if (!(target instanceof QueryEntityEx)) {
@@ -298,9 +301,14 @@ public class QuerySchema implements Serializable {
 
                 QueryEntity entity = ((List<QueryEntity>)entities).get(targetIdx);
 
-                for (String field : op0.columns())
+                for (String field : op0.columns()) {
                     entity.getFields().remove(field);
+                    entity.getAliases().remove(field);
+                    entity.getFieldsPrecision().remove(field);
+                }
             }
+            if (!F.isEmpty(entities))
+                G.localIgnite().cache(op.cacheName()).getConfiguration(CacheConfiguration.class).clearQueryEntities().setQueryEntities(entities);
         }
     }
 
