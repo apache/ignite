@@ -574,6 +574,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         return exchActions != null && exchActions.changedBaseline();
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean changedAffinity() {
+        DiscoveryEvent firstDiscoEvt0 = firstDiscoEvt;
+
+        assert firstDiscoEvt0 != null;
+
+        return firstDiscoEvt0.type() == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT
+            || !firstDiscoEvt0.eventNode().isClient() || firstDiscoEvt0.eventNode().isLocal();
+    }
+
     /**
      * @return {@code True} if there are caches to start.
      */
@@ -582,7 +592,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * @return First event discovery event.
+     * @return First event discovery event.1
      *
      */
     public DiscoveryEvent firstEvent() {
@@ -1910,8 +1920,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             .map(singleMessage -> fullMsg.copy().joinedNodeAffinity(affinityForJoinedNodes))
             .orElse(null);
 
-        long time = System.currentTimeMillis();
-
         // Prepare and send full messages for given nodes.
         nodes.stream()
             .map(node -> {
@@ -1964,9 +1972,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     U.error(log, "Failed to send partitions [node=" + node + ']', e);
                 }
             });
-
-        if (log.isInfoEnabled())
-            log.info("Sending Full Message performed in " + (System.currentTimeMillis() - time) + " ms.");
     }
 
     /**
@@ -3380,15 +3385,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         nodes.addAll(sndResNodes);
                 }
 
-                time = System.currentTimeMillis();
-
                 if (!nodes.isEmpty())
                     sendAllPartitions(msg, nodes, mergedJoinExchMsgs0, joinedNodeAff);
 
                 partitionsSent = true;
-
-                if (log.isInfoEnabled())
-                    log.info("Sending Full Message to all nodes performed in " + (System.currentTimeMillis() - time) + " ms.");
 
                 if (!stateChangeExchange())
                     onDone(exchCtx.events().topologyVersion(), null);
