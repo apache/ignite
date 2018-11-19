@@ -223,10 +223,11 @@ public interface DataStorageMetrics {
     /**
      * Storage space allocated adjusted for possible sparsity in bytes.
      *
+     * May produce unstable or even incorrect result on some file systems (e.g. XFS).
+     * Known to work correctly on Ext4 and Btrfs.
+     *
      * @return Storage space allocated adjusted for possible sparsity in bytes
      *         or negative value is not supported.
-     * @implNote May produce unstable or even incorrect result on some file systems (e.g. XFS).
-     *           Known to work correctly on Ext4 and Btrfs.
      */
     public long getSparseStorageSize();
 }
