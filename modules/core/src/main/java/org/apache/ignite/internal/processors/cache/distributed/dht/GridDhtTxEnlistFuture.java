@@ -119,19 +119,16 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<G
 
         res.success(txRes.success());
 
-        if(txRes.invokeResult() != null)
+        if(txRes.invokeResult() != null) {
             res.invokeResult(true);
 
-        if (needRes) {
             CacheInvokeResult invokeRes = txRes.invokeResult();
 
-            if (invokeRes != null) {
-                if(invokeRes.result() != null || invokeRes.error() != null)
-                    res.addEntryProcessResult(cctx, key, null, invokeRes.result(), invokeRes.error(), cctx.keepBinary());
-            }
-            else
-                res.set(cctx, txRes.prevValue(), txRes.success(), true);
+            if (invokeRes.result() != null || invokeRes.error() != null)
+                res.addEntryProcessResult(cctx, key, null, invokeRes.result(), invokeRes.error(), cctx.keepBinary());
         }
+        else if (needRes)
+            res.set(cctx, txRes.prevValue(), txRes.success(), true);
     }
 
     /** {@inheritDoc} */
