@@ -66,7 +66,7 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
     /** Cache size */
     public static final int CACHE_SIZE = 100000 / CACHE_NAMES.length;
 
-    /** */
+    /** Persistence enabled flag. */
     private boolean persistenceEnabled = true;
 
     /** {@inheritDoc} */
@@ -326,7 +326,14 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
             .collect(toList());
     }
 
-    /** */
+    /**
+     * Counts partitions in the specified state on the specified nodes.
+     *
+     * @param cacheName Cache name.
+     * @param state Partition state.
+     * @param gridIdx Grid index.
+     * @return Number of local partitions in the specified state.
+     */
     private int count(String cacheName, GridDhtPartitionState state, int ... gridIdx) {
         return Arrays.stream(gridIdx).map(idx ->
             getPartitionsStates(idx, cacheName).stream().filter(isEqual(state)).collect(toList()).size()).sum();
