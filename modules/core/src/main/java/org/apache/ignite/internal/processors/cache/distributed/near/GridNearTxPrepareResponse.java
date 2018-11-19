@@ -359,7 +359,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
         switch (writer.state()) {
             case 11:
-                if (!writer.writeMessage("clientRemapVer", clientRemapVer))
+                if (!writer.writeAffinityTopologyVersion("clientRemapVer", clientRemapVer))
                     return false;
 
                 writer.incrementState();
@@ -435,7 +435,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
         switch (reader.state()) {
             case 11:
-                clientRemapVer = reader.readMessage("clientRemapVer");
+                clientRemapVer = reader.readAffinityTopologyVersion("clientRemapVer");
 
                 if (!reader.isLastRead())
                     return false;

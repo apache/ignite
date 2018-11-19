@@ -186,7 +186,7 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeMessage("topVer", topVer))
+                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -232,7 +232,7 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
                 reader.incrementState();
 
             case 7:
-                topVer = reader.readMessage("topVer");
+                topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
                     return false;

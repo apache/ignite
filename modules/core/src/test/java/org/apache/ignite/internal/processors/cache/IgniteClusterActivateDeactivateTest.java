@@ -845,8 +845,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         checkCaches1(SRVS + CLIENTS);
 
         // Wait for late affinity assignment to finish.
-        grid(0).context().cache().context().exchange().affinityReadyFuture(
-            new AffinityTopologyVersion(SRVS + CLIENTS, 1)).get();
+        awaitPartitionMapExchange();
 
         final AffinityTopologyVersion STATE_CHANGE_TOP_VER = new AffinityTopologyVersion(SRVS + CLIENTS + 1, 1);
 

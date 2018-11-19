@@ -326,9 +326,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** Future for wait all exchange listeners comepleted. */
     private final GridFutureAdapter<?> afterLsnrCompleteFut = new GridFutureAdapter<>();
 
-    /** */
-    private volatile AffinityTopologyVersion lastAffChangeTopVer;
-
     /**
      * @param cctx Cache context.
      * @param busyLock Busy lock.
@@ -569,16 +566,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             || !firstDiscoEvt0.eventNode().isClient() || firstDiscoEvt0.eventNode().isLocal();
     }
 
-    /** {@inheritDoc} */
-    @Override public AffinityTopologyVersion lastAffinityChangeTopologyVersion() {
-        if (changedAffinity())
-            return topologyVersion();
-        else if (!exchangeDone()) // TODO: initialVersion and topologyVersion are always equal now, but it should be fixed later.
-            return initialVersion();
-        else
-            return topologyVersion();
-    }
-
     /**
      * @return {@code True} if there are caches to start.
      */
@@ -656,7 +643,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param newCrd {@code True} if node become coordinator on this exchange.
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
-    public void init(@Nullable GridDhtPartitionsExchangeFuture lastFut, boolean newCrd) throws IgniteInterruptedCheckedException {
+    public void init(boolean newCrd) throws IgniteInterruptedCheckedException {
         if (isDone())
             return;
 
@@ -670,9 +657,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         assert exchId.nodeId().equals(firstDiscoEvt.eventNode().id()) : this;
 
         try {
-            if (!changedAffinity() && lastFut != null)
-                lastAffChangeTopVer = lastFut.lastAffinityChangeTopologyVersion();
-
             AffinityTopologyVersion topVer = initialVersion();
 
             srvNodes = new ArrayList<>(firstEvtDiscoCache.serverNodes());

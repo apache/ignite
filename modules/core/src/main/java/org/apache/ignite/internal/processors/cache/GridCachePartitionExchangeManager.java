@@ -22,7 +22,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,6 +34,7 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
@@ -98,6 +98,7 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMess
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
+import org.apache.ignite.internal.util.GridListSet;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -135,6 +136,7 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.PARTIAL_COUNTERS_MAP_SINCE;
+import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture.nextDumpTimeout;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader.DFLT_PRELOAD_RESEND_TIMEOUT;
 
@@ -181,6 +183,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /** */
     private final ConcurrentMap<AffinityTopologyVersion, AffinityReadyFuture> readyFuts =
+        new ConcurrentSkipListMap<>();
+
+    /** */
+    private final ConcurrentNavigableMap<AffinityTopologyVersion, AffinityTopologyVersion> lastAffTopVers =
         new ConcurrentSkipListMap<>();
 
     /** */
@@ -900,6 +906,17 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @return Future or {@code null} is future is already completed.
      */
     @Nullable public IgniteInternalFuture<AffinityTopologyVersion> affinityReadyFuture(AffinityTopologyVersion ver) {
+        GridDhtPartitionsExchangeFuture lastInitializedFut0 = lastInitializedFut;
+
+        if (lastInitializedFut0 != null && lastInitializedFut0.initialVersion().compareTo(ver) == 0
+            && lastInitializedFut0.changedAffinity()) {
+            if (log.isTraceEnabled())
+                log.trace("Return lastInitializedFut for topology ready future " +
+                    "[ver=" + ver + ", fut=" + lastInitializedFut0 + ']');
+
+            return lastInitializedFut0;
+        }
+
         AffinityTopologyVersion topVer = exchFuts.readyTopVer();
 
         if (topVer.compareTo(ver) >= 0) {
@@ -966,19 +983,44 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /**
      *
-     * @param topVer
-     * @return
+     * @param topVer Topology version.
+     * @return Last topology version before the provided one when affinity was modified.
      */
     public AffinityTopologyVersion lastAffinityChangedTopologyVersion(AffinityTopologyVersion topVer) {
         if (topVer.topologyVersion() <= 0)
             return topVer;
 
-        GridDhtPartitionsExchangeFuture exchFut = exchFuts.get(topVer);
+        AffinityTopologyVersion lastAffTopVer = lastAffTopVers.get(topVer);
 
-        if (exchFut == null || exchFut.firstEvent() == null || exchFut.changedAffinity())
-            return topVer;
+        return lastAffTopVer != null ? lastAffTopVer : topVer;
+    }
 
-        return exchFut.lastAffinityChangeTopologyVersion();
+    /**
+     *
+     * @param topVer Topology version.
+     * @param lastAffTopVer Last topology version before the provided one when affinity was modified.
+     * @return {@code True} if data was modified.
+     */
+    public boolean lastAffinityChangedTopologyVersion(AffinityTopologyVersion topVer, AffinityTopologyVersion lastAffTopVer) {
+        assert lastAffTopVer.compareTo(topVer) <= 0;
+
+        if (lastAffTopVer.topologyVersion() <= 0 || lastAffTopVer.equals(topVer))
+            return false;
+
+        while (true) {
+            AffinityTopologyVersion old = lastAffTopVers.putIfAbsent(topVer, lastAffTopVer);
+
+            if (old == null)
+                return true;
+
+            if (lastAffTopVer.compareTo(old) < 0) {
+                if (lastAffTopVers.replace(topVer, old, lastAffTopVer))
+                    return true;
+            }
+            else
+                return false;
+        }
+
     }
 
     /**
@@ -1517,7 +1559,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     ) {
         GridDhtPartitionsExchangeFuture fut;
 
-        GridDhtPartitionsExchangeFuture old = exchFuts.putIfAbsent(exchId.topologyVersion(),
+        GridDhtPartitionsExchangeFuture old = exchFuts.addx(
             fut = new GridDhtPartitionsExchangeFuture(cctx, busyLock, exchId, exchActions, affChangeMsg));
 
         if (old != null) {
@@ -2328,6 +2370,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /** */
     public boolean affinityChanged(AffinityTopologyVersion from, AffinityTopologyVersion to) {
+        if (lastAffinityChangedTopologyVersion(to).compareTo(from) >= 0)
+            return false;
+
         Collection<GridDhtPartitionsExchangeFuture> history = exchFuts.values();
 
         boolean fromFound = false;
@@ -2701,7 +2746,21 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 crd = newCrd = !srvNodes.isEmpty() && srvNodes.get(0).isLocal();
                             }
 
-                            exchFut.init(lastFinishedFut.get(), newCrd);
+                            if (!exchFut.changedAffinity()) {
+                                GridDhtPartitionsExchangeFuture lastFut = lastFinishedFut.get();
+
+                                if (lastFut != null) {
+                                    if (!lastFut.changedAffinity()) {
+                                        AffinityTopologyVersion lastAffVer = cctx.exchange().lastAffinityChangedTopologyVersion(lastFut.initialVersion());
+
+                                        cctx.exchange().lastAffinityChangedTopologyVersion(exchFut.initialVersion(), lastAffVer);
+                                    }
+                                    else
+                                        cctx.exchange().lastAffinityChangedTopologyVersion(exchFut.initialVersion(), lastFut.initialVersion());
+                                }
+                            }
+
+                            exchFut.init(newCrd);
 
                             int dumpCnt = 0;
 
@@ -2985,7 +3044,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /**
      *
      */
-    private static class ExchangeFutureSet extends ConcurrentSkipListMap<AffinityTopologyVersion, GridDhtPartitionsExchangeFuture> {
+    private static class ExchangeFutureSet extends GridListSet<GridDhtPartitionsExchangeFuture> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -2994,7 +3053,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         /** */
         private final AtomicReference<AffinityTopologyVersion> readyTopVer =
-            new AtomicReference<>(AffinityTopologyVersion.NONE);
+            new AtomicReference<>(NONE);
 
         /**
          * Creates ordered, not strict list set.
@@ -3002,15 +3061,16 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          * @param histSize Max history size.
          */
         private ExchangeFutureSet(int histSize) {
-            super(new Comparator<AffinityTopologyVersion>() {
-                @Override public int compare(
-                    AffinityTopologyVersion t1,
-                    AffinityTopologyVersion t2
-                ) {
-                    // Reverse order.
-                    return t2.compareTo(t1);
-                }
-            });
+            super((f1, f2) -> {
+                AffinityTopologyVersion t1 = f1.exchangeId().topologyVersion();
+                AffinityTopologyVersion t2 = f2.exchangeId().topologyVersion();
+
+                assert t1.topologyVersion() > 0;
+                assert t2.topologyVersion() > 0;
+
+                // Reverse order.
+                return t2.compareTo(t1);
+            }, /*not strict*/false);
 
             this.histSize = histSize;
         }
@@ -3019,20 +3079,17 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          * @param fut Future to add.
          * @return {@code True} if added.
          */
-        @Override public synchronized GridDhtPartitionsExchangeFuture putIfAbsent(
-            AffinityTopologyVersion topVer,
+        @Override public synchronized GridDhtPartitionsExchangeFuture addx(
             GridDhtPartitionsExchangeFuture fut) {
-            assert topVer.topologyVersion() > 0;
-
-            GridDhtPartitionsExchangeFuture cur = super.putIfAbsent(topVer, fut);
+            GridDhtPartitionsExchangeFuture cur = super.addx(fut);
 
             while (size() > histSize) {
-                GridDhtPartitionsExchangeFuture last = lastEntry().getValue();
+                GridDhtPartitionsExchangeFuture last = last();
 
                 if (!last.isDone() || Objects.equals(last.initialVersion(), readyTopVer()))
                     break;
 
-                remove(last.initialVersion());
+                removeLast();
             }
 
             // Return the value in the set.
@@ -3063,16 +3120,17 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public synchronized GridDhtPartitionsExchangeFuture remove(
-            Object topVer) {
-            return super.remove(topVer);
+        @Nullable @Override public synchronized GridDhtPartitionsExchangeFuture removex(
+            GridDhtPartitionsExchangeFuture val) {
+
+            return super.removex(val);
         }
 
         /**
          * @return Values.
          */
         @Override public synchronized List<GridDhtPartitionsExchangeFuture> values() {
-            return new ArrayList<>(super.values());
+            return super.values();
         }
 
         /** {@inheritDoc} */

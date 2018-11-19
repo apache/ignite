@@ -70,7 +70,7 @@ public abstract class GridCacheMessage implements Message {
 
     /** */
     @GridToStringInclude
-    @Nullable private AffinityTopologyVersion lastAffChangedTopVer;
+    private @Nullable AffinityTopologyVersion lastAffChangedTopVer;
 
     /** */
     @GridDirectTransient
@@ -189,15 +189,22 @@ public abstract class GridCacheMessage implements Message {
     }
 
     /**
-     * @return
+     * Returns the earliest affinity topology version for which this message is valid.
+     *
+     * @return Last affinity topology version when affinity was modified.
      */
     public AffinityTopologyVersion lastAffinityChangedTopologyVersion() {
-        if (lastAffChangedTopVer == null)
+        if (lastAffChangedTopVer == null || lastAffChangedTopVer.topologyVersion() <= 0)
             return topologyVersion();
 
         return lastAffChangedTopVer;
     }
 
+    /**
+     * Sets the earliest affinity topology version for which this message is valid.
+     *
+     * @param topVer Last affinity topology version when affinity was modified.
+     */
     public void lastAffinityChangedTopologyVersion(AffinityTopologyVersion topVer) {
         lastAffChangedTopVer = topVer;
     }
@@ -677,7 +684,7 @@ public abstract class GridCacheMessage implements Message {
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeMessage("lastAffChangedTopVer", lastAffChangedTopVer))
+                if (!writer.writeAffinityTopologyVersion("lastAffChangedTopVer", lastAffChangedTopVer))
                     return false;
 
                 writer.incrementState();
@@ -710,7 +717,7 @@ public abstract class GridCacheMessage implements Message {
                 reader.incrementState();
 
             case 1:
-                lastAffChangedTopVer = reader.readMessage("lastAffChangedTopVer");
+                lastAffChangedTopVer = reader.readAffinityTopologyVersion("lastAffChangedTopVer");
 
                 if (!reader.isLastRead())
                     return false;

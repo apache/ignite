@@ -232,7 +232,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
      * @return Affinity assignment.
      */
     public AffinityAssignment assignment(AffinityTopologyVersion topVer) {
-        return assignment(topVer, topVer);
+        return assignment(topVer, cctx.shared().exchange().lastAffinityChangedTopologyVersion(topVer));
     }
 
     /**

@@ -618,7 +618,10 @@ public class GridAffinityAssignmentCache {
      * @return Cached affinity.
      */
     public AffinityAssignment cachedAffinity(AffinityTopologyVersion topVer) {
-        return cachedAffinity(topVer, topVer);
+        AffinityTopologyVersion lastAffChangeTopVer =
+            ctx.cache().context().exchange().lastAffinityChangedTopologyVersion(topVer);
+
+        return cachedAffinity(topVer, lastAffChangeTopVer);
     }
 
     /**
@@ -641,10 +644,15 @@ public class GridAffinityAssignmentCache {
 
         AffinityAssignment cache = head.get();
 
-        if (!cache.topologyVersion().equals(topVer)) {
-            cache = affCache.get(lastAffChangeTopVer);
+        if (!(cache.topologyVersion().compareTo(lastAffChangeTopVer) >= 0 &&
+            cache.topologyVersion().compareTo(topVer) <= 0)) {
 
-            if (cache == null) {
+            Map.Entry<AffinityTopologyVersion, HistoryAffinityAssignment> e = affCache.ceilingEntry(lastAffChangeTopVer);
+
+            if (e != null)
+                cache = e.getValue();
+
+            if (cache == null || cache.topologyVersion().compareTo(topVer) > 0) {
                 throw new IllegalStateException("Getting affinity for topology version earlier than affinity is " +
                     "calculated [locNode=" + ctx.discovery().localNode() +
                     ", grp=" + cacheOrGrpName +
@@ -656,7 +664,7 @@ public class GridAffinityAssignmentCache {
         }
 
         assert cache.topologyVersion().compareTo(lastAffChangeTopVer) >= 0 &&
-            cache.topologyVersion().compareTo(topVer) <= 0 : "Invalid cached affinity: " + cache;
+            cache.topologyVersion().compareTo(topVer) <= 0 : "Invalid cached affinity: [cache=" + cache + ", topVer=" + topVer + ", lastAffChangedTopVer=" + lastAffChangeTopVer + "]";
 
         return cache;
     }
