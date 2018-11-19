@@ -400,8 +400,8 @@ public class ClusterListener implements AutoCloseable {
 
             if (restExec == null) {
                 restExec = restPool.open("web-agent",
-                    cfg.clientKeyStore(), cfg.clientKeyStorePassword(),
-                    cfg.trustStore(), cfg.trustKeyStorePassword());
+                    cfg.nodeKeyStore(), cfg.nodeKeyStorePassword(),
+                    cfg.nodeTrustStore(), cfg.nodeTrustStorePassword());
             }
 
             RestResult res = restExec.sendRequest(cfg.nodeURIs(), params, null);

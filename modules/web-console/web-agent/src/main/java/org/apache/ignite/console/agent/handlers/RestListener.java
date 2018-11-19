@@ -90,8 +90,8 @@ public class RestListener extends AbstractListener {
 
                 if (restExec == null) {
                     restExec = restPool.open("demo-rest-listener",
-                        cfg.clientKeyStore(), cfg.clientKeyStorePassword(),
-                        cfg.trustStore(), cfg.trustKeyStorePassword());
+                        cfg.nodeKeyStore(), cfg.nodeKeyStorePassword(),
+                        cfg.nodeTrustStore(), cfg.nodeTrustStorePassword());
                 }
 
                 return restExec.sendRequest(AgentClusterDemo.getDemoUrl(), params, headers);
@@ -101,8 +101,8 @@ public class RestListener extends AbstractListener {
 
             if (restExec == null) {
                 restExec = restPool.open(token,
-                    cfg.clientKeyStore(), cfg.clientKeyStorePassword(),
-                    cfg.trustStore(), cfg.trustKeyStorePassword());
+                    cfg.nodeKeyStore(), cfg.nodeKeyStorePassword(),
+                    cfg.nodeTrustStore(), cfg.nodeTrustStorePassword());
             }
 
             return restExec.sendRequest(this.cfg.nodeURIs(), params, headers);

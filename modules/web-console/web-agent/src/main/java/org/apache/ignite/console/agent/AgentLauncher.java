@@ -24,7 +24,6 @@ import io.socket.client.IO;
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.Authenticator;
 import java.net.ConnectException;
@@ -33,8 +32,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.UnknownHostException;
-import java.security.GeneralSecurityException;
-import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -43,13 +40,10 @@ import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLHandshakeException;
-import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 import okhttp3.OkHttpClient;
 import org.apache.ignite.console.agent.handlers.ClusterListener;
@@ -71,7 +65,6 @@ import static io.socket.client.Socket.EVENT_DISCONNECT;
 import static io.socket.client.Socket.EVENT_ERROR;
 import static org.apache.ignite.console.agent.AgentUtils.fromJSON;
 import static org.apache.ignite.console.agent.AgentUtils.toJSON;
-import static org.apache.ignite.console.agent.AgentUtils.disabledTrustManager;
 
 /**
  * Ignite Web Agent launcher.
@@ -209,31 +202,6 @@ public class AgentLauncher {
         return new Scanner(System.in).nextLine().toCharArray();
     }
 
-    /** */
-    private static OkHttpClient prepareOkHttpClient() throws GeneralSecurityException, IOException {
-        KeyStore ks = AgentUtils.keyStore(
-            "C:/GridGain/GitHub/ignite/ggprivate/modules/visor-tester/keystore/client.jks",
-            "123456".toCharArray()
-        );
-
-        KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
-        kmf.init(ks, "123456".toCharArray());
-
-        TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
-        tmf.init(ks);
-
-        SSLContext sslContext = SSLContext.getInstance("TLS");
-        sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
-
-        OkHttpClient sOkHttpClient = new OkHttpClient.Builder()
-            .hostnameVerifier((hostname, session) -> true)
-            .sslSocketFactory(sslContext.getSocketFactory(),
-                (X509TrustManager)tmf.getTrustManagers()[0])
-            .build();
-
-        return sOkHttpClient;
-    }
-
     /**
      * @param args Args.
      */
@@ -351,13 +319,55 @@ public class AgentLauncher {
 
         cfg.nodeURIs(nodeURIs);
 
-        OkHttpClient sOkHttpClient = prepareOkHttpClient();
-
         IO.Options opts = new IO.Options();
-        opts.callFactory = sOkHttpClient;
-        opts.webSocketFactory = sOkHttpClient;
         opts.path = "/agents";
-        opts.secure = true;
+
+        String keyStore = cfg.serverKeyStore();
+        String trustStore = cfg.serverTrustStore();
+
+        boolean trustAll = Boolean.getBoolean("trust.all");
+        boolean hasTrustStore = trustStore != null;
+        boolean hasKeyStore = keyStore != null;
+
+        if (trustAll || hasTrustStore || hasKeyStore) {
+            OkHttpClient.Builder builder = new OkHttpClient.Builder();
+
+            if (hasTrustStore && trustAll) {
+                log.warn("Options contains both '--server-trust-store' and '-Dtrust.all=true'. " +
+                    "Option '-Dtrust.all=true' will be ignored.");
+            }
+
+            X509TrustManager trustMgr = null;
+
+            if (trustAll && !hasTrustStore) {
+                trustMgr = AgentUtils.disabledTrustManager();
+
+                builder.hostnameVerifier((hostname, session) -> true);
+            }
+
+            if (hasTrustStore)
+                trustMgr = AgentUtils.trustManager(trustStore, cfg.serverTrustStorePassword());
+
+            KeyManager[] keyMgrs = null;
+
+            if (hasKeyStore)
+                keyMgrs = AgentUtils.keyManagers(keyStore, cfg.serverKeyStorePassword());
+
+            SSLContext ctx = SSLContext.getInstance("TLS");
+
+            ctx.init(keyMgrs, new TrustManager[] {trustMgr}, null);
+
+            builder.sslSocketFactory(ctx.getSocketFactory(), trustMgr);
+
+            OkHttpClient sslFactory = builder
+                .hostnameVerifier((hostname, session) -> true)
+                .sslSocketFactory(ctx.getSocketFactory(), trustMgr)
+                .build();
+
+            opts.callFactory = sslFactory;
+            opts.webSocketFactory = sslFactory;
+            opts.secure = true;
+        }
 
         final Socket client = IO.socket(uri, opts);
 

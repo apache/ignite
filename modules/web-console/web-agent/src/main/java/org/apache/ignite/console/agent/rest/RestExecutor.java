@@ -20,16 +20,12 @@ package org.apache.ignite.console.agent.rest;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.net.ConnectException;
-import java.security.KeyStore;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.KeyManager;
-import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
 import com.fasterxml.jackson.core.JsonFactory;
@@ -59,7 +55,6 @@ import org.slf4j.LoggerFactory;
 import static com.fasterxml.jackson.core.JsonToken.END_ARRAY;
 import static com.fasterxml.jackson.core.JsonToken.END_OBJECT;
 import static com.fasterxml.jackson.core.JsonToken.START_ARRAY;
-import static org.apache.ignite.console.agent.AgentUtils.disabledTrustManager;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_AUTH_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
@@ -75,9 +70,6 @@ public class RestExecutor implements AutoCloseable {
     private static final ObjectMapper MAPPER = new GridJettyObjectMapper();
 
     /** */
-    private static final char[] EMPTY_PWD = new char[0];
-
-    /** */
     private final OkHttpClient httpClient;
 
     /** Index of alive node URI. */
@@ -86,12 +78,12 @@ public class RestExecutor implements AutoCloseable {
     /**
      * Constructor.
      *
-     * @param clientStore Optional path to client key store file.
-     * @param clientPwd Optional password for client key store.
-     * @param trustStore Optional path to trust key store file.
-     * @param trustStorePwd Optional password for trust key store.
+     * @param keyStore Optional path to key store file.
+     * @param keyStorePwd Optional password for key store.
+     * @param trustStore Optional path to trust store file.
+     * @param trustStorePwd Optional password for trust store.
      */
-    public RestExecutor(String clientStore, String clientPwd, String trustStore, String trustStorePwd) {
+    public RestExecutor(String keyStore, String keyStorePwd, String trustStore, String trustStorePwd) {
         Dispatcher dispatcher = new Dispatcher();
 
         dispatcher.setMaxRequests(Integer.MAX_VALUE);
@@ -101,62 +93,41 @@ public class RestExecutor implements AutoCloseable {
             .readTimeout(0, TimeUnit.MILLISECONDS)
             .dispatcher(dispatcher);
 
-        // Workaround for self-signed certificates.
-        if (Boolean.getBoolean("trust.all")) {
+        boolean trustAll = Boolean.getBoolean("trust.all");
+        boolean hasTrustStore = trustStore != null;
+        boolean hasKeyStore = keyStore != null;
+
+        if (trustAll || hasTrustStore || hasKeyStore) {
             try {
+                if (hasTrustStore && trustAll) {
+                    log.warning("Options contains both '--node-trust-store' and '-Dtrust.all=true'. " +
+                        "Option '-Dtrust.all=true' will be ignored.");
+                }
+
                 SSLContext ctx = SSLContext.getInstance("TLS");
 
-                // Create an SSLContext that uses our TrustManager
-                ctx.init(null, new TrustManager[] {disabledTrustManager()}, null);
+                X509TrustManager trustMgr = null;
 
-                builder.sslSocketFactory(ctx.getSocketFactory(), disabledTrustManager());
+                if (trustAll && !hasTrustStore) {
+                    trustMgr = AgentUtils.disabledTrustManager();
 
-                builder.hostnameVerifier((hostname, session) -> true);
-            }
-            catch (Exception ignored) {
-                LT.warn(log, "Failed to initialize socket factory for \"-Dtrust.all\" option to skip certificate validation.");
-            }
-        }
-        else if (trustStore != null) {
-            try {
-                char[] trustPwd = trustStorePwd != null ? trustStorePwd.toCharArray() : EMPTY_PWD;
-                KeyStore trustKeyStore = AgentUtils.keyStore(trustStore, trustPwd);
+                    builder.hostnameVerifier((hostname, session) -> true);
+                }
 
-                TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
-                tmf.init(trustKeyStore);
-
-                TrustManager[] trustMgrs = tmf.getTrustManagers();
-
-                X509TrustManager trustMgr = (X509TrustManager)Arrays.stream(trustMgrs)
-                    .filter(tm -> tm instanceof X509TrustManager)
-                    .findFirst()
-                    .orElseThrow(() -> new IllegalStateException("X509TrustManager manager not found"));
-
-                SSLContext ctx = SSLContext.getInstance("TLS");
+                if (hasTrustStore)
+                    trustMgr = AgentUtils.trustManager(trustStore, trustStorePwd);
 
                 KeyManager[] keyMgrs = null;
 
-                if (clientStore != null) {
-                    char[] pwd = clientPwd != null ? clientPwd.toCharArray() : EMPTY_PWD;
+                if (hasKeyStore)
+                    keyMgrs = AgentUtils.keyManagers(keyStore, keyStorePwd);
 
-                    KeyStore keyStore = AgentUtils.keyStore(clientStore, pwd);
-
-                    KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-                    kmf.init(keyStore, pwd);
-
-                    keyMgrs = kmf.getKeyManagers();
-                }
-
-                ctx.init(keyMgrs, trustMgrs, null);
+                ctx.init(keyMgrs, new TrustManager[] {trustMgr}, null);
 
                 builder.sslSocketFactory(ctx.getSocketFactory(), trustMgr);
             }
             catch (Exception e) {
-                String err = clientStore != null
-                    ? "Failed to initialize socket factory to establish mutual SSL connection with server"
-                    : "Failed to initialize socket factory to establish SSL connection with server";
-
-                log.error(err, e);
+                log.error("Failed to initialize SSL socket factory", e);
             }
         }
 

@@ -96,24 +96,44 @@ public class AgentConfiguration {
     private Boolean disableDemo;
 
     /** */
-    @Parameter(names = {"-cs", "--client-certificate"},
-        description = "Path to client key store")
-    private String clientKeyStore;
+    @Parameter(names = {"-nks", "--node-key-store"},
+        description = "Path to key store that will be used to connect to cluster")
+    private String nodeKeyStore;
 
     /** */
-    @Parameter(names = {"-cp", "--client-password"},
-        description = "Optional password for client key store")
-    private String clientKeyStorePass;
+    @Parameter(names = {"-nkp", "--node-key-store-password"},
+        description = "Optional password for node key store")
+    private String nodeKeyStorePass;
 
     /** */
-    @Parameter(names = {"-ts", "--trust-store"},
-        description = "Path to trust key store")
-    private String trustKeyStore;
+    @Parameter(names = {"-nts", "--node-trust-store"},
+        description = "Path to trust store that will be used to connect to cluster")
+    private String nodeTrustStore;
 
     /** */
-    @Parameter(names = {"-tp", "--trust-store-password"},
-        description = "Password for trust key store")
-    private String trustKeyStorePass;
+    @Parameter(names = {"-ntp", "--node-trust-store-password"},
+        description = "Password for node trust store")
+    private String nodeTrustStorePass;
+
+    /** */
+    @Parameter(names = {"-sks", "--server-key-store"},
+        description = "Path to key store that will be used to connect to Web server")
+    private String srvKeyStore;
+
+    /** */
+    @Parameter(names = {"-skp", "--node-key-store-password"},
+        description = "Optional password for server key store")
+    private String srvKeyStorePass;
+
+    /** */
+    @Parameter(names = {"-sts", "--server-trust-store"},
+        description = "Path to trust store that will be used to connect to Web server")
+    private String srvTrustStore;
+
+    /** */
+    @Parameter(names = {"-stp", "--server-trust-store-password"},
+        description = "Password for server trust store")
+    private String srvTrustStorePass;
 
     /** */
     @Parameter(names = {"-h", "--help"}, help = true, description = "Print this help message")
@@ -239,59 +259,115 @@ public class AgentConfiguration {
     }
 
     /**
-     * @return Path to client key store.
+     * @return Path to node key store.
      */
-    public String clientKeyStore() {
-        return clientKeyStore;
+    public String nodeKeyStore() {
+        return nodeKeyStore;
     }
 
     /**
-     * @param clientKeyStore Path to client certificate.
+     * @param nodeKeyStore Path to node key store.
      */
-    public void clientKeyStore(String clientKeyStore) {
-        this.clientKeyStore = clientKeyStore;
+    public void nodeKeyStore(String nodeKeyStore) {
+        this.nodeKeyStore = nodeKeyStore;
     }
 
     /**
-     * @return Client key store password.
+     * @return Node key store password.
      */
-    public String clientKeyStorePassword() {
-        return clientKeyStorePass;
+    public String nodeKeyStorePassword() {
+        return nodeKeyStorePass;
     }
 
     /**
-     * @param clientPass Client key store password.
+     * @param nodeKeyStorePass Node key store password.
      */
-    public void clientKeyStorePassword(String clientPass) {
-        this.clientKeyStorePass = clientPass;
+    public void nodeKeyStorePassword(String nodeKeyStorePass) {
+        this.nodeKeyStorePass = nodeKeyStorePass;
     }
 
     /**
-     * @return Path to trust key store.
+     * @return Path to node trust store.
      */
-    public String trustStore() {
-        return trustKeyStore;
+    public String nodeTrustStore() {
+        return nodeTrustStore;
     }
 
     /**
-     * @param trustStore Path to trust key store.
+     * @param nodeTrustStore Path to node trust store.
      */
-    public void trustStore(String trustStore) {
-        this.trustKeyStore = trustStore;
+    public void nodeTrustStore(String nodeTrustStore) {
+        this.nodeTrustStore = nodeTrustStore;
     }
 
     /**
-     * @return Trust store password.
+     * @return Node trust store password.
      */
-    public String trustKeyStorePassword() {
-        return trustKeyStorePass;
+    public String nodeTrustStorePassword() {
+        return nodeTrustStorePass;
     }
 
     /**
-     * @param trustStorePass Trust store password.
+     * @param nodeTrustStorePass Node trust store password.
      */
-    public void trustKeyStorePassword(String trustStorePass) {
-        this.trustKeyStorePass = trustStorePass;
+    public void nodeTrustStorePassword(String nodeTrustStorePass) {
+        this.nodeTrustStorePass = nodeTrustStorePass;
+    }
+
+    /**
+     * @return Path to server key store.
+     */
+    public String serverKeyStore() {
+        return srvKeyStore;
+    }
+
+    /**
+     * @param srvKeyStore Path to server key store.
+     */
+    public void serverKeyStore(String srvKeyStore) {
+        this.srvKeyStore = srvKeyStore;
+    }
+
+    /**
+     * @return Server key store password.
+     */
+    public String serverKeyStorePassword() {
+        return srvKeyStorePass;
+    }
+
+    /**
+     * @param srvKeyStorePass Server key store password.
+     */
+    public void serverKeyStorePassword(String srvKeyStorePass) {
+        this.srvKeyStorePass = srvKeyStorePass;
+    }
+
+    /**
+     * @return Path to server trust store.
+     */
+    public String serverTrustStore() {
+        return srvTrustStore;
+    }
+
+    /**
+     * @param srvTrustStore Path to server trust store.
+     */
+    public void serverTrustStore(String srvTrustStore) {
+        this.srvTrustStore = srvTrustStore;
+    }
+
+    /**
+     * @return Server trust store password.
+     */
+    public String serverTrustStorePassword() {
+        return srvTrustStorePass;
+    }
+
+    /**
+     * @param srvTrustStorePass Server trust store password.
+     */
+    public void serverTrustStorePassword(String srvTrustStorePass) {
+        this.srvTrustStorePass = srvTrustStorePass;
     }
 
     /**
@@ -373,17 +449,29 @@ public class AgentConfiguration {
         if (disableDemo == null)
             disableDemo(cfg.disableDemo());
 
-        if (clientKeyStore == null)
-            clientKeyStore(cfg.clientKeyStore());
+        if (nodeKeyStore == null)
+            nodeKeyStore(cfg.nodeKeyStore());
 
-        if (clientKeyStorePass == null)
-            clientKeyStorePassword(cfg.clientKeyStorePassword());
+        if (nodeKeyStorePass == null)
+            nodeKeyStorePassword(cfg.nodeKeyStorePassword());
 
-        if (trustKeyStore == null)
-            trustStore(cfg.trustStore());
+        if (nodeTrustStore == null)
+            nodeTrustStore(cfg.nodeTrustStore());
 
-        if (trustKeyStorePass == null)
-            trustKeyStorePassword(cfg.trustKeyStorePassword());
+        if (nodeTrustStorePass == null)
+            nodeTrustStorePassword(cfg.nodeTrustStorePassword());
+
+        if (srvKeyStore == null)
+            serverKeyStore(cfg.serverKeyStore());
+
+        if (srvKeyStorePass == null)
+            serverKeyStorePassword(cfg.serverKeyStorePassword());
+
+        if (srvTrustStore == null)
+            serverTrustStore(cfg.serverTrustStore());
+
+        if (srvTrustStorePass == null)
+            serverTrustStorePassword(cfg.serverTrustStorePassword());
     }
 
     /** {@inheritDoc} */

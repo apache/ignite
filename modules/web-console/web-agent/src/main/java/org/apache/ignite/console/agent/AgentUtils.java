@@ -30,6 +30,10 @@ import java.security.KeyStore;
 import java.security.ProtectionDomain;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 import org.apache.log4j.Logger;
 import org.json.JSONArray;
@@ -41,6 +45,9 @@ import org.json.JSONObject;
 public class AgentUtils {
     /** */
     private static final Logger log = Logger.getLogger(AgentUtils.class.getName());
+
+    /** */
+    private static final char[] EMPTY_PWD = new char[0];
 
     /** JSON object mapper. */
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -194,7 +201,7 @@ public class AgentUtils {
      * @param pwd Key store password.
      * @return Key store.
      * @throws GeneralSecurityException If failed to load key store.
-     * @throws IOException If failed to load java key store file content.
+     * @throws IOException If failed to load key store file content.
      */
     public static KeyStore keyStore(String pathToJks, char[] pwd) throws GeneralSecurityException, IOException {
         KeyStore keyStore = KeyStore.getInstance("JKS");
@@ -204,7 +211,47 @@ public class AgentUtils {
     }
 
     /**
-     * Create a trust manager that trusts all certificates It is not using a particular keyStore
+     * @param pathToJks Path to key store.
+     * @param pwd Key store password.
+     * @return Key managers.
+     * @throws GeneralSecurityException If failed to load key store.
+     * @throws IOException If failed to load key store file content.
+     */
+    public static KeyManager[] keyManagers(String pathToJks, String pwd) throws GeneralSecurityException, IOException {
+        char[] p = pwd != null ? pwd.toCharArray() : EMPTY_PWD;
+
+        KeyStore keyStore = keyStore(pathToJks, p);
+
+        KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+        kmf.init(keyStore, p);
+
+        return kmf.getKeyManagers();
+    }
+
+    /**
+     * @param pathToJks Path to trust store file.
+     * @param pwd Trust store password.
+     * @return Trust manager
+     * @throws GeneralSecurityException If failed to load trust store.
+     * @throws IOException If failed to load trust store file content.
+     */
+    public static X509TrustManager trustManager(String pathToJks, String pwd) throws GeneralSecurityException, IOException {
+        char[] trustPwd = pwd != null ? pwd.toCharArray() : EMPTY_PWD;
+        KeyStore trustKeyStore = keyStore(pathToJks, trustPwd);
+
+        TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
+        tmf.init(trustKeyStore);
+
+        TrustManager[] trustMgrs = tmf.getTrustManagers();
+
+        return (X509TrustManager)Arrays.stream(trustMgrs)
+            .filter(tm -> tm instanceof X509TrustManager)
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("X509TrustManager manager not found"));
+    }
+
+    /**
+     * Create a trust manager that trusts all certificates.
      */
     public static X509TrustManager disabledTrustManager() {
         return new X509TrustManager() {
