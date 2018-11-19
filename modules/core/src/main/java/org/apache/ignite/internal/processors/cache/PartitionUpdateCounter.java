@@ -156,12 +156,12 @@ public class PartitionUpdateCounter {
      * @param cntr Sets initial counter.
      */
     public void updateInitial(long cntr) {
-        if (cntr <= initCntr)
-            return;
+        if (cntr <= initCntr) {
+            if (cntr == 0) // 0 means counter reset.
+                initCntr = 0;
 
-        // 0 mean counter reset.
-        if (cntr == 0)
-            initCntr = 0;
+            return;
+        }
 
         gapCnt++;
 
