@@ -290,6 +290,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Checkpoint thread. Needs to be volatile because it is created in exchange worker. */
     private volatile Checkpointer checkpointer;
 
+    /** Thread that holds checkpointer process. */
+    private volatile IgniteThread checkpointThread;
+
     /** For testing only. */
     private volatile boolean checkpointsEnabled = true;
 
@@ -441,6 +444,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         wakeupForCheckpoint("enableCheckpoints()");
 
         return fut;
+    }
+
+    /**
+     * For test use only.
+
+     * @return Instance of checkpoint thread.
+     */
+    public IgniteThread checkpointThread() {
+        return checkpointThread;
     }
 
     /** {@inheritDoc} */
@@ -1432,7 +1444,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             snapshotMgr.restoreState();
 
-            new IgniteThread(cctx.igniteInstanceName(), "db-checkpoint-thread", checkpointer).start();
+            IgniteThread cpThread = new IgniteThread(cctx.igniteInstanceName(), "db-checkpoint-thread", checkpointer);
+
+            cpThread.start();
+
+            checkpointThread = cpThread;
 
             CheckpointProgressSnapshot chp = checkpointer.wakeupForCheckpoint(0, "node started");
 
@@ -2345,28 +2361,29 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
 
-            for (int i = 0; i < grp.affinity().partitions(); i++) {
-                T2<Integer, Long> restore = partStates.get(new T2<>(grpId, i));
+            checkpointReadLock();
 
-                if (storeMgr.exists(grpId, i)) {
-                    storeMgr.ensure(grpId, i);
+            try {
+                for (int i = 0; i < grp.affinity().partitions(); i++) {
+                    T2<Integer, Long> restore = partStates.get(new T2<>(grpId, i));
 
-                    if (storeMgr.pages(grpId, i) <= 1)
-                        continue;
+                    if (storeMgr.exists(grpId, i)) {
+                        storeMgr.ensure(grpId, i);
 
-                    GridDhtLocalPartition part = grp.topology().localPartition(i);
+                        if (storeMgr.pages(grpId, i) <= 1)
+                            continue;
 
-                    if (part == null)
-                        part = grp.topology().forceCreatePartition(i);
 
-                    assert part != null;
+                        GridDhtLocalPartition part = grp.topology().localPartition(i);
 
-                    // TODO: https://issues.apache.org/jira/browse/IGNITE-6097
-                    grp.offheap().onPartitionInitialCounterUpdated(i, 0);
+                        if (part == null)
+                            part = grp.topology().forceCreatePartition(i);
 
-                    checkpointReadLock();
+                        assert part != null;
 
-                    try {
+                        // TODO: https://issues.apache.org/jira/browse/IGNITE-6097
+                        grp.offheap().onPartitionInitialCounterUpdated(i, 0);
+
                         long partMetaId = pageMem.partitionMetaPageId(grpId, i);
                         long partMetaPage = pageMem.acquirePage(grpId, partMetaId);
 
@@ -2405,30 +2422,26 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             pageMem.releasePage(grpId, partMetaId, partMetaPage);
                         }
                     }
-                    finally {
-                        checkpointReadUnlock();
+                    else if (restore != null) {
+                        GridDhtLocalPartition part = grp.topology().localPartition(i);
+
+                        if (part == null)
+                            part = grp.topology().forceCreatePartition(i);
+
+                        assert part != null;
+
+                        // TODO: https://issues.apache.org/jira/browse/IGNITE-6097
+                        grp.offheap().onPartitionInitialCounterUpdated(i, 0);
+
+                        updateState(part, restore.get1());
                     }
                 }
-                else if (restore != null) {
-                    GridDhtLocalPartition part = grp.topology().localPartition(i);
 
-                    if (part == null)
-                        part = grp.topology().forceCreatePartition(i);
-
-                    assert part != null;
-
-                    // TODO: https://issues.apache.org/jira/browse/IGNITE-6097
-                    grp.offheap().onPartitionInitialCounterUpdated(i, 0);
-
-                    updateState(part, restore.get1());
-                }
+                // After partition states are restored, it is necessary to update internal data structures in topology.
+                grp.topology().afterStateRestored(grp.topology().lastTopologyChangeVersion());
             }
-
-            // After partition states are restored, it is necessary to update internal data structures in topology.
-            grp.topology().afterStateRestored(grp.topology().lastTopologyChangeVersion());
-
-            if (grp.cacheOrGroupName().equals("CACHE") && grp.topology().hasMovingPartitions()) {
-                int k = 2;
+            finally {
+                checkpointReadUnlock();
             }
         }
     }
