@@ -2573,11 +2573,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /**
      * Checks, that cache interceptor should be skipped.
      * <p>
-     * In current cache interceptor implementation for changes got by DR will be invoked following methods:
+     * In current cache interceptor implementation, if changes were got by DR, the following methods will be invoked:
      * {@link CacheInterceptor#onBeforePut(Cache.Entry, Object)}, {@link CacheInterceptor#onAfterPut(Cache.Entry)},
      * {@link CacheInterceptor#onBeforeRemove(Cache.Entry)} and {@link CacheInterceptor#onAfterRemove(Cache.Entry)},
      * but method {@link CacheInterceptor#onGet(Object, Object)} will not be invoked.
-     * This implementation can corrupt data. For example, cache interceptor wrap data on update/remove and unwrap data
+     * This implementation could corrupt data. For example, cache interceptor wrap data on update/remove and unwrap data
      * back on get from cache. For avoid this scenario and made changes by CacheInterceptor idempotent the method
      * {@link GridCacheDrManager#cacheInterceptorDisabled()} should return {@code false}.
      *
