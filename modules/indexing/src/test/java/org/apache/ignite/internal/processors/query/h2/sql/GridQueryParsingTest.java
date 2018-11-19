@@ -1008,7 +1008,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         String schemaName = idx.schema(DEFAULT_CACHE_NAME);
 
-        return (JdbcConnection)idx.connectionForSchema(schemaName);
+        return (JdbcConnection)idx.connections().connectionForThread(schemaName);
     }
 
     /**

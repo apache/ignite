@@ -647,7 +647,7 @@ public final class UpdatePlan {
 
         /** {@inheritDoc} */
         @Override public void beforeDetach() {
-            ObjectPoolReusable<H2ConnectionWrapper> conn0 = conn = idx.detachConnection();
+            ObjectPoolReusable<H2ConnectionWrapper> conn0 = conn = idx.connections().detachConnection();
 
             if (isClosed())
                 conn0.recycle();

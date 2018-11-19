@@ -825,7 +825,7 @@ public class GridMapQueryExecutor {
             if (nodeRess.put(reqId, segmentId, qryResults) != null)
                 throw new IllegalStateException();
 
-            Connection conn = h2.connectionForSchema(schemaName);
+            Connection conn = h2.connections().connectionForThread(schemaName);
 
             H2Utils.setupConnection(conn, distributedJoinMode != OFF, enforceJoinOrder, lazy);
 
@@ -969,7 +969,7 @@ public class GridMapQueryExecutor {
                 if (qryResults.cancelled())
                     throw new QueryCancelledException();
 
-                final ObjectPoolReusable<H2ConnectionWrapper> detachedConn = h2.detachConnection();
+                final ObjectPoolReusable<H2ConnectionWrapper> detachedConn = h2.connections().detachConnection();
 
                 qryResults.lazyWorker().start(H2Utils.session(conn), detachedConn);
 

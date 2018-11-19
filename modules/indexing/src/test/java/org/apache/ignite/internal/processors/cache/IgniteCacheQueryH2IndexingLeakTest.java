@@ -119,10 +119,10 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
      * @return size of statement cache.
      */
     private static int getStatementCacheSize(GridQueryProcessor qryProcessor) {
-        IgniteH2Indexing h2Idx = GridTestUtils.getFieldValue(qryProcessor, GridQueryProcessor.class, "idx");
 
-        ConcurrentMap<Thread, ConcurrentMap<H2ConnectionWrapper, Boolean>> conns =
-            GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "conns");
+        IgniteH2Indexing h2Idx = (IgniteH2Indexing)qryProcessor.getIndexing();
+
+        ConcurrentMap<Thread, ConcurrentMap<H2ConnectionWrapper, Boolean>> conns = h2Idx.connections().connectionsForThread();
 
         int cntr = 0;
 
@@ -148,10 +148,10 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
             // Open iterator on the created cursor: add entries to the cache.
             IgniteInternalFuture<?> fut = multithreadedAsync(
                 new CAX() {
+                    @SuppressWarnings("unchecked")
                     @Override public void applyx() throws IgniteCheckedException {
                         while (!stop.get()) {
                             c.query(new SqlQuery(Integer.class, "_val >= 0")).getAll();
-
                             c.query(new SqlQuery(Integer.class, "_val >= 1")).getAll();
                         }
                     }
@@ -200,6 +200,7 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
             // Open iterator on the created cursor: add entries to the cache
             IgniteInternalFuture<?> fut = multithreadedAsync(
                 new CAX() {
+                    @SuppressWarnings("unchecked")
                     @Override public void applyx() throws IgniteCheckedException {
                         c.query(new SqlQuery(Integer.class, "_val >= 0")).getAll();
 
