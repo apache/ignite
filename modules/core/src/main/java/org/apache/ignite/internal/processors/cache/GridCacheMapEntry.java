@@ -1242,7 +1242,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (lockedByCurrentThread()) {
                 unlockEntry();
 
-                cctx.evicts().touch(this, AffinityTopologyVersion.NONE);
+                cctx.evicts().touch(this);
             }
         }
 
@@ -1358,7 +1358,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (lockedByCurrentThread()) {
                 unlockEntry();
 
-                cctx.evicts().touch(this, AffinityTopologyVersion.NONE);
+                cctx.evicts().touch(this);
             }
         }
 
@@ -1426,7 +1426,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (lockedByCurrentThread()) {
                 unlockEntry();
 
-                cctx.evicts().touch(this, AffinityTopologyVersion.NONE);
+                cctx.evicts().touch(this);
             }
         }
 
@@ -5251,7 +5251,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (entry.lockedByCurrentThread()) {
                     entry.unlockEntry();
 
-                    cctx.evicts().touch(entry, AffinityTopologyVersion.NONE);
+                    cctx.evicts().touch(entry);
                 }
             }
 
@@ -5357,7 +5357,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (entry.lockedByCurrentThread()) {
                     entry.unlockEntry();
 
-                    cctx.evicts().touch(entry, AffinityTopologyVersion.NONE);
+                    cctx.evicts().touch(entry);
                 }
             }
 
@@ -5604,7 +5604,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (entry.lockedByCurrentThread()) {
                     entry.unlockEntry();
 
-                    cctx.evicts().touch(entry, AffinityTopologyVersion.NONE);
+                    cctx.evicts().touch(entry);
                 }
             }
 
@@ -6796,7 +6796,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (lockedByCurrentThread()) {
                 unlockEntry();
 
-                cctx.evicts().touch(this, AffinityTopologyVersion.NONE);
+                cctx.evicts().touch(this);
             }
         }
 
