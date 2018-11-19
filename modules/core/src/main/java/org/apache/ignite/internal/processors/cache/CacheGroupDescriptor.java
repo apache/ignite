@@ -200,7 +200,7 @@ public class CacheGroupDescriptor {
      * @param cacheName Cache name
      * @param cacheId Cache ID.
      */
-    void onCacheStopped(String cacheName, int cacheId) {
+    public void onCacheStopped(String cacheName, int cacheId) {
         assert cacheName != null;
         assert cacheId != 0;
 
@@ -216,7 +216,7 @@ public class CacheGroupDescriptor {
     /**
      * @return {@code True} if group contains cache.
      */
-    boolean hasCaches() {
+    public boolean hasCaches() {
         return caches != null && !caches.isEmpty();
     }
 
