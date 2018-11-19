@@ -79,10 +79,6 @@ public class ConnectionManager {
         System.setProperty("h2.dropRestrict", "false"); // Drop schema with cascade semantics.
     }
 
-    /** All connections are used by Ignite instance. Map of (H2ConnectionWrapper, Boolean) is used as a Set. */
-    private final ConcurrentMap<Thread, ConcurrentMap<H2ConnectionWrapper, Boolean>> threadConns = new ConcurrentHashMap<>();
-
-
     /** Shared connection pool. */
     private final ThreadLocal<ObjectPool<H2ConnectionWrapper>> connPool
         = new ThreadLocal<ObjectPool<H2ConnectionWrapper>>() {
@@ -94,6 +90,9 @@ public class ConnectionManager {
                 ConnectionManager.this::recycleConnection);
         }
     };
+
+    /** All connections are used by Ignite instance. Map of (H2ConnectionWrapper, Boolean) is used as a Set. */
+    private final ConcurrentMap<Thread, ConcurrentMap<H2ConnectionWrapper, Boolean>> threadConns = new ConcurrentHashMap<>();
 
     /** Connection cache. */
     private final ThreadLocal<ObjectPoolReusable<H2ConnectionWrapper>> connCache
@@ -367,7 +366,7 @@ public class ConnectionManager {
      * Handles SQL exception.
      */
     public void onSqlException() {
-        // TODO: check that error may be thrown on detached connection.
+        // TODO: now INVALID!!! don't remove from pool, don't handle detached.
         H2ConnectionWrapper conn = connCache.get().object();
 
         connCache.set(null);
