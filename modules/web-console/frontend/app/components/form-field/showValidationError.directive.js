@@ -21,8 +21,10 @@
  */
 export function directive($timeout) {
     return {
-        require: ['ngModel', '?^^bsCollapseTarget', '?^^igniteFormField', '?^^panelCollapsible'],
-        link(scope, el, attr, [ngModel, bsCollapseTarget, igniteFormField, panelCollapsible]) {
+        require: ['ngModel', '?^^bsCollapseTarget', '?^^igniteFormField', '?formFieldSize', '?^^panelCollapsible'],
+        link(scope, el, attr, [ngModel, bsCollapseTarget, igniteFormField, formFieldSize, panelCollapsible]) {
+            const formFieldController = igniteFormField || formFieldSize;
+
             let onBlur;
             scope.$on('$destroy', () => {
                 el[0].removeEventListener('blur', onBlur);
@@ -38,8 +40,8 @@ export function directive($timeout) {
                 bsCollapseTarget && bsCollapseTarget.open();
                 panelCollapsible && panelCollapsible.open();
 
-                if (!onBlur && igniteFormField) {
-                    onBlur = () => igniteFormField.hideError();
+                if (!onBlur && formFieldController) {
+                    onBlur = () => formFieldController.hideError();
                     el[0].addEventListener('blur', onBlur, {passive: true});
                 }
 
@@ -52,7 +54,7 @@ export function directive($timeout) {
                     if (!attr.bsSelect)
                         $timeout(() => el[0].focus());
 
-                    igniteFormField && igniteFormField.notifyAboutError();
+                    formFieldController && formFieldController.notifyAboutError();
                 });
             });
         }
