@@ -34,6 +34,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -49,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLoca
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
+import org.apache.ignite.internal.processors.cache.dr.GridCacheDrManager;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheEntryExtras;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheMvccEntryExtras;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
@@ -1514,7 +1516,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             old = oldValPresent ? oldVal : this.val;
 
             if(intercept)
-                intercept = !(isRemoteDrUpdate(explicitVer) && cctx.dr().cacheInterceptorDisabled());
+                intercept = !skipInterceptor(explicitVer);
 
             if (intercept) {
                 val0 = cctx.unwrapBinaryIfNeeded(val, keepBinary, false);
@@ -1743,7 +1745,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             old = oldValPresent ? oldVal : val;
 
             if(intercept)
-                intercept = !(isRemoteDrUpdate(explicitVer) && cctx.dr().cacheInterceptorDisabled());
+                intercept = !skipInterceptor(explicitVer);
 
             if (intercept) {
                 entry0 = new CacheLazyEntry(cctx, key, old, keepBinary);
@@ -2566,6 +2568,24 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      */
     private boolean isRemoteDrUpdate(@Nullable GridCacheVersion explicitVer) {
         return explicitVer != null && explicitVer.dataCenterId() != cctx.dr().dataCenterId();
+    }
+
+    /**
+     * Checks, that cache interceptor should be skipped.
+     * <p>
+     * In current cache interceptor implementation for changes got by DR will be invoked following methods:
+     * {@link CacheInterceptor#onBeforePut(Cache.Entry, Object)}, {@link CacheInterceptor#onAfterPut(Cache.Entry)},
+     * {@link CacheInterceptor#onBeforeRemove(Cache.Entry)} and {@link CacheInterceptor#onAfterRemove(Cache.Entry)},
+     * but method {@link CacheInterceptor#onGet(Object, Object)} will not be invoked.
+     * This implementation can corrupt data. For example, cache interceptor wrap data on update/remove and unwrap data
+     * back on get from cache. For avoid this scenario and made changes by CacheInterceptor idempotent the method
+     * {@link GridCacheDrManager#cacheInterceptorDisabled()} should return {@code false}.
+     *
+     * @param explicitVer - Explicit version (if any).
+     * @return {@code true} if cache interceptor should be skipped and {@code false} otherwise.
+     */
+    private boolean skipInterceptor(@Nullable GridCacheVersion explicitVer) {
+        return isRemoteDrUpdate(explicitVer) && cctx.dr().cacheInterceptorDisabled();
     }
 
     /**
