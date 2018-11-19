@@ -17,15 +17,21 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.EventType;
@@ -48,13 +54,13 @@ public class CacheResultIsNotNullOnPartitionLossTest extends GridCommonAbstractT
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Number of servers to be started. */
-    private static final int SERVERS = 10;
+    private static final int SERVERS = 5;
 
     /** Index of node that is goning to be the only client node. */
     private static final int CLIENT_IDX = SERVERS;
 
     /** Number of cache entries to insert into the test cache. */
-    private static final int CACHE_ENTRIES_CNT = 10_000;
+    private static final int CACHE_ENTRIES_CNT = 60;
 
     /** True if {@link #getConfiguration(String)} is expected to configure client node on next invocations. */
     private boolean isClient;
@@ -75,6 +81,7 @@ public class CacheResultIsNotNullOnPartitionLossTest extends GridCommonAbstractT
                 .setCacheMode(CacheMode.PARTITIONED)
                 .setBackups(0)
                 .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+                .setAffinity(new RendezvousAffinityFunction(false, 50))
                 .setPartitionLossPolicy(PartitionLossPolicy.READ_WRITE_SAFE)
         );
 
@@ -90,7 +97,12 @@ public class CacheResultIsNotNullOnPartitionLossTest extends GridCommonAbstractT
 
         cleanPersistenceDir();
 
-        startGrids(SERVERS);
+        List<Integer> list = IntStream.range(0, SERVERS).boxed().collect(Collectors.toList());
+
+        Collections.shuffle(list);
+
+        for (Integer i : list)
+            startGrid(i);
 
         isClient = true;
 
@@ -178,9 +190,9 @@ public class CacheResultIsNotNullOnPartitionLossTest extends GridCommonAbstractT
             readerThreadStarted.await(1, TimeUnit.SECONDS);
 
             for (int i = 0; i < SERVERS - 1; i++) {
-                Thread.sleep(50L);
-
                 grid(i).close();
+
+                Thread.sleep(400L);
             }
         }
         finally {
@@ -204,6 +216,7 @@ public class CacheResultIsNotNullOnPartitionLossTest extends GridCommonAbstractT
     private boolean expectedThrowableClass(Throwable throwable) {
         return X.hasCause(
             throwable,
+            IgniteClientDisconnectedException.class,
             CacheInvalidStateException.class,
             ClusterTopologyCheckedException.class,
             IllegalStateException.class,
