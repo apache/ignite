@@ -1002,16 +1002,17 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      */
     public void testDoInParallelWithStealingJob() throws IgniteCheckedException {
         // Pool size should be less that input data collection.
-        ExecutorService executorService = Executors.newFixedThreadPool(2);
+        ExecutorService executorService = Executors.newFixedThreadPool(1);
 
-        CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch mainThreadLatch = new CountDownLatch(1);
+        CountDownLatch poolThreadLatch = new CountDownLatch(1);
 
         // Busy one thread from the pool.
         executorService.submit(new Runnable() {
             @Override
             public void run() {
                 try {
-                    latch.await();
+                    poolThreadLatch.await();
                 }
                 catch (InterruptedException e) {
                     throw new IgniteInterruptedException(e);
@@ -1020,6 +1021,8 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         });
 
         List<Integer> data = asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+
+        AtomicInteger taskProcessed = new AtomicInteger();
 
         long threadId = Thread.currentThread().getId();
 
@@ -1032,25 +1035,37 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
             new IgniteThrowableConsumer<Integer, Integer>() {
                 @Override public Integer accept(Integer cnt) throws IgniteInterruptedCheckedException {
                     // Release thread in pool in the middle of range.
-                    if (cnt == 4) {
-                        latch.countDown();
-                    }
+                    if (taskProcessed.getAndIncrement() == (data.size() / 2) - 1) {
+                        poolThreadLatch.countDown();
 
-                    // Throttler.
-                    U.sleep(50);
+                        try {
+                            // Await thread in thread pool complete task.
+                            mainThreadLatch.await();
+                        }
+                        catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+
+                            throw new IgniteInterruptedCheckedException(e);
+                        }
+                    }
 
                     // Increment if executed in current thread.
                     if (Thread.currentThread().getId() == threadId)
                         curThreadCnt.incrementAndGet();
-                    else
+                    else {
                         poolThreadCnt.incrementAndGet();
+
+                        if (taskProcessed.get() == data.size())
+                            mainThreadLatch.countDown();
+                    }
 
                     return -cnt;
                 }
             });
 
-        Assert.assertTrue(curThreadCnt.get() > 0);
-        Assert.assertTrue(poolThreadCnt.get() > 0);
+        Assert.assertEquals(curThreadCnt.get() + poolThreadCnt.get(), data.size());
+        Assert.assertEquals(5, curThreadCnt.get());
+        Assert.assertEquals(5, poolThreadCnt.get());
         Assert.assertEquals(asList(0, -1, -2, -3, -4, -5, -6, -7, -8, -9), res);
     }
 
