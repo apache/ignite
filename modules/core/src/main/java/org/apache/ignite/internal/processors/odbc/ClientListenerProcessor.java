@@ -258,7 +258,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
         GridNioFilter codecFilter = new GridNioCodecFilter(new ClientListenerBufferedParser(), log, false);
 
-        GridNioFilter priorityFilter = new GridNioPriorityQueryFilter();
+        GridNioFilter priorityFilter = new GridNioPriorityQueryFilter(log);
 
         if (cliConnCfg.isSslEnabled()) {
             Factory<SSLContext> sslCtxFactory = cliConnCfg.isUseIgniteSslContextFactory() ?
