@@ -604,7 +604,6 @@ public abstract class PageIO {
      * @return Page IO.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     public static <Q extends PageIO> Q getPageIO(ByteBuffer page) throws IgniteCheckedException {
         return getPageIO(getType(page), getVersion(page));
     }
