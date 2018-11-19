@@ -34,7 +34,13 @@ export class IgniteFormField {
         this.$element = this.onAnimEnd = null;
     }
     notifyAboutError() {
-        if (this.$element) this.$element.addClass(IgniteFormField.animName);
+        if (!this.$element) return;
+        this.$element.addClass(IgniteFormField.animName);
+        this.$element.find('.form-field__error [bs-tooltip]').trigger('mouseenter');
+    }
+    hideError() {
+        if (!this.$element) return;
+        this.$element.find('.form-field__error [bs-tooltip]').trigger('mouseleave');
     }
     /**
      * Exposes control in $scope

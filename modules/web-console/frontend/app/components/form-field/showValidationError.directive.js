@@ -23,6 +23,12 @@ export function directive($timeout) {
     return {
         require: ['ngModel', '?^^bsCollapseTarget', '?^^igniteFormField', '?^^panelCollapsible'],
         link(scope, el, attr, [ngModel, bsCollapseTarget, igniteFormField, panelCollapsible]) {
+            let onBlur;
+            scope.$on('$destroy', () => {
+                el[0].removeEventListener('blur', onBlur);
+                onBlur = null;
+            });
+
             const off = scope.$on('$showValidationError', (e, target) => {
                 if (target !== ngModel)
                     return;
@@ -31,6 +37,11 @@ export function directive($timeout) {
 
                 bsCollapseTarget && bsCollapseTarget.open();
                 panelCollapsible && panelCollapsible.open();
+
+                if (!onBlur && igniteFormField) {
+                    onBlur = () => igniteFormField.hideError();
+                    el[0].addEventListener('blur', onBlur, {passive: true});
+                }
 
                 $timeout(() => {
                     if (el[0].scrollIntoViewIfNeeded)
