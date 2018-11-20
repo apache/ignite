@@ -81,7 +81,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
 
         CacheConfiguration ccfg = new CacheConfiguration();
 
-        ccfg.setName("cache");
+        ccfg.setName(CACHE_NAME);
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 16));
@@ -137,9 +137,9 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         IgniteEx ig = (IgniteEx)startGrids(3);
         ig.cluster().active(true);
 
-        IgniteCache<Integer, byte[]> cache = ig.cache("cache");
+        IgniteCache<Integer, byte[]> cache = ig.cache(CACHE_NAME);
 
-        final int pageSize = ig.cachex("cache").context().dataRegion().pageMemory().pageSize();
+        final int pageSize = ig.cachex(CACHE_NAME).context().dataRegion().pageMemory().pageSize();
 
         for (int i = 0; i < ENTRIES; i++) { // At least 20MB of raw data in total.
             final byte[] val = new byte[20000];
@@ -262,7 +262,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         IgniteEx ig = startGrid(0);
         ig.cluster().active(true);
 
-        IgniteCache<Integer, byte[]> cache = ig.cache("cache");
+        IgniteCache<Integer, byte[]> cache = ig.cache(CACHE_NAME);
 
         for (int i = 0; i < 2500; i++) { // At least 50MB of raw data in total.
             final byte[] val = new byte[20000];
@@ -325,9 +325,9 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         IgniteEx ig = (IgniteEx)startGrids(3);
         ig.cluster().active(true);
 
-        IgniteCache<Integer, byte[]> cache = ig.cache("cache");
+        IgniteCache<Integer, byte[]> cache = ig.cache(CACHE_NAME);
 
-        final int pageSize = ig.cachex("cache").context().dataRegion().pageMemory().pageSize();
+        final int pageSize = ig.cachex(CACHE_NAME).context().dataRegion().pageMemory().pageSize();
 
         for (int i = 0; i < 100; i++) {
             final byte[] val = new byte[20000];
