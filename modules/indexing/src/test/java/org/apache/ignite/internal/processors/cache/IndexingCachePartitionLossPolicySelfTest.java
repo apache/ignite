@@ -28,8 +28,8 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteCachePartit
  */
 public class IndexingCachePartitionLossPolicySelfTest extends IgniteCachePartitionLossPolicySelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration<Integer, Integer> cacheConfiguration() {
-        CacheConfiguration<Integer, Integer> ccfg = super.cacheConfiguration();
+    @Override protected CacheConfiguration<Integer, Integer> cacheConfiguration(String cacheName) {
+        CacheConfiguration<Integer, Integer> ccfg = super.cacheConfiguration(cacheName);
 
         ccfg.setIndexedTypes(Integer.class, Integer.class);
 
@@ -37,18 +37,18 @@ public class IndexingCachePartitionLossPolicySelfTest extends IgniteCachePartiti
     }
 
     /** {@inheritDoc} */
-    protected void checkQueryPasses(Ignite node, boolean loc, int... parts) {
-        executeQuery(node, loc, parts);
+    @Override protected void checkQueryPasses(Ignite node, boolean loc, String cacheName, int... parts) {
+        executeQuery(node, loc, cacheName, parts);
     }
 
     /** {@inheritDoc} */
-    protected void checkQueryFails(Ignite node, boolean loc, int... parts) {
+    @Override protected void checkQueryFails(Ignite node, boolean loc, String cacheName, int... parts) {
         // TODO: Local queries ignore partition loss, see https://issues.apache.org/jira/browse/IGNITE-7039.
         if (loc)
             return;
 
         try {
-            executeQuery(node, loc, parts);
+            executeQuery(node, loc, cacheName, parts);
 
             fail("Exception is not thrown.");
         }
@@ -64,12 +64,13 @@ public class IndexingCachePartitionLossPolicySelfTest extends IgniteCachePartiti
     /**
      * Execute SQL query on a given node.
      *
-     * @param parts Partitions.
      * @param node Node.
      * @param loc Local flag.
+     * @param cacheName Cache name.
+     * @param parts Partitions.
      */
-    private static void executeQuery(Ignite node, boolean loc, int... parts) {
-        IgniteCache cache = node.cache(DEFAULT_CACHE_NAME);
+    private static void executeQuery(Ignite node, boolean loc, String cacheName, int... parts) {
+        IgniteCache cache = node.cache(cacheName);
 
         SqlFieldsQuery qry = new SqlFieldsQuery("SELECT * FROM Integer");
 

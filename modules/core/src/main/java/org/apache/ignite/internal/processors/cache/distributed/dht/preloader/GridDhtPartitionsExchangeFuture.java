@@ -3001,6 +3001,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * Detect lost partitions.
      *
      * @param resTopVer Result topology version.
+     * @param crd {@code True} if run on coordinator.
      */
     private void detectLostPartitions(AffinityTopologyVersion resTopVer, boolean crd) {
         boolean detected = false;
@@ -3042,6 +3043,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /**
      * @param cacheNames Cache names.
+     * @param crd {@code True} if run on coordinator.
      */
     private void resetLostPartitions(Collection<String> cacheNames, boolean crd) {
         assert !exchCtx.mergeExchanges();
