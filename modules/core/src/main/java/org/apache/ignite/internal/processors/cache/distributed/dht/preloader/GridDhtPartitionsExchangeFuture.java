@@ -1806,7 +1806,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             Set<String> caches = exchActions.cachesToResetLostPartitions();
 
             if (!F.isEmpty(caches))
-                resetLostPartitions(caches);
+                resetLostPartitions(caches, false);
         }
 
         if (cctx.kernalContext().clientNode() || (dynamicCacheStartExchange() && exchangeLocE != null)) {
@@ -2078,7 +2078,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
 
             if (serverNodeDiscoveryEvent() || localJoinExchange())
-                detectLostPartitions(res);
+                detectLostPartitions(res, false);
 
             Map<Integer, CacheGroupValidation> m = U.newHashMap(cctx.cache().cacheGroups().size());
 
@@ -2997,7 +2997,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      *
      * @param resTopVer Result topology version.
      */
-    private void detectLostPartitions(AffinityTopologyVersion resTopVer) {
+    private void detectLostPartitions(AffinityTopologyVersion resTopVer, boolean crd) {
         boolean detected = false;
 
         long time = System.currentTimeMillis();
@@ -3016,6 +3016,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     detected |= detectedOnGrp;
                 }
             }
+
+            if (crd) {
+                for (GridClientPartitionTopology top : cctx.exchange().clientTopologies())
+                    top.detectLostPartitions(resTopVer, null);
+            }
         }
 
         if (detected) {
@@ -3033,22 +3038,36 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /**
      * @param cacheNames Cache names.
      */
-    private void resetLostPartitions(Collection<String> cacheNames) {
+    private void resetLostPartitions(Collection<String> cacheNames, boolean crd) {
         assert !exchCtx.mergeExchanges();
 
         synchronized (cctx.exchange().interruptLock()) {
             if (Thread.currentThread().isInterrupted())
                 return;
 
-            for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-                if (grp.isLocal())
-                    continue;
+            for (String cacheName : cacheNames) {
+                boolean found = false;
 
-                for (String cacheName : cacheNames) {
+                for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+                    if (grp.isLocal())
+                        continue;
+
                     if (grp.hasCache(cacheName)) {
                         grp.topology().resetLostPartitions(initialVersion());
 
+                        found = true;
+
                         break;
+                    }
+                }
+
+                if (crd && !found) {
+                    DynamicCacheDescriptor cacheDesc = cctx.affinity().caches().get(CU.cacheId(cacheName));
+
+                    if (cacheDesc != null) {
+                        GridDhtPartitionTopology top = cctx.exchange().clientTopology(cacheDesc.groupId(), context().events().discoveryCache());
+
+                        top.resetLostPartitions(initialVersion());
                     }
                 }
             }
@@ -3276,7 +3295,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         Set<String> caches = exchActions.cachesToResetLostPartitions();
 
                         if (!F.isEmpty(caches))
-                            resetLostPartitions(caches);
+                            resetLostPartitions(caches, true);
                     }
                 }
                 else if (discoveryCustomMessage instanceof SnapshotDiscoveryMessage
@@ -3288,7 +3307,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     assignPartitionsStates();
 
                 if (exchCtx.events().hasServerLeft())
-                    detectLostPartitions(resTopVer);
+                    detectLostPartitions(resTopVer, true);
             }
 
             // Recalculate new affinity based on partitions availability.
