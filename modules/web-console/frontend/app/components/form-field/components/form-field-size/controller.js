@@ -67,7 +67,8 @@ export default class PCFormFieldSizeController {
     }
 
     $onDestroy() {
-        this.$element = null;
+        delete this.$element[0].focus;
+        this.$element = this.inputElement = null;
     }
 
     $onInit() {
@@ -84,6 +85,8 @@ export default class PCFormFieldSizeController {
             this.ngModel.$validators.max = (value) => this.ngModel.$isEmpty(value) || value === void 0 || value <= this.max;
 
         this.ngModel.$validators.step = (value) => this.ngModel.$isEmpty(value) || value === void 0 || Math.floor(value) === value;
+        this.inputElement = this.$element[0].querySelector('input');
+        this.$element[0].focus = () => this.inputElement.focus();
     }
 
     $onChanges(changes) {
@@ -142,5 +145,19 @@ export default class PCFormFieldSizeController {
     setDefaultSizeType() {
         this.sizesMenu = PCFormFieldSizeController.sizeTypes.bytes;
         this.sizeScale = this.chooseSizeScale();
+    }
+
+    notifyAboutError() {
+        if (this.$element)
+            this.$element.find('.form-field__error [bs-tooltip]').trigger('mouseenter');
+    }
+
+    hideError() {
+        if (this.$element)
+            this.$element.find('.form-field__error [bs-tooltip]').trigger('mouseleave');
+    }
+
+    triggerBlur() {
+        this.$element[0].dispatchEvent(new FocusEvent('blur', {relatedTarget: this.inputElement}));
     }
 }
