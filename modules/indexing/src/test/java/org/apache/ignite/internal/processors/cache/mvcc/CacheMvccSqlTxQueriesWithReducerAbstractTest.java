@@ -680,7 +680,7 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
         IgniteSQLException ex0 = X.cause(ex.get(), IgniteSQLException.class);
 
         assertNotNull("Exception has not been thrown.", ex0);
-        assertEquals("Mvcc version mismatch.", ex0.getMessage());
+        assertTrue(ex0.getMessage().startsWith("Cannot serialize transaction due to write conflict"));
     }
 
     /**

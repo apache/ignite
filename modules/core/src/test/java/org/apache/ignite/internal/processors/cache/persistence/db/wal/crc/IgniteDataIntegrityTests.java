@@ -24,13 +24,14 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.concurrent.ThreadLocalRandom;
+
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SimpleFileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
-import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 
 /**
  *
@@ -59,6 +60,7 @@ public class IgniteDataIntegrityTests extends TestCase {
         );
 
         ByteBuffer buf = ByteBuffer.allocate(1024);
+
         ThreadLocalRandom curr = ThreadLocalRandom.current();
 
         for (int i = 0; i < 1024; i+=16) {
@@ -66,7 +68,7 @@ public class IgniteDataIntegrityTests extends TestCase {
             buf.putInt(curr.nextInt());
             buf.putInt(curr.nextInt());
             buf.position(i);
-            buf.putInt(PureJavaCrc32.calcCrc32(buf, 12));
+            buf.putInt(FastCrc.calcCrc(buf, 12));
         }
 
         buf.rewind();

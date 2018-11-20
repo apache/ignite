@@ -50,6 +50,9 @@ import org.h2.value.ValueUuid;
  * Helper class for in-page indexes.
  */
 public class InlineIndexHelper {
+    /** Value for comparison meaning 'Not enough information to compare'. */
+    public static final int CANT_BE_COMPARE = -2;
+
     private static final Charset CHARSET = StandardCharsets.UTF_8;
 
     /** PageContext for use in IO's */
@@ -76,6 +79,9 @@ public class InlineIndexHelper {
     );
 
     /** */
+    private final String colName;
+
+    /** */
     private final int type;
 
     /** */
@@ -94,11 +100,16 @@ public class InlineIndexHelper {
     private final boolean compareStringsOptimized;
 
     /**
+     * @param colName Column name.
      * @param type Index type (see {@link Value}).
      * @param colIdx Index column index.
      * @param sortType Column sort type (see {@link IndexColumn#sortType}).
+     * @param compareMode Compare mode.
      */
-    public InlineIndexHelper(int type, int colIdx, int sortType, CompareMode compareMode) {
+    public InlineIndexHelper(String colName, int type, int colIdx, int sortType,
+        CompareMode compareMode) {
+
+        this.colName = colName;
         this.type = type;
         this.colIdx = colIdx;
         this.sortType = sortType;
@@ -162,6 +173,13 @@ public class InlineIndexHelper {
             default:
                 throw new UnsupportedOperationException("no get operation for fast index type " + type);
         }
+    }
+
+    /**
+     * @return Column name
+     */
+    public String colName() {
+        return colName;
     }
 
     /**
@@ -347,7 +365,7 @@ public class InlineIndexHelper {
      * @param maxSize Maximum size to read.
      * @param v Value to compare.
      * @param comp Comparator.
-     * @return Compare result (-2 means we can't compare).
+     * @return Compare result ( {@code CANT_BE_COMPARE} means we can't compare).
      */
     public int compare(long pageAddr, int off, int maxSize, Value v, Comparator<Value> comp) {
         int c = tryCompareOptimized(pageAddr, off, maxSize, v);
@@ -358,7 +376,7 @@ public class InlineIndexHelper {
         Value v1 = get(pageAddr, off, maxSize);
 
         if (v1 == null)
-            return -2;
+            return CANT_BE_COMPARE;
 
         c = Integer.signum(comp.compare(v1, v));
 
@@ -368,7 +386,7 @@ public class InlineIndexHelper {
         if (isValueFull(pageAddr, off) || canRelyOnCompare(c, v1, v))
             return fixSort(c, sortType());
 
-        return -2;
+        return CANT_BE_COMPARE;
     }
 
     /**
@@ -376,7 +394,7 @@ public class InlineIndexHelper {
      * @param off Offset.
      * @param maxSize Maximum size to read.
      * @param v Value to compare.
-     * @return Compare result ({@code Integer.MIN_VALUE} means unsupported operation; {@code -2} - can't compare).
+     * @return Compare result ({@code Integer.MIN_VALUE} means unsupported operation; {@code CANT_BE_COMPARE} - can't compare).
      */
     private int tryCompareOptimized(long pageAddr, int off, int maxSize, Value v) {
         int type;
@@ -384,7 +402,7 @@ public class InlineIndexHelper {
         if ((size > 0 && size + 1 > maxSize)
                 || maxSize < 1
                 || (type = PageUtils.getByte(pageAddr, off)) == Value.UNKNOWN)
-            return -2;
+            return CANT_BE_COMPARE;
 
         if (type == Value.NULL)
             return Integer.MIN_VALUE;
@@ -568,7 +586,7 @@ public class InlineIndexHelper {
      * @param pageAddr Page address.
      * @param off Offset.
      * @param v Value to compare.
-     * @return Compare result ({@code -2} means we can't compare).
+     * @return Compare result ({@code CANT_BE_COMPARE} means we can't compare).
      */
     private int compareAsBytes(long pageAddr, int off, Value v) {
         byte[] bytes = v.getBytesNoCopy();
@@ -620,7 +638,7 @@ public class InlineIndexHelper {
             // b) Even truncated current value is longer, so that it's bigger.
             return fixSort(1, sortType());
 
-        return -2;
+        return CANT_BE_COMPARE;
     }
 
     /**
@@ -628,7 +646,7 @@ public class InlineIndexHelper {
      * @param off Offset.
      * @param v Value to compare.
      * @param ignoreCase {@code True} if a case-insensitive comparison should be used.
-     * @return Compare result ({@code -2} means we can't compare).
+     * @return Compare result ({@code CANT_BE_COMPARE} means we can't compare).
      */
     private int compareAsString(long pageAddr, int off, Value v, boolean ignoreCase) {
         String s = v.getString();
@@ -795,7 +813,48 @@ public class InlineIndexHelper {
             // b) Even truncated current value is longer, so that it's bigger.
             return fixSort(1, sortType());
 
-        return -2;
+        return CANT_BE_COMPARE;
+    }
+
+    /**
+     * Calculate size to inline given value.
+     *
+     * @param val Value to calculate inline size.
+     * @return Calculated inline size for given value.
+     */
+    public int inlineSizeOf(Value val){
+        if (val.getType() == Value.NULL)
+            return 1;
+
+        if (val.getType() != type)
+            throw new UnsupportedOperationException("value type doesn't match");
+
+        switch (type) {
+            case Value.BOOLEAN:
+            case Value.BYTE:
+            case Value.SHORT:
+            case Value.INT:
+            case Value.LONG:
+            case Value.FLOAT:
+            case Value.DOUBLE:
+            case Value.TIME:
+            case Value.DATE:
+            case Value.TIMESTAMP:
+            case Value.UUID:
+                return size + 1;
+
+            case Value.STRING:
+            case Value.STRING_FIXED:
+            case Value.STRING_IGNORECASE:
+                return val.getString().getBytes(CHARSET).length + 3;
+
+            case Value.BYTES:
+            case Value.JAVA_OBJECT:
+                return val.getBytes().length + 3;
+
+            default:
+                throw new UnsupportedOperationException("no get operation for fast index type " + type);
+        }
     }
 
     /**
@@ -931,7 +990,6 @@ public class InlineIndexHelper {
 
                     return maxSize;
                 }
-
             }
 
             default:
@@ -1014,5 +1072,68 @@ public class InlineIndexHelper {
      */
     public static int fixSort(int c, int sortType) {
         return sortType == SortOrder.ASCENDING ? c : -c;
+    }
+
+    /**
+     * @param typeCode Type code.
+     * @return Name.
+     */
+    public static String nameTypeBycode(int typeCode) {
+        switch (typeCode) {
+            case Value.UNKNOWN:
+                return "UNKNOWN";
+            case Value.NULL:
+                return "NULL";
+            case Value.BOOLEAN:
+                return "BOOLEAN";
+            case Value.BYTE:
+                return "BYTE";
+            case Value.SHORT:
+                return "SHORT";
+            case Value.INT:
+                return "INT";
+            case Value.LONG:
+                return "LONG";
+            case Value.DECIMAL:
+                return "DECIMAL";
+            case Value.DOUBLE:
+                return "DOUBLE";
+            case Value.FLOAT:
+                return "FLOAT";
+            case Value.TIME:
+                return "TIME";
+            case Value.DATE:
+                return "DATE";
+            case Value.TIMESTAMP:
+                return "TIMESTAMP";
+            case Value.BYTES:
+                return "BYTES";
+            case Value.STRING:
+                return "STRING";
+            case Value.STRING_IGNORECASE:
+                return "STRING_IGNORECASE";
+            case Value.BLOB:
+                return "BLOB";
+            case Value.CLOB:
+                return "CLOB";
+            case Value.ARRAY:
+                return "ARRAY";
+            case Value.RESULT_SET:
+                return "RESULT_SET";
+            case Value.JAVA_OBJECT:
+                return "JAVA_OBJECT";
+            case Value.UUID:
+                return "UUID";
+            case Value.STRING_FIXED:
+                return "STRING_FIXED";
+            case Value.GEOMETRY:
+                return "GEOMETRY";
+            case Value.TIMESTAMP_TZ:
+                return "TIMESTAMP_TZ";
+            case Value.ENUM:
+                return "ENUM";
+            default:
+                return "UNKNOWN type " + typeCode;
+        }
     }
 }

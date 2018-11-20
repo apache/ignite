@@ -106,7 +106,6 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
      * @param spaceName Space name.
      * @return Offheap swap space.
      */
-    @SuppressWarnings("unchecked")
     @Nullable private GridOffHeapPartitionedMap offheap(@Nullable String spaceName) {
         return offheap.get(maskNull(spaceName));
     }

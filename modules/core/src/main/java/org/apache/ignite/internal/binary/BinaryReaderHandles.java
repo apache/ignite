@@ -51,7 +51,7 @@ public class BinaryReaderHandles {
      * @return Object.
      */
     @SuppressWarnings("unchecked")
-    public @Nullable <T> T get(int pos) {
+    @Nullable public <T> T get(int pos) {
         switch (mode) {
             case MODE_EMPTY:
                 return null;

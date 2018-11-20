@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import {ReplaySubject} from 'rxjs/ReplaySubject';
+
 /**
  * @typedef User
  * @prop {string} _id
@@ -40,7 +42,10 @@ export default function User($q, $injector, $root, $state, $http) {
     /** @type {ng.IPromise<User>} */
     let user;
 
+    const current$ = new ReplaySubject(1);
+
     return {
+        current$,
         /**
          * @returns {ng.IPromise<User>}
          */
@@ -50,6 +55,8 @@ export default function User($q, $injector, $root, $state, $http) {
                     $root.user = data;
 
                     $root.$broadcast('user', $root.user);
+
+                    current$.next(data);
 
                     return $root.user;
                 })

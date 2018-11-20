@@ -38,19 +38,31 @@ module.exports.factory = function() {
     class AgentSocket {
         /**
          * @param {Socket} socket Socket for interaction.
+         * @param {Object} accounts Active accounts.
          * @param {Array.<String>} tokens Agent tokens.
          * @param {String} demoEnabled Demo enabled.
          */
-        constructor(socket, tokens, demoEnabled) {
+        constructor(socket, accounts, tokens, demoEnabled) {
             Object.assign(this, {
-                socket,
-                tokens,
+                accounts,
                 cluster: null,
                 demo: {
                     enabled: demoEnabled,
                     browserSockets: []
-                }
+                },
+                socket,
+                tokens
             });
+        }
+
+        resetToken(oldToken) {
+            _.pull(this.tokens, oldToken);
+
+            this.emitEvent('agent:reset:token', oldToken)
+                .then(() => {
+                    if (_.isEmpty(this.tokens) && this.socket.connected)
+                        this.socket.close();
+                });
         }
 
         /**
@@ -115,7 +127,8 @@ module.exports.factory = function() {
                             const top = this.restResultParse(res);
 
                             _.forEach(this.demo.browserSockets, (sock) => sock.emit('topology', top));
-                        } catch (err) {
+                        }
+                        catch (err) {
                             _.forEach(this.demo.browserSockets, (sock) => sock.emit('topology:err', err));
                         }
                     });

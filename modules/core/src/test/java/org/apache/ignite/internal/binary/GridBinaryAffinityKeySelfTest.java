@@ -225,7 +225,6 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
      */
     private static class TestObject {
         /** */
-        @SuppressWarnings("UnusedDeclaration")
         private int affKey;
 
         /**

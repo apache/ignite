@@ -73,7 +73,8 @@ object IgniteOptimization extends Rule[LogicalPlan] with Logging {
                     catalogTable = _catalogTable,
                     aliasIndex = aliasIndexIterator,
                     cacheName =
-                        sqlCacheName(igniteSqlRelation.ic.ignite(), igniteSqlRelation.tableName)
+                        sqlCacheName(igniteSqlRelation.ic.ignite(), igniteSqlRelation.tableName,
+                            igniteSqlRelation.schemaName)
                             .getOrElse(throw new IgniteException("Unknown table")))
 
                 //Logical Relation is bottomest TreeNode in LogicalPlan.

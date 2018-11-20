@@ -181,7 +181,8 @@ public class IgniteWalIteratorFactory {
             iteratorParametersBuilder.lowBound,
             iteratorParametersBuilder.highBound,
             iteratorParametersBuilder.keepBinary,
-            iteratorParametersBuilder.bufferSize
+            iteratorParametersBuilder.bufferSize,
+            iteratorParametersBuilder.strictBoundsCheck
         );
     }
 
@@ -367,7 +368,7 @@ public class IgniteWalIteratorFactory {
             kernalCtx, null, null, null,
             null, null, null, dbMgr, null,
             null, null, null, null,
-            null, null,null, null
+            null, null,null, null, null
         );
     }
 
@@ -417,6 +418,9 @@ public class IgniteWalIteratorFactory {
 
         /** */
         private FileWALPointer highBound = DFLT_HIGH_BOUND;
+
+        /** Use strict bounds check for WAL segments. */
+        private boolean strictBoundsCheck;
 
         /**
          * @param filesOrDirs Paths to files or directories.
@@ -535,6 +539,16 @@ public class IgniteWalIteratorFactory {
         }
 
         /**
+         * @param flag Use strict check.
+         * @return IteratorParametersBuilder Self reference.
+         */
+        public IteratorParametersBuilder strictBoundsCheck(boolean flag) {
+            this.strictBoundsCheck = flag;
+
+            return this;
+        }
+
+        /**
          * Copy current state of builder to new instance.
          *
          * @return IteratorParametersBuilder Self reference.
@@ -550,7 +564,8 @@ public class IgniteWalIteratorFactory {
                 .marshallerMappingFileStoreDir(marshallerMappingFileStoreDir)
                 .from(lowBound)
                 .to(highBound)
-                .filter(filter);
+                .filter(filter)
+                .strictBoundsCheck(strictBoundsCheck);
         }
 
         /**

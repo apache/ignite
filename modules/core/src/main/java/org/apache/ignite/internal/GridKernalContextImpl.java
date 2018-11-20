@@ -38,6 +38,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -161,6 +162,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringExclude
     private GridIndexingManager indexingMgr;
+
+    /** */
+    @GridToStringExclude
+    private GridEncryptionManager encryptionMgr;
 
     /*
      * Processors.
@@ -410,6 +415,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** Failure processor. */
     private FailureProcessor failureProc;
 
+    /** Recovery mode flag. Flag is set to {@code false} when discovery manager started. */
+    private boolean recoveryMode = true;
+
     /**
      * No-arg constructor is required by externalization.
      */
@@ -557,6 +565,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             loadMgr = (GridLoadBalancerManager)comp;
         else if (comp instanceof GridIndexingManager)
             indexingMgr = (GridIndexingManager)comp;
+        else if (comp instanceof GridEncryptionManager)
+            encryptionMgr = (GridEncryptionManager)comp;
 
         /*
          * Processors.
@@ -799,6 +809,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridIndexingManager indexing() {
         return indexingMgr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridEncryptionManager encryption() {
+        return encryptionMgr;
     }
 
     /** {@inheritDoc} */
@@ -1164,8 +1179,20 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    public Thread.UncaughtExceptionHandler uncaughtExceptionHandler() {
+    @Override public Thread.UncaughtExceptionHandler uncaughtExceptionHandler() {
         return hnd;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean recoveryMode() {
+        return recoveryMode;
+    }
+
+    /**
+     * @param recoveryMode Recovery mode.
+     */
+    public void recoveryMode(boolean recoveryMode) {
+        this.recoveryMode = recoveryMode;
     }
 
     /** {@inheritDoc} */

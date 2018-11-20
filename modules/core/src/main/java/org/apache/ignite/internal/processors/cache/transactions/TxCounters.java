@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Values which should be tracked during transaction execution and applied on commit.
@@ -69,7 +70,7 @@ public class TxCounters {
     /**
      * @return Final update counters.
      */
-    public Collection<PartitionUpdateCountersMessage> updateCounters() {
+    @Nullable public Collection<PartitionUpdateCountersMessage> updateCounters() {
         return updCntrs;
     }
 
