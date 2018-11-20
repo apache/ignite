@@ -330,7 +330,7 @@ public interface GridQueryIndexing {
     /**
      * Cancels all executing queries.
      */
-    public void cancelAllQueries();
+    public void onKernalStop();
 
     /**
      * Gets database schema from cache name.
