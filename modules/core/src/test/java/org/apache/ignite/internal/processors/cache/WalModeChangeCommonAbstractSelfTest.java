@@ -319,8 +319,6 @@ public abstract class WalModeChangeCommonAbstractSelfTest extends GridCommonAbst
 
         cfg.setDataStorageConfiguration(storageCfg);
 
-        cfg.setFailureDetectionTimeout(30_000);
-
         if (filter)
             cfg.setUserAttributes(Collections.singletonMap(FILTER_ATTR, true));
 
