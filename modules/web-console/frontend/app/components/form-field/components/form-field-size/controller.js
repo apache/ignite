@@ -28,6 +28,8 @@ export default class PCFormFieldSizeController {
     onScaleChange;
     /** @type {ng.IFormController} */
     innerForm;
+    /** @type {boolean?} */
+    autofocus;
 
     static $inject = ['$element', '$attrs'];
 
@@ -37,6 +39,10 @@ export default class PCFormFieldSizeController {
             {label: 'Kb', value: 1024},
             {label: 'Mb', value: 1024 * 1024},
             {label: 'Gb', value: 1024 * 1024 * 1024}
+        ],
+        gigabytes: [
+            {label: 'Gb', value: 1},
+            {label: 'Tb', value: 1024}
         ],
         seconds: [
             {label: 'ns', value: 1 / 1000},

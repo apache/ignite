@@ -14,9 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
 import java.io.Serializable;
+import java.util.Random;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -76,6 +78,81 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+    }
+
+    /**
+     *
+     */
+    public void testMetaStorageMassivePutFixed() throws Exception {
+        IgniteEx ig = startGrid(0);
+
+        ig.cluster().active(true);
+
+        IgniteCacheDatabaseSharedManager db = ig.context().cache().context().database();
+
+        MetaStorage metaStorage = db.metaStorage();
+
+        assertNotNull(metaStorage);
+
+        Random rnd = new Random();
+
+        db.checkpointReadLock();
+
+        int size;
+        try {
+            for (int i = 0; i < 10_000; i++) {
+                size = rnd.nextBoolean() ? 3500 : 2 * 3500;
+                String key = "TEST_KEY_" + (i % 1000);
+
+                byte[] arr = new byte[size];
+                rnd.nextBytes(arr);
+
+                metaStorage.remove(key);
+
+                metaStorage.putData(key, arr/*b.toString().getBytes()*/);
+            }
+        }
+        finally {
+            db.checkpointReadUnlock();
+        }
+    }
+
+    /**
+     *
+     */
+    public void testMetaStorageMassivePutRandom() throws Exception {
+        IgniteEx ig = startGrid(0);
+
+        ig.cluster().active(true);
+
+        IgniteCacheDatabaseSharedManager db = ig.context().cache().context().database();
+
+        MetaStorage metaStorage = db.metaStorage();
+
+        assertNotNull(metaStorage);
+
+        Random rnd = new Random();
+
+        db.checkpointReadLock();
+
+        int size;
+        try {
+            for (int i = 0; i < 50_000; i++) {
+                size = 100 + rnd.nextInt(9000);
+
+                String key = "TEST_KEY_" + (i % 2_000);
+
+                byte[] arr = new byte[size];
+                rnd.nextBytes(arr);
+
+                metaStorage.remove(key);
+
+                metaStorage.putData(key, arr/*b.toString().getBytes()*/);
+            }
+        }
+        finally {
+            db.checkpointReadUnlock();
+        }
     }
 
     /**
