@@ -88,7 +88,7 @@ import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
-import org.apache.ignite.internal.stat.GridIoStatManager;
+import org.apache.ignite.internal.stat.IoStatisticsManager;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.StripedExecutor;
@@ -420,7 +420,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     private boolean recoveryMode = true;
 
     /** IO statistics manager. */
-    private GridIoStatManager ioStatMgr;
+    private IoStatisticsManager ioStatMgr;
 
     /**
      * No-arg constructor is required by externalization.
@@ -519,7 +519,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
                     "META-INF/ignite.xml.");
         }
 
-        ioStatMgr = new GridIoStatManager();
+        ioStatMgr = new IoStatisticsManager();
     }
 
     /** {@inheritDoc} */
@@ -1150,7 +1150,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public GridIoStatManager ioStats() {
+    @Override public IoStatisticsManager ioStats() {
         return ioStatMgr;
     }
 

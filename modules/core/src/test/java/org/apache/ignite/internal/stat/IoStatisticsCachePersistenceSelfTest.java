@@ -21,7 +21,7 @@ package org.apache.ignite.internal.stat;
 /**
  * Tests for cache IO statistics for persistence mode.
  */
-public class IoStatCachePersistenceTest extends IoStatCacheTest {
+public class IoStatisticsCachePersistenceSelfTest extends IoStatisticsCacheSelfTest {
 
     /** {@inheritDoc} */
     protected boolean persist(){

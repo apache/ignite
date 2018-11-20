@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.pagemem;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.stat.StatisticsHolder;
+import org.apache.ignite.internal.stat.IoStatisticsHolder;
 
 /**
  * Supports operations on pages.
@@ -47,7 +47,7 @@ public interface PageSupport {
      * @return Page pointer.
      * @throws IgniteCheckedException If failed.
      */
-    public long acquirePage(int grpId, long pageId, StatisticsHolder statHolder) throws IgniteCheckedException;
+    public long acquirePage(int grpId, long pageId, IoStatisticsHolder statHolder) throws IgniteCheckedException;
 
     /**
      *

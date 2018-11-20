@@ -28,15 +28,15 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.mxbean.IoStatMetricsMXBean;
+import org.apache.ignite.mxbean.IoStatisticsMetricsMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.internal.stat.GridIoStatManager.HASH_PK_INDEX_NAME;
+import static org.apache.ignite.internal.stat.IoStatisticsManager.HASH_PK_INDEX_NAME;
 
 /**
  * Test of local node IO statistics MX bean.
  */
-public class IoStatMetricsLocalMXBeanImplTest extends GridCommonAbstractTest {
+public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstractTest {
     /** */
     private static IgniteEx ignite;
 
@@ -72,7 +72,7 @@ public class IoStatMetricsLocalMXBeanImplTest extends GridCommonAbstractTest {
      * @throws Exception In case of failure.
      */
     public void testIndexBasic() throws Exception {
-        IoStatMetricsMXBean bean = ioStatMXBean();
+        IoStatisticsMetricsMXBean bean = ioStatMXBean();
 
         Assert.assertNotNull(bean.getStartGatheringStatistics());
 
@@ -116,7 +116,7 @@ public class IoStatMetricsLocalMXBeanImplTest extends GridCommonAbstractTest {
      * @throws Exception In case of failure.
      */
     public void testCacheBasic() throws Exception {
-        IoStatMetricsMXBean bean = ioStatMXBean();
+        IoStatisticsMetricsMXBean bean = ioStatMXBean();
 
         Assert.assertNotNull(bean.getStartGatheringStatistics());
 
@@ -157,7 +157,7 @@ public class IoStatMetricsLocalMXBeanImplTest extends GridCommonAbstractTest {
      * @param bean JMX bean.
      * @param cnt Number of inserting elements.
      */
-    private void warmUpMemmory(IoStatMetricsMXBean bean, int cnt) {
+    private void warmUpMemmory(IoStatisticsMetricsMXBean bean, int cnt) {
         populateCache(cnt);
 
         clearCache(cnt);
@@ -185,15 +185,15 @@ public class IoStatMetricsLocalMXBeanImplTest extends GridCommonAbstractTest {
      * @return IO statistics MX bean for node with given index.
      * @throws Exception In case of failure.
      */
-    private IoStatMetricsMXBean ioStatMXBean() throws Exception {
+    private IoStatisticsMetricsMXBean ioStatMXBean() throws Exception {
         ObjectName mbeanName = U.makeMBeanName(getTestIgniteInstanceName(0), "IOMetrics",
-            IoStatMetricsLocalMXBeanImpl.class.getSimpleName());
+            IoStatisticsMetricsLocalMXBeanImpl.class.getSimpleName());
 
         MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
 
         if (!mbeanSrv.isRegistered(mbeanName))
             fail("MBean is not registered: " + mbeanName.getCanonicalName());
 
-        return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, IoStatMetricsMXBean.class, false);
+        return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, IoStatisticsMetricsMXBean.class, false);
     }
 }

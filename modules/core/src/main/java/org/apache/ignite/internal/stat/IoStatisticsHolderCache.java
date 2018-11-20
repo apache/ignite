@@ -26,7 +26,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 /**
  * Cache statistics holder to gather statistics related to concrete cache.
  */
-public class StatisticsHolderCache implements StatisticsHolder {
+public class IoStatisticsHolderCache implements IoStatisticsHolder {
     /** */
     public static final String PHYSICAL_READS = "PHYSICAL_READS";
     /** */
@@ -43,7 +43,7 @@ public class StatisticsHolderCache implements StatisticsHolder {
     /**
      * @param cacheName Name of cache.
      */
-    public StatisticsHolderCache(String cacheName) {
+    public IoStatisticsHolderCache(String cacheName) {
         assert cacheName != null;
 
         this.cacheName = cacheName;
@@ -56,7 +56,7 @@ public class StatisticsHolderCache implements StatisticsHolder {
         if (pageIoType == PageIO.T_DATA) {
             logicalReadCntr.increment();
 
-            StatisticsHelper.trackLogicalReadQuery(pageAddr);
+            IoStatisticsHelper.trackLogicalReadQuery(pageAddr);
         }
 
     }
@@ -70,7 +70,7 @@ public class StatisticsHolderCache implements StatisticsHolder {
 
             physicalReadCntr.increment();
 
-            StatisticsHelper.trackPhysicalAndLogicalReadQuery(pageAddr);
+            IoStatisticsHelper.trackPhysicalAndLogicalReadQuery(pageAddr);
         }
     }
 
@@ -111,7 +111,7 @@ public class StatisticsHolderCache implements StatisticsHolder {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "StatisticsHolderCache{" + "logicalReadCntr=" + logicalReadCntr +
+        return "IoStatisticsHolderCache{" + "logicalReadCntr=" + logicalReadCntr +
             ", physicalReadCntr=" + physicalReadCntr +
             ", cacheName='" + cacheName + '\'' +
             '}';

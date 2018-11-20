@@ -44,8 +44,8 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersion
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
-import org.apache.ignite.internal.stat.GridIoStatManager;
-import org.apache.ignite.internal.stat.StatisticsHolder;
+import org.apache.ignite.internal.stat.IoStatisticsHolder;
+import org.apache.ignite.internal.stat.IoStatisticsManager;
 import org.apache.ignite.internal.util.GridArrays;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.F;
@@ -105,7 +105,7 @@ public abstract class PagesList extends DataStructure {
             Boolean walPlc,
             Void ignore,
             int bucket,
-            StatisticsHolder statHolder) throws IgniteCheckedException {
+            IoStatisticsHolder statHolder) throws IgniteCheckedException {
             assert getPageId(pageAddr) == pageId;
 
             PagesListNodeIO io = (PagesListNodeIO)iox;
@@ -169,7 +169,7 @@ public abstract class PagesList extends DataStructure {
 
                 while (nextId != 0) {
                     final long pageId = nextId;
-                    final long page = acquirePage(pageId, GridIoStatManager.NO_OP_STATISTIC_HOLDER);
+                    final long page = acquirePage(pageId, IoStatisticsManager.NO_OP_STATISTIC_HOLDER);
 
                     try {
                         long pageAddr = readLock(pageId, page); // No concurrent recycling on init.
@@ -214,7 +214,7 @@ public abstract class PagesList extends DataStructure {
 
                         while (prevId != 0L) {
                             final long pageId = prevId;
-                            final long page = acquirePage(pageId, GridIoStatManager.NO_OP_STATISTIC_HOLDER);
+                            final long page = acquirePage(pageId, IoStatisticsManager.NO_OP_STATISTIC_HOLDER);
                             try  {
                                 long pageAddr = readLock(pageId, page);
 
@@ -294,7 +294,7 @@ public abstract class PagesList extends DataStructure {
                                 }
 
                                 curId = nextPageId;
-                                curPage = acquirePage(curId, GridIoStatManager.NO_OP_STATISTIC_HOLDER);
+                                curPage = acquirePage(curId, IoStatisticsManager.NO_OP_STATISTIC_HOLDER);
                                 curAddr = writeLock(curId, curPage);
 
                                 curIo = PagesListMetaIO.VERSIONS.latest();
@@ -305,7 +305,7 @@ public abstract class PagesList extends DataStructure {
                                 releaseAndClose(curId, curPage, curAddr);
 
                                 curId = nextPageId;
-                                curPage = acquirePage(curId, GridIoStatManager.NO_OP_STATISTIC_HOLDER);
+                                curPage = acquirePage(curId, IoStatisticsManager.NO_OP_STATISTIC_HOLDER);
                                 curAddr = writeLock(curId, curPage);
 
                                 curIo = PagesListMetaIO.VERSIONS.forPage(curAddr);
@@ -328,7 +328,7 @@ public abstract class PagesList extends DataStructure {
         while (nextPageId != 0L) {
             long pageId = nextPageId;
 
-            long page = acquirePage(pageId, GridIoStatManager.NO_OP_STATISTIC_HOLDER);
+            long page = acquirePage(pageId, IoStatisticsManager.NO_OP_STATISTIC_HOLDER);
             try {
                 long pageAddr = writeLock(pageId, page);
 
@@ -572,7 +572,7 @@ public abstract class PagesList extends DataStructure {
 
                 while (tailId != 0L) {
                     final long pageId = tailId;
-                    final long page = acquirePage(pageId, GridIoStatManager.NO_OP_STATISTIC_HOLDER);
+                    final long page = acquirePage(pageId, IoStatisticsManager.NO_OP_STATISTIC_HOLDER);
                     try {
                         long pageAddr = readLock(pageId, page);
 
@@ -623,7 +623,7 @@ public abstract class PagesList extends DataStructure {
         final long dataPage,
         final long dataAddr,
         int bucket,
-        StatisticsHolder statHolder)
+        IoStatisticsHolder statHolder)
         throws IgniteCheckedException {
         assert bag == null ^ dataAddr == 0L;
 
@@ -721,7 +721,7 @@ public abstract class PagesList extends DataStructure {
         final long dataPage,
         final long dataAddr,
         int bucket,
-        StatisticsHolder statHolder
+        IoStatisticsHolder statHolder
     ) throws IgniteCheckedException {
         if (io.getNextId(pageAddr) != 0L)
             return false; // Splitted.
@@ -767,7 +767,7 @@ public abstract class PagesList extends DataStructure {
         final long data,
         final long dataAddr,
         int bucket,
-        StatisticsHolder statHolder
+        IoStatisticsHolder statHolder
     ) throws IgniteCheckedException {
         AbstractDataPageIO dataIO = PageIO.getPageIO(dataAddr);
 
@@ -869,7 +869,7 @@ public abstract class PagesList extends DataStructure {
         PagesListNodeIO io,
         ReuseBag bag,
         int bucket,
-        StatisticsHolder statHolder
+        IoStatisticsHolder statHolder
     ) throws IgniteCheckedException {
         assert bag != null : "bag is null";
         assert !bag.isEmpty() : "bag is empty";
@@ -1054,7 +1054,7 @@ public abstract class PagesList extends DataStructure {
      * @throws IgniteCheckedException If failed.
      */
     protected final long takeEmptyPage(int bucket, @Nullable IOVersions initIoVers,
-        StatisticsHolder statHolder) throws IgniteCheckedException {
+        IoStatisticsHolder statHolder) throws IgniteCheckedException {
         for (int lockAttempt = 0; ;) {
             Stripe stripe = getPageForTake(bucket);
 
@@ -1244,7 +1244,7 @@ public abstract class PagesList extends DataStructure {
         final long dataAddr,
         AbstractDataPageIO dataIO,
         int bucket,
-        StatisticsHolder statHolder)
+        IoStatisticsHolder statHolder)
         throws IgniteCheckedException {
         final long pageId = dataIO.getFreeListPageId(dataAddr);
 
@@ -1330,7 +1330,7 @@ public abstract class PagesList extends DataStructure {
         long pageAddr,
         long prevId,
         int bucket,
-        StatisticsHolder statHolder)
+        IoStatisticsHolder statHolder)
         throws IgniteCheckedException {
         // If we do not have a next page (we are tail) and we are on reuse bucket,
         // then we can leave as is as well, because it is normal to have an empty tail page here.
@@ -1367,7 +1367,7 @@ public abstract class PagesList extends DataStructure {
         final long page,
         long nextId,
         int bucket,
-        StatisticsHolder statHolder)
+        IoStatisticsHolder statHolder)
         throws IgniteCheckedException {
         assert nextId != 0; // We should do mergeNoNext then.
 
@@ -1442,7 +1442,7 @@ public abstract class PagesList extends DataStructure {
         long nextPage,
         long nextAddr,
         int bucket,
-        StatisticsHolder statHolder
+        IoStatisticsHolder statHolder
     ) throws IgniteCheckedException {
         long prevId = io.getPreviousId(pageAddr);
 
@@ -1485,7 +1485,7 @@ public abstract class PagesList extends DataStructure {
         long nextId,
         long nextPage,
         long nextAddr,
-        StatisticsHolder statHolder)
+        IoStatisticsHolder statHolder)
         throws IgniteCheckedException {
         long prevPage = acquirePage(prevId, statHolder);
 

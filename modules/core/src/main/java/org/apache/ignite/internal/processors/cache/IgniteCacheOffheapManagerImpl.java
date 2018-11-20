@@ -87,7 +87,7 @@ import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccSnapshot
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccTreeClosure;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
-import org.apache.ignite.internal.stat.StatisticsHolder;
+import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
@@ -3278,7 +3278,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     private final class MvccMarkUpdatedHandler extends PageHandler<MvccVersion, Boolean> {
         /** {@inheritDoc} */
         @Override public Boolean run(int cacheId, long pageId, long page, long pageAddr, PageIO io, Boolean walPlc,
-            MvccVersion newVer, int itemId, StatisticsHolder statHolder) throws IgniteCheckedException {
+            MvccVersion newVer, int itemId, IoStatisticsHolder statHolder) throws IgniteCheckedException {
             assert grp.mvccEnabled();
 
             DataPageIO iox = (DataPageIO)io;
@@ -3308,7 +3308,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     private final class MvccUpdateTxStateHintHandler extends PageHandler<Void, Boolean> {
         /** {@inheritDoc} */
         @Override public Boolean run(int cacheId, long pageId, long page, long pageAddr, PageIO io,
-            Boolean walPlc, Void ignore, int itemId, StatisticsHolder statHolder) throws IgniteCheckedException {
+            Boolean walPlc, Void ignore, int itemId, IoStatisticsHolder statHolder) throws IgniteCheckedException {
 
             DataPageIO iox = (DataPageIO)io;
 
@@ -3361,7 +3361,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     private final class MvccApplyChangesHandler extends PageHandler<MvccDataRow, Boolean> {
         /** {@inheritDoc} */
         @Override public Boolean run(int cacheId, long pageId, long page, long pageAddr, PageIO io, Boolean walPlc,
-            MvccDataRow newRow, int itemId, StatisticsHolder statHolder) throws IgniteCheckedException {
+            MvccDataRow newRow, int itemId, IoStatisticsHolder statHolder) throws IgniteCheckedException {
             assert grp.mvccEnabled();
 
             DataPageIO iox = (DataPageIO)io;

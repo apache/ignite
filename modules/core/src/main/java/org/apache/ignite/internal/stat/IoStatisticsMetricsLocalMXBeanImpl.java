@@ -23,21 +23,21 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.ignite.mxbean.IoStatMetricsMXBean;
+import org.apache.ignite.mxbean.IoStatisticsMetricsMXBean;
 
-import static org.apache.ignite.internal.stat.GridIoStatManager.HASH_PK_INDEX_NAME;
+import static org.apache.ignite.internal.stat.IoStatisticsManager.HASH_PK_INDEX_NAME;
 
 /**
  * JMX bean to expose local node IO statistics.
  */
-public class IoStatMetricsLocalMXBeanImpl implements IoStatMetricsMXBean {
+public class IoStatisticsMetricsLocalMXBeanImpl implements IoStatisticsMetricsMXBean {
     /** IO statistic manager. */
-    private GridIoStatManager statMgr;
+    private IoStatisticsManager statMgr;
 
     /**
      * @param statMgr IO statistic manager.
      */
-    public IoStatMetricsLocalMXBeanImpl(GridIoStatManager statMgr) {
+    public IoStatisticsMetricsLocalMXBeanImpl(IoStatisticsManager statMgr) {
         this.statMgr = statMgr;
     }
 
@@ -53,17 +53,17 @@ public class IoStatMetricsLocalMXBeanImpl implements IoStatMetricsMXBean {
 
     /** {@inheritDoc} */
     @Override public String getCacheStatisticsFormatted(String cacheGrpName) {
-        return formattedStats(StatType.CACHE_GROUP, cacheGrpName, null);
+        return formattedStats(IoStatisticsType.CACHE_GROUP, cacheGrpName, null);
     }
 
     /** {@inheritDoc} */
     @Override public Long getCachePhysicalReadsStatistics(String cacheGrpName) {
-        return statMgr.physicalReads(StatType.CACHE_GROUP, cacheGrpName);
+        return statMgr.physicalReads(IoStatisticsType.CACHE_GROUP, cacheGrpName);
     }
 
     /** {@inheritDoc} */
     @Override public Long getCacheLogicalReadsStatistics(String cacheGrpName) {
-        return statMgr.logicalReads(StatType.CACHE_GROUP, cacheGrpName);
+        return statMgr.logicalReads(IoStatisticsType.CACHE_GROUP, cacheGrpName);
     }
 
     /** {@inheritDoc} */
@@ -75,8 +75,8 @@ public class IoStatMetricsLocalMXBeanImpl implements IoStatMetricsMXBean {
      * @param idxName Name of index
      * @return Type of index statistics.
      */
-    private StatType getIndexStatType(String idxName) {
-        return idxName.equals(HASH_PK_INDEX_NAME) ? StatType.HASH_INDEX : StatType.SORTED_INDEX;
+    private IoStatisticsType getIndexStatType(String idxName) {
+        return idxName.equals(HASH_PK_INDEX_NAME) ? IoStatisticsType.HASH_INDEX : IoStatisticsType.SORTED_INDEX;
     }
 
     /**
@@ -87,7 +87,7 @@ public class IoStatMetricsLocalMXBeanImpl implements IoStatMetricsMXBean {
      * @param subName SubName of statistics.
      * @return String presentation of IO statistics for given parameters.
      */
-    private String formattedStats(StatType statType, String name, String subName) {
+    private String formattedStats(IoStatisticsType statType, String name, String subName) {
         Map<String, Long> logicalReads = statMgr.logicalReadsByTypes(statType, name, subName);
 
         Map<String, Long> physicalReads = statMgr.physicalReadsByTypes(statType, name, subName);
@@ -115,42 +115,42 @@ public class IoStatMetricsLocalMXBeanImpl implements IoStatMetricsMXBean {
     @Override public Long getIndexLeafLogicalReadsStatistics(String cacheGrpName, String idxName) {
         Map<String, Long> logicalReads = statMgr.logicalReadsByTypes(getIndexStatType(idxName), cacheGrpName, idxName);
 
-        return logicalReads.get(StatisticsHolderIndex.LOGICAL_READS_LEAF);
+        return logicalReads.get(IoStatisticsHolderIndex.LOGICAL_READS_LEAF);
     }
 
     /** {@inheritDoc} */
     @Override public Long getIndexLeafPhysicalReadsStatistics(String cacheGrpName, String idxName) {
         Map<String, Long> logicalReads = statMgr.logicalReadsByTypes(getIndexStatType(idxName), cacheGrpName, idxName);
 
-        return logicalReads.get(StatisticsHolderIndex.PHYSICAL_READS_LEAF);
+        return logicalReads.get(IoStatisticsHolderIndex.PHYSICAL_READS_LEAF);
     }
 
     /** {@inheritDoc} */
     @Override public Long getIndexInnerLogicalReadsStatistics(String cacheGrpName, String idxName) {
         Map<String, Long> logicalReads = statMgr.logicalReadsByTypes(getIndexStatType(idxName), cacheGrpName, idxName);
 
-        return logicalReads.get(StatisticsHolderIndex.LOGICAL_READS_INNER);
+        return logicalReads.get(IoStatisticsHolderIndex.LOGICAL_READS_INNER);
     }
 
     /** {@inheritDoc} */
     @Override public Long getIndexInnerPhysicalReadsStatistics(String cacheGrpName, String idxName) {
         Map<String, Long> logicalReads = statMgr.logicalReadsByTypes(getIndexStatType(idxName), cacheGrpName, idxName);
 
-        return logicalReads.get(StatisticsHolderIndex.PHYSICAL_READS_INNER);
+        return logicalReads.get(IoStatisticsHolderIndex.PHYSICAL_READS_INNER);
     }
 
     /** {@inheritDoc} */
     @Override public Set<String> getStatHashIndexesNames(String cacheGrpName) {
-        return statMgr.deriveStatSubNames(StatType.HASH_INDEX, cacheGrpName);
+        return statMgr.deriveStatSubNames(IoStatisticsType.HASH_INDEX, cacheGrpName);
     }
 
     /** {@inheritDoc} */
     @Override public Set<String> getStatSortedIndexesNames(String cacheGrpName) {
-        return statMgr.deriveStatSubNames(StatType.SORTED_INDEX, cacheGrpName);
+        return statMgr.deriveStatSubNames(IoStatisticsType.SORTED_INDEX, cacheGrpName);
     }
 
     /** {@inheritDoc} */
     @Override public Set<String> getStatCachesNames() {
-        return statMgr.deriveStatNames(StatType.CACHE_GROUP);
+        return statMgr.deriveStatNames(IoStatisticsType.CACHE_GROUP);
     }
 }

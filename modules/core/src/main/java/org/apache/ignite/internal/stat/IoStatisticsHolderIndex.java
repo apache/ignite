@@ -26,7 +26,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 /**
  * Index statistics holder to gather statistics related to concrete index.
  */
-public class StatisticsHolderIndex implements StatisticsHolder {
+public class IoStatisticsHolderIndex implements IoStatisticsHolder {
     /** */
     public static final String LOGICAL_READS_LEAF = "LOGICAL_READS_LEAF";
     /** */
@@ -57,7 +57,7 @@ public class StatisticsHolderIndex implements StatisticsHolder {
      * @param cacheName Name of cache.
      * @param idxName Name of index.
      */
-    public StatisticsHolderIndex(String cacheName, String idxName) {
+    public IoStatisticsHolderIndex(String cacheName, String idxName) {
         assert cacheName != null && idxName != null;
 
         this.cacheName = cacheName;
@@ -72,13 +72,13 @@ public class StatisticsHolderIndex implements StatisticsHolder {
             case INNER:
                 logicalReadInnerCntr.increment();
 
-                StatisticsHelper.trackLogicalReadQuery(pageAddr);
+                IoStatisticsHelper.trackLogicalReadQuery(pageAddr);
 
                 break;
             case LEAF:
                 logicalReadLeafCntr.increment();
 
-                StatisticsHelper.trackLogicalReadQuery(pageAddr);
+                IoStatisticsHelper.trackLogicalReadQuery(pageAddr);
 
                 break;
         }
@@ -95,7 +95,7 @@ public class StatisticsHolderIndex implements StatisticsHolder {
 
                 physicalReadInnerCntr.increment();
 
-                StatisticsHelper.trackPhysicalAndLogicalReadQuery(pageAddr);
+                IoStatisticsHelper.trackPhysicalAndLogicalReadQuery(pageAddr);
 
                 break;
             case LEAF:
@@ -103,7 +103,7 @@ public class StatisticsHolderIndex implements StatisticsHolder {
 
                 physicalReadLeafCntr.increment();
 
-                StatisticsHelper.trackPhysicalAndLogicalReadQuery(pageAddr);
+                IoStatisticsHelper.trackPhysicalAndLogicalReadQuery(pageAddr);
 
                 break;
         }
@@ -205,7 +205,7 @@ public class StatisticsHolderIndex implements StatisticsHolder {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "StatisticsHolderIndex{" + "logicalReadLeafCntr=" + logicalReadLeafCntr +
+        return "IoStatisticsHolderIndex{" + "logicalReadLeafCntr=" + logicalReadLeafCntr +
             ", logicalReadInnerCntr=" + logicalReadInnerCntr +
             ", physicalReadLeafCntr=" + physicalReadLeafCntr +
             ", physicalReadInnerCntr=" + physicalReadInnerCntr +

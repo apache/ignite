@@ -25,7 +25,7 @@ import java.util.Set;
  * This interface defines JMX view for IO statistics.
  */
 @MXBeanDescription("MBean that provides access IO statistics metrics.")
-public interface IoStatMetricsMXBean {
+public interface IoStatisticsMetricsMXBean {
 
     /**
      * @return Start time of gathering statistics.

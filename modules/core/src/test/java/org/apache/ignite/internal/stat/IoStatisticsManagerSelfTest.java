@@ -29,12 +29,12 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 
-import static org.apache.ignite.internal.stat.GridIoStatManager.HASH_PK_INDEX_NAME;
+import static org.apache.ignite.internal.stat.IoStatisticsManager.HASH_PK_INDEX_NAME;
 
 /**
  * Tests for IO statistic manager.
  */
-public class GridIoStatManagerTest extends GridCommonAbstractTest {
+public class IoStatisticsManagerSelfTest extends GridCommonAbstractTest {
 
     /** */
     private static final int RECORD_COUNT = 5000;
@@ -73,16 +73,16 @@ public class GridIoStatManagerTest extends GridCommonAbstractTest {
      * @throws Exception In case of failure.
      */
     private void ioStatGlobalPageTrackTest(boolean isPersistent) throws Exception {
-        GridIoStatManager ioStatMgr = prepareData(isPersistent);
+        IoStatisticsManager ioStatMgr = prepareData(isPersistent);
 
-        long physicalReadsCnt = ioStatMgr.physicalReads(StatType.CACHE_GROUP, DEFAULT_CACHE_NAME);
+        long physicalReadsCnt = ioStatMgr.physicalReads(IoStatisticsType.CACHE_GROUP, DEFAULT_CACHE_NAME);
 
         if (isPersistent)
             Assert.assertTrue(physicalReadsCnt>0);
         else
             Assert.assertEquals(0, physicalReadsCnt);
 
-        Long logicalReads = ioStatMgr.logicalReads(StatType.HASH_INDEX, DEFAULT_CACHE_NAME, HASH_PK_INDEX_NAME);
+        Long logicalReads = ioStatMgr.logicalReads(IoStatisticsType.HASH_INDEX, DEFAULT_CACHE_NAME, HASH_PK_INDEX_NAME);
 
         Assert.assertNotNull(logicalReads);
 
@@ -96,10 +96,10 @@ public class GridIoStatManagerTest extends GridCommonAbstractTest {
      * @return IO statistic manager.
      * @throws Exception In case of failure.
      */
-    @NotNull private GridIoStatManager prepareData(boolean isPersistent) throws Exception {
+    @NotNull private IoStatisticsManager prepareData(boolean isPersistent) throws Exception {
         IgniteEx ign = prepareIgnite(isPersistent);
 
-        GridIoStatManager ioStatMgr = ign.context().ioStats();
+        IoStatisticsManager ioStatMgr = ign.context().ioStats();
 
         IgniteCache cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
 

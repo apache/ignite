@@ -40,9 +40,9 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.apache.ignite.internal.stat.GridIoStatManager;
-import org.apache.ignite.internal.stat.StatType;
-import org.apache.ignite.internal.stat.StatisticsHolder;
+import org.apache.ignite.internal.stat.IoStatisticsHolder;
+import org.apache.ignite.internal.stat.IoStatisticsManager;
+import org.apache.ignite.internal.stat.IoStatisticsType;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -155,9 +155,9 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             AtomicInteger maxCalculatedInlineSize = new AtomicInteger();
 
-            GridIoStatManager ioStatMngr = cctx.kernalContext().ioStats();
+            IoStatisticsManager ioStatMngr = cctx.kernalContext().ioStats();
 
-            StatisticsHolder statHldr = ioStatMngr.createAndRegisterStatHolder(StatType.SORTED_INDEX, cctx.name(), idxName);
+            IoStatisticsHolder statHldr = ioStatMngr.createAndRegisterStatHolder(IoStatisticsType.SORTED_INDEX, cctx.name(), idxName);
 
             for (int i = 0; i < segments.length; i++) {
                 db.checkpointReadLock();

@@ -173,7 +173,7 @@ import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
 import static org.apache.ignite.internal.util.IgniteUtils.checkpointBufferSize;
-import static org.apache.ignite.internal.stat.GridIoStatManager.NO_OP_STATISTIC_HOLDER;
+import static org.apache.ignite.internal.stat.IoStatisticsManager.NO_OP_STATISTIC_HOLDER;
 
 /**
  *

@@ -32,12 +32,12 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 
-import static org.apache.ignite.internal.stat.GridIoStatManager.HASH_PK_INDEX_NAME;
+import static org.apache.ignite.internal.stat.IoStatisticsManager.HASH_PK_INDEX_NAME;
 
 /**
  * Tests for cache IO statistics for inmemory mode.
  */
-public class IoStatCacheTest extends GridCommonAbstractTest {
+public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
     /** */
     protected final static String ATOMIC_CACHE_NAME = "ATOMIC_CACHE";
 
@@ -49,6 +49,7 @@ public class IoStatCacheTest extends GridCommonAbstractTest {
 
     /** */
     protected final static String CACHE1_IN_GROUP_NAME = "CACHE1_GROUP";
+
     /** */
     protected final static String CACHE2_IN_GROUP_NAME = "CACHE2_GROUP";
 
@@ -172,14 +173,14 @@ public class IoStatCacheTest extends GridCommonAbstractTest {
     public void testForThreeCaches() {
         prepareData(RECORD_COUNT, ATOMIC_CACHE_NAME, TRANSACTIONAL_CACHE_NAME, MVCC_CACHE_NAME);
 
-        GridIoStatManager ioStatMgr = ignite.context().ioStats();
+        IoStatisticsManager ioStatMgr = ignite.context().ioStats();
 
-        Set<String> statisticCacheNames = ioStatMgr.deriveStatNames(StatType.CACHE_GROUP);
+        Set<String> statisticCacheNames = ioStatMgr.deriveStatNames(IoStatisticsType.CACHE_GROUP);
 
         Assert.assertEquals(ALL_CACHE_GROUP_NAMES, statisticCacheNames);
 
         Stream.of(ATOMIC_CACHE_NAME, TRANSACTIONAL_CACHE_NAME, MVCC_CACHE_NAME).forEach((cacheName) -> {
-            long logicalReads = ioStatMgr.logicalReads(StatType.CACHE_GROUP, cacheName);
+            long logicalReads = ioStatMgr.logicalReads(IoStatisticsType.CACHE_GROUP, cacheName);
 
             Assert.assertTrue(logicalReads > RECORD_COUNT);
         });
@@ -191,13 +192,13 @@ public class IoStatCacheTest extends GridCommonAbstractTest {
     public void testCacheGroupCaches() {
         prepareData(RECORD_COUNT, CACHE1_IN_GROUP_NAME, CACHE2_IN_GROUP_NAME);
 
-        GridIoStatManager ioStatMgr = ignite.context().ioStats();
+        IoStatisticsManager ioStatMgr = ignite.context().ioStats();
 
-        Set<String> statisticCacheNames = ioStatMgr.deriveStatNames(StatType.CACHE_GROUP);
+        Set<String> statisticCacheNames = ioStatMgr.deriveStatNames(IoStatisticsType.CACHE_GROUP);
 
         Assert.assertEquals(ALL_CACHE_GROUP_NAMES, statisticCacheNames);
 
-        long logicalReads = ioStatMgr.logicalReads(StatType.CACHE_GROUP, CACHE_GROUP_NAME);
+        long logicalReads = ioStatMgr.logicalReads(IoStatisticsType.CACHE_GROUP, CACHE_GROUP_NAME);
 
         Assert.assertEquals(RECORD_COUNT * 6, logicalReads);
     }
@@ -211,19 +212,19 @@ public class IoStatCacheTest extends GridCommonAbstractTest {
     protected void cacheTest(String cacheName, int rowCnt, int dataPageReads, int idxPageReadsCnt) {
         prepareData(rowCnt, cacheName);
 
-        GridIoStatManager ioStatMgr = ignite.context().ioStats();
+        IoStatisticsManager ioStatMgr = ignite.context().ioStats();
 
-        Set<String> statisticCacheNames = ioStatMgr.deriveStatNames(StatType.CACHE_GROUP);
+        Set<String> statisticCacheNames = ioStatMgr.deriveStatNames(IoStatisticsType.CACHE_GROUP);
 
         Assert.assertEquals(ALL_CACHE_GROUP_NAMES, statisticCacheNames);
 
         Assert.assertTrue(statisticCacheNames.contains(cacheName));
 
-        long logicalReadsCache = ioStatMgr.logicalReads(StatType.CACHE_GROUP, cacheName);
+        long logicalReadsCache = ioStatMgr.logicalReads(IoStatisticsType.CACHE_GROUP, cacheName);
 
         Assert.assertEquals(dataPageReads, logicalReadsCache);
 
-        long logicalReadsIdx = ioStatMgr.logicalReads(StatType.HASH_INDEX, cacheName, HASH_PK_INDEX_NAME);
+        long logicalReadsIdx = ioStatMgr.logicalReads(IoStatisticsType.HASH_INDEX, cacheName, HASH_PK_INDEX_NAME);
 
         Assert.assertEquals(idxPageReadsCnt, logicalReadsIdx);
 

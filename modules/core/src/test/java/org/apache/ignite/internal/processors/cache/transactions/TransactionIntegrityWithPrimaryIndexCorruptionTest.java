@@ -33,7 +33,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.tree.SearchRow;
-import org.apache.ignite.internal.stat.StatisticsHolder;
+import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
@@ -186,7 +186,7 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
 
                     return new PageHandler<BPlusTree.Get, BPlusTree.Result>() {
                         @Override public BPlusTree.Result run(int cacheId, long pageId, long page, long pageAddr, PageIO io,
-                            Boolean walPlc, BPlusTree.Get arg, int lvl, StatisticsHolder statHolder) throws IgniteCheckedException {
+                            Boolean walPlc, BPlusTree.Get arg, int lvl, IoStatisticsHolder statHolder) throws IgniteCheckedException {
                             log.info("Invoked [cachedId=" + cacheId + ", hnd=" + arg.toString() +
                                 ", corruption=" + corruptionEnabled + ", row=" + arg.row() + ", rowCls=" + arg.row().getClass() + ']');
 

@@ -31,8 +31,8 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseB
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
-import org.apache.ignite.internal.stat.GridIoStatManager;
-import org.apache.ignite.internal.stat.StatisticsHolder;
+import org.apache.ignite.internal.stat.IoStatisticsHolder;
+import org.apache.ignite.internal.stat.IoStatisticsManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
@@ -139,7 +139,7 @@ public abstract class DataStructure implements PageLockListener {
      * @return Page absolute pointer.
      * @throws IgniteCheckedException If failed.
      */
-    protected final long acquirePage(long pageId, StatisticsHolder statHolder) throws IgniteCheckedException {
+    protected final long acquirePage(long pageId, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         assert PageIdUtils.flag(pageId) == FLAG_IDX && PageIdUtils.partId(pageId) == INDEX_PARTITION ||
             PageIdUtils.flag(pageId) == FLAG_DATA && PageIdUtils.partId(pageId) <= MAX_PARTITION_ID :
             U.hexLong(pageId) + " flag=" + PageIdUtils.flag(pageId) + " part=" + PageIdUtils.partId(pageId);
@@ -239,7 +239,7 @@ public abstract class DataStructure implements PageLockListener {
         PageHandler<?, R> h,
         int intArg,
         R lockFailed,
-        StatisticsHolder statHolder) throws IgniteCheckedException {
+        IoStatisticsHolder statHolder) throws IgniteCheckedException {
         return PageHandler.writePage(pageMem, grpId, pageId, this, h, null, null, null, null, intArg, lockFailed, statHolder);
     }
 
@@ -259,7 +259,7 @@ public abstract class DataStructure implements PageLockListener {
         X arg,
         int intArg,
         R lockFailed,
-        StatisticsHolder statHolder) throws IgniteCheckedException {
+        IoStatisticsHolder statHolder) throws IgniteCheckedException {
         return PageHandler.writePage(pageMem, grpId, pageId, this, h, null, null, null, arg, intArg, lockFailed, statHolder);
     }
 
@@ -281,7 +281,7 @@ public abstract class DataStructure implements PageLockListener {
         X arg,
         int intArg,
         R lockFailed,
-        StatisticsHolder statHolder) throws IgniteCheckedException {
+        IoStatisticsHolder statHolder) throws IgniteCheckedException {
         return PageHandler.writePage(pageMem, grpId, pageId, page, this, h, null, null, null, arg, intArg, lockFailed, statHolder);
     }
 
@@ -303,7 +303,7 @@ public abstract class DataStructure implements PageLockListener {
         X arg,
         int intArg,
         R lockFailed,
-        StatisticsHolder statHolder) throws IgniteCheckedException {
+        IoStatisticsHolder statHolder) throws IgniteCheckedException {
         return PageHandler.writePage(pageMem, grpId, pageId, this, h, init, wal, null, arg, intArg, lockFailed, statHolder);
     }
 
@@ -323,7 +323,7 @@ public abstract class DataStructure implements PageLockListener {
         X arg,
         int intArg,
         R lockFailed,
-        StatisticsHolder statHolder) throws IgniteCheckedException {
+        IoStatisticsHolder statHolder) throws IgniteCheckedException {
         return PageHandler.readPage(pageMem, grpId, pageId, this, h, arg, intArg, lockFailed, statHolder);
     }
 
@@ -345,7 +345,7 @@ public abstract class DataStructure implements PageLockListener {
         X arg,
         int intArg,
         R lockFailed,
-        StatisticsHolder statHolder) throws IgniteCheckedException {
+        IoStatisticsHolder statHolder) throws IgniteCheckedException {
         return PageHandler.readPage(pageMem, grpId, pageId, page, this, h, arg, intArg, lockFailed, statHolder);
     }
 
@@ -355,7 +355,7 @@ public abstract class DataStructure implements PageLockListener {
      * @throws IgniteCheckedException if failed.
      */
     protected final void init(long pageId, PageIO init) throws IgniteCheckedException {
-        PageHandler.initPage(pageMem, grpId, pageId, init, wal, this, GridIoStatManager.NO_OP_STATISTIC_HOLDER);
+        PageHandler.initPage(pageMem, grpId, pageId, init, wal, this, IoStatisticsManager.NO_OP_STATISTIC_HOLDER);
     }
 
     /**

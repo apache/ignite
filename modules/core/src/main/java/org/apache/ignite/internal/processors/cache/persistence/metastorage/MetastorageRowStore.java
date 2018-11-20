@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
-import org.apache.ignite.internal.stat.GridIoStatManager;
+import org.apache.ignite.internal.stat.IoStatisticsManager;
 
 /**
  *
@@ -55,7 +55,7 @@ public class MetastorageRowStore {
         db.checkpointReadLock();
 
         try {
-            freeList.removeDataRowByLink(link, GridIoStatManager.NO_OP_STATISTIC_HOLDER);
+            freeList.removeDataRowByLink(link, IoStatisticsManager.NO_OP_STATISTIC_HOLDER);
         }
         finally {
             db.checkpointReadUnlock();
@@ -70,7 +70,7 @@ public class MetastorageRowStore {
         db.checkpointReadLock();
 
         try {
-            freeList.insertDataRow(row, GridIoStatManager.NO_OP_STATISTIC_HOLDER);
+            freeList.insertDataRow(row, IoStatisticsManager.NO_OP_STATISTIC_HOLDER);
         }
         finally {
             db.checkpointReadUnlock();
@@ -84,7 +84,7 @@ public class MetastorageRowStore {
      * @throws IgniteCheckedException If failed.
      */
     public boolean updateRow(long link, MetastorageDataRow row) throws IgniteCheckedException {
-        return freeList.updateDataRow(link, row, GridIoStatManager.NO_OP_STATISTIC_HOLDER);
+        return freeList.updateDataRow(link, row, IoStatisticsManager.NO_OP_STATISTIC_HOLDER);
     }
 
     /**

@@ -23,7 +23,7 @@ import java.util.Map;
 /**
  * Holder of IO statistics.
  */
-public interface StatisticsHolder {
+public interface IoStatisticsHolder {
 
     /**
      * Track logical read of given page.

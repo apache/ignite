@@ -84,7 +84,7 @@ import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
-import org.apache.ignite.internal.stat.GridIoStatManager;
+import org.apache.ignite.internal.stat.IoStatisticsManager;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.StripedExecutor;
@@ -648,7 +648,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         return null;
     }
 
-    @Override public GridIoStatManager ioStats() {
+    @Override public IoStatisticsManager ioStats() {
         return null;
     }
 

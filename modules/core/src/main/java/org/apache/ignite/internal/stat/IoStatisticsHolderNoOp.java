@@ -24,7 +24,7 @@ import java.util.Map;
 /**
  * No Operation IO statistics holder. Use in case statistics shouldn't be gathered.
  */
-public class StatisticsHolderNoOp implements StatisticsHolder {
+public class IoStatisticsHolderNoOp implements IoStatisticsHolder {
     /** {@inheritDoc} */
     @Override public void trackLogicalRead(long pageAddr) {
     }

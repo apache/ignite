@@ -21,7 +21,7 @@ package org.apache.ignite.internal.stat;
 /**
  * Type of statistics.
  */
-public enum StatType {
+public enum IoStatisticsType {
     /** */
     SORTED_INDEX,
     /** */

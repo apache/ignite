@@ -34,8 +34,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.stat.GridIoStatManager;
-import org.apache.ignite.internal.stat.StatType;
+import org.apache.ignite.internal.stat.IoStatisticsManager;
+import org.apache.ignite.internal.stat.IoStatisticsType;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -164,23 +164,23 @@ public class IoStatBasicIndexTest extends GridCommonAbstractTest {
 
     /** */
     private void checkStat() {
-        GridIoStatManager ioStat = grid().context().ioStats();
+        IoStatisticsManager ioStat = grid().context().ioStats();
 
-        Set<String> hashIndexes = ioStat.deriveStatNames(StatType.HASH_INDEX);
+        Set<String> hashIndexes = ioStat.deriveStatNames(IoStatisticsType.HASH_INDEX);
 
         Assert.assertEquals(PK_HASH_INDEXES, hashIndexes);
 
-        Set<String> sortedIndexCaches = ioStat.deriveStatNames(StatType.SORTED_INDEX);
+        Set<String> sortedIndexCaches = ioStat.deriveStatNames(IoStatisticsType.SORTED_INDEX);
 
         Assert.assertEquals(1, sortedIndexCaches.size());
 
-        Set<String> sortedIdxNames = ioStat.deriveStatSubNames(StatType.SORTED_INDEX,
+        Set<String> sortedIdxNames = ioStat.deriveStatSubNames(IoStatisticsType.SORTED_INDEX,
             sortedIndexCaches.toArray()[0].toString());
 
         Assert.assertEquals(sortedIndexCaches.toString(), indexes.size() + NUMBER_OF_PK_SORTED_INDEXES, sortedIdxNames.size());
 
         for (String idxName : sortedIdxNames) {
-            Long logicalReads = ioStat.logicalReads(StatType.SORTED_INDEX, DEFAULT_CACHE_NAME, idxName);
+            Long logicalReads = ioStat.logicalReads(IoStatisticsType.SORTED_INDEX, DEFAULT_CACHE_NAME, idxName);
 
             Assert.assertNotNull(idxName, logicalReads);
 

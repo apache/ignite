@@ -24,11 +24,11 @@ import java.util.concurrent.atomic.LongAdder;
 
 /**
  * Query Statistics holder to gather statistics related to concrete query.
- * Used in {@code org.apache.ignite.internal.stat.StatisticsHolderIndex} and {@code org.apache.ignite.internal.stat.StatisticsHolderCache}.
+ * Used in {@code org.apache.ignite.internal.stat.IoStatisticsHolderIndex} and {@code org.apache.ignite.internal.stat.IoStatisticsHolderCache}.
  * Query Statistics holder to gather statistics related to concrete query. Used in {@code
- * org.apache.ignite.internal.stat.StatisticsHolderIndex} and {@code org.apache.ignite.internal.stat.StatisticsHolderCache}.
+ * org.apache.ignite.internal.stat.IoStatisticsHolderIndex} and {@code org.apache.ignite.internal.stat.IoStatisticsHolderCache}.
  */
-public class StatisticsHolderQuery implements StatisticsHolder {
+public class IoStatisticsHolderQuery implements IoStatisticsHolder {
     /** */
     public static final String PHYSICAL_READS = "PHYSICAL_READS";
     /** */
@@ -45,7 +45,7 @@ public class StatisticsHolderQuery implements StatisticsHolder {
     /**
      * @param qryId Query id.
      */
-    public StatisticsHolderQuery(String qryId) {
+    public IoStatisticsHolderQuery(String qryId) {
         this.qryId = qryId;
     }
 

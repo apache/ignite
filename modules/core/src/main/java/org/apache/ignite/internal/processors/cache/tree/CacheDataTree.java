@@ -36,7 +36,7 @@ import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccCacheIdAwa
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
-import org.apache.ignite.internal.stat.StatisticsHolder;
+import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
@@ -202,7 +202,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     }
 
     /** {@inheritDoc} */
-    @Override protected StatisticsHolder statisticsHolder() {
+    @Override protected IoStatisticsHolder statisticsHolder() {
         return grp.statisticsHolderIdx();
     }
 

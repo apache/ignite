@@ -44,7 +44,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffini
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
@@ -57,8 +56,8 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageParti
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.query.continuous.CounterSkipContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.stat.StatType;
-import org.apache.ignite.internal.stat.StatisticsHolder;
+import org.apache.ignite.internal.stat.IoStatisticsHolder;
+import org.apache.ignite.internal.stat.IoStatisticsType;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -76,8 +75,8 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOADED;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
-import static org.apache.ignite.internal.stat.GridIoStatManager.HASH_PK_INDEX_NAME;
-import static org.apache.ignite.internal.stat.GridIoStatManager.NO_OP_STATISTIC_HOLDER;
+import static org.apache.ignite.internal.stat.IoStatisticsManager.HASH_PK_INDEX_NAME;
+import static org.apache.ignite.internal.stat.IoStatisticsManager.NO_OP_STATISTIC_HOLDER;
 
 /**
  *
@@ -179,10 +178,10 @@ public class CacheGroupContext {
     private volatile boolean partitionStatesRestored;
 
     /** Statistics holder to track IO operations for PK index pages. */
-    private final StatisticsHolder statisticsHolderIdx;
+    private final IoStatisticsHolder statHolderIdx;
 
     /** Statistics holder to track IO operations for data pages. */
-    private final StatisticsHolder statisticsHolderData;
+    private final IoStatisticsHolder statHolderData;
 
 
     /**
@@ -249,15 +248,15 @@ public class CacheGroupContext {
         mxBean = new CacheGroupMetricsMXBeanImpl(this);
 
         if (systemCache()) {
-            statisticsHolderIdx = NO_OP_STATISTIC_HOLDER;
+            statHolderIdx = NO_OP_STATISTIC_HOLDER;
 
-            statisticsHolderData = NO_OP_STATISTIC_HOLDER;
+            statHolderData = NO_OP_STATISTIC_HOLDER;
         }
         else {
-            statisticsHolderIdx = ctx.kernalContext().ioStats().createAndRegisterStatHolder(StatType.HASH_INDEX,
+            statHolderIdx = ctx.kernalContext().ioStats().createAndRegisterStatHolder(IoStatisticsType.HASH_INDEX,
                 cacheOrGroupName(), HASH_PK_INDEX_NAME);
 
-            statisticsHolderData = ctx.kernalContext().ioStats().createAndRegisterStatHolder(StatType.CACHE_GROUP,
+            statHolderData = ctx.kernalContext().ioStats().createAndRegisterStatHolder(IoStatisticsType.CACHE_GROUP,
                 cacheOrGroupName());
         }
     }
@@ -1324,14 +1323,14 @@ public class CacheGroupContext {
     /**
      * @return Statistics holder to track cache IO operations.
      */
-    public StatisticsHolder statisticsHolderIdx() {
-        return statisticsHolderIdx;
+    public IoStatisticsHolder statisticsHolderIdx() {
+        return statHolderIdx;
     }
 
     /**
      * @return Statistics holder to track cache IO operations.
      */
-    public StatisticsHolder statisticsHolderData() {
-        return statisticsHolderData;
+    public IoStatisticsHolder statisticsHolderData() {
+        return statHolderData;
     }
 }

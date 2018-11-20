@@ -110,7 +110,7 @@ import org.junit.Assert;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
-import static org.apache.ignite.internal.stat.GridIoStatManager.NO_OP_STATISTIC_HOLDER;
+import static org.apache.ignite.internal.stat.IoStatisticsManager.NO_OP_STATISTIC_HOLDER;
 
 /**
  *

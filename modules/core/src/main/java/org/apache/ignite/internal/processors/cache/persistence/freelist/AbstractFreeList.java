@@ -40,8 +40,8 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.LongLi
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
-import org.apache.ignite.internal.stat.GridIoStatManager;
-import org.apache.ignite.internal.stat.StatisticsHolder;
+import org.apache.ignite.internal.stat.IoStatisticsHolder;
+import org.apache.ignite.internal.stat.IoStatisticsManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -99,7 +99,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             Boolean walPlc,
             T row,
             int itemId,
-            StatisticsHolder statHolder)
+            IoStatisticsHolder statHolder)
             throws IgniteCheckedException {
             AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
 
@@ -146,7 +146,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             Boolean walPlc,
             T row,
             int written,
-            StatisticsHolder statHolder)
+            IoStatisticsHolder statHolder)
             throws IgniteCheckedException {
             AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
 
@@ -280,7 +280,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             Boolean walPlc,
             ReuseBag reuseBag,
             int itemId,
-            StatisticsHolder statHolder)
+            IoStatisticsHolder statHolder)
             throws IgniteCheckedException {
             AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
 
@@ -470,7 +470,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     }
 
     /** {@inheritDoc} */
-    @Override public void insertDataRow(T row, StatisticsHolder statHolder) throws IgniteCheckedException {
+    @Override public void insertDataRow(T row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         int rowSize = row.size();
 
         int written = 0;
@@ -518,7 +518,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
      * @see PagesList#initReusedPage(long, long, long, int, byte, PageIO)
      */
     private long initReusedPage(long reusedPageId, int partId,
-        StatisticsHolder statHolder) throws IgniteCheckedException {
+        IoStatisticsHolder statHolder) throws IgniteCheckedException {
         long reusedPage = acquirePage(reusedPageId, statHolder);
         try {
             long reusedPageAddr = writeLock(reusedPageId, reusedPage);
@@ -540,7 +540,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
     /** {@inheritDoc} */
     @Override public boolean updateDataRow(long link, T row,
-        StatisticsHolder statHolder) throws IgniteCheckedException {
+        IoStatisticsHolder statHolder) throws IgniteCheckedException {
         assert link != 0;
 
         long pageId = PageIdUtils.pageId(link);
@@ -555,7 +555,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
     /** {@inheritDoc} */
     @Override public <S, R> R updateDataRow(long link, PageHandler<S, R> pageHnd, S arg,
-        StatisticsHolder statHolder) throws IgniteCheckedException {
+        IoStatisticsHolder statHolder) throws IgniteCheckedException {
         assert link != 0;
 
         long pageId = PageIdUtils.pageId(link);
@@ -569,7 +569,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     }
 
     /** {@inheritDoc} */
-    @Override public void removeDataRowByLink(long link, StatisticsHolder statHolder) throws IgniteCheckedException {
+    @Override public void removeDataRowByLink(long link, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         assert link != 0;
 
         long pageId = PageIdUtils.pageId(link);
@@ -621,14 +621,14 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     @Override public void addForRecycle(ReuseBag bag) throws IgniteCheckedException {
         assert reuseList == this : "not allowed to be a reuse list";
 
-        put(bag, 0, 0, 0L, REUSE_BUCKET, GridIoStatManager.NO_OP_STATISTIC_HOLDER);
+        put(bag, 0, 0, 0L, REUSE_BUCKET, IoStatisticsManager.NO_OP_STATISTIC_HOLDER);
     }
 
     /** {@inheritDoc} */
     @Override public long takeRecycledPage() throws IgniteCheckedException {
         assert reuseList == this : "not allowed to be a reuse list";
 
-        return takeEmptyPage(REUSE_BUCKET, null, GridIoStatManager.NO_OP_STATISTIC_HOLDER);
+        return takeEmptyPage(REUSE_BUCKET, null, IoStatisticsManager.NO_OP_STATISTIC_HOLDER);
     }
 
     /** {@inheritDoc} */

@@ -21,9 +21,9 @@ package org.apache.ignite.internal.stat;
 /**
  * Helper for gathering IO statistics.
  */
-public class StatisticsHelper {
+public class IoStatisticsHelper {
     /** */
-    private static final ThreadLocal<StatisticsHolderQuery> CURRENT_QUERY_STATISTICS = new ThreadLocal<>();
+    private static final ThreadLocal<IoStatisticsHolderQuery> CURRENT_QUERY_STATISTICS = new ThreadLocal<>();
 
     /**
      * Start gathering IO statistics for query. Should be used together with {@code finishGatheringQueryStatistics}
@@ -32,11 +32,11 @@ public class StatisticsHelper {
      * @param qryId Identifier of query.
      */
     public static void startGatheringQueryStatistics(String qryId) {
-        StatisticsHolderQuery currQryStatisticsHolder = CURRENT_QUERY_STATISTICS.get();
+        IoStatisticsHolderQuery currQryStatisticsHolder = CURRENT_QUERY_STATISTICS.get();
 
         assert currQryStatisticsHolder == null : currQryStatisticsHolder;
 
-        CURRENT_QUERY_STATISTICS.set(new StatisticsHolderQuery(qryId));
+        CURRENT_QUERY_STATISTICS.set(new IoStatisticsHolderQuery(qryId));
     }
 
     /**
@@ -44,10 +44,10 @@ public class StatisticsHelper {
      *
      * @param qryStat Statistics which will be merged to current query statistics.
      */
-    public static void mergeQueryStatistics(StatisticsHolderQuery qryStat) {
+    public static void mergeQueryStatistics(IoStatisticsHolderQuery qryStat) {
         assert qryStat != null;
 
-        StatisticsHolderQuery currQryStatisticsHolder = CURRENT_QUERY_STATISTICS.get();
+        IoStatisticsHolderQuery currQryStatisticsHolder = CURRENT_QUERY_STATISTICS.get();
 
         assert currQryStatisticsHolder != null;
 
@@ -60,8 +60,8 @@ public class StatisticsHelper {
      *
      * @return Gathered statistics.
      */
-    public static StatisticsHolder finishGatheringQueryStatistics() {
-        StatisticsHolderQuery currQryStatisticsHolder = CURRENT_QUERY_STATISTICS.get();
+    public static IoStatisticsHolder finishGatheringQueryStatistics() {
+        IoStatisticsHolderQuery currQryStatisticsHolder = CURRENT_QUERY_STATISTICS.get();
 
         assert currQryStatisticsHolder != null;
 
@@ -76,7 +76,7 @@ public class StatisticsHelper {
      * @param pageAddr Address of page.
      */
     static void trackLogicalReadQuery(long pageAddr) {
-        StatisticsHolderQuery currQryStatisticsHolder = CURRENT_QUERY_STATISTICS.get();
+        IoStatisticsHolderQuery currQryStatisticsHolder = CURRENT_QUERY_STATISTICS.get();
 
         if (currQryStatisticsHolder != null)
             currQryStatisticsHolder.trackLogicalRead(pageAddr);
@@ -89,7 +89,7 @@ public class StatisticsHelper {
      * @param pageAddr Address of page.
      */
     static void trackPhysicalAndLogicalReadQuery(long pageAddr) {
-        StatisticsHolderQuery currQryStatisticsHolder = CURRENT_QUERY_STATISTICS.get();
+        IoStatisticsHolderQuery currQryStatisticsHolder = CURRENT_QUERY_STATISTICS.get();
 
         if (currQryStatisticsHolder != null)
             currQryStatisticsHolder.trackPhysicalAndLogicalRead(pageAddr);

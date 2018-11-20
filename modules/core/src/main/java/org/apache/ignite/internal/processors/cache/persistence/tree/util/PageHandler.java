@@ -24,7 +24,7 @@ import org.apache.ignite.internal.pagemem.PageSupport;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.stat.StatisticsHolder;
+import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.util.GridUnsafe;
 
 import static java.lang.Boolean.FALSE;
@@ -39,7 +39,7 @@ public abstract class PageHandler<X, R> {
         @Override public Boolean run(int cacheId, long pageId, long page, long pageAddr, PageIO io, Boolean walPlc,
             Void arg,
             int intArg,
-            StatisticsHolder statHolder) throws IgniteCheckedException {
+            IoStatisticsHolder statHolder) throws IgniteCheckedException {
             return Boolean.TRUE;
         }
     };
@@ -66,7 +66,7 @@ public abstract class PageHandler<X, R> {
         Boolean walPlc,
         X arg,
         int intArg,
-        StatisticsHolder statHolder
+        IoStatisticsHolder statHolder
     )
         throws IgniteCheckedException;
 
@@ -111,7 +111,7 @@ public abstract class PageHandler<X, R> {
         X arg,
         int intArg,
         R lockFailed,
-        StatisticsHolder statHolder
+        IoStatisticsHolder statHolder
     ) throws IgniteCheckedException {
         long page = pageMem.acquirePage(cacheId, pageId, statHolder);
         try {
@@ -156,7 +156,7 @@ public abstract class PageHandler<X, R> {
         X arg,
         int intArg,
         R lockFailed,
-        StatisticsHolder statHolder
+        IoStatisticsHolder statHolder
     ) throws IgniteCheckedException {
         long pageAddr = 0L;
 
@@ -233,7 +233,7 @@ public abstract class PageHandler<X, R> {
         PageIO init,
         IgniteWriteAheadLogManager wal,
         PageLockListener lsnr,
-        StatisticsHolder statHolder
+        IoStatisticsHolder statHolder
     ) throws IgniteCheckedException {
         Boolean res = writePage(pageMem, grpId, pageId, lsnr, PageHandler.NO_OP, init, wal, null, null, 0, FALSE, statHolder);
 
@@ -268,7 +268,7 @@ public abstract class PageHandler<X, R> {
         X arg,
         int intArg,
         R lockFailed,
-        StatisticsHolder statHolder
+        IoStatisticsHolder statHolder
     ) throws IgniteCheckedException {
         boolean releaseAfterWrite = true;
         long page = pageMem.acquirePage(grpId, pageId, statHolder);
@@ -338,7 +338,7 @@ public abstract class PageHandler<X, R> {
         X arg,
         int intArg,
         R lockFailed,
-        StatisticsHolder statHolder
+        IoStatisticsHolder statHolder
     ) throws IgniteCheckedException {
         long pageAddr = writeLock(pageMem, grpId, pageId, page, lsnr, false);
 

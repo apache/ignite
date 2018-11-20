@@ -59,8 +59,8 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseL
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandlerWrapper;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
-import org.apache.ignite.internal.stat.GridIoStatManager;
-import org.apache.ignite.internal.stat.StatisticsHolder;
+import org.apache.ignite.internal.stat.IoStatisticsHolder;
+import org.apache.ignite.internal.stat.IoStatisticsManager;
 import org.apache.ignite.internal.util.GridArrays;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.IgniteTree;
@@ -644,7 +644,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** {@inheritDoc} */
         @Override public Bool run(int cacheId, long metaId, long metaPage, long metaAddr, PageIO iox, Boolean walPlc,
             Void ignore, int lvl,
-            StatisticsHolder statHolder)
+            IoStatisticsHolder statHolder)
             throws IgniteCheckedException {
             // Safe cast because we should never recycle meta page until the tree is destroyed.
             BPlusMetaIO io = (BPlusMetaIO)iox;
@@ -676,7 +676,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** {@inheritDoc} */
         @Override public Bool run(int cacheId, long metaId, long metaPage, long pageAddr, PageIO iox, Boolean walPlc,
             Long rootPageId, int lvl,
-            StatisticsHolder statHolder)
+            IoStatisticsHolder statHolder)
             throws IgniteCheckedException {
             assert rootPageId != null;
 
@@ -709,7 +709,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** {@inheritDoc} */
         @Override public Bool run(int cacheId, long metaId, long metaPage, long pageAddr, PageIO iox, Boolean walPlc,
             Long rootId, int inlineSize,
-            StatisticsHolder statHolder)
+            IoStatisticsHolder statHolder)
             throws IgniteCheckedException {
             assert rootId != null;
 
@@ -5609,7 +5609,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public Result run(int cacheId, long pageId, long page, long pageAddr, PageIO iox, Boolean walPlc,
-            G g, int lvl, StatisticsHolder statHolder) throws IgniteCheckedException {
+            G g, int lvl, IoStatisticsHolder statHolder) throws IgniteCheckedException {
             assert PageIO.getPageId(pageAddr) == pageId;
 
             // If we've passed the check for correct page ID, we can safely cast.
@@ -5813,7 +5813,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * @return Statistics holder to track IO operations.
      */
-    protected StatisticsHolder statisticsHolder() {
-        return GridIoStatManager.NO_OP_STATISTIC_HOLDER;
+    protected IoStatisticsHolder statisticsHolder() {
+        return IoStatisticsManager.NO_OP_STATISTIC_HOLDER;
     }
 }

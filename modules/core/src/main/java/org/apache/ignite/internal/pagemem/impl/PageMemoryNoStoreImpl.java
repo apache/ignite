@@ -38,8 +38,8 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.stat.GridIoStatManager;
-import org.apache.ignite.internal.stat.StatisticsHolder;
+import org.apache.ignite.internal.stat.IoStatisticsHolder;
+import org.apache.ignite.internal.stat.IoStatisticsManager;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.OffheapReadWriteLock;
@@ -443,11 +443,11 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public long acquirePage(int cacheId, long pageId) {
-        return acquirePage(cacheId, pageId, GridIoStatManager.NO_OP_STATISTIC_HOLDER);
+        return acquirePage(cacheId, pageId, IoStatisticsManager.NO_OP_STATISTIC_HOLDER);
     }
 
     /** {@inheritDoc} */
-    @Override public long acquirePage(int cacheId, long pageId, StatisticsHolder statHolder) {
+    @Override public long acquirePage(int cacheId, long pageId, IoStatisticsHolder statHolder) {
         int pageIdx = PageIdUtils.pageIndex(pageId);
 
         Segment seg = segment(pageIdx);
