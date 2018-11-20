@@ -1979,7 +1979,7 @@ export class NotebookCtrl {
 
             await this.Notebook.save(this.$scope.notebook).catch(this.Messages.showError);
         } catch (e) {
-            // This is annoying
+            // no-op
         }
     }
 
