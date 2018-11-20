@@ -19,12 +19,9 @@ package org.apache.ignite.ml.dataset;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Random;
-import java.util.function.Function;
-import java.util.stream.Stream;
 import org.apache.ignite.ml.environment.LearningEnvironment;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
  * Class representing chain of transformers applied to upstream.
@@ -33,9 +30,6 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
  * @param <V> Type of upstream values.
  */
 public class UpstreamTransformerBuildersChain<K, V> implements Serializable {
-    /** Seed used for transformations. */
-    private Long seed;
-
     /** List of upstream transformations. */
     private List<UpstreamTransformerBuilder<K, V>> list;
 
@@ -58,8 +52,8 @@ public class UpstreamTransformerBuildersChain<K, V> implements Serializable {
      * @return Upstream transformers chain consisting of one specified transformer.
      */
     public static <K, V> UpstreamTransformerBuildersChain<K, V> of(UpstreamTransformerBuilder<K, V> trans) {
-        UpstreamTransformerBuildersChain<K, V> res = new UpstreamTransformerBuildersChain<>();
-        return res.addUpstreamTransformer(trans);
+        return new UpstreamTransformerBuildersChain<>(
+            new ArrayList<>(Collections.singletonList(trans)));
     }
 
     /**
@@ -67,19 +61,23 @@ public class UpstreamTransformerBuildersChain<K, V> implements Serializable {
      */
     private UpstreamTransformerBuildersChain() {
         list = new ArrayList<>();
-        seed = new Random().nextLong();
+    }
+
+    private UpstreamTransformerBuildersChain(List<UpstreamTransformerBuilder<K, V>> list) {
+        this.list = list;
     }
 
     /**
-     * Adds upstream transformer to this chain.
+     * Returns new instance of this class with added upstream transformer builder.
      *
-     * @param next Transformer to add.
+     * @param next Upstream transformer builder to add.
      * @return This chain with added transformer.
      */
-    public UpstreamTransformerBuildersChain<K, V> addUpstreamTransformer(UpstreamTransformerBuilder<K, V> next) {
-        list.add(next);
+    public UpstreamTransformerBuildersChain<K, V> withAddedUpstreamTransformer(UpstreamTransformerBuilder<K, V> next) {
+        ArrayList<UpstreamTransformerBuilder<K, V>> newList = new ArrayList<>(list);
+        newList.add(next);
 
-        return this;
+        return new UpstreamTransformerBuildersChain<>(newList);
     }
 
     public UpstreamTransformer<K, V> build(LearningEnvironment env) {
@@ -93,44 +91,11 @@ public class UpstreamTransformerBuildersChain<K, V> implements Serializable {
     }
 
     /**
-     * Checks if this chain is empty.
+     * Checks if transformation which is built from environment will be trivial (identity transformation).
      *
-     * @return Result of check if this chain is empty.
+     * @return Result of check if this chain produces trivial upstream transformer.
      */
-    public boolean isEmpty() {
+    public boolean isTrivial() {
         return list.isEmpty();
-    }
-
-    /**
-     * Set seed for transformations.
-     *
-     * @param seed Seed.
-     * @return This object.
-     */
-    public UpstreamTransformerBuildersChain<K, V> setSeed(long seed) {
-        this.seed = seed;
-
-        return this;
-    }
-
-    /**
-     * Modifies seed for transformations if it is present.
-     *
-     * @param f Modification function.
-     * @return This object.
-     */
-    public UpstreamTransformerBuildersChain<K, V> modifySeed(IgniteFunction<Long, Long> f) {
-        seed = f.apply(seed);
-
-        return this;
-    }
-
-    /**
-     * Get seed used for RNG in transformations.
-     *
-     * @return Seed used for RNG in transformations.
-     */
-    public Long seed() {
-        return seed;
     }
 }

@@ -17,23 +17,16 @@
 
 package org.apache.ignite.ml.trainers;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
-import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.dataset.PartitionContextBuilder;
-import org.apache.ignite.ml.dataset.PartitionDataBuilder;
-import org.apache.ignite.ml.dataset.UpstreamTransformerBuildersChain;
 import org.apache.ignite.ml.environment.LearningEnvironment;
-import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.environment.parallelism.Promise;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -49,6 +42,23 @@ import org.apache.ignite.ml.util.Utils;
  * Class containing various trainer transformers.
  */
 public class TrainerTransformers {
+    /**
+     * Add bagging logic to a given trainer. No features bootstrapping is done.
+     *
+     * @param ensembleSize Size of ensemble.
+     * @param subsampleRatio Subsample ratio to whole dataset.
+     * @param aggregator Aggregator.
+     * @param <M> Type of one model in ensemble.
+     * @param <L> Type of labels.
+     * @return Bagged trainer.
+     */
+    public static <M extends Model<Vector, Double>, L> DatasetTrainer<ModelsComposition, L> makeBagged(
+        DatasetTrainer<M, L> trainer,
+        int ensembleSize,
+        double subsampleRatio,
+        PredictionsAggregator aggregator) {
+        return makeBagged(trainer, ensembleSize, subsampleRatio, -1, -1, aggregator);
+    }
     /**
      * Add bagging logic to a given trainer.
      *
@@ -148,7 +158,7 @@ public class TrainerTransformers {
         log.log(MLLogger.VerboseLevel.LOW, "Start learning.");
 
         List<int[]> mappings = null;
-        if (featuresVectorSize > 0) {
+        if (featuresVectorSize > 0 && featureSubspaceDim != featuresVectorSize) {
             mappings = IntStream.range(0, ensembleSize).mapToObj(
                 modelIdx -> getMapping(
                     featuresVectorSize,

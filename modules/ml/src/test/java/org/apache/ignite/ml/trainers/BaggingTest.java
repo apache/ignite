@@ -80,6 +80,8 @@ public class BaggingTest extends TrainerTest {
                 trainer,
                 10,
                 0.7,
+                2,
+                2,
                 new OnMajorityPredictionsAggregator());
 
         ModelsComposition mdl = baggedTrainer.fit(
@@ -105,7 +107,13 @@ public class BaggingTest extends TrainerTest {
 
         double subsampleRatio = 0.3;
 
-        ModelsComposition model = TrainerTransformers.makeBagged(countTrainer, 100, subsampleRatio, new MeanValuePredictionsAggregator())
+        ModelsComposition model = TrainerTransformers.makeBagged(
+            countTrainer,
+            100,
+            subsampleRatio,
+            2,
+            2,
+            new MeanValuePredictionsAggregator())
             .fit(cacheMock, parts, null, null);
 
         Double res = model.apply(null);

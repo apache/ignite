@@ -180,18 +180,18 @@ public class ComputeUtils {
             qry.setPartition(part);
             qry.setFilter(filter);
 
-            UpstreamTransformerBuildersChain<K, V> chainCopy = Utils.copy(transformersChain);
-            chainCopy.modifySeed(s -> s + part);
+            UpstreamTransformer<K, V> transformer = transformersChain.build(env);
+            UpstreamTransformer<K, V> transformerCopy = Utils.copy(transformer);
 
-            long cnt = computeCount(upstreamCache, qry, chainCopy);
+            long cnt = computeCount(upstreamCache, qry, transformer, transformersChain.isTrivial());
 
             if (cnt > 0) {
                 try (QueryCursor<UpstreamEntry<K, V>> cursor = upstreamCache.query(qry,
                     e -> new UpstreamEntry<>(e.getKey(), e.getValue()))) {
 
                     Iterator<UpstreamEntry<K, V>> it = cursor.iterator();
-                    if (!chainCopy.isEmpty()) {
-                        Stream<UpstreamEntry<K, V>> transformedStream = chainCopy.transform(Utils.asStream(it, cnt));
+                    if (!transformersChain.isTrivial()) {
+                        Stream<UpstreamEntry<K, V>> transformedStream = transformerCopy.apply(Utils.asStream(it, cnt));
                         it = transformedStream.iterator();
                     }
 
@@ -234,7 +234,7 @@ public class ComputeUtils {
     public static <K, V, C extends Serializable> void initContext(
         Ignite ignite,
         String upstreamCacheName,
-//        UpstreamTransformerBuildersChain<K, V> transformersChain,
+        UpstreamTransformerBuildersChain<K, V> transformersChain,
         IgniteBiPredicate<K, V> filter,
         String datasetCacheName,
         PartitionContextBuilder<K, V, C> ctxBuilder,
@@ -254,15 +254,16 @@ public class ComputeUtils {
 
             C ctx;
             UpstreamTransformer<K, V> transformer = transformersChain.build(env);
+            UpstreamTransformer<K, V> transformerCopy = Utils.copy(transformer);
 
-            long cnt = computeCount(locUpstreamCache, qry, transformersChain);
+            long cnt = computeCount(locUpstreamCache, qry, transformer, transformersChain.isTrivial());
 
             try (QueryCursor<UpstreamEntry<K, V>> cursor = locUpstreamCache.query(qry,
                 e -> new UpstreamEntry<>(e.getKey(), e.getValue()))) {
 
                 Iterator<UpstreamEntry<K, V>> it = cursor.iterator();
-                if (!transformersChain.isEmpty()) {
-                    Stream<UpstreamEntry<K, V>> transformedStream = chainCopy.transform(Utils.asStream(it, cnt));
+                if (!transformersChain.isTrivial()) {
+                    Stream<UpstreamEntry<K, V>> transformedStream = transformerCopy.apply(Utils.asStream(it, cnt));
                     it = transformedStream.iterator();
                 }
                 Iterator<UpstreamEntry<K, V>> iter = new IteratorWithConcurrentModificationChecker<>(
@@ -340,7 +341,8 @@ public class ComputeUtils {
      *
      * @param cache Ignite cache with upstream data.
      * @param qry Cache query.
-     * @param transformersChain Transformers of stream of upstream data.
+     * @param transformer Upstream transformer.
+     * @param idTransformer If upstream transformer is trivial (identity function)
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @return Number of entries supplied by the iterator.
@@ -348,15 +350,16 @@ public class ComputeUtils {
     private static  <K, V> long computeCount(
         IgniteCache<K, V> cache,
         ScanQuery<K, V> qry,
-        UpstreamTransformerBuildersChain<K, V> transformersChain) {
+        UpstreamTransformer<K, V> transformer,
+        boolean idTransformer) {
         try (QueryCursor<UpstreamEntry<K, V>> cursor = cache.query(qry,
             e -> new UpstreamEntry<>(e.getKey(), e.getValue()))) {
 
             // 'If' statement below is just for optimization, to avoid unnecessary iterator -> stream -> iterator
             // operations.
-            return transformersChain.isEmpty() ?
+            return idTransformer ?
                 computeCount(cursor.iterator()) :
-                computeCount(transformersChain.transform(Utils.asStream(cursor.iterator())).iterator());
+                computeCount(transformer.apply(Utils.asStream(cursor.iterator())).iterator());
         }
     }
 

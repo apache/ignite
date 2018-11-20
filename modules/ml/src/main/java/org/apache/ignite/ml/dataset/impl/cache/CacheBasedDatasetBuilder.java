@@ -27,6 +27,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionContextBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
+import org.apache.ignite.ml.dataset.UpstreamTransformerBuilder;
 import org.apache.ignite.ml.dataset.UpstreamTransformerBuildersChain;
 import org.apache.ignite.ml.dataset.impl.cache.util.ComputeUtils;
 import org.apache.ignite.ml.dataset.impl.cache.util.DatasetAffinityFunctionWrapper;
@@ -80,10 +81,24 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
      * @param filter Filter for {@code upstream} data.
      */
     public CacheBasedDatasetBuilder(Ignite ignite, IgniteCache<K, V> upstreamCache, IgniteBiPredicate<K, V> filter) {
+        this(ignite, upstreamCache, filter, UpstreamTransformerBuildersChain.empty());
+    }
+
+    /**
+     * Constructs a new instance of cache based dataset builder that makes {@link CacheBasedDataset}.
+     *
+     * @param ignite Ignite instance.
+     * @param upstreamCache Ignite Cache with {@code upstream} data.
+     * @param filter Filter for {@code upstream} data.
+     */
+    public CacheBasedDatasetBuilder(Ignite ignite,
+        IgniteCache<K, V> upstreamCache,
+        IgniteBiPredicate<K, V> filter,
+        UpstreamTransformerBuildersChain<K, V> transformersChain) {
         this.ignite = ignite;
         this.upstreamCache = upstreamCache;
         this.filter = filter;
-        transformersChain = UpstreamTransformerBuildersChain.empty();
+        this.transformersChain = transformersChain;
     }
 
     /** {@inheritDoc} */
@@ -122,13 +137,11 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public UpstreamTransformerBuildersChain<K, V> upstreamTransformersChain() {
-        return transformersChain;
+    @Override public DatasetBuilder<K, V> withUpstreamTransformer(UpstreamTransformerBuilder<K, V> builder) {
+        return new CacheBasedDatasetBuilder<>(ignite, upstreamCache, filter, transformersChain.withAddedUpstreamTransformer(builder));
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public DatasetBuilder<K, V> withFilter(IgniteBiPredicate<K, V> filterToAdd) {
         return new CacheBasedDatasetBuilder<>(ignite, upstreamCache,
             (e1, e2) -> filter.apply(e1, e2) && filterToAdd.apply(e1, e2));

@@ -49,7 +49,7 @@ public class BaggingUpstreamTransformer<K, V> implements UpstreamTransformer<K, 
      * @return Builder of {@link BaggingUpstreamTransformer}.
      */
     public static <K, V> UpstreamTransformerBuilder<K, V> builder(double subsampleRatio, int modelIdx) {
-        return env -> new BaggingUpstreamTransformer<>(env.randomNumbersGenerator().nextLong(), subsampleRatio);
+        return env -> new BaggingUpstreamTransformer<>(env.randomNumbersGenerator().nextLong() + modelIdx, subsampleRatio);
     }
 
     /**

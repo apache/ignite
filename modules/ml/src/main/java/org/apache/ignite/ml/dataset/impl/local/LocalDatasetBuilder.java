@@ -27,6 +27,8 @@ import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionContextBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
+import org.apache.ignite.ml.dataset.UpstreamTransformer;
+import org.apache.ignite.ml.dataset.UpstreamTransformerBuilder;
 import org.apache.ignite.ml.dataset.UpstreamTransformerBuildersChain;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
@@ -70,12 +72,29 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
      * @param upstreamMap {@code Map} with upstream data.
      * @param filter Filter for {@code upstream} data.
      * @param partitions Number of partitions.
+     * @param upstreamTransformers Chain of upstream transformer builders.
      */
-    public LocalDatasetBuilder(Map<K, V> upstreamMap, IgniteBiPredicate<K, V> filter, int partitions) {
+    public LocalDatasetBuilder(Map<K, V> upstreamMap,
+        IgniteBiPredicate<K, V> filter,
+        int partitions,
+        UpstreamTransformerBuildersChain<K, V> upstreamTransformers) {
         this.upstreamMap = upstreamMap;
         this.filter = filter;
         this.partitions = partitions;
-        this.upstreamTransformers = UpstreamTransformerBuildersChain.empty();
+        this.upstreamTransformers = upstreamTransformers;
+    }
+
+    /**
+     * Constructs a new instance of local dataset builder that makes {@link LocalDataset}.
+     *
+     * @param upstreamMap {@code Map} with upstream data.
+     * @param filter Filter for {@code upstream} data.
+     * @param partitions Number of partitions.
+     */
+    public LocalDatasetBuilder(Map<K, V> upstreamMap,
+        IgniteBiPredicate<K, V> filter,
+        int partitions) {
+        this(upstreamMap, filter, partitions, UpstreamTransformerBuildersChain.empty());
     }
 
     /** {@inheritDoc} */
@@ -105,29 +124,27 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
         for (int part = 0; part < partitions; part++) {
             int cnt = part == partitions - 1 ? entriesList.size() - ptr : Math.min(partSize, entriesList.size() - ptr);
             LearningEnvironment env = envBuilder.buildForWorker(part);
+            UpstreamTransformer<K, V> transformer1 = upstreamTransformers.build(env);
+            UpstreamTransformer<K, V> transformer2 = Utils.copy(transformer1);
+            UpstreamTransformer<K, V> transformer3 = Utils.copy(transformer1);
 
-            int p = part;
-            upstreamTransformers.modifySeed(s -> s + p);
-
-            if (!upstreamTransformers.isEmpty()) {
-                cnt = (int)upstreamTransformers.transform(
-                    Utils.asStream(new IteratorWindow<>(thirdKeysIter, k -> k, cnt))).count();
+            if (!upstreamTransformers.isTrivial()) {
+                cnt = (int)transformer1.apply(Utils.asStream(new IteratorWindow<>(thirdKeysIter, k -> k, cnt))).count();
             }
 
             Iterator<UpstreamEntry<K, V>> iter;
-            if (upstreamTransformers.isEmpty()) {
+            if (upstreamTransformers.isTrivial()) {
                 iter = new IteratorWindow<>(firstKeysIter, k -> k, cnt);
             }
             else {
-                iter = upstreamTransformers.transform(
-                    Utils.asStream(new IteratorWindow<>(firstKeysIter, k -> k, cnt))).iterator();
+                iter = transformer2.apply(Utils.asStream(new IteratorWindow<>(firstKeysIter, k -> k, cnt))).iterator();
             }
 
             C ctx = cnt > 0 ? partCtxBuilder.build(env, iter, cnt) : null;
 
             Iterator<UpstreamEntry<K, V>> iter1;
-            if (upstreamTransformers.isEmpty()) {
-                iter1 = upstreamTransformers.transform(
+            if (upstreamTransformers.isTrivial()) {
+                iter1 = transformer3.apply(
                     Utils.asStream(new IteratorWindow<>(secondKeysIter, k -> k, cnt))).iterator();
             }
             else {
@@ -151,13 +168,13 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public UpstreamTransformerBuildersChain<K, V> upstreamTransformersChain() {
-        return upstreamTransformers;
+    @Override public DatasetBuilder<K, V> withUpstreamTransformer(UpstreamTransformerBuilder<K, V> builder) {
+        UpstreamTransformerBuildersChain<K, V> newChain = upstreamTransformers.withAddedUpstreamTransformer(builder);
+
+        return new LocalDatasetBuilder<>(upstreamMap, filter, partitions, newChain);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public DatasetBuilder<K, V> withFilter(IgniteBiPredicate<K, V> filterToAdd) {
         return new LocalDatasetBuilder<>(upstreamMap,
             (e1, e2) -> filter.apply(e1, e2) && filterToAdd.apply(e1, e2), partitions);
