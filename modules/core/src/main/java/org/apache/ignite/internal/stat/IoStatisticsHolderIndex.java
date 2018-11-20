@@ -183,7 +183,6 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
                 return IndexPageType.LEAF;
 
             default:
-
                 if ((PageIO.T_H2_EX_REF_LEAF_START <= pageIoType && pageIoType <= PageIO.T_H2_EX_REF_LEAF_END) ||
                     (PageIO.T_H2_EX_REF_MVCC_LEAF_START <= pageIoType && pageIoType <= PageIO.T_H2_EX_REF_MVCC_LEAF_END)
                 )
@@ -204,8 +203,10 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
     enum IndexPageType {
         /** */
         LEAF,
+
         /** */
         INNER,
+
         /** */
         NOT_INDEX;
     }
