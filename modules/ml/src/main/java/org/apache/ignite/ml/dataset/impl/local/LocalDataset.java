@@ -25,7 +25,7 @@ import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 
 /**
- * An implementation of dataset based on local data structures such as {@code Map} and {@code List} and doesn't requires
+ * An implementation of dataset based on local data structures such as {@code Map} and {@code List} and doesn't require
  * Ignite environment. Introduces for testing purposes mostly, but can be used for simple local computations as well.
  *
  * @param <C> Type of a partition {@code context}.

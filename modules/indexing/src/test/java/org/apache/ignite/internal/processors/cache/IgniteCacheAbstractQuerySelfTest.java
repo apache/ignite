@@ -1160,13 +1160,16 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
     /**
      * JUnit.
-     *
-     * @throws Exception In case of error.
      */
-    public void _testTwoObjectsTextSearch() throws Exception {
-        fail("http://atlassian.gridgain.com/jira/browse/GG-11216");
+    public void testTwoObjectsTextSearch() {
+        CacheConfiguration<Object, Object> conf = new CacheConfiguration<>(cacheConfiguration());
 
-        IgniteCache<Object, Object> c = jcache(Object.class, Object.class);
+        conf.setQueryEntities(Arrays.asList(
+           new QueryEntity(Integer.class, ObjectValue.class),
+           new QueryEntity(String.class, ObjectValueOther.class)
+        ));
+
+        IgniteCache<Object, Object> c = jcache(ignite(), conf, Object.class, Object.class);
 
         c.put(1, new ObjectValue("ObjectValue str", 1));
         c.put("key", new ObjectValueOther("ObjectValueOther str"));
