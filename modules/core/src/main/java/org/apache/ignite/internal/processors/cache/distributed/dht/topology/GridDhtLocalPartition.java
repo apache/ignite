@@ -32,6 +32,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -562,6 +564,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to log partition state change to WAL.", e);
+
+                        ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
                     }
 
                     if (log.isDebugEnabled())
@@ -984,6 +988,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to log partition state snapshot to WAL.", e);
+
+                    ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
                 }
         }
 
