@@ -1727,7 +1727,11 @@ public class GridSqlQueryParser {
             if (o instanceof GridSqlTable) {
                 GridH2Table tbl = ((GridSqlTable)o).dataTable();
 
-                if (tbl != null && tbl.cache() != null) {
+                if (tbl != null) {
+                    //It's lazy cache. Can't be local.
+                    if (tbl.cache() == null)
+                        return false;
+
                     GridCacheContext cctx = tbl.cache();
 
                     if (cctx.mvccEnabled())
