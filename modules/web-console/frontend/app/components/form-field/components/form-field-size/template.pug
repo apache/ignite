@@ -40,6 +40,7 @@ include /app/helpers/jade/mixins
         ng-required='$ctrl.required'
         ng-disabled='$ctrl.ngDisabled'
         ignite-form-field-input-autofocus='{{$ctrl.autofocus}}'
+        ng-on-blur='$ctrl.triggerBlur()'
     )
     button.select-toggle(
         bs-select
