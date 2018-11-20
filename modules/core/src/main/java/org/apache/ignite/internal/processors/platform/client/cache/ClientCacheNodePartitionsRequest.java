@@ -50,8 +50,7 @@ public class ClientCacheNodePartitionsRequest extends ClientCacheRequest {
         IgniteCache cache = cache(ctx);
 
         GridDiscoveryManager discovery = ctx.kernalContext().discovery();
-        Collection<ClusterNode> nodes = discovery.cacheNodes(cache.getName(),
-            new AffinityTopologyVersion(discovery.topologyVersion()));
+        Collection<ClusterNode> nodes = discovery.discoCache().cacheNodes(cache.getName());
 
         Affinity aff = ctx.kernalContext().affinity().affinityProxy(cache.getName());
 
