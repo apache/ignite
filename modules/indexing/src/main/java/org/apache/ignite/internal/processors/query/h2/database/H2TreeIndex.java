@@ -155,9 +155,9 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             AtomicInteger maxCalculatedInlineSize = new AtomicInteger();
 
-            IoStatisticsManager ioStatMngr = cctx.kernalContext().ioStats();
+            IoStatisticsManager statMgr = cctx.kernalContext().ioStats();
 
-            IoStatisticsHolder statHldr = ioStatMngr.createAndRegisterStatHolder(IoStatisticsType.SORTED_INDEX, cctx.name(), idxName);
+            IoStatisticsHolder stats = statMgr.createAndRegisterStatHolder(IoStatisticsType.SORTED_INDEX, cctx.name(), idxName);
 
             for (int i = 0; i < segments.length; i++) {
                 db.checkpointReadLock();
@@ -187,7 +187,7 @@ public class H2TreeIndex extends GridH2IndexBase {
                         rowCache,
                         cctx.kernalContext().failure(),
                         log,
-                        statHldr) {
+                        stats) {
                         @Override public int compareValues(Value v1, Value v2) {
                             return v1 == v2 ? 0 : table.compareTypeSafe(v1, v2);
                         }

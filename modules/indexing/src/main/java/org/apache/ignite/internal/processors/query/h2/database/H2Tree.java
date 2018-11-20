@@ -88,7 +88,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
     private final String idxName;
 
     /** */
-    private final IoStatisticsHolder statHolderstatHolder;
+    private final IoStatisticsHolder stats;
 
     /** */
     private final Comparator<Value> comp = new Comparator<Value>() {
@@ -134,7 +134,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
      * @param mvccEnabled Mvcc flag.
      * @param failureProcessor if the tree is corrupted.
      * @param log Logger.
-     * @param statHolder Statistics holder.
+     * @param stats Statistics holder.
      * @throws IgniteCheckedException If failed.
      */
     protected H2Tree(
@@ -159,7 +159,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
         @Nullable H2RowCache rowCache,
         @Nullable FailureProcessor failureProcessor,
         IgniteLogger log,
-        IoStatisticsHolder statHolder
+        IoStatisticsHolder stats
     ) throws IgniteCheckedException {
         super(name, grpId, pageMem, wal, globalRmvId, metaPageId, reuseList, failureProcessor);
 
@@ -205,7 +205,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
 
         this.log = log;
 
-        this.statHolderstatHolder = statHolder;
+        this.stats = stats;
 
         initTree(initNew, inlineSize);
     }
@@ -519,7 +519,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
 
     /** {@inheritDoc} */
     @Override protected IoStatisticsHolder statisticsHolder() {
-        return statHolderstatHolder;
+        return stats;
     }
 
     /**
