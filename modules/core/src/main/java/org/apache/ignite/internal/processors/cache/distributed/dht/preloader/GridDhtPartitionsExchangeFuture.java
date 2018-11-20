@@ -2379,7 +2379,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                 if (!grp.isLocal()) {
-                    boolean detectedOnGrp = grp.topology().detectLostPartitions(resTopVer, events().lastEvent());
+                    // Do not trigger lost partition events on start.
+                    boolean event = !localJoinExchange() && !activateCluster();
+
+                    boolean detectedOnGrp = grp.topology().detectLostPartitions(resTopVer, event ? events().lastEvent() : null);
 
                     detected |= detectedOnGrp;
                 }
