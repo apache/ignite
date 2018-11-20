@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.record.CacheState;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
@@ -249,7 +250,9 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         if (encryptionDisabled)
             return false;
 
-        return encMgr.groupKey(grpId) != null;
+        GridEncryptionManager encMgr = cctx.kernalContext().encryption();
+
+        return encMgr != null && encMgr.groupKey(grpId) != null;
     }
 
     /**
