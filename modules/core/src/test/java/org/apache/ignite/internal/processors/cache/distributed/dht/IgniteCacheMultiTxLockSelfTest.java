@@ -29,6 +29,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -197,6 +198,7 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
      * @param keys Number of keys.
      * @return Running thread.
      */
+    @SuppressWarnings("TypeMayBeWeakened")
     private Thread runCacheOperations(final IgniteInternalCache<Object,Object> cache, final int keys) {
         Thread t = new Thread() {
             @Override public void run() {

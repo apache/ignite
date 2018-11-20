@@ -276,9 +276,6 @@ public final class IgfsImpl implements IgfsEx {
         // Restore interrupted flag.
         if (interrupted)
             Thread.currentThread().interrupt();
-
-        if (dualPool != null)
-            dualPool.shutdownNow();
     }
 
     /**

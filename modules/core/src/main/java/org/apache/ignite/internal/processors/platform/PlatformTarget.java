@@ -26,6 +26,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Interop target abstraction.
  */
+@SuppressWarnings("UnusedDeclaration")
 public interface PlatformTarget {
     /**
      * Process IN operation.

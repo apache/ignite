@@ -191,6 +191,7 @@ public class TxOptimisticPrepareOnUnstableTopologyTest extends GridCommonAbstrac
      * @param keys Number of keys.
      * @return Running thread.
      */
+    @SuppressWarnings("TypeMayBeWeakened")
     private Thread runCacheOperations(Ignite node, TransactionIsolation isolation, long timeout, final int keys) {
         Thread t = new Thread() {
             @Override public void run() {

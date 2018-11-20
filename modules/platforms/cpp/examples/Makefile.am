@@ -23,6 +23,5 @@ SUBDIRS = \
     query-example \
 	continuous-query-example \
 	compute-example \
-	thin-client-put-get-example \
     include
 

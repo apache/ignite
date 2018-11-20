@@ -190,7 +190,8 @@ public interface IgniteTxState {
     public boolean empty();
 
     /**
+     * @param cctx Context.
      * @return {@code True} if MVCC mode is enabled for transaction.
      */
-    public boolean mvccEnabled();
+    public boolean mvccEnabled(GridCacheSharedContext cctx);
 }

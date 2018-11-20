@@ -23,6 +23,8 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageSupport;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.GridUnsafe;
 
@@ -209,7 +211,7 @@ public abstract class PageHandler<X, R> {
 
     /**
      * @param pageMem Page memory.
-     * @param grpId Group ID.
+     * @param cacheId Cache ID.
      * @param pageId Page ID.
      * @param init IO for new page initialization.
      * @param wal Write ahead log.
@@ -218,20 +220,20 @@ public abstract class PageHandler<X, R> {
      */
     public static void initPage(
         PageMemory pageMem,
-        int grpId,
+        int cacheId,
         long pageId,
         PageIO init,
         IgniteWriteAheadLogManager wal,
         PageLockListener lsnr
     ) throws IgniteCheckedException {
-        Boolean res = writePage(pageMem, grpId, pageId, lsnr, PageHandler.NO_OP, init, wal, null, null, 0, FALSE);
+        Boolean res = writePage(pageMem, cacheId, pageId, lsnr, PageHandler.NO_OP, init, wal, null, null, 0, FALSE);
 
         assert res != FALSE;
     }
 
     /**
      * @param pageMem Page memory.
-     * @param grpId Group ID.
+     * @param cacheId Cache ID.
      * @param pageId Page ID.
      * @param lsnr Lock listener.
      * @param h Handler.
@@ -246,7 +248,7 @@ public abstract class PageHandler<X, R> {
      */
     public static <X, R> R writePage(
         PageMemory pageMem,
-        int grpId,
+        int cacheId,
         final long pageId,
         PageLockListener lsnr,
         PageHandler<X, R> h,
@@ -258,9 +260,9 @@ public abstract class PageHandler<X, R> {
         R lockFailed
     ) throws IgniteCheckedException {
         boolean releaseAfterWrite = true;
-        long page = pageMem.acquirePage(grpId, pageId);
+        long page = pageMem.acquirePage(cacheId, pageId);
         try {
-            long pageAddr = writeLock(pageMem, grpId, pageId, page, lsnr, false);
+            long pageAddr = writeLock(pageMem, cacheId, pageId, page, lsnr, false);
 
             if (pageAddr == 0L)
                 return lockFailed;
@@ -270,13 +272,13 @@ public abstract class PageHandler<X, R> {
             try {
                 if (init != null) {
                     // It is a new page and we have to initialize it.
-                    doInitPage(pageMem, grpId, pageId, page, pageAddr, init, wal);
+                    doInitPage(pageMem, cacheId, pageId, page, pageAddr, init, wal);
                     walPlc = FALSE;
                 }
                 else
                     init = PageIO.getPageIO(pageAddr);
 
-                R res = h.run(grpId, pageId, page, pageAddr, init, walPlc, arg, intArg);
+                R res = h.run(cacheId, pageId, page, pageAddr, init, walPlc, arg, intArg);
 
                 ok = true;
 
@@ -285,19 +287,19 @@ public abstract class PageHandler<X, R> {
             finally {
                 assert PageIO.getCrc(pageAddr) == 0; //TODO GG-11480
 
-                if (releaseAfterWrite = h.releaseAfterWrite(grpId, pageId, page, pageAddr, arg, intArg))
-                    writeUnlock(pageMem, grpId, pageId, page, pageAddr, lsnr, walPlc, ok);
+                if (releaseAfterWrite = h.releaseAfterWrite(cacheId, pageId, page, pageAddr, arg, intArg))
+                    writeUnlock(pageMem, cacheId, pageId, page, pageAddr, lsnr, walPlc, ok);
             }
         }
         finally {
             if (releaseAfterWrite)
-                pageMem.releasePage(grpId, pageId, page);
+                pageMem.releasePage(cacheId, pageId, page);
         }
     }
 
     /**
      * @param pageMem Page memory.
-     * @param grpId Group ID.
+     * @param cacheId Cache ID.
      * @param pageId Page ID.
      * @param page Page pointer.
      * @param lsnr Lock listener.
@@ -313,7 +315,7 @@ public abstract class PageHandler<X, R> {
      */
     public static <X, R> R writePage(
         PageMemory pageMem,
-        int grpId,
+        int cacheId,
         long pageId,
         long page,
         PageLockListener lsnr,
@@ -325,7 +327,7 @@ public abstract class PageHandler<X, R> {
         int intArg,
         R lockFailed
     ) throws IgniteCheckedException {
-        long pageAddr = writeLock(pageMem, grpId, pageId, page, lsnr, false);
+        long pageAddr = writeLock(pageMem, cacheId, pageId, page, lsnr, false);
 
         if (pageAddr == 0L)
             return lockFailed;
@@ -335,13 +337,13 @@ public abstract class PageHandler<X, R> {
         try {
             if (init != null) {
                 // It is a new page and we have to initialize it.
-                doInitPage(pageMem, grpId, pageId, page, pageAddr, init, wal);
+                doInitPage(pageMem, cacheId, pageId, page, pageAddr, init, wal);
                 walPlc = FALSE;
             }
             else
                 init = PageIO.getPageIO(pageAddr);
 
-            R res = h.run(grpId, pageId, page, pageAddr, init, walPlc, arg, intArg);
+            R res = h.run(cacheId, pageId, page, pageAddr, init, walPlc, arg, intArg);
 
             ok = true;
 
@@ -350,8 +352,8 @@ public abstract class PageHandler<X, R> {
         finally {
             assert PageIO.getCrc(pageAddr) == 0; //TODO GG-11480
 
-            if (h.releaseAfterWrite(grpId, pageId, page, pageAddr, arg, intArg))
-                writeUnlock(pageMem, grpId, pageId, page, pageAddr, lsnr, walPlc, ok);
+            if (h.releaseAfterWrite(cacheId, pageId, page, pageAddr, arg, intArg))
+                writeUnlock(pageMem, cacheId, pageId, page, pageAddr, lsnr, walPlc, ok);
         }
     }
 
@@ -406,7 +408,7 @@ public abstract class PageHandler<X, R> {
 
     /**
      * @param pageMem Page memory.
-     * @param grpId Group ID.
+     * @param cacheId Cache ID.
      * @param pageId Page ID.
      * @param page Page pointer.
      * @param pageAddr Page address.
@@ -416,7 +418,7 @@ public abstract class PageHandler<X, R> {
      */
     private static void doInitPage(
         PageMemory pageMem,
-        int grpId,
+        int cacheId,
         long pageId,
         long page,
         long pageAddr,
@@ -425,11 +427,11 @@ public abstract class PageHandler<X, R> {
 
         assert PageIO.getCrc(pageAddr) == 0; //TODO GG-11480
 
-        init.initNewPage(pageAddr, pageId, pageMem.realPageSize(grpId));
+        init.initNewPage(pageAddr, pageId, pageMem.pageSize());
 
         // Here we should never write full page, because it is known to be new.
-        if (isWalDeltaRecordNeeded(pageMem, grpId, pageId, page, wal, FALSE))
-            wal.log(new InitNewPageRecord(grpId, pageId,
+        if (isWalDeltaRecordNeeded(pageMem, cacheId, pageId, page, wal, FALSE))
+            wal.log(new InitNewPageRecord(cacheId, pageId,
                 init.getType(), init.getVersion(), pageId));
     }
 

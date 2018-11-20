@@ -20,7 +20,9 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.ClusterNodeMetricsSelfTest;
 import org.apache.ignite.internal.ClusterNodeMetricsUpdateTest;
+import org.apache.ignite.internal.GridAffinityMappedTest;
 import org.apache.ignite.internal.GridAffinityNoCacheSelfTest;
+import org.apache.ignite.internal.GridAffinityP2PSelfTest;
 import org.apache.ignite.internal.GridAffinitySelfTest;
 import org.apache.ignite.internal.GridAlwaysFailoverSpiFailSelfTest;
 import org.apache.ignite.internal.GridCancelOnGridStopSelfTest;
@@ -53,6 +55,7 @@ import org.apache.ignite.internal.GridNonHistoryMetricsSelfTest;
 import org.apache.ignite.internal.GridProjectionLocalJobMultipleArgumentsSelfTest;
 import org.apache.ignite.internal.GridStopWithWaitSelfTest;
 import org.apache.ignite.internal.GridTaskCancelSingleNodeSelfTest;
+import org.apache.ignite.internal.GridTaskExecutionContextSelfTest;
 import org.apache.ignite.internal.GridTaskExecutionSelfTest;
 import org.apache.ignite.internal.GridTaskExecutionWithoutPeerClassLoadingSelfTest;
 import org.apache.ignite.internal.GridTaskFailoverAffinityRunTest;
@@ -74,7 +77,6 @@ import org.apache.ignite.internal.IgniteExecutorServiceTest;
 import org.apache.ignite.internal.IgniteExplicitImplicitDeploymentSelfTest;
 import org.apache.ignite.internal.IgniteRoundRobinErrorAfterClientReconnectTest;
 import org.apache.ignite.internal.TaskNodeRestartTest;
-import org.apache.ignite.internal.VisorManagementEventSelfTest;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManagerSelfTest;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointTaskSelfTest;
 import org.apache.ignite.internal.managers.communication.GridCommunicationManagerListenersSelfTest;
@@ -175,8 +177,6 @@ public class IgniteComputeGridTestSuite {
         suite.addTestSuite(IgniteComputeCustomExecutorSelfTest.class);
 
         suite.addTestSuite(IgniteComputeJobOneThreadTest.class);
-
-        suite.addTestSuite(VisorManagementEventSelfTest.class);
 
         return suite;
     }

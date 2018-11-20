@@ -50,6 +50,7 @@ public class GridResourceLoggerInjector extends GridResourceBasicInjector<Ignite
      * @param target Target.
      * @return Logger.
      */
+    @SuppressWarnings("IfMayBeConditional")
     private IgniteLogger resource(LoggerResource ann, Object target) {
         Class<?> cls = ann.categoryClass();
         String cat = ann.categoryName();

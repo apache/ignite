@@ -404,32 +404,41 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * or due to {@code IOException} during network operations.
      */
     public void onDisconnect() {
-        if (worker != null) {
-            worker.cancel();
+        if (busyLock.enterBusy())
+        {
+            if (worker != null) {
+                worker.cancel();
 
-            try {
-                worker.join();
+                try {
+                    worker.join();
+                }
+                catch (InterruptedException e) {
+                    // No-op.
+                }
             }
-            catch (InterruptedException e) {
-                // No-op.
+
+            try
+            {
+                for (JdbcQueryCursor cursor : qryCursors.values())
+                    cursor.close();
+
+                for (JdbcBulkLoadProcessor processor : bulkLoadRequests.values()) {
+                    try {
+                        processor.close();
+                    }
+                    catch (Exception e) {
+                        U.error(null, "Error closing JDBC bulk load processor.", e);
+                    }
+                }
+
+                bulkLoadRequests.clear();
+
+                U.close(cliCtx, log);
+            }
+            finally {
+                busyLock.leaveBusy();
             }
         }
-
-        for (JdbcQueryCursor cursor : qryCursors.values())
-            cursor.close();
-
-        for (JdbcBulkLoadProcessor processor : bulkLoadRequests.values()) {
-            try {
-                processor.close();
-            }
-            catch (Exception e) {
-                U.error(null, "Error closing JDBC bulk load processor.", e);
-            }
-        }
-
-        bulkLoadRequests.clear();
-
-        U.close(cliCtx, log);
     }
 
     /**
@@ -848,6 +857,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param req Get columns metadata request.
      * @return Response.
      */
+    @SuppressWarnings("unchecked")
     private JdbcResponse getColumnsMeta(JdbcMetaColumnsRequest req) {
         try {
             Collection<JdbcColumnMeta> meta = new LinkedHashSet<>();
@@ -1003,11 +1013,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                         table.keyFieldName();
 
                     if (fields.isEmpty()) {
-                        String keyColName =
-                            table.keyFieldName() == null ? QueryUtils.KEY_FIELD_NAME : table.keyFieldName();
-
                         meta.add(new JdbcPrimaryKeyMeta(table.schemaName(), table.tableName(), keyName,
-                            Collections.singletonList(keyColName)));
+                            Collections.singletonList("_KEY")));
                     }
                     else
                         meta.add(new JdbcPrimaryKeyMeta(table.schemaName(), table.tableName(), keyName, fields));
@@ -1072,7 +1079,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         if (e instanceof IgniteSQLException)
             return new JdbcResponse(((IgniteSQLException) e).statusCode(), e.getMessage());
         else
-            return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, e.getMessage());
+            return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, e.toString());
     }
 
     /**

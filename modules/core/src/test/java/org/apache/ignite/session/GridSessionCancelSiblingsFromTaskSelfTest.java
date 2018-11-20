@@ -51,6 +51,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 /**
  * Session cancellation tests.
  */
+@SuppressWarnings({"CatchGenericClass"})
 @GridCommonTest(group = "Task Session")
 public class GridSessionCancelSiblingsFromTaskSelfTest extends GridCommonAbstractTest {
     /** */
@@ -219,6 +220,7 @@ public class GridSessionCancelSiblingsFromTaskSelfTest extends GridCommonAbstrac
                     private volatile Thread thread;
 
                     /** {@inheritDoc} */
+                    @SuppressWarnings({"BusyWait"})
                     @Override public Serializable execute() {
                         assert taskSes != null;
 
@@ -270,6 +272,7 @@ public class GridSessionCancelSiblingsFromTaskSelfTest extends GridCommonAbstrac
         }
 
         /** {@inheritDoc} */
+        @SuppressWarnings("deprecation")
         @Override public ComputeJobResultPolicy result(ComputeJobResult result, List<ComputeJobResult> received) {
             if (received.size() == 1) {
                 Collection<ComputeJobSibling> jobSiblings = taskSes.getJobSiblings();

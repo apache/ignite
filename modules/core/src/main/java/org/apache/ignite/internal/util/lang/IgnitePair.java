@@ -46,6 +46,7 @@ public class IgnitePair<T> extends IgniteBiTuple<T, T> {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings( {"CloneDoesntDeclareCloneNotSupportedException"})
     @Override public Object clone() {
         return super.clone();
     }

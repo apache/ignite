@@ -56,6 +56,7 @@ public class JdbcThinUtils {
      * @param cls Java class name.
      * @return Type from {@link Types}.
      */
+    @SuppressWarnings("IfMayBeConditional")
     public static int type(String cls) {
         if (Boolean.class.getName().equals(cls) || boolean.class.getName().equals(cls))
             return BOOLEAN;
@@ -91,6 +92,7 @@ public class JdbcThinUtils {
      * @param cls Java class name.
      * @return SQL type name.
      */
+    @SuppressWarnings("IfMayBeConditional")
     public static String typeName(String cls) {
         if (Boolean.class.getName().equals(cls) || boolean.class.getName().equals(cls))
             return "BOOLEAN";

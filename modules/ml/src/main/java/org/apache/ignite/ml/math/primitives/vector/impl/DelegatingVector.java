@@ -151,11 +151,6 @@ public class DelegatingVector implements Vector {
     }
 
     /** {@inheritDoc} */
-    @Override public Vector copyOfRange(int from, int to) {
-        return dlg.copyOfRange(from, to);
-    }
-
-    /** {@inheritDoc} */
     @Override public Spliterator<Double> allSpliterator() {
         return dlg.allSpliterator();
     }

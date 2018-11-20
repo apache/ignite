@@ -1061,6 +1061,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testPutFieldsWithDefaultWriteObject() throws Exception {
         try {
             marshalUnmarshal(new CustomWriteObjectMethodObject("test"));
@@ -1073,6 +1074,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ThrowableInstanceNeverThrown")
     public void testThrowable() throws Exception {
         Throwable t = new Throwable("Throwable");
 
@@ -1458,6 +1460,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * Test object with {@code writeObject} and {@code readObject} methods.
      */
+    @SuppressWarnings("TransientFieldNotInitialized")
     private static class WriteReadTestObject implements Serializable {
         /** */
         private int val;
@@ -1549,6 +1552,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
         private int val;
 
         /** */
+        @SuppressWarnings("UnusedDeclaration")
         private String str;
 
         /**
@@ -1768,6 +1772,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * Class C.
      */
+    @SuppressWarnings("MethodOverridesPrivateMethodOfSuperclass")
     private static class C extends B {
         /** */
         @SuppressWarnings("InstanceVariableMayNotBeInitializedByReadObject")
@@ -2166,6 +2171,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * Test enum.
      */
+    @SuppressWarnings("JavaDoc")
     private enum TestEnum {
         /** */
         A,

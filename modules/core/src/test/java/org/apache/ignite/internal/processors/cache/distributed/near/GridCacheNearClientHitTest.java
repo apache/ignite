@@ -37,10 +37,10 @@ import static org.apache.ignite.cache.CachePeekMode.NEAR;
  */
 public class GridCacheNearClientHitTest extends GridCommonAbstractTest {
     /** Ip finder. */
-    private static final TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+    private final static TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static final String CACHE_NAME = "test-near-cache";
+    private final static String CACHE_NAME = "test-near-cache";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(final String igniteInstanceName) throws Exception {

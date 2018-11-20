@@ -46,6 +46,7 @@ import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -156,10 +157,6 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
                 return;
 
             boolean first = (nodeId != null);
-
-            // Need to unlock topology to avoid deadlock with binary descriptors registration.
-            if (!topLocked && cctx.topology().holdsLock())
-                cctx.topology().readUnlock();
 
             for (Batch batch : next) {
                 ClusterNode node = batch.node();
@@ -383,8 +380,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
                 }
             }
 
-            cctx.tm().txHandler().mvccEnlistBatch(dhtTx, cctx, it.operation(), keys, vals,
-                mvccSnapshot.withoutActiveTransactions(), null, -1);
+            dhtTx.mvccEnlistBatch(cctx, it.operation(), keys, vals, mvccSnapshot.withoutActiveTransactions());
         }
         catch (IgniteCheckedException e) {
             onDone(e);
@@ -567,14 +563,15 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
      * @param err Exception.
      * @return {@code True} if future was completed by this call.
      */
+    @SuppressWarnings("unchecked")
     public boolean checkResponse(UUID nodeId, GridNearTxEnlistResponse res, Throwable err) {
         assert res != null || err != null : this;
 
         if (err == null && res.error() != null)
             err = res.error();
 
-        if (res != null)
-            tx.mappings().get(nodeId).addBackups(res.newDhtNodes());
+        if (X.hasCause(err, ClusterTopologyCheckedException.class))
+            tx.removeMapping(nodeId);
 
         if (err != null)
             processFailure(err, null);

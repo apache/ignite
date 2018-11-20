@@ -93,6 +93,7 @@ final class GridUriDeploymentDiscovery {
      * @param dir Directory which should be scanned.
      * @param rsrcs Set which will be filled in.
      */
+    @SuppressWarnings({"UnusedCatchParameter"})
     private static void findResourcesInDirectory(GridUriDeploymentFileResourceLoader clsLdr, File dir,
         Set<Class<? extends ComputeTask<?, ?>>> rsrcs) {
         assert dir.isDirectory() == true;

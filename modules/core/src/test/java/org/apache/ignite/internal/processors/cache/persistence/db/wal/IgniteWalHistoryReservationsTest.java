@@ -114,7 +114,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         final IgniteEx ig0 = (IgniteEx)startGrids(initGridCnt + 1);
 
-        ig0.cluster().active(true);
+        ig0.active(true);
 
         stopGrid(initGridCnt);
 
@@ -256,7 +256,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         IgniteEx ig0 = (IgniteEx)startGrids(2);
 
-        ig0.cluster().active(true);
+        ig0.active(true);
 
         IgniteCache<Integer, Integer> cache = ig0.cache("cache1");
 
@@ -269,8 +269,6 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
             cache.remove(k);
 
         IgniteEx ig1 = startGrid(1);
-
-        awaitPartitionMapExchange();
 
         IgniteCache<Integer, Integer> cache1 = ig1.cache("cache1");
 
@@ -287,6 +285,8 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
                 assertEquals("k=" + k, k, cache1.get(k));
             }
         }
+
+        cache.rebalance().get();
 
         for (int p = 0; p < ig1.affinity("cache1").partitions(); p++) {
             GridDhtLocalPartition p0 = ig0.context().cache().cache("cache1").context().topology().localPartition(p);
@@ -305,7 +305,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         IgniteEx ig0 = (IgniteEx)startGrids(2);
 
-        ig0.cluster().active(true);
+        ig0.active(true);
 
         IgniteCache<Integer, Integer> cache = ig0.cache("cache1");
 
@@ -330,8 +330,6 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         IgniteEx ig1 = startGrid(1);
 
-        awaitPartitionMapExchange();
-
         IgniteCache<Integer, Integer> cache1 = ig1.cache("cache1");
 
         assertEquals(entryCnt / 2, cache.size());
@@ -347,6 +345,8 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
                 assertEquals("k=" + k, k, cache1.get(k));
             }
         }
+
+        cache.rebalance().get();
 
         for (int p = 0; p < ig1.affinity("cache1").partitions(); p++) {
             GridDhtLocalPartition p0 = ig0.context().cache().cache("cache1").context().topology().localPartition(p);
@@ -407,7 +407,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         final Ignite ig0 = startGrids(initGridCnt);
 
-        ig0.cluster().active(true);
+        ig0.active(true);
 
         IgniteCache<Object, Object> cache = ig0.cache("cache1");
 

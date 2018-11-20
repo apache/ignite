@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             // Verify metrics.
             var metrics = ignite.GetDataRegionMetrics().OrderBy(x => x.Name).ToArray();
-            Assert.AreEqual(4, metrics.Length);  // two defined plus system and plus TxLog.
+            Assert.AreEqual(3, metrics.Length);  // two defined plus system.
 
             var emptyMetrics = metrics[0];
             Assert.AreEqual(RegionNoMetrics, emptyMetrics.Name);

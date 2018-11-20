@@ -372,10 +372,6 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
     public boolean isRecordable(int type) {
         GridCacheContext cctx0 = cctx;
 
-        // Event recording is impossible in recovery mode.
-        if (cctx0 != null && cctx0.kernalContext().recoveryMode())
-            return false;
-
         return cctx0 != null && cctx0.userCache() && cctx0.gridEvents().isRecordable(type)
             && !cctx0.config().isEventsDisabled();
     }

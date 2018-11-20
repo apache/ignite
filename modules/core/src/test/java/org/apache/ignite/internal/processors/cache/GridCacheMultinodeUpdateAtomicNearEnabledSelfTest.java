@@ -27,6 +27,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
  */
 public class GridCacheMultinodeUpdateAtomicNearEnabledSelfTest extends GridCacheMultinodeUpdateAbstractSelfTest {
     /** {@inheritDoc} */
+    @SuppressWarnings("RedundantMethodOverride")
     @Override protected NearCacheConfiguration nearConfiguration() {
         return new NearCacheConfiguration();
     }

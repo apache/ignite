@@ -42,6 +42,7 @@ public abstract class TcpDiscoveryIpFinderAbstractSelfTest<T extends TcpDiscover
      *
      * @throws Exception If any error occurs.
      */
+    @SuppressWarnings({"AbstractMethodCallInConstructor", "OverriddenMethodCallDuringObjectConstruction"})
     protected TcpDiscoveryIpFinderAbstractSelfTest() throws Exception {
         super(false);
     }

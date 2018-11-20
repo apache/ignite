@@ -142,6 +142,7 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("IteratorNextCanNotThrowNoSuchElementException")
     @Override public T onNext() {
         if (!hasNext())
             throw new NoSuchElementException();

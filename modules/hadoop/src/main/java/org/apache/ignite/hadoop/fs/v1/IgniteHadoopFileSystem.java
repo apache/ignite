@@ -126,6 +126,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
     private short dfltReplication;
 
     /** Base file system uri. */
+    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private URI uri;
 
     /** Authority. */
@@ -199,6 +200,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
      *
      * @param colocateFileWrites Whether all ongoing file writes should be colocated.
      */
+    @SuppressWarnings("UnusedDeclaration")
     public void colocateFileWrites(boolean colocateFileWrites) {
         this.colocateFileWrites = colocateFileWrites;
     }
@@ -429,6 +431,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("deprecation")
     @Override public FSDataOutputStream create(Path f, final FsPermission perm, boolean overwrite, int bufSize,
         short replication, long blockSize, Progressable progress) throws IOException {
         A.notNull(f, "f");
@@ -489,6 +492,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("deprecation")
     @Override public FSDataOutputStream append(Path f, int bufSize, Progressable progress) throws IOException {
         A.notNull(f, "f");
 
@@ -531,6 +535,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public boolean rename(Path src, Path dst) throws IOException {
         A.notNull(src, "src");
         A.notNull(dst, "dst");
@@ -577,6 +582,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public boolean delete(Path f, boolean recursive) throws IOException {
         A.notNull(f, "f");
 
@@ -672,6 +678,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public boolean mkdirs(Path f, FsPermission perm) throws IOException {
         A.notNull(f, "f");
 

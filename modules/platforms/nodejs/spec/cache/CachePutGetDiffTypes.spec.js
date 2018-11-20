@@ -543,45 +543,6 @@ describe('cache put get test suite >', () => {
             catch(error => done.fail(error));
     });
 
-    it('put enum items', (done) => {
-        Promise.resolve().
-            then(async () => {
-                const fakeTypeId = 12345;
-                const enumItem1 = new EnumItem(fakeTypeId);
-                enumItem1.setOrdinal(1);
-                await putEnumItem(enumItem1, null, done);
-                await putEnumItem(enumItem1, ObjectType.PRIMITIVE_TYPE.ENUM, done);
-                const enumItem2 = new EnumItem(fakeTypeId);
-                enumItem2.setName('name');
-                await putEnumItem(enumItem2, null, done);
-                await putEnumItem(enumItem2, ObjectType.PRIMITIVE_TYPE.ENUM, done);
-                const enumItem3 = new EnumItem(fakeTypeId);
-                enumItem3.setValue(2);
-                await putEnumItem(enumItem3, null, done);
-                await putEnumItem(enumItem3, ObjectType.PRIMITIVE_TYPE.ENUM, done);
-            }).
-            then(done).
-            catch(error => done.fail(error));
-    });
-
-    async function putEnumItem(value, valueType, done) {
-        const cache = igniteClient.getCache(CACHE_NAME).
-            setKeyType(null).
-            setValueType(valueType);
-        const key = new Date();
-        // Enums registration is not supported by the client, therefore put EnumItem must throw IgniteClientError
-        try {
-            await cache.put(key, value);
-            done.fail('put EnumItem must throw IgniteClientError');
-        }
-        catch (err) {
-            TestingHelper.checkEnumItemSerializationError(err, done);
-        }
-        finally {
-            await cache.removeAll();
-        }
-    }
-
     async function putGetPrimitiveValues(keyType, valueType, key, value, modificator) {
         const cache = await igniteClient.getCache(CACHE_NAME).
             setKeyType(keyType).

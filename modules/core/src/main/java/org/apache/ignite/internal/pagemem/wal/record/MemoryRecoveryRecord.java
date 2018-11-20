@@ -20,11 +20,11 @@ package org.apache.ignite.internal.pagemem.wal.record;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Marker indicates that binary memory recovery has finished.
+ * Marker that we start memory recovering
  */
 public class MemoryRecoveryRecord extends WALRecord {
     /** Create timestamp, millis */
-    private final long time;
+    private long time;
 
     /**
      * Default constructor.

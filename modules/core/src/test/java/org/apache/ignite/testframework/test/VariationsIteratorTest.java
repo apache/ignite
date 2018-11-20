@@ -43,6 +43,7 @@ public class VariationsIteratorTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("PointlessArithmeticExpression")
     public void test2() throws Exception {
         Object[][] arr = new Object[][] {
             {0},
@@ -57,6 +58,7 @@ public class VariationsIteratorTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("PointlessArithmeticExpression")
     public void test3() throws Exception {
         Object[][] arr = new Object[][] {
             {0, 1, 2, 3, 4, 5},
@@ -71,6 +73,7 @@ public class VariationsIteratorTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("PointlessArithmeticExpression")
     public void test4() throws Exception {
         Object[][] arr = new Object[][]{
             {0,1,2},

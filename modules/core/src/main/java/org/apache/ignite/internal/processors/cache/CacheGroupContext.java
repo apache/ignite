@@ -22,10 +22,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.AffinityFunction;
@@ -41,23 +39,16 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
-import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
-import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionRecoverState;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.query.continuous.CounterSkipContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -86,13 +77,13 @@ public class CacheGroupContext {
     private final int grpId;
 
     /** Node ID cache group was received from. */
-    private volatile UUID rcvdFrom;
+    private final UUID rcvdFrom;
 
     /** Flag indicating that this cache group is in a recovery mode due to partitions loss. */
     private boolean needsRecovery;
 
     /** */
-    private volatile AffinityTopologyVersion locStartVer;
+    private final AffinityTopologyVersion locStartVer;
 
     /** */
     private final CacheConfiguration<?, ?> ccfg;
@@ -101,7 +92,7 @@ public class CacheGroupContext {
     private final GridCacheSharedContext ctx;
 
     /** */
-    private volatile boolean affNode;
+    private final boolean affNode;
 
     /** */
     private final CacheType cacheType;
@@ -125,17 +116,16 @@ public class CacheGroupContext {
     private final IgniteLogger log;
 
     /** */
-    private volatile GridAffinityAssignmentCache aff;
+    private GridAffinityAssignmentCache aff;
 
     /** */
-    private volatile GridDhtPartitionTopologyImpl top;
+    private GridDhtPartitionTopologyImpl top;
 
     /** */
-    private volatile IgniteCacheOffheapManager offheapMgr;
+    private IgniteCacheOffheapManager offheapMgr;
 
     /** */
-    private volatile GridCachePreloader preldr;
-
+    private GridCachePreloader preldr;
     /** */
     private final DataRegion dataRegion;
 
@@ -169,12 +159,6 @@ public class CacheGroupContext {
     /** */
     private volatile boolean globalWalEnabled;
 
-    /** Flag indicates that cache group is under recovering and not attached to topology. */
-    private final AtomicBoolean recoveryMode;
-
-    /** Flag indicates that all group partitions have restored their state from page memory / disk. */
-    private volatile boolean partitionStatesRestored;
-
     /**
      * @param ctx Context.
      * @param grpId Group ID.
@@ -203,8 +187,7 @@ public class CacheGroupContext {
         ReuseList reuseList,
         AffinityTopologyVersion locStartVer,
         boolean persistenceEnabled,
-        boolean walEnabled,
-        boolean recoveryMode
+        boolean walEnabled
     ) {
         assert ccfg != null;
         assert dataRegion != null || !affNode;
@@ -224,7 +207,8 @@ public class CacheGroupContext {
         this.globalWalEnabled = walEnabled;
         this.persistenceEnabled = persistenceEnabled;
         this.localWalEnabled = true;
-        this.recoveryMode = new AtomicBoolean(recoveryMode);
+
+        persistGlobalWalState(walEnabled);
 
         ioPlc = cacheType.ioPolicy();
 
@@ -730,11 +714,9 @@ public class CacheGroupContext {
      *
      */
     public void onKernalStop() {
-        if (!isRecoveryMode()) {
-            aff.cancelFutures(new IgniteCheckedException("Failed to wait for topology update, node is stopping."));
+        aff.cancelFutures(new IgniteCheckedException("Failed to wait for topology update, node is stopping."));
 
-            preldr.onKernalStop();
-        }
+        preldr.onKernalStop();
 
         offheapMgr.onKernalStop();
     }
@@ -756,11 +738,6 @@ public class CacheGroupContext {
      *
      */
     void stopGroup() {
-        offheapMgr.stop();
-
-        if (isRecoveryMode())
-            return;
-
         IgniteCheckedException err =
             new IgniteCheckedException("Failed to wait for topology update, cache (or node) is stopping.");
 
@@ -770,203 +747,9 @@ public class CacheGroupContext {
 
         preldr.onKernalStop();
 
+        offheapMgr.stop();
+
         ctx.io().removeCacheGroupHandlers(grpId);
-    }
-
-    /**
-     * Finishes recovery for current cache group. Attaches topology version and initializes I/O.
-     *
-     * @param startVer Cache group start version.
-     * @param originalReceivedFrom UUID of node that was first who initiated cache group creating. This is needed to
-     * decide should node calculate affinity locally or fetch from other nodes.
-     * @param affinityNode Flag indicates, is local node affinity node or not. This may be calculated only after node
-     * joined to topology.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void finishRecovery(
-        AffinityTopologyVersion startVer,
-        UUID originalReceivedFrom,
-        boolean affinityNode
-    ) throws IgniteCheckedException {
-        if (recoveryMode.compareAndSet(true, false)) {
-            affNode = affinityNode;
-
-            rcvdFrom = originalReceivedFrom;
-
-            locStartVer = startVer;
-
-            persistGlobalWalState(globalWalEnabled);
-
-            initializeIO();
-
-            ctx.affinity().onCacheGroupCreated(this);
-        }
-    }
-
-    /**
-     * Pre-create partitions that resides in page memory or WAL and restores their state.
-     */
-    public long restorePartitionStates(
-        Map<GroupPartitionId, PartitionRecoverState> partitionRecoveryStates) throws IgniteCheckedException {
-        if (isLocal() || !affinityNode() || !dataRegion().config().isPersistenceEnabled())
-            return 0;
-
-        if (partitionStatesRestored)
-            return 0;
-
-        long processed = 0;
-
-        PageMemoryEx pageMem = (PageMemoryEx)dataRegion().pageMemory();
-
-        for (int p = 0; p < affinity().partitions(); p++) {
-            PartitionRecoverState recoverState = partitionRecoveryStates.get(new GroupPartitionId(grpId, p));
-
-            if (ctx.pageStore().exists(grpId, p)) {
-                ctx.pageStore().ensure(grpId, p);
-
-                if (ctx.pageStore().pages(grpId, p) <= 1) {
-                    if (log.isDebugEnabled())
-                        log.debug("Skipping partition on recovery (pages less than 1) " +
-                            "[grp=" + cacheOrGroupName() + ", p=" + p + "]");
-
-                    continue;
-                }
-
-                if (log.isDebugEnabled())
-                    log.debug("Creating partition on recovery (exists in page store) " +
-                        "[grp=" + cacheOrGroupName() + ", p=" + p + "]");
-
-                processed++;
-
-                GridDhtLocalPartition part = topology().forceCreatePartition(p);
-
-                offheap().onPartitionInitialCounterUpdated(p, 0);
-
-                ctx.database().checkpointReadLock();
-
-                try {
-                    long partMetaId = pageMem.partitionMetaPageId(grpId, p);
-                    long partMetaPage = pageMem.acquirePage(grpId, partMetaId);
-
-                    try {
-                        long pageAddr = pageMem.writeLock(grpId, partMetaId, partMetaPage);
-
-                        boolean changed = false;
-
-                        try {
-                            PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
-
-                            if (recoverState != null) {
-                                io.setPartitionState(pageAddr, (byte)recoverState.stateId());
-
-                                changed = updateState(part, recoverState.stateId());
-
-                                if (recoverState.stateId() == GridDhtPartitionState.OWNING.ordinal()
-                                    || (recoverState.stateId() == GridDhtPartitionState.MOVING.ordinal()
-                                    && part.initialUpdateCounter() < recoverState.updateCounter())) {
-                                    part.initialUpdateCounter(recoverState.updateCounter());
-
-                                    changed = true;
-                                }
-
-                                if (log.isInfoEnabled())
-                                    log.warning("Restored partition state (from WAL) " +
-                                        "[grp=" + cacheOrGroupName() + ", p=" + p + ", state=" + part.state() +
-                                        ", updCntr=" + part.initialUpdateCounter() + "]");
-                            }
-                            else {
-                                int stateId = (int)io.getPartitionState(pageAddr);
-
-                                changed = updateState(part, stateId);
-
-                                if (log.isDebugEnabled())
-                                    log.debug("Restored partition state (from page memory) " +
-                                        "[grp=" + cacheOrGroupName() + ", p=" + p + ", state=" + part.state() +
-                                        ", updCntr=" + part.initialUpdateCounter() + ", stateId=" + stateId + "]");
-                            }
-                        }
-                        finally {
-                            pageMem.writeUnlock(grpId, partMetaId, partMetaPage, null, changed);
-                        }
-                    }
-                    finally {
-                        pageMem.releasePage(grpId, partMetaId, partMetaPage);
-                    }
-                }
-                finally {
-                    ctx.database().checkpointReadUnlock();
-                }
-            }
-            else if (recoverState != null) {
-                GridDhtLocalPartition part = topology().forceCreatePartition(p);
-
-                offheap().onPartitionInitialCounterUpdated(p, recoverState.updateCounter());
-
-                updateState(part, recoverState.stateId());
-
-                processed++;
-
-                if (log.isDebugEnabled())
-                    log.debug("Restored partition state (from WAL) " +
-                        "[grp=" + cacheOrGroupName() + ", p=" + p + ", state=" + part.state() +
-                        ", updCntr=" + part.initialUpdateCounter() + "]");
-            }
-            else {
-                if (log.isDebugEnabled())
-                    log.debug("Skipping partition on recovery (no page store OR wal state) " +
-                        "[grp=" + cacheOrGroupName() + ", p=" + p + "]");
-            }
-        }
-
-        partitionStatesRestored = true;
-
-        return processed;
-    }
-
-    /**
-     * @param part Partition to restore state for.
-     * @param stateId State enum ordinal.
-     * @return Updated flag.
-     */
-    private boolean updateState(GridDhtLocalPartition part, int stateId) {
-        if (stateId != -1) {
-            GridDhtPartitionState state = GridDhtPartitionState.fromOrdinal(stateId);
-
-            assert state != null;
-
-            part.restoreState(state == GridDhtPartitionState.EVICTED ? GridDhtPartitionState.RENTING : state);
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * @return {@code True} if current cache group is in recovery mode.
-     */
-    public boolean isRecoveryMode() {
-        return recoveryMode.get();
-    }
-
-    /**
-     * Initializes affinity and rebalance I/O handlers.
-     */
-    private void initializeIO() throws IgniteCheckedException {
-        assert !recoveryMode.get() : "Couldn't initialize I/O handlers, recovery mode is on for group " + this;
-
-        if (ccfg.getCacheMode() != LOCAL) {
-            if (!ctx.kernalContext().clientNode()) {
-                ctx.io().addCacheGroupHandler(groupId(), GridDhtAffinityAssignmentRequest.class,
-                    (IgniteBiInClosure<UUID, GridDhtAffinityAssignmentRequest>)this::processAffinityAssignmentRequest);
-            }
-
-            preldr = new GridDhtPreloader(this);
-
-            preldr.start();
-        }
-        else
-            preldr = new GridCachePreloaderAdapter(this);
     }
 
     /**
@@ -993,7 +776,7 @@ public class CacheGroupContext {
     /**
      * @return {@code True} if group contains caches.
      */
-    public boolean hasCaches() {
+    boolean hasCaches() {
         List<GridCacheContext> caches = this.caches;
 
         return !caches.isEmpty();
@@ -1101,13 +884,6 @@ public class CacheGroupContext {
     }
 
     /**
-     * @return {@code True} if there is at least one cache with registered CQ exists in this group.
-     */
-    public boolean hasContinuousQueryCaches() {
-        return !F.isEmpty(contQryCaches);
-    }
-
-    /**
      * @throws IgniteCheckedException If failed.
      */
     public void start() throws IgniteCheckedException {
@@ -1120,25 +896,39 @@ public class CacheGroupContext {
             ccfg.getCacheMode() == LOCAL,
             persistenceEnabled());
 
-        if (ccfg.getCacheMode() != LOCAL)
+        if (ccfg.getCacheMode() != LOCAL) {
             top = new GridDhtPartitionTopologyImpl(ctx, this);
 
-        try {
-            offheapMgr = persistenceEnabled
-                ? new GridCacheOffheapManager()
-                : new IgniteCacheOffheapManagerImpl();
+            if (!ctx.kernalContext().clientNode()) {
+                ctx.io().addCacheGroupHandler(groupId(), GridDhtAffinityAssignmentRequest.class,
+                    new IgniteBiInClosure<UUID, GridDhtAffinityAssignmentRequest>() {
+                        @Override public void apply(UUID nodeId, GridDhtAffinityAssignmentRequest msg) {
+                            processAffinityAssignmentRequest(nodeId, msg);
+                        }
+                    });
+            }
+
+            preldr = new GridDhtPreloader(this);
+
+            preldr.start();
         }
-        catch (Exception e) {
-            throw new IgniteCheckedException("Failed to initialize offheap manager", e);
+        else
+            preldr = new GridCachePreloaderAdapter(this);
+
+        if (persistenceEnabled()) {
+            try {
+                offheapMgr = new GridCacheOffheapManager();
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException("Failed to initialize offheap manager", e);
+            }
         }
+        else
+            offheapMgr = new IgniteCacheOffheapManagerImpl();
 
         offheapMgr.start(ctx, this);
 
-        if (!isRecoveryMode()) {
-            initializeIO();
-
-            ctx.affinity().onCacheGroupCreated(this);
-        }
+        ctx.affinity().onCacheGroupCreated(this);
     }
 
     /**
@@ -1152,7 +942,8 @@ public class CacheGroupContext {
      * @param nodeId Node ID.
      * @param req Request.
      */
-    private void processAffinityAssignmentRequest(UUID nodeId, GridDhtAffinityAssignmentRequest req) {
+    private void processAffinityAssignmentRequest(final UUID nodeId,
+        final GridDhtAffinityAssignmentRequest req) {
         if (log.isDebugEnabled())
             log.debug("Processing affinity assignment request [node=" + nodeId + ", req=" + req + ']');
 

@@ -26,6 +26,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
@@ -307,9 +308,6 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Events for class tasks that was started from external clients should contain
-     * client subject id instead of the node where it was started. This test checks it.
-     *
      * @throws Exception If failed.
      */
     public void testClient() throws Exception {
@@ -330,7 +328,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_STARTED, evt.type());
-        assertEquals(client.id(), evt.subjectId());
+        assertEquals(nodeId, evt.subjectId());
 
         assert it.hasNext();
 
@@ -339,7 +337,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_REDUCED, evt.type());
-        assertEquals(client.id(), evt.subjectId());
+        assertEquals(nodeId, evt.subjectId());
 
         assert it.hasNext();
 
@@ -348,7 +346,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_FINISHED, evt.type());
-        assertEquals(client.id(), evt.subjectId());
+        assertEquals(nodeId, evt.subjectId());
 
         assert !it.hasNext();
     }

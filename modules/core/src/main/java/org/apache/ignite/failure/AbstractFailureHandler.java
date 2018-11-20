@@ -23,8 +23,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
-import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_BLOCKED;
-
 /**
  * Abstract superclass for {@link FailureHandler} implementations.
  * Maintains a set of ignored failure types.
@@ -32,7 +30,7 @@ import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_BLOCKED;
 public abstract class AbstractFailureHandler implements FailureHandler {
     /** */
     @GridToStringInclude
-    private Set<FailureType> ignoredFailureTypes = Collections.singleton(SYSTEM_WORKER_BLOCKED);
+    private Set<FailureType> ignoredFailureTypes = Collections.emptySet();
 
     /** {@inheritDoc} */
     @Override public void setIgnoredFailureTypes(Set<FailureType> failureTypes) {
@@ -47,7 +45,7 @@ public abstract class AbstractFailureHandler implements FailureHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
+    public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
         return !ignoredFailureTypes.contains(failureCtx.type()) && handle(ignite, failureCtx);
     }
 

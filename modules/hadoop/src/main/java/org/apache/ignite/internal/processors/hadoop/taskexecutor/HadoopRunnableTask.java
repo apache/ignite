@@ -230,6 +230,7 @@ public abstract class HadoopRunnableTask implements Callable<Void> {
      * @return Task input.
      * @throws IgniteCheckedException If failed.
      */
+    @SuppressWarnings("unchecked")
     private HadoopTaskInput createInputInternal(HadoopTaskContext ctx) throws IgniteCheckedException {
         switch (ctx.taskInfo().type()) {
             case SETUP:

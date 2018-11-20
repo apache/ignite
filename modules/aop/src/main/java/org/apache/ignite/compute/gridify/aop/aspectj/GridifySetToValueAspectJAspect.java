@@ -56,7 +56,7 @@ public class GridifySetToValueAspectJAspect extends GridifySetToValueAbstractAsp
      * @return Method execution result.
      * @throws Throwable If execution failed.
      */
-    @SuppressWarnings({"ProhibitedExceptionDeclared", "ProhibitedExceptionThrown"})
+    @SuppressWarnings({"ProhibitedExceptionDeclared", "ProhibitedExceptionThrown", "CatchGenericClass"})
     @Around("execution(@org.apache.ignite.compute.gridify.GridifySetToValue * *(..)) && !cflow(call(* org.apache.ignite.compute.ComputeJob.*(..)))")
     public Object gridify(ProceedingJoinPoint joinPnt) throws Throwable {
         Method mtd = ((MethodSignature) joinPnt.getSignature()).getMethod();

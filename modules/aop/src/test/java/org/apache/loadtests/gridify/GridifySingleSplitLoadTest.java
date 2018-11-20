@@ -35,6 +35,7 @@ import org.apache.log4j.Level;
 /**
  * Gridify single split load test.
  */
+@SuppressWarnings({"CatchGenericClass"})
 @GridCommonTest(group = "Load Test")
 public class GridifySingleSplitLoadTest extends GridCommonAbstractTest {
     /** */
@@ -44,6 +45,7 @@ public class GridifySingleSplitLoadTest extends GridCommonAbstractTest {
 
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ConstantConditions")
     @Override public String getTestIgniteInstanceName() {
         // Gridify task has empty Ignite instance name by default so we need to change it
         // here.
@@ -97,6 +99,7 @@ public class GridifySingleSplitLoadTest extends GridCommonAbstractTest {
      *
      * @throws Exception If task execution failed.
      */
+    @SuppressWarnings("unchecked")
     public void testGridifyLoad() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 

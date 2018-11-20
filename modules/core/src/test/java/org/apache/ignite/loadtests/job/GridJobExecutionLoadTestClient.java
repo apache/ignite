@@ -56,6 +56,7 @@ public class GridJobExecutionLoadTestClient implements Callable<Object> {
     private static volatile boolean finish;
 
     /** {@inheritDoc} */
+    @SuppressWarnings("InfiniteLoopStatement")
     @Nullable @Override public Object call() throws Exception {
         IgniteCompute rmts = g.compute(g.cluster().forRemotes());
 

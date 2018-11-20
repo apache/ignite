@@ -36,5 +36,6 @@ public @interface DiscoverySpiHistorySupport {
     /**
      * Whether or not target SPI supports topology snapshots history.
      */
+    @SuppressWarnings({"JavaDoc"})
     public boolean value();
 }

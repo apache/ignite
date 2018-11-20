@@ -150,27 +150,4 @@ public class GridLongListSelfTest extends TestCase {
         assertEquals(asList(1, 3, 4, 5, 0), list);
         assertEquals(asList(0, 1, 3, 4, 5), list.sort());
     }
-
-    /**
-     *
-     */
-    public void testArray() {
-        GridLongList list = new GridLongList();
-
-        long[] array = list.array();
-
-        assertNotNull(array);
-
-        assertEquals(0, array.length);
-
-        list.add(1L);
-
-        array = list.array();
-
-        assertNotNull(array);
-
-        assertEquals(1, array.length);
-
-        assertEquals(1L, array[0]);
-    }
 }

@@ -53,8 +53,6 @@ import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueUuid;
 import org.springframework.util.SerializationUtils;
 
-import static org.apache.ignite.internal.processors.query.h2.database.InlineIndexHelper.CANT_BE_COMPARE;
-
 /**
  * Simple tests for {@link InlineIndexHelper}.
  */
@@ -95,9 +93,9 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
         assertEquals(1, putAndCompare("bbb", "aaa", maxSize));
         assertEquals(1, putAndCompare("aaa", "aa", maxSize));
         assertEquals(1, putAndCompare("aaa", "a", maxSize));
-        assertEquals(CANT_BE_COMPARE, putAndCompare("aaa", "aaa", maxSize));
-        assertEquals(CANT_BE_COMPARE, putAndCompare("aaa", "aab", maxSize));
-        assertEquals(CANT_BE_COMPARE, putAndCompare("aab", "aaa", maxSize));
+        assertEquals(-2, putAndCompare("aaa", "aaa", maxSize));
+        assertEquals(-2, putAndCompare("aaa", "aab", maxSize));
+        assertEquals(-2, putAndCompare("aab", "aaa", maxSize));
     }
 
     /** */
@@ -110,9 +108,9 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
         assertEquals(1, putAndCompare("¢¢¢", "¡¡¡", maxSize));
         assertEquals(1, putAndCompare("¡¡¡", "¡¡", maxSize));
         assertEquals(1, putAndCompare("¡¡¡", "¡", maxSize));
-        assertEquals(CANT_BE_COMPARE, putAndCompare("¡¡¡", "¡¡¡", maxSize));
-        assertEquals(CANT_BE_COMPARE, putAndCompare("¡¡¡", "¡¡¢", maxSize));
-        assertEquals(CANT_BE_COMPARE, putAndCompare("¡¡¢", "¡¡¡", maxSize));
+        assertEquals(-2, putAndCompare("¡¡¡", "¡¡¡", maxSize));
+        assertEquals(-2, putAndCompare("¡¡¡", "¡¡¢", maxSize));
+        assertEquals(-2, putAndCompare("¡¡¢", "¡¡¡", maxSize));
     }
 
     /** */
@@ -209,7 +207,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
 
             int off = 0;
 
-            InlineIndexHelper ih = new InlineIndexHelper("", Value.STRING, 1, 0,
+            InlineIndexHelper ih = new InlineIndexHelper(Value.STRING, 1, 0,
                 CompareMode.getInstance(null, 0));
 
             ih.put(pageAddr, off, v1 == null ? ValueNull.INSTANCE : ValueString.get(v1), maxSize);
@@ -234,7 +232,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
 
     /** Test on String values compare */
     public void testRelyOnCompare() {
-        InlineIndexHelper ha = new InlineIndexHelper("", Value.STRING, 0, SortOrder.ASCENDING,
+        InlineIndexHelper ha = new InlineIndexHelper(Value.STRING, 0, SortOrder.ASCENDING,
             CompareMode.getInstance(null, 0));
 
         // same size
@@ -256,7 +254,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
 
     /** Test on Bytes values compare */
     public void testRelyOnCompareBytes() {
-        InlineIndexHelper ha = new InlineIndexHelper("", Value.BYTES, 0, SortOrder.ASCENDING,
+        InlineIndexHelper ha = new InlineIndexHelper(Value.BYTES, 0, SortOrder.ASCENDING,
             CompareMode.getInstance(null, 0));
 
         // same size
@@ -278,7 +276,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
 
     /** Test on Bytes values compare */
     public void testRelyOnCompareJavaObject() {
-        InlineIndexHelper ha = new InlineIndexHelper("", Value.JAVA_OBJECT, 0, SortOrder.ASCENDING,
+        InlineIndexHelper ha = new InlineIndexHelper(Value.JAVA_OBJECT, 0, SortOrder.ASCENDING,
             CompareMode.getInstance(null, 0));
 
         // different types
@@ -325,7 +323,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
 
             int off = 0;
 
-            InlineIndexHelper ih = new InlineIndexHelper("", Value.STRING, 1, 0,
+            InlineIndexHelper ih = new InlineIndexHelper(Value.STRING, 1, 0,
                 CompareMode.getInstance(null, 0));
 
             ih.put(pageAddr, off, ValueString.get("aaaaaaa"), 3 + 5);
@@ -376,7 +374,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
 
             int off = 0;
 
-            InlineIndexHelper ih = new InlineIndexHelper("", Value.BYTES, 1, 0,
+            InlineIndexHelper ih = new InlineIndexHelper(Value.BYTES, 1, 0,
                 CompareMode.getInstance(null, 0));
 
             int maxSize = 3 + 3;
@@ -434,7 +432,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
 
             int off = 0;
 
-            InlineIndexHelper ih = new InlineIndexHelper("", Value.JAVA_OBJECT, 1, 0,
+            InlineIndexHelper ih = new InlineIndexHelper(Value.JAVA_OBJECT, 1, 0,
                 CompareMode.getInstance(null, 0));
 
             int maxSize = 3 + 3;
@@ -565,7 +563,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
             int off = 0;
             int max = 255;
 
-            InlineIndexHelper ih = new InlineIndexHelper("", v1.getType(), 1, 0,
+            InlineIndexHelper ih = new InlineIndexHelper(v1.getType(), 1, 0,
                 CompareMode.getInstance(null, 0));
 
             off += ih.put(pageAddr, off, v1, max - off);

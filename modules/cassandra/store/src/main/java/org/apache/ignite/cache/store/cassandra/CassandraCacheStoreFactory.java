@@ -66,6 +66,7 @@ public class CassandraCacheStoreFactory<K, V> implements Factory<CassandraCacheS
      *
      * @return {@code This} for chaining.
      */
+    @SuppressWarnings("UnusedDeclaration")
     public CassandraCacheStoreFactory<K, V> setDataSource(DataSource dataSrc) {
         this.dataSrc = dataSrc;
 
@@ -90,6 +91,7 @@ public class CassandraCacheStoreFactory<K, V> implements Factory<CassandraCacheS
      * @param settings Persistence settings.
      * @return {@code This} for chaining.
      */
+    @SuppressWarnings("UnusedDeclaration")
     public CassandraCacheStoreFactory<K, V> setPersistenceSettings(KeyValuePersistenceSettings settings) {
         this.persistenceSettings = settings;
 

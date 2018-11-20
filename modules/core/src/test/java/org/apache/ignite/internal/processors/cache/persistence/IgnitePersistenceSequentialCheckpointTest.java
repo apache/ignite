@@ -17,8 +17,9 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.configuration.CheckpointWriteOrder;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.WALMode;
 
 /**
  *

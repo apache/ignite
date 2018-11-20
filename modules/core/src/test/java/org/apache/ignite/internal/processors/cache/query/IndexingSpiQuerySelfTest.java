@@ -26,10 +26,12 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import javax.cache.Cache;
+import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -45,7 +47,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -56,19 +57,25 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Indexing Spi query only test
  */
-public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
-    private IndexingSpi indexingSpi;
+public class IndexingSpiQuerySelfTest extends TestCase {
+    public static final String CACHE_NAME = "test-cache";
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+    @Override public void tearDown() throws Exception {
+        Ignition.stopAll(true);
+    }
+
+    /**
+     * @return Configuration.
+     */
+    protected IgniteConfiguration configuration() {
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
         TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);
 
-        cfg.setIndexingSpi(indexingSpi);
         cfg.setDiscoverySpi(disco);
 
         return cfg;
@@ -79,22 +86,17 @@ public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
         return new CacheConfiguration<>(cacheName);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
     public void testSimpleIndexingSpi() throws Exception {
-        indexingSpi = new MyIndexingSpi();
+        IgniteConfiguration cfg = configuration();
 
-        Ignite ignite = startGrid(0);
+        cfg.setIndexingSpi(new MyIndexingSpi());
 
-        CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration(DEFAULT_CACHE_NAME);
+        Ignite ignite = Ignition.start(cfg);
+
+        CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration(CACHE_NAME);
 
         IgniteCache<Integer, Integer> cache = ignite.createCache(ccfg);
 
@@ -111,11 +113,13 @@ public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testIndexingSpiWithDisabledQueryProcessor() throws Exception {
-        indexingSpi = new MyIndexingSpi();
+        IgniteConfiguration cfg = configuration();
 
-        Ignite ignite = startGrid(0);
+        cfg.setIndexingSpi(new MyIndexingSpi());
 
-        CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration(DEFAULT_CACHE_NAME);
+        Ignite ignite = Ignition.start(cfg);
+
+        CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration(CACHE_NAME);
 
         IgniteCache<Integer, Integer> cache = ignite.createCache(ccfg);
 
@@ -132,11 +136,13 @@ public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBinaryIndexingSpi() throws Exception {
-        indexingSpi = new MyBinaryIndexingSpi();
+        IgniteConfiguration cfg = configuration();
 
-        Ignite ignite = startGrid(0);
+        cfg.setIndexingSpi(new MyBinaryIndexingSpi());
 
-        CacheConfiguration<PersonKey, Person> ccfg = cacheConfiguration(DEFAULT_CACHE_NAME);
+        Ignite ignite = Ignition.start(cfg);
+
+        CacheConfiguration<PersonKey, Person> ccfg = cacheConfiguration(CACHE_NAME);
 
         IgniteCache<PersonKey, Person> cache = ignite.createCache(ccfg);
 
@@ -162,43 +168,43 @@ public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
     public void testNonBinaryIndexingSpi() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI, "true");
 
-        try {
-            indexingSpi = new MyIndexingSpi();
+        IgniteConfiguration cfg = configuration();
 
-            Ignite ignite = startGrid(0);
+        cfg.setIndexingSpi(new MyIndexingSpi());
 
-            CacheConfiguration<PersonKey, Person> ccfg = cacheConfiguration(DEFAULT_CACHE_NAME);
+        Ignite ignite = Ignition.start(cfg);
 
-            IgniteCache<PersonKey, Person> cache = ignite.createCache(ccfg);
+        CacheConfiguration<PersonKey, Person> ccfg = cacheConfiguration(CACHE_NAME);
 
-            for (int i = 0; i < 10; i++) {
-                PersonKey key = new PersonKey(i);
+        IgniteCache<PersonKey, Person> cache = ignite.createCache(ccfg);
 
-                cache.put(key, new Person("John Doe " + i));
-            }
+        for (int i = 0; i < 10; i++) {
+            PersonKey key = new PersonKey(i);
 
-            QueryCursor<Cache.Entry<PersonKey, Person>> cursor = cache.query(
-                new SpiQuery<PersonKey, Person>().setArgs(new PersonKey(2), new PersonKey(5)));
-
-            for (Cache.Entry<PersonKey, Person> entry : cursor)
-                System.out.println(entry);
-
-            cache.remove(new PersonKey(9));
+            cache.put(key, new Person("John Doe " + i));
         }
-        finally {
-            System.clearProperty(IgniteSystemProperties.IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI);
-        }
+
+        QueryCursor<Cache.Entry<PersonKey, Person>> cursor = cache.query(
+            new SpiQuery<PersonKey, Person>().setArgs(new PersonKey(2), new PersonKey(5)));
+
+        for (Cache.Entry<PersonKey, Person> entry : cursor)
+            System.out.println(entry);
+
+        cache.remove(new PersonKey(9));
     }
 
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testIndexingSpiFailure() throws Exception {
-        indexingSpi = new MyBrokenIndexingSpi();
+        IgniteConfiguration cfg = configuration();
 
-        Ignite ignite = startGrid(0);
+        cfg.setIndexingSpi(new MyBrokenIndexingSpi());
 
-        CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration(DEFAULT_CACHE_NAME);
+        Ignite ignite = Ignition.start(cfg);
+
+        CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration(CACHE_NAME);
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 

@@ -17,16 +17,18 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import java.util.HashSet;
 import org.h2.engine.Session;
 import org.h2.result.SortOrder;
 import org.h2.table.Column;
 import org.h2.table.TableFilter;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.HashSet;
+
 /**
  * Wrapper type for primary key.
  */
+@SuppressWarnings("PackageVisibleInnerClass")
 public class GridH2PrimaryScanIndex extends GridH2ScanIndex<GridH2IndexBase> {
     /** */
     static final String SCAN_INDEX_NAME_SUFFIX = "__SCAN_";

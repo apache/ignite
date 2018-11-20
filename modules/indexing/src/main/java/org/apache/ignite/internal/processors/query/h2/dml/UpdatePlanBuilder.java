@@ -95,10 +95,8 @@ public final class UpdatePlanBuilder {
      * @param fieldsQry Original query.
      * @return Update plan.
      */
-    @SuppressWarnings("ConstantConditions")
     public static UpdatePlan planForStatement(Prepared prepared, boolean loc, IgniteH2Indexing idx,
-        @Nullable Connection conn, @Nullable SqlFieldsQuery fieldsQry, @Nullable Integer errKeysPos,
-        boolean dmlInsideTxAllowed)
+        @Nullable Connection conn, @Nullable SqlFieldsQuery fieldsQry, @Nullable Integer errKeysPos)
         throws IgniteCheckedException {
         assert !prepared.isQuery();
 
@@ -106,31 +104,18 @@ public final class UpdatePlanBuilder {
 
         GridSqlStatement stmt = parser.parse(prepared);
 
-
         List<GridH2Table> tbls = extractTablesParticipateAtQuery(parser);
 
-        GridCacheContext prevCctx = null;
+        GridCacheContext cctx = null;
         boolean mvccEnabled = false;
 
         for (GridH2Table h2tbl : tbls) {
             H2Utils.checkAndInitLazyCache(h2tbl);
 
-            if (prevCctx == null) {
-                prevCctx = h2tbl.cache();
-
-                assert prevCctx != null : h2tbl.cacheName() + " is lazy";
-
-                mvccEnabled = prevCctx.mvccEnabled();
-
-                if (!mvccEnabled && !dmlInsideTxAllowed && prevCctx.cache().context().tm().inUserTx()) {
-                    throw new IgniteSQLException("DML statements are not allowed inside a transaction over " +
-                        "cache(s) with TRANSACTIONAL atomicity mode (change atomicity mode to " +
-                        "TRANSACTIONAL_SNAPSHOT or disable this error message with system property " +
-                        "\"IGNITE_ALLOW_DML_INSIDE_TRANSACTION\" [cacheName=" + prevCctx.name() + ']');
-                }
-            }
+            if (cctx == null)
+                mvccEnabled = (cctx = h2tbl.cache()).mvccEnabled();
             else if (h2tbl.cache().mvccEnabled() != mvccEnabled)
-                MvccUtils.throwAtomicityModesMismatchException(prevCctx, h2tbl.cache());
+                MvccUtils.throwAtomicityModesMismatchException(cctx, h2tbl.cache());
         }
 
         if (stmt instanceof GridSqlMerge || stmt instanceof GridSqlInsert)
@@ -139,7 +124,7 @@ public final class UpdatePlanBuilder {
             return planForUpdate(stmt, loc, idx, mvccEnabled, conn, fieldsQry, errKeysPos);
         else
             throw new IgniteSQLException("Unsupported operation: " + prepared.getSQL(),
-                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
     /**
@@ -151,7 +136,6 @@ public final class UpdatePlanBuilder {
      */
     private static List<GridH2Table> extractTablesParticipateAtQuery(GridSqlQueryParser parser) throws IgniteSQLException {
         Collection<?> parserObjects = parser.objectsMap().values();
-
         List<GridH2Table> tbls = new ArrayList<>(parserObjects.size());
 
         // check all involved caches
@@ -536,6 +520,7 @@ public final class UpdatePlanBuilder {
      * @return The update plan for this command.
      * @throws IgniteCheckedException if failed.
      */
+    @SuppressWarnings("ConstantConditions")
     public static UpdatePlan planForBulkLoad(SqlBulkLoadCommand cmd, GridH2Table tbl) throws IgniteCheckedException {
         GridH2RowDescriptor desc = tbl.rowDescriptor();
 
@@ -871,7 +856,7 @@ public final class UpdatePlanBuilder {
     /**
      * Simple supplier that just takes specified element of a given row.
      */
-    private static final class PlainValueSupplier implements KeyValueSupplier {
+    private final static class PlainValueSupplier implements KeyValueSupplier {
         /** Index of column to use. */
         private final int colIdx;
 

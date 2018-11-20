@@ -46,6 +46,7 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
     private GridStringLogger strLog = new GridStringLogger(false, this.log);
 
     /** {@inheritDoc} */
+    @SuppressWarnings({"unchecked"})
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 

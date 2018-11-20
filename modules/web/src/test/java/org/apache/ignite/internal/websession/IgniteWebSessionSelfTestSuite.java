@@ -26,6 +26,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
 /**
  * Test suite for web sessions caching functionality.
  */
+@SuppressWarnings("PublicInnerClass")
 public class IgniteWebSessionSelfTestSuite extends TestSuite {
     /**
      * @return Test suite.

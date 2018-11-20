@@ -42,5 +42,5 @@ public @interface IgniteSpiMultipleInstancesSupport {
      * Whether or not target SPI supports multiple grid instances
      * started in the same VM.
      */
-    public boolean value();
+    @SuppressWarnings({"JavaDoc"}) public boolean value();
 }

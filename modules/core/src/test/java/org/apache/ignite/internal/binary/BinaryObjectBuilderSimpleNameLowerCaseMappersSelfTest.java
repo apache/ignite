@@ -25,6 +25,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 /**
  * Binary builder test.
  */
+@SuppressWarnings("ResultOfMethodCallIgnored")
 public class BinaryObjectBuilderSimpleNameLowerCaseMappersSelfTest extends BinaryObjectBuilderDefaultMappersSelfTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

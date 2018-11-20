@@ -72,6 +72,11 @@ public class VisorThreadMonitorInfo extends VisorThreadLockInfo {
     }
 
     /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return 1;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         try (VisorDataTransferObjectOutput dtout = new VisorDataTransferObjectOutput(out)) {
             dtout.writeByte(super.getProtocolVersion());

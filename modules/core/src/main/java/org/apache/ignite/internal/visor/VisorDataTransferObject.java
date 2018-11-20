@@ -26,13 +26,10 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Base class for data transfer objects for Visor tasks.
- *
- * @deprecated Use {@link IgniteDataTransferObject} instead. This class may be removed in Ignite 3.0.
+ * Base class for data transfer objects.
  */
 public abstract class VisorDataTransferObject implements Externalizable {
     /** */
@@ -49,9 +46,6 @@ public abstract class VisorDataTransferObject implements Externalizable {
 
     /** Version 3. */
     protected static final byte V3 = 3;
-
-    /** Version 4. */
-    protected static final byte V4 = 4;
 
     /**
      * @param col Source collection.

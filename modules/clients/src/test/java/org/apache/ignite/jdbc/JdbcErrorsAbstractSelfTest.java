@@ -717,6 +717,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * @param expState expected SQLSTATE code.
      * @throws SQLException if failed.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void checkErrorState(final String sql, String expState, String expMsg) throws SQLException {
         checkErrorState(new ConnClosure() {
             @Override public void run(Connection conn) throws Exception {
@@ -733,6 +734,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * @param expState expected SQLSTATE code.
      * @throws SQLException if failed.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     protected void checkErrorState(final ConnClosure clo, String expState, String expMsg) throws SQLException {
         checkErrorState(new IgniteCallable<Void>() {
             @Override public Void call() throws Exception {
@@ -753,6 +755,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * @param expState expected SQLSTATE code.
      * @throws SQLException if failed.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     protected void checkErrorState(final IgniteCallable<Void> clo, String expState, String expMsg) throws SQLException {
         SQLException ex = (SQLException)GridTestUtils.assertThrows(null, clo, SQLException.class, expMsg);
 

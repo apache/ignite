@@ -122,6 +122,11 @@ public class GridCacheMvccEntryInfo extends GridCacheEntryInfo implements MvccVe
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isKeyAbsentBefore() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 

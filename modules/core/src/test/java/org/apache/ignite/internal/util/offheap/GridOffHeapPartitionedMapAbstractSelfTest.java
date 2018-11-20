@@ -245,6 +245,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("unchecked")
     public void testPutRandomKeys() throws Exception {
         map = newMap();
 

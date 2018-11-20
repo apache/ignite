@@ -45,6 +45,7 @@ import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 /**
  * Class for multithreaded {@link TcpCommunicationSpi} test.
  */
+@SuppressWarnings({"JUnitAbstractTestClassNamingConvention"})
 public class GridTcpCommunicationSpiLanLoadTest extends GridSpiAbstractTest<TcpCommunicationSpi> {
     /** Connection idle timeout */
     public static final int IDLE_CONN_TIMEOUT = 2000;
@@ -85,6 +86,7 @@ public class GridTcpCommunicationSpiLanLoadTest extends GridSpiAbstractTest<TcpC
     /**
      * Accumulating listener.
      */
+    @SuppressWarnings({"deprecation"})
     private class MessageListener implements CommunicationListener<Message> {
         /** Node id of local node. */
         private final UUID locNodeId;
@@ -263,6 +265,7 @@ public class GridTcpCommunicationSpiLanLoadTest extends GridSpiAbstractTest<TcpC
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings({"NullableProblems"})
     @Override protected void afterTestsStopped() throws Exception {
         spi.setListener(null);
 

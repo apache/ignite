@@ -1655,6 +1655,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * Test object.
      */
+    @SuppressWarnings("UnusedDeclaration")
     private static class TestObject implements Serializable {
         /** */
         @QuerySqlField

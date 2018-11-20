@@ -68,6 +68,7 @@ public class DataStorageConfiguration implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Default data region start size (256 MB). */
+    @SuppressWarnings("UnnecessaryBoxing")
     public static final long DFLT_DATA_REGION_INITIAL_SIZE = 256L * 1024 * 1024;
 
     /** Fraction of available memory to allocate for default DataRegion. */
@@ -277,9 +278,6 @@ public class DataStorageConfiguration implements Serializable {
      * @see java.util.zip.Deflater#BEST_COMPRESSION
      */
     private int walCompactionLevel = DFLT_WAL_COMPACTION_LEVEL;
-
-    /** Timeout for checkpoint read lock acquisition. */
-    private Long checkpointReadLockTimeout;
 
     /**
      * Initial size of a data region reserved for system cache.
@@ -983,30 +981,6 @@ public class DataStorageConfiguration implements Serializable {
      */
     public void setWalCompactionLevel(int walCompactionLevel) {
         this.walCompactionLevel = walCompactionLevel;
-    }
-
-    /**
-     * Returns timeout for checkpoint read lock acquisition.
-     *
-     * @return Returns timeout for checkpoint read lock acquisition in milliseconds.
-     * @see #setCheckpointReadLockTimeout(long)
-     */
-    public Long getCheckpointReadLockTimeout() {
-        return checkpointReadLockTimeout;
-    }
-
-    /**
-     * Sets timeout for checkpoint read lock acquisition.
-     * <p>
-     * When any thread cannot acquire checkpoint read lock in this time, then critical failure handler is being called.
-     *
-     * @param checkpointReadLockTimeout Timeout for checkpoint read lock acquisition in milliseconds.
-     * @return {@code this} for chaining.
-     */
-    public DataStorageConfiguration setCheckpointReadLockTimeout(long checkpointReadLockTimeout) {
-        this.checkpointReadLockTimeout = checkpointReadLockTimeout;
-
-        return this;
     }
 
     /** {@inheritDoc} */

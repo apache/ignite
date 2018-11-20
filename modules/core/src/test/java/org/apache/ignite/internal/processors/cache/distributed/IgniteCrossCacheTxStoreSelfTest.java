@@ -61,7 +61,7 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cfg3 = cacheConfiguration("cacheC", new SecondStoreFactory());
         CacheConfiguration cfg4 = cacheConfiguration("cacheD", null);
 
-        cfg.setCacheConfiguration(cfg4, cfg2, cfg3, cfg1);
+        cfg.setCacheConfiguration(cfg1, cfg2, cfg3, cfg4);
 
         return cfg;
     }
@@ -91,8 +91,6 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
-
-        cleanPersistenceDir();
 
         startGrids(4);
     }
@@ -162,8 +160,8 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
             "delete cacheA",
             "write cacheB",
             "sessionEnd true"
-            ),
-            firstStoreEvts);
+        ),
+        firstStoreEvts);
 
         assertEquals(0, secondStoreEvts.size());
     }
@@ -211,16 +209,16 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
             "write cacheA",
             "delete cacheA",
             "sessionEnd true"
-            ),
-            firstStoreEvts);
+        ),
+        firstStoreEvts);
 
         assertEqualsCollections(F.asList(
             "writeAll cacheC 2",
             "deleteAll cacheC 2",
             "write cacheC",
             "sessionEnd true"
-            ),
-            secondStoreEvts);
+        ),
+        secondStoreEvts);
     }
 
     /**
@@ -266,8 +264,8 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
             "write cacheA",
             "delete cacheA",
             "sessionEnd true"
-            ),
-            firstStoreEvts);
+        ),
+        firstStoreEvts);
 
         assertEquals(0, secondStoreEvts.size());
     }
@@ -363,10 +361,15 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** {@inheritDoc} */
-        @Override public synchronized CacheStore create() {
+        @Override public CacheStore create() {
             String igniteInstanceName = ignite.name();
 
-            return firstStores.computeIfAbsent(igniteInstanceName, (k) -> new TestStore());
+            CacheStore store = firstStores.get(igniteInstanceName);
+
+            if (store == null)
+                store = F.addIfAbsent(firstStores, igniteInstanceName, new TestStore());
+
+            return store;
         }
     }
 
@@ -381,7 +384,12 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
         @Override public CacheStore create() {
             String igniteInstanceName = ignite.name();
 
-            return secondStores.computeIfAbsent(igniteInstanceName, (k) -> new TestStore());
+            CacheStore store = secondStores.get(igniteInstanceName);
+
+            if (store == null)
+                store = F.addIfAbsent(secondStores, igniteInstanceName, new TestStore());
+
+            return store;
         }
     }
 }

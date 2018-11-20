@@ -61,6 +61,7 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
      *
      * @param size Initial size.
      */
+    @SuppressWarnings("IfMayBeConditional")
     public GridLeanMap(int size) {
         assert size >= 0;
 

@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.Callable;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -643,7 +644,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
         if (register)
             assertEquals(val.name(), obj.enumName());
     }
-
+    
     /**
      * Validate single value.
      *
@@ -676,6 +677,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
         /**
          * Default constructor.
          */
+        @SuppressWarnings("UnusedDeclaration")
         public EnumHolder() {
             // No-op.
         }

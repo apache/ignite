@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.pagemem.wal.record.delta;
 
+import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.PageMemory;

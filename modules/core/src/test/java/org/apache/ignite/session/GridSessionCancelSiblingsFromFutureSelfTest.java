@@ -49,6 +49,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 /**
  * Test of session siblings cancellation from future.
  */
+@SuppressWarnings({"CatchGenericClass"})
 @GridCommonTest(group = "Task Session")
 public class GridSessionCancelSiblingsFromFutureSelfTest extends GridCommonAbstractTest {
     /** */

@@ -44,7 +44,7 @@ import org.apache.kafka.common.errors.WakeupException;
  */
 public class KafkaStreamer<K, V> extends StreamAdapter<ConsumerRecord, K, V> {
     /** Default polling timeout. */
-    private static final long DFLT_TIMEOUT = 100;
+    private final static long DFLT_TIMEOUT = 100;
 
     /** Logger. */
     private IgniteLogger log;

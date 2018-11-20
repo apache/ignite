@@ -107,6 +107,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings({"IfMayBeConditional"})
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -227,9 +228,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
-    public void testMultiThreadedServersRestart() throws Throwable {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1123");
-
+    public void _testMultiThreadedServersRestart() throws Throwable {
         multiThreadedClientsServersRestart(GRID_CNT * 2, 0);
     }
 

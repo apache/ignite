@@ -19,7 +19,6 @@ package org.apache.ignite.internal.pagemem.store;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
-import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -244,17 +243,9 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
     public void cleanupPersistentSpace(CacheConfiguration cacheConfiguration) throws IgniteCheckedException;
 
     /**
-     * Cleanup persistent space for all caches except metastore.
+     * Cleanup persistent space for all caches.
      */
     public void cleanupPersistentSpace() throws IgniteCheckedException;
-
-    /**
-     * Cleanup cache store whether it matches the provided predicate and if matched store was previously initizlized.
-     *
-     * @param cacheGrpPred Predicate to match by id cache group stores to clean.
-     * @param cleanFiles {@code True} to delete all persisted files related to particular store.
-     */
-    public void cleanupPageStoreIfMatch(Predicate<Integer> cacheGrpPred, boolean cleanFiles);
 
     /**
      * Creates and initializes cache work directory retrieved from {@code cacheCfg}.

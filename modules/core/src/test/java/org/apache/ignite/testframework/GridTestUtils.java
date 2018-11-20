@@ -43,7 +43,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Properties;
 import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
@@ -112,6 +111,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Utility class for tests.
  */
+@SuppressWarnings({"UnusedCatchParameter"})
 public final class GridTestUtils {
     /** Default busy wait sleep interval in milliseconds.  */
     public static final long DFLT_BUSYWAIT_SLEEP_INTERVAL = 200;
@@ -179,11 +179,6 @@ public final class GridTestUtils {
         public static DiscoverySpiListener wrap(DiscoverySpiListener delegate, DiscoveryHook discoveryHook) {
             return new DiscoverySpiListenerWrapper(delegate, discoveryHook);
         }
-    }
-
-    /** Test parameters scale factor util. */
-    public static final class SF extends ScaleFactorUtil {
-
     }
 
     /** */
@@ -831,6 +826,7 @@ public final class GridTestUtils {
      * @param threadName Thread names.
      * @return Future for the run. Future returns execution time in milliseconds.
      */
+    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     public static IgniteInternalFuture<Long> runMultiThreadedAsync(Callable<?> call, int threadNum, final String threadName) {
         final List<Callable<?>> calls = Collections.<Callable<?>>nCopies(threadNum, call);
         final GridTestSafeThreadFactory threadFactory = new GridTestSafeThreadFactory(threadName);
@@ -909,16 +905,8 @@ public final class GridTestUtils {
         }
 
         // Wait threads finish their job.
-        try {
-            for (Thread t : threads)
-                t.join();
-        }
-        catch (InterruptedException e) {
-            for (Thread t : threads)
-                t.interrupt();
-
-            throw e;
-        }
+        for (Thread t : threads)
+            t.join();
 
         time = System.currentTimeMillis() - time;
 
@@ -934,6 +922,7 @@ public final class GridTestUtils {
      * @param task Runnable.
      * @return Future with task result.
      */
+    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     public static IgniteInternalFuture runAsync(final Runnable task) {
         return runAsync(task,"async-runnable-runner");
     }
@@ -944,6 +933,7 @@ public final class GridTestUtils {
      * @param task Runnable.
      * @return Future with task result.
      */
+    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     public static IgniteInternalFuture runAsync(final Runnable task, String threadName) {
         return runAsync(() -> {
             task.run();
@@ -958,6 +948,7 @@ public final class GridTestUtils {
      * @param task Callable.
      * @return Future with task result.
      */
+    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     public static <T> IgniteInternalFuture<T> runAsync(final Callable<T> task) {
         return runAsync(task, "async-callable-runner");
     }
@@ -969,6 +960,7 @@ public final class GridTestUtils {
      * @param threadName Thread name.
      * @return Future with task result.
      */
+    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     public static <T> IgniteInternalFuture<T> runAsync(final Callable<T> task, String threadName) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to start new threads (test is being stopped).");
@@ -1162,6 +1154,7 @@ public final class GridTestUtils {
      * @param ignite Grid to stop.
      * @param log Logger.
      */
+    @SuppressWarnings({"CatchGenericClass"})
     public static void close(Ignite ignite, IgniteLogger log) {
         if (ignite != null)
             try {
@@ -1179,6 +1172,7 @@ public final class GridTestUtils {
      * @param igniteInstanceName Ignite instance name.
      * @param log Logger.
      */
+    @SuppressWarnings({"CatchGenericClass"})
     public static void stopGrid(String igniteInstanceName, IgniteLogger log) {
         try {
             G.stop(igniteInstanceName, false);
@@ -1314,12 +1308,15 @@ public final class GridTestUtils {
      * @return Field value.
      * @throws IgniteException In case of error.
      */
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public static <T> T getFieldValue(Object obj, Class cls, String fieldName) throws IgniteException {
         assert obj != null;
         assert fieldName != null;
 
         try {
-            return (T)findField(cls, obj, fieldName);
+            obj = findField(cls, obj, fieldName);
+
+            return (T)obj;
         }
         catch (NoSuchFieldException | IllegalAccessException e) {
             throw new IgniteException("Failed to get object field [obj=" + obj +
@@ -1336,6 +1333,7 @@ public final class GridTestUtils {
      * @return Field value.
      * @throws IgniteException In case of error.
      */
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public static <T> T getFieldValue(Object obj, String... fieldNames) throws IgniteException {
         assert obj != null;
         assert fieldNames != null;
@@ -1377,6 +1375,7 @@ public final class GridTestUtils {
      * @return Field value.
      * @throws IgniteException In case of error.
      */
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public static <T> T getFieldValueHierarchy(Object obj, String... fieldNames) throws IgniteException {
         assert obj != null;
         assert fieldNames != null;
@@ -1417,12 +1416,22 @@ public final class GridTestUtils {
         // Resolve inner field.
         Field field = cls.getDeclaredField(fieldName);
 
-        boolean accessible = field.isAccessible();
+        synchronized (field) {
+            // Backup accessible field state.
+            boolean accessible = field.isAccessible();
 
-        if (!accessible)
-            field.setAccessible(true);
+            try {
+                if (!accessible)
+                    field.setAccessible(true);
 
-        return field.get(obj);
+                return field.get(obj);
+            }
+            finally {
+                // Recover accessible field state.
+                if (!accessible)
+                    field.setAccessible(false);
+            }
+        }
     }
 
     /**
@@ -1448,6 +1457,7 @@ public final class GridTestUtils {
      * @param val New field value.
      * @throws IgniteException In case of error.
      */
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public static void setFieldValue(Object obj, String fieldName, Object val) throws IgniteException {
         assert obj != null;
         assert fieldName != null;
@@ -1457,12 +1467,22 @@ public final class GridTestUtils {
 
             Field field = cls.getDeclaredField(fieldName);
 
-            boolean accessible = field.isAccessible();
+            synchronized (field) {
+                // Backup accessible field state.
+                boolean accessible = field.isAccessible();
 
-            if (!accessible)
-                field.setAccessible(true);
+                try {
+                    if (!accessible)
+                        field.setAccessible(true);
 
-            field.set(obj, val);
+                    field.set(obj, val);
+                }
+                finally {
+                    // Recover accessible field state.
+                    if (!accessible)
+                        field.setAccessible(false);
+                }
+            }
         }
         catch (NoSuchFieldException | IllegalAccessException e) {
             throw new IgniteException("Failed to set object field [obj=" + obj + ", field=" + fieldName + ']', e);
@@ -1478,28 +1498,46 @@ public final class GridTestUtils {
      * @param val New field value.
      * @throws IgniteException In case of error.
      */
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public static void setFieldValue(Object obj, Class cls, String fieldName, Object val) throws IgniteException {
         assert fieldName != null;
 
         try {
             Field field = cls.getDeclaredField(fieldName);
 
-            boolean accessible = field.isAccessible();
+            synchronized (field) {
+                // Backup accessible field state.
+                boolean accessible = field.isAccessible();
 
-            if (!accessible)
-                field.setAccessible(true);
+                boolean isFinal = (field.getModifiers() & Modifier.FINAL) > 0;
 
-            boolean isFinal = (field.getModifiers() & Modifier.FINAL) != 0;
+                Field modifiersField = null;
 
-            if (isFinal) {
-                Field modifiersField = Field.class.getDeclaredField("modifiers");
+                if (isFinal)
+                    modifiersField = Field.class.getDeclaredField("modifiers");
 
-                modifiersField.setAccessible(true);
+                try {
+                    if (!accessible)
+                        field.setAccessible(true);
 
-                modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+                    if (isFinal) {
+                        modifiersField.setAccessible(true);
+                        modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+                    }
+
+                    field.set(obj, val);
+                }
+                finally {
+                    // Recover accessible field state.
+                    if (!accessible)
+                        field.setAccessible(false);
+
+                    if (isFinal) {
+                        modifiersField.setInt(field, field.getModifiers() | Modifier.FINAL);
+                        modifiersField.setAccessible(false);
+                    }
+                }
             }
-
-            field.set(obj, val);
         }
         catch (NoSuchFieldException | IllegalAccessException e) {
             throw new IgniteException("Failed to set object field [obj=" + obj + ", field=" + fieldName + ']', e);
@@ -1515,50 +1553,53 @@ public final class GridTestUtils {
      * @return Method invocation result.
      * @throws Exception If failed.
      */
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     @Nullable public static <T> T invoke(Object obj, String mtd, Object... params) throws Exception {
-        Class<?> cls = obj.getClass();
+        // We cannot resolve method by parameter classes due to some of parameters can be null.
+        // Search correct method among all methods collection.
+        for (Method m : obj.getClass().getDeclaredMethods()) {
+            // Filter methods by name.
+            if (!m.getName().equals(mtd))
+                continue;
 
-        do {
-            // We cannot resolve method by parameter classes due to some of parameters can be null.
-            // Search correct method among all methods collection.
-            for (Method m : cls.getDeclaredMethods()) {
-                // Filter methods by name.
-                if (!m.getName().equals(mtd))
-                    continue;
+            if (!areCompatible(params, m.getParameterTypes()))
+                continue;
 
-                if (!areCompatible(params, m.getParameterTypes()))
-                    continue;
-
-                try {
+            try {
+                synchronized (m) {
+                    // Backup accessible field state.
                     boolean accessible = m.isAccessible();
 
-                    if (!accessible)
-                        m.setAccessible(true);
+                    try {
+                        if (!accessible)
+                            m.setAccessible(true);
 
-                    return (T)m.invoke(obj, params);
-                }
-                catch (IllegalAccessException e) {
-                    throw new RuntimeException("Failed to access method" +
-                        " [obj=" + obj + ", mtd=" + mtd + ", params=" + Arrays.toString(params) + ']', e);
-                }
-                catch (InvocationTargetException e) {
-                    Throwable cause = e.getCause();
-
-                    if (cause instanceof Error)
-                        throw (Error)cause;
-
-                    if (cause instanceof Exception)
-                        throw (Exception)cause;
-
-                    throw new RuntimeException("Failed to invoke method)" +
-                        " [obj=" + obj + ", mtd=" + mtd + ", params=" + Arrays.toString(params) + ']', e);
+                        return (T)m.invoke(obj, params);
+                    }
+                    finally {
+                        // Recover accessible field state.
+                        if (!accessible)
+                            m.setAccessible(false);
+                    }
                 }
             }
+            catch (IllegalAccessException e) {
+                throw new RuntimeException("Failed to access method" +
+                    " [obj=" + obj + ", mtd=" + mtd + ", params=" + Arrays.toString(params) + ']', e);
+            }
+            catch (InvocationTargetException e) {
+                Throwable cause = e.getCause();
 
-            cls = cls.getSuperclass();
+                if (cause instanceof Error)
+                    throw (Error) cause;
+
+                if (cause instanceof Exception)
+                    throw (Exception) cause;
+
+                throw new RuntimeException("Failed to invoke method)" +
+                    " [obj=" + obj + ", mtd=" + mtd + ", params=" + Arrays.toString(params) + ']', e);
+            }
         }
-        while (cls != Object.class);
-
 
         throw new RuntimeException("Failed to find method" +
             " [obj=" + obj + ", mtd=" + mtd + ", params=" + Arrays.toString(params) + ']');
@@ -1998,87 +2039,5 @@ public final class GridTestUtils {
     public static void mergeExchangeWaitVersion(Ignite node, long topVer, List mergedEvts) {
         ((IgniteEx)node).context().cache().context().exchange().mergeExchangesTestWaitVersion(
             new AffinityTopologyVersion(topVer, 0), mergedEvts);
-    }
-
-    /** Test parameters scale factor util. */
-    private static class ScaleFactorUtil {
-        /** Test speed scale factor property name. */
-        private static final String TEST_SCALE_FACTOR_PROPERTY = "TEST_SCALE_FACTOR";
-
-        /** Min test scale factor value. */
-        private static final double MIN_TEST_SCALE_FACTOR_VALUE = 0.1;
-
-        /** Max test scale factor value. */
-        private static final double MAX_TEST_SCALE_FACTOR_VALUE = 1.0;
-
-        /** Test speed scale factor. */
-        private static final double TEST_SCALE_FACTOR_VALUE = readScaleFactor();
-
-        /** */
-        private static double readScaleFactor() {
-            double scaleFactor = Double.parseDouble(System.getProperty(TEST_SCALE_FACTOR_PROPERTY, "1.0"));
-
-            scaleFactor = Math.max(scaleFactor, MIN_TEST_SCALE_FACTOR_VALUE);
-            scaleFactor = Math.min(scaleFactor, MAX_TEST_SCALE_FACTOR_VALUE);
-
-            return scaleFactor;
-        }
-
-        /** */
-        public static int apply(int val) {
-            return (int)(TEST_SCALE_FACTOR_VALUE * val);
-        }
-
-        /** */
-        public static int apply(int val, int lowerBound, int upperBound) {
-            return applyUB(applyLB(val, lowerBound), upperBound);
-        }
-
-        /** Apply scale factor with lower bound */
-        public static int applyLB(int val, int lowerBound) {
-            return Math.max((int)(TEST_SCALE_FACTOR_VALUE * val), lowerBound);
-        }
-
-        /** Apply scale factor with upper bound */
-        public static int applyUB(int val, int upperBound) {
-            return Math.min((int)(TEST_SCALE_FACTOR_VALUE * val), upperBound);
-        }
-    }
-
-    /** Adds system property on initialization and removes it when closed. */
-    public static final class SystemProperty implements AutoCloseable {
-        /** Name of property. */
-        private final String name;
-
-        /** Original value of property. */
-        private final String originalValue;
-
-        /**
-         * Constructor.
-         *
-         * @param name Name.
-         * @param val Value.
-         */
-        public SystemProperty(String name, String val) {
-            this.name = name;
-
-            Properties props = System.getProperties();
-
-            originalValue = (String)props.put(name, val);
-
-            System.setProperties(props);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void close() {
-            Properties props = System.getProperties();
-
-            if (originalValue != null)
-                props.put(name, originalValue);
-            else
-                props.remove(name);
-
-            System.setProperties(props);
-        }
     }
 }

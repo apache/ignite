@@ -34,5 +34,5 @@ public @interface MXBeanParametersDescriptions {
      *
      * Array of descriptions for parameters.
      */
-    public String[] value();
+    @SuppressWarnings({"JavaDoc"}) public String[] value();
 }

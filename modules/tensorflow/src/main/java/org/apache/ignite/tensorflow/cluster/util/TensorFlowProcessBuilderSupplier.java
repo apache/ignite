@@ -34,19 +34,19 @@ public class TensorFlowProcessBuilderSupplier extends PythonProcessBuilderSuppli
     /** Prefix for worker environment variables. */
     private static final String ENV_PREFIX = "IGNITE_DATASET_";
 
-    /** Upstream cache query local mode. */
-    private final Boolean loc;
+    /** Partition of the upstream cache. */
+    private final Integer part;
 
     /**
      * Constructs a new instance of Python process builder supplier.
      *
      * @param interactive Interactive flag (allows to used standard input to pass Python script).
-     * @param loc Upstream cache query local mode.
+     * @param part Partition index.
      * @param meta Meta information that adds to script as arguments.
      */
-    public TensorFlowProcessBuilderSupplier(boolean interactive, Boolean loc, String... meta) {
+    public TensorFlowProcessBuilderSupplier(boolean interactive, Integer part, String... meta) {
         super(interactive, meta);
-        this.loc = loc;
+        this.part = part;
     }
 
     /** {@inheritDoc} */
@@ -64,8 +64,8 @@ public class TensorFlowProcessBuilderSupplier extends PythonProcessBuilderSuppli
         if (port != null)
             env.put(ENV_PREFIX + "PORT", String.valueOf(port));
 
-        if (loc != null)
-            env.put(ENV_PREFIX + "LOCAL", String.valueOf(loc));
+        if (part != null)
+            env.put(ENV_PREFIX + "PART", String.valueOf(part));
 
         return pythonProcBuilder;
     }

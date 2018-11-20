@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.h2.dml;
 
-import java.sql.SQLException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
+
+import java.sql.SQLException;
 
 /**
  * Result of processing an individual page with {@link IgniteCache#invokeAll} including error details, if any.
@@ -37,6 +38,7 @@ public final class DmlPageProcessingResult {
     private final SQLException ex;
 
     /** */
+    @SuppressWarnings("ConstantConditions")
     public DmlPageProcessingResult(long cnt, Object[] errKeys, @Nullable SQLException ex) {
         this.cnt = cnt;
         this.errKeys = U.firstNotNull(errKeys, X.EMPTY_OBJECT_ARRAY);

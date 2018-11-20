@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal.processors.platform.cache.query;
 
-import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.platform.PlatformTarget;
+
+import javax.cache.event.CacheEntryUpdatedListener;
 
 /**
  * Platform continuous query.
@@ -51,5 +52,6 @@ public interface PlatformContinuousQuery extends CacheEntryUpdatedListener, Plat
      *
      * @return Initial query cursor.
      */
+    @SuppressWarnings("UnusedDeclaration")
     public PlatformTarget getInitialQueryCursor();
 }

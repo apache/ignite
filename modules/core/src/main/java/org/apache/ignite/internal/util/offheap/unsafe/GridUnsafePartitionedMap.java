@@ -76,6 +76,7 @@ public class GridUnsafePartitionedMap implements GridOffHeapPartitionedMap {
      * @param lruStripes LRU stripes.
      * @param evictLsnr Eviction callback.
      */
+    @SuppressWarnings("unchecked")
     public GridUnsafePartitionedMap(int parts, int concurrency, float load, long initCap, long totalMem,
         short lruStripes, @Nullable GridOffHeapEvictListener evictLsnr) {
         this.parts = parts;

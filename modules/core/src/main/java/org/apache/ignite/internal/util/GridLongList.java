@@ -42,9 +42,6 @@ public class GridLongList implements Message, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Empty array. */
-    public static final long[] EMPTY_ARRAY = new long[0];
-
     /** */
     private long[] arr;
 
@@ -393,9 +390,6 @@ public class GridLongList implements Message, Externalizable {
      * @return Array copy.
      */
     public long[] array() {
-        if (arr == null)
-            return EMPTY_ARRAY;
-
         long[] res = new long[idx];
 
         System.arraycopy(arr, 0, res, 0, idx);

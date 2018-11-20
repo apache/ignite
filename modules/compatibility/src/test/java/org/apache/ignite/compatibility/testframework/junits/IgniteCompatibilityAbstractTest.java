@@ -21,7 +21,6 @@ import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -169,16 +168,14 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
                 final Collection<Dependency> dependencies = getDependencies(ver);
 
-                Set<String> excludedModules = dependencies.stream().map(Dependency::localPathTemplate).collect(Collectors.toSet());
-
-                Set<String> excludedPaths = dependencies.stream().map(Dependency::excludePathFromClassPath).filter(Objects::nonNull).collect(Collectors.toSet());
+                Set<String> excluded = dependencies.stream().map(Dependency::localPathTemplate).collect(Collectors.toSet());
 
                 StringBuilder pathBuilder = new StringBuilder();
 
                 for (URL url : CompatibilityTestsUtils.classLoaderUrls(CLASS_LOADER)) {
                     String path = url.getPath();
 
-                    if (excludedModules.stream().noneMatch(path::contains) && excludedPaths.stream().noneMatch(path::contains))
+                    if (excluded.stream().noneMatch(path::contains))
                         pathBuilder.append(path).append(File.pathSeparator);
                 }
 
@@ -245,9 +242,6 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
         dependencies.add(new Dependency("core", "ignite-core"));
         dependencies.add(new Dependency("core", "ignite-core", true));
-
-        //Just to exclude indexing module
-        dependencies.add(new Dependency("indexing", "ignite-core"));
 
         return dependencies;
     }

@@ -420,7 +420,7 @@ public class StripedExecutor implements ExecutorService {
     /**
      * Stripe.
      */
-    private abstract static class Stripe extends GridWorker {
+    private static abstract class Stripe extends GridWorker {
         /** */
         private final String igniteInstanceName;
 

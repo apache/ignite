@@ -332,6 +332,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @return Affinity key.
      * @throws IgniteCheckedException In case of error.
      */
+    @SuppressWarnings("unchecked")
     @Nullable public Object affinityKey(String cacheName, @Nullable Object key) throws IgniteCheckedException {
         assert cacheName != null;
 

@@ -155,6 +155,7 @@ public class GridTestNode extends GridMetadataAwareAdapter implements ClusterNod
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public Map<String, Object> attributes() {
         return attrs;
     }

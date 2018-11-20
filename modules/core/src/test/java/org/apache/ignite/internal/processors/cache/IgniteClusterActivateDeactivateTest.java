@@ -1378,7 +1378,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
             GridCacheProcessor cache = ((IgniteEx)ignite(i)).context().cache();
 
             assertTrue(cache.caches().isEmpty());
-            assertTrue(cache.internalCaches().stream().allMatch(c -> c.context().isRecoveryMode()));
+            assertTrue(cache.internalCaches().isEmpty());
         }
     }
 }

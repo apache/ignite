@@ -49,6 +49,7 @@ public class GridUnsafeDataOutputArraySizingSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("BusyWait")
     public void testSmall() throws Exception {
         final GridUnsafeDataOutput out = new GridUnsafeDataOutput(512);
 
@@ -93,6 +94,7 @@ public class GridUnsafeDataOutputArraySizingSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("BusyWait")
     public void testChanged2() throws Exception {
         final GridUnsafeDataOutput out = new GridUnsafeDataOutput(512);
 

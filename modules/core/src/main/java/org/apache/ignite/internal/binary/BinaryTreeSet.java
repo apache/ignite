@@ -17,15 +17,16 @@
 
 package org.apache.ignite.internal.binary;
 
-import java.io.ObjectStreamException;
-import java.util.Comparator;
-import java.util.TreeSet;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
+
+import java.io.ObjectStreamException;
+import java.util.Comparator;
+import java.util.TreeSet;
 
 /**
  * Binary {@link TreeSet} wrapper.
@@ -51,6 +52,7 @@ public class BinaryTreeSet implements Binarylizable {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
         BinaryRawWriter rawWriter = writer.rawWriter();
 

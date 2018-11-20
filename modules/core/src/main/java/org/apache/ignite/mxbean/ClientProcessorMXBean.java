@@ -18,6 +18,7 @@
 package org.apache.ignite.mxbean;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * MXBean interface that provides access to ODBC\JDBC\Thin client connections.

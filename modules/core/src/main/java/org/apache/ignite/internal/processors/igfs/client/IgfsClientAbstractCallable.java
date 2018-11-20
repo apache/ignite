@@ -51,6 +51,7 @@ public abstract class IgfsClientAbstractCallable<T> implements IgniteCallable<T>
     protected String user;
 
     /** Injected instance. */
+    @SuppressWarnings("UnusedDeclaration")
     @IgniteInstanceResource
     private transient Ignite ignite;
 

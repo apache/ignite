@@ -41,7 +41,9 @@ public class TransactionIntegrityWithSystemWorkerDeathTest extends AbstractTrans
         return false;
     }
 
-    /** */
+    /**
+     *
+     */
     public void testFailoverWithDiscoWorkerTermination() throws Exception {
         doTestTransferAmount(new FailoverScenario() {
             static final int failedNodeIdx = 1;
@@ -81,7 +83,7 @@ public class TransactionIntegrityWithSystemWorkerDeathTest extends AbstractTrans
 
                 awaitPartitionMapExchange();
             }
-        }, true);
+        });
     }
 
     /**

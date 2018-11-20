@@ -35,7 +35,7 @@ public class GridifySpringPointcut implements Pointcut {
      * Class filter.
      */
     private static final ClassFilter filter = new ClassFilter() {
-        @SuppressWarnings({"RawUseOfParameterizedType"})
+        @SuppressWarnings({"unchecked", "RawUseOfParameterizedType"})
         @Override public boolean matches(Class cls) {
             return true;
         }
@@ -44,6 +44,7 @@ public class GridifySpringPointcut implements Pointcut {
     /** Method matcher. */
     private static final MethodMatcher dfltMatcher = new GridifyMethodMatcher() {
         // Warning suppression is due to Spring...
+        @SuppressWarnings("unchecked")
         @Override public boolean matches(Method method, Class cls) {
             return cls.isAnnotationPresent(Gridify.class) || method.isAnnotationPresent(Gridify.class);
         }
@@ -52,6 +53,7 @@ public class GridifySpringPointcut implements Pointcut {
     /** Method matcher. */
     private static final MethodMatcher setToValueMatcher = new GridifyMethodMatcher() {
         // Warning suppression is due to Spring...
+        @SuppressWarnings("unchecked")
         @Override public boolean matches(Method method, Class cls) {
             return cls.isAnnotationPresent(GridifySetToValue.class) || method.isAnnotationPresent(GridifySetToValue.class);
         }
@@ -60,6 +62,7 @@ public class GridifySpringPointcut implements Pointcut {
     /** Method matcher. */
     private static final MethodMatcher setToSetMatcher = new GridifyMethodMatcher() {
         // Warning suppression is due to Spring...
+        @SuppressWarnings("unchecked")
         @Override public boolean matches(Method method, Class cls) {
             return cls.isAnnotationPresent(GridifySetToSet.class) || method.isAnnotationPresent(GridifySetToSet.class);
         }
@@ -103,6 +106,7 @@ public class GridifySpringPointcut implements Pointcut {
      */
     private abstract static class GridifyMethodMatcher implements MethodMatcher {
         /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
         @Override public abstract boolean matches(Method method, Class cls);
 
         /** {@inheritDoc} */
@@ -112,7 +116,7 @@ public class GridifySpringPointcut implements Pointcut {
 
         /** {@inheritDoc} */
         // Warning suppression is due to Spring...
-        @SuppressWarnings({"RawUseOfParameterizedType"})
+        @SuppressWarnings({"unchecked", "RawUseOfParameterizedType"})
         @Override public boolean matches(Method method, Class aClass, Object[] objs) {
             // No-op.
             return false;

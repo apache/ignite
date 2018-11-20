@@ -29,6 +29,7 @@ import java.net.URL;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ResourceBundle;
+
 import org.apache.ignite.cache.store.cassandra.datasource.DataSource;
 import org.apache.ignite.cache.store.cassandra.session.pool.SessionPool;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -196,6 +197,7 @@ public class CassandraHelper {
     }
 
     /** */
+    @SuppressWarnings("UnusedDeclaration")
     public static ResultSet executeWithRegularCredentials(String statement, Object... args) {
         if (args == null || args.length == 0)
             return regularSession().execute(statement);
@@ -205,11 +207,13 @@ public class CassandraHelper {
     }
 
     /** */
+    @SuppressWarnings("UnusedDeclaration")
     public static ResultSet executeWithAdminCredentials(Statement statement) {
         return adminSession().execute(statement);
     }
 
     /** */
+    @SuppressWarnings("UnusedDeclaration")
     public static ResultSet executeWithRegularCredentials(Statement statement) {
         return regularSession().execute(statement);
     }
@@ -223,6 +227,7 @@ public class CassandraHelper {
     }
 
     /** */
+    @SuppressWarnings("UnusedDeclaration")
     public static synchronized DataSource getRegularDataSrc() {
         if (regularDataSrc != null)
             return regularDataSrc;

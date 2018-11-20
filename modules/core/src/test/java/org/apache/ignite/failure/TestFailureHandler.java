@@ -52,14 +52,12 @@ public class TestFailureHandler extends AbstractFailureHandler {
 
     /** {@inheritDoc} */
     @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
-        if (this.failureCtx == null) {
-            this.failureCtx = failureCtx;
+        this.failureCtx = failureCtx;
 
-            if (latch != null)
-                latch.countDown();
+        if (latch != null)
+            latch.countDown();
 
-            ignite.log().warning("Handled ignite failure: " + failureCtx);
-        }
+        ignite.log().warning("Handled ignite failure: " + failureCtx);
 
         return invalidate;
     }

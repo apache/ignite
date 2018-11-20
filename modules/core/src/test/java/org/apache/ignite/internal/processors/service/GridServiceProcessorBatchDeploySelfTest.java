@@ -129,9 +129,11 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
     }
 
     /**
+     * TODO: enable when IGNITE-6259 is fixed.
+     *
      * @throws Exception If failed.
      */
-    public void testDeployAllTopologyChange() throws Exception {
+    public void _testDeployAllTopologyChange() throws Exception {
         Ignite client = grid(CLIENT_NODE_NAME);
 
         final AtomicBoolean finished = new AtomicBoolean();
@@ -139,7 +141,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
         IgniteInternalFuture<Object> topChangeFut = runTopChanger(finished);
 
         try {
-            int numServices = 50;
+            int numServices = 500;
             int batchSize = 5;
 
             CountDownLatch latch = new CountDownLatch(numServices);
@@ -169,7 +171,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
                 from = to;
             }
 
-            assertTrue(latch.await(120, TimeUnit.SECONDS));
+            assertTrue(latch.await(30, TimeUnit.SECONDS));
 
             assertDeployedServices(client, cfgs);
         }
@@ -181,9 +183,11 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
     }
 
     /**
+     * TODO: enable when IGNITE-6259 is fixed.
+     *
      * @throws Exception If failed.
      */
-    public void testDeployAllTopologyChangeFail() throws Exception {
+    public void _testDeployAllTopologyChangeFail() throws Exception {
         final Ignite client = grid(CLIENT_NODE_NAME);
 
         final AtomicBoolean finished = new AtomicBoolean();
@@ -191,7 +195,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
         IgniteInternalFuture<Object> topChangeFut = runTopChanger(finished);
 
         try {
-            int numServices = 200;
+            int numServices = 500;
             int batchSize = 5;
 
             CountDownLatch latch = new CountDownLatch(numServices);
@@ -244,7 +248,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
                 from = to;
             }
 
-            assertTrue(latch.await(120, TimeUnit.SECONDS));
+            assertTrue(latch.await(30, TimeUnit.SECONDS));
 
             cfgs.removeAll(failingCfgs);
 
@@ -432,11 +436,11 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
     }
 
     /**
+     * TODO: enable when IGNITE-6259 is fixed.
+     *
      * @throws Exception If failed.
      */
-    public void testCancelAllTopologyChange() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10021");
-
+    public void _testCancelAllTopologyChange() throws Exception {
         Ignite client = grid(CLIENT_NODE_NAME);
 
         int numServices = 500;

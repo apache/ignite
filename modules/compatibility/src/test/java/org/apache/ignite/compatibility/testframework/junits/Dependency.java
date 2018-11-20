@@ -40,9 +40,6 @@ public class Dependency {
     /** Test flag. Test jar should have {@code true} value. Default is {@code false}. */
     private boolean test;
 
-    /** */
-    private String exludePathFromClassPath;
-
     /**
      * Creates dependency.
      *
@@ -74,33 +71,10 @@ public class Dependency {
      * @param version Version. Null means default Ignite version is to be used. M
      */
     public Dependency(String locModuleName, @Nullable String grpName, String artifactName, @Nullable String version) {
-        this(locModuleName, grpName, artifactName, version, false);
-    }
-
-    /**
-     * @param excludeName Local module name or part of exclude path.
-     * @param grpName Group name. Null means ignite default group name.
-     * @param artifactName Artifact name (artifact ID) without group na
-     * @param version Version. Null means default Ignite version is to be used. M
-     * @param exludeNotLocModule {@code true} In case param @excludeName should exclude path instead of local module.
-     */
-    public Dependency(String excludeName, @Nullable String grpName, String artifactName, @Nullable String version,
-        boolean exludeNotLocModule) {
-        if (exludeNotLocModule)
-            this.exludePathFromClassPath = excludeName;
-        else
-            this.locModuleName = excludeName;
-
+        this.locModuleName = locModuleName;
         this.groupName = grpName;
         this.artifactName = artifactName;
         this.version = version;
-    }
-
-    /**
-     * @return Path to exclude form classpath.
-     */
-    public String excludePathFromClassPath() {
-        return exludePathFromClassPath;
     }
 
     /**

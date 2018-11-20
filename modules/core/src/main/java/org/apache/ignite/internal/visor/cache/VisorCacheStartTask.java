@@ -29,7 +29,6 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -41,7 +40,6 @@ import org.jetbrains.annotations.Nullable;
  * Task that start cache or near cache with specified configuration.
  */
 @GridInternal
-@GridVisorManagementTask
 public class VisorCacheStartTask extends VisorMultiNodeTask<VisorCacheStartTaskArg, Map<UUID, IgniteException>, Void> {
     /** */
     private static final long serialVersionUID = 0L;

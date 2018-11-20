@@ -22,6 +22,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.Parser;
 import org.h2.expression.Expression;
 import org.h2.table.Column;
+import org.h2.value.Value;
 
 /**
  * Column.

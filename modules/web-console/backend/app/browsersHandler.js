@@ -38,14 +38,14 @@ module.exports = {
              * @param {Socket} sock
              */
             add(sock) {
-                const token = sock.request.user._id.toString();
+                const token = sock.request.user.token;
 
                 if (this.sockets.has(token))
                     this.sockets.get(token).push(sock);
                 else
                     this.sockets.set(token, [sock]);
 
-                return this.sockets.get(sock.request.user);
+                return this.sockets.get(token);
             }
 
             /**
@@ -61,13 +61,11 @@ module.exports = {
                 return sockets;
             }
 
-            get(account) {
-                let sockets = this.sockets.get(account._id.toString());
+            get(token) {
+                if (this.sockets.has(token))
+                    return this.sockets.get(token);
 
-                if (_.isEmpty(sockets))
-                    this.sockets.set(account._id.toString(), sockets = []);
-
-                return sockets;
+                return [];
             }
 
             demo(token) {
@@ -105,11 +103,11 @@ module.exports = {
             }
 
             /**
-             * @param {String} account
+             * @param {String} token
              * @param {Array.<Socket>} [socks]
              */
-            agentStats(account, socks = this._browserSockets.get(account)) {
-                return this._agentHnd.agents(account)
+            agentStats(token, socks = this._browserSockets.get(token)) {
+                return this._agentHnd.agents(token)
                     .then((agentSocks) => {
                         const stat = _.reduce(agentSocks, (acc, agentSock) => {
                             acc.count += 1;
@@ -129,8 +127,8 @@ module.exports = {
                     .then((stat) => _.forEach(socks, (sock) => sock.emit('agents:stat', stat)));
             }
 
-            clusterChanged(account, cluster) {
-                const socks = this._browserSockets.get(account);
+            clusterChanged(token, cluster) {
+                const socks = this._browserSockets.get(token);
 
                 _.forEach(socks, (sock) => sock.emit('cluster:changed', cluster));
             }
@@ -155,10 +153,10 @@ module.exports = {
                 }
             }
 
-            executeOnAgent(account, demo, event, ...args) {
+            executeOnAgent(token, demo, event, ...args) {
                 const cb = _.last(args);
 
-                return this._agentHnd.agent(account, demo)
+                return this._agentHnd.agent(token, demo)
                     .then((agentSock) => agentSock.emitEvent(event, ..._.dropRight(args)))
                     .then((res) => cb(null, res))
                     .catch((err) => cb(this.errorTransformer(err)));
@@ -166,21 +164,21 @@ module.exports = {
 
             agentListeners(sock) {
                 const demo = sock.request._query.IgniteDemoMode === 'true';
-                const account = () => sock.request.user;
+                const token = () => sock.request.user.token;
 
                 // Return available drivers to browser.
                 sock.on('schemaImport:drivers', (...args) => {
-                    this.executeOnAgent(account(), demo, 'schemaImport:drivers', ...args);
+                    this.executeOnAgent(token(), demo, 'schemaImport:drivers', ...args);
                 });
 
                 // Return schemas from database to browser.
                 sock.on('schemaImport:schemas', (...args) => {
-                    this.executeOnAgent(account(), demo, 'schemaImport:schemas', ...args);
+                    this.executeOnAgent(token(), demo, 'schemaImport:schemas', ...args);
                 });
 
                 // Return tables from database to browser.
                 sock.on('schemaImport:metadata', (...args) => {
-                    this.executeOnAgent(account(), demo, 'schemaImport:metadata', ...args);
+                    this.executeOnAgent(token(), demo, 'schemaImport:metadata', ...args);
                 });
             }
 
@@ -220,7 +218,9 @@ module.exports = {
                         return cb('Invalid format of message: "node:rest"');
                     }
 
-                    const agent = this._agentHnd.agent(sock.request.user, demo, clusterId);
+                    const token = sock.request.user.token;
+
+                    const agent = this._agentHnd.agent(token, demo, clusterId);
 
                     this.executeOnNode(agent, demo, credentials, params)
                         .then((data) => cb(null, data))
@@ -244,11 +244,6 @@ module.exports = {
 
                 this.registerVisorTask('toggleClusterState', internalVisor('misc.VisorChangeGridActiveStateTask'), internalVisor('misc.VisorChangeGridActiveStateTaskArg'));
 
-                this.registerVisorTask('cacheNamesCollectorTask', internalVisor('cache.VisorCacheNamesCollectorTask'), 'java.lang.Void');
-
-                this.registerVisorTask('cacheNodesTask', internalVisor('cache.VisorCacheNodesTask'), 'java.lang.String');
-                this.registerVisorTask('cacheNodesTaskX2', internalVisor('cache.VisorCacheNodesTask'), internalVisor('cache.VisorCacheNodesTaskArg'));
-
                 // Return command result from grid to browser.
                 sock.on('node:visor', (arg, cb) => {
                     const {clusterId, params, credentials} = arg || {};
@@ -263,6 +258,8 @@ module.exports = {
 
                         return cb('Invalid format of message: "node:visor"');
                     }
+
+                    const token = sock.request.user.token;
 
                     const {taskId, nids, args = []} = params;
 
@@ -280,7 +277,7 @@ module.exports = {
 
                     _.forEach(_.concat(desc.argCls, args), (param, idx) => { exeParams[`p${idx + 3}`] = param; });
 
-                    const agent = this._agentHnd.agent(sock.request.user, demo, clusterId);
+                    const agent = this._agentHnd.agent(token, demo, clusterId);
 
                     this.executeOnNode(agent, demo, credentials, exeParams)
                         .then((data) => {
@@ -320,13 +317,18 @@ module.exports = {
                             // Handle browser disconnect event.
                             sock.on('disconnect', () => {
                                 this._browserSockets.remove(sock);
+
+                                const demo = sock.request._query.IgniteDemoMode === 'true';
+
+                                // Stop demo if latest demo tab for this token.
+                                demo && agentHnd.tryStopDemo(sock);
                             });
 
                             this.agentListeners(sock);
                             this.nodeListeners(sock);
 
                             this.pushInitialData(sock);
-                            this.agentStats(sock.request.user, [sock]);
+                            this.agentStats(sock.request.user.token, [sock]);
                             this.emitNotification(sock);
                         });
                     });

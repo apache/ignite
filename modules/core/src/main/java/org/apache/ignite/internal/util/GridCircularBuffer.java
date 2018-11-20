@@ -156,6 +156,7 @@ public class GridCircularBuffer<T> {
         /**
          * @return Item.
          */
+        @SuppressWarnings("MethodNamesDifferingOnlyByCase")
         synchronized V item() {
             return item;
         }

@@ -31,7 +31,6 @@ import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.UUID;
-import java.util.regex.Pattern;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterStartNodeResult;
@@ -91,9 +90,6 @@ public class StartNodeCallableImpl implements StartNodeCallable {
     /** Connection timeout. */
     private final int timeout;
 
-    /** Timeout processor. */
-    private GridTimeoutProcessor proc;
-
     /** Logger. */
     @LoggerResource
     private transient IgniteLogger log;
@@ -134,8 +130,6 @@ public class StartNodeCallableImpl implements StartNodeCallable {
         Session ses = null;
 
         try {
-            proc = ((IgniteEx)ignite).context().timeout();
-
             if (spec.key() != null)
                 ssh.addIdentity(spec.key().getAbsolutePath());
 
@@ -280,8 +274,7 @@ public class StartNodeCallableImpl implements StartNodeCallable {
 
                 info("Starting remote node with SSH command: " + startNodeCmd, spec.logger(), log);
 
-                // Execute command via ssh and wait until id of new process will be found in the output.
-                shell(ses, startNodeCmd, "\\[(\\d)\\] (\\d)+");
+                shell(ses, startNodeCmd);
 
                 findSuccess = "grep \"" + SUCCESSFUL_START_MSG + "\" " + scriptOutputPath;
             }
@@ -322,24 +315,7 @@ public class StartNodeCallableImpl implements StartNodeCallable {
      * @throws IgniteInterruptedCheckedException If thread was interrupted while waiting.
      */
     private void shell(Session ses, String cmd) throws JSchException, IOException, IgniteInterruptedCheckedException {
-        shell(ses, cmd, null);
-    }
-
-    /**
-     * Executes command using {@code shell} channel.
-     *
-     * @param ses SSH session.
-     * @param cmd Command.
-     * @param regexp Regular expression to wait until it will be found in stream from node.
-     * @throws JSchException In case of SSH error.
-     * @throws IOException If IO error occurs.
-     * @throws IgniteInterruptedCheckedException If thread was interrupted while waiting.
-     */
-    private void shell(Session ses, String cmd, String regexp)
-        throws JSchException, IOException, IgniteInterruptedCheckedException {
         ChannelShell ch = null;
-
-        GridTimeoutObject to = null;
 
         try {
             ch = (ChannelShell)ses.openChannel("shell");
@@ -348,44 +324,9 @@ public class StartNodeCallableImpl implements StartNodeCallable {
 
             try (PrintStream out = new PrintStream(ch.getOutputStream(), true)) {
                 out.println(cmd);
-            }
 
-            if (regexp != null) {
-                Pattern ptrn = Pattern.compile(regexp);
-
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(ch.getInputStream()))) {
-                    String line;
-
-                    boolean first = true;
-
-                    while ((line = reader.readLine()) != null) {
-                        if (ptrn.matcher(line).find()) {
-                            // Wait for a while until process from regexp really will be started.
-                            U.sleep(50);
-
-                            break;
-                        }
-                        else if (first) {
-                            to = initTimer(cmd);
-
-                            first = false;
-                        }
-                    }
-                }
-                catch (InterruptedIOException ignore) {
-                    // No-op.
-                }
-                finally {
-                    if (to != null) {
-                        boolean r = proc.removeTimeoutObject(to);
-
-                        assert r || to.endTime() <= U.currentTimeMillis() : "Timeout object was not removed: " + to;
-                    }
-                }
-
-            }
-            else
                 U.sleep(EXECUTE_WAIT_TIME);
+            }
         }
         finally {
             if (ch != null && ch.isConnected())
@@ -484,6 +425,10 @@ public class StartNodeCallableImpl implements StartNodeCallable {
             if (encoding == null)
                 encoding = Charset.defaultCharset().name();
 
+            IgniteEx grid = (IgniteEx)ignite;
+
+            GridTimeoutProcessor proc = grid.context().timeout();
+
             GridTimeoutObject to = null;
 
             SB out = null;
@@ -502,7 +447,20 @@ public class StartNodeCallableImpl implements StartNodeCallable {
                     out.a(line);
 
                     if (first) {
-                        to = initTimer(cmd);
+                        to = new GridTimeoutObjectAdapter(EXECUTE_WAIT_TIME) {
+                            /**  */
+                            private final Thread thread = Thread.currentThread();
+
+                            @Override public void onTimeout() {
+                                thread.interrupt();
+                            }
+
+                            @Override public String toString() {
+                                return S.toString("GridTimeoutObject", "cmd", cmd, "thread", thread);
+                            }
+                        };
+
+                        assert proc.addTimeoutObject(to) : "Timeout object was not added: " + to;
 
                         first = false;
                     }
@@ -525,31 +483,6 @@ public class StartNodeCallableImpl implements StartNodeCallable {
             if (ch != null && ch.isConnected())
                 ch.disconnect();
         }
-    }
-
-    /**
-     * Initialize timer to wait for command execution.
-     *
-     * @param cmd Command to log.
-     */
-    private GridTimeoutObject initTimer(String cmd) {
-        GridTimeoutObject to = new GridTimeoutObjectAdapter(EXECUTE_WAIT_TIME) {
-            private final Thread thread = Thread.currentThread();
-
-            @Override public void onTimeout() {
-                thread.interrupt();
-            }
-
-            @Override public String toString() {
-                return S.toString("GridTimeoutObject", "cmd", cmd, "thread", thread);
-            }
-        };
-
-        boolean wasAdded = proc.addTimeoutObject(to);
-
-        assert wasAdded : "Timeout object was not added: " + to;
-
-        return to;
     }
 
     /**

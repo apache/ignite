@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.util;
 
-import java.util.Collections;
-import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.hadoop.util.BasicUserNameMapper;
 import org.apache.ignite.hadoop.util.ChainedUserNameMapper;
@@ -27,6 +25,9 @@ import org.apache.ignite.hadoop.util.UserNameMapper;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import java.util.Collections;
+import java.util.concurrent.Callable;
 
 /**
  * Tests for chained user name mapper.
@@ -43,6 +44,7 @@ public class ChainedUserNameMapperSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testNullMappers() throws Exception {
         GridTestUtils.assertThrows(null, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -58,6 +60,7 @@ public class ChainedUserNameMapperSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testNullMapperElement() throws Exception {
         GridTestUtils.assertThrows(null, new Callable<Void>() {
             @Override public Void call() throws Exception {

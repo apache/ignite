@@ -75,56 +75,51 @@ struct TransactionTestSuiteFixture : public odbc::OdbcTestSuite
      */
     void InsertTestValue(int64_t key, const std::string& value)
     {
-        InsertTestValue(stmt, key, value);
-    }
-
-    /**
-     * Insert test string value in cache and make all the neccessary checks.
-     *
-     * @param stmt Statement.
-     * @param key Key.
-     * @param value Value.
-     */
-    static void InsertTestValue(SQLHSTMT stmt, int64_t key, const std::string& value)
-    {
         SQLCHAR insertReq[] = "INSERT INTO TestType(_key, strField) VALUES(?, ?)";
 
-        SQLRETURN ret = SQLPrepare(stmt, insertReq, SQL_NTS);
+        SQLRETURN ret;
 
-        ODBC_THROW_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+        ret = SQLPrepare(stmt, insertReq, SQL_NTS);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         char strField[1024] = { 0 };
         SQLLEN strFieldLen = 0;
 
         ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_BIGINT, 0, 0, &key, 0, 0);
 
-        ODBC_THROW_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, sizeof(strField),
             sizeof(strField), &strField, sizeof(strField), &strFieldLen);
 
-        ODBC_THROW_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         strncpy(strField, value.c_str(), sizeof(strField));
         strFieldLen = SQL_NTS;
 
         ret = SQLExecute(stmt);
 
-        ODBC_THROW_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         SQLLEN affected = 0;
         ret = SQLRowCount(stmt, &affected);
 
-        ODBC_THROW_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         BOOST_CHECK_EQUAL(affected, 1);
 
         ret = SQLMoreResults(stmt);
 
         if (ret != SQL_NO_DATA)
-            ODBC_THROW_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-        ResetStatement(stmt);
+        ResetStatement();
     }
 
     /**
@@ -135,23 +130,14 @@ struct TransactionTestSuiteFixture : public odbc::OdbcTestSuite
      */
     void UpdateTestValue(int64_t key, const std::string& value)
     {
-        UpdateTestValue(stmt, key, value);
-    }
-
-    /**
-     * Update test string value in cache and make all the neccessary checks.
-     *
-     * @param stmt Statement.
-     * @param key Key.
-     * @param value Value.
-     */
-    static void UpdateTestValue(SQLHSTMT stmt, int64_t key, const std::string& value)
-    {
         SQLCHAR insertReq[] = "UPDATE TestType SET strField=? WHERE _key=?";
 
-        SQLRETURN ret = SQLPrepare(stmt, insertReq, SQL_NTS);
+        SQLRETURN ret;
 
-        ODBC_THROW_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+        ret = SQLPrepare(stmt, insertReq, SQL_NTS);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         char strField[1024] = { 0 };
         SQLLEN strFieldLen = 0;
@@ -159,32 +145,36 @@ struct TransactionTestSuiteFixture : public odbc::OdbcTestSuite
         ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, sizeof(strField),
             sizeof(strField), &strField, sizeof(strField), &strFieldLen);
 
-        ODBC_THROW_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_BIGINT, 0, 0, &key, 0, 0);
 
-        ODBC_THROW_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         strncpy(strField, value.c_str(), sizeof(strField));
         strFieldLen = SQL_NTS;
 
         ret = SQLExecute(stmt);
 
-        ODBC_THROW_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         SQLLEN affected = 0;
         ret = SQLRowCount(stmt, &affected);
 
-        ODBC_THROW_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         BOOST_CHECK_EQUAL(affected, 1);
 
         ret = SQLMoreResults(stmt);
 
         if (ret != SQL_NO_DATA)
-            ODBC_THROW_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-        ResetStatement(stmt);
+        ResetStatement();
     }
 
     /**
@@ -194,45 +184,41 @@ struct TransactionTestSuiteFixture : public odbc::OdbcTestSuite
      */
     void DeleteTestValue(int64_t key)
     {
-        DeleteTestValue(stmt, key);
-    }
-
-    /**
-     * Delete test string value.
-     *
-     * @param stmt Statement.
-     * @param key Key.
-     */
-    static void DeleteTestValue(SQLHSTMT stmt, int64_t key)
-    {
         SQLCHAR insertReq[] = "DELETE FROM TestType WHERE _key=?";
 
-        SQLRETURN ret = SQLPrepare(stmt, insertReq, SQL_NTS);
+        SQLRETURN ret;
 
-        ODBC_THROW_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+        ret = SQLPrepare(stmt, insertReq, SQL_NTS);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_BIGINT, 0, 0, &key, 0, 0);
 
-        ODBC_THROW_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         ret = SQLExecute(stmt);
 
-        ODBC_THROW_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         SQLLEN affected = 0;
         ret = SQLRowCount(stmt, &affected);
 
-        ODBC_THROW_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         BOOST_CHECK_EQUAL(affected, 1);
 
         ret = SQLMoreResults(stmt);
 
         if (ret != SQL_NO_DATA)
-            ODBC_THROW_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-        ResetStatement(stmt);
+        ResetStatement();
     }
+
     /**
      * Selects and checks the value.
      *
@@ -240,18 +226,6 @@ struct TransactionTestSuiteFixture : public odbc::OdbcTestSuite
      * @param expect Expected value.
      */
     void CheckTestValue(int64_t key, const std::string& expect)
-    {
-        CheckTestValue(stmt, key, expect);
-    }
-
-    /**
-     * Selects and checks the value.
-     *
-     * @param stmt Statement.
-     * @param key Key.
-     * @param expect Expected value.
-     */
-    static void CheckTestValue(SQLHSTMT stmt, int64_t key, const std::string& expect)
     {
         // Just selecting everything to make sure everything is OK
         SQLCHAR selectReq[] = "SELECT strField FROM TestType WHERE _key = ?";
@@ -261,19 +235,23 @@ struct TransactionTestSuiteFixture : public odbc::OdbcTestSuite
 
         SQLRETURN ret = SQLBindCol(stmt, 1, SQL_C_CHAR, &strField, sizeof(strField), &strFieldLen);
 
-        ODBC_THROW_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_BIGINT, 0, 0, &key, 0, 0);
 
-        ODBC_THROW_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         ret = SQLExecDirect(stmt, selectReq, sizeof(selectReq));
 
-        ODBC_THROW_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         ret = SQLFetch(stmt);
 
-        ODBC_THROW_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         BOOST_CHECK_EQUAL(std::string(strField, strFieldLen), expect);
 
@@ -284,9 +262,9 @@ struct TransactionTestSuiteFixture : public odbc::OdbcTestSuite
         ret = SQLMoreResults(stmt);
 
         if (ret != SQL_NO_DATA)
-            ODBC_THROW_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-        ResetStatement(stmt);
+        ResetStatement();
     }
 
     /**
@@ -296,17 +274,6 @@ struct TransactionTestSuiteFixture : public odbc::OdbcTestSuite
      */
     void CheckNoTestValue(int64_t key)
     {
-        CheckNoTestValue(stmt, key);
-    }
-
-    /**
-     * Selects and checks that value is absent.
-     *
-     * @param stmt Statement.
-     * @param key Key.
-     */
-    static void CheckNoTestValue(SQLHSTMT stmt, int64_t key)
-    {
         // Just selecting everything to make sure everything is OK
         SQLCHAR selectReq[] = "SELECT strField FROM TestType WHERE _key = ?";
 
@@ -315,31 +282,32 @@ struct TransactionTestSuiteFixture : public odbc::OdbcTestSuite
 
         SQLRETURN ret = SQLBindCol(stmt, 1, SQL_C_CHAR, &strField, sizeof(strField), &strFieldLen);
 
-        ODBC_THROW_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_BIGINT, 0, 0, &key, 0, 0);
 
-        ODBC_THROW_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         ret = SQLExecDirect(stmt, selectReq, sizeof(selectReq));
 
-        ODBC_THROW_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         ret = SQLFetch(stmt);
 
         BOOST_CHECK_EQUAL(ret, SQL_NO_DATA);
 
-        if (ret != SQL_NO_DATA)
-            ODBC_THROW_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+        if (ret != SQL_NO_DATA && !SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         ret = SQLMoreResults(stmt);
 
-        BOOST_CHECK_EQUAL(ret, SQL_NO_DATA);
-
         if (ret != SQL_NO_DATA)
-            ODBC_THROW_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-        ResetStatement(stmt);
+        ResetStatement();
     }
 
     /**
@@ -347,23 +315,15 @@ struct TransactionTestSuiteFixture : public odbc::OdbcTestSuite
      */
     void ResetStatement()
     {
-        ResetStatement(stmt);
-    }
-
-    /**
-     * Reset statement state.
-     *
-     * @param stmt Statement.
-     */
-    static void ResetStatement(SQLHSTMT stmt)
-    {
         SQLRETURN ret = SQLFreeStmt(stmt, SQL_RESET_PARAMS);
 
-        ODBC_THROW_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         ret = SQLFreeStmt(stmt, SQL_UNBIND);
 
-        ODBC_THROW_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
     }
 
     /** Node started during the test. */
@@ -776,74 +736,6 @@ BOOST_AUTO_TEST_CASE(TransactionEnvironmentTxModeCommit)
     ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_ENV, env);
 
     CheckTestValue(42, "Some");
-}
-
-BOOST_AUTO_TEST_CASE(TransactionVersionMismatchError)
-{
-    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
-
-    InsertTestValue(1, "test_1");
-
-    SQLRETURN ret = SQLSetConnectAttr(dbc, SQL_ATTR_AUTOCOMMIT, SQL_AUTOCOMMIT_OFF, 0);
-
-    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
-
-    CheckTestValue(1, "test_1");
-
-    SQLHDBC dbc2;
-    SQLHSTMT stmt2;
-
-    Connect(dbc2, stmt2, "DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
-
-    ret = SQLSetConnectAttr(dbc2, SQL_ATTR_AUTOCOMMIT, SQL_AUTOCOMMIT_OFF, 0);
-
-    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc2);
-
-    InsertTestValue(stmt2, 2, "test_2");
-
-    ret = SQLEndTran(SQL_HANDLE_DBC, dbc2, SQL_COMMIT);
-
-    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc2);
-
-    CheckTestValue(stmt2, 1, "test_1");
-    CheckTestValue(stmt2, 2, "test_2");
-
-    try
-    {
-        InsertTestValue(2, "test_2");
-
-        BOOST_FAIL("Exception is expected");
-    }
-    catch (OdbcClientError& err)
-    {
-        BOOST_CHECK(err.message.find("Cannot serialize transaction due to write conflict") != err.message.npos);
-        BOOST_CHECK_EQUAL(err.sqlstate, "40001");
-
-        ResetStatement(stmt);
-    }
-
-    try
-    {
-        CheckTestValue(1, "test_1");
-
-        BOOST_FAIL("Exception is expected");
-    }
-    catch (OdbcClientError& err)
-    {
-        BOOST_CHECK(err.message.find("Transaction is already completed") != err.message.npos);
-        BOOST_CHECK_EQUAL(err.sqlstate, "25000");
-
-        ResetStatement(stmt);
-    }
-
-    ret = SQLEndTran(SQL_HANDLE_DBC, dbc, SQL_ROLLBACK);
-    ODBC_THROW_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
-
-    SQLFreeHandle(SQL_HANDLE_STMT, stmt2);
-
-    SQLDisconnect(dbc2);
-
-    SQLFreeHandle(SQL_HANDLE_DBC, dbc2);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

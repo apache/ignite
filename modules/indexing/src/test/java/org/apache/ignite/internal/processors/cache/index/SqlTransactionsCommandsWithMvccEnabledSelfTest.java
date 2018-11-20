@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -180,6 +183,7 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
     /**
      * Test that attempting to perform a cache API operation from within an SQL transaction fails.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void checkCacheOperationThrows(final String opName, final Object... args) {
         execute(node(), "BEGIN");
 
@@ -260,7 +264,7 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
     }
 
     /** */
-    private static final EntryProcessor<Integer, Integer, Object> ENTRY_PROC =
+    private final static EntryProcessor<Integer, Integer, Object> ENTRY_PROC =
         new EntryProcessor<Integer, Integer, Object>() {
         @Override public Object process(MutableEntry<Integer, Integer> entry, Object... arguments)
         throws EntryProcessorException {
@@ -269,7 +273,7 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
     };
 
     /** */
-    private static final CacheEntryProcessor<Integer, Integer, Object> CACHE_ENTRY_PROC =
+    private final static CacheEntryProcessor<Integer, Integer, Object> CACHE_ENTRY_PROC =
         new CacheEntryProcessor<Integer, Integer, Object>() {
             @Override public Object process(MutableEntry<Integer, Integer> entry, Object... arguments)
                 throws EntryProcessorException {

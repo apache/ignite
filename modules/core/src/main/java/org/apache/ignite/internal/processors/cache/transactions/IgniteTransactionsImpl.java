@@ -151,6 +151,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
      * @param sysCacheCtx System cache context.
      * @return Transaction.
      */
+    @SuppressWarnings("unchecked")
     private GridNearTxLocal txStart0(
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,

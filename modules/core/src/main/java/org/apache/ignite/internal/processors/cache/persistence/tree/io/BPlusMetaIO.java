@@ -28,7 +28,7 @@ import org.apache.ignite.internal.util.GridStringBuilder;
 public class BPlusMetaIO extends PageIO {
     /** */
     public static final IOVersions<BPlusMetaIO> VERSIONS = new IOVersions<>(
-        new BPlusMetaIO(1), new BPlusMetaIO(2), new BPlusMetaIO(3)
+        new BPlusMetaIO(1), new BPlusMetaIO(2)
     );
 
     /** */
@@ -40,9 +40,6 @@ public class BPlusMetaIO extends PageIO {
     /** */
     private final int inlineSizeOff;
 
-    /** */
-    private boolean unwrappedPk;
-
     /**
      * @param ver Page format version.
      */
@@ -53,19 +50,11 @@ public class BPlusMetaIO extends PageIO {
             case 1:
                 inlineSizeOff = -1;
                 refsOff = LVLS_OFF + 1;
-                unwrappedPk = false;
                 break;
 
             case 2:
                 inlineSizeOff = LVLS_OFF + 1;
                 refsOff = inlineSizeOff + 2;
-                unwrappedPk = false;
-                break;
-
-            case 3:
-                inlineSizeOff = LVLS_OFF + 1;
-                refsOff = inlineSizeOff + 2;
-                unwrappedPk = true;
                 break;
 
             default:
@@ -191,13 +180,6 @@ public class BPlusMetaIO extends PageIO {
      */
     public int getInlineSize(long pageAddr) {
         return getVersion() > 1 ? PageUtils.getShort(pageAddr, inlineSizeOff) : 0;
-    }
-
-    /**
-     * @return {@code true} In case use unwrapped PK.
-     */
-    public boolean unwrappedPk() {
-        return unwrappedPk;
     }
 
     /** {@inheritDoc} */

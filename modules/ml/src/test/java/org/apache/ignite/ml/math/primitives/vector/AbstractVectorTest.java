@@ -353,6 +353,7 @@ public class AbstractVectorTest {
      * @param storage {@link VectorStorage}
      * @return AbstractVector.
      */
+    @SuppressWarnings("ClassWithoutNoArgConstructor")
     private AbstractVector getAbstractVector(VectorStorage storage) {
         return new AbstractVector(storage) { // TODO: IGNTIE-5723, find out how to fix warning about missing constructor
             /** {@inheritDoc} */

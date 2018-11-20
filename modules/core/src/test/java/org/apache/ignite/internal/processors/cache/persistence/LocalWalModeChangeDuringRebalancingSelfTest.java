@@ -546,6 +546,11 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         }
 
         /** {@inheritDoc} */
+        @Override public FileIO create(File file) throws IOException {
+            return new TestFileIO(delegate.create(file));
+        }
+
+        /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
             return new TestFileIO(delegate.create(file, modes));
         }

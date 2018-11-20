@@ -425,6 +425,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
      * @param cacheList Caches.
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void checkAllCacheCombinations(
         boolean idx,
         List<List<TestCache>> cacheList) throws Exception {

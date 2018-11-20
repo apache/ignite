@@ -22,7 +22,7 @@ import org.apache.ignite.internal.processors.authentication.AuthorizationContext
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
-import org.apache.ignite.plugin.security.SecurityException;
+import org.apache.ignite.internal.processors.security.SecurityContextHolder;
 
 /**
  * Thin client request handler.
@@ -48,15 +48,19 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
 
     /** {@inheritDoc} */
     @Override public ClientListenerResponse handle(ClientListenerRequest req) {
+        if (authCtx != null) {
+            AuthorizationContext.context(authCtx);
+            SecurityContextHolder.set(ctx.securityContext());
+        }
+
         try {
             return ((ClientRequest)req).process(ctx);
         }
-        catch (SecurityException ex) {
-            throw new IgniteClientException(
-                ClientStatus.SECURITY_VIOLATION,
-                "Client is not authorized to perform this operation",
-                ex
-            );
+        finally {
+            if (authCtx != null)
+                AuthorizationContext.clear();
+
+            SecurityContextHolder.clear();
         }
     }
 

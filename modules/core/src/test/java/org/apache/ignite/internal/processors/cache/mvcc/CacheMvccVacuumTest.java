@@ -84,12 +84,6 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
         ensureNoVacuum(node0);
         ensureNoVacuum(node1);
 
-        node1.createCache(new CacheConfiguration<>("test1")
-            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
-
-        ensureNoVacuum(node0);
-        ensureNoVacuum(node1);
-
         node1.createCache(new CacheConfiguration<>("test2")
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT));
 

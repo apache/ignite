@@ -40,7 +40,6 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -107,13 +106,6 @@ public class GridCacheContinuousQueryConcurrentTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
-    public void testReplicatedMvccTx() throws Exception {
-        testRegistration(cacheConfiguration(CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, 1));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testRestartReplicated() throws Exception {
         testRestartRegistration(cacheConfiguration(CacheMode.REPLICATED, CacheAtomicityMode.ATOMIC, 2));
     }
@@ -135,13 +127,6 @@ public class GridCacheContinuousQueryConcurrentTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
-    public void testRestartPartitionMvccTx() throws Exception {
-        testRestartRegistration(cacheConfiguration(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, 2));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testReplicatedAtomic() throws Exception {
         testRegistration(cacheConfiguration(CacheMode.REPLICATED, CacheAtomicityMode.ATOMIC, 2));
     }
@@ -151,13 +136,6 @@ public class GridCacheContinuousQueryConcurrentTest extends GridCommonAbstractTe
      */
     public void testPartitionTx() throws Exception {
         testRegistration(cacheConfiguration(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL, 2));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPartitionMvccTx() throws Exception {
-        testRegistration(cacheConfiguration(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, 2));
     }
 
     /**
@@ -364,44 +342,17 @@ public class GridCacheContinuousQueryConcurrentTest extends GridCommonAbstractTe
         // were busy setting up the cache listener.
         // Check asynchronously.
         // Complete the promise if the key was inserted concurrently.
-        if (!((IgniteCacheProxy)cache).context().mvccEnabled()) {
-            cache.getAsync(key).listen(new IgniteInClosure<IgniteFuture<String>>() {
-                @Override public void apply(IgniteFuture<String> f) {
-                    String val = f.get();
+        cache.getAsync(key).listen(new IgniteInClosure<IgniteFuture<String>>() {
+            @Override public void apply(IgniteFuture<String> f) {
+                String val = f.get();
 
-                    if (val != null) {
-                        log.info("Completed by get: " + id);
+                if (val != null) {
+                    log.info("Completed by get: " + id);
 
-                        (((GridFutureAdapter)((IgniteFutureImpl)promise).internalFuture())).onDone("by async get");
-                    }
+                    (((GridFutureAdapter)((IgniteFutureImpl)promise).internalFuture())).onDone("by get");
                 }
-            });
-        }
-        else {
-            // For MVCC caches we need to wait until updated value becomes visible for consequent readers.
-            // When MVCC transaction completes, it's updates are not visible immediately for the new transactions.
-            // This is caused by the lag between transaction completes on the node and mvcc coordinator
-            // removes this transaction from the active list.
-            GridTestUtils.runAsync(new Runnable() {
-                @Override public void run() {
-                    String v;
-
-                    while (!Thread.currentThread().isInterrupted()) {
-                        v = cache.get(key);
-
-                        if (v == null)
-                            doSleep(100);
-                        else {
-                            log.info("Completed by async mvcc get: " + id);
-
-                            (((GridFutureAdapter)((IgniteFutureImpl)promise).internalFuture())).onDone("by get");
-
-                            break;
-                        }
-                    }
-                }
-            });
-        }
+            }
+        });
 
         return promise;
     }

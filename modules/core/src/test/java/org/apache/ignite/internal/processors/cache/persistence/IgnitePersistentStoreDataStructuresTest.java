@@ -22,7 +22,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCountDownLatch;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSemaphore;
@@ -186,19 +185,10 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
 
         final Ignite node = startGrids(2);
 
-        IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
-            while (true) {
-                try {
-                    // Should not hang.
-                    node.atomicSequence(seqName, 0, false);
-
-                    break;
-                }
-                catch (IgniteException e) {
-                    // Can fail on not yet activated cluster. Retry until success.
-                    assertTrue(e.getMessage()
-                        .contains("Can not perform the operation because the cluster is inactive"));
-                }
+        IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                // Should not hang.
+                node.atomicSequence(seqName, 0, false);
             }
         });
 

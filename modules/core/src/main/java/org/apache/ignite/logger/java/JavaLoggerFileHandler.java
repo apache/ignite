@@ -68,6 +68,7 @@ public final class JavaLoggerFileHandler extends StreamHandler {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("NonSynchronizedMethodOverridesSynchronizedMethod")
     @Override public boolean isLoggable(LogRecord record) {
         FileHandler delegate0 = delegate;
 

@@ -106,33 +106,6 @@ namespace ignite
                 }
 
                 /**
-                 * Stores given key-value pairs in cache.
-                 * If write-through is enabled, the stored values will be persisted to store.
-                 *
-                 * @param begin Iterator pointing to the beginning of the key-value pair sequence.
-                 * @param end Iterator pointing to the end of the key-value pair sequence.
-                 */
-                template<typename InIter>
-                void PutAll(InIter begin, InIter end)
-                {
-                    impl::thin::WritableMapImpl<K, V, InIter> wrSeq(begin, end);
-
-                    proxy.PutAll(wrSeq);
-                }
-
-                /**
-                 * Stores given key-value pairs in cache.
-                 * If write-through is enabled, the stored values will be persisted to store.
-                 *
-                 * @param vals Key-value pairs to store in cache.
-                 */
-                template<typename Map>
-                void PutAll(const Map& vals)
-                {
-                    PutAll(vals.begin(), vals.end());
-                }
-
-                /**
                  * Get value from the cache.
                  *
                  * @param key Key.
@@ -162,60 +135,6 @@ namespace ignite
                 }
 
                 /**
-                 * Retrieves values mapped to the specified keys from cache.
-                 * If some value is not present in cache, then it will be looked up from swap storage. If
-                 * it's not present in swap, or if swap is disabled, and if read-through is allowed, value
-                 * will be loaded from persistent store.
-                 *
-                 * @param begin Iterator pointing to the beginning of the key sequence.
-                 * @param end Iterator pointing to the end of the key sequence.
-                 * @param dst Output iterator. Should dereference to std::pair or CacheEntry.
-                 */
-                template<typename InIter, typename OutIter>
-                void GetAll(InIter begin, InIter end, OutIter dst)
-                {
-                    impl::thin::WritableSetImpl<K, InIter> wrSeq(begin, end);
-                    impl::thin::ReadableMapImpl<K, V, OutIter> rdSeq(dst);
-
-                    proxy.GetAll(wrSeq, rdSeq);
-                }
-
-                /**
-                 * Retrieves values mapped to the specified keys from cache.
-                 * If some value is not present in cache, then it will be looked up from swap storage. If
-                 * it's not present in swap, or if swap is disabled, and if read-through is allowed, value
-                 * will be loaded from persistent store.
-                 *
-                 * @param keys Keys.
-                 * @param res Map of key-value pairs.
-                 */
-                template<typename Set, typename Map>
-                void GetAll(const Set& keys, Map& res)
-                {
-                    return GetAll(keys.begin(), keys.end(), std::inserter(res, res.end()));
-                }
-
-                /**
-                 * Stores given key-value pair in cache only if there is a previous mapping for it.
-                 * If cache previously contained value for the given key, then this value is returned.
-                 * In case of PARTITIONED or REPLICATED caches, the value will be loaded from the primary node,
-                 * which in its turn may load the value from the swap storage, and consecutively, if it's not
-                 * in swap, rom the underlying persistent storage.
-                 * If write-through is enabled, the stored value will be persisted to store.
-                 *
-                 * @param key Key to store in cache.
-                 * @param value Value to be associated with the given key.
-                 * @return True if the value was replaced.
-                 */
-                bool Replace(const K& key, const V& value)
-                {
-                    impl::thin::WritableKeyImpl<KeyType> wrKey(key);
-                    impl::thin::WritableImpl<ValueType> wrValue(value);
-
-                    return proxy.Replace(wrKey, wrValue);
-                }
-
-                /**
                  * Check if the cache contains a value for the specified key.
                  *
                  * @param key Key whose presence in this cache is to be tested.
@@ -226,33 +145,6 @@ namespace ignite
                     impl::thin::WritableKeyImpl<KeyType> wrKey(key);
 
                     return proxy.ContainsKey(wrKey);
-                }
-
-                /**
-                 * Check if cache contains mapping for these keys.
-                 *
-                 * @param keys Keys.
-                 * @return True if cache contains mapping for all these keys.
-                 */
-                template<typename Set>
-                bool ContainsKeys(const Set& keys)
-                {
-                    return ContainsKeys(keys.begin(), keys.end());
-                }
-
-                /**
-                 * Check if cache contains mapping for these keys.
-                 *
-                 * @param begin Iterator pointing to the beginning of the key sequence.
-                 * @param end Iterator pointing to the end of the key sequence.
-                 * @return True if cache contains mapping for all these keys.
-                 */
-                template<typename InIter>
-                bool ContainsKeys(InIter begin, InIter end)
-                {
-                    impl::thin::WritableSetImpl<K, InIter> wrSeq(begin, end);
-
-                    return proxy.ContainsKeys(wrSeq);
                 }
 
                 /**
@@ -277,6 +169,7 @@ namespace ignite
                  * If the returned value is not needed, method removex() should always be used instead of this
                  * one to avoid the overhead associated with returning of the previous value.
                  * If write-through is enabled, the value will be removed from store.
+                 * This method is transactional and will enlist the entry into ongoing transaction if there is one.
                  *
                  * @param key Key whose mapping is to be removed from cache.
                  * @return False if there was no matching key.
@@ -286,33 +179,6 @@ namespace ignite
                     impl::thin::WritableKeyImpl<KeyType> wrKey(key);
 
                     return proxy.Remove(wrKey);
-                }
-
-                /**
-                 * Removes given key mappings from cache.
-                 * If write-through is enabled, the value will be removed from store.
-                 *
-                 * @param keys Keys whose mappings are to be removed from cache.
-                 */
-                template<typename Set>
-                void RemoveAll(const Set& keys)
-                {
-                    RemoveAll(keys.begin(), keys.end());
-                }
-
-                /**
-                 * Removes given key mappings from cache.
-                 * If write-through is enabled, the value will be removed from store.
-                 *
-                 * @param begin Iterator pointing to the beginning of the key sequence.
-                 * @param end Iterator pointing to the end of the key sequence.
-                 */
-                template<typename InIter>
-                void RemoveAll(InIter begin, InIter end)
-                {
-                    impl::thin::WritableSetImpl<K, InIter> wrSeq(begin, end);
-
-                    proxy.RemoveAll(wrSeq);
                 }
 
                 /**
@@ -344,33 +210,6 @@ namespace ignite
                 void Clear()
                 {
                     proxy.Clear();
-                }
-
-                /**
-                 * Clear entries from the cache and swap storage, without notifying listeners or CacheWriters.
-                 * Entry is cleared only if it is not currently locked, and is not participating in a transaction.
-                 *
-                 * @param keys Keys to clear.
-                 */
-                template<typename Set>
-                void ClearAll(const Set& keys)
-                {
-                    ClearAll(keys.begin(), keys.end());
-                }
-
-                /**
-                 * Clear entries from the cache and swap storage, without notifying listeners or CacheWriters.
-                 * Entry is cleared only if it is not currently locked, and is not participating in a transaction.
-                 *
-                 * @param begin Iterator pointing to the beginning of the key sequence.
-                 * @param end Iterator pointing to the end of the key sequence.
-                 */
-                template<typename InIter>
-                void ClearAll(InIter begin, InIter end)
-                {
-                    impl::thin::WritableSetImpl<K, InIter> wrSeq(begin, end);
-
-                    proxy.ClearAll(wrSeq);
                 }
 
                 /**

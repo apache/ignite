@@ -21,7 +21,6 @@ import java.io.FilenameFilter;
 import java.io.RandomAccessFile;
 import java.util.Arrays;
 import java.util.Comparator;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -150,10 +149,8 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         }
 
         // Spam WAL to move all data records to compressible WAL zone.
-        for (int i = 0; i < WAL_SEGMENT_SIZE / DFLT_PAGE_SIZE * 2; i++) {
-            ig.context().cache().context().wal().log(new PageSnapshot(new FullPageId(-1, -1), new byte[DFLT_PAGE_SIZE],
-                DFLT_PAGE_SIZE));
-        }
+        for (int i = 0; i < WAL_SEGMENT_SIZE / DFLT_PAGE_SIZE * 2; i++)
+            ig.context().cache().context().wal().log(new PageSnapshot(new FullPageId(-1, -1), new byte[DFLT_PAGE_SIZE]));
 
         // WAL archive segment is allowed to be compressed when it's at least one checkpoint away from current WAL head.
         ig.context().cache().context().database().wakeupForCheckpoint("Forced checkpoint").get();
@@ -222,20 +219,6 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         }
 
         assertFalse(fail);
-
-        // Check compation successfully reset on blt changed.
-        stopAllGrids();
-
-        Ignite ignite = startGrids(2);
-
-        ignite.cluster().active(true);
-
-        resetBaselineTopology();
-
-        // This node will join to different blt.
-        startGrid(2);
-
-        awaitPartitionMapExchange();
     }
 
     /**
@@ -364,10 +347,8 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         }
 
         // Spam WAL to move all data records to compressible WAL zone.
-        for (int i = 0; i < WAL_SEGMENT_SIZE / DFLT_PAGE_SIZE * 2; i++) {
-            ig.context().cache().context().wal().log(new PageSnapshot(new FullPageId(-1, -1), new byte[DFLT_PAGE_SIZE],
-                DFLT_PAGE_SIZE));
-        }
+        for (int i = 0; i < WAL_SEGMENT_SIZE / DFLT_PAGE_SIZE * 2; i++)
+            ig.context().cache().context().wal().log(new PageSnapshot(new FullPageId(-1, -1), new byte[DFLT_PAGE_SIZE]));
 
         // WAL archive segment is allowed to be compressed when it's at least one checkpoint away from current WAL head.
         ig.context().cache().context().database().wakeupForCheckpoint("Forced checkpoint").get();

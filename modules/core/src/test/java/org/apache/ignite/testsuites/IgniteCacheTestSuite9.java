@@ -22,12 +22,10 @@ import org.apache.ignite.internal.processors.cache.CachePutIfAbsentTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheGetCustomCollectionsSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLoadRebalanceEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAtomicPrimarySyncBackPressureTest;
-import org.apache.ignite.internal.processors.cache.distributed.CacheOperationsInterruptTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCachePrimarySyncTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCachePrimarySyncTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCacheWriteSynchronizationModesMultithreadedTest;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteTxConcurrentRemoveObjectsTest;
-import org.apache.ignite.internal.processors.cache.transactions.TxDataConsistencyOnCommitFailureTest;
+import org.apache.ignite.testframework.junits.GridAbstractTest;
 
 /**
  * Test suite.
@@ -38,6 +36,8 @@ public class IgniteCacheTestSuite9 extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
+        System.setProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, "false");
+
         TestSuite suite = new TestSuite("IgniteCache Test Suite part 9");
 
         suite.addTestSuite(IgniteCacheGetCustomCollectionsSelfTest.class);
@@ -48,12 +48,6 @@ public class IgniteCacheTestSuite9 extends TestSuite {
         suite.addTestSuite(CachePutIfAbsentTest.class);
 
         suite.addTestSuite(CacheAtomicPrimarySyncBackPressureTest.class);
-
-        suite.addTestSuite(IgniteTxConcurrentRemoveObjectsTest.class);
-
-        suite.addTestSuite(TxDataConsistencyOnCommitFailureTest.class);
-
-        suite.addTestSuite(CacheOperationsInterruptTest.class);
 
         return suite;
     }

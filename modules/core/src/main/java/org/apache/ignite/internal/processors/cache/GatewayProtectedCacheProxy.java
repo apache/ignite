@@ -49,8 +49,8 @@ import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.internal.AsyncSupportAdapter;
-import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
+import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -1488,42 +1488,6 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
 
         try {
             delegate.clearStatistics();
-        }
-        finally {
-            onLeave(opGate);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void preloadPartition(int part) {
-        CacheOperationGate opGate = onEnter();
-
-        try {
-            delegate.preloadPartition(part);
-        }
-        finally {
-            onLeave(opGate);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<Void> preloadPartitionAsync(int part) {
-        CacheOperationGate opGate = onEnter();
-
-        try {
-            return delegate.preloadPartitionAsync(part);
-        }
-        finally {
-            onLeave(opGate);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean localPreloadPartition(int part) {
-        CacheOperationGate opGate = onEnter();
-
-        try {
-            return delegate.localPreloadPartition(part);
         }
         finally {
             onLeave(opGate);

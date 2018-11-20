@@ -188,6 +188,7 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("UnusedDeclaration")
     public void testInvalidTypes() throws Exception {
         inclEvtTypes = new int[]{EVT_TASK_STARTED};
 

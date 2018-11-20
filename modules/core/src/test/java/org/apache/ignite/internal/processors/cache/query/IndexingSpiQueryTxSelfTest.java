@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.concurrent.Callable;
-import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -41,13 +37,29 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.Cache;
+
 /**
  * Indexing Spi transactional query test
  */
 public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
+    /** */
+    private static AtomicInteger cnt;
+
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 4;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        cnt = new AtomicInteger();
+
+        super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */
@@ -56,48 +68,30 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
-        cfg.setClientMode("client".equals(igniteInstanceName));
-        cfg.setIndexingSpi(new MyBrokenIndexingSpi());
+        if (cnt.getAndIncrement() == 0)
+            cfg.setClientMode(true);
+        else {
+            cfg.setIndexingSpi(new MyBrokenIndexingSpi());
 
-        CacheConfiguration ccfg = cacheConfiguration(igniteInstanceName);
-        ccfg.setName(DEFAULT_CACHE_NAME);
-        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+            CacheConfiguration ccfg = cacheConfiguration(igniteInstanceName);
+            ccfg.setName("test-cache");
+            ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
-        ccfg.setIndexedTypes(Integer.class, Integer.class);
+            ccfg.setIndexedTypes(Integer.class, Integer.class);
 
-        cfg.setCacheConfiguration(ccfg);
-
+            cfg.setCacheConfiguration(ccfg);
+        }
         return cfg;
-    }
-
-    /** */
-    public void testIndexingSpiWithTxClient() throws Exception {
-        IgniteEx client = startGrid("client");
-
-        assertNotNull(client.cache(DEFAULT_CACHE_NAME));
-
-        doTestIndexingSpiWithTx(client, 0);
-    }
-
-    /** */
-    public void testIndexingSpiWithTxLocal() throws Exception {
-        IgniteEx ignite = (IgniteEx)primaryNode(0, DEFAULT_CACHE_NAME);
-
-        doTestIndexingSpiWithTx(ignite, 0);
-    }
-
-    /** */
-    public void testIndexingSpiWithTxNotLocal() throws Exception {
-        IgniteEx ignite = (IgniteEx)primaryNode(0, DEFAULT_CACHE_NAME);
-
-        doTestIndexingSpiWithTx(ignite, 1);
     }
 
     /**
      * @throws Exception If failed.
      */
-    private void doTestIndexingSpiWithTx(IgniteEx ignite, int key) throws Exception {
-        final IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testIndexingSpiWithTx() throws Exception {
+        IgniteEx ignite = grid(0);
+
+        final IgniteCache<Integer, Integer> cache = ignite.cache("test-cache");
 
         final IgniteTransactions txs = ignite.transactions();
 
@@ -110,7 +104,7 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
                         Transaction tx;
 
                         try (Transaction tx0 = tx = txs.txStart(concurrency, isolation)) {
-                            cache.put(key, key);
+                            cache.put(1, 1);
 
                             tx0.commit();
                         }
@@ -120,8 +114,6 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
                         return null;
                     }
                 }, IgniteTxHeuristicCheckedException.class);
-
-                checkFutures();
             }
         }
     }
@@ -143,7 +135,7 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
         /** {@inheritDoc} */
         @Override public Iterator<Cache.Entry<?, ?>> query(@Nullable String cacheName, Collection<Object> params,
             @Nullable IndexingQueryFilter filters) throws IgniteSpiException {
-            return null;
+           return null;
         }
 
         /** {@inheritDoc} */

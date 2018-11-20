@@ -137,6 +137,7 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<P
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings({"RedundantTypeArguments"})
     public void testCollision1() throws Exception {
         List<CollisionJobContext> activeJobs = makeContextList(null);
         List<CollisionJobContext> passiveJobs = makeContextList(null);
@@ -241,7 +242,7 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<P
                 ((GridTestCollisionTaskSession)ctx.getTaskSession()).setPriorityAttributeKey("bad-attr-name");
 
                 ((GridTestCollisionJobContext)ctx).setJobContext(new GridTestJobContext() {
-                    @SuppressWarnings({"RedundantTypeArguments"})
+                    @SuppressWarnings({"unchecked", "RedundantTypeArguments"})
                     @Override public <K, V> V getAttribute(K key) {
                         if (DFLT_JOB_PRIORITY_ATTRIBUTE_KEY.equals(key))
                             return null;

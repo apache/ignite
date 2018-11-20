@@ -17,63 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /** */
 public class CacheMvccPartitionedSqlTxQueriesWithReducerTest extends CacheMvccSqlTxQueriesWithReducerAbstractTest {
     /** {@inheritDoc} */
     protected CacheMode cacheMode() {
         return PARTITIONED;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testQueryUpdateOnUnstableTopologyDoesNotCauseDeadlock() throws Exception {
-        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
-            .setIndexedTypes(Integer.class, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue.class);
-
-        testSpi = true;
-
-        Ignite updateNode = startGrids(3);
-
-        CountDownLatch latch = new CountDownLatch(1);
-
-        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(1));
-
-        spi.blockMessages((node, msg) -> {
-            if (msg instanceof GridDhtPartitionsSingleMessage) {
-                latch.countDown();
-
-                return true;
-            }
-
-            return false;
-        });
-
-        CompletableFuture.runAsync(() -> stopGrid(2));
-
-        assertTrue(latch.await(TX_TIMEOUT, TimeUnit.MILLISECONDS));
-
-        CompletableFuture<Void> queryFut = CompletableFuture.runAsync(() -> updateNode
-            .cache(DEFAULT_CACHE_NAME)
-            .query(new SqlFieldsQuery("INSERT INTO MvccTestSqlIndexValue (_key, idxVal1) VALUES (1,1),(2,2),(3,3)"))
-            .getAll());
-
-        Thread.sleep(300);
-
-        spi.stopBlock();
-
-        queryFut.get(TX_TIMEOUT, TimeUnit.MILLISECONDS);
     }
 }

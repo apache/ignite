@@ -30,6 +30,10 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
+
 /**
  * Direct native IO factory for block IO operations on aligned memory structures.<br>
  * This limited functionality is used for page store operations.<br>
@@ -138,6 +142,11 @@ public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
         managedAlignedBuffers.put(GridUnsafe.bufferAddress(allocate), Thread.currentThread());
 
         return allocate;
+    }
+
+    /** {@inheritDoc} */
+    @Override public FileIO create(File file) throws IOException {
+        return create(file, CREATE, READ, WRITE);
     }
 
     /** {@inheritDoc} */

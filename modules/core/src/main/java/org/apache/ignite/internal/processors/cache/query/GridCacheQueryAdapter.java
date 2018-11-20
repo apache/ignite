@@ -527,7 +527,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
+    @SuppressWarnings({"IfMayBeConditional", "unchecked"})
     @Override public GridCloseableIterator executeScanQuery() throws IgniteCheckedException {
         assert type == SCAN : "Wrong processing of query: " + type;
 
@@ -864,7 +864,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
                     assert waitVer != null;
 
-                    retryFut = cctx.shared().exchange().affinityReadyFuture(waitVer);
+                    retryFut = cctx.affinity().affinityReadyFuture(waitVer);
                 }
                 else if (e.hasCause(ClusterTopologyCheckedException.class)) {
                     ClusterTopologyCheckedException topEx = X.cause(e, ClusterTopologyCheckedException.class);

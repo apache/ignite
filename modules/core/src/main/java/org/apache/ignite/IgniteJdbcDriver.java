@@ -285,6 +285,7 @@ import org.apache.ignite.internal.jdbc.JdbcDriverPropertyInfo;
  * }
  * </pre>
  */
+@SuppressWarnings("JavadocReference")
 public class IgniteJdbcDriver implements Driver {
     /** Prefix for property names. */
     private static final String PROP_PREFIX = "ignite.jdbc.";

@@ -42,6 +42,7 @@ public class GridMultiSplitsRedeployLoadTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ConstantConditions")
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
         IgniteConfiguration cfg = super.getConfiguration();
 
@@ -139,6 +140,7 @@ public class GridMultiSplitsRedeployLoadTest extends GridCommonAbstractTest {
     /**
      * @param ignite Grid.
      */
+    @SuppressWarnings("unchecked")
     private void deployTask(Ignite ignite) {
         ignite.compute().localDeployTask(GridLoadTestTask.class, GridLoadTestTask.class.getClassLoader());
     }

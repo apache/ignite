@@ -97,7 +97,6 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
 
         boolean mtr = req0.includeMetrics();
         boolean attr = req0.includeAttributes();
-        boolean caches = req0.includeCaches();
 
         switch (req.command()) {
             case TOPOLOGY: {
@@ -108,7 +107,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
                     new ArrayList<>(allNodes.size());
 
                 for (ClusterNode node : allNodes)
-                    top.add(createNodeBean(node, mtr, attr, caches));
+                    top.add(createNodeBean(node, mtr, attr));
 
                 res.setResponse(top);
 
@@ -144,7 +143,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
                     });
 
                 if (node != null)
-                    res.setResponse(createNodeBean(node, mtr, attr, caches));
+                    res.setResponse(createNodeBean(node, mtr, attr));
                 else
                     res.setResponse(null);
 
@@ -197,15 +196,14 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
     }
 
     /**
-     * Creates node bean out of cluster node. Notice that cache attribute is handled separately.
+     * Creates node bean out of grid node. Notice that cache attribute is handled separately.
      *
-     * @param node Cluster node.
-     * @param mtr Whether to include node metrics.
-     * @param attr Whether to include node attributes.
-     * @param caches Whether to include node caches.
+     * @param node Grid node.
+     * @param mtr {@code true} to add metrics.
+     * @param attr {@code true} to add attributes.
      * @return Grid Node bean.
      */
-    private GridClientNodeBean createNodeBean(ClusterNode node, boolean mtr, boolean attr, boolean caches) {
+    private GridClientNodeBean createNodeBean(ClusterNode node, boolean mtr, boolean attr) {
         assert node != null;
 
         GridClientNodeBean nodeBean = new GridClientNodeBean();
@@ -218,16 +216,14 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
         nodeBean.setTcpAddresses(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_TCP_ADDRS)));
         nodeBean.setTcpHostNames(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_TCP_HOST_NAMES)));
 
-        if (caches) {
-            Map<String, CacheConfiguration> nodeCaches = ctx.discovery().nodePublicCaches(node);
+        Map<String, CacheConfiguration> nodeCaches = ctx.discovery().nodePublicCaches(node);
 
-            Collection<GridClientCacheBean> cacheBeans = new ArrayList<>(nodeCaches.size());
+        Collection<GridClientCacheBean> caches = new ArrayList<>(nodeCaches.size());
 
-            for (CacheConfiguration ccfg : nodeCaches.values())
-                cacheBeans.add(createCacheBean(ccfg));
+        for (CacheConfiguration ccfg : nodeCaches.values())
+            caches.add(createCacheBean(ccfg));
 
-            nodeBean.setCaches(cacheBeans);
-        }
+        nodeBean.setCaches(caches);
 
         if (mtr) {
             ClusterMetrics metrics = node.metrics();

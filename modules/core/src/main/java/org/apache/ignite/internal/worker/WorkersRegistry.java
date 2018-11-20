@@ -61,10 +61,8 @@ public class WorkersRegistry implements GridWorkerListener {
     /** */
     private final IgniteBiInClosure<GridWorker, FailureType> workerFailedHnd;
 
-    /**
-     * Maximum inactivity period for system worker in milliseconds, when exceeded, worker is considered as blocked.
-     */
-    private volatile long sysWorkerBlockedTimeout;
+    /** Worker heartbeat timeout in milliseconds, when exceeded, worker is considered as blocked. */
+    private final long heartbeatTimeout;
 
     /** Time in milliseconds between successive workers checks. */
     private final long checkInterval;
@@ -74,17 +72,15 @@ public class WorkersRegistry implements GridWorkerListener {
 
     /**
      * @param workerFailedHnd Closure to invoke on worker failure.
-     * @param sysWorkerBlockedTimeout Maximum allowed worker heartbeat interval in milliseconds, non-positive value denotes
-     * infinite interval.
+     * @param heartbeatTimeout Maximum allowed worker heartbeat interval in milliseconds, should be positive.
      */
     public WorkersRegistry(
         @NotNull IgniteBiInClosure<GridWorker, FailureType> workerFailedHnd,
-        long sysWorkerBlockedTimeout,
-        IgniteLogger log
-    ) {
+        long heartbeatTimeout,
+        IgniteLogger log) {
         this.workerFailedHnd = workerFailedHnd;
-        this.sysWorkerBlockedTimeout = U.ensurePositive(sysWorkerBlockedTimeout, Long.MAX_VALUE);
-        this.checkInterval = Math.min(DFLT_CHECK_INTERVAL, sysWorkerBlockedTimeout);
+        this.heartbeatTimeout = heartbeatTimeout;
+        this.checkInterval = Math.min(DFLT_CHECK_INTERVAL, heartbeatTimeout);
         this.log = log;
     }
 
@@ -131,31 +127,13 @@ public class WorkersRegistry implements GridWorkerListener {
     }
 
     /** */
-    public boolean livenessCheckEnabled() {
+    boolean livenessCheckEnabled() {
         return livenessCheckEnabled;
     }
 
     /** */
-    public void livenessCheckEnabled(boolean val) {
+    void livenessCheckEnabled(boolean val) {
         livenessCheckEnabled = val;
-    }
-
-    /**
-     * Returns maximum inactivity period for system worker. When exceeded, worker is considered as blocked.
-     *
-     * @return Maximum inactivity period for system worker in milliseconds.
-     */
-    public long getSystemWorkerBlockedTimeout() {
-        return sysWorkerBlockedTimeout == Long.MAX_VALUE ? 0 : sysWorkerBlockedTimeout;
-    }
-
-    /**
-     * Sets maximum inactivity period for system worker. When exceeded, worker is considered as blocked.
-     *
-     * @param val Maximum inactivity period for system worker in milliseconds.
-     */
-    public void setSystemWorkerBlockedTimeout(long val) {
-        sysWorkerBlockedTimeout = U.ensurePositive(val, Long.MAX_VALUE);
     }
 
     /** {@inheritDoc} */
@@ -165,9 +143,6 @@ public class WorkersRegistry implements GridWorkerListener {
 
     /** {@inheritDoc} */
     @Override public void onStopped(GridWorker w) {
-        if (!w.isCancelled())
-            workerFailedHnd.apply(w, SYSTEM_WORKER_TERMINATION);
-
         unregister(w.runner().getName());
     }
 
@@ -186,7 +161,7 @@ public class WorkersRegistry implements GridWorkerListener {
         try {
             lastCheckTs = U.currentTimeMillis();
 
-            long workersToCheck = Math.max(registeredWorkers.size() * checkInterval / sysWorkerBlockedTimeout, 1);
+            long workersToCheck = Math.max(registeredWorkers.size() * checkInterval / heartbeatTimeout, 1);
 
             int workersChecked = 0;
 
@@ -212,7 +187,7 @@ public class WorkersRegistry implements GridWorkerListener {
                         // That is, if worker is dead, but still resides in registeredWorkers
                         // then something went wrong, the only extra thing is to test
                         // whether the iterator refers to actual state of registeredWorkers.
-                        GridWorker worker0 = registeredWorkers.get(runner.getName());
+                        GridWorker worker0 = registeredWorkers.get(worker.runner().getName());
 
                         if (worker0 != null && worker0 == worker)
                             workerFailedHnd.apply(worker, SYSTEM_WORKER_TERMINATION);
@@ -220,7 +195,7 @@ public class WorkersRegistry implements GridWorkerListener {
 
                     long heartbeatDelay = U.currentTimeMillis() - worker.heartbeatTs();
 
-                    if (heartbeatDelay > sysWorkerBlockedTimeout) {
+                    if (heartbeatDelay > heartbeatTimeout) {
                         GridWorker worker0 = registeredWorkers.get(worker.runner().getName());
 
                         if (worker0 != null && worker0 == worker) {

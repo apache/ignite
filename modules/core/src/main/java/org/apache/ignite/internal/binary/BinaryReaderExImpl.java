@@ -2028,6 +2028,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                     for (BinarySchema existingSchema : existingSchemas)
                         existingSchemaIds.add(existingSchema.schemaId());
 
+
                     throw new BinaryObjectException("Cannot find schema for object with compact footer" +
                         " [typeName=" + type.typeName() +
                         ", typeId=" + typeId +

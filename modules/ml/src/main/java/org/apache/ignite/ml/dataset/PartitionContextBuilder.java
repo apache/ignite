@@ -52,7 +52,7 @@ public interface PartitionContextBuilder<K, V, C extends Serializable> extends S
      * @param <C2> New type of a partition {@code context}.
      * @return Composed partition {@code context} builder.
      */
-    public default <C2 extends Serializable> PartitionContextBuilder<K, V, C2> andThen(IgniteFunction<C, C2> fun) {
+    default public <C2 extends Serializable> PartitionContextBuilder<K, V, C2> andThen(IgniteFunction<C, C2> fun) {
         return (upstreamData, upstreamDataSize) -> fun.apply(build(upstreamData, upstreamDataSize));
     }
 }

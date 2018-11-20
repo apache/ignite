@@ -40,7 +40,7 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTest {
     /** Client node index. */
-    private static final int CLIENT = 2;
+    private final static int CLIENT = 2;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

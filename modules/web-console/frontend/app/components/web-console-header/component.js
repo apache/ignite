@@ -36,10 +36,6 @@ export default {
                 !this.constructor.connectedClustersUnvisibleStates.some((state) => this.$state.includes(state));
         }
 
-        isAuthorized() {
-            return !!this.$rootScope.user;
-        }
-
         $onInit() {
             this.setConnectedClustersVisible();
 

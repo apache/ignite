@@ -36,5 +36,6 @@ public @interface IgniteSpiConfiguration {
     /**
      * Whether this configuration setting is optional or not.
      */
+    @SuppressWarnings("JavaDoc")
     public boolean optional();
 }

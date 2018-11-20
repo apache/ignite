@@ -23,61 +23,32 @@ import org.apache.ignite.IgniteCheckedException;
  *
  */
 public interface DatabaseLifecycleListener {
+
     /**
-     * Callback executed when data regions become to start-up.
+     * @param mgr Database shared manager.
      *
-     * @param mgr Database shared manager.
-     * @throws IgniteCheckedException If failed.
      */
-    default void onInitDataRegions(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
-    }
-
-    ;
+    void onInitDataRegions(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException;
 
     /**
-     * Callback executed right before node become perform binary recovery.
+     * @param mgr Page store manager.
      *
-     * @param mgr Database shared manager.
-     * @throws IgniteCheckedException If failed.
      */
-    default void beforeBinaryMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
-    }
-
-    ;
+    void beforeMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException;
 
     /**
-     * Callback executed when binary memory has fully restored and WAL logging is resumed.
+     * @param mgr Database shared manager.
      *
-     * @param mgr Database shared manager.
-     * @throws IgniteCheckedException If failed.
      */
-    default void afterBinaryMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
-    }
-
-    ;
-
-    /**
-     * @param mgr
-     * @throws IgniteCheckedException
-     */
-    default void beforeResumeWalLogging(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
-    }
-
-    ;
+    void afterMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException;
 
     /**
      * @param mgr Database shared manager.
      */
-    default void afterInitialise(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
-    }
-
-    ;
+    void afterInitialise(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException;
 
     /**
      * @param mgr Database shared manager.
      */
-    default void beforeStop(IgniteCacheDatabaseSharedManager mgr) {
-    }
-
-    ;
+    void beforeStop(IgniteCacheDatabaseSharedManager mgr);
 }

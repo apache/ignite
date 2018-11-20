@@ -18,6 +18,7 @@
 package org.apache.ignite.client;
 
 import java.util.concurrent.Callable;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;

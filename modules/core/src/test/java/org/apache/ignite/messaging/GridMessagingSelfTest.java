@@ -795,6 +795,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
 
         assertFalse(error.get());
 
+        //noinspection AssertEqualsBetweenInconvertibleTypes
         assertEquals(msgs, Arrays.asList(rcvMsgs.toArray()));
     }
 
@@ -987,6 +988,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
      *
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ConstantConditions")
     public void testNullMessages() throws Exception {
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {

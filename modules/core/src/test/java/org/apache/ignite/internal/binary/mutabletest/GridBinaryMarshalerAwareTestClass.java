@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.binary.mutabletest;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
-import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -55,6 +55,7 @@ public class GridBinaryMarshalerAwareTestClass implements Binarylizable {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("FloatingPointEquality")
     @Override public boolean equals(Object other) {
         return this == other || GridTestUtils.deepEquals(this, other);
     }

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.eviction.paged;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Enables but not touches persistent region, checks page eviction and PDS+no PDS mode.

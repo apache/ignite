@@ -70,7 +70,7 @@ export default class Notebook {
         return this.confirmModal.confirm(`Are you sure you want to remove notebook: "${notebook.name}"?`)
             .then(() => this.NotebookData.findIndex(notebook))
             .then((idx) => {
-                return this.NotebookData.remove(notebook)
+                this.NotebookData.remove(notebook)
                     .then(() => {
                         if (this.$state.includes('base.sql.tabs.notebook') && this.$state.params.noteId === notebook._id)
                             return this._openNotebook(idx);

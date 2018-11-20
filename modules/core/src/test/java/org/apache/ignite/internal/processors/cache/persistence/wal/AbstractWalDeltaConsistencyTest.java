@@ -76,8 +76,6 @@ public abstract class AbstractWalDeltaConsistencyTest extends GridCommonAbstract
     protected DataStorageConfiguration getDataStorageConfiguration() {
         return new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setInitialSize(256 * 1024 * 1024)
-                .setMaxSize(256 * 1024 * 1024)
                 .setPersistenceEnabled(true)
                 .setName("dflt-plc"));
     }

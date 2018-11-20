@@ -476,6 +476,7 @@ public class HadoopSkipList extends HadoopMultimapBase {
          * @param meta Meta pointer.
          * @return Comparison result.
          */
+        @SuppressWarnings("unchecked")
         private int cmp(Object key, long meta) {
             assert meta != 0;
 

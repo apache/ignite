@@ -181,6 +181,7 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test that attempting to perform a cache API operation from within an SQL transaction fails.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void checkCacheOperationThrows(final String opName, final Object... args) {
         execute(node(), "BEGIN");
 
@@ -263,6 +264,7 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test that attempting to perform a cache PUT operation from within an SQL transaction fails.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testCacheOperationsFromSqlTransaction() {
         checkCacheOperationThrows("get", 1);
 
@@ -359,7 +361,7 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
     }
 
     /** */
-    private static final EntryProcessor<Integer, Integer, Object> ENTRY_PROC =
+    private final static EntryProcessor<Integer, Integer, Object> ENTRY_PROC =
         new EntryProcessor<Integer, Integer, Object>() {
         @Override public Object process(MutableEntry<Integer, Integer> entry, Object... arguments)
         throws EntryProcessorException {
@@ -368,7 +370,7 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
     };
 
     /** */
-    private static final CacheEntryProcessor<Integer, Integer, Object> CACHE_ENTRY_PROC =
+    private final static CacheEntryProcessor<Integer, Integer, Object> CACHE_ENTRY_PROC =
         new CacheEntryProcessor<Integer, Integer, Object>() {
             @Override public Object process(MutableEntry<Integer, Integer> entry, Object... arguments)
                 throws EntryProcessorException {

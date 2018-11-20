@@ -127,7 +127,7 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
                     }
                 }
             },
-            false, 0);
+            true, 0);
 
         checkSizeModificationByOperation("merge into person(id, name) values(1, 'a')", true, 1);
 
@@ -298,7 +298,7 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
         }
         catch (Exception e) {
             if (e.getCause().getCause() instanceof IgniteSQLException)
-                assertTrue(e.getMessage().contains("Failed to finish transaction because it has been rolled back"));
+                assertTrue(e.getMessage().toLowerCase().contains("version mismatch"));
             else {
                 e.printStackTrace();
 

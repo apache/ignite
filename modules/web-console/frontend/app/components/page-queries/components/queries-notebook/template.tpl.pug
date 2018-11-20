@@ -394,12 +394,12 @@ mixin paragraph-query
                         input.form-control(type='text' st-search='label' placeholder='Filter caches...')
 
                     .queries-notebook-displayed-caches
-                        div(ng-repeat='cache in displayedCaches track by cache.value')
+                        div(ng-repeat='cache in displayedCaches track by cache.name')
                             +form-field__radio({
                                 label: '{{ cache.label }}',
                                 model: 'paragraph.cacheName',
                                 name: '"cache_" + [paragraph.id, $index].join("_")',
-                                value: 'cache.value'
+                                value: 'cache.name'
                             })
 
                     .settings-row

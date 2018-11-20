@@ -33,7 +33,6 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.messaging.MessagingListenActor;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -150,10 +149,9 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
 
         send();
 
-        assertTrue(latch.await(2, SECONDS));
+        assert latch.await(2, SECONDS);
 
-        // Make sure that no more messages received than expected.
-        U.sleep(500);
+        Thread.sleep(500);
 
         assertEquals(MSG_CNT * GRID_CNT, cnt.get());
 
@@ -166,14 +164,13 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     public void testNonNullTopic() throws Exception {
         latch = new CountDownLatch(MSG_CNT * GRID_CNT);
 
-        listen(grid(0).cluster(), TOPIC, true);
+        listen(grid(0).cluster(), null, true);
 
         send();
 
-        assertTrue(latch.await(2, SECONDS));
+        assert latch.await(2, SECONDS);
 
-        // Make sure that no more messages received than expected.
-        U.sleep(500);
+        Thread.sleep(500);
 
         assertEquals(MSG_CNT * GRID_CNT, cnt.get());
 

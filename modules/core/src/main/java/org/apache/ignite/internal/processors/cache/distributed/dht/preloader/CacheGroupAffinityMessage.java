@@ -192,10 +192,16 @@ public class CacheGroupAffinityMessage implements Message {
         for (int n = 0; n < assign.size(); n++) {
             long order = assign.get(n);
 
-            ClusterNode affNode = nodesByOrder.computeIfAbsent(order, o -> discoCache.serverNodeByOrder(order));
+            ClusterNode affNode = nodesByOrder.get(order);
 
-            assert affNode != null : "Failed to find node by order [order=" + order +
-                ", topVer=" + discoCache.version() + ']';
+            if (affNode == null) {
+                affNode = discoCache.serverNodeByOrder(order);
+
+                assert affNode != null : "Failed to find node by order [order=" + order +
+                    ", topVer=" + discoCache.version() + ']';
+
+                nodesByOrder.put(order, affNode);
+            }
 
             assign0.add(affNode);
         }

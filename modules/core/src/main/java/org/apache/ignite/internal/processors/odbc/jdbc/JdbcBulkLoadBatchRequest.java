@@ -93,6 +93,7 @@ public class JdbcBulkLoadBatchRequest extends JdbcRequest {
      * @param cmd The command ({@link #CMD_CONTINUE}, {@link #CMD_FINISHED_EOF}, or {@link #CMD_FINISHED_ERROR}).
      * @param data The data block (zero length is acceptable).
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public JdbcBulkLoadBatchRequest(long qryId, int batchIdx, int cmd, @NotNull byte[] data) {
         super(BULK_LOAD_BATCH);
 
@@ -137,6 +138,7 @@ public class JdbcBulkLoadBatchRequest extends JdbcRequest {
      *
      * @return data if data was not supplied
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     @NotNull public byte[] data() {
         return data;
     }

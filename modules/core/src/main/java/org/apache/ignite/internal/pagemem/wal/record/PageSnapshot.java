@@ -38,30 +38,21 @@ public class PageSnapshot extends WALRecord implements WalRecordCacheGroupAware{
     private FullPageId fullPageId;
 
     /**
-     * PageSIze without encryption overhead.
-     */
-    private int realPageSize;
-
-    /**
      * @param fullId Full page ID.
      * @param arr Read array.
-     * @param realPageSize Page size without encryption overhead.
      */
-    public PageSnapshot(FullPageId fullId, byte[] arr, int realPageSize) {
-        this.fullPageId = fullId;
-        this.pageData = arr;
-        this.realPageSize = realPageSize;
+    public PageSnapshot(FullPageId fullId, byte[] arr) {
+        fullPageId = fullId;
+        pageData = arr;
     }
 
     /**
      * @param fullPageId Full page ID.
      * @param ptr Pointer to copy from.
      * @param pageSize Page size.
-     * @param realPageSize Page size without encryption overhead.
      */
-    public PageSnapshot(FullPageId fullPageId, long ptr, int pageSize, int realPageSize) {
+    public PageSnapshot(FullPageId fullPageId, long ptr, int pageSize) {
         this.fullPageId = fullPageId;
-        this.realPageSize = realPageSize;
 
         pageData = new byte[pageSize];
 
@@ -97,7 +88,7 @@ public class PageSnapshot extends WALRecord implements WalRecordCacheGroupAware{
 
         try {
             return "PageSnapshot [fullPageId = " + fullPageId() + ", page = [\n"
-                + PageIO.printPage(addr, realPageSize)
+                + PageIO.printPage(addr, pageData.length)
                 + "],\nsuper = ["
                 + super.toString() + "]]";
         }

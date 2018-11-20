@@ -56,6 +56,7 @@ public class Log4j2ConfigUpdateTest extends TestCase {
      * Check that changing log4j2 config file causes the logger configuration to be updated.
      * String-accepting constructor is used.
      */
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     public void testConfigChangeStringConstructor() throws Exception {
         checkConfigUpdate(new Log4J2LoggerSupplier() {
             @Override public Log4J2Logger get(File cfgFile) throws Exception {
@@ -68,6 +69,7 @@ public class Log4j2ConfigUpdateTest extends TestCase {
      * Check that changing log4j config file causes the logger configuration to be updated.
      * File-accepting constructor is used.
      */
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     public void testConfigChangeFileConstructor() throws Exception {
         checkConfigUpdate(new Log4J2LoggerSupplier() {
             @Override public Log4J2Logger get(File cfgFile) throws Exception {
@@ -80,6 +82,7 @@ public class Log4j2ConfigUpdateTest extends TestCase {
      * Check that changing log4j config file causes the logger configuration to be updated.
      * File-accepting constructor is used.
      */
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     public void testConfigChangeUrlConstructor() throws Exception {
         checkConfigUpdate(new Log4J2LoggerSupplier() {
             @Override public Log4J2Logger get(File cfgFile) throws Exception {

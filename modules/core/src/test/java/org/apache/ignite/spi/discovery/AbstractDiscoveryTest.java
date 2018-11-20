@@ -34,6 +34,7 @@ import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
  * Base discovery test class.
  * @param <T> SPI implementation class.
  */
+@SuppressWarnings({"JUnitAbstractTestClassNamingConvention"})
 public abstract class AbstractDiscoveryTest<T extends DiscoverySpi> extends GridSpiAbstractTest<T> {
     /** */
     @SuppressWarnings({"ClassExplicitlyExtendsThread"})
@@ -46,6 +47,7 @@ public abstract class AbstractDiscoveryTest<T extends DiscoverySpi> extends Grid
         private boolean isCanceled;
 
         /** {@inheritDoc} */
+        @SuppressWarnings({"UnusedCatchParameter"})
         @Override public void run() {
             Random rnd = new Random();
 

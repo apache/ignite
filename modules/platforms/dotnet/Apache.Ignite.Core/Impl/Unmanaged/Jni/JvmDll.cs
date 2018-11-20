@@ -172,8 +172,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 
         /// <summary>
         /// Gets the default JVM init args.
-        /// Before calling this function, native code must set the vm_args->version field to the JNI version
-        /// it expects the VM to support. After this function returns, vm_args->version will be set
+        /// Before calling this function, native code must set the vm_args->version field to the JNI version 
+        /// it expects the VM to support. After this function returns, vm_args->version will be set 
         /// to the actual JNI version the VM supports.
         /// </summary>
         public unsafe JniResult GetDefaultJvmInitArgs(JvmInitArgs* args)
@@ -305,7 +305,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// </summary>
         private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPathsWindows()
         {
-#if !NETCOREAPP2_0 && !NETCOREAPP2_1
+#if !NETCOREAPP2_0
             if (!Os.IsWindows)
             {
                 yield break;

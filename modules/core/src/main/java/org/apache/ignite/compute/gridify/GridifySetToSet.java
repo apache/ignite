@@ -208,5 +208,6 @@ public @interface GridifySetToSet {
      * Name of the Ignite instance to use. By default, no-name default Ignite instance is used.
      * Refer to {@link org.apache.ignite.Ignition} for information about named Ignite instances.
      */
+    @SuppressWarnings({"JavaDoc"})
     String igniteInstanceName() default "";
 }

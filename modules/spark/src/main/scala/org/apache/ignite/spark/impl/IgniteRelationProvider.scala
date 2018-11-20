@@ -55,14 +55,12 @@ class IgniteRelationProvider extends RelationProvider
       * @see IgniteRelation
       * @see IgnitionEx#grid(String)
       * @see org.apache.ignite.spark.IgniteDataFrameSettings.OPTION_TABLE
-      * @see org.apache.ignite.spark.IgniteDataFrameSettings.OPTION_SCHEMA
       * @see org.apache.ignite.spark.IgniteDataFrameSettings.OPTION_CONFIG_FILE
       */
     override def createRelation(sqlCtx: SQLContext, params: Map[String, String]): BaseRelation =
         createRelation(
             igniteContext(params, sqlCtx),
             params.getOrElse(OPTION_TABLE, throw new IgniteException("'table' must be specified.")),
-            params.get(OPTION_SCHEMA),
             sqlCtx)
 
     /**
@@ -103,7 +101,7 @@ class IgniteRelationProvider extends RelationProvider
 
         val tblName = tableName(params)
 
-        val tblInfoOption = sqlTableInfo[Any, Any](ctx.ignite(), tblName, params.get(OPTION_SCHEMA))
+        val tblInfoOption = sqlTableInfo[Any, Any](ctx.ignite(), tblName)
 
         if (tblInfoOption.isDefined) {
             mode match {
@@ -122,7 +120,6 @@ class IgniteRelationProvider extends RelationProvider
 
                     saveTable(data,
                         tblName,
-                        params.get(OPTION_SCHEMA),
                         ctx,
                         params.get(OPTION_STREAMER_ALLOW_OVERWRITE).map(_.toBoolean),
                         params.get(OPTION_STREAMER_FLUSH_FREQUENCY).map(_.toLong),
@@ -132,7 +129,6 @@ class IgniteRelationProvider extends RelationProvider
                 case Append ⇒
                     saveTable(data,
                         tblName,
-                        params.get(OPTION_SCHEMA),
                         ctx,
                         params.get(OPTION_STREAMER_ALLOW_OVERWRITE).map(_.toBoolean),
                         params.get(OPTION_STREAMER_FLUSH_FREQUENCY).map(_.toLong),
@@ -163,7 +159,6 @@ class IgniteRelationProvider extends RelationProvider
 
             saveTable(data,
                 tblName,
-                params.get(OPTION_SCHEMA),
                 ctx,
                 params.get(OPTION_STREAMER_ALLOW_OVERWRITE).map(_.toBoolean),
                 params.get(OPTION_STREAMER_FLUSH_FREQUENCY).map(_.toLong),
@@ -173,28 +168,25 @@ class IgniteRelationProvider extends RelationProvider
 
         createRelation(ctx,
             tblName,
-            params.get(OPTION_SCHEMA),
             sqlCtx)
     }
 
     /**
       * @param igniteCtx Ignite context.
-      * @param tblName   Table name.
-      * @param schema    Optional schema name.
-      * @param sqlCtx    SQL context.
+      * @param tblName Table name.
+      * @param sqlCtx SQL context.
       * @return Ignite SQL relation.
       */
-    private def createRelation(igniteCtx: IgniteContext, tblName: String, schema: Option[String], sqlCtx: SQLContext):
-    BaseRelation = {
+    private def createRelation(igniteCtx: IgniteContext, tblName: String, sqlCtx: SQLContext): BaseRelation = {
         val optimizationDisabled =
             sqlCtx.sparkSession.conf.get(OPTION_DISABLE_SPARK_SQL_OPTIMIZATION, "false").toBoolean
 
         val experimentalMethods = sqlCtx.sparkSession.sessionState.experimentalMethods
 
         if (optimizationDisabled) {
-            experimentalMethods.extraOptimizations =
+            experimentalMethods.extraOptimizations = 
                 experimentalMethods.extraOptimizations.filter(_ != IgniteOptimization)
-        }
+        } 
         else {
             val optimizationExists = experimentalMethods.extraOptimizations.contains(IgniteOptimization)
 
@@ -205,7 +197,6 @@ class IgniteRelationProvider extends RelationProvider
         IgniteSQLRelation(
             igniteCtx,
             tblName,
-            schema,
             sqlCtx)
     }
 

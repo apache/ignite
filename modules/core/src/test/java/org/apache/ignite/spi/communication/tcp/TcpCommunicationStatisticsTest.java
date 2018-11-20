@@ -55,10 +55,10 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Mutex. */
-    private final Object mux = new Object();
+    final private Object mux = new Object();
 
     /** */
-    private final CountDownLatch latch = new CountDownLatch(1);
+    final private CountDownLatch latch = new CountDownLatch(1);
 
     static {
         GridIoMessageFactory.registerCustom(GridTestMessage.DIRECT_TYPE, new CO<Message>() {

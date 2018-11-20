@@ -34,7 +34,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
  */
 public class GridCacheConcurrentGetCacheOnClientTest extends GridCommonAbstractTest{
     /** Ip finder. */
-    private static final TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+    private final static TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /**
      * @param gridName Grid name.

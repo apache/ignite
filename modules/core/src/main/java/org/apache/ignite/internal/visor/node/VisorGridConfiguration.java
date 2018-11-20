@@ -126,9 +126,6 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
     /** Client connector configuration */
     private VisorClientConnectorConfiguration clnConnCfg;
 
-    /** MVCC configuration. */
-    private VisorMvccConfiguration mvccCfg;
-
     /**
      * Default constructor.
      */
@@ -195,8 +192,6 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
 
         if (dsCfg != null)
             dataStorage = new VisorDataStorageConfiguration(dsCfg);
-
-        mvccCfg = new VisorMvccConfiguration(c);
     }
 
     /**
@@ -388,16 +383,9 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
         return dataStorage;
     }
 
-    /**
-     * @return MVCC configuration.
-     */
-    public VisorMvccConfiguration getMvccConfiguration() {
-        return mvccCfg;
-    }
-
     /** {@inheritDoc} */
     @Override public byte getProtocolVersion() {
-        return V4;
+        return V3;
     }
 
     /** {@inheritDoc} */
@@ -429,7 +417,6 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
         U.writeCollection(out, srvcCfgs);
         out.writeObject(dataStorage);
         out.writeObject(clnConnCfg);
-        out.writeObject(mvccCfg);
     }
 
     /** {@inheritDoc} */
@@ -460,14 +447,11 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
         sqlConnCfg = (VisorSqlConnectorConfiguration) in.readObject();
         srvcCfgs = U.readList(in);
 
-        if (protoVer > V1)
+        if (protoVer >= V2)
             dataStorage = (VisorDataStorageConfiguration)in.readObject();
 
-        if (protoVer > V2)
+        if (protoVer >= V3)
             clnConnCfg = (VisorClientConnectorConfiguration)in.readObject();
-
-        if (protoVer > V3)
-            mvccCfg = (VisorMvccConfiguration)in.readObject();
     }
 
     /** {@inheritDoc} */

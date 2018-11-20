@@ -112,7 +112,6 @@ import id8 from './filters/id8.filter';
 
 // Components
 import igniteListOfRegisteredUsers from './components/list-of-registered-users';
-import dialogAdminCreateUser from './components/dialog-admin-create-user';
 import IgniteActivitiesUserDialog from './components/activities-user-dialog';
 import './components/input-dialog';
 import webConsoleHeader from './components/web-console-header';
@@ -149,7 +148,7 @@ import progressLine from './components/progress-line';
 import formField from './components/form-field';
 import igniteChart from './components/ignite-chart';
 import igniteChartSelector from './components/ignite-chart-series-selector';
-import statusOutput from './components/status-output';
+import igniteStatus from './components/ignite-status';
 
 import pageProfile from './components/page-profile';
 import pagePasswordChanged from './components/page-password-changed';
@@ -157,7 +156,6 @@ import pagePasswordReset from './components/page-password-reset';
 import pageSignup from './components/page-signup';
 import pageSignin from './components/page-signin';
 import pageForgotPassword from './components/page-forgot-password';
-import formSignup from './components/form-signup';
 
 import igniteServices from './services';
 
@@ -247,7 +245,6 @@ export default angular.module('ignite-console', [
     connectedClusters.name,
     connectedClustersDialog.name,
     igniteListOfRegisteredUsers.name,
-    dialogAdminCreateUser.name,
     pageProfile.name,
     pageLanding.name,
     pagePasswordChanged.name,
@@ -261,10 +258,9 @@ export default angular.module('ignite-console', [
     passwordVisibility.name,
     igniteChart.name,
     igniteChartSelector.name,
-    statusOutput.name,
+    igniteStatus.name,
     progressLine.name,
-    formField.name,
-    formSignup.name
+    formField.name
 ])
 .service('$exceptionHandler', $exceptionHandler)
 // Directives.

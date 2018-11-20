@@ -1320,7 +1320,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
         protected final AtomicBoolean failed = new AtomicBoolean(false);
 
         /** */
-        protected final int topChangeThreads;
+        private final int topChangeThreads;
 
         /** Flag to enable circular topology change. */
         private boolean circular;
@@ -1445,7 +1445,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                             throw F.wrap(e);
                     }
                 }
-            }, topChangeThreads, "topology-change-thread");
+            }, TOP_CHANGE_THREAD_CNT, "topology-change-thread");
         }
     }
 

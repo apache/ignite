@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Full API cache test.
  */
-@SuppressWarnings({"unchecked"})
+@SuppressWarnings({"TransientFieldInNonSerializableClass", "unchecked"})
 public class InterceptorCacheConfigVariationsFullApiTest extends IgniteCacheConfigVariationsFullApiTest {
     /** */
     private static volatile boolean validate = true;

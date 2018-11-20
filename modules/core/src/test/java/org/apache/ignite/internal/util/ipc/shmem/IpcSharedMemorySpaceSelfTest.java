@@ -103,7 +103,7 @@ public class IpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> fut2 = multithreadedAsync(
             new Callable<Object>() {
-                @SuppressWarnings({"TooBroadScope"})
+                @SuppressWarnings({"TooBroadScope", "StatementWithEmptyBody"})
                 @Override public Object call() throws Exception {
                     IpcSharedMemorySpace inSpace;
 

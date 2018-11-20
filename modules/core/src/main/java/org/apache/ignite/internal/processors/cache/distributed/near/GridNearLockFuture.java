@@ -148,6 +148,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
     private final Map<KeyCacheObject, IgniteBiTuple<GridCacheVersion, CacheObject>> valMap;
 
     /** */
+    @SuppressWarnings("UnusedDeclaration")
     private volatile int done;
 
     /** Keys locked so far. */
@@ -447,6 +448,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
      * @param nodeId Left node ID
      * @return {@code True} if node was in the list.
      */
+    @SuppressWarnings({"ThrowableInstanceNeverThrown"})
     @Override public boolean onNodeLeft(UUID nodeId) {
         boolean found = false;
 
@@ -574,7 +576,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
      * @param miniId Mini ID to find.
      * @return Mini future.
      */
-    @SuppressWarnings({"IfMayBeConditional"})
+    @SuppressWarnings({"ForLoopReplaceableByForEach", "IfMayBeConditional"})
     private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (this) {
@@ -1211,6 +1213,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
      *
      * @throws IgniteCheckedException If mapping can not be completed.
      */
+    @SuppressWarnings("unchecked")
     private void proceedMapping0()
         throws IgniteCheckedException {
         GridNearLockMapping map;
@@ -1482,6 +1485,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         private Set<IgniteTxKey> requestedKeys;
 
         /** {@inheritDoc} */
+        @SuppressWarnings({"ThrowableInstanceNeverThrown"})
         @Override public void onTimeout() {
             if (log.isDebugEnabled())
                 log.debug("Timed out waiting for lock response: " + this);

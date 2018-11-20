@@ -497,10 +497,6 @@ class BinaryUtils {
             expectedTypeCode === BinaryUtils.TYPE_CODE.COMPLEX_OBJECT) {
             return;
         }
-        else if (expectedTypeCode === BinaryUtils.TYPE_CODE.ENUM &&
-            actualTypeCode === BinaryUtils.TYPE_CODE.BINARY_ENUM) {
-            return;
-        }
         else if (actualTypeCode !== expectedTypeCode) {
             throw Errors.IgniteClientError.typeCastError(actualTypeCode, expectedTypeCode);
         }

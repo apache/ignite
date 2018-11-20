@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.MRConfig;
 import org.apache.hadoop.mapreduce.protocol.ClientProtocol;
@@ -110,6 +111,7 @@ public class IgniteHadoopClientProtocolProvider extends ClientProtocolProvider {
      * @return Client.
      * @throws IOException If failed.
      */
+    @SuppressWarnings("unchecked")
     private MapReduceClient client(String clusterName, Collection<String> addrs) throws IOException {
         while (true) {
             MapReduceClient cli = cliMap.get(clusterName);

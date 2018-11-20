@@ -17,20 +17,6 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Vector;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.ClassCache;
@@ -39,6 +25,20 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
+import java.util.concurrent.ConcurrentHashMap;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Vector;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Class loader allowing explicitly load classes without delegation to parent class loader.
@@ -84,6 +84,7 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
     private final ConcurrentMap<String, Class> cacheMap = new ConcurrentHashMap<>();
 
     /** Diagnostic name of this class loader. */
+    @SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"})
     private final String name;
 
     /** Igfs Helper. */
@@ -175,24 +176,11 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
         }
 
         // Link libraries to class loader.
-        Object ldrLibsObj = nativeLibraries(this);
+        Vector<Object> ldrLibs = nativeLibraries(this);
 
-        if (ldrLibsObj instanceof Vector) {
-            Vector<Object> ldrLibs = (Vector<Object>)ldrLibsObj;
-
-            synchronized (ldrLibs) {
-                ldrLibs.addAll(res);
-            }
+        synchronized (ldrLibs) {
+            ldrLibs.addAll(res);
         }
-        else if (ldrLibsObj instanceof ConcurrentHashMap) {
-            ConcurrentHashMap<Object, Object> ldrLibs = (ConcurrentHashMap<Object, Object>)ldrLibsObj;
-
-            synchronized (ldrLibs) {
-                for (Object nl : res)
-                    ldrLibs.put(nativeLibraryName(nl), nl);
-            }
-        }
-
     }
 
     /**
@@ -225,17 +213,9 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
                 ClassLoader ldr = APP_CLS_LDR;
 
                 while (ldr != null) {
-                    Object ldrLibObject = nativeLibraries(ldr);
+                    Vector<Object> ldrLibObjs = nativeLibraries(ldr);
 
-                    Collection ldrLibObjs = null;
-                    if (ldrLibObject instanceof Vector)
-                        ldrLibObjs = (Vector<Object>)ldrLibObject;
-                    else if (ldrLibObject instanceof ConcurrentHashMap)
-                        ldrLibObjs = ((ConcurrentHashMap)ldrLibObject).values();
-                    else
-                        ldrLibObjs = Collections.emptySet();
-
-                    synchronized (ldrLibObject) {
+                    synchronized (ldrLibObjs) {
                         for (Object ldrLibObj : ldrLibObjs) {
                             String name = nativeLibraryName(ldrLibObj);
 
@@ -245,8 +225,7 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
 
                                     break;
                                 }
-                            }
-                            else {
+                            } else {
                                 if (name.contains(libName)) {
                                     libObj = ldrLibObj;
 
@@ -285,7 +264,7 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
      * @param ldr Class loaded.
      * @return Native libraries.
      */
-    private static Object nativeLibraries(ClassLoader ldr) {
+    private static Vector<Object> nativeLibraries(ClassLoader ldr) {
         assert ldr != null;
 
         return U.field(ldr, "nativeLibraries");
@@ -382,6 +361,7 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
      * @param clsName Class name.
      * @return Whether class must be loaded by current classloader without delegation.
      */
+    @SuppressWarnings("RedundantIfStatement")
     public static boolean loadByCurrentClassloader(String clsName) {
         // All impl classes.
         if (clsName.startsWith("org.apache.ignite.internal.processors.hadoop.impl"))

@@ -39,6 +39,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 /**
  * Partitioned affinity test.
  */
+@SuppressWarnings({"PointlessArithmeticExpression"})
 public class GridCachePartitionedAffinityExcludeNeighborsPerformanceTest extends GridCommonAbstractTest {
     /** Grid count. */
     private static final int GRIDS = 3;

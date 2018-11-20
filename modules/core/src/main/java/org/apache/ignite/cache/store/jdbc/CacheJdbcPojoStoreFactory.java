@@ -398,6 +398,7 @@ public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheAbstractJdb
      *
      * @return Cache store factory.
      */
+    @SuppressWarnings("unchecked")
     public Factory<DataSource> getDataSourceFactory() {
         return dataSrcFactory;
     }
@@ -408,6 +409,7 @@ public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheAbstractJdb
      * @param dataSrcFactory Datasource factory.
      * @return {@code this} for chaining.
      */
+    @SuppressWarnings("unchecked")
     public CacheJdbcPojoStoreFactory<K, V> setDataSourceFactory(Factory<DataSource> dataSrcFactory) {
         this.dataSrcFactory = dataSrcFactory;
 

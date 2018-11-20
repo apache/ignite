@@ -241,6 +241,7 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings({"UnusedDeclaration", "unchecked"})
     @Override public PlatformTarget getInitialQueryCursor() {
         return initialQryCur;
     }

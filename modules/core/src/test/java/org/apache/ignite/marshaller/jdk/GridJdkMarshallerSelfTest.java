@@ -24,6 +24,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 /**
  * JDK marshaller self test.
  */
+@SuppressWarnings({"JUnitTestCaseWithNoTests"})
 @GridCommonTest(group = "Marshaller")
 public class GridJdkMarshallerSelfTest extends GridMarshallerAbstractTest {
     /** {@inheritDoc} */

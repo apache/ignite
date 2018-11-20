@@ -56,7 +56,7 @@ public interface PartitionDataBuilder<K, V, C extends Serializable, D extends Au
      * @param <D2> New type of a partition {@code data}.
      * @return Composed partition {@code data} builder.
      */
-    public default <D2 extends AutoCloseable> PartitionDataBuilder<K, V, C, D2> andThen(
+    default public <D2 extends AutoCloseable> PartitionDataBuilder<K, V, C, D2> andThen(
         IgniteBiFunction<D, C, D2> fun) {
         return (upstreamData, upstreamDataSize, ctx) -> fun.apply(build(upstreamData, upstreamDataSize, ctx), ctx);
     }

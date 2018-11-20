@@ -33,7 +33,7 @@ public enum NestedTxMode {
     ERROR;
 
     /** Default handling mode. */
-    public static final NestedTxMode DEFAULT = ERROR;
+    public final static NestedTxMode DEFAULT = ERROR;
 
     /**
      * Get enum value from int

@@ -102,7 +102,6 @@ import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.plugin.security.SecurityException;
-import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -1150,17 +1149,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * @param cacheName Cache name.
-     * @param grpName Group name.
-     * @return Group ID.
-     */
-    public static int cacheGroupId(String cacheName, @Nullable String grpName) {
-        assert cacheName != null;
-
-        return grpName != null ? CU.cacheId(grpName) : CU.cacheId(cacheName);
-    }
-
-    /**
      * @param cfg Grid configuration.
      * @param cacheName Cache name.
      * @return {@code True} in this is IGFS data or meta cache.
@@ -1585,7 +1573,7 @@ public class GridCacheUtils {
     /**
      * @return default TX configuration if system cache is used or current grid TX config otherwise.
      */
-    public static TransactionConfiguration transactionConfiguration(@Nullable final GridCacheContext sysCacheCtx,
+    public static TransactionConfiguration transactionConfiguration(final @Nullable GridCacheContext sysCacheCtx,
         final IgniteConfiguration cfg) {
         return sysCacheCtx != null && sysCacheCtx.systemTx()
             ? DEFAULT_TX_CFG
@@ -1755,7 +1743,7 @@ public class GridCacheUtils {
         boolean readThrough,
         boolean skipVals
     ) {
-        if (cctx.mvccEnabled() || !readThrough || skipVals ||
+        if (!readThrough || skipVals ||
             (key != null && !cctx.affinity().backupsByKey(key, topVer).contains(cctx.localNode())))
             return null;
 
@@ -1909,17 +1897,6 @@ public class GridCacheUtils {
         }
 
         return false;
-    }
-
-    /**
-     * @param pageSize Page size.
-     * @param encSpi Encryption spi.
-     * @return Page size without encryption overhead.
-     */
-    public static int encryptedPageSize(int pageSize, EncryptionSpi encSpi) {
-        return pageSize
-            - (encSpi.encryptedSizeNoPadding(pageSize) - pageSize)
-            - encSpi.blockSize(); /* For CRC. */
     }
 
     /**

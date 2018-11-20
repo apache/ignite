@@ -361,6 +361,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ConstantConditions")
     @Override public final boolean onDone(@Nullable Object res, @Nullable Throwable err) {
         assert err != null : "onDone should be called only to finish future with error on cache/node stop";
 

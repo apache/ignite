@@ -35,18 +35,17 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHan
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.cache.tree.CacheIdAwareDataInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.CacheIdAwareDataLeafIO;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccCacheIdAwareDataInnerIO;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccCacheIdAwareDataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.CacheIdAwarePendingEntryInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.CacheIdAwarePendingEntryLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.DataInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.DataLeafIO;
-import org.apache.ignite.internal.processors.cache.tree.PendingEntryInnerIO;
-import org.apache.ignite.internal.processors.cache.tree.PendingEntryLeafIO;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccCacheIdAwareDataInnerIO;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccCacheIdAwareDataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataLeafIO;
+import org.apache.ignite.internal.processors.cache.tree.PendingEntryInnerIO;
+import org.apache.ignite.internal.processors.cache.tree.PendingEntryLeafIO;
 import org.apache.ignite.internal.util.GridStringBuilder;
-import org.apache.ignite.spi.encryption.EncryptionSpi;
 
 /**
  * Base format for all the page types.
@@ -294,7 +293,7 @@ public abstract class PageIO {
     }
 
     /**
-     * @param pageAddr Page address.
+     * @param pageAddr Page addres.
      * @return Page type.
      */
     public static int getType(long pageAddr) {
@@ -504,8 +503,6 @@ public abstract class PageIO {
      * @param pageAddr Page address.
      * @param pageId Page ID.
      * @param pageSize Page size.
-     *
-     * @see EncryptionSpi#encryptedSize(int)
      */
     public void initNewPage(long pageAddr, long pageId, int pageSize) {
         setType(pageAddr, getType());

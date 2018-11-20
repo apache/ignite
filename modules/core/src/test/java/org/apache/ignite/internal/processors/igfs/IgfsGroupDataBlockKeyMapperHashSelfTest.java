@@ -101,6 +101,7 @@ public class IgfsGroupDataBlockKeyMapperHashSelfTest extends IgfsCommonAbstractT
      *
      * @throws Exception If failed.
      */
+    @SuppressWarnings("NumericOverflow")
     public void checkIntOverflowDistribution(int partCnt) throws Exception {
         IgniteUuid fileId = IgniteUuid.randomUuid();
 

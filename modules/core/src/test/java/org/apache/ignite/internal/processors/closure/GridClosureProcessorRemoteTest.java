@@ -50,6 +50,7 @@ public class GridClosureProcessorRemoteTest extends GridCommonAbstractTest {
     }
 
         /** {@inheritDoc} */
+    @SuppressWarnings({"ConstantConditions"})
     @Override protected void beforeTestsStarted() throws Exception {
         startGrids(NODES_CNT);
     }

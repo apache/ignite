@@ -40,7 +40,6 @@ import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cluster.ClusterNode;
@@ -319,20 +318,13 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
         return new CacheConfiguration("test-cache-cq")
             .setBackups(1)
             .setNodeFilter(filter)
-            .setAtomicityMode(atomicityMode())
+            .setAtomicityMode(ATOMIC)
             .setWriteSynchronizationMode(FULL_SYNC)
             .setCacheMode(PARTITIONED);
     }
 
-    /**
-     * @return Atomicity mode.
-     */
-    protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
-    }
-
     /** */
-    private static final class ListenerConfiguration extends MutableCacheEntryListenerConfiguration {
+    private final static class ListenerConfiguration extends MutableCacheEntryListenerConfiguration {
         /** Operation. */
         enum Op {
             /** Insert. */
@@ -384,7 +376,7 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
     }
 
     /** */
-    private static final class EntryEventFilterFactory implements Factory<CacheEntryEventFilter> {
+    private final static class EntryEventFilterFactory implements Factory<CacheEntryEventFilter> {
         /** */
         @IgniteInstanceResource
         private Ignite ignite;
@@ -413,7 +405,7 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
     }
 
     /** */
-    private static final class NodeFilter implements IgnitePredicate<ClusterNode> {
+    private final static class NodeFilter implements IgnitePredicate<ClusterNode> {
         /** */
         private final int idx;
 
@@ -429,7 +421,7 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
     }
 
     /** */
-    private static final class NodeFilterByRegexp implements IgnitePredicate<ClusterNode> {
+    private final static class NodeFilterByRegexp implements IgnitePredicate<ClusterNode> {
         /** */
         private final Pattern pattern;
 

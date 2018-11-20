@@ -229,6 +229,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @SuppressWarnings({"TooBroadScope"})
     public void testLock() throws Exception {
         final int kv = 1;
 
@@ -404,6 +405,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @SuppressWarnings({"TooBroadScope"})
     public void testLockTimeoutTwoThreads() throws Exception {
         int keyCnt = 1;
 

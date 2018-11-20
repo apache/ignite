@@ -155,7 +155,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
                     DataPagePayload data = io.readPayload(pageAddr,
                         itemId(nextLink),
-                        pageMem.realPageSize(grpId));
+                        pageMem.pageSize());
 
                     nextLink = data.nextLink();
 
@@ -659,6 +659,11 @@ public class CacheDataRowAdapter implements CacheDataRow {
     /** {@inheritDoc} */
     @Override public byte newMvccTxState() {
         return TxState.NA;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isKeyAbsentBefore() {
+        return false;
     }
 
     /**

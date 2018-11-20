@@ -64,8 +64,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             "CacheStoreSessionListenerFactories",
             "PlatformConfiguration",
             "ExecutorConfiguration",
-            "CommunicationFailureResolver",
-            "EncryptionSpi"
+            "CommunicationFailureResolver"
         };
 
         /** Properties that are missing on .NET side. */
@@ -81,8 +80,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             "TimeServerPortBase",
             "TimeServerPortRange",
             "IncludeProperties",
-            "isAutoActivationEnabled",  // IGNITE-7301
-            "NetworkCompressionLevel"
+            "isAutoActivationEnabled"  // IGNITE-7301
         };
 
         /// <summary>

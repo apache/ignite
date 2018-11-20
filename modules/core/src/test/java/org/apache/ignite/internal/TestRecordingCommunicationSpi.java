@@ -218,26 +218,6 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
     }
 
     /**
-     * @param size Size
-     * @param timeout Timeout.
-     * @throws InterruptedException
-     */
-    public boolean waitForBlocked(int size, long timeout) throws InterruptedException {
-        long t0 = U.currentTimeMillis() + timeout;
-
-        synchronized (this) {
-            while (blockedMsgs.size() < size) {
-                wait(1000);
-
-                if (U.currentTimeMillis() >= t0)
-                    return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
      * @throws InterruptedException If interrupted.
      */
     public void waitForRecorded() throws InterruptedException {

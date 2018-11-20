@@ -264,6 +264,7 @@ public class JdbcThinComplexQuerySelfTest extends JdbcThinAbstractSelfTest {
     /**
      * Person.
      */
+    @SuppressWarnings("UnusedDeclaration")
     private static class Person implements Serializable {
         /** ID. */
         @QuerySqlField
@@ -302,6 +303,7 @@ public class JdbcThinComplexQuerySelfTest extends JdbcThinAbstractSelfTest {
     /**
      * Organization.
      */
+    @SuppressWarnings("UnusedDeclaration")
     private static class Organization implements Serializable {
         /** ID. */
         @QuerySqlField

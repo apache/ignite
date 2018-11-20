@@ -302,6 +302,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
     /**
      *
      */
+    @SuppressWarnings( {"unchecked", "IfMayBeConditional"})
     private void getAsync() {
         assert part != -1;
 

@@ -42,6 +42,7 @@ public class PlatformBalancingSingleClosureTask extends PlatformAbstractTask {
     private PlatformJob job;
 
     /** Load balancer. */
+    @SuppressWarnings("UnusedDeclaration")
     @LoadBalancerResource
     private ComputeLoadBalancer lb;
 

@@ -42,6 +42,7 @@ public abstract class GridSingleSplitsNewNodesAbstractLoadTest extends GridCommo
     protected abstract DiscoverySpi getDiscoverySpi(IgniteConfiguration cfg);
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ConstantConditions")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 

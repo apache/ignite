@@ -31,6 +31,7 @@ import org.jetbrains.annotations.Nullable;
  * Convenient adapter for working with metadata. <h2 class="header">Thread Safety</h2> This class provides necessary
  * synchronization for thread-safe access.
  */
+@SuppressWarnings({"SynchronizeOnNonFinalField"})
 public class GridMetadataAwareAdapter {
     /**
      * Enum stored predefined keys.
@@ -367,6 +368,7 @@ public class GridMetadataAwareAdapter {
      * @throws IOException If I/O error occurred.
      * @throws ClassNotFoundException If some class could not be found.
      */
+    @SuppressWarnings({"unchecked"})
     protected void readExternalMeta(ObjectInput in) throws IOException, ClassNotFoundException {
         Object[] cp = (Object[])in.readObject();
 
@@ -376,6 +378,7 @@ public class GridMetadataAwareAdapter {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings({"CloneDoesntDeclareCloneNotSupportedException", "OverriddenMethodCallDuringObjectConstruction"})
     @Override public Object clone() {
         try {
             GridMetadataAwareAdapter clone = (GridMetadataAwareAdapter)super.clone();

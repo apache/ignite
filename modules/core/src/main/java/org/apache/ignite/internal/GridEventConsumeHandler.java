@@ -71,6 +71,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
     };
 
     /** Local callback. */
+    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private IgniteBiPredicate<UUID, Event> cb;
 
     /** Filter. */

@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-import {nonEmpty} from 'app/utils/lodashMixins';
-
 import {ListEditableColsController} from './cols.directive';
 
 /** @returns {ng.IDirective} */
@@ -37,8 +35,7 @@ export default function() {
                 el.addClass(ctrl.rowClass);
 
             ctrl.colDefs.forEach(({ cellClass }, index) => {
-                if (nonEmpty(cellClass))
-                    children[index].classList.add(...(Array.isArray(cellClass) ? cellClass : cellClass.split(' ')));
+                _.forEach((Array.isArray(cellClass) ? cellClass : [cellClass]), (item) => children[index].classList.add(item));
             });
         }
     };

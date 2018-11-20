@@ -22,6 +22,7 @@ import org.apache.ignite.internal.GridFactoryVmShutdownTest;
 import org.apache.ignite.internal.managers.GridManagerMxBeanIllegalArgumentHandleTest;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheMultiNodeDataStructureTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.preloader.GridCacheReplicatedPreloadUndeploysTest;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileDownloaderTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesWriteThrottleSandboxTest;
 import org.apache.ignite.internal.processors.compute.GridComputeJobExecutionErrorToLogManualTest;
 import org.apache.ignite.internal.util.future.GridFutureQueueTest;

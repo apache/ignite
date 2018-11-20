@@ -33,10 +33,7 @@ public interface MetastorageLifecycleListener {
      *
      * @param metastorage Read-only meta storage.
      */
-    default void onReadyForRead(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
-    }
-
-    ;
+    public void onReadyForRead(ReadOnlyMetastorage metastorage) throws IgniteCheckedException;
 
     /**
      * Fully functional metastore capable of performing reading and writing operations.
@@ -46,8 +43,5 @@ public interface MetastorageLifecycleListener {
      *
      * @param metastorage Fully functional meta storage.
      */
-    default void onReadyForReadWrite(ReadWriteMetastorage metastorage) throws IgniteCheckedException {
-    }
-
-    ;
+    public void onReadyForReadWrite(ReadWriteMetastorage metastorage) throws IgniteCheckedException;
 }

@@ -24,7 +24,6 @@ import java.util.Date;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadLocalRandom;
@@ -44,6 +43,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.loadtests.util.GridCumulativeAverage;
 import org.apache.ignite.testframework.GridLoadTestUtils;
 import org.jetbrains.annotations.Nullable;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
@@ -149,6 +149,7 @@ public class GridIoManagerBenchmark {
      * @param duration Test duration.
      * @param outputFilename Output file name.
      */
+    @SuppressWarnings("deprecation")
     private static void sendMessages(IgniteKernal g, int threads, int duration, @Nullable final String outputFilename) {
         X.println(">>> Sending messages.");
 
@@ -230,6 +231,7 @@ public class GridIoManagerBenchmark {
     /**
      * @param g Kernal.
      */
+    @SuppressWarnings("deprecation")
     private static void receiveMessages(final IgniteKernal g) {
         X.println(">>> Receiving messages.");
 

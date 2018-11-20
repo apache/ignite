@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import angular from 'angular';
+
 import template from './template.pug';
 import controller from './controller';
 import './style.scss';

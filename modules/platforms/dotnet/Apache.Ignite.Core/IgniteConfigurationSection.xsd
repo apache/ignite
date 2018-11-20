@@ -18,10 +18,11 @@
 -->
 
 <xs:schema id="IgniteConfigurationSection"
-           targetNamespace="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"
-           elementFormDefault="qualified"
-           xmlns="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"
-           xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    targetNamespace="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"
+    elementFormDefault="qualified"
+    xmlns="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"
+    xmlns:mstns="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"
+    xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
     <xs:simpleType name="cacheMode" final="restriction">
         <xs:restriction base="xs:string">
@@ -861,12 +862,6 @@
                                             <xs:documentation>Desired query parallelism within a single node.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
-                                    <xs:attribute name="encryptionEnabled" type="xs:boolean">
-                                        <xs:annotation>
-                                            <xs:documentation>Flag indicating whether cache encryption enabled.
-                                            </xs:documentation>
-                                        </xs:annotation>
-                                    </xs:attribute>
                                 </xs:complexType>
                             </xs:element>
                         </xs:sequence>
@@ -908,38 +903,6 @@
                                 </xs:complexType>
                             </xs:element>
                         </xs:sequence>
-                    </xs:complexType>
-                </xs:element>
-                <xs:element name="encryptionSpi" minOccurs="0">
-                    <xs:annotation>
-                        <xs:documentation>Encryption spi. Null for disabled encryption.</xs:documentation>
-                    </xs:annotation>
-                    <xs:complexType>
-                        <xs:attribute name="masterKeyName" type="xs:string">
-                            <xs:annotation>
-                                <xs:documentation>Master key name</xs:documentation>
-                            </xs:annotation>
-                        </xs:attribute>
-                        <xs:attribute name="keySize" type="xs:int">
-                            <xs:annotation>
-                                <xs:documentation>Encryption key size.</xs:documentation>
-                            </xs:annotation>
-                        </xs:attribute>
-                        <xs:attribute name="keyStorePath" type="xs:string">
-                            <xs:annotation>
-                                <xs:documentation>Key store path.</xs:documentation>
-                            </xs:annotation>
-                        </xs:attribute>
-                        <xs:attribute name="keyStorePassword" type="xs:string">
-                            <xs:annotation>
-                                <xs:documentation>Key store password.</xs:documentation>
-                            </xs:annotation>
-                        </xs:attribute>
-                        <xs:attribute name="type" type="xs:string" use="required">
-                            <xs:annotation>
-                                <xs:documentation>Assembly-qualified type name.</xs:documentation>
-                            </xs:annotation>
-                        </xs:attribute>
                     </xs:complexType>
                 </xs:element>
                 <xs:element name="discoverySpi" minOccurs="0">
@@ -1036,8 +999,7 @@
                         <xs:attribute name="forceServerMode" type="xs:boolean">
                             <xs:annotation>
                                 <xs:documentation>
-                                    Whether TcpDiscoveryspi is started in server mode regardless of
-                                    IgniteConfiguration.ClientMode setting.
+                                    Whether TcpDiscoverySpi is started in server mode regardless of IgniteConfiguration.ClientMode setting.
                                 </xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
@@ -1411,7 +1373,7 @@
                             </xs:annotation>
                         </xs:attribute>
                     </xs:complexType>
-                </xs:element>
+                </xs:element>                
                 <xs:element name="sqlConnectorConfiguration" minOccurs="0">
                     <xs:annotation>
                         <xs:documentation>SQL connector configuration (JDBC and ODBC).</xs:documentation>
@@ -1782,7 +1744,7 @@
                                                         <xs:documentation>Size of the checkpointing page buffer.</xs:documentation>
                                                     </xs:annotation>
                                                 </xs:attribute>
-                                            </xs:complexType>
+                                            </xs:complexType>                                            
                                         </xs:element>
                                     </xs:sequence>
                                 </xs:complexType>
@@ -1921,13 +1883,6 @@
                         <xs:attribute name="walAutoArchiveAfterInactivity" type="xs:string">
                             <xs:annotation>
                                 <xs:documentation>Inactivity time after which to run WAL segment auto archiving.</xs:documentation>
-                            </xs:annotation>
-                        </xs:attribute>
-                        <xs:attribute name="checkpointReadLockTimeout" type="xs:string">
-                            <xs:annotation>
-                                <xs:documentation>
-                                    Timeout for checkpoint read lock acquisition.
-                                </xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                     </xs:complexType>
@@ -2233,13 +2188,6 @@
                 <xs:annotation>
                     <xs:documentation>
                         Failure detection timeout used by discovery and communication subsystems.
-                    </xs:documentation>
-                </xs:annotation>
-            </xs:attribute>
-            <xs:attribute name="systemWorkerBlockedTimeout" type="xs:string">
-                <xs:annotation>
-                    <xs:documentation>
-                        Timeout for blocked system workers detection.
                     </xs:documentation>
                 </xs:annotation>
             </xs:attribute>

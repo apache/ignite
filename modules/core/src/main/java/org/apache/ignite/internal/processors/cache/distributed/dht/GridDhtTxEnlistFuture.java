@@ -135,7 +135,7 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<G
     }
 
     /** {@inheritDoc} */
-    @Override public boolean needResult() {
+    public boolean needResult() {
         return needRes;
     }
 
@@ -145,12 +145,12 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<G
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasNextX() {
+    public boolean hasNextX() {
         return it.hasNext();
     }
 
     /** {@inheritDoc} */
-    @Override public Object nextX() {
+    public Object nextX() {
         return it.next();
     }
 

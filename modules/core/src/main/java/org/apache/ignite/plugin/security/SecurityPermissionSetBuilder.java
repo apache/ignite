@@ -126,11 +126,6 @@ public class SecurityPermissionSetBuilder {
      * @return {@link SecurityPermissionSetBuilder} refer to same permission builder.
      */
     public SecurityPermissionSetBuilder appendCachePermissions(String name, SecurityPermission... perms) {
-        for (SecurityPermission perm : perms) {
-            if (perm == SecurityPermission.CACHE_CREATE || perm == SecurityPermission.CACHE_DESTROY)
-                throw new IgniteException(perm + " should be assigned as system permission, not cache permission");
-        }
-
         validate(toCollection("CACHE_"), perms);
 
         append(cachePerms, name, toCollection(perms));
@@ -145,7 +140,7 @@ public class SecurityPermissionSetBuilder {
      * @return {@link SecurityPermissionSetBuilder} refer to same permission builder.
      */
     public SecurityPermissionSetBuilder appendSystemPermissions(SecurityPermission... perms) {
-        validate(toCollection("EVENTS_", "ADMIN_", "CACHE_CREATE", "CACHE_DESTROY", "JOIN_AS_SERVER"), perms);
+        validate(toCollection("EVENTS_", "ADMIN_"), perms);
 
         sysPerms.addAll(toCollection(perms));
 
@@ -199,7 +194,7 @@ public class SecurityPermissionSetBuilder {
     private final <T> Collection<T> toCollection(T... perms) {
         assert perms != null;
 
-        Collection<T> col = U.newLinkedHashSet(perms.length);
+        Collection<T> col = U.newHashSet(perms.length);
 
         Collections.addAll(col, perms);
 

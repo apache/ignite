@@ -31,6 +31,7 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
@@ -42,7 +43,6 @@ import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListe
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
-import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
@@ -133,6 +133,11 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
         this.readOnly = readOnly;
         log = cctx.logger(getClass());
         this.failureProcessor = cctx.kernalContext().failure();
+    }
+
+    /** */
+    public MetaStorage(GridCacheSharedContext cctx, DataRegion memPlc, DataRegionMetricsImpl memMetrics) {
+        this(cctx, memPlc, memMetrics, false);
     }
 
     /** */
@@ -356,7 +361,6 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
                         // Initialize new page.
                         PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.latest();
 
-                        //MetaStorage never encrypted so realPageSize == pageSize.
                         io.initNewPage(pageAddr, partMetaId, pageMem.pageSize());
 
                         treeRoot = pageMem.allocatePage(METASTORAGE_CACHE_ID, partId, PageMemory.FLAG_DATA);
@@ -533,7 +537,6 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
                     try {
                         SimpleDataPageIO io = (SimpleDataPageIO)ioVersions().forPage(pageAddr);
 
-                        //MetaStorage never encrypted so realPageSize == pageSize.
                         DataPagePayload data = io.readPayload(pageAddr, itemId(nextLink), pageMem.pageSize());
 
                         nextLink = data.nextLink();

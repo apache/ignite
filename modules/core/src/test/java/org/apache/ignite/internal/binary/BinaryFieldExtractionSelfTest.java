@@ -179,6 +179,7 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @SuppressWarnings("UnusedDeclaration")
     private static class TestObject {
         /** */
         private byte bVal;
@@ -231,6 +232,7 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @SuppressWarnings("UnusedDeclaration")
     private static class DecimalValue {
         /** */
         private BigDecimal decVal;

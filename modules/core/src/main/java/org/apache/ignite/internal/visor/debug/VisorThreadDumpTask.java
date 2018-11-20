@@ -20,7 +20,6 @@ package org.apache.ignite.internal.visor.debug;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -30,7 +29,6 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  * Creates thread dump.
  */
 @GridInternal
-@GridVisorManagementTask
 public class VisorThreadDumpTask extends VisorOneNodeTask<Void, VisorThreadDumpTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;

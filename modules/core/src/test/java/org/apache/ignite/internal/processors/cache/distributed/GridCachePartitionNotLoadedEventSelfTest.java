@@ -38,7 +38,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.util.TestTcpCommunicationSpi;
 import org.eclipse.jetty.util.ConcurrentHashSet;
@@ -141,19 +140,17 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
 
         assert !cache.containsKey(key);
 
-        final long awaitingTimeoutMs = SF.apply(5 * 60 * 1000);
-
-        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 return !lsnr1.lostParts.isEmpty();
             }
-        }, awaitingTimeoutMs));
+        }, getTestTimeout());
 
-        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 return !lsnr2.lostParts.isEmpty();
             }
-        }, awaitingTimeoutMs));
+        }, getTestTimeout());
     }
 
     /**

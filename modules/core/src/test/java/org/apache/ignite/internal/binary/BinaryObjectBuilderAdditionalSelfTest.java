@@ -56,6 +56,7 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.MarshallerPlatformIds;
 import org.apache.ignite.internal.binary.builder.BinaryBuilderEnum;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
@@ -1168,6 +1169,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @SuppressWarnings("AssertEqualsBetweenInconvertibleTypes")
     public void testDateArrayOverride() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
 
@@ -1186,6 +1188,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    @SuppressWarnings("AssertEqualsBetweenInconvertibleTypes")
     public void testTimestampArrayOverride() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
 

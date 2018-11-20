@@ -328,6 +328,7 @@ public class AboutDialog extends JDialog {
     public static void centerShow(final String appName, final String bannerSpec,
         final String ver, final Date release, final String copyright) {
         SwingUtilities.invokeLater(new Runnable() {
+            @SuppressWarnings("NonThreadSafeLazyInitialization")
             @Override public void run() {
                 if (aboutDlg == null) {
                     try {

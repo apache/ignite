@@ -47,6 +47,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_UNDEPLOYED;
 /**
  * Task deployment tests.
  */
+@SuppressWarnings("unchecked")
 @GridCommonTest(group = "Kernal Self")
 public class GridDeploymentSelfTest extends GridCommonAbstractTest {
     /** */
@@ -95,6 +96,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
     /**
      * @param ignite Grid.
      */
+    @SuppressWarnings({"CatchGenericClass"})
     private void stopGrid(Ignite ignite) {
         try {
             if (ignite != null)

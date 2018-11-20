@@ -38,6 +38,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED
 /**
  * Tests for replicated cache preloader.
  */
+@SuppressWarnings({"PublicInnerClass"})
 public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloadLifecycleAbstractTest {
     /** */
     private static boolean quiet = true;

@@ -206,6 +206,7 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
      *
      * @param colocateFileWrites Whether all ongoing file writes should be colocated.
      */
+    @SuppressWarnings("UnusedDeclaration")
     public void colocateFileWrites(boolean colocateFileWrites) {
         this.colocateFileWrites = colocateFileWrites;
     }
@@ -422,6 +423,7 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("deprecation")
     @Override public FSDataOutputStream createInternal(
         Path f,
         EnumSet<CreateFlag> flag,

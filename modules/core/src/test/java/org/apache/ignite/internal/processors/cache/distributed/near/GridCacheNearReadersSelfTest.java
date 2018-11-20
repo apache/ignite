@@ -465,6 +465,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @SuppressWarnings({"SizeReplaceableByIsEmpty"})
     public void testImplicitLockReaders() throws Exception {
         grids = 3;
         aff.reset(grids, 1);

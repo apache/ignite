@@ -786,9 +786,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
 
                     Map<String, GridCacheAdapter> caches = caches(ig);
 
-                    for (GridCacheAdapter cacheAdapter : caches.values())
-                        Assert.assertTrue("Cache should be in recovery mode: " + cacheAdapter.context(),
-                            cacheAdapter.context().isRecoveryMode());
+                    Assert.assertEquals(0, caches.size());
                 }
             });
         }

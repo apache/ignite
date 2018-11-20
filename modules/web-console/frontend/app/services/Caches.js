@@ -31,8 +31,7 @@ export default class Caches {
     /** @type {ig.menu<ig.config.cache.AtomicityModes>} */
     atomicityModes = [
         {value: 'ATOMIC', label: 'ATOMIC'},
-        {value: 'TRANSACTIONAL', label: 'TRANSACTIONAL'},
-        {value: 'TRANSACTIONAL_SNAPSHOT', label: 'TRANSACTIONAL_SNAPSHOT'}
+        {value: 'TRANSACTIONAL', label: 'TRANSACTIONAL'}
     ];
 
     /**

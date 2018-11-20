@@ -44,8 +44,8 @@ public class UploadBenchmarkArguments implements StreamerParams {
     /**
      * Parameters for JDBC connection, that only uploads data.
      *
-     * We can't just pass entire params string, due to yardstick, which relies on bash, has some troubles with escaping
-     * ampersand character.
+     * We can't just pass entire params string, due to yardstick, which relies on bash,
+     * has some troubles with escaping ampersand character.
      */
     @Parameter(names = {"--sql-jdbc-params"},
         variableArity = true,
@@ -76,7 +76,7 @@ public class UploadBenchmarkArguments implements StreamerParams {
 
     @Parameter(names = {"--streamer-ordered"}, arity = 1,
         description = "Streamer benchmarks only: set streamer ordered flag.")
-    private boolean streamerOrdered = false;
+    private boolean streamerOrdered = true;
 
     /** How many rows to upload during warmup. */
     @Parameter(names = {"--upload-warmup-rows"})
@@ -90,14 +90,10 @@ public class UploadBenchmarkArguments implements StreamerParams {
     @Parameter(names = {"--upload-jdbc-batch-size"})
     private long jdbcBatchSize = -1;
 
-    /** Turn on streaming during upload. */
-    @Parameter(names = {"--use-streaming"}, arity = 1,
+    /** Turn on streaming during upload */
+    @Parameter(names={"--use-streaming"}, arity = 1,
         description = "Upload data in insert benchmarks in streaming mode")
     private boolean useStreaming = false;
-
-    /** Number of secondary indexes to create before upload. Values can be from 0 up to 10. */
-    @Parameter(names = {"--idx-count"})
-    private int idxCnt = 0;
 
     /**
      * @return Switch wal.
@@ -131,9 +127,10 @@ public class UploadBenchmarkArguments implements StreamerParams {
     }
 
     /**
-     * How many entries to collect before sending to java streamer api in either way: passing map to {@link
-     * IgniteDataStreamer#addData(Map)}, or set STREAMING sql command parameter. <br/> If set to 1, {@link
-     * IgniteDataStreamer#addData(Object, Object)} method will be used.
+     * How many entries to collect before sending to java streamer api in either way:
+     * passing map to {@link IgniteDataStreamer#addData(Map)},
+     * or set STREAMING sql command parameter. <br/>
+     * If set to 1, {@link IgniteDataStreamer#addData(Object, Object)} method will be used.
      */
     @Override @Nullable public Integer streamerLocalBatchSize() {
         return streamerLocBatchSize;
@@ -185,13 +182,6 @@ public class UploadBenchmarkArguments implements StreamerParams {
      */
     public boolean useStreaming() {
         return useStreaming;
-    }
-
-    /**
-     * See {@link #idxCnt}.
-     */
-    public int indexesCount() {
-        return idxCnt;
     }
 
     /** {@inheritDoc} */

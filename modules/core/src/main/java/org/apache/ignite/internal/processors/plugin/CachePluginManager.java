@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.plugin;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
-import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -41,6 +41,8 @@ import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.Nullable;
+
+import javax.cache.Cache;
 
 /**
  * Cache plugin manager.
@@ -112,11 +114,11 @@ public class CachePluginManager extends GridCacheManagerAdapter {
     public <T> T createComponent(Class<T> cls) {
         for (CachePluginProvider provider : providersList) {
             T res = (T)provider.createComponent(cls);
-
+            
             if (res != null)
                 return res;
         }
-
+        
         if (cls.equals(GridCacheDrManager.class))
             return (T)new GridOsCacheDrManager();
         else if (cls.equals(CacheConflictResolutionManager.class)) {
@@ -169,16 +171,17 @@ public class CachePluginManager extends GridCacheManagerAdapter {
 
     /**
      * Checks that remote caches has configuration compatible with the local.
-     *
+     *    
      * @param rmtCfg Remote cache configuration.
      * @param rmtNode Remote rmtNode.
      * @throws IgniteCheckedException If failed.
      */
+    @SuppressWarnings("unchecked")
     public void validateRemotes(CacheConfiguration rmtCfg, ClusterNode rmtNode) throws IgniteCheckedException {
         for (Map.Entry<CachePluginContext, CachePluginProvider> entry : providersMap.entrySet()) {
             CachePluginContext cctx = entry.getKey();
             CachePluginProvider provider = entry.getValue();
-
+            
             provider.validateRemote(cctx.igniteCacheConfiguration(), rmtCfg, rmtNode);
         }
     }

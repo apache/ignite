@@ -43,6 +43,7 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("deprecation")
     @Override protected void afterTest() throws Exception {
         ((IgniteKernal)grid()).context().io().
             removeMessageListener(GridTopic.TOPIC_COMM_USER.name());

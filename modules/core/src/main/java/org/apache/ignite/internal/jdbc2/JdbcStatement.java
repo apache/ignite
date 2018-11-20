@@ -91,6 +91,7 @@ public class JdbcStatement implements Statement {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("deprecation")
     @Override public ResultSet executeQuery(String sql) throws SQLException {
         execute0(sql, true);
 

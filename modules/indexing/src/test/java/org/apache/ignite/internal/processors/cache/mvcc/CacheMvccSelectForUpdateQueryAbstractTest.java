@@ -30,7 +30,6 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.X;
@@ -58,7 +57,7 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
 
         disableScheduledVacuum = getName().equals("testSelectForUpdateAfterAbortedTx");
 
-        IgniteEx grid = startGrid(0);
+        startGrids(3);
 
         CacheConfiguration seg = new CacheConfiguration("segmented*");
 
@@ -67,9 +66,11 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
         if (seg.getCacheMode() == PARTITIONED)
             seg.setQueryParallelism(4);
 
-        grid.addCacheConfiguration(seg);
+        grid(0).addCacheConfiguration(seg);
 
-        try (Connection c = connect(grid)) {
+        Thread.sleep(1000L);
+
+        try (Connection c = connect(grid(0))) {
             execute(c, "create table person (id int primary key, firstName varchar, lastName varchar) " +
                 "with \"atomicity=transactional_snapshot,cache_name=Person\"");
 
@@ -89,14 +90,14 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
                 tx.commit();
             }
         }
-
-        startGridsMultiThreaded(1, 2);
     }
 
     /**
      *
      */
     public void testSelectForUpdateDistributed() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9724");
+
         doTestSelectForUpdateDistributed("Person", false);
     }
 
@@ -161,8 +162,6 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
      * @throws Exception If failed.
      */
     void doTestSelectForUpdateDistributed(String cacheName, boolean outsideTx) throws Exception {
-        awaitPartitionMapExchange();
-
         Ignite node = grid(0);
 
         IgniteCache<Integer, ?> cache = node.cache(cacheName);
@@ -275,7 +274,7 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
      * @param locked Whether the key is locked
      * @throws Exception if failed.
      */
-    @SuppressWarnings({"unchecked"})
+    @SuppressWarnings({"ThrowableNotThrown", "unchecked"})
     private void checkLocks(String cacheName, List<Integer> keys, boolean locked) throws Exception {
         Ignite node = ignite(2);
         IgniteCache cache = node.cache(cacheName);

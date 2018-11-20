@@ -60,6 +60,7 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
      * @param ctx Context.
      * @throws Exception If failed.
      */
+    @SuppressWarnings("NullableProblems")
     public GridCacheTestContext(GridTestKernalContext ctx) throws Exception {
         super(
             ctx,
@@ -80,7 +81,6 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
                 new GridCacheSharedTtlCleanupManager(),
                 new PartitionsEvictManager(),
                 new CacheNoopJtaManager(),
-                null,
                 null
             ),
             defaultCacheConfiguration(),
@@ -89,7 +89,6 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
             AffinityTopologyVersion.ZERO,
             true,
             true,
-            false,
             new GridCacheEventManager(),
             new CacheOsStoreManager(null, new CacheConfiguration()),
             new GridCacheEvictionManager(),

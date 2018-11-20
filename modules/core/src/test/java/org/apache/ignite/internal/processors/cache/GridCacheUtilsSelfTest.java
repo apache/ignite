@@ -74,6 +74,7 @@ public class GridCacheUtilsSelfTest extends GridCommonAbstractTest {
          * @param obj Object.
          * @return {@code False}.
          */
+        @SuppressWarnings("CovariantEquals")
         @Override public boolean equals(Object obj) {
             return false;
         }
@@ -117,6 +118,7 @@ public class GridCacheUtilsSelfTest extends GridCommonAbstractTest {
 
     /**
      */
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     public void testCacheKeyValidation() throws IgniteCheckedException {
         CU.validateCacheKey("key");
 

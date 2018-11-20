@@ -375,6 +375,7 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
     /**
      * Person.
      */
+    @SuppressWarnings("UnusedDeclaration")
     private static class Person implements Serializable {
         /** ID. */
         @QuerySqlField

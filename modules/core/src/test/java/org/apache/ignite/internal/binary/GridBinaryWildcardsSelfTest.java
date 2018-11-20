@@ -23,9 +23,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
-import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryNameMapper;
+import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
@@ -99,6 +99,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      */
     public void testClassNamesCustomMappers() throws Exception {
         BinaryMarshaller marsh = binaryMarshaller(null, new BinaryIdMapper() {
+            @SuppressWarnings("IfMayBeConditional")
             @Override public int typeId(String clsName) {
                 if (clsName.endsWith("1"))
                     return 300;
@@ -186,6 +187,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      */
     public void testTypeConfigurationsWithGlobalMapper() throws Exception {
         BinaryMarshaller marsh = binaryMarshaller(new BinaryBasicNameMapper(false), new BinaryIdMapper() {
+            @SuppressWarnings("IfMayBeConditional")
             @Override public int typeId(String clsName) {
                 if (clsName.endsWith("1"))
                     return 300;
@@ -221,6 +223,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      */
     public void testTypeConfigurationsWithNonGlobalMapper() throws Exception {
         BinaryMarshaller marsh = binaryMarshaller(new BinaryBasicNameMapper(true), new BinaryIdMapper() {
+            @SuppressWarnings("IfMayBeConditional")
             @Override public int typeId(String clsName) {
                 if (clsName.endsWith("1"))
                     return 300;
@@ -398,6 +401,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      */
     public void testClassNamesWithCustomMapperJar() throws Exception {
         BinaryMarshaller marsh = binaryMarshaller(new BinaryBasicNameMapper(false), new BinaryIdMapper() {
+            @SuppressWarnings("IfMayBeConditional")
             @Override public int typeId(String clsName) {
                 if (clsName.endsWith("1"))
                     return 300;
@@ -470,6 +474,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      */
     public void testTypeConfigurationsWithGlobalMapperJar() throws Exception {
         BinaryMarshaller marsh = binaryMarshaller(new BinaryBasicNameMapper(false), new BinaryIdMapper() {
+            @SuppressWarnings("IfMayBeConditional")
             @Override public int typeId(String clsName) {
                 if (clsName.endsWith("1"))
                     return 300;
@@ -505,6 +510,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      */
     public void testTypeConfigurationsWithNonGlobalMapperJar() throws Exception {
         BinaryMarshaller marsh = binaryMarshaller(new BinaryBasicNameMapper(false), new BinaryIdMapper() {
+            @SuppressWarnings("IfMayBeConditional")
             @Override public int typeId(String clsName) {
                 if (clsName.endsWith("1"))
                     return 300;

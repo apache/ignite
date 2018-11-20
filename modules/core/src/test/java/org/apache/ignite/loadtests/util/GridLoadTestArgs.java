@@ -120,6 +120,7 @@ public class GridLoadTestArgs {
      *         JVM property is {@code null} or default value if both
      *         are {@code null}.
      */
+    @SuppressWarnings("ConstantConditions")
     public static int getIntProperty(String name, int dflt) {
         Integer ret = getIntProperty0(name);
 
@@ -194,6 +195,7 @@ public class GridLoadTestArgs {
      *         JVM property is {@code null} or default value if both
      *         are {@code null}.
      */
+    @SuppressWarnings("ConstantConditions")
     public static long getLongProperty(String name, long dflt) {
         Long ret = getLongProperty(name);
 

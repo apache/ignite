@@ -78,7 +78,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -113,18 +112,13 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
             cacheCfg.setCacheMode(cacheMode());
             cacheCfg.setAtomicityMode(atomicityMode());
-            cacheCfg.setLoadPreviousValue(true);
+            cacheCfg.setNearConfiguration(nearConfiguration());
             cacheCfg.setRebalanceMode(ASYNC);
             cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-            cacheCfg.setNearConfiguration(nearConfiguration());
-
-            if (atomicityMode() != TRANSACTIONAL_SNAPSHOT) {
-                cacheCfg.setCacheStoreFactory(new StoreFactory()); // TODO IGNITE-8582 enable for tx snapshot.
-                cacheCfg.setReadThrough(true); // TODO IGNITE-8582 enable for tx snapshot.
-                cacheCfg.setWriteThrough(true); // TODO IGNITE-8582 enable for tx snapshot.
-            }
-            else
-                cacheCfg.setIndexedTypes(Integer.class, Integer.class);
+            cacheCfg.setCacheStoreFactory(new StoreFactory());
+            cacheCfg.setReadThrough(true);
+            cacheCfg.setWriteThrough(true);
+            cacheCfg.setLoadPreviousValue(true);
 
             cfg.setCacheConfiguration(cacheCfg);
         }
@@ -246,25 +240,9 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     protected abstract int gridCount();
 
     /**
-     * @param cache Cache.
-     * @param key Key.
-     * @param val Value.
-     */
-    protected void cachePut(IgniteCache cache, Integer key, Integer val) {
-        cache.put(key, val);
-    }
-
-    /**
-     * @param cache Cache.
-     * @param key Key.
-     */
-    protected void cacheRemove(IgniteCache cache, Integer key) {
-        cache.remove(key);
-    }
-
-    /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testIllegalArguments() throws Exception {
         final ContinuousQuery<Object, Object> q = new ContinuousQuery<>();
 
@@ -336,13 +314,13 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         });
 
         try (QueryCursor<Cache.Entry<Integer, Integer>> ignored = cache.query(qry)) {
-            cachePut(cache, 1, 1);
-            cachePut(cache, 2, 2);
-            cachePut(cache, 3, 3);
+            cache.put(1, 1);
+            cache.put(2, 2);
+            cache.put(3, 3);
 
-            cacheRemove(cache, 2);
+            cache.remove(2);
 
-            cachePut(cache, 1, 10);
+            cache.put(1, 10);
 
             assert latch.await(LATCH_TIMEOUT, MILLISECONDS);
 
@@ -392,7 +370,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
         try (QueryCursor<Cache.Entry<Integer, Integer>> ignored = cache.query(qry)) {
             for (int i = 0; i < 100; i++)
-                cachePut(cache, i, i);
+                cache.put(i, i);
         }
     }
 
@@ -431,13 +409,13 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             for (int i = 0; i < gridCount(); i++) {
                 IgniteCache<Object, Object> cache0 = grid(i).cache(DEFAULT_CACHE_NAME);
 
-                cachePut(cache0, 1, 1);
-                cachePut(cache0, 2, 2);
-                cachePut(cache0, 3, 3);
+                cache0.put(1, 1);
+                cache0.put(2, 2);
+                cache0.put(3, 3);
 
-                cacheRemove(cache0, 1);
-                cacheRemove(cache0, 2);
-                cacheRemove(cache0, 3);
+                cache0.remove(1);
+                cache0.remove(2);
+                cache0.remove(3);
 
                 final int iter = i + 1;
 
@@ -489,7 +467,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         final int keyCnt = parts * 2;
 
         for (int i = 0; i < parts / 2; i++)
-            cachePut(cache, i, i);
+            cache.put(i, i);
 
         for (int i = 0; i < 10; i++) {
             if (i % 2 == 0) {
@@ -508,7 +486,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
                 QueryCursor<Cache.Entry<Integer, Integer>> qryCur = cache.query(qry);
 
                 for (int key = 0; key < keyCnt; key++)
-                    cachePut(cache, key, key);
+                    cache.put(key, key);
 
                 try {
                     assert GridTestUtils.waitForCondition(new PA() {
@@ -523,7 +501,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             }
             else {
                 for (int key = 0; key < keyCnt; key++)
-                    cachePut(cache, key, key);
+                    cache.put(key, key);
             }
         }
     }
@@ -566,16 +544,16 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         });
 
         try (QueryCursor<Cache.Entry<Integer, Integer>> ignored = cache.query(qry)) {
-            cachePut(cache, 1, 1);
-            cachePut(cache, 2, 2);
-            cachePut(cache, 3, 3);
-            cachePut(cache, 4, 4);
+            cache.put(1, 1);
+            cache.put(2, 2);
+            cache.put(3, 3);
+            cache.put(4, 4);
 
-            cacheRemove(cache, 2);
-            cacheRemove(cache, 3);
+            cache.remove(2);
+            cache.remove(3);
 
-            cachePut(cache, 1, 10);
-            cachePut(cache, 4, 40);
+            cache.put(1, 10);
+            cache.put(4, 40);
 
             assert latch.await(LATCH_TIMEOUT, MILLISECONDS);
 
@@ -653,8 +631,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
                     break;
             }
 
-            cachePut(cache, locKey, 1);
-            cachePut(cache, rmtKey, 2);
+            cache.put(locKey, 1);
+            cache.put(rmtKey, 2);
 
             assert latch.await(LATCH_TIMEOUT, MILLISECONDS);
 
@@ -728,12 +706,12 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             Iterator<Integer> it = keys.iterator();
 
             for (int i = 0; i < 4; i++)
-                cachePut(cache, it.next(), 0);
+                cache.put(it.next(), 0);
 
             assert !latch.await(2, SECONDS);
 
             for (int i = 0; i < 2; i++)
-                cachePut(cache, it.next(), 0);
+                cache.put(it.next(), 0);
 
             assert latch.await(LATCH_TIMEOUT, MILLISECONDS);
 
@@ -812,7 +790,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             }
 
             for (Integer k : keys)
-                cachePut(cache, k, 0);
+                cache.put(k, 0);
 
             assert !latch.await(2, SECONDS);
             assert latch.await(1000 + LATCH_TIMEOUT, MILLISECONDS);
@@ -854,7 +832,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         });
 
         for (int i = 0; i < 10; i++)
-            cachePut(cache, i, i);
+            cache.put(i, i);
 
         try (QueryCursor<Cache.Entry<Integer, Integer>> cur = cache.query(qry)) {
             List<Cache.Entry<Integer, Integer>> res = cur.getAll();
@@ -906,7 +884,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         });
 
         for (int i = 0; i < 10; i++)
-            cachePut(cache, i, i);
+            cache.put(i, i);
 
         try (QueryCursor<Cache.Entry<Integer, Integer>> cur = cache.query(qry)) {
             List<Cache.Entry<Integer, Integer>> res = cur.getAll();
@@ -928,8 +906,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
                 exp++;
             }
 
-            cachePut(cache, 10, 10);
-            cachePut(cache, 11, 11);
+            cache.put(10, 10);
+            cache.put(11, 11);
 
             assert latch.await(LATCH_TIMEOUT, MILLISECONDS) : latch.getCount();
 
@@ -1000,8 +978,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         try (QueryCursor<Cache.Entry<Object, Object>> ignored = cache.query(qry)) {
             cache.put(new GridCacheInternalKeyImpl("test", "test"), 1);
 
-            cachePut(cache, 1, 1);
-            cachePut(cache, 2, 2);
+            cache.put(1, 1);
+            cache.put(2, 2);
 
             assert latch.await(LATCH_TIMEOUT, MILLISECONDS);
 
@@ -1036,7 +1014,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
                 log.info("Started node without cache: " + ignite);
             }
 
-            cachePut(cache, 1, 1);
+            cache.put(1, 1);
 
             assertTrue(latch.await(5000, MILLISECONDS));
         }
@@ -1124,7 +1102,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
             try (QueryCursor<Cache.Entry<Integer, Integer>> ignored = cache.query(qry)) {
                 for (int i = 0; i < 100; i++)
-                    cachePut(cache, i, i);
+                    cache.put(i, i);
 
                 assert latch.await(LATCH_TIMEOUT, MILLISECONDS);
                 assert execLatch.await(LATCH_TIMEOUT, MILLISECONDS);
@@ -1169,8 +1147,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         });
 
         try (QueryCursor<Cache.Entry<Object, Object>> ignored = cache.query(qry)) {
-            cachePut(cache, 1, 1);
-            cachePut(cache, 2, 2);
+            cache.put(1, 1);
+            cache.put(2, 2);
 
             // Wait for expiration.
             Thread.sleep(2000);

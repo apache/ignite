@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-mixin form-field__timepicker({ label, model, name, mindate, maxdate, disabled, required, placeholder, tip, format = 'HH:mm'})
+mixin form-field__timepicker({ label, model, name, mindate, maxdate, disabled, required, placeholder, tip })
     mixin __form-field__timepicker()
         input(
             id=`{{ ${name} }}Input`
@@ -28,10 +28,9 @@ mixin form-field__timepicker({ label, model, name, mindate, maxdate, disabled, r
             ng-disabled=disabled && `${disabled}`
 
             bs-timepicker
-            data-time-format=format
+            data-time-format='HH:mm'
             data-length='1'
             data-minute-step='1'
-            data-second-step='1'
             data-arrow-behavior='picker'
 
             data-placement='bottom'

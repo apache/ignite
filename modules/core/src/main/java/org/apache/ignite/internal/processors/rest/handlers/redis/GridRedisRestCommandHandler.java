@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
@@ -46,20 +45,15 @@ public abstract class GridRedisRestCommandHandler implements GridRedisCommandHan
     /** REST protocol handler. */
     protected final GridRestProtocolHandler hnd;
 
-    /** Kernel context. */
-    protected final GridKernalContext ctx;
-
     /**
      * Constructor.
      *
      * @param log Logger.
      * @param hnd REST protocol handler.
-     * @param ctx Kernal context.
      */
-    protected GridRedisRestCommandHandler(IgniteLogger log, GridRestProtocolHandler hnd, GridKernalContext ctx) {
+    public GridRedisRestCommandHandler(final IgniteLogger log, final GridRestProtocolHandler hnd) {
         this.log = log;
         this.hnd = hnd;
-        this.ctx = ctx;
     }
 
     /** {@inheritDoc} */
@@ -81,7 +75,7 @@ public abstract class GridRedisRestCommandHandler implements GridRedisCommandHan
 
                         return msg;
                     }
-                }, ctx.getRestExecutorService());
+                });
         }
         catch (IgniteCheckedException e) {
             if (e instanceof GridRedisTypeException)

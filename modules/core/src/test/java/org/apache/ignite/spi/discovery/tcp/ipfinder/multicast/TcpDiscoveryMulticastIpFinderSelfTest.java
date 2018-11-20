@@ -48,7 +48,7 @@ public class TcpDiscoveryMulticastIpFinderSelfTest
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"TooBroadScope"})
+    @SuppressWarnings({"TooBroadScope", "BusyWait"})
     public void testExchange() throws Exception {
         String locAddr = null;
 

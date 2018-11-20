@@ -22,9 +22,9 @@ import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
@@ -39,7 +39,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 /**
  * Interop data streamer wrapper.
  */
-@SuppressWarnings({"unchecked"})
+@SuppressWarnings({"UnusedDeclaration", "unchecked"})
 public class PlatformDataStreamer extends PlatformAbstractTarget {
     /** Policy: continue. */
     private static final int PLC_CONTINUE = 0;
@@ -192,7 +192,7 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
                 ldr.perNodeBufferSize((int) val);
 
                 return TRUE;
-
+            
             case OP_SET_PER_THREAD_BUFFER_SIZE:
                 ldr.perThreadBufferSize((int) val);
 
@@ -241,7 +241,7 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
 
             case OP_PER_NODE_BUFFER_SIZE:
                 return ldr.perNodeBufferSize();
-
+            
             case OP_PER_THREAD_BUFFER_SIZE:
                 return ldr.perThreadBufferSize();
 

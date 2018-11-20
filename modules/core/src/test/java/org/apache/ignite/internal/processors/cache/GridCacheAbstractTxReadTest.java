@@ -41,6 +41,7 @@ public abstract class GridCacheAbstractTxReadTest extends GridCacheAbstractSelfT
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("NullableProblems")
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
         CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 

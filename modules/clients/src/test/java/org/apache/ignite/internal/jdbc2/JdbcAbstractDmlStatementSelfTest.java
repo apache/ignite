@@ -189,6 +189,7 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
     /**
      * Person.
      */
+    @SuppressWarnings("UnusedDeclaration")
     static class Person implements Serializable {
         /** ID. */
         @QuerySqlField

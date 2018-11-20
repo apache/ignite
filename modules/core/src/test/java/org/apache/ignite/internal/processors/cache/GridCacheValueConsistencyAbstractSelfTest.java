@@ -26,7 +26,6 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.testframework.GridTestUtils.SF;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -277,7 +276,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
         if (nearEnabled())
             fail("https://issues.apache.org/jira/browse/IGNITE-627");
 
-        for (int i = 0; i < SF.applyLB(10, 2); i++) {
+       for (int i = 0; i < 10; i++) {
            log.info("Iteration: " + i);
 
            putRemoveConsistencyMultithreaded();

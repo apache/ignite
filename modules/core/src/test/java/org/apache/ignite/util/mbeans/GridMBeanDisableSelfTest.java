@@ -33,17 +33,15 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public class GridMBeanDisableSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
+    @Override protected void beforeTestsStarted() throws Exception {
         IgniteUtils.IGNITE_MBEANS_DISABLED = true;
 
-        super.setUp();
+        super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */
-    @Override protected void tearDown() throws Exception {
+    @Override protected void afterTestsStopped() throws Exception {
         IgniteUtils.IGNITE_MBEANS_DISABLED = false;
-
-        super.tearDown();
     }
 
     /**
@@ -54,12 +52,12 @@ public class GridMBeanDisableSelfTest extends GridCommonAbstractTest {
     public void testCorrectMBeanInfo() throws Exception {
         // Node should start and stopped with no errors.
         try (final Ignite ignite = startGrid(0)) {
-            final MBeanServer srv = ignite.configuration().getMBeanServer();
+            final MBeanServer server = ignite.configuration().getMBeanServer();
 
             GridTestUtils.assertThrowsWithCause(
                 new Callable<Void>() {
                     @Override public Void call() throws Exception {
-                        U.registerMBean(srv, ignite.name(), "dummy", "DummyMbean1", new DummyMBeanImpl(), DummyMBean.class);
+                        U.registerMBean(server, ignite.name(), "dummy", "DummyMbean1", new DummyMBeanImpl(), DummyMBean.class);
 
                         return null;
                     }
@@ -74,7 +72,7 @@ public class GridMBeanDisableSelfTest extends GridCommonAbstractTest {
                             "DummyMbean2"
                         );
 
-                        U.registerMBean(srv, objName, new DummyMBeanImpl(), DummyMBean.class);
+                        U.registerMBean(server, objName, new DummyMBeanImpl(), DummyMBean.class);
 
                         return null;
 

@@ -18,9 +18,9 @@
 package org.apache.spark.sql.ignite
 
 import org.apache.ignite.IgniteException
-import org.apache.ignite.spark.impl.optimization._
-import org.apache.ignite.spark.impl.optimization.accumulator._
 import org.apache.ignite.spark.impl.{IgniteSQLAccumulatorRelation, IgniteSQLRelation, sqlCacheName}
+import org.apache.ignite.spark.impl.optimization.{accumulator, _}
+import org.apache.ignite.spark.impl.optimization.accumulator._
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical._
@@ -73,8 +73,7 @@ object IgniteOptimization extends Rule[LogicalPlan] with Logging {
                     catalogTable = _catalogTable,
                     aliasIndex = aliasIndexIterator,
                     cacheName =
-                        sqlCacheName(igniteSqlRelation.ic.ignite(), igniteSqlRelation.tableName,
-                            igniteSqlRelation.schemaName)
+                        sqlCacheName(igniteSqlRelation.ic.ignite(), igniteSqlRelation.tableName)
                             .getOrElse(throw new IgniteException("Unknown table")))
 
                 //Logical Relation is bottomest TreeNode in LogicalPlan.

@@ -58,7 +58,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_UNDEPLOYED;
  * 3. The test should execute a task in SHARED_UNDEPLOY mode, restart a node with same version and
  *      make sure that a new class loader is created on remote node.
  */
-@SuppressWarnings({"ProhibitedExceptionDeclared", "unchecked"})
+@SuppressWarnings({"ProhibitedExceptionDeclared", "ObjectEquality", "unchecked"})
 public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
     /** Current deployment mode. */
     private DeploymentMode depMode;

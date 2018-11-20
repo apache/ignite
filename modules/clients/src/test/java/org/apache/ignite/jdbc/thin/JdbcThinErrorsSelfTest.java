@@ -83,6 +83,7 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
      * Test error code for the case when error is caused on batch execution.
      * @throws SQLException if failed.
      */
+    @SuppressWarnings("MagicConstant")
     public void testBatchUpdateException() throws SQLException {
         try (final Connection conn = getConnection()) {
             try (Statement stmt = conn.createStatement()) {

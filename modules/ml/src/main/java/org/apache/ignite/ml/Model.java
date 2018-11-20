@@ -36,7 +36,7 @@ public interface Model<T, V> extends IgniteFunction<T, V> {
     /**
      * @param pretty Use pretty mode.
      */
-    public default String toString(boolean pretty) {
+    default public String toString(boolean pretty) {
         return getClass().getSimpleName();
     }
 }

@@ -85,7 +85,7 @@ public interface Dataset<C extends Serializable, D extends AutoCloseable> extend
      * @param <R> Type of a result.
      * @return Final result.
      */
-    public default <R> R computeWithCtx(IgniteTriFunction<C, D, Integer, R> map, IgniteBinaryOperator<R> reduce) {
+    default public <R> R computeWithCtx(IgniteTriFunction<C, D, Integer, R> map, IgniteBinaryOperator<R> reduce) {
         return computeWithCtx(map, reduce, null);
     }
 
@@ -98,7 +98,7 @@ public interface Dataset<C extends Serializable, D extends AutoCloseable> extend
      * @param <R> Type of a result.
      * @return Final result.
      */
-    public default <R> R compute(IgniteBiFunction<D, Integer, R> map, IgniteBinaryOperator<R> reduce) {
+    default public <R> R compute(IgniteBiFunction<D, Integer, R> map, IgniteBinaryOperator<R> reduce) {
         return compute(map, reduce, null);
     }
 
@@ -112,7 +112,7 @@ public interface Dataset<C extends Serializable, D extends AutoCloseable> extend
      * @param <R> Type of a result.
      * @return Final result.
      */
-    public default <R> R computeWithCtx(IgniteBiFunction<C, D, R> map, IgniteBinaryOperator<R> reduce, R identity) {
+    default public <R> R computeWithCtx(IgniteBiFunction<C, D, R> map, IgniteBinaryOperator<R> reduce, R identity) {
         return computeWithCtx((ctx, data, partIdx) -> map.apply(ctx, data), reduce, identity);
     }
 
@@ -126,7 +126,7 @@ public interface Dataset<C extends Serializable, D extends AutoCloseable> extend
      * @param <R> Type of a result.
      * @return Final result.
      */
-    public default <R> R compute(IgniteFunction<D, R> map, IgniteBinaryOperator<R> reduce, R identity) {
+    default public <R> R compute(IgniteFunction<D, R> map, IgniteBinaryOperator<R> reduce, R identity) {
         return compute((data, partIdx) -> map.apply(data), reduce, identity);
     }
 
@@ -139,7 +139,7 @@ public interface Dataset<C extends Serializable, D extends AutoCloseable> extend
      * @param <R> Type of a result.
      * @return Final result.
      */
-    public default <R> R computeWithCtx(IgniteBiFunction<C, D, R> map, IgniteBinaryOperator<R> reduce) {
+    default public <R> R computeWithCtx(IgniteBiFunction<C, D, R> map, IgniteBinaryOperator<R> reduce) {
         return computeWithCtx((ctx, data, partIdx) -> map.apply(ctx, data), reduce);
     }
 
@@ -152,7 +152,7 @@ public interface Dataset<C extends Serializable, D extends AutoCloseable> extend
      * @param <R> Type of a result.
      * @return Final result.
      */
-    public default <R> R compute(IgniteFunction<D, R> map, IgniteBinaryOperator<R> reduce) {
+    default public <R> R compute(IgniteFunction<D, R> map, IgniteBinaryOperator<R> reduce) {
         return compute((data, partIdx) -> map.apply(data), reduce);
     }
 
@@ -162,7 +162,7 @@ public interface Dataset<C extends Serializable, D extends AutoCloseable> extend
      *
      * @param map Function applied to every partition {@code data}, {@code context} and partition index.
      */
-    public default void computeWithCtx(IgniteTriConsumer<C, D, Integer> map) {
+    default public void computeWithCtx(IgniteTriConsumer<C, D, Integer> map) {
         computeWithCtx((ctx, data, partIdx) -> {
             map.accept(ctx, data, partIdx);
             return null;
@@ -174,7 +174,7 @@ public interface Dataset<C extends Serializable, D extends AutoCloseable> extend
      *
      * @param map Function applied to every partition {@code data} and partition index.
      */
-    public default void compute(IgniteBiConsumer<D, Integer> map) {
+    default public void compute(IgniteBiConsumer<D, Integer> map) {
         compute((data, partIdx) -> {
             map.accept(data, partIdx);
             return null;
@@ -186,7 +186,7 @@ public interface Dataset<C extends Serializable, D extends AutoCloseable> extend
      *
      * @param map Function applied to every partition {@code data} and {@code context}.
      */
-    public default void computeWithCtx(IgniteBiConsumer<C, D> map) {
+    default public void computeWithCtx(IgniteBiConsumer<C, D> map) {
         computeWithCtx((ctx, data, partIdx) -> map.accept(ctx, data));
     }
 
@@ -195,7 +195,7 @@ public interface Dataset<C extends Serializable, D extends AutoCloseable> extend
      *
      * @param map Function applied to every partition {@code data}.
      */
-    public default void compute(IgniteConsumer<D> map) {
+    default public void compute(IgniteConsumer<D> map) {
         compute((data, partIdx) -> map.accept(data));
     }
 
@@ -207,7 +207,7 @@ public interface Dataset<C extends Serializable, D extends AutoCloseable> extend
      * @param <I> Type of a new wrapped dataset.
      * @return New wrapped dataset.
      */
-    public default <I extends Dataset<C, D>> I wrap(IgniteFunction<Dataset<C, D>, I> wrapper) {
+    default public <I extends Dataset<C ,D>> I wrap(IgniteFunction<Dataset<C, D>, I> wrapper) {
         return wrapper.apply(this);
     }
 }

@@ -39,6 +39,7 @@ public class GridToolsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings({"TypeMayBeWeakened"})
     public void testCorrectAntGarTask() throws Exception {
         String tmpDirName = GridTestProperties.getProperty("ant.gar.tmpdir");
         String srcDirName = GridTestProperties.getProperty("ant.gar.srcdir");
@@ -265,6 +266,7 @@ public class GridToolsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings({"TypeMayBeWeakened"})
     public void testAntGarTaskWithNullDescriptor() throws Exception {
         String tmpDirName = GridTestProperties.getProperty("ant.gar.tmpdir");
         String srcDirName = GridTestProperties.getProperty("ant.gar.srcdir");

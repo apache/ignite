@@ -68,6 +68,7 @@ public class AsyncSupportAdapter<T extends IgniteAsyncSupport> implements Ignite
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <R> IgniteFuture<R> future() {
         return future(true);
     }

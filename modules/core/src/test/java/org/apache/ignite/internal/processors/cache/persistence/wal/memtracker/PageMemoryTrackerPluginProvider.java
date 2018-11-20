@@ -20,16 +20,12 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.memtracker;
 import java.io.Serializable;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
-import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.plugin.CachePluginContext;
@@ -47,7 +43,7 @@ import org.jetbrains.annotations.Nullable;
  * PageMemory tracker plugin provider.
  */
 public class PageMemoryTrackerPluginProvider implements PluginProvider<PageMemoryTrackerConfiguration>,
-    IgniteChangeGlobalStateSupport, DatabaseLifecycleListener {
+    IgniteChangeGlobalStateSupport {
     /** System property name to implicitly enable page memory tracker . */
     public static final String IGNITE_ENABLE_PAGE_MEMORY_TRACKER = "IGNITE_ENABLE_PAGE_MEMORY_TRACKER";
 
@@ -136,7 +132,7 @@ public class PageMemoryTrackerPluginProvider implements PluginProvider<PageMemor
 
     /** {@inheritDoc} */
     @Override public void start(PluginContext ctx) {
-        ((IgniteEx)ctx.grid()).context().internalSubscriptionProcessor().registerDatabaseListener(this);
+        // No-op
     }
 
     /** {@inheritDoc} */
@@ -199,18 +195,6 @@ public class PageMemoryTrackerPluginProvider implements PluginProvider<PageMemor
         }
         catch (PluginNotFoundException ignore) {
             return null;
-        }
-    }
-
-    @Override
-    public void beforeBinaryMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
-        if (plugin != null) {
-            try {
-                plugin.start();
-            }
-            catch (Exception e) {
-                log.error("Can't start plugin", e);
-            }
         }
     }
 }

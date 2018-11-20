@@ -155,6 +155,7 @@ public class GridBoundedConcurrentOrderedSet<E> extends GridConcurrentSkipListSe
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings({"unchecked"})
     @Override public GridBoundedConcurrentOrderedSet<E> clone() {
         GridBoundedConcurrentOrderedSet<E> s = (GridBoundedConcurrentOrderedSet<E>)super.clone();
 

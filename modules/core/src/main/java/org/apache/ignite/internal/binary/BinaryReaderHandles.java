@@ -17,9 +17,10 @@
 
 package org.apache.ignite.internal.binary;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.util.HashMap;
 import java.util.Map;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Reader handles.
@@ -50,7 +51,7 @@ public class BinaryReaderHandles {
      * @return Object.
      */
     @SuppressWarnings("unchecked")
-    @Nullable public <T> T get(int pos) {
+    public @Nullable <T> T get(int pos) {
         switch (mode) {
             case MODE_EMPTY:
                 return null;

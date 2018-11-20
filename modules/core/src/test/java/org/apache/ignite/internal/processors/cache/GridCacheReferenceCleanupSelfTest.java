@@ -494,6 +494,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     /** Test value class. Created mostly to simplify heap dump analysis. */
     private static class TestValue {
         /** */
+        @SuppressWarnings("UnusedDeclaration")
         private final int i;
 
         /** @param i Value. */

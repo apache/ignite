@@ -387,10 +387,10 @@ public abstract class DataStructure implements PageLockListener {
     }
 
     /**
-     * @return Page size without encryption overhead.
+     * @return Page size.
      */
-    protected int pageSize() {
-        return pageMem.realPageSize(grpId);
+    protected final int pageSize() {
+        return pageMem.pageSize();
     }
 
     @Override public void onBeforeWriteLock(int cacheId, long pageId, long page) {

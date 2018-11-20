@@ -18,7 +18,7 @@
 import _ from 'lodash';
 import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
 
-import {BehaviorSubject} from 'rxjs/BehaviorSubject';
+import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import 'rxjs/add/operator/first';
 import 'rxjs/add/operator/partition';
 import 'rxjs/add/operator/takeUntil';
@@ -34,7 +34,7 @@ import {ClusterSecretsManager} from './types/ClusterSecretsManager';
 import ClusterLoginService from './components/cluster-login/service';
 
 const State = {
-    INIT: 'INIT',
+    DISCONNECTED: 'DISCONNECTED',
     AGENT_DISCONNECTED: 'AGENT_DISCONNECTED',
     CLUSTER_DISCONNECTED: 'CLUSTER_DISCONNECTED',
     CONNECTED: 'CONNECTED'
@@ -43,17 +43,9 @@ const State = {
 const IGNITE_2_0 = '2.0.0';
 const LAZY_QUERY_SINCE = [['2.1.4-p1', '2.2.0'], '2.2.1'];
 const COLLOCATED_QUERY_SINCE = [['2.3.5', '2.4.0'], ['2.4.6', '2.5.0'], ['2.5.1-p13', '2.6.0'], '2.7.0'];
-const COLLECT_BY_CACHE_GROUPS_SINCE = '2.7.0';
 
-/** Reserved cache names */
-const RESERVED_CACHE_NAMES = [
-    'ignite-hadoop-mr-sys-cache',
-    'ignite-sys-cache',
-    'MetaStorage',
-    'TxLog'
-];
+// Error codes from o.a.i.internal.processors.restGridRestResponse.java
 
-/** Error codes from o.a.i.internal.processors.restGridRestResponse.java */
 const SuccessStatus = {
     /** Command succeeded. */
     STATUS_SUCCESS: 0,
@@ -67,9 +59,10 @@ const SuccessStatus = {
 
 class ConnectionState {
     constructor(cluster) {
+        this.agents = [];
         this.cluster = cluster;
         this.clusters = [];
-        this.state = State.INIT;
+        this.state = State.DISCONNECTED;
     }
 
     updateCluster(cluster) {
@@ -80,6 +73,10 @@ class ConnectionState {
     }
 
     update(demo, count, clusters) {
+        _.forEach(clusters, (cluster) => {
+            cluster.name = cluster.id;
+        });
+
         this.clusters = clusters;
 
         if (_.isEmpty(this.clusters))
@@ -110,11 +107,13 @@ class ConnectionState {
     }
 
     disconnect() {
+        this.agents = [];
+
         if (this.cluster)
             this.cluster.disconnect = true;
 
         this.clusters = [];
-        this.state = State.AGENT_DISCONNECTED;
+        this.state = State.DISCONNECTED;
     }
 }
 
@@ -134,7 +133,7 @@ export default class AgentManager {
     ClusterLoginSrv;
 
     /** @type {String} */
-    clusterVersion;
+    clusterVersion = '2.4.0';
 
     connectionSbj = new BehaviorSubject(new ConnectionState(AgentManager.restoreActiveCluster()));
 
@@ -179,8 +178,6 @@ export default class AgentManager {
         this.UserNotifications = UserNotifications;
         this.Version = Version;
         this.ClusterLoginSrv = ClusterLoginSrv;
-
-        this.clusterVersion = this.Version.webConsole;
 
         let prevCluster;
 
@@ -249,8 +246,7 @@ export default class AgentManager {
     saveToStorage(cluster = this.connectionSbj.getValue().cluster) {
         try {
             localStorage.cluster = JSON.stringify(cluster);
-        }
-        catch (ignore) {
+        } catch (ignore) {
             // No-op.
         }
     }
@@ -393,11 +389,7 @@ export default class AgentManager {
             }
         });
 
-        const stopWatchUnsubscribe = this.$transitions.onExit({}, () => {
-            this.stopWatch();
-
-            stopWatchUnsubscribe();
-        });
+        this.$transitions.onExit({}, () => this.stopWatch());
 
         return this.awaitCluster();
     }
@@ -548,43 +540,12 @@ export default class AgentManager {
     }
 
     /**
-     * @param {boolean} [attr] Collect node attributes.
-     * @param {boolean} [mtr] Collect node metrics.
-     * @param {boolean} [caches] Collect node caches descriptors.
+     * @param {Boolean} [attr]
+     * @param {Boolean} [mtr]
      * @returns {Promise}
      */
-    topology(attr = false, mtr = false, caches = false) {
-        return this._executeOnCluster('node:rest', {cmd: 'top', attr, mtr, caches});
-    }
-
-    collectCacheNames(nid) {
-        if (this.available(COLLECT_BY_CACHE_GROUPS_SINCE))
-            return this.visorTask('cacheNamesCollectorTask', nid);
-
-        return Promise.resolve({cacheGroupsNotAvailable: true});
-    }
-
-    publicCacheNames() {
-        return this.collectCacheNames()
-            .then((data) => {
-                if (nonEmpty(data.caches))
-                    return _.difference(_.keys(data.caches), RESERVED_CACHE_NAMES);
-
-                return this.topology(false, false, true)
-                    .then((nodes) => {
-                        return _.map(_.uniqBy(_.flatMap(nodes, 'caches'), 'name'), 'name');
-                    });
-            });
-    }
-
-    /**
-     * @param {string} cacheName Cache name.
-     */
-    cacheNodes(cacheName) {
-        if (this.available(IGNITE_2_0))
-            return this.visorTask('cacheNodesTaskX2', null, cacheName);
-
-        return this.visorTask('cacheNodesTask', null, cacheName);
+    topology(attr = false, mtr = false) {
+        return this._executeOnCluster('node:rest', {cmd: 'top', attr, mtr});
     }
 
     /**

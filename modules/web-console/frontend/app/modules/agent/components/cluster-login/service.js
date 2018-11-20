@@ -22,8 +22,6 @@ import {CancellationError} from 'app/errors/CancellationError';
 export default class ClusterLoginService {
     static $inject = ['$modal', '$q'];
 
-    deferred;
-
     /**
      * @param {mgcrea.ngStrap.modal.IModalService} $modal
      * @param {ng.IQService} $q
@@ -38,12 +36,7 @@ export default class ClusterLoginService {
      * @returns {ng.IPromise<import('../../types/ClusterSecrets').ClusterSecrets>}
      */
     askCredentials(baseSecrets) {
-        if (this.deferred)
-            return this.deferred.promise;
-
-        this.deferred = this.$q.defer();
-
-        const self = this;
+        const deferred = this.$q.defer();
 
         const modal = this.$modal({
             template: `
@@ -57,11 +50,11 @@ export default class ClusterLoginService {
                 this.secrets = _.clone(baseSecrets);
 
                 this.onLogin = () => {
-                    self.deferred.resolve(this.secrets);
+                    deferred.resolve(this.secrets);
                 };
 
                 this.onHide = () => {
-                    self.deferred.reject(new CancellationError());
+                    deferred.reject(new CancellationError());
                 };
             }],
             controllerAs: '$ctrl',
@@ -70,11 +63,7 @@ export default class ClusterLoginService {
         });
 
         return modal.$promise
-            .then(() => this.deferred.promise)
-            .finally(() => {
-                this.deferred = null;
-
-                modal.hide();
-            });
+            .then(() => deferred.promise)
+            .finally(modal.hide);
     }
 }

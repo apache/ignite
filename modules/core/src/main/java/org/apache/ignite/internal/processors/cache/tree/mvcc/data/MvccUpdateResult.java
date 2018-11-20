@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.tree.mvcc.data;
 
 import java.util.List;
 import org.apache.ignite.internal.processors.cache.CacheInvokeResult;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
 
@@ -38,19 +37,10 @@ public interface MvccUpdateResult {
     public MvccVersion resultVersion();
 
     /**
+     *
      * @return Collection of row created or affected by the current tx.
      */
     public List<MvccLinkAwareSearchRow> history();
-
-    /**
-     * @return New value of updated entry.
-     */
-    public CacheObject newValue();
-
-    /**
-     * @return Old value.
-     */
-    public CacheObject oldValue();
 
     /**
      * @return {@code True} if this key was inserted in the cache with this row in the same transaction.
@@ -58,6 +48,12 @@ public interface MvccUpdateResult {
     public boolean isKeyAbsentBefore();
 
     /**
+     * @return Flag whether tx has overridden it's own update.
+     */
+    public boolean isOwnValueOverridden();
+
+    /**
+     *
      * @return Entry processor invoke result.
      */
     CacheInvokeResult invokeResult();

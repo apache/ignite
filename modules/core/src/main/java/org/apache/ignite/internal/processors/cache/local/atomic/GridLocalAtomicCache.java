@@ -1347,7 +1347,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
      * @param transformed {@code True} if transform operation performed.
      * @return Partial update exception.
      */
-    @SuppressWarnings({"unchecked", "ConstantConditions"})
+    @SuppressWarnings({"unchecked", "ConstantConditions", "ForLoopReplaceableByForEach"})
     @Nullable private CachePartialUpdateCheckedException updatePartialBatch(
         List<GridCacheEntryEx> entries,
         final GridCacheVersion ver,

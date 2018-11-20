@@ -103,6 +103,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("deprecation")
     public void testThroughput() throws Exception {
         final IgniteKernal sndKernal = (IgniteKernal)grid(0);
         final IgniteKernal rcvKernal = (IgniteKernal)grid(1);
@@ -198,6 +199,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("deprecation")
     public void testLatency() throws Exception {
         final IgniteKernal sndKernal = (IgniteKernal)grid(0);
         final IgniteKernal rcvKernal = (IgniteKernal)grid(1);
@@ -293,6 +295,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("deprecation")
     public void testVariableLoad() throws Exception {
         final IgniteKernal sndKernal = (IgniteKernal)grid(0);
         final IgniteKernal rcvKernal = (IgniteKernal)grid(1);

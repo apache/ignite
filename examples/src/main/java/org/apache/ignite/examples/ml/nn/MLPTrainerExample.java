@@ -61,7 +61,7 @@ public class MLPTrainerExample {
      *
      * @param args Command line arguments, none required.
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
         // IMPL NOTE based on MLPGroupTrainerTest#testXOR
         System.out.println(">>> Distributed multilayer perceptron example started.");
 

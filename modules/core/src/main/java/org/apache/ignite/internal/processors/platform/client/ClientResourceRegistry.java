@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
+import org.apache.ignite.IgniteException;
+
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;

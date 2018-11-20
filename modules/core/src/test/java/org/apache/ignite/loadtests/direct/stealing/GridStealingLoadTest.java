@@ -86,6 +86,7 @@ public class GridStealingLoadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("unchecked")
     public void testStealingLoad() throws Exception {
         final Ignite ignite = grid(0);
 

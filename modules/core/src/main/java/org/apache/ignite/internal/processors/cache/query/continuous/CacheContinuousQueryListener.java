@@ -114,9 +114,4 @@ public interface CacheContinuousQueryListener<K, V> {
      * @return Whether to notify on existing entries.
      */
     public boolean notifyExisting();
-
-    /**
-     * @return {@code True} if this listener should be called on events on primary partitions only.
-     */
-    public boolean isPrimaryOnly();
 }

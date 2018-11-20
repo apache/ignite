@@ -46,6 +46,7 @@ public class GridCacheFilterFailedException extends Exception {
     /**
      * @return Value for failed filter.
      */
+    @SuppressWarnings({"unchecked"})
     public CacheObject value() {
         return val;
     }

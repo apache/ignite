@@ -80,7 +80,7 @@
         <javax.cache.bundle.version>1.0.0_1</javax.cache.bundle.version>
         <javax.cache.tck.version>1.0.1</javax.cache.tck.version>
         <javax.cache.version>1.0.0</javax.cache.version>
-        <jetbrains.annotations.version>16.0.3</jetbrains.annotations.version>
+        <jetbrains.annotations.version>13.0</jetbrains.annotations.version>
         <jetty.version>9.4.11.v20180605</jetty.version>
         <jmh.version>1.13</jmh.version>
         <jms.spec.version>1.1.1</jms.spec.version>
@@ -89,7 +89,7 @@
         <jsonlib.bundle.version>2.4_1</jsonlib.bundle.version>
         <jsonlib.version>2.4</jsonlib.version>
         <jtidy.version>r938</jtidy.version>
-        <kafka.version>1.1.1</kafka.version>
+        <kafka.version>0.10.0.1</kafka.version>
         <karaf.version>4.0.2</karaf.version>
         <log4j.version>2.11.0</log4j.version>
         <lucene.bundle.version>7.4.0_1</lucene.bundle.version>
@@ -107,7 +107,6 @@
         <scala210.jline.version>2.10.7</scala210.jline.version>
         <scala210.library.version>2.10.7</scala210.library.version>
         <scala.library.version>2.11.12</scala.library.version>
-        <scala.test.version>2.2.6</scala.test.version>
         <slf4j.version>1.7.7</slf4j.version>
         <slf4j16.version>1.6.4</slf4j16.version>
         <spark.hadoop.version>2.6.5</spark.hadoop.version>
@@ -489,18 +488,6 @@
                                 <title>Ignite ML</title>
                                 <packages>org.apache.ignite.ml*</packages>
                             </group>
-                            <group>
-                                <title>Ignite TensorFlow</title>
-                                <packages>org.apache.ignite.tensorflow*</packages>
-                            </group>
-                            <group>
-                                <title>Encryption SPI</title>
-                                <packages>org.apache.ignite.spi.encryption*</packages>
-                            </group>
-                            <group>
-                                <title>Ignite Web Console</title>
-                                <packages>org.apache.ignite.console*</packages>
-                            </group>
                         </groups>
                         <header>
                             <![CDATA[
@@ -854,7 +841,6 @@
                                         <!--special excludes-->
                                         <exclude>idea/ignite_codeStyle.xml</exclude>
                                         <exclude>idea/ignite_inspections.xml</exclude>
-                                        <exclude>idea/ignite_inspections_teamcity.xml</exclude>
                                         <exclude>**/DEVNOTES*.txt</exclude>
                                         <exclude>**/NOTICE*</exclude>
                                         <exclude>**/LICENSE*</exclude>
@@ -872,8 +858,7 @@
                                         <exclude>**/books/*.txt</exclude><!--books examples-->
                                         <exclude>src/main/java/org/apache/ignite/examples/streaming/wordcount/*.txt</exclude><!--books examples-->
                                         <exclude>examples/src/main/java/org/apache/ignite/examples/streaming/wordcount/*.txt</exclude><!--books examples-->
-                                        <exclude>**/resources/datasets/**/*</exclude><!--Datasets in ml module-->
-                                        <exclude>**/ml/util/datasets/**/*</exclude><!--Datasets in ml examples-->
+                                        <exclude>**/resources/datasets/**/*</exclude><!--KNN Datasets in ml module-->
                                         <exclude>src/main/java/org/jetbrains/annotations/*.java</exclude><!--copyright-->
                                         <exclude>dev-tools/IGNITE-*.patch</exclude>
                                         <exclude>dev-tools/.gradle/**/*</exclude>
@@ -950,16 +935,6 @@
                                         <exclude>modules/platforms/nodejs/examples/certs/ca.crt</exclude>
                                         <exclude>modules/platforms/nodejs/examples/certs/client.key</exclude>
                                         <exclude>modules/platforms/nodejs/api_spec/**</exclude>
-                                        <exclude>modules/platforms/python/**/*.md
-                                        </exclude><!--markdown can not be commented-->
-                                        <exclude>modules/platforms/python/docs/Makefile
-                                        </exclude><!--sphinx files: BSD license-->
-                                        <exclude>modules/platforms/python/docs/conf.py
-                                        </exclude><!--sphinx files: BSD license-->
-                                        <exclude>modules/platforms/python/docs/source/**/*.rst
-                                        </exclude><!--sphinx-apidoc generated files-->
-                                        <exclude>modules/platforms/python/requirements/**/*.txt
-                                        </exclude><!--plain text can not be commented-->
                                         <!--web console-->
                                         <exclude>**/web-console/**/.eslintrc</exclude>
                                         <exclude>**/web-console/**/.babelrc</exclude>

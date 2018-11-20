@@ -43,17 +43,17 @@ import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
+import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
@@ -97,7 +97,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
@@ -162,10 +161,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringExclude
     private GridIndexingManager indexingMgr;
-
-    /** */
-    @GridToStringExclude
-    private GridEncryptionManager encryptionMgr;
 
     /*
      * Processors.
@@ -415,9 +410,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** Failure processor. */
     private FailureProcessor failureProc;
 
-    /** Recovery mode flag. Flag is set to {@code false} when discovery manager started. */
-    private boolean recoveryMode = true;
-
     /**
      * No-arg constructor is required by externalization.
      */
@@ -565,13 +557,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             loadMgr = (GridLoadBalancerManager)comp;
         else if (comp instanceof GridIndexingManager)
             indexingMgr = (GridIndexingManager)comp;
-        else if (comp instanceof GridEncryptionManager)
-            encryptionMgr = (GridEncryptionManager)comp;
 
-            /*
-             * Processors.
-             * ==========
-             */
+        /*
+         * Processors.
+         * ==========
+         */
 
         else if (comp instanceof FailureProcessor)
             failureProc = (FailureProcessor)comp;
@@ -809,11 +799,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridIndexingManager indexing() {
         return indexingMgr;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridEncryptionManager encryption() {
-        return encryptionMgr;
     }
 
     /** {@inheritDoc} */
@@ -1179,20 +1164,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public Thread.UncaughtExceptionHandler uncaughtExceptionHandler() {
+    public Thread.UncaughtExceptionHandler uncaughtExceptionHandler() {
         return hnd;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean recoveryMode() {
-        return recoveryMode;
-    }
-
-    /**
-     * @param recoveryMode Recovery mode.
-     */
-    public void recoveryMode(boolean recoveryMode) {
-        this.recoveryMode = recoveryMode;
     }
 
     /** {@inheritDoc} */

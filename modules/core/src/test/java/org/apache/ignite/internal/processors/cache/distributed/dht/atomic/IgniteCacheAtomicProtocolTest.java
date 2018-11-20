@@ -806,15 +806,13 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
 
         startServers(2);
 
-        Ignite srv0 = ignite(0);
-        Ignite srv1 = ignite(1);
-
-        IgniteCache<Object, Object> cache = srv0.cache(TEST_CACHE);
-
         // Waiting for minor topology changing because of late affinity assignment.
         awaitPartitionMapExchange();
 
-        List<Integer> keys = primaryKeys(cache, putAll ? 3 : 1);
+        Ignite srv0 = ignite(0);
+        Ignite srv1 = ignite(1);
+
+        List<Integer> keys = primaryKeys(srv0.cache(TEST_CACHE), putAll ? 3 : 1);
 
         ccfg = null;
 

@@ -32,6 +32,8 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePar
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedFailoverSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteChangingBaselineDownCachePutAllFailoverTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteChangingBaselineUpCachePutAllFailoverTest;
+import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteStableBaselineCachePutAllFailoverTest;
+import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteStableBaselineCacheRemoveFailoverTest;
 
 /**
  *

@@ -74,6 +74,7 @@ ul.tabs.tabs--blue
                 label: 'Actions',
                 model: '$ctrl.action',
                 name: 'action',
+                disabled: '!$ctrl.selected.length',
                 options: '$ctrl.actionOptions'
             })
 

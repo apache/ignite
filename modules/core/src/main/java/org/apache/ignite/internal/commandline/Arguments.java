@@ -71,10 +71,10 @@ public class Arguments {
      */
     private String walArgs;
 
-    /** Ping timeout for grid client. See {@link GridClientConfiguration#pingTimeout}. */
+    /** Ping timeout for grid client. See {@link GridClientConfiguration#pingTimeout}.*/
     private long pingTimeout;
 
-    /** Ping interval for grid client. See {@link GridClientConfiguration#pingInterval}. */
+    /** Ping interval for grid client. See {@link GridClientConfiguration#pingInterval}.*/
     private long pingInterval;
 
     /**
@@ -94,8 +94,8 @@ public class Arguments {
      * @param autoConfirmation Auto confirmation flag.
      */
     public Arguments(Command cmd, String host, String port, String user, String pwd, String baselineAct,
-        String baselineArgs, VisorTxTaskArg txArg, CacheArguments cacheArgs, String walAct, String walArgs,
-        Long pingTimeout, Long pingInterval, boolean autoConfirmation) {
+                     String baselineArgs, VisorTxTaskArg txArg, CacheArguments cacheArgs, String walAct, String walArgs,
+                     Long pingTimeout, Long pingInterval, boolean autoConfirmation) {
         this.cmd = cmd;
         this.host = host;
         this.port = port;
@@ -136,29 +136,15 @@ public class Arguments {
     /**
      * @return user name
      */
-    public String getUserName() {
+    public String user() {
         return user;
-    }
-
-    /**
-     * @param user New user name.
-     */
-    public void setUserName(String user) {
-        this.user = user;
     }
 
     /**
      * @return password
      */
-    public String getPassword() {
+    public String password() {
         return pwd;
-    }
-
-    /**
-     * @param pwd New password.
-     */
-    public void setPassword(String pwd) {
-        this.pwd = pwd;
     }
 
     /**

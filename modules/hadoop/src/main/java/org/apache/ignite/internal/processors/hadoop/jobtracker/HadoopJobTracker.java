@@ -44,9 +44,6 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.hadoop.HadoopInputSplit;
-import org.apache.ignite.hadoop.HadoopMapReducePlan;
-import org.apache.ignite.hadoop.HadoopMapReducePlanner;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -55,11 +52,14 @@ import org.apache.ignite.internal.processors.hadoop.HadoopClassLoader;
 import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopComponent;
 import org.apache.ignite.internal.processors.hadoop.HadoopContext;
+import org.apache.ignite.hadoop.HadoopInputSplit;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobPhase;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobStatus;
+import org.apache.ignite.hadoop.HadoopMapReducePlan;
+import org.apache.ignite.hadoop.HadoopMapReducePlanner;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskCancelledException;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounterWriter;
@@ -232,6 +232,7 @@ public class HadoopJobTracker extends HadoopComponent {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("deprecation")
     @Override public void onKernalStart() throws IgniteCheckedException {
         super.onKernalStart();
 
@@ -302,6 +303,7 @@ public class HadoopJobTracker extends HadoopComponent {
      * @param info Job info.
      * @return Job completion future.
      */
+    @SuppressWarnings("unchecked")
     public IgniteInternalFuture<HadoopJobId> submit(HadoopJobId jobId, HadoopJobInfo info) {
         if (!busyLock.tryReadLock()) {
             return new GridFinishedFuture<>(new IgniteCheckedException("Failed to execute map-reduce job " +
@@ -424,6 +426,7 @@ public class HadoopJobTracker extends HadoopComponent {
      * @param meta Metadata.
      * @return Status.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public static HadoopJobStatus status(HadoopJobMetadata meta) {
         HadoopJobInfo jobInfo = meta.jobInfo();
 
@@ -545,7 +548,7 @@ public class HadoopJobTracker extends HadoopComponent {
      * @param info Task info.
      * @param status Task status.
      */
-    @SuppressWarnings({"ConstantConditions"})
+    @SuppressWarnings({"ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
     public void onTaskFinished(HadoopTaskInfo info, HadoopTaskStatus status) {
         if (!busyLock.tryReadLock())
             return;

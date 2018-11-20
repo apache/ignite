@@ -46,7 +46,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
@@ -130,9 +129,6 @@ public class GridCacheSharedContext<K, V> {
     /** */
     private PartitionsEvictManager evictMgr;
 
-    /** Mvcc caching manager. */
-    private MvccCachingManager mvccCachingMgr;
-
     /** Cache contexts map. */
     private ConcurrentHashMap<Integer, GridCacheContext<K, V>> ctxMap;
 
@@ -175,9 +171,6 @@ public class GridCacheSharedContext<K, V> {
     /** */
     private final List<IgniteChangeGlobalStateSupport> stateAwareMgrs;
 
-    /** Cluster is in read-only mode. */
-    private volatile boolean readOnlyMode;
-
     /**
      * @param kernalCtx  Context.
      * @param txMgr Transaction manager.
@@ -211,8 +204,7 @@ public class GridCacheSharedContext<K, V> {
         GridCacheSharedTtlCleanupManager ttlMgr,
         PartitionsEvictManager evictMgr,
         CacheJtaManagerAdapter jtaMgr,
-        Collection<CacheStoreSessionListener> storeSesLsnrs,
-        MvccCachingManager mvccCachingMgr
+        Collection<CacheStoreSessionListener> storeSesLsnrs
     ) {
         this.kernalCtx = kernalCtx;
 
@@ -232,8 +224,7 @@ public class GridCacheSharedContext<K, V> {
             affMgr,
             ioMgr,
             ttlMgr,
-            evictMgr,
-            mvccCachingMgr
+            evictMgr
         );
 
         this.storeSesLsnrs = storeSesLsnrs;
@@ -399,8 +390,7 @@ public class GridCacheSharedContext<K, V> {
             affMgr,
             ioMgr,
             ttlMgr,
-            evictMgr,
-            mvccCachingMgr
+            evictMgr
         );
 
         this.mgrs = mgrs;
@@ -459,8 +449,7 @@ public class GridCacheSharedContext<K, V> {
         CacheAffinitySharedManager affMgr,
         GridCacheIoManager ioMgr,
         GridCacheSharedTtlCleanupManager ttlMgr,
-        PartitionsEvictManager evictMgr,
-        MvccCachingManager mvccCachingMgr
+        PartitionsEvictManager evictMgr
     ) {
         this.mvccMgr = add(mgrs, mvccMgr);
         this.verMgr = add(mgrs, verMgr);
@@ -477,7 +466,6 @@ public class GridCacheSharedContext<K, V> {
         this.ioMgr = add(mgrs, ioMgr);
         this.ttlMgr = add(mgrs, ttlMgr);
         this.evictMgr = add(mgrs, evictMgr);
-        this.mvccCachingMgr = add(mgrs, mvccCachingMgr);
     }
 
     /**
@@ -584,7 +572,7 @@ public class GridCacheSharedContext<K, V> {
      *
      * @param cacheId Cache id.
      */
-    @Nullable public CacheObjectContext cacheObjectContext(int cacheId) throws IgniteCheckedException {
+    public @Nullable CacheObjectContext cacheObjectContext(int cacheId) throws IgniteCheckedException {
         GridCacheContext<K, V> ctx = ctxMap.get(cacheId);
 
         if (ctx != null)
@@ -821,13 +809,6 @@ public class GridCacheSharedContext<K, V> {
      */
     public PartitionsEvictManager evict() {
         return evictMgr;
-    }
-
-    /**
-     * @return Mvcc transaction enlist caching manager.
-     */
-    public MvccCachingManager mvccCaching() {
-        return mvccCachingMgr;
     }
 
     /**
@@ -1126,28 +1107,5 @@ public class GridCacheSharedContext<K, V> {
      */
     private int dhtAtomicUpdateIndex(GridCacheVersion ver) {
         return U.safeAbs(ver.hashCode()) % dhtAtomicUpdCnt.length();
-    }
-
-    /**
-     * @return {@code true} if cluster is in read-only mode.
-     */
-    public boolean readOnlyMode() {
-        return readOnlyMode;
-    }
-
-    /**
-     * @param readOnlyMode Read-only flag.
-     */
-    public void readOnlyMode(boolean readOnlyMode) {
-        this.readOnlyMode = readOnlyMode;
-    }
-
-    /**
-     * For test purposes.
-     *
-     * @param txMgr Tx manager.
-     */
-    public void setTxManager(IgniteTxManager txMgr) {
-        this.txMgr = txMgr;
     }
 }

@@ -84,14 +84,12 @@ import static javax.cache.event.EventType.REMOVED;
 import static javax.cache.event.EventType.UPDATED;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryRandomOperationsTest.ContinuousDeploy.ALL;
 import static org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryRandomOperationsTest.ContinuousDeploy.CLIENT;
 import static org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryRandomOperationsTest.ContinuousDeploy.SERVER;
-import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
@@ -332,42 +330,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
-    public void testMvccTx() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL_SNAPSHOT,
-            false);
-
-        doTestContinuousQuery(ccfg, SERVER);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testMvccTxAllNodes() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL_SNAPSHOT,
-            false);
-
-        doTestContinuousQuery(ccfg, ALL);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testMvccTxExplicit() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL_SNAPSHOT,
-            false);
-
-        doTestContinuousQuery(ccfg, SERVER);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testDoubleRemoveAtomicWithoutBackup() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             0,
@@ -384,7 +346,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             0,
             ATOMIC,
-            true);
+            false);
 
         doTestNotModifyOperation(ccfg);
     }
@@ -432,7 +394,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
             TRANSACTIONAL,
-            true);
+            false);
 
         doTestNotModifyOperation(ccfg);
     }
@@ -456,59 +418,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
             0,
             TRANSACTIONAL,
-            true);
-
-        doTestNotModifyOperation(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDoubleRemoveMvccTx() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL_SNAPSHOT,
             false);
-
-        doTestNotModifyOperation(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDoubleRemoveMvccTxWithStore() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8582");
-
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL_SNAPSHOT,
-            true);
-
-        doTestNotModifyOperation(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDoubleRemoveReplicatedMvccTx() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
-            0,
-            TRANSACTIONAL_SNAPSHOT,
-            false);
-
-        doTestNotModifyOperation(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDoubleRemoveReplicatedMvccTxWithStore() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8582");
-
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
-            0,
-            TRANSACTIONAL_SNAPSHOT,
-            true);
 
         doTestNotModifyOperation(ccfg);
     }
@@ -917,102 +827,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    public void testMvccTxClient() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL_SNAPSHOT,
-            false);
-
-        doTestContinuousQuery(ccfg, CLIENT);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testMvccTxClientExplicit() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL_SNAPSHOT,
-            false);
-
-        doTestContinuousQuery(ccfg, CLIENT);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testMvccTxReplicated() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
-            0,
-            TRANSACTIONAL_SNAPSHOT,
-            false);
-
-        doTestContinuousQuery(ccfg, SERVER);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testMvccTxReplicatedClient() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
-            0,
-            TRANSACTIONAL_SNAPSHOT,
-            false);
-
-        doTestContinuousQuery(ccfg, CLIENT);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testMvccTxNoBackups() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            0,
-            TRANSACTIONAL_SNAPSHOT,
-            false);
-
-        doTestContinuousQuery(ccfg, SERVER);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testMvccTxNoBackupsAllNodes() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            0,
-            TRANSACTIONAL_SNAPSHOT,
-            false);
-
-        doTestContinuousQuery(ccfg, ALL);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testMvccTxNoBackupsExplicit() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            0,
-            TRANSACTIONAL_SNAPSHOT,
-            false);
-
-        doTestContinuousQuery(ccfg, SERVER);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testMvccTxNoBackupsClient() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            0,
-            TRANSACTIONAL_SNAPSHOT,
-            false);
-
-        doTestContinuousQuery(ccfg, CLIENT);
-    }
-
-    /**
      * @param ccfg Cache configuration.
      * @param deploy The place where continuous query will be started.
      * @throws Exception If failed.
@@ -1174,19 +988,11 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
 
         Transaction tx = null;
 
-        CacheAtomicityMode atomicityMode = cache.getConfiguration(CacheConfiguration.class).getAtomicityMode();
-
-        boolean mvccEnabled = atomicityMode == TRANSACTIONAL_SNAPSHOT;
-
-        if (atomicityMode != ATOMIC && rnd.nextBoolean()) {
-            TransactionConcurrency concurrency = mvccEnabled ? PESSIMISTIC : txRandomConcurrency(rnd);
-            TransactionIsolation isolation = mvccEnabled ? REPEATABLE_READ : txRandomIsolation(rnd);
-
-            tx = ignite.transactions().txStart(concurrency, isolation);
-        }
+        if (cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == TRANSACTIONAL && rnd.nextBoolean())
+            tx = ignite.transactions().txStart(txRandomConcurrency(rnd), txRandomIsolation(rnd));
 
         try {
-            log.info("Random operation [key=" + key + ", op=" + op + ']');
+            // log.info("Random operation [key=" + key + ", op=" + op + ']');
 
             switch (op) {
                 case 0: {
@@ -1195,7 +1001,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                     if (tx != null)
                         tx.commit();
 
-                    updatePartitionCounter(cache, key, partCntr, expEvtCntrs, false);
+                    updatePartitionCounter(cache, key, partCntr, expEvtCntrs);
 
                     waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), key, newVal, oldVal);
 
@@ -1210,7 +1016,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                     if (tx != null)
                         tx.commit();
 
-                    updatePartitionCounter(cache, key, partCntr, expEvtCntrs, false);
+                    updatePartitionCounter(cache, key, partCntr, expEvtCntrs);
 
                     waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), key, newVal, oldVal);
 
@@ -1220,13 +1026,12 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                 }
 
                 case 2: {
-                    boolean res = cache.remove(key);
+                    cache.remove(key);
 
                     if (tx != null)
                         tx.commit();
 
-                    // We don't update part counter if nothing was removed when MVCC enabled.
-                    updatePartitionCounter(cache, key, partCntr, expEvtCntrs, mvccEnabled && !res);
+                    updatePartitionCounter(cache, key, partCntr, expEvtCntrs);
 
                     waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), key, oldVal, oldVal);
 
@@ -1236,13 +1041,12 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                 }
 
                 case 3: {
-                    Object res = cache.getAndRemove(key);
+                    cache.getAndRemove(key);
 
                     if (tx != null)
                         tx.commit();
 
-                    // We don't update part counter if nothing was removed when MVCC enabled.
-                    updatePartitionCounter(cache, key, partCntr, expEvtCntrs, mvccEnabled && res == null);
+                    updatePartitionCounter(cache, key, partCntr, expEvtCntrs);
 
                     waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), key, oldVal, oldVal);
 
@@ -1257,7 +1061,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                     if (tx != null)
                         tx.commit();
 
-                    updatePartitionCounter(cache, key, partCntr, expEvtCntrs, false);
+                    updatePartitionCounter(cache, key, partCntr, expEvtCntrs);
 
                     waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), key, newVal, oldVal);
 
@@ -1267,15 +1071,12 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                 }
 
                 case 5: {
-                    EntrySetValueProcessor proc = new EntrySetValueProcessor(null, rnd.nextBoolean());
-
-                    cache.invoke(key, proc);
+                    cache.invoke(key, new EntrySetValueProcessor(null, rnd.nextBoolean()));
 
                     if (tx != null)
                         tx.commit();
 
-                    // We don't update part counter if nothing was removed when MVCC enabled.
-                    updatePartitionCounter(cache, key, partCntr, expEvtCntrs, mvccEnabled && proc.getOldVal() == null);
+                    updatePartitionCounter(cache, key, partCntr, expEvtCntrs);
 
                     waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), key, oldVal, oldVal);
 
@@ -1291,7 +1092,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                         tx.commit();
 
                     if (oldVal == null) {
-                        updatePartitionCounter(cache, key, partCntr, expEvtCntrs, false);
+                        updatePartitionCounter(cache, key, partCntr, expEvtCntrs);
 
                         waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), key, newVal, null);
 
@@ -1310,7 +1111,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                         tx.commit();
 
                     if (oldVal == null) {
-                        updatePartitionCounter(cache, key, partCntr, expEvtCntrs, false);
+                        updatePartitionCounter(cache, key, partCntr, expEvtCntrs);
 
                         waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), key, newVal, null);
 
@@ -1329,7 +1130,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                         tx.commit();
 
                     if (oldVal != null) {
-                        updatePartitionCounter(cache, key, partCntr, expEvtCntrs, false);
+                        updatePartitionCounter(cache, key, partCntr, expEvtCntrs);
 
                         waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), key, newVal, oldVal);
 
@@ -1348,7 +1149,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                         tx.commit();
 
                     if (oldVal != null) {
-                        updatePartitionCounter(cache, key, partCntr, expEvtCntrs, false);
+                        updatePartitionCounter(cache, key, partCntr, expEvtCntrs);
 
                         waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), key, newVal, oldVal);
 
@@ -1372,7 +1173,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                             if (tx != null)
                                 tx.commit();
 
-                            updatePartitionCounter(cache, key, partCntr, expEvtCntrs, false);
+                            updatePartitionCounter(cache, key, partCntr, expEvtCntrs);
 
                             waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), key, newVal, oldVal);
 
@@ -1411,7 +1212,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                         tx.commit();
 
                     for (Map.Entry<Object, Object> e : vals.entrySet())
-                        updatePartitionCounter(cache, e.getKey(), partCntr, expEvtCntrs, false);
+                        updatePartitionCounter(cache, e.getKey(), partCntr, expEvtCntrs);
 
                     waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), vals, expData);
 
@@ -1432,7 +1233,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                         tx.commit();
 
                     for (Map.Entry<Object, Object> e : vals.entrySet())
-                        updatePartitionCounter(cache, e.getKey(), partCntr, expEvtCntrs, false);
+                        updatePartitionCounter(cache, e.getKey(), partCntr, expEvtCntrs);
 
                     waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), vals, expData);
 
@@ -1529,18 +1330,16 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
      * @return {@link TransactionConcurrency}.
      */
     private TransactionConcurrency txRandomConcurrency(Random rnd) {
-        return rnd.nextBoolean() ? TransactionConcurrency.OPTIMISTIC : PESSIMISTIC;
+        return rnd.nextBoolean() ? TransactionConcurrency.OPTIMISTIC : TransactionConcurrency.PESSIMISTIC;
     }
 
     /**
      * @param cache Cache.
      * @param key Key
      * @param cntrs Partition counters.
-     * @param evtCntrs Event counters.
-     * @param skipUpdCntr Skip update counter flag.
      */
     private void updatePartitionCounter(IgniteCache<Object, Object> cache, Object key, Map<Integer, Long> cntrs,
-        Map<Object, Long> evtCntrs, boolean skipUpdCntr) {
+        Map<Object, Long> evtCntrs) {
         Affinity<Object> aff = cache.unwrap(Ignite.class).affinity(cache.getName());
 
         int part = aff.partition(key);
@@ -1550,10 +1349,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         if (partCntr == null)
             partCntr = 0L;
 
-        if (!skipUpdCntr)
-            partCntr++;
-
-        cntrs.put(part, partCntr);
+        cntrs.put(part, ++partCntr);
         evtCntrs.put(key, partCntr);
     }
 
@@ -1781,12 +1577,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
      *
      */
     protected static class EntrySetValueProcessor implements EntryProcessor<Object, Object, Object> {
-        /**
-         * Static variable: we need to obtain a previous value from another node. Assume this is a single threaded
-         * execution.
-         */
-        private static Object oldVal;
-
         /** */
         private Object val;
 
@@ -1817,8 +1607,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             if (skipModify)
                 return null;
 
-            oldVal = e.getValue();
-
             Object old = retOld ? e.getValue() : null;
 
             if (val != null)
@@ -1827,17 +1615,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                 e.remove();
 
             return old;
-        }
-
-        /**
-         * @return Old value.
-         */
-        Object getOldVal() {
-            Object oldVal0 = oldVal;
-
-            oldVal = null; // Clean value.
-
-            return oldVal0;
         }
 
         /** {@inheritDoc} */

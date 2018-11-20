@@ -47,7 +47,6 @@ All available parameters with defaults:
     HTTPS key:                  --server:key "serve/keys/test.key"
     HTTPS certificate:          --server:cert "serve/keys/test.crt"
     HTTPS passphrase:           --server:keyPassphrase "password"
-    Disable self registration:  --server:disable:signup false
     MongoDB URL:                --mongodb:url mongodb://localhost/console
     Mail service:               --mail:service "gmail"
     Signature text:             --mail:sign "Kind regards, Apache Ignite Team"

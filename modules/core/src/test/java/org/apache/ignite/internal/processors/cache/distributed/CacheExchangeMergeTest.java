@@ -93,7 +93,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static final long WAIT_SECONDS = 45;
+    private static final long WAIT_SECONDS = 15;
 
     /** */
     private ThreadLocal<Boolean> client = new ThreadLocal<>();
@@ -935,6 +935,8 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
         testSpi = true;
 
         Ignite srv0 = startGrids(srvs);
+
+        mergeExchangeWaitVersion(srv0, 6);
 
         CountDownLatch latch = blockExchangeFinish(srvs, mode);
 

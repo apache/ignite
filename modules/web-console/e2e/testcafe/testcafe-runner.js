@@ -42,8 +42,7 @@ const startTestcafe = (config) => {
                     .browsers(config.browsers)
                     .reporter(config.reporter)
                     .run({ skipJsErrors: true });
-            }
-            catch (err) {
+            } catch (err) {
                 console.log(err);
 
                 process.exit(1);

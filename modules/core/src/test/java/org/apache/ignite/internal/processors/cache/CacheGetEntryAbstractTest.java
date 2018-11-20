@@ -40,6 +40,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -72,13 +73,13 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
     /**
      * @return Transaction concurrency.
      */
-    protected abstract TransactionConcurrency concurrency();
+    abstract protected TransactionConcurrency concurrency();
 
     /**
      *
      * @return Transaction isolation.
      */
-    protected abstract TransactionIsolation isolation();
+    abstract protected TransactionIsolation isolation();
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {

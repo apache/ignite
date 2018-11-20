@@ -25,10 +25,6 @@ export function $exceptionHandler($log) {
         if (exception instanceof CancellationError)
             return;
 
-        // From ui-grid
-        if (exception === 'Possibly unhandled rejection: canceled')
-            return;
-
         $log.error(exception, cause);
     };
 }

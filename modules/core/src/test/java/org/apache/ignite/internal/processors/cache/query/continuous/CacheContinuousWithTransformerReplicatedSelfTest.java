@@ -32,7 +32,6 @@ import javax.cache.expiry.Duration;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.ContinuousQueryWithTransformer;
@@ -101,19 +100,11 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
             CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             ccfg.setCacheMode(cacheMode());
-            ccfg.setAtomicityMode(atomicityMode());
 
             cfg.setCacheConfiguration(ccfg);
         }
 
         return cfg;
-    }
-
-    /**
-     * @return Cache atomicity mode.
-     */
-    protected CacheAtomicityMode atomicityMode() {
-        return CacheAtomicityMode.TRANSACTIONAL;
     }
 
     /** {@inheritDoc} */

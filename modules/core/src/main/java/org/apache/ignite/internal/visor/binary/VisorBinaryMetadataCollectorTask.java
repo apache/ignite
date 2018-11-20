@@ -20,7 +20,6 @@ package org.apache.ignite.internal.visor.binary;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
@@ -30,7 +29,6 @@ import org.apache.ignite.marshaller.Marshaller;
  * Task that collects binary metadata.
  */
 @GridInternal
-@GridVisorManagementTask
 public class VisorBinaryMetadataCollectorTask
     extends VisorOneNodeTask<VisorBinaryMetadataCollectorTaskArg, VisorBinaryMetadataCollectorTaskResult> {
     /** */

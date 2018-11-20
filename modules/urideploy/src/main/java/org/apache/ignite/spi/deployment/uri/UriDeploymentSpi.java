@@ -346,6 +346,7 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
     private boolean checkMd5;
 
     /** */
+    @SuppressWarnings({"CollectionDeclaredAsConcreteClass"})
     private final LinkedList<GridUriDeploymentUnitDescriptor> unitLoaders = new LinkedList<>();
 
     /** */
@@ -373,6 +374,7 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
     private IgniteLogger log;
 
     /** NOTE: flag for test purposes only. */
+    @SuppressWarnings("UnusedDeclaration")
     private boolean delayOnNewOrUpdatedFile;
 
     /** Configured scanners. */

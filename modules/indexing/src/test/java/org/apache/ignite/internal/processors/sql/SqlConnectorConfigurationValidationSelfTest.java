@@ -17,12 +17,6 @@
 
 package org.apache.ignite.internal.processors.sql;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.Statement;
-import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicInteger;
 import junit.framework.TestCase;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -35,6 +29,13 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * SQL connector configuration validation tests.
@@ -162,7 +163,7 @@ public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstr
      * @param sqlCfg SQL configuration.
      * @param success Success flag. * @throws Exception If failed.
      */
-    @SuppressWarnings({"unchecked"})
+    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
     private void check(SqlConnectorConfiguration sqlCfg, boolean success) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration();
 

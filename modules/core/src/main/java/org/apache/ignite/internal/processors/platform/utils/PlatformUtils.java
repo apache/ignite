@@ -17,22 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.utils;
 
-import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.security.Timestamp;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import javax.cache.CacheException;
-import javax.cache.event.CacheEntryEvent;
-import javax.cache.event.CacheEntryListenerException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -75,12 +59,29 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.logger.NullLogger;
 import org.jetbrains.annotations.Nullable;
 
+import javax.cache.CacheException;
+import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryListenerException;
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.security.Timestamp;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PREFIX;
 
 /**
  * Platform utility methods.
  */
-@SuppressWarnings({"unchecked"})
+@SuppressWarnings({"UnusedDeclaration", "unchecked"})
 public class PlatformUtils {
     /** Node attribute: platform. */
     public static final String ATTR_PLATFORM = ATTR_PREFIX  + ".platform";
@@ -619,6 +620,7 @@ public class PlatformUtils {
      * @param ex Error.
      * @param writer Writer.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public static void writeError(Throwable ex, BinaryRawWriterEx writer) {
         writer.writeObjectDetached(ex.getClass().getName());
 
@@ -729,6 +731,7 @@ public class PlatformUtils {
      * @param err Error.
      * @return Error data.
      */
+    @SuppressWarnings("UnusedDeclaration")
     public static byte[] errorData(Throwable err) {
         if (err instanceof PlatformExtendedException) {
             PlatformContext ctx = ((PlatformExtendedException)err).context();
@@ -847,6 +850,7 @@ public class PlatformUtils {
      *
      * @return Marshaller.
      */
+    @SuppressWarnings("deprecation")
     public static GridBinaryMarshaller marshaller() {
         BinaryContext ctx =
             new BinaryContext(BinaryNoopMetadataHandler.instance(), new IgniteConfiguration(), new NullLogger());

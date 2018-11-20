@@ -52,10 +52,10 @@ import org.apache.ignite.testframework.GridTestUtils;
  */
 public class CacheStoreSessionListenerWriteBehindEnabledTest extends GridCacheAbstractSelfTest {
     /** */
-    protected static final int CNT = 100;
+    protected final static int CNT = 100;
 
     /** */
-    private static final int WRITE_BEHIND_FLUSH_FREQUENCY = 1000;
+    private final static int WRITE_BEHIND_FLUSH_FREQUENCY = 1000;
 
     /** */
     private static final List<OperationType> operations = Collections.synchronizedList(new ArrayList<OperationType>());

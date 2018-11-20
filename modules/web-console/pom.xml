@@ -337,6 +337,27 @@
                             </execution>
 
                             <execution>
+                                <id>docker-build-standalone</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>docker</executable>
+                                    <arguments>
+                                        <argument>build</argument>
+                                        <argument>-f</argument>
+                                        <argument>docker/standalone/Dockerfile</argument>
+                                        <argument>-t</argument>
+                                        <argument>
+                                            ${docker.registry.host}/${docker.repository}/${docker.standalone.image}:${project.version}
+                                        </argument>
+                                        <argument>${project.basedir}</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+
+                            <execution>
                                 <id>docker-push-backend</id>
                                 <phase>deploy</phase>
                                 <goals>
@@ -365,6 +386,23 @@
                                         <argument>push</argument>
                                         <argument>
                                             ${docker.registry.host}/${docker.repository}/${docker.frontend.image}:${project.version}
+                                        </argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+
+                            <execution>
+                                <id>docker-push-standalone</id>
+                                <phase>deploy</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>docker</executable>
+                                    <arguments>
+                                        <argument>push</argument>
+                                        <argument>
+                                            ${docker.registry.host}/${docker.repository}/${docker.standalone.image}:${project.version}
                                         </argument>
                                     </arguments>
                                 </configuration>

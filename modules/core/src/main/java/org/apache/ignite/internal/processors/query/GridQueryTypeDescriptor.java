@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.query;
 
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.jetbrains.annotations.Nullable;
 
 /**

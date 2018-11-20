@@ -35,6 +35,7 @@ public class HadoopStartup {
     /**
      * @return Configuration for job run.
      */
+    @SuppressWarnings("UnnecessaryFullyQualifiedName")
     public static Configuration configuration() {
         Configuration cfg = new Configuration();
 

@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     /// Base cache test.
     /// </summary>
     [SuppressMessage("ReSharper", "UnusedVariable")]
-    public abstract class CacheAbstractTest
+    public abstract class CacheAbstractTest 
     {
         /// <summary>
         /// Fixture setup.
@@ -91,7 +91,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// </summary>
         [TearDown]
         public void AfterTest() {
-            for (int i = 0; i < GridCount(); i++)
+            for (int i = 0; i < GridCount(); i++) 
                 Cache(i).WithKeepBinary<object, object>().RemoveAll();
 
             for (int i = 0; i < GridCount(); i++)
@@ -213,7 +213,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsTrue(cache.ContainsKey(key));
             Assert.IsFalse(cache.ContainsKey(-1));
         }
-
+        
         [Test]
         public void TestContainsKeys()
         {
@@ -229,7 +229,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.IsFalse(cache.ContainsKeys(keys.Concat(new[] {int.MaxValue})));
         }
-
+        
         [Test]
         public void TestPeek()
         {
@@ -260,11 +260,11 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(1, cache.Get(1));
             Assert.AreEqual(2, cache.Get(2));
-
+            
             Assert.Throws<KeyNotFoundException>(() => cache.Get(3));
 
             int value;
-
+            
             Assert.IsTrue(cache.TryGet(1, out value));
             Assert.AreEqual(1, value);
 
@@ -282,7 +282,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.Put(1, 1);
             cache.Put(2, 2);
-
+            
             Assert.AreEqual(1, cache.Get(1));
             Assert.AreEqual(2, cache.Get(2));
             Assert.IsFalse(cache.ContainsKey(3));
@@ -376,11 +376,11 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(1, cache.Get(1));
 
             Assert.IsFalse(cache.GetAndRemove(0).Success);
-
+            
             Assert.AreEqual(1, cache.GetAndRemove(1).Value);
 
             Assert.IsFalse(cache.GetAndRemove(1).Success);
-
+            
             Assert.IsFalse(cache.ContainsKey(1));
         }
 
@@ -653,9 +653,10 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Expiry policy tests.
         /// </summary>
         [Test]
-        [Ignore("https://issues.apache.org/jira/browse/IGNITE-8983")]
         public void TestWithExpiryPolicy()
         {
+            Assert.Fail("https://issues.apache.org/jira/browse/IGNITE-8983");
+
             TestWithExpiryPolicy((cache, policy) => cache.WithExpiryPolicy(policy), true);
         }
 
@@ -679,11 +680,11 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Expiry policy tests.
         /// </summary>
-        private void TestWithExpiryPolicy(Func<ICache<int, int>, IExpiryPolicy, ICache<int, int>> withPolicyFunc,
+        private void TestWithExpiryPolicy(Func<ICache<int, int>, IExpiryPolicy, ICache<int, int>> withPolicyFunc, 
             bool origCache)
         {
             ICache<int, int> cache0 = Cache(0);
-
+            
             int key0;
             int key1;
 
@@ -697,7 +698,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 key0 = GetPrimaryKeyForCache(cache0);
                 key1 = GetPrimaryKeyForCache(Cache(1));
             }
-
+            
             // Test unchanged expiration.
             ICache<int, int> cache = withPolicyFunc(cache0, new ExpiryPolicy(null, null, null));
             cache0 = origCache ? cache0 : cache;
@@ -786,7 +787,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsFalse(cache0.ContainsKey(key0));
             Assert.IsFalse(cache0.ContainsKey(key1));
         }
-
+        
         /// <summary>
         /// Expiry policy tests for zero and negative expiry values.
         /// </summary>
@@ -795,7 +796,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         public void TestWithExpiryPolicyZeroNegative()
         {
             ICache<int, int> cache0 = Cache(0);
-
+            
             int key0;
             int key1;
 
@@ -837,7 +838,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             cache0.RemoveAll(new List<int> { key0, key1 });
 
             // Test negative expiration.
-            cache = cache0.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromMilliseconds(-100),
+            cache = cache0.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromMilliseconds(-100), 
                 TimeSpan.FromMilliseconds(-100), TimeSpan.FromMilliseconds(-100)));
 
             cache.Put(key0, key0);
@@ -1713,7 +1714,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.IsNull(err);
         }
-
+        
         /**
          * Test tries to provoke garbage collection for .Net future before it was completed to verify
          * futures pinning works.
@@ -2040,7 +2041,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             foreach (var nearKey in nearKeys.Take(3))
                 Assert.AreNotEqual(0, cache.Get(nearKey));
         }
-
+        
         [Test]
         public void TestSerializable()
         {
@@ -2179,7 +2180,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             var results = res.OrderBy(x => x.Key).Select(x => x.Result);
             var expectedResults = entries.OrderBy(x => x.Key).Select(x => x.Value + arg);
-
+            
             Assert.IsTrue(results.SequenceEqual(expectedResults));
 
             var resultEntries = cache.GetAll(entries.Keys);
@@ -2196,20 +2197,20 @@ namespace Apache.Ignite.Core.Tests.Cache
             res = cache.InvokeAll(entries.Keys, new T {Exists = false}, arg);
 
             Assert.IsTrue(res.All(x => x.Result == arg));
-            Assert.IsTrue(cache.GetAll(entries.Keys).All(x => x.Value == arg));
+            Assert.IsTrue(cache.GetAll(entries.Keys).All(x => x.Value == arg)); 
 
             // Test exceptions
             var errKey = entries.Keys.Reverse().Take(5).Last();
 
             TestInvokeAllException(cache, entries, new T { ThrowErr = true, ThrowOnKey = errKey }, arg, errKey);
-            TestInvokeAllException(cache, entries, new T { ThrowErrBinarizable = true, ThrowOnKey = errKey },
+            TestInvokeAllException(cache, entries, new T { ThrowErrBinarizable = true, ThrowOnKey = errKey }, 
                 arg, errKey);
             TestInvokeAllException(cache, entries, new T { ThrowErrNonSerializable = true, ThrowOnKey = errKey },
                 arg, errKey, "ExpectedException");
 
         }
 
-        private static void TestInvokeAllException<T>(ICache<int, int> cache, Dictionary<int, int> entries,
+        private static void TestInvokeAllException<T>(ICache<int, int> cache, Dictionary<int, int> entries, 
             T processor, int arg, int errKey, string exceptionText = null) where T : AddArgCacheEntryProcessor
         {
             var res = cache.InvokeAll(entries.Keys, processor, arg);

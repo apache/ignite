@@ -425,6 +425,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("CloneDoesntCallSuperClone")
     @Override public BinaryObject clone() throws CloneNotSupportedException {
         return heapCopy();
     }

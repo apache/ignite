@@ -35,9 +35,6 @@ export default class ActivitiesData {
         action = action || this.$state.$current.url.source || '';
         group = group || (action.match(/^\/([^/]+)/) || [])[1];
 
-        return this.$http.post('/api/v1/activities/page', { group, action })
-            .catch(() => {
-                // No-op.
-            });
+        return this.$http.post('/api/v1/activities/page', { group, action });
     }
 }

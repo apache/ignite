@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryField;
@@ -30,6 +28,9 @@ import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProce
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  *
@@ -45,7 +46,7 @@ public class CacheDefaultBinaryAffinityKeyMapper extends GridCacheDefaultAffinit
     private Map<String, String> typeNameAffFields = new HashMap<>();
 
     /** Mapping from type ID to affinity field name. */
-    private transient volatile Map<Integer, BinaryField> typeIdAffFields;
+    private volatile transient Map<Integer, BinaryField> typeIdAffFields;
 
     /**
      * Constructor.

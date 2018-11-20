@@ -66,7 +66,6 @@ import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static java.sql.Statement.NO_GENERATED_KEYS;
 import static java.sql.Statement.RETURN_GENERATED_KEYS;
 import static org.apache.ignite.configuration.ClientConnectorConfiguration.DFLT_PORT;
-import static org.apache.ignite.internal.processors.odbc.SqlStateCode.TRANSACTION_STATE_EXCEPTION;
 
 /**
  * Connection test.
@@ -979,20 +978,29 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     public void testGetSetAutoCommit() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
-            boolean ac0 = conn.getAutoCommit();
+            assertTrue(conn.getAutoCommit());
 
-            conn.setAutoCommit(!ac0);
-            // assert no exception
+            // Cannot disable autocommit when MVCC is disabled.
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setAutoCommit(false);
 
-            conn.setAutoCommit(ac0);
-            // assert no exception
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "MVCC must be enabled in order to invoke transactional operation: COMMIT"
+            );
+
+            assertTrue(conn.getAutoCommit());
 
             conn.close();
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
                 @Override public void run() throws Exception {
-                    conn.setAutoCommit(ac0);
+                    conn.setAutoCommit(true);
                 }
             });
         }
@@ -1014,6 +1022,19 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                 },
                 SQLException.class,
                 "Transaction cannot be committed explicitly in auto-commit mode"
+            );
+
+            // Cannot disable autocommit when MVCC is disabled.
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setAutoCommit(false);
+
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "MVCC must be enabled in order to invoke transactional operation: COMMIT"
             );
 
             assertTrue(conn.getAutoCommit());
@@ -1060,6 +1081,21 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                 "Transaction cannot be rolled back explicitly in auto-commit mode."
             );
 
+            // Cannot disable autocommit when MVCC is disabled.
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setAutoCommit(false);
+
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "MVCC must be enabled in order to invoke transactional operation: COMMIT"
+            );
+
+            assertTrue(conn.getAutoCommit());
+
             conn.close();
 
             // Exception when called on closed connection
@@ -1069,47 +1105,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                 }
             });
         }
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    public void testBeginFailsWhenMvccIsDisabled() throws Exception {
-        try (Connection conn = DriverManager.getConnection(URL)) {
-            conn.createStatement().execute("BEGIN");
-
-            fail("Exception is expected");
-        }
-        catch (SQLException e) {
-            assertEquals(TRANSACTION_STATE_EXCEPTION, e.getSQLState());
-        }
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    public void testCommitIgnoredWhenMvccIsDisabled() throws Exception {
-        try (Connection conn = DriverManager.getConnection(URL)) {
-            conn.setAutoCommit(false);
-            conn.createStatement().execute("COMMIT");
-
-            conn.commit();
-        }
-        // assert no exception
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    public void testRollbackIgnoredWhenMvccIsDisabled() throws Exception {
-        try (Connection conn = DriverManager.getConnection(URL)) {
-            conn.setAutoCommit(false);
-
-            conn.createStatement().execute("ROLLBACK");
-
-            conn.rollback();
-        }
-        // assert no exception
     }
 
     /**
@@ -1397,6 +1392,21 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                 "Savepoint cannot be set in auto-commit mode"
             );
 
+            // Cannot disable autocommit when MVCC is disabled.
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setAutoCommit(false);
+
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "MVCC must be enabled in order to invoke transactional operation: COMMIT"
+            );
+
+            assertTrue(conn.getAutoCommit());
+
             conn.close();
 
             checkConnectionClosed(new RunnableX() {
@@ -1442,6 +1452,21 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                 "Savepoint cannot be set in auto-commit mode"
             );
 
+            // Cannot disable autocommit when MVCC is disabled.
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setAutoCommit(false);
+
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "MVCC must be enabled in order to invoke transactional operation: COMMIT"
+            );
+
+            assertTrue(conn.getAutoCommit());
+
             conn.close();
 
             checkConnectionClosed(new RunnableX() {
@@ -1486,6 +1511,21 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                 SQLException.class,
                 "Auto-commit mode"
             );
+
+            // Cannot disable autocommit when MVCC is disabled.
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setAutoCommit(false);
+
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "MVCC must be enabled in order to invoke transactional operation: COMMIT"
+            );
+
+            assertTrue(conn.getAutoCommit());
 
             conn.close();
 
@@ -1924,6 +1964,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * Test that attempting to supply invalid nested TX mode to driver fails on the client.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testInvalidNestedTxMode() {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -1939,6 +1980,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      * We have to do this without explicit {@link Connection} as long as there's no other way to bypass validation and
      * supply a malformed {@link ConnectionProperties} to {@link JdbcThinTcpIo}.
      */
+    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "ThrowFromFinallyBlock"})
     public void testInvalidNestedTxModeOnServerSide() throws SQLException, NoSuchMethodException,
         IllegalAccessException, InvocationTargetException, InstantiationException, IOException {
         ConnectionPropertiesImpl connProps = new ConnectionPropertiesImpl();

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.visor.cache;
 
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
@@ -27,7 +26,6 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  * Reset lost partitions for caches.
  */
 @GridInternal
-@GridVisorManagementTask
 public class VisorCacheResetLostPartitionsTask extends VisorOneNodeTask<VisorCacheResetLostPartitionsTaskArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;

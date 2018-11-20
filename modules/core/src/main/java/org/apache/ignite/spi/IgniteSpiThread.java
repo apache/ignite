@@ -56,6 +56,7 @@ public abstract class IgniteSpiThread extends IgniteThread {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings({"CatchGenericClass"})
     @Override public final void run() {
         try {
             body();

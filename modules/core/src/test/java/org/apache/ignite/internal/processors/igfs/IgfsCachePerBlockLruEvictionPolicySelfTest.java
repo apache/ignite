@@ -54,7 +54,7 @@ import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 /**
  * Tests for IGFS per-block LR eviction policy.
  */
-@SuppressWarnings({"ConstantConditions"})
+@SuppressWarnings({"ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
 public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstractTest {
     /** Primary IGFS name. */
     private static final String IGFS_PRIMARY = "igfs-primary";

@@ -17,11 +17,6 @@
 
 package org.apache.ignite.internal.binary;
 
-import java.math.BigDecimal;
-import java.sql.Timestamp;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.UUID;
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
@@ -32,6 +27,12 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.UUID;
 
 /**
  * Contains tests for binary object fields.
@@ -539,6 +540,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
     /**
      * Outer test object.
      */
+    @SuppressWarnings("UnusedDeclaration")
     public static class TestOuterObject {
         /** Inner object. */
         public TestObject fInner;
@@ -563,6 +565,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
     /**
      * Test object class, c
      */
+    @SuppressWarnings("UnusedDeclaration")
     public static class TestObject {
         /** Primitive fields. */
         public byte fByte;
@@ -656,6 +659,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
     /**
      * Inner test object.
      */
+    @SuppressWarnings("UnusedDeclaration")
     public static class TestInnerObject {
         /** Value. */
         private int val;

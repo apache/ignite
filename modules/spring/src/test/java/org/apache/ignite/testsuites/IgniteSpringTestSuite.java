@@ -23,23 +23,21 @@ import org.apache.ignite.cache.spring.GridSpringCacheManagerSelfTest;
 import org.apache.ignite.cache.spring.GridSpringCacheManagerSpringBeanSelfTest;
 import org.apache.ignite.cache.spring.SpringCacheManagerContextInjectionTest;
 import org.apache.ignite.cache.spring.SpringCacheTest;
+import org.apache.ignite.spring.injection.IgniteSpringBeanSpringResourceInjectionTest;
+import org.apache.ignite.internal.IgniteSpringBeanTest;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStoreFactorySelfTest;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactorySelfTest;
 import org.apache.ignite.cache.store.jdbc.CachePojoStoreXmlSelfTest;
 import org.apache.ignite.cache.store.jdbc.CachePojoStoreXmlWithSqlEscapeSelfTest;
 import org.apache.ignite.cache.store.spring.CacheSpringStoreSessionListenerSelfTest;
-import org.apache.ignite.encryption.SpringEncryptedCacheRestartClientTest;
-import org.apache.ignite.encryption.SpringEncryptedCacheRestartTest;
 import org.apache.ignite.internal.GridFactorySelfTest;
 import org.apache.ignite.internal.GridSpringBeanSerializationSelfTest;
 import org.apache.ignite.internal.IgniteDynamicCacheConfigTest;
-import org.apache.ignite.internal.IgniteSpringBeanTest;
 import org.apache.ignite.internal.processors.resource.GridTransformSpringInjectionSelfTest;
 import org.apache.ignite.p2p.GridP2PUserVersionChangeSelfTest;
 import org.apache.ignite.spring.IgniteExcludeInConfigurationTest;
 import org.apache.ignite.spring.IgniteStartFromStreamConfigurationTest;
 import org.apache.ignite.spring.injection.GridServiceInjectionSpringResourceTest;
-import org.apache.ignite.spring.injection.IgniteSpringBeanSpringResourceInjectionTest;
 import org.apache.ignite.startup.cmdline.GridCommandLineLoaderTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
 import org.apache.ignite.transactions.spring.GridSpringTransactionManagerSelfTest;
@@ -95,10 +93,6 @@ public class IgniteSpringTestSuite extends TestSuite {
 
         suite.addTestSuite(SpringCacheTest.class);
 
-        suite.addTestSuite(SpringEncryptedCacheRestartTest.class);
-        suite.addTestSuite(SpringEncryptedCacheRestartClientTest.class);
-
-        //suite.addTestSuite(GridSpringCacheManagerMultiJvmSelfTest.class);
         suite.addTestSuite(GridSpringCacheManagerMultiJvmSelfTest.class);
 
         suite.addTestSuite(GridCommandLineLoaderTest.class);

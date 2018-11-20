@@ -39,8 +39,6 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Deployment;
     using Apache.Ignite.Core.Discovery;
     using Apache.Ignite.Core.Discovery.Tcp;
-    using Apache.Ignite.Core.Encryption;
-    using Apache.Ignite.Core.Encryption.Keystore;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Failure;
     using Apache.Ignite.Core.Impl;
@@ -164,9 +162,6 @@ namespace Apache.Ignite.Core
 
         /** */
         private TimeSpan? _clientFailureDetectionTimeout;
-
-        /** */
-        private TimeSpan? _sysWorkerBlockedTimeout;
 
         /** */
         private int? _publicThreadPoolSize;
@@ -332,7 +327,6 @@ namespace Apache.Ignite.Core
             writer.WriteBooleanNullable(_authenticationEnabled);
             writer.WriteLongNullable(_mvccVacuumFreq);
             writer.WriteIntNullable(_mvccVacuumThreadCnt);
-            writer.WriteTimeSpanAsLongNullable(_sysWorkerBlockedTimeout);
 
             if (SqlSchemas == null)
                 writer.WriteInt(-1);
@@ -375,26 +369,6 @@ namespace Apache.Ignite.Core
                     throw new InvalidOperationException("Unsupported discovery SPI: " + disco.GetType());
 
                 tcpDisco.Write(writer);
-            }
-            else
-                writer.WriteBoolean(false);
-
-            var enc = EncryptionSpi;
-
-            if (enc != null)
-            {
-                writer.WriteBoolean(true);
-
-                var keystoreEnc = enc as KeystoreEncryptionSpi;
-                
-                if (keystoreEnc == null)
-                    throw new InvalidOperationException("Unsupported encryption SPI: " + enc.GetType());
-
-                writer.WriteString(keystoreEnc.MasterKeyName);
-                writer.WriteInt(keystoreEnc.KeySize);
-                writer.WriteString(keystoreEnc.KeyStorePath);
-                writer.WriteCharArray(
-                    keystoreEnc.KeyStorePassword == null ? null : keystoreEnc.KeyStorePassword.ToCharArray());
             }
             else
                 writer.WriteBoolean(false);
@@ -721,7 +695,6 @@ namespace Apache.Ignite.Core
             _authenticationEnabled = r.ReadBooleanNullable();
             _mvccVacuumFreq = r.ReadLongNullable();
             _mvccVacuumThreadCnt = r.ReadIntNullable();
-            _sysWorkerBlockedTimeout = r.ReadTimeSpanNullable();
 
             int sqlSchemasCnt = r.ReadInt();
 
@@ -753,9 +726,6 @@ namespace Apache.Ignite.Core
 
             // Discovery config
             DiscoverySpi = r.ReadBoolean() ? new TcpDiscoverySpi(r) : null;
-
-            EncryptionSpi = (srvVer.CompareTo(ClientSocket.Ver120) >= 0 && r.ReadBoolean()) ? 
-                new KeystoreEncryptionSpi(r) : null;
 
             // Communication config
             CommunicationSpi = r.ReadBoolean() ? new TcpCommunicationSpi(r) : null;
@@ -1085,12 +1055,6 @@ namespace Apache.Ignite.Core
         /// Null for default communication.
         /// </summary>
         public ICommunicationSpi CommunicationSpi { get; set; }
-        
-        /// <summary>
-        /// Gets or sets the encryption service provider.
-        /// Null for disabled encryption.
-        /// </summary>
-        public IEncryptionSpi EncryptionSpi { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether node should start in client mode.
@@ -1377,15 +1341,6 @@ namespace Apache.Ignite.Core
         {
             get { return _failureDetectionTimeout ?? DefaultFailureDetectionTimeout; }
             set { _failureDetectionTimeout = value; }
-        }
-
-        /// <summary>
-        /// Gets or sets the timeout for blocked system workers detection.
-        /// </summary>
-        public TimeSpan? SystemWorkerBlockedTimeout
-        {
-            get { return _sysWorkerBlockedTimeout; }
-            set { _sysWorkerBlockedTimeout = value; }
         }
 
         /// <summary>

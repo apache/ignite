@@ -88,7 +88,7 @@ public class ClusterNodeAttributeAffinityBackupFilter implements IgniteBiPredica
     /**
      * @param attributeNames The list of attribute names for the set of attributes to compare. Must be at least one.
      */
-    public ClusterNodeAttributeAffinityBackupFilter(String... attributeNames) {
+    ClusterNodeAttributeAffinityBackupFilter(String... attributeNames) {
         A.ensure(attributeNames.length > 0, "attributeNames.length > 0");
 
         this.attributeNames = attributeNames;

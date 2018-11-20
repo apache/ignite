@@ -101,6 +101,7 @@ public class GridTuple<V> implements Iterable<V>, Cloneable, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings({"CloneDoesntDeclareCloneNotSupportedException"})
     @Override public Object clone() {
         try {
             return super.clone();

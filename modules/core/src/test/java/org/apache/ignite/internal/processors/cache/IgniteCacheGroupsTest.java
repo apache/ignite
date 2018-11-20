@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import com.google.common.collect.Sets;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,6 +49,7 @@ import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
+import com.google.common.collect.Sets;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -98,7 +98,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
@@ -1290,7 +1289,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStartManyCaches() throws Exception {
-        final int CACHES = SF.apply(5_000);
+        final int CACHES = 5_000;
 
         final int NODES = 4;
 
@@ -3723,7 +3722,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         client = false;
 
-        final int CACHES = SF.applyLB(10, 2);
+        final int CACHES = 10;
 
         final AtomicReferenceArray<IgniteCache> caches = new AtomicReferenceArray<>(CACHES);
 
@@ -3738,8 +3737,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         final AtomicInteger cacheCntr = new AtomicInteger();
 
         try {
-            final int ITERATIONS_COUNT = SF.applyLB(10, 1);
-            for (int i = 0; i < ITERATIONS_COUNT; i++) {
+            for (int i = 0; i < 10; i++) {
                 stop.set(false);
 
                 final AtomicReference<Exception> err = new AtomicReference<>();
@@ -3860,7 +3858,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                     }
                 }, 8, "op-thread");
 
-                Thread.sleep(SF.applyLB(10_000, 1_000));
+                Thread.sleep(10_000);
 
                 stop.set(true);
 

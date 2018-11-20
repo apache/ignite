@@ -144,6 +144,7 @@ public class GridTestExternalClassLoader extends URLClassLoader {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings({"NonSynchronizedMethodOverridesSynchronizedMethod"})
     @Override protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
         if (excludeClassNames.contains(name))
             throw new ClassNotFoundException(name);

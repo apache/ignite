@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.odbc.odbc;
 
-import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -30,6 +29,8 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * ODBC request handler worker to maintain single threaded transactional execution of SQL statements when MVCC is on.<p>
@@ -49,7 +50,7 @@ class OdbcRequestHandlerWorker extends GridWorker {
     private final GridKernalContext ctx;
 
     /** Response */
-    private static final ClientListenerResponse ERR_RESPONSE = new OdbcResponse(IgniteQueryErrorCode.UNKNOWN,
+    private final static ClientListenerResponse ERR_RESPONSE = new OdbcResponse(IgniteQueryErrorCode.UNKNOWN,
         "Connection closed.");
 
     /**

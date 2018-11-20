@@ -92,20 +92,6 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        GridTestUtils.setFieldValue(User.class, "bCryptGensaltLog2Rounds", 4);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        GridTestUtils.setFieldValue(User.class, "bCryptGensaltLog2Rounds", 10);
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 

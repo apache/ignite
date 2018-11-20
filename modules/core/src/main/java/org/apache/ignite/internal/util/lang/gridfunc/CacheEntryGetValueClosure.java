@@ -30,6 +30,7 @@ public class CacheEntryGetValueClosure implements IgniteClosure {
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
+    @SuppressWarnings({"unchecked"})
     @Nullable @Override public Object apply(Object o) {
         return ((Cache.Entry)o).getValue();
     }

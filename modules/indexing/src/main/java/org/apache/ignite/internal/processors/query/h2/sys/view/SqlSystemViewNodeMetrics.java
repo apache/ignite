@@ -40,7 +40,7 @@ public class SqlSystemViewNodeMetrics extends SqlAbstractLocalSystemView {
      * @param ctx Grid context.
      */
     public SqlSystemViewNodeMetrics(GridKernalContext ctx) {
-        super("NODE_METRICS", "Node metrics", ctx, "NODE_ID",
+        super("NODE_METRICS", "Node metrics", ctx, new String[] {"NODE_ID"},
             newColumn("NODE_ID", Value.UUID),
             newColumn("LAST_UPDATE_TIME", Value.TIMESTAMP),
             newColumn("MAX_ACTIVE_JOBS", Value.INT),

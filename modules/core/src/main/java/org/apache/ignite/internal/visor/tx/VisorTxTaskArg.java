@@ -38,31 +38,31 @@ public class VisorTxTaskArg extends VisorDataTransferObject {
     private VisorTxOperation op;
 
     /** */
-    @Nullable private Integer limit;
+    private @Nullable Integer limit;
 
     /** */
-    @Nullable private Long minDuration;
+    private @Nullable Long minDuration;
 
     /** */
-    @Nullable private Integer minSize;
+    private @Nullable Integer minSize;
 
     /** */
-    @Nullable private TransactionState state;
+    private @Nullable TransactionState state;
 
     /** */
-    @Nullable private VisorTxProjection proj;
+    private @Nullable VisorTxProjection proj;
 
     /** */
-    @Nullable private List<String> consistentIds;
+    private @Nullable List<String> consistentIds;
 
     /** */
-    @Nullable private String xid;
+    private @Nullable String xid;
 
     /** */
-    @Nullable private String lbRegex;
+    private @Nullable String lbRegex;
 
     /** */
-    @Nullable private VisorTxSortOrder sortOrder;
+    private @Nullable VisorTxSortOrder sortOrder;
 
     /**
      * Default constructor.

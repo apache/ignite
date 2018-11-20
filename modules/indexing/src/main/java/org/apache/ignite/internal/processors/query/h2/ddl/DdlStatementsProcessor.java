@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDropTable;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.processors.security.SecurityContextHolder;
 import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
 import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
@@ -118,6 +119,7 @@ public class DdlStatementsProcessor {
      * @param cmd Command.
      * @return Result.
      */
+    @SuppressWarnings("unchecked")
     public FieldsQueryCursor<List<?>> runDdlStatement(String sql, SqlCommand cmd) {
         IgniteInternalFuture fut = null;
 
@@ -256,7 +258,7 @@ public class DdlStatementsProcessor {
      * @param prepared Prepared.
      * @return Cursor on query results.
      */
-    @SuppressWarnings({"unchecked"})
+    @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
     public FieldsQueryCursor<List<?>> runDdlStatement(String sql, Prepared prepared) {
         IgniteInternalFuture fut = null;
 
@@ -326,7 +328,7 @@ public class DdlStatementsProcessor {
                 }
             }
             else if (stmt0 instanceof GridSqlCreateTable) {
-                ctx.security().authorize(null, SecurityPermission.CACHE_CREATE, null);
+                ctx.security().authorize(null, SecurityPermission.CACHE_CREATE, SecurityContextHolder.get());
 
                 GridSqlCreateTable cmd = (GridSqlCreateTable)stmt0;
 
@@ -355,11 +357,11 @@ public class DdlStatementsProcessor {
 
                     ctx.query().dynamicTableCreate(cmd.schemaName(), e, cmd.templateName(), cmd.cacheName(),
                         cmd.cacheGroup(), cmd.dataRegionName(), cmd.affinityKey(), cmd.atomicityMode(),
-                        cmd.writeSynchronizationMode(), cmd.backups(), cmd.ifNotExists(), cmd.encrypted());
+                        cmd.writeSynchronizationMode(), cmd.backups(), cmd.ifNotExists());
                 }
             }
             else if (stmt0 instanceof GridSqlDropTable) {
-                ctx.security().authorize(null, SecurityPermission.CACHE_DESTROY, null);
+                ctx.security().authorize(null, SecurityPermission.CACHE_DESTROY, SecurityContextHolder.get());
 
                 GridSqlDropTable cmd = (GridSqlDropTable)stmt0;
 

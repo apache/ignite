@@ -176,6 +176,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     private GridCacheContext<?, ?> ctx;
 
     /** Prepared flag to prevent multiple candidate add. */
+    @SuppressWarnings("UnusedDeclaration")
     @GridDirectTransient
     private transient volatile int prepared;
 

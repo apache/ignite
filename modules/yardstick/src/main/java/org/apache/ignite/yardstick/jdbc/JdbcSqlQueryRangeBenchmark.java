@@ -21,31 +21,18 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
-import org.yardstickframework.BenchmarkConfiguration;
 
 /**
  * JDBC benchmark that performs select operations
  */
 public class JdbcSqlQueryRangeBenchmark extends AbstractJdbcBenchmark {
     /** Statement with range. */
-    private ThreadLocal<PreparedStatement> stmtRange;
+    private ThreadLocal<PreparedStatement> stmtRange = newStatement(
+        "SELECT id, val FROM test_long WHERE id BETWEEN ? AND ?");
 
     /** Statement full scan. */
-    private ThreadLocal<PreparedStatement> stmtSingle;
-
-    /** Prepares SELECT query and it's parameters. */
-    private SelectCommand select;
-
-    /** {@inheritDoc} */
-    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
-        super.setUp(cfg);
-
-        select = args.selectCommand();
-
-        stmtRange = newStatement(select.selectRange());
-
-        stmtSingle = newStatement(select.selectOne());
-    }
+    private ThreadLocal<PreparedStatement> stmtSingle = newStatement(
+        "SELECT id, val FROM test_long WHERE id = ?");
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
@@ -56,9 +43,7 @@ public class JdbcSqlQueryRangeBenchmark extends AbstractJdbcBenchmark {
         if (args.sqlRange() == 1) {
             stmt = stmtSingle.get();
 
-            long id = ThreadLocalRandom.current().nextLong(args.range()) + 1;
-
-            stmt.setLong(1, select.fieldByPK(id));
+            stmt.setLong(1, ThreadLocalRandom.current().nextLong(args.range()) + 1);
 
             expRsSize = 1;
         }
@@ -68,8 +53,8 @@ public class JdbcSqlQueryRangeBenchmark extends AbstractJdbcBenchmark {
             long id = ThreadLocalRandom.current().nextLong(args.range() - args.sqlRange()) + 1;
             long maxId = id + args.sqlRange() - 1;
 
-            stmt.setLong(1, select.fieldByPK(id));
-            stmt.setLong(2, select.fieldByPK(maxId));
+            stmt.setLong(1, id);
+            stmt.setLong(2, maxId);
 
             expRsSize = args.sqlRange();
         }

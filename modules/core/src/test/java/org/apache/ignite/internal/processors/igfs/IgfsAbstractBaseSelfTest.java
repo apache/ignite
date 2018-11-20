@@ -53,6 +53,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -68,7 +69,7 @@ import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 /**
  * Test fo regular igfs operations.
  */
-@SuppressWarnings({"ConstantConditions"})
+@SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "ConstantConditions"})
 public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
     /** IGFS block size. */
     protected static final int IGFS_BLOCK_SIZE = 512 * 1024;
@@ -1036,6 +1037,7 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
      * @param uni IGFS.
      * @throws Exception If failed.
      */
+    @SuppressWarnings("unchecked")
     public static void clear(IgfsSecondaryFileSystemTestAdapter uni) throws Exception {
         IgfsEx igfsEx = uni.igfs();
 

@@ -5,10 +5,7 @@
         "ssl": false,
         "key": "serve/keys/test.key",
         "cert": "serve/keys/test.crt",
-        "keyPassphrase": "password",
-        "disable": {
-            "signup": false
-        }
+        "keyPassphrase": "password"
     },
     "mongodb": {
         "url": "mongodb://localhost/console"

@@ -23,21 +23,6 @@
 
 namespace ignite_test
 {
-    OdbcClientError GetOdbcError(SQLSMALLINT handleType, SQLHANDLE handle)
-    {
-        SQLCHAR sqlstate[7] = {};
-        SQLINTEGER nativeCode;
-
-        SQLCHAR message[ODBC_BUFFER_SIZE];
-        SQLSMALLINT reallen = 0;
-
-        SQLGetDiagRec(handleType, handle, 1, sqlstate, &nativeCode, message, ODBC_BUFFER_SIZE, &reallen);
-
-        return OdbcClientError(
-            std::string(reinterpret_cast<char*>(sqlstate)),
-            std::string(reinterpret_cast<char*>(message), reallen));
-    }
-
     std::string GetOdbcErrorState(SQLSMALLINT handleType, SQLHANDLE handle)
     {
         SQLCHAR sqlstate[7] = {};

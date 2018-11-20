@@ -31,6 +31,7 @@ import java.lang.annotation.Target;
  * you need to tell a task which SPI to use (by default it will use the fist
  * SPI in the list).
  */
+@SuppressWarnings({"JavaDoc"})
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})

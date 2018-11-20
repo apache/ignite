@@ -908,6 +908,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * Test object.
      */
+    @SuppressWarnings("UnusedDeclaration")
     private static class BaseTestObject implements Serializable {
         /** */
         @QuerySqlField(index = false)
@@ -930,6 +931,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * Test object.
      */
+    @SuppressWarnings("UnusedDeclaration")
     private static class TestObject extends BaseTestObject {
         /** */
         @QuerySqlField

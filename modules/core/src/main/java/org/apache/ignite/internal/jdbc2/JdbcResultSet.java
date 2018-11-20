@@ -181,6 +181,7 @@ public class JdbcResultSet implements ResultSet {
     }
 
         /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public boolean next() throws SQLException {
         ensureNotClosed();
 

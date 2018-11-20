@@ -227,6 +227,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("unchecked")
     public void testAddAll() throws Exception {
         try {
             String queueName = UUID.randomUUID().toString();

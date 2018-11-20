@@ -17,13 +17,14 @@
 
 package org.apache.ignite.platform;
 
-import java.io.Serializable;
-import javax.cache.event.CacheEntryEvent;
-import javax.cache.event.CacheEntryListenerException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.resources.IgniteInstanceResource;
+
+import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryListenerException;
+import java.io.Serializable;
 
 /**
  * Test filter factory
@@ -31,6 +32,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 public class PlatformCacheEntryEventFilterFactory implements Serializable,
     PlatformJavaObjectFactory<CacheEntryEventSerializableFilter> {
     /** Property to be set from platform. */
+    @SuppressWarnings("FieldCanBeLocal")
     private String startsWith = "-";
 
     /** Injected instance. */

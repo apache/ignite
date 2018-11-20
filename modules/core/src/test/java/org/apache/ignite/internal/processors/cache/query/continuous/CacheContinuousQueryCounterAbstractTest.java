@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
@@ -53,6 +52,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -234,7 +234,7 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
             assertEquals(2, vals.size());
             assertEquals(2, (int)vals.get(0).get1());
             assertEquals(1L, (long)vals.get(0).get2());
-            assertEquals(2, (int)vals.get(1).get1());
+            assertNull(vals.get(1).get1());
 
             vals = map.get(3);
 
@@ -353,8 +353,8 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
         assertEquals(1L, (long)val.get(0).get1());
 
         // Check remove 1
-        assertEquals(1L, (long)val.get(1).get1());
         assertEquals(iter * 2 + 2, (long)val.get(1).get2());
+        assertNull(val.get(1).get1());
 
         val = evnts.get(2);
 
@@ -365,8 +365,8 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
         assertEquals(2L, (long)val.get(0).get1());
 
         // Check remove 2
-        assertEquals(2L, (long)val.get(1).get1());
         assertEquals(iter * 2 + 2, (long)val.get(1).get2());
+        assertNull(val.get(1).get1());
 
         val = evnts.get(3);
 
@@ -377,8 +377,8 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
         assertEquals(3L, (long)val.get(0).get1());
 
         // Check remove 3
-        assertEquals(3L, (long)val.get(1).get1());
         assertEquals(iter * 2 + 2, (long)val.get(1).get2());
+        assertNull(val.get(1).get1());
     }
 
     /**
@@ -509,7 +509,7 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
             assertEquals((int)vals.get(1).get1(), 4);
             assertEquals((long)vals.get(1).get1(), (long)vals.get(1).get2());
 
-            assertEquals(4, (long)vals.get(2).get1());
+            assertNull(vals.get(2).get1());
             assertEquals(5, (long)vals.get(2).get2());
 
             assertEquals((int)vals.get(3).get1(), 10);
@@ -526,7 +526,7 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
             assertEquals((int)vals.get(1).get1(), 4);
             assertEquals((long)vals.get(1).get1(), (long)vals.get(1).get2());
 
-            assertEquals(4, (long)vals.get(2).get1());
+            assertNull(vals.get(2).get1());
             assertEquals(5, (long)vals.get(2).get2());
 
             assertEquals((int)vals.get(3).get1(), 40);

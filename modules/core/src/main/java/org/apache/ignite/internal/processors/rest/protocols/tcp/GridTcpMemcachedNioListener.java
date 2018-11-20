@@ -271,6 +271,7 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
      * @param cmd Command.
      * @return REST request.
      */
+    @SuppressWarnings("unchecked")
     private GridRestRequest createRestRequest(GridMemcachedMessage req, GridRestCommand cmd) {
         assert req != null;
 

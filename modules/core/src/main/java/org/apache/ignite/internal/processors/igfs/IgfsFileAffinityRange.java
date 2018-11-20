@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
@@ -61,6 +62,7 @@ public class IgfsFileAffinityRange implements Message, Externalizable, Binaryliz
     private IgniteUuid affKey;
 
     /** {@code True} if currently being moved by fragmentizer. */
+    @SuppressWarnings("RedundantFieldInitialization")
     private int status = RANGE_STATUS_INITIAL;
 
     /** Range start offset (divisible by block size). */

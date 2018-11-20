@@ -31,6 +31,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
  * Annotates all tests in SPI test framework. Provides implementation class of the SPI and
  * optional dependencies.
  */
+@SuppressWarnings({"JavaDoc"})
 @Documented
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)

@@ -134,6 +134,7 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings({"TooBroadScope"})
     public void testLeaksInIgniteH2IndexingOnTerminatedThread() throws Exception {
         final IgniteCache<Integer, Integer> c = grid(0).cache(DEFAULT_CACHE_NAME);
 

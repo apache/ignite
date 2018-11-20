@@ -165,21 +165,13 @@ public abstract class GridNearTxPrepareFutureAdapter extends
      * @param txMapping Transaction mapping.
      */
     final void checkOnePhase(GridDhtTxMapping txMapping) {
-        checkOnePhase(tx.transactionNodes());
-    }
-
-    /**
-     * Checks if mapped transaction can be committed on one phase. One-phase commit can be done if transaction maps to
-     * one primary node and not more than one backup.
-     *
-     * @param txNodes Primary to backups node map.
-     */
-    final void checkOnePhase(Map<UUID, Collection<UUID>> txNodes) {
-        if (tx.storeWriteThrough() || tx.txState().mvccEnabled()) // TODO IGNITE-3479 (onePhase + mvcc)
+        if (tx.storeWriteThrough() || tx.txState().mvccEnabled(cctx)) // TODO IGNITE-3479 (onePhase + mvcc)
             return;
 
-        if (txNodes.size() == 1) {
-            Map.Entry<UUID, Collection<UUID>> entry = txNodes.entrySet().iterator().next();
+        Map<UUID, Collection<UUID>> map = txMapping.transactionNodes();
+
+        if (map.size() == 1) {
+            Map.Entry<UUID, Collection<UUID>> entry = map.entrySet().iterator().next();
 
             assert entry != null;
 
@@ -195,6 +187,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
      * @param res Response.
      * @param updateMapping Update mapping flag.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     final void onPrepareResponse(GridDistributedTxMapping m,
         GridNearTxPrepareResponse res,
         boolean updateMapping) {

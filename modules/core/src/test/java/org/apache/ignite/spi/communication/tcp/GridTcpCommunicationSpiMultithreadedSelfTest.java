@@ -67,6 +67,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 /**
  * Class for multithreaded {@link TcpCommunicationSpi} test.
  */
+@SuppressWarnings({"JUnitAbstractTestClassNamingConvention"})
 public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstractTest<TcpCommunicationSpi> {
     /** Connection idle timeout */
     public static final int IDLE_CONN_TIMEOUT = 2000;
@@ -125,6 +126,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
     /**
      * Accumulating listener.
      */
+    @SuppressWarnings({"deprecation"})
     private static class MessageListener implements CommunicationListener<Message> {
         /** Node id of local node. */
         private final UUID locNodeId;

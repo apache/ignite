@@ -67,10 +67,7 @@ public interface GridComponent {
         AUTH_PROC,
 
         /** */
-        CACHE_CRD_PROC,
-
-        /** Encryption manager. */
-        ENCRYPTION_MGR
+        CACHE_CRD_PROC
     }
 
     /**
@@ -156,7 +153,7 @@ public interface GridComponent {
     @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node);
 
     /** */
-    @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node, JoiningNodeDiscoveryData discoData);
+    @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag.JoiningNodeDiscoveryData discoData);
 
     /**
      * Gets unique component type to distinguish components providing discovery data. Must return non-null value

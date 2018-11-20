@@ -47,7 +47,7 @@ public class HadoopV2ReduceTask extends HadoopV2Task {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
+    @SuppressWarnings({"ConstantConditions", "unchecked"})
     @Override public void run0(HadoopV2TaskContext taskCtx) throws IgniteCheckedException {
         OutputFormat outputFormat = null;
         Exception err = null;

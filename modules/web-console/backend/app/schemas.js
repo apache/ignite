@@ -136,7 +136,7 @@ module.exports.factory = function(mongoose) {
         clusters: [{type: ObjectId, ref: 'Cluster'}],
         domains: [{type: ObjectId, ref: 'DomainModel'}],
         cacheMode: {type: String, enum: ['PARTITIONED', 'REPLICATED', 'LOCAL']},
-        atomicityMode: {type: String, enum: ['ATOMIC', 'TRANSACTIONAL', 'TRANSACTIONAL_SNAPSHOT']},
+        atomicityMode: {type: String, enum: ['ATOMIC', 'TRANSACTIONAL']},
         partitionLossPolicy: {
             type: String,
             enum: ['READ_ONLY_SAFE', 'READ_ONLY_ALL', 'READ_WRITE_SAFE', 'READ_WRITE_ALL', 'IGNORE']
@@ -1109,9 +1109,7 @@ module.exports.factory = function(mongoose) {
             rateTimeInterval: Number,
             tlbSize: Number,
             subIntervals: Number
-        },
-        mvccVacuumThreadCount: Number,
-        mvccVacuumFrequency: Number
+        }
     });
 
     Cluster.index({name: 1, space: 1}, {unique: true});

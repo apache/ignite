@@ -1325,7 +1325,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
      * Key to test puts and gets with
      */
     @SuppressWarnings({"ConstantConditions", "unused"})
-    private static final class ComplexBinaryFieldsListHashedKey {
+    private final static class ComplexBinaryFieldsListHashedKey {
         /** */
         private final Integer firstField = 1;
 

@@ -26,6 +26,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Mvcc SQL API coordinator failover test.
  */
+@SuppressWarnings("unchecked")
 public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheMvccAbstractBasicCoordinatorFailoverTest {
     /**
      * @throws Exception If failed.

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.v2;
 
-import java.io.IOException;
 import org.apache.hadoop.mapred.JobContextImpl;
 import org.apache.hadoop.mapreduce.JobStatus;
 import org.apache.hadoop.mapreduce.OutputCommitter;
@@ -25,6 +24,8 @@ import org.apache.hadoop.mapreduce.OutputFormat;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
+
+import java.io.IOException;
 
 /**
  * Hadoop cleanup task (commits or aborts job).
@@ -44,6 +45,7 @@ public class HadoopV2CleanupTask extends HadoopV2Task {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ConstantConditions")
     @Override public void run0(HadoopV2TaskContext taskCtx) throws IgniteCheckedException {
         JobContextImpl jobCtx = taskCtx.jobContext();
 

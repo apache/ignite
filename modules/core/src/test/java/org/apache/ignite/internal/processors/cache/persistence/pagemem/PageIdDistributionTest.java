@@ -140,7 +140,7 @@ public class PageIdDistributionTest extends GridCommonAbstractTest {
     }
 
     /**
-     * If needed run this test manually to get data to plot histogram for per-element distance from ideal.
+     * Uncomment and run this test manually to get data to plot histogram for per-element distance from ideal.
      * You can use Octave to plot the histogram:
      * <pre>
      *     all = csvread("histo.txt");
@@ -149,7 +149,7 @@ public class PageIdDistributionTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testRealHistory() throws Exception {
+    public void _testRealHistory() throws Exception {
         int capacity = CACHE_IDS.length * PARTS * PAGES;
 
         info("Capacity: " + capacity);

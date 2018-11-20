@@ -85,6 +85,7 @@ import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRELOAD;
 /**
  * Thread pool for requesting partitions from other nodes and populating local cache.
  */
+@SuppressWarnings("NonConstantFieldWithUpperCaseName")
 public class GridDhtPartitionDemander {
     /** */
     private final GridCacheSharedContext<?, ?> ctx;
@@ -740,25 +741,7 @@ public class GridDhtPartitionDemander {
                 int p = e.getKey();
 
                 if (aff.get(p).contains(ctx.localNode())) {
-                    GridDhtLocalPartition part;
-
-                    try {
-                        part = top.localPartition(p, topVer, true);
-                    }
-                    catch (GridDhtInvalidPartitionException err) {
-                        assert !topVer.equals(top.lastTopologyChangeVersion());
-
-                        if (log.isDebugEnabled()) {
-                            log.debug("Failed to get partition for rebalancing [" +
-                                "grp=" + grp.cacheOrGroupName() +
-                                ", err=" + err +
-                                ", p=" + p +
-                                ", topVer=" + topVer +
-                                ", lastTopVer=" + top.lastTopologyChangeVersion() + ']');
-                        }
-
-                        continue;
-                    }
+                    GridDhtLocalPartition part = top.localPartition(p, topVer, true);
 
                     assert part != null;
 

@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 /**
  * This exception is used to wrap standard {@link InterruptedException} into {@link IgniteCheckedException}.
  */
+@SuppressWarnings({"TypeMayBeWeakened"})
 public class IgniteInterruptedCheckedException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;

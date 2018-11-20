@@ -23,49 +23,35 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
-import org.yardstickframework.BenchmarkConfiguration;
 
 /**
  * Native sql benchmark that performs select operations.
  */
 public class NativeSqlQueryRangeBenchmark extends AbstractNativeBenchmark {
-    /** Prepares SELECT query and it's parameters. */
-    private SelectCommand select;
-
-    /** {@inheritDoc} */
-    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
-        super.setUp(cfg);
-
-        select = args.selectCommand();
-    }
-
     /**
      * Benchmarked action that performs selects and validates results.
      *
      * {@inheritDoc}
      */
-
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         long expRsSize;
 
         SqlFieldsQuery qry;
 
         if (args.sqlRange() == 1) {
-            qry = new SqlFieldsQuery(select.selectOne());
+            qry = new SqlFieldsQuery("SELECT id, val FROM test_long WHERE id = ?");
 
-            long id = ThreadLocalRandom.current().nextLong(args.range()) + 1;
-
-            qry.setArgs(select.fieldByPK(id));
+            qry.setArgs(ThreadLocalRandom.current().nextLong(args.range()) + 1);
 
             expRsSize = 1;
         }
         else {
-            qry = new SqlFieldsQuery(select.selectRange());
+            qry = new SqlFieldsQuery("SELECT id, val FROM test_long WHERE id BETWEEN ? AND ?");
 
             long id = ThreadLocalRandom.current().nextLong(args.range() - args.sqlRange()) + 1;
             long maxId = id + args.sqlRange() - 1;
 
-            qry.setArgs(select.fieldByPK(id), select.fieldByPK(maxId));
+            qry.setArgs(id, maxId);
 
             expRsSize = args.sqlRange();
         }
@@ -73,7 +59,7 @@ public class NativeSqlQueryRangeBenchmark extends AbstractNativeBenchmark {
         long rsSize = 0;
 
         try (FieldsQueryCursor<List<?>> cursor = ((IgniteEx)ignite()).context().query()
-            .querySqlFields(qry, false)) {
+                .querySqlFields(qry, false)) {
 
             for (List<?> row : cursor) {
                 if ((Long)row.get(0) + 1 != (Long)row.get(1))

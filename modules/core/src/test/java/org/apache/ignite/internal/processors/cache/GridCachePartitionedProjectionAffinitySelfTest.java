@@ -36,6 +36,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 /**
  * Partitioned affinity test for projections.
  */
+@SuppressWarnings({"PointlessArithmeticExpression"})
 public class GridCachePartitionedProjectionAffinitySelfTest extends GridCommonAbstractTest {
     /** Backup count. */
     private static final int BACKUPS = 1;
@@ -91,6 +92,7 @@ public class GridCachePartitionedProjectionAffinitySelfTest extends GridCommonAb
     }
 
     /** @throws Exception If failed. */
+    @SuppressWarnings("deprecation")
     public void testProjectionAffinity() throws Exception {
         waitTopologyUpdate();
 
@@ -108,6 +110,7 @@ public class GridCachePartitionedProjectionAffinitySelfTest extends GridCommonAb
     }
 
     /** @throws Exception If failed. */
+    @SuppressWarnings("BusyWait")
     private void waitTopologyUpdate() throws Exception {
         GridTestUtils.waitTopologyUpdate(DEFAULT_CACHE_NAME, BACKUPS, log());
     }

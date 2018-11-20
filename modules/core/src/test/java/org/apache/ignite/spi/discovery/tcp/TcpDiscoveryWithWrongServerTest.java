@@ -42,10 +42,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
     /** Non-Ignite Server port #1. */
-    private static final int SERVER_PORT = 47500;
+    private final static int SERVER_PORT = 47500;
 
     /** Non-Ignite Server port #2. */
-    private static final int LAST_SERVER_PORT = SERVER_PORT + 5;
+    private final static int LAST_SERVER_PORT = SERVER_PORT + 5;
 
     /** Non-Ignite Server sockets. */
     private List<ServerSocket> srvSocks = new ArrayList<>();

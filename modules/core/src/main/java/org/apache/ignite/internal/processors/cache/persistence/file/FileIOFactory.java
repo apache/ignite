@@ -22,10 +22,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.OpenOption;
 
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
-
 /**
  * {@link FileIO} factory definition.
  */
@@ -37,11 +33,7 @@ public interface FileIOFactory extends Serializable {
      * @return File I/O interface.
      * @throws IOException If I/O interface creation was failed.
      */
-    default FileIO create(File file) throws IOException {
-        return create(file, CREATE, READ, WRITE);
-    }
-
-    ;
+    public FileIO create(File file) throws IOException;
 
     /**
      * Creates I/O interface for file with specified mode.
@@ -51,5 +43,5 @@ public interface FileIOFactory extends Serializable {
      * @return File I/O interface.
      * @throws IOException If I/O interface creation was failed.
      */
-    FileIO create(File file, OpenOption... modes) throws IOException;
+    public FileIO create(File file, OpenOption... modes) throws IOException;
 }

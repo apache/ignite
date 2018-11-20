@@ -37,12 +37,12 @@ import org.apache.ignite.ml.math.util.MatrixUtil;
  */
 public class Blas {
     /** F2J implementation of BLAS. */
-    private static transient BLAS f2jBlas = new F2jBLAS();
+    transient static private BLAS f2jBlas = new F2jBLAS();
 
     /**
      * Native implementation of BLAS. F2J implementation will be used as fallback if no native implementation is found.
      */
-    private static transient BLAS nativeBlas = BLAS.getInstance();
+    transient static private BLAS nativeBlas = BLAS.getInstance();
 
     /**
      * Performs y += a * x

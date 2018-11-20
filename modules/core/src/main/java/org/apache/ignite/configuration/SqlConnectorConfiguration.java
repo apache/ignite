@@ -26,6 +26,7 @@ import org.jetbrains.annotations.Nullable;
  * Deprecated as of Apache Ignite 2.3. Please use {@link ClientConnectorConfiguration} and
  * {@link IgniteConfiguration#setClientConnectorConfiguration(ClientConnectorConfiguration)} instead.
  */
+@SuppressWarnings("deprecation")
 @Deprecated
 public class SqlConnectorConfiguration {
     /** Default port. */

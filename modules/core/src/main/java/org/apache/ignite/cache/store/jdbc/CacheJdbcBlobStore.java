@@ -207,6 +207,7 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings({"RedundantTypeArguments"})
     @Override public V load(K key) {
         init();
 

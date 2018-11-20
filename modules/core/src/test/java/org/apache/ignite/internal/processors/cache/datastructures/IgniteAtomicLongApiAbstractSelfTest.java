@@ -220,6 +220,7 @@ public abstract class IgniteAtomicLongApiAbstractSelfTest extends IgniteAtomicsA
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings({"NullableProblems", "ConstantConditions"})
     public void testCompareAndSet() throws Exception {
         info("Running test [name=" + getName() + ", cacheMode=" + atomicsCacheMode() + ']');
 

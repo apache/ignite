@@ -195,6 +195,7 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
      * @param type Type.
      * @throws Exception If failed.
      */
+    @SuppressWarnings("unchecked")
     private void checkWaitAttributeMethod(WaitAttributeType type) throws Exception {
         assert type != null;
 

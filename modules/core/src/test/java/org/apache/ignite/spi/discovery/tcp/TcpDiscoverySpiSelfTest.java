@@ -26,6 +26,7 @@ import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 /**
  * TCP discovery spi test.
  */
+@SuppressWarnings({"JUnitTestCaseWithNoTests"})
 @GridSpiTest(spi = TcpDiscoverySpi.class, group = "Discovery SPI")
 public class TcpDiscoverySpiSelfTest extends AbstractDiscoverySelfTest<TcpDiscoverySpi> {
     /** */

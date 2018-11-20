@@ -51,6 +51,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
  * Super class for all communication self tests.
  * @param <T> Type of communication SPI.
  */
+@SuppressWarnings({"JUnitAbstractTestClassNamingConvention"})
 public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationSpi> extends GridSpiAbstractTest<T> {
     /** */
     private static long msgId = 1;
@@ -88,6 +89,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
     }
 
     /** */
+    @SuppressWarnings({"deprecation"})
     private class MessageListener implements CommunicationListener<Message> {
         /** */
         private final UUID locNodeId;
@@ -193,6 +195,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("WaitWithoutCorrespondingNotify")
     public void testSendToManyNodes() throws Exception {
         msgDestMap.clear();
 

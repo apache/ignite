@@ -39,7 +39,7 @@ public class SqlSystemViewNodes extends SqlAbstractLocalSystemView {
      * @param ctx Grid context.
      */
     public SqlSystemViewNodes(GridKernalContext ctx) {
-        super("NODES", "Topology nodes", ctx, "ID",
+        super("NODES", "Topology nodes", ctx, new String[] {"ID"},
             newColumn("ID", Value.UUID),
             newColumn("CONSISTENT_ID"),
             newColumn("VERSION"),

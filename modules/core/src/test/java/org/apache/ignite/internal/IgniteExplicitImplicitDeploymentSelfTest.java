@@ -101,6 +101,7 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
     /**
      * @param ignite Grid.
      */
+    @SuppressWarnings({"CatchGenericClass"})
     private void stopGrid(Ignite ignite) {
         try {
             if (ignite != null)

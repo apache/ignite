@@ -49,16 +49,16 @@ public abstract class H2DynamicIndexingComplexAbstractTest extends DynamicIndexA
     private final int backups;
 
     /** Names of companies to use. */
-    private static final List<String> COMPANIES = Arrays.asList("ASF", "GNU", "BSD");
+    private final static List<String> COMPANIES = Arrays.asList("ASF", "GNU", "BSD");
 
     /** Cities to use. */
-    private static final List<String> CITIES = Arrays.asList("St. Petersburg", "Boston", "Berkeley", "London");
+    private final static List<String> CITIES = Arrays.asList("St. Petersburg", "Boston", "Berkeley", "London");
 
     /** Index of server node. */
-    protected static final int SRV_IDX = 0;
+    protected final static int SRV_IDX = 0;
 
     /** Index of client node. */
-    protected static final int CLIENT_IDX = 1;
+    protected final static int CLIENT_IDX = 1;
 
     /**
      * Constructor.
@@ -88,6 +88,7 @@ public abstract class H2DynamicIndexingComplexAbstractTest extends DynamicIndexA
     }
 
     /** Do test. */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testOperations() {
         executeSql("CREATE TABLE person (id int, name varchar, age int, company varchar, city varchar, " +
             "primary key (id, name, city)) WITH \"template=" + cacheMode.name() + ",atomicity=" + atomicityMode.name() +

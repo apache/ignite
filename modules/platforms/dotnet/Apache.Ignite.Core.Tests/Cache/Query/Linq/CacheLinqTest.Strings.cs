@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 
             CheckFunc(x => x.Trim(), strings);
 
-#if !NETCOREAPP2_0 && !NETCOREAPP2_1  // Trim is not supported on .NET Core
+#if !NETCOREAPP2_0  // Trim is not supported on .NET Core
             CheckFunc(x => x.Trim('P'), strings);
             var toTrim = new[] { 'P' };
             CheckFunc(x => x.Trim(toTrim), strings);
@@ -89,9 +89,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             CheckFunc(x => Regex.Replace(x, @"son.\d", "kele!", RegexOptions.None), strings);
             CheckFunc(x => Regex.Replace(x, @"person.\d", "akele!", RegexOptions.IgnoreCase), strings);
             CheckFunc(x => Regex.Replace(x, @"person.\d", "akele!", RegexOptions.Multiline), strings);
-            CheckFunc(x => Regex.Replace(x, @"person.\d", "akele!", RegexOptions.IgnoreCase | RegexOptions.Multiline),
+            CheckFunc(x => Regex.Replace(x, @"person.\d", "akele!", RegexOptions.IgnoreCase | RegexOptions.Multiline), 
                 strings);
-            var notSupportedException = Assert.Throws<NotSupportedException>(() => CheckFunc(x =>
+            var notSupportedException = Assert.Throws<NotSupportedException>(() => CheckFunc(x => 
                 Regex.IsMatch(x, @"^person\d", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant), strings));
             Assert.AreEqual("RegexOptions.CultureInvariant is not supported", notSupportedException.Message);
 
@@ -100,7 +100,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             CheckFunc(x => Regex.IsMatch(x, @"^person_9\d", RegexOptions.IgnoreCase), strings);
             CheckFunc(x => Regex.IsMatch(x, @"^Person_9\d", RegexOptions.Multiline), strings);
             CheckFunc(x => Regex.IsMatch(x, @"^person_9\d", RegexOptions.IgnoreCase | RegexOptions.Multiline), strings);
-            notSupportedException = Assert.Throws<NotSupportedException>(() => CheckFunc(x =>
+            notSupportedException = Assert.Throws<NotSupportedException>(() => CheckFunc(x => 
                 Regex.IsMatch(x, @"^person_9\d",RegexOptions.IgnoreCase | RegexOptions.CultureInvariant), strings));
             Assert.AreEqual("RegexOptions.CultureInvariant is not supported", notSupportedException.Message);
 

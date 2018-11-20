@@ -101,6 +101,7 @@ public class GridMemoryEventStorageSpiSelfTest extends GridSpiAbstractTest<Memor
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings({"NullableProblems"})
     public void testFilter() throws Exception {
         MemoryEventStorageSpi spi = getSpi();
 

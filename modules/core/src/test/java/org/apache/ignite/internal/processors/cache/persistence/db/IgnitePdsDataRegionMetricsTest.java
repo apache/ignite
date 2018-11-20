@@ -323,8 +323,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
             .memoryMetrics()
             .getTotalAllocatedPages();
 
-        assertEquals("Number of allocated pages is different than in metrics for [node=" + node.name() + ", cache=" + cacheName + "]",
-            totalPersistenceSize / pageStoreMgr.pageSize(), totalAllocatedPagesFromMetrics);
+        assertEquals(totalPersistenceSize / pageStoreMgr.pageSize(), totalAllocatedPagesFromMetrics);
     }
 
     /**

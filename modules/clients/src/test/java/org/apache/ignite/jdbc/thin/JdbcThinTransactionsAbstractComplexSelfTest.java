@@ -50,7 +50,7 @@ import org.apache.ignite.testframework.GridTestUtils;
  */
 public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcThinAbstractSelfTest {
     /** Client node index. */
-    static final int CLI_IDX = 1;
+    final static int CLI_IDX = 1;
 
     /**
      * Closure to perform ordinary delete after repeatable read.
@@ -271,6 +271,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testBatchDmlStatementsIntermediateFailure() throws SQLException {
         insertPerson(6, "John", "Doe", 2, 2);
 
@@ -687,6 +688,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      *     (must yield an exception).
      * @throws Exception if failed.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void doTestRepeatableRead(final IgniteInClosure<Connection> concurrentWriteClo,
         final IgniteInClosure<Connection> afterReadClo) throws Exception {
         final CountDownLatch repeatableReadLatch = new CountDownLatch(1);
@@ -753,11 +755,11 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
 
                     return null;
                 }
-            }, IgniteCheckedException.class, "Cannot serialize transaction due to write conflict");
+            }, IgniteCheckedException.class, "Mvcc version mismatch.");
 
             assertTrue(X.hasCause(ex, SQLException.class));
 
-            assertTrue(X.getCause(ex).getMessage().contains("Cannot serialize transaction due to write conflict"));
+            assertTrue(X.getCause(ex).getMessage().contains("Mvcc version mismatch."));
         }
         else
             readFut.get();
@@ -1014,7 +1016,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      * Person class.
      */
-    private static final class Person {
+    private final static class Person {
         /** */
         @QuerySqlField
         public int id;

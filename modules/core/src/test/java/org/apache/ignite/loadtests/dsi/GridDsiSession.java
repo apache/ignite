@@ -57,6 +57,7 @@ public class GridDsiSession implements Serializable{
         private String key;
 
         /** */
+        @SuppressWarnings("UnusedDeclaration")
         @AffinityKeyMapped
         private String terminalId;
 

@@ -98,6 +98,7 @@ public class GridCacheValueCollection<K, V> extends GridSerializableCollection<V
                     next = null;
             }
 
+            @SuppressWarnings( {"IteratorHasNextCallsIteratorNext"})
             @Override public boolean hasNext() {
                 advance();
 

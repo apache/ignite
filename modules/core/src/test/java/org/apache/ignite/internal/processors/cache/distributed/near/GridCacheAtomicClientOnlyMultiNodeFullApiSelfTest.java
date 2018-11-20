@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import com.google.common.collect.ImmutableSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -28,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.TouchedExpiryPolicy;
+import com.google.common.collect.ImmutableSet;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CachePeekMode;
@@ -80,12 +80,12 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
     }
 
     /** {@inheritDoc} */
-    @Override public void testReaderTtlNoTx() {
+    @Override public void _testReaderTtlNoTx() throws Exception {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void testReaderTtlTx() {
+    @Override public void _testReaderTtlTx() throws Exception {
         // No-op.
     }
 

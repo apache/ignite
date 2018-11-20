@@ -334,6 +334,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
     }
 
     /** Value. */
+    @SuppressWarnings("UnusedDeclaration")
     private static class Value implements Serializable {
         /** Byte array. */
         private byte[] arr;

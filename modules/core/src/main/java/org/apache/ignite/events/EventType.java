@@ -245,16 +245,6 @@ public interface EventType {
     public static final int EVT_TASK_REDUCED = 25;
 
     /**
-     * Built-in event type: Visor or Web Console management task started.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for internal Ignite events and should not be used by
-     * user-defined events.
-     *
-     * @see TaskEvent
-     */
-    public static final int EVT_MANAGEMENT_TASK_STARTED = 26;
-
-    /**
      * Built-in event type: non-task class deployed.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for

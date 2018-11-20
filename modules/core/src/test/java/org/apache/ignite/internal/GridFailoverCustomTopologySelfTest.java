@@ -80,7 +80,7 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"WaitNotInLoop", "UnconditionalWait"})
+    @SuppressWarnings({"WaitNotInLoop", "UnconditionalWait", "unchecked"})
     public void testFailoverTopology() throws Exception {
         try {
             Ignite ignite1 = startGrid(1);

@@ -23,12 +23,10 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.cache.CacheException;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.ContinuousQuery;
@@ -44,14 +42,10 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.transactions.Transaction;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  *
@@ -98,13 +92,6 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
-    public void testConcurrentUpdatePartitionMvccTx() throws Exception {
-        concurrentUpdatePartition(TRANSACTIONAL_SNAPSHOT, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testConcurrentUpdatePartitionAtomicCacheGroup() throws Exception {
         concurrentUpdatePartition(ATOMIC, true);
     }
@@ -114,13 +101,6 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
      */
     public void testConcurrentUpdatePartitionTxCacheGroup() throws Exception {
         concurrentUpdatePartition(TRANSACTIONAL, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testConcurrentUpdatePartitionMvccTxCacheGroup() throws Exception {
-        concurrentUpdatePartition(TRANSACTIONAL_SNAPSHOT, true);
     }
 
     /**
@@ -199,30 +179,8 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                     for (int i = 0; i < UPDATES; i++) {
-                        for (int c = 0; c < srvCaches.size(); c++) {
-                            if (atomicityMode == ATOMIC)
-                                srvCaches.get(c).put(keys.get(rnd.nextInt(KEYS)), i);
-                            else {
-                                IgniteCache<Object, Object> cache0 = srvCaches.get(c);
-                                IgniteTransactions txs = cache0.unwrap(Ignite.class).transactions();
-
-                                boolean committed = false;
-
-                                while (!committed) {
-                                    try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                                        cache0.put(keys.get(rnd.nextInt(KEYS)), i);
-
-                                        tx.commit();
-
-                                        committed = true;
-                                    }
-                                    catch (CacheException e) {
-                                        assertTrue(e.getMessage() != null &&
-                                            e.getMessage().contains("Cannot serialize transaction due to write conflict"));
-                                    }
-                                }
-                            }
-                        }
+                        for (int c = 0; c < srvCaches.size(); c++)
+                            srvCaches.get(c).put(keys.get(rnd.nextInt(KEYS)), i);
                     }
 
                     return null;
@@ -288,29 +246,15 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
-    public void testConcurrentUpdatesAndQueryStartMvccTx() throws Exception {
-        concurrentUpdatesAndQueryStart(TRANSACTIONAL_SNAPSHOT, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testConcurrentUpdatesAndQueryStartAtomicCacheGroup() throws Exception {
+    public void _testConcurrentUpdatesAndQueryStartAtomicCacheGroup() throws Exception {
         concurrentUpdatesAndQueryStart(ATOMIC, true);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testConcurrentUpdatesAndQueryStartTxCacheGroup() throws Exception {
+    public void _testConcurrentUpdatesAndQueryStartTxCacheGroup() throws Exception {
         concurrentUpdatesAndQueryStart(TRANSACTIONAL, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testConcurrentUpdatesAndQueryStartMvccTxCacheGroup() throws Exception {
-        concurrentUpdatesAndQueryStart(TRANSACTIONAL_SNAPSHOT, true);
     }
 
     /**
@@ -329,24 +273,24 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
 
         if (cacheGrp) {
             for (int i = 0; i < 3; i++) {
-                CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME + i);
+                CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME + i);
 
                 ccfg.setGroupName("testGroup");
                 ccfg.setWriteSynchronizationMode(FULL_SYNC);
                 ccfg.setAtomicityMode(atomicityMode);
 
-                IgniteCache<?, ?> cache = client.createCache(ccfg);
+                IgniteCache cache = client.createCache(ccfg);
 
                 caches.add(cache.getName());
             }
         }
         else {
-            CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             ccfg.setWriteSynchronizationMode(FULL_SYNC);
             ccfg.setAtomicityMode(atomicityMode);
 
-            IgniteCache<?, ?> cache = client.createCache(ccfg);
+            IgniteCache cache = client.createCache(ccfg);
 
             caches.add(cache.getName());
         }
@@ -389,29 +333,8 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
                         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                         while (!stop.get()) {
-                            for (IgniteCache<Object, Object> srvCache : srvCaches) {
-                                if (atomicityMode == ATOMIC)
-                                    srvCache.put(keys.get(rnd.nextInt(KEYS)), rnd.nextInt(100) - 200);
-                                else {
-                                    IgniteTransactions txs = srvCache.unwrap(Ignite.class).transactions();
-
-                                    boolean committed = false;
-
-                                    while (!committed) {
-                                        try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                                            srvCache.put(keys.get(rnd.nextInt(KEYS)), rnd.nextInt(100) - 200);
-
-                                            tx.commit();
-
-                                            committed = true;
-                                        }
-                                        catch (CacheException e) {
-                                            assertTrue(e.getMessage() != null &&
-                                                e.getMessage().contains("Cannot serialize transaction due to write conflict"));
-                                        }
-                                    }
-                                }
-                            }
+                            for (IgniteCache<Object, Object> srvCache : srvCaches)
+                                srvCache.put(keys.get(rnd.nextInt(KEYS)), rnd.nextInt(100) - 200);
                         }
 
                         return null;
@@ -438,29 +361,8 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                     for (int i = 0; i < UPDATES; i++) {
-                        for (IgniteCache<Object, Object> srvCache : srvCaches) {
-                            if (atomicityMode == ATOMIC)
-                                srvCache.put(keys.get(rnd.nextInt(KEYS)), i);
-                            else {
-                                IgniteTransactions txs = srvCache.unwrap(Ignite.class).transactions();
-
-                                boolean committed = false;
-
-                                while (!committed) {
-                                    try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                                        srvCache.put(keys.get(rnd.nextInt(KEYS)), i);
-
-                                        tx.commit();
-
-                                        committed = true;
-                                    }
-                                    catch (CacheException e) {
-                                        assertTrue(e.getMessage() != null &&
-                                            e.getMessage().contains("Cannot serialize transaction due to write conflict"));
-                                    }
-                                }
-                            }
-                        }
+                        for (IgniteCache<Object, Object> srvCache : srvCaches)
+                            srvCache.put(keys.get(rnd.nextInt(KEYS)), i);
                     }
 
                     return null;
@@ -476,7 +378,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
 
                         return evtCnt.get() >= THREADS * UPDATES;
                     }
-                }, 30000);
+                }, 5000);
 
                 assertEquals(THREADS * UPDATES, qry.get1().get());
 

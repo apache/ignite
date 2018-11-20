@@ -62,6 +62,7 @@ public abstract class GridRestProtocolAdapter implements GridRestProtocol {
     /**
      * @param ctx Context.
      */
+    @SuppressWarnings({"OverriddenMethodCallDuringObjectConstruction"})
     protected GridRestProtocolAdapter(GridKernalContext ctx) {
         assert ctx != null;
         assert ctx.config().getConnectorConfiguration() != null;

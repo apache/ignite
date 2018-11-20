@@ -36,6 +36,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests for replicated cache preloader.
  */
+@SuppressWarnings({"PublicInnerClass"})
 public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePreloadLifecycleAbstractTest {
     /** Grid count. */
     private int gridCnt = 5;

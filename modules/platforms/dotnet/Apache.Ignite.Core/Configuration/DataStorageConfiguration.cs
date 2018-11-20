@@ -234,7 +234,6 @@ namespace Apache.Ignite.Core.Configuration
             PageSize = reader.ReadInt();
             ConcurrencyLevel = reader.ReadInt();
             WalAutoArchiveAfterInactivity = reader.ReadLongAsTimespan();
-            CheckpointReadLockTimeout = reader.ReadTimeSpanNullable();
 
             var count = reader.ReadInt();
 
@@ -287,7 +286,6 @@ namespace Apache.Ignite.Core.Configuration
             writer.WriteInt(PageSize);
             writer.WriteInt(ConcurrencyLevel);
             writer.WriteTimeSpanAsLong(WalAutoArchiveAfterInactivity);
-            writer.WriteTimeSpanAsLongNullable(CheckpointReadLockTimeout);
 
             if (DataRegionConfigurations != null)
             {
@@ -489,11 +487,6 @@ namespace Apache.Ignite.Core.Configuration
         /// </summary>
         [DefaultValue(typeof(TimeSpan), "-00:00:00.001")]
         public TimeSpan WalAutoArchiveAfterInactivity { get; set; }
-
-        /// <summary>
-        /// Gets or sets the timeout for checkpoint read lock acquisition.
-        /// </summary>
-        public TimeSpan? CheckpointReadLockTimeout { get; set; }
 
         /// <summary>
         /// Gets or sets the data region configurations.

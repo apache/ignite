@@ -20,7 +20,6 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.managers.GridManagerLocalMessageListenerSelfTest;
 import org.apache.ignite.internal.managers.GridNoopManagerSelfTest;
-import org.apache.ignite.spi.encryption.KeystoreEncryptionSpiSelfTest;
 
 /**
  * Grid SPI test suite.
@@ -62,8 +61,6 @@ public class IgniteSpiTestSuite extends TestSuite {
 
         // Local Message Listener tests.
         suite.addTestSuite(GridManagerLocalMessageListenerSelfTest.class);
-
-        suite.addTestSuite(KeystoreEncryptionSpiSelfTest.class);
 
         return suite;
     }

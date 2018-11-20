@@ -36,7 +36,6 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Multicast;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
-    using Apache.Ignite.Core.Encryption.Keystore;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.PersistentStore;
@@ -82,7 +81,6 @@ namespace Apache.Ignite.Core.Tests
             CheckDefaultValueAttributes(new IgniteConfiguration());
             CheckDefaultValueAttributes(new BinaryConfiguration());
             CheckDefaultValueAttributes(new TcpDiscoverySpi());
-            CheckDefaultValueAttributes(new KeystoreEncryptionSpi());
             CheckDefaultValueAttributes(new CacheConfiguration());
             CheckDefaultValueAttributes(new TcpDiscoveryMulticastIpFinder());
             CheckDefaultValueAttributes(new TcpCommunicationSpi());
@@ -133,14 +131,6 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(disco.StatisticsPrintFrequency, resDisco.StatisticsPrintFrequency);
                 Assert.AreEqual(disco.ThreadPriority, resDisco.ThreadPriority);
                 Assert.AreEqual(disco.TopologyHistorySize, resDisco.TopologyHistorySize);
-
-                var enc = (KeystoreEncryptionSpi) cfg.EncryptionSpi;
-                var resEnc = (KeystoreEncryptionSpi) resCfg.EncryptionSpi;
-                
-                Assert.AreEqual(enc.MasterKeyName, resEnc.MasterKeyName);
-                Assert.AreEqual(enc.KeySize, resEnc.KeySize);
-                Assert.AreEqual(enc.KeyStorePath, resEnc.KeyStorePath);
-                Assert.AreEqual(enc.KeyStorePassword, resEnc.KeyStorePassword);
 
                 var ip = (TcpDiscoveryStaticIpFinder) disco.IpFinder;
                 var resIp = (TcpDiscoveryStaticIpFinder) resDisco.IpFinder;
@@ -204,7 +194,6 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(com.UnacknowledgedMessagesBufferSize, resCom.UnacknowledgedMessagesBufferSize);
 
                 Assert.AreEqual(cfg.FailureDetectionTimeout, resCfg.FailureDetectionTimeout);
-                Assert.AreEqual(cfg.SystemWorkerBlockedTimeout, resCfg.SystemWorkerBlockedTimeout);
                 Assert.AreEqual(cfg.ClientFailureDetectionTimeout, resCfg.ClientFailureDetectionTimeout);
                 Assert.AreEqual(cfg.LongQueryWarningTimeout, resCfg.LongQueryWarningTimeout);
 
@@ -695,13 +684,6 @@ namespace Apache.Ignite.Core.Tests
                     ThreadPriority = 6,
                     TopologyHistorySize = 1234567
                 },
-                EncryptionSpi = new KeystoreEncryptionSpi()
-                {
-                    KeySize = 192,
-                    KeyStorePassword = "love_sex_god",
-                    KeyStorePath = "tde.jks",
-                    MasterKeyName = KeystoreEncryptionSpi.DefaultMasterKeyName
-                },
                 IgniteInstanceName = "gridName1",
                 IgniteHome = IgniteHome.Resolve(null),
                 IncludedEventTypes = EventType.DiscoveryAll,
@@ -753,7 +735,6 @@ namespace Apache.Ignite.Core.Tests
                     UnacknowledgedMessagesBufferSize = 3450
                 },
                 FailureDetectionTimeout = TimeSpan.FromSeconds(3.5),
-                SystemWorkerBlockedTimeout = TimeSpan.FromSeconds(8.5),
                 ClientFailureDetectionTimeout = TimeSpan.FromMinutes(12.3),
                 LongQueryWarningTimeout = TimeSpan.FromMinutes(1.23),
                 IsActiveOnStart = true,
@@ -826,7 +807,6 @@ namespace Apache.Ignite.Core.Tests
                     ConcurrencyLevel = 1,
                     PageSize = 8 * 1024,
                     WalAutoArchiveAfterInactivity = TimeSpan.FromMinutes(5),
-                    CheckpointReadLockTimeout = TimeSpan.FromSeconds(9.5),
                     DefaultDataRegionConfiguration = new DataRegionConfiguration
                     {
                         Name = "reg1",

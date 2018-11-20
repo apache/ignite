@@ -151,6 +151,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
         }).start();
 
         multithreaded(new Runnable() {
+            @SuppressWarnings("InfiniteLoopStatement")
             @Override public void run() {
                 while (!finish.get()) {
                     try {

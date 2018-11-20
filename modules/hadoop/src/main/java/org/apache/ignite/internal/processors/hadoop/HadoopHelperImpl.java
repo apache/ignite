@@ -16,8 +16,6 @@
  */
 package org.apache.ignite.internal.processors.hadoop;
 
-import java.io.IOException;
-import java.io.InputStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
@@ -29,12 +27,15 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.commons.Remapper;
 import org.objectweb.asm.commons.RemappingClassAdapter;
 
+import java.io.IOException;
+import java.io.InputStream;
+
 /**
  * Utility methods for Hadoop classloader required to avoid direct 3rd-party dependencies in class loader.
  */
 public class HadoopHelperImpl implements HadoopHelper {
     /** Kernal context. */
-    private GridKernalContext ctx;
+    private final GridKernalContext ctx;
 
     /** Common class loader. */
     private volatile HadoopClassLoader ldr;
@@ -128,11 +129,5 @@ public class HadoopHelperImpl implements HadoopHelper {
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to resolve Ignite work directory.", e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() {
-        // Force drop KernalContext link, because HadoopHelper leaks in some tests.
-        ctx = null;
     }
 }

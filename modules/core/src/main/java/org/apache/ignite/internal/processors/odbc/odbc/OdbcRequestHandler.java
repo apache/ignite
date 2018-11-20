@@ -691,7 +691,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
                 for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
                     if (!matches(table.schemaName(), schemaPattern) ||
                         !matches(table.tableName(), req.table()) ||
-                        !matchesTableType("TABLE", req.tableType()))
+                        !matches("TABLE", req.tableType()))
                         continue;
 
                     OdbcTableMeta tableMeta = new OdbcTableMeta(null, table.schemaName(), table.tableName(), "TABLE");
@@ -852,37 +852,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             default:
                 return GridBinaryMarshaller.BYTE_ARR;
         }
-    }
-
-    /**
-     * Checks whether string matches table type pattern.
-     *
-     * @param str String.
-     * @param ptrn Pattern.
-     * @return Whether string matches pattern.
-     */
-    private static boolean matchesTableType(String str, String ptrn) {
-        if (F.isEmpty(ptrn))
-            return true;
-
-        if (str == null)
-            return false;
-
-        String pattern = ptrn.toUpperCase().replace("%", ".*").replace("_", ".");
-
-        String[] types = pattern.split(",");
-
-        for (String type0 : types) {
-            String type = type0.trim();
-
-            if (type.length() >= 2 && type.matches("['\"].*['\"]"))
-                type = type.substring(1, type.length() - 1);
-
-            if (str.toUpperCase().matches(type))
-                return true;
-        }
-
-        return false;
     }
 
     /**

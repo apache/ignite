@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc.odbc;
 
+import java.util.Collection;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.jetbrains.annotations.Nullable;
 

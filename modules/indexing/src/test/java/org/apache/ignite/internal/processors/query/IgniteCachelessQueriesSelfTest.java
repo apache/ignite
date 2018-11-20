@@ -44,7 +44,7 @@ public class IgniteCachelessQueriesSelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static final String SELECT =
+    private final static String SELECT =
         "select count(*) from \"pers\".Person p, \"org\".Organization o where p.orgId = o._key";
 
     /** */

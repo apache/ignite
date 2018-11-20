@@ -1378,6 +1378,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
      *
      * @throws SQLException In case of error.
      */
+    @SuppressWarnings("unchecked")
     private void updateMetaData() throws SQLException {
         if (conn.isClosed())
             throw new SQLException("Connection is closed.", SqlStateCode.CONNECTION_CLOSED);

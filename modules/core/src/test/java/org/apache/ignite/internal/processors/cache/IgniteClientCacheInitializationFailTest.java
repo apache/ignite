@@ -193,7 +193,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
     /**
      * @param client Client.
      */
-    @SuppressWarnings({"ThrowableNotThrown"})
+    @SuppressWarnings({"ThrowableNotThrown", "ThrowableResultOfMethodCallIgnored"})
     private void checkFailedCache(final Ignite client, final String cacheName) {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -329,7 +329,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public boolean registerType(GridCacheContextInfo cctx,
-            GridQueryTypeDescriptor desc, boolean isSql) throws IgniteCheckedException {
+            GridQueryTypeDescriptor desc) throws IgniteCheckedException {
             return false;
         }
 

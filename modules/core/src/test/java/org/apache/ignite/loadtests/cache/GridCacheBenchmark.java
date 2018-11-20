@@ -57,6 +57,7 @@ public class GridCacheBenchmark {
      * @param args Arguments.
      * @throws Exception If failed.
      */
+    @SuppressWarnings("BusyWait")
     public static void main(String[] args) throws Exception {
         GridFileLock fileLock = GridLoadTestUtils.fileLock();
 

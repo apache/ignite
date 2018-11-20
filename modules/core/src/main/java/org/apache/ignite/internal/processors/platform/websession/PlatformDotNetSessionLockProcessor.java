@@ -17,16 +17,18 @@
 
 package org.apache.ignite.internal.processors.platform.websession;
 
-import java.sql.Timestamp;
-import java.util.UUID;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
+
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
+import java.sql.Timestamp;
+import java.util.UUID;
 
 /**
  * Entry processor that locks web session data.
  */
+@SuppressWarnings("AssignmentToDateFieldFromParameter")
 public class PlatformDotNetSessionLockProcessor implements CacheEntryProcessor<String, PlatformDotNetSessionData, Object> {
     /** */
     private static final long serialVersionUID = 0L;

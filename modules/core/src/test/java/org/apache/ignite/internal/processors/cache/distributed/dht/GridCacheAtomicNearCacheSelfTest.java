@@ -118,6 +118,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ZeroLengthArrayAllocation")
     private void checkNearCache() throws Exception {
         checkPut();
 
@@ -524,6 +525,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ZeroLengthArrayAllocation")
     private void checkRemove() throws Exception {
         log.info("Check remove.");
 

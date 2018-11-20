@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -150,7 +151,7 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
         else if (timeout > 0)
             timeoutObj = new LockTimeoutObject();
 
-        while (true) {
+        while(true) {
             IgniteInternalFuture<?> fut = tx.lockFuture();
 
             if (fut == GridDhtTxLocalAdapter.ROLLBACK_FUT) {
@@ -331,22 +332,25 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
                 map(false);
             }
             else {
-                cctx.time().waitAsync(fut, tx.remainingTime(), (e, timedOut) -> {
-                    try {
-                        if (e != null || timedOut)
-                            onDone(timedOut ? tx.timeoutException() : e);
-                        else
+                fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                    @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
+                        try {
+                            fut.get();
+
                             mapOnTopology();
-                    }
-                    finally {
-                        cctx.shared().txContextReset();
+                        }
+                        catch (IgniteCheckedException e) {
+                            onDone(e);
+                        }
+                        finally {
+                            cctx.shared().txContextReset();
+                        }
                     }
                 });
             }
         }
         finally {
-            if (cctx.topology().holdsLock())
-                cctx.topology().readUnlock();
+            cctx.topology().readUnlock();
         }
     }
 
@@ -362,10 +366,6 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
     @Override public boolean onDone(@Nullable T res, @Nullable Throwable err, boolean cancelled) {
         if (!DONE_UPD.compareAndSet(this, 0, 1))
             return false;
-
-        // Need to unlock topology to avoid deadlock with binary descriptors registration.
-        if (cctx.topology().holdsLock())
-            cctx.topology().readUnlock();
 
         cctx.tm().txContext(tx);
 

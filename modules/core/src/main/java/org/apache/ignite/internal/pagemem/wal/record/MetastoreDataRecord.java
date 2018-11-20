@@ -18,14 +18,13 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
-import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public class MetastoreDataRecord extends WALRecord implements WalRecordCacheGroupAware {
+public class MetastoreDataRecord extends WALRecord {
     /** */
     private final String key;
 
@@ -59,10 +58,5 @@ public class MetastoreDataRecord extends WALRecord implements WalRecordCacheGrou
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(MetastoreDataRecord.class, this, "super", super.toString());
-    }
-
-    /** {@inheritDoc} */
-    @Override public int groupId() {
-        return MetaStorage.METASTORAGE_CACHE_ID;
     }
 }

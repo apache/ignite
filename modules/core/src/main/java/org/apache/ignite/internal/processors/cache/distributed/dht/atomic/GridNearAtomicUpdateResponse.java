@@ -194,6 +194,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
     /**
      * @param ret Return value.
      */
+    @SuppressWarnings("unchecked")
     public void returnValue(GridCacheReturn ret) {
         this.ret = ret;
     }
@@ -242,6 +243,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
      * @param ttl TTL for near cache update.
      * @param expireTime Expire time for near cache update.
      */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     void addNearTtl(int keyIdx, long ttl, long expireTime) {
         initNearUpdates();
 

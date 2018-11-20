@@ -23,6 +23,7 @@ import java.util.LinkedList;
 /**
  * Replacement for Hadoop {@code org.apache.hadoop.util.Daemon} class.
  */
+@SuppressWarnings("UnusedDeclaration")
 public class HadoopDaemon extends Thread {
     /** Lock object used for synchronization. */
     private static final Object lock = new Object();

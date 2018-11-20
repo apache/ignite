@@ -55,6 +55,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
     private ExecutorService customExec;
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     @Override protected void beforeTest() throws Exception {
         ctxExec = createExecutor(CTX_THREAD_NAME);
         customExec = createExecutor(CUSTOM_THREAD_NAME);

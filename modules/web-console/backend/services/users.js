@@ -42,20 +42,16 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
         /**
          * Save profile information.
          *
-         * @param {String} host - The host.
-         * @param {Object} user - The user.
-         * @param {Object} createdByAdmin - Whether user created by admin.
+         * @param {String} host - The host
+         * @param {Object} user - The user
          * @returns {Promise.<mongo.ObjectId>} that resolves account id of merge operation.
          */
-        static create(host, user, createdByAdmin) {
+        static create(host, user) {
             return mongo.Account.count().exec()
                 .then((cnt) => {
                     user.admin = cnt === 0;
                     user.registered = new Date();
                     user.token = utilsService.randomString(settings.tokenLength);
-
-                    if (settings.server.disableSignup && !user.admin && !createdByAdmin)
-                        throw new errors.ServerErrorException('Sign-up is not allowed. Ask your Web Console administrator to create account for you.');
 
                     return new mongo.Account(user);
                 })
@@ -78,7 +74,7 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
                     return registered.save()
                         .then(() => mongo.Space.create({name: 'Personal space', owner: registered._id}))
                         .then(() => {
-                            mailsService.emailUserSignUp(host, registered, createdByAdmin);
+                            mailsService.emailUserSignUp(host, registered);
 
                             return registered;
                         });

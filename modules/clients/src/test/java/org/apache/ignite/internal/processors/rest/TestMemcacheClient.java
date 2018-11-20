@@ -113,6 +113,7 @@ final class TestMemcacheClient {
 
         // Start socket reader thread.
         rdr = new Thread(new Runnable() {
+            @SuppressWarnings("InfiniteLoopStatement")
             @Override public void run() {
                 try {
                     InputStream in = sock.getInputStream();

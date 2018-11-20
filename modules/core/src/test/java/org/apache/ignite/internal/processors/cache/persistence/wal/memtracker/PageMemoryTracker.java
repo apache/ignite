@@ -31,6 +31,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
@@ -59,13 +60,13 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaS
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FsyncModeFileWriteAheadLogManager;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginContext;
-import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.mockito.Mockito;
 
 /**
@@ -148,21 +149,40 @@ public class PageMemoryTracker implements IgnitePlugin {
      */
     IgniteWriteAheadLogManager createWalManager() {
         if (isEnabled()) {
-            return new FileWriteAheadLogManager(gridCtx) {
-                @Override public WALPointer log(WALRecord record) throws IgniteCheckedException {
-                    WALPointer res = super.log(record);
+            if (ctx.igniteConfiguration().getDataStorageConfiguration().getWalMode() == WALMode.FSYNC) {
+                return new FsyncModeFileWriteAheadLogManager(gridCtx) {
+                    @Override public WALPointer log(WALRecord record) throws IgniteCheckedException {
+                        WALPointer res = super.log(record);
 
-                    applyWalRecord(record);
+                        applyWalRecord(record);
 
-                    return res;
-                }
+                        return res;
+                    }
 
-                @Override public void resumeLogging(WALPointer lastPtr) throws IgniteCheckedException {
-                    super.resumeLogging(lastPtr);
+                    @Override public void resumeLogging(WALPointer lastPtr) throws IgniteCheckedException {
+                        super.resumeLogging(lastPtr);
 
-                    emptyPds = (lastPtr == null);
-                }
-            };
+                        emptyPds = (lastPtr == null);
+                    }
+                };
+            }
+            else {
+                return new FileWriteAheadLogManager(gridCtx) {
+                    @Override public WALPointer log(WALRecord record) throws IgniteCheckedException {
+                        WALPointer res = super.log(record);
+
+                        applyWalRecord(record);
+
+                        return res;
+                    }
+
+                    @Override public void resumeLogging(WALPointer lastPtr) throws IgniteCheckedException {
+                        super.resumeLogging(lastPtr);
+
+                        emptyPds = (lastPtr == null);
+                    }
+                };
+            }
         }
 
         return null;
@@ -202,21 +222,9 @@ public class PageMemoryTracker implements IgnitePlugin {
 
         pageSize = ctx.igniteConfiguration().getDataStorageConfiguration().getPageSize();
 
-        EncryptionSpi encSpi = ctx.igniteConfiguration().getEncryptionSpi();
-
         pageMemoryMock = Mockito.mock(PageMemory.class);
 
         Mockito.doReturn(pageSize).when(pageMemoryMock).pageSize();
-        Mockito.when(pageMemoryMock.realPageSize(Mockito.anyInt())).then(mock -> {
-            int grpId = (Integer)mock.getArguments()[0];
-
-            if (gridCtx.encryption().groupKey(grpId) == null)
-                return pageSize;
-
-            return pageSize
-                - (encSpi.encryptedSizeNoPadding(pageSize) - pageSize)
-                - encSpi.blockSize() /* For CRC. */;
-        });
 
         GridCacheSharedContext sharedCtx = gridCtx.cache().context();
 
@@ -454,7 +462,18 @@ public class PageMemoryTracker implements IgnitePlugin {
             return;
 
         // Increment statistics.
-        stats.computeIfAbsent(record.type(), r -> new AtomicInteger()).incrementAndGet();
+        AtomicInteger statCnt = stats.get(record.type());
+
+        if (statCnt == null) {
+            statCnt = new AtomicInteger();
+
+            AtomicInteger oldCnt = stats.putIfAbsent(record.type(), statCnt);
+
+            if (oldCnt != null)
+                statCnt = oldCnt;
+        }
+
+        statCnt.incrementAndGet();
     }
 
     /**

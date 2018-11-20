@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.file;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.util.typedef.internal.U;

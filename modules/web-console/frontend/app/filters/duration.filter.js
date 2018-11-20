@@ -18,14 +18,10 @@
 export default () => {
     /**
      * @param {number} t Time in ms.
-     * @param {string} dflt Default value.
      */
-    const filter = (t, dflt = '0') => {
+    const filter = (t) => {
         if (t === 9223372036854775807)
             return 'Infinite';
-
-        if (t <= 0)
-            return dflt;
 
         const a = (i, suffix) => i && i !== '00' ? i + suffix + ' ' : '';
 

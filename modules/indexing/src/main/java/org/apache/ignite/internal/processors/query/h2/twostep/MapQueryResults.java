@@ -63,6 +63,7 @@ class MapQueryResults {
      * @param lazyWorker Lazy worker (if any).
      * @param forUpdate {@code SELECT FOR UPDATE} flag.
      */
+    @SuppressWarnings("unchecked")
     MapQueryResults(IgniteH2Indexing h2, long qryReqId, int qrys, @Nullable GridCacheContext<?, ?> cctx,
         @Nullable MapQueryLazyWorker lazyWorker, boolean forUpdate) {
         this.forUpdate = forUpdate;

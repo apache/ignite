@@ -123,6 +123,7 @@ public class GridCacheQueueProxy<T> implements IgniteQueue<T>, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("SuspiciousMethodCalls")
     @Override public boolean contains(final Object item) {
         gate.enter();
 
@@ -159,6 +160,7 @@ public class GridCacheQueueProxy<T> implements IgniteQueue<T>, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("SuspiciousMethodCalls")
     @Override public boolean remove(final Object item) {
         gate.enter();
 

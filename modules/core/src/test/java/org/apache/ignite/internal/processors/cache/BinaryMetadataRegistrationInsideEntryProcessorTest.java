@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import javax.cache.processor.EntryProcessor;
@@ -40,7 +40,7 @@ public class BinaryMetadataRegistrationInsideEntryProcessorTest extends GridComm
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration() {
         TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder()
-            .setAddresses(Collections.singletonList("127.0.0.1:47500..47509"));
+            .setAddresses(Arrays.asList("127.0.0.1:47500..47509"));
 
         return new IgniteConfiguration()
             .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(ipFinder))
@@ -60,9 +60,9 @@ public class BinaryMetadataRegistrationInsideEntryProcessorTest extends GridComm
                 cache.invoke(i, new CustomProcessor());
         }
         catch (Exception e) {
-            Map<Integer, CustomObj> val = cache.get(1);
+            Map<Integer, CustomObj> value = cache.get(1);
 
-            if ((val != null) && (val.get(1).anEnum == CustomEnum.ONE) && val.get(1).obj.data.equals("test"))
+            if ((value != null) && (value.get(1) != null) && (value.get(1).getObj() == CustomEnum.ONE))
                 System.out.println("Data was saved.");
             else
                 System.out.println("Data wasn't saved.");
@@ -82,7 +82,7 @@ public class BinaryMetadataRegistrationInsideEntryProcessorTest extends GridComm
             Object... objects) throws EntryProcessorException {
             Map<Integer, CustomObj> map = new HashMap<>();
 
-            map.put(1, new CustomObj(new CustomInnerObject("test"), CustomEnum.ONE));
+            map.put(1, new CustomObj(CustomEnum.ONE));
 
             entry.setValue(map);
 
@@ -95,20 +95,27 @@ public class BinaryMetadataRegistrationInsideEntryProcessorTest extends GridComm
      */
     private static class CustomObj {
         /** Object. */
-        private final CustomInnerObject obj;
-
-        /** Enum. */
-        private final CustomEnum anEnum;
+        private final Object obj;
 
         /**
          * @param obj Object.
-         * @param anEnum Enum.
          */
-        CustomObj(
-            CustomInnerObject obj,
-            CustomEnum anEnum) {
+        public CustomObj(Object obj) {
             this.obj = obj;
-            this.anEnum = anEnum;
+        }
+
+        /**
+         * @param val Value.
+         */
+        public static CustomObj valueOf(int val) {
+            return new CustomObj(val);
+        }
+
+        /**
+         *
+         */
+        public Object getObj() {
+            return obj;
         }
     }
 
@@ -131,18 +138,4 @@ public class BinaryMetadataRegistrationInsideEntryProcessorTest extends GridComm
         }
     }
 
-    /**
-     *
-     */
-    private static class CustomInnerObject {
-        /** */
-        private final String data;
-
-        /**
-         * @param data Data.
-         */
-        CustomInnerObject(String data) {
-            this.data = data;
-        }
-    }
 }

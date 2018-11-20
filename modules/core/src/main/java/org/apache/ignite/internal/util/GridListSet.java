@@ -393,7 +393,7 @@ public class GridListSet<V> extends GridSerializableSet<V> implements Cloneable 
      * @return Clone of this set.
      * @throws CloneNotSupportedException
      */
-    @SuppressWarnings({"unchecked"})
+    @SuppressWarnings( {"unchecked", "OverriddenMethodCallDuringObjectConstruction"})
     @Override protected Object clone() throws CloneNotSupportedException {
         GridListSet<V> clone = (GridListSet<V>)super.clone();
 
@@ -426,6 +426,7 @@ public class GridListSet<V> extends GridSerializableSet<V> implements Cloneable 
                 return set.addx(val);
             }
 
+            @SuppressWarnings( {"CloneDoesntCallSuperClone"})
             @Override public synchronized Object clone() throws CloneNotSupportedException {
                 return set.clone();
             }

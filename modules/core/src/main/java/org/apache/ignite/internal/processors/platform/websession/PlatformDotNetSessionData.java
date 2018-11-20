@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.websession;
 
-import java.sql.Timestamp;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.UUID;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
@@ -30,9 +26,15 @@ import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
+import java.sql.Timestamp;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.UUID;
+
 /**
  * Web session state data.
  */
+@SuppressWarnings({"ReturnOfDateField", "AssignmentToDateFieldFromParameter"})
 public class PlatformDotNetSessionData implements Binarylizable {
     /** Items. */
     private Map<String, byte[]> items;

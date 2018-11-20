@@ -27,7 +27,6 @@ import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -38,7 +37,6 @@ import org.jetbrains.annotations.Nullable;
  * Task that will collect information about baseline topology and can change its state.
  */
 @GridInternal
-@GridVisorManagementTask
 public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, VisorBaselineTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;

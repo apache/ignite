@@ -39,6 +39,7 @@ public class GridDhtTxMapping {
      *
      * @param nodes Nodes.
      */
+    @SuppressWarnings("ConstantConditions")
     public void addMapping(List<ClusterNode> nodes) {
         assert !F.isEmpty(nodes) : nodes;
 

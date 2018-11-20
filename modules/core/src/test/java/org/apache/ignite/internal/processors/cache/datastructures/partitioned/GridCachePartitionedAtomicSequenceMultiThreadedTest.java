@@ -340,6 +340,7 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
      * @param updated Whether use updated values.
      * @throws Exception If failed.
      */
+    @SuppressWarnings("IfMayBeConditional")
     private void checkUpdate(boolean updated) throws Exception {
         String seqName = UUID.randomUUID().toString();
 

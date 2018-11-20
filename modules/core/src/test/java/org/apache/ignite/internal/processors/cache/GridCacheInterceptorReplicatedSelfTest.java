@@ -28,6 +28,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  */
 public class GridCacheInterceptorReplicatedSelfTest extends GridCacheInterceptorAbstractSelfTest {
     /** {@inheritDoc} */
+    @SuppressWarnings("RedundantMethodOverride")
     @Override protected CacheAtomicityMode atomicityMode() {
         return TRANSACTIONAL;
     }

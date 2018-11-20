@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
@@ -49,6 +48,7 @@ import org.apache.ignite.resources.SpringResource;
 import org.apache.ignite.resources.TaskContinuousMapperResource;
 import org.apache.ignite.resources.TaskSessionResource;
 import org.jetbrains.annotations.Nullable;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Resource container contains caches for classes used for injection.
@@ -107,6 +107,7 @@ public class GridResourceIoc {
      * @return {@code True} if resource was injected.
      * @throws IgniteCheckedException Thrown in case of any errors during injection.
      */
+    @SuppressWarnings("SimplifiableIfStatement")
     boolean inject(Object target,
         Class<? extends Annotation> annCls,
         GridResourceInjector injector,

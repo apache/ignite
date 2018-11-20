@@ -46,7 +46,7 @@ class WebSession implements HttpSession, Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** Flag indicating if the session is valid. */
-    private transient volatile boolean isValid = true;
+    private volatile transient boolean isValid = true;
 
     /** Empty session context. */
     private static final HttpSessionContext EMPTY_SES_CTX = new HttpSessionContext() {

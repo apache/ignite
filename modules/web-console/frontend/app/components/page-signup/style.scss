@@ -41,6 +41,16 @@ page-signup {
                 margin-left: auto;
             }
         }
+
+        form {
+            display: grid;
+            grid-gap: 10px;
+            grid-template-columns: 1fr 1fr;
+
+            .full-width {
+                grid-column: 1 / 3;
+            }
+        }
     }
 
     .page-signup__has-account-message {

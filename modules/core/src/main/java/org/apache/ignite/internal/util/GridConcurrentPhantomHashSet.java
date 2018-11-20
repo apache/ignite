@@ -208,6 +208,7 @@ public class GridConcurrentPhantomHashSet<E> implements Set<E> {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings({"ToArrayCallWithZeroLengthArrayArgument"})
     @Override public Object[] toArray() {
         return toArray(EMPTY_ARR);
     }
@@ -262,6 +263,7 @@ public class GridConcurrentPhantomHashSet<E> implements Set<E> {
             }
 
             /** {@inheritDoc} */
+            @SuppressWarnings({"IteratorNextCanNotThrowNoSuchElementException"})
             @Override public E next() {
                 if (elem == null) {
                     if (!hasNext())

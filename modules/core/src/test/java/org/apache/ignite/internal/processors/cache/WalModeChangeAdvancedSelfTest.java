@@ -29,7 +29,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.GridTestUtils.SF;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -243,7 +242,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         final AtomicInteger restartCnt = new AtomicInteger();
 
-        final int restarts = SF.applyLB(10, 3);
+        final int restarts = 10;
 
         Thread t = new Thread(new Runnable() {
             @Override public void run() {
@@ -290,7 +289,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
                 state = !state;
             }
-            catch (IgniteException ignore) {
+            catch (IgniteException e) {
                 // Possible disconnect, re-try.
             }
         }
@@ -432,7 +431,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         final IgniteCache cache = cacheCli.getOrCreateCache(cacheConfig(PARTITIONED));
 
-        for (int i = 1; i <= SF.applyLB(3, 2); i++) {
+        for (int i = 1; i <= 3; i++) {
             // Start pushing requests.
             Collection<Ignite> walNodes = new ArrayList<>();
 
@@ -443,7 +442,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
             final AtomicBoolean done = new AtomicBoolean();
 
-            final CountDownLatch latch = new CountDownLatch(walNodes.size() + 1);
+            final CountDownLatch latch = new CountDownLatch(5);
 
             for (Ignite node : walNodes) {
                 final Ignite node0 = node;
@@ -477,7 +476,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
             t.start();
 
-            Thread.sleep(SF.applyLB(20_000, 2_000));
+            Thread.sleep(20_000);
 
             done.set(true);
 

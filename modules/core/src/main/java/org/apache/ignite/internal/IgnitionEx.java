@@ -115,7 +115,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
-import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.spi.indexing.noop.NoopIndexingSpi;
@@ -138,7 +137,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_HOST;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_SHUTDOWN_HOOK;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_RESTART_CODE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -1157,11 +1155,9 @@ public class IgnitionEx {
             try {
                 grid.start(startCtx);
             }
-            catch (Exception e) {
-                if (X.hasCause(e, IgniteInterruptedCheckedException.class, InterruptedException.class)) {
-                    if (grid.starterThreadInterrupted)
-                        Thread.interrupted();
-                }
+            catch (IgniteInterruptedCheckedException e) {
+                if (grid.starterThreadInterrupted)
+                    Thread.interrupted();
 
                 throw e;
             }
@@ -1749,7 +1745,7 @@ public class IgnitionEx {
          * @param startCtx Starting context.
          * @throws IgniteCheckedException If start failed.
          */
-        @SuppressWarnings({"TooBroadScope"})
+        @SuppressWarnings({"unchecked", "TooBroadScope"})
         private void start0(GridStartContext startCtx) throws IgniteCheckedException {
             assert grid == null : "Grid is already started: " + name;
 
@@ -1833,10 +1829,7 @@ public class IgnitionEx {
                                 new IgniteException(S.toString(GridWorker.class, deadWorker))));
                     }
                 },
-                IgniteSystemProperties.getLong(IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT,
-                    cfg.getSystemWorkerBlockedTimeout() != null
-                        ? cfg.getSystemWorkerBlockedTimeout()
-                        : cfg.getFailureDetectionTimeout()),
+                cfg.getFailureDetectionTimeout(),
                 log);
 
             stripedExecSvc = new StripedExecutor(
@@ -2352,6 +2345,7 @@ public class IgnitionEx {
          * @param cfg Ignite configuration.
          * @throws IgniteCheckedException If failed.
          */
+        @SuppressWarnings("unchecked")
         public void initializeDefaultCacheConfiguration(IgniteConfiguration cfg) throws IgniteCheckedException {
             List<CacheConfiguration> cacheCfgs = new ArrayList<>();
 
@@ -2450,9 +2444,6 @@ public class IgnitionEx {
 
             if (cfg.getIndexingSpi() == null)
                 cfg.setIndexingSpi(new NoopIndexingSpi());
-
-            if (cfg.getEncryptionSpi() == null)
-                cfg.setEncryptionSpi(new NoopEncryptionSpi());
         }
 
         /**

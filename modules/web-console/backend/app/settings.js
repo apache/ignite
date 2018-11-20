@@ -61,16 +61,13 @@ module.exports = {
             server: {
                 host: nconf.get('server:host') || dfltHost,
                 port: _normalizePort(nconf.get('server:port') || dfltPort),
-                // eslint-disable-next-line eqeqeq
-                SSLOptions: nconf.get('server:ssl') == 'true' && {
+                SSLOptions: nconf.get('server:ssl') && {
                     enable301Redirects: true,
                     trustXFPHeader: true,
                     key: fs.readFileSync(nconf.get('server:key')),
                     cert: fs.readFileSync(nconf.get('server:cert')),
                     passphrase: nconf.get('server:keyPassphrase')
-                },
-                // eslint-disable-next-line eqeqeq
-                disableSignup: nconf.get('server:disable:signup') == 'true'
+                }
             },
             mail,
             mongoUrl: nconf.get('mongodb:url') || 'mongodb://127.0.0.1/console',

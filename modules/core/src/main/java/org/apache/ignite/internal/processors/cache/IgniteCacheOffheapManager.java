@@ -23,8 +23,8 @@ import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -275,9 +275,8 @@ public interface IgniteCacheOffheapManager {
      * @param expireTime Expire time.
      * @param mvccSnapshot MVCC snapshot.
      * @param primary {@code True} if on primary node.
-     * @param needHist Flag to collect history.
+     * @param needHistory Flag to collect history.
      * @param noCreate Flag indicating that row should not be created if absent.
-     * @param needOldVal {@code True} if need old value.
      * @param filter Filter.
      * @param retVal Flag to return previous value.
      * @param entryProc Entry processor.
@@ -292,9 +291,8 @@ public interface IgniteCacheOffheapManager {
         long expireTime,
         MvccSnapshot mvccSnapshot,
         boolean primary,
-        boolean needHist,
+        boolean needHistory,
         boolean noCreate,
-        boolean needOldVal,
         @Nullable CacheEntryPredicate filter,
         boolean retVal,
         EntryProcessor entryProc,
@@ -304,8 +302,7 @@ public interface IgniteCacheOffheapManager {
      * @param entry Entry.
      * @param mvccSnapshot MVCC snapshot.
      * @param primary {@code True} if on primary node.
-     * @param needHist Flag to collect history.
-     * @param needOldVal {@code True} if need old value.
+     * @param needHistory Flag to collect history.
      * @param filter Filter.
      * @param retVal Flag to return previous value.
      * @return Update result.
@@ -315,8 +312,7 @@ public interface IgniteCacheOffheapManager {
         GridCacheMapEntry entry,
         MvccSnapshot mvccSnapshot,
         boolean primary,
-        boolean needHist,
-        boolean needOldVal,
+        boolean needHistory,
         @Nullable CacheEntryPredicate filter,
         boolean retVal) throws IgniteCheckedException;
 
@@ -408,25 +404,6 @@ public interface IgniteCacheOffheapManager {
         GridDhtLocalPartition part,
         @Nullable CacheDataRow oldRow
     ) throws IgniteCheckedException;
-
-    /**
-     * @param cctx Cache context.
-     * @param key Key.
-     * @param val Value.
-     * @param ver Version.
-     * @param expireTime Expire time.
-     * @param part Partition.
-     * @param mvccVer Mvcc version.
-     * @throws IgniteCheckedException If failed.
-     */
-    void mvccApplyUpdate(
-        GridCacheContext cctx,
-        KeyCacheObject key,
-        CacheObject val,
-        GridCacheVersion ver,
-        long expireTime,
-        GridDhtLocalPartition part,
-        MvccVersion mvccVer) throws IgniteCheckedException;
 
     /**
      * @param cctx Cache context.
@@ -607,14 +584,6 @@ public interface IgniteCacheOffheapManager {
      * @return Number of entries.
      */
     public long totalPartitionEntriesCount(int part);
-
-    /**
-     * Preload a partition. Must be called under partition reservation for DHT caches.
-     *
-     * @param part Partition.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void preloadPartition(int part) throws IgniteCheckedException;
 
     /**
      *
@@ -836,9 +805,8 @@ public interface IgniteCacheOffheapManager {
          * @param entryProc Entry processor.
          * @param invokeArgs Entry processor invoke arguments.
          * @param primary {@code True} if update is executed on primary node.
-         * @param needHist Flag to collect history.
+         * @param needHistory Flag to collect history.
          * @param noCreate Flag indicating that row should not be created if absent.
-         * @param needOldVal {@code True} if need old value.
          * @param retVal Flag to return previous value.
          * @return Update result.
          * @throws IgniteCheckedException If failed.
@@ -854,9 +822,8 @@ public interface IgniteCacheOffheapManager {
             EntryProcessor entryProc,
             Object[] invokeArgs,
             boolean primary,
-            boolean needHist,
+            boolean needHistory,
             boolean noCreate,
-            boolean needOldVal,
             boolean retVal) throws IgniteCheckedException;
 
         /**
@@ -866,7 +833,6 @@ public interface IgniteCacheOffheapManager {
          * @param filter Filter.
          * @param primary {@code True} if update is executed on primary node.
          * @param needHistory Flag to collect history.
-         * @param needOldVal {@code True} if need old value.
          * @param retVal Flag to return previous value.
          * @return List of transactions to wait for.
          * @throws IgniteCheckedException If failed.
@@ -878,7 +844,6 @@ public interface IgniteCacheOffheapManager {
             @Nullable CacheEntryPredicate filter,
             boolean primary,
             boolean needHistory,
-            boolean needOldVal,
             boolean retVal) throws IgniteCheckedException;
 
         /**
@@ -940,23 +905,6 @@ public interface IgniteCacheOffheapManager {
          * @throws IgniteCheckedException If failed.
          */
         public void invoke(GridCacheContext cctx, KeyCacheObject key, OffheapInvokeClosure c) throws IgniteCheckedException;
-
-        /**
-         * @param cctx Cache context.
-         * @param key Key.
-         * @param val Value.
-         * @param ver Version.
-         * @param expireTime Expire time.
-         * @param mvccVer Mvcc version.
-         * @throws IgniteCheckedException
-         */
-        void mvccApplyUpdate(GridCacheContext cctx,
-            KeyCacheObject key,
-            CacheObject val,
-            GridCacheVersion ver,
-            long expireTime,
-            MvccVersion mvccVer
-        ) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.
@@ -1098,7 +1046,7 @@ public interface IgniteCacheOffheapManager {
         /**
          * @param cntr Counter.
          */
-        public void updateInitialCounter(long cntr);
+        void updateInitialCounter(long cntr);
 
         /**
          * Inject rows cache cleaner.
@@ -1111,19 +1059,8 @@ public interface IgniteCacheOffheapManager {
          * Return PendingTree for data store.
          *
          * @return PendingTree instance.
+         * @throws IgniteCheckedException
          */
-        public PendingEntriesTree pendingTree();
-
-        /**
-         * Flushes pending update counters closing all possible gaps.
-         */
-        public void finalizeUpdateCountres();
-
-        /**
-         * Preload a store into page memory.
-         *
-         * @throws IgniteCheckedException If failed.
-         */
-        public void preload() throws IgniteCheckedException;
+        PendingEntriesTree pendingTree();
     }
 }

@@ -477,7 +477,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean mvccEnabled() {
+    @Override public boolean mvccEnabled(GridCacheSharedContext cctx) {
         return Boolean.TRUE == mvccEnabled;
     }
 

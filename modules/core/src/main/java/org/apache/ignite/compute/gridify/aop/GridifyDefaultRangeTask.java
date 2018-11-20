@@ -83,6 +83,7 @@ public class GridifyDefaultRangeTask extends ComputeTaskAdapter<GridifyRangeArgu
     private ComputeLoadBalancer balancer;
 
     /** */
+    @SuppressWarnings({"UnusedDeclaration"})
     @TaskContinuousMapperResource
     private ComputeTaskContinuousMapper mapper;
 

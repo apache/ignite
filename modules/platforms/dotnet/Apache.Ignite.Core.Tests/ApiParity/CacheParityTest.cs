@@ -57,10 +57,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             "sizeLongAsync",  // IGNITE-6563
             "localSizeLong",  // IGNITE-6563
             "enableStatistics",  // IGNITE-7276
-            "clearStatistics",  // IGNITE-9017
-            "preloadPartition",  // IGNITE-9998
-            "preloadPartitionAsync",  // IGNITE-9998
-            "localPreloadPartition",  // IGNITE-9998
+            "clearStatistics"  // IGNITE-9017
         };
 
         /// <summary>

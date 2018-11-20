@@ -100,8 +100,6 @@ public class CachePageWriteLockUnlockTest extends GridCommonAbstractTest {
 
             grid0 = startGrid(0);
 
-            grid0.cluster().active(true);
-
             preloadPartition(grid0, DEFAULT_CACHE_NAME, PARTITION);
 
             Iterator<Cache.Entry<Object, Object>> it = grid0.cache(DEFAULT_CACHE_NAME).iterator();

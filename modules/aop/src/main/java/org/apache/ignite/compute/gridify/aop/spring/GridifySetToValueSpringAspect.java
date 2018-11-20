@@ -55,7 +55,7 @@ public class GridifySetToValueSpringAspect extends GridifySetToValueAbstractAspe
      *
      * {@inheritDoc}
      */
-    @SuppressWarnings({"ProhibitedExceptionDeclared", "ProhibitedExceptionThrown"})
+    @SuppressWarnings({"ProhibitedExceptionDeclared", "ProhibitedExceptionThrown", "CatchGenericClass"})
     @Override public Object invoke(MethodInvocation invoc) throws Throwable {
         Method mtd = invoc.getMethod();
 

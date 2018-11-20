@@ -90,7 +90,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
      * @param g2 Grid 2.
      * @param task Task to execute.
      */
-    @SuppressWarnings({"unchecked"})
+    @SuppressWarnings({"TypeMayBeWeakened", "unchecked"})
     private void executeFail(Ignite g1, Ignite g2, Class task) {
         try {
             g1.compute().execute(task, g2.cluster().localNode().id());
