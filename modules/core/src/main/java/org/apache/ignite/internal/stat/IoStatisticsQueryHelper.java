@@ -21,9 +21,9 @@ package org.apache.ignite.internal.stat;
 /**
  * Helper for gathering IO statistics.
  */
-public class IoStatisticsHelper {
+public class IoStatisticsQueryHelper {
     /** */
-    private static final ThreadLocal<IoStatisticsHolderQuery> CURRENT_QUERY_STATISTICS = new ThreadLocal<>();
+    private static final ThreadLocal<IoStatisticsHolderQuery> CUR_QRY_STATS = new ThreadLocal<>();
 
     /**
      * Start gathering IO statistics for query. Should be used together with {@code finishGatheringQueryStatistics}
@@ -32,11 +32,11 @@ public class IoStatisticsHelper {
      * @param qryId Identifier of query.
      */
     public static void startGatheringQueryStatistics(String qryId) {
-        IoStatisticsHolderQuery currQryStatisticsHolder = CURRENT_QUERY_STATISTICS.get();
+        IoStatisticsHolderQuery currQryStatisticsHolder = CUR_QRY_STATS.get();
 
         assert currQryStatisticsHolder == null : currQryStatisticsHolder;
 
-        CURRENT_QUERY_STATISTICS.set(new IoStatisticsHolderQuery(qryId));
+        CUR_QRY_STATS.set(new IoStatisticsHolderQuery(qryId));
     }
 
     /**
@@ -47,7 +47,7 @@ public class IoStatisticsHelper {
     public static void mergeQueryStatistics(IoStatisticsHolderQuery qryStat) {
         assert qryStat != null;
 
-        IoStatisticsHolderQuery currQryStatisticsHolder = CURRENT_QUERY_STATISTICS.get();
+        IoStatisticsHolderQuery currQryStatisticsHolder = CUR_QRY_STATS.get();
 
         assert currQryStatisticsHolder != null;
 
@@ -61,11 +61,11 @@ public class IoStatisticsHelper {
      * @return Gathered statistics.
      */
     public static IoStatisticsHolder finishGatheringQueryStatistics() {
-        IoStatisticsHolderQuery currQryStatisticsHolder = CURRENT_QUERY_STATISTICS.get();
+        IoStatisticsHolderQuery currQryStatisticsHolder = CUR_QRY_STATS.get();
 
         assert currQryStatisticsHolder != null;
 
-        CURRENT_QUERY_STATISTICS.remove();
+        CUR_QRY_STATS.remove();
 
         return currQryStatisticsHolder;
     }
@@ -76,7 +76,7 @@ public class IoStatisticsHelper {
      * @param pageAddr Address of page.
      */
     static void trackLogicalReadQuery(long pageAddr) {
-        IoStatisticsHolderQuery currQryStatisticsHolder = CURRENT_QUERY_STATISTICS.get();
+        IoStatisticsHolderQuery currQryStatisticsHolder = CUR_QRY_STATS.get();
 
         if (currQryStatisticsHolder != null)
             currQryStatisticsHolder.trackLogicalRead(pageAddr);
@@ -89,7 +89,7 @@ public class IoStatisticsHelper {
      * @param pageAddr Address of page.
      */
     static void trackPhysicalAndLogicalReadQuery(long pageAddr) {
-        IoStatisticsHolderQuery currQryStatisticsHolder = CURRENT_QUERY_STATISTICS.get();
+        IoStatisticsHolderQuery currQryStatisticsHolder = CUR_QRY_STATS.get();
 
         if (currQryStatisticsHolder != null)
             currQryStatisticsHolder.trackPhysicalAndLogicalRead(pageAddr);

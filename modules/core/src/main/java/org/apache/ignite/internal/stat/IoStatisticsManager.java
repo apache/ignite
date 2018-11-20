@@ -36,7 +36,7 @@ public class IoStatisticsManager {
     private final Map<IoStatisticsType, Map<IoStatisticsHolderKey, IoStatisticsHolder>> statByType;
 
     /** Time of since statistics start gathering. */
-    private volatile LocalDateTime statsSince = LocalDateTime.now();
+    private volatile LocalDateTime startTime = LocalDateTime.now();
 
     /**
      * Constructor.
@@ -71,30 +71,30 @@ public class IoStatisticsManager {
         if (statByType.isEmpty())
             throw new IgniteIllegalStateException("IO Statistics manager has been stopped and can'be used");
 
-        IoStatisticsHolder statHolder;
+        IoStatisticsHolder stat;
+        IoStatisticsHolderKey statKey;
 
-        IoStatisticsHolderKey statisticsHolderKey;
         switch (type) {
             case CACHE_GROUP:
-                statHolder = new IoStatisticsHolderCache(name);
-
-                statisticsHolderKey = new IoStatisticsHolderKey(name);
+                stat = new IoStatisticsHolderCache(name);
+                statKey = new IoStatisticsHolderKey(name);
 
                 break;
+
             case HASH_INDEX:
             case SORTED_INDEX:
-                statHolder = new IoStatisticsHolderIndex(name, subName);
-
-                statisticsHolderKey = new IoStatisticsHolderKey(name, subName);
+                stat = new IoStatisticsHolderIndex(name, subName);
+                statKey = new IoStatisticsHolderKey(name, subName);
 
                 break;
+
             default:
                 throw new IgniteException("Gathering IO statistics for " + type + "doesn't support");
         }
 
-        IoStatisticsHolder existedStatisitcHolder = statByType.get(type).putIfAbsent(statisticsHolderKey, statHolder);
+        IoStatisticsHolder existedStatisitcHolder = statByType.get(type).putIfAbsent(statKey, stat);
 
-        return (existedStatisitcHolder != null) ? existedStatisitcHolder : statHolder;
+        return (existedStatisitcHolder != null) ? existedStatisitcHolder : stat;
     }
 
     /**
@@ -112,14 +112,14 @@ public class IoStatisticsManager {
             s.forEach((k, sh) -> sh.resetStatistics())
         );
 
-        statsSince = LocalDateTime.now();
+        startTime = LocalDateTime.now();
     }
 
     /**
      * @return When statistics gathering start.
      */
-    public LocalDateTime statsSince() {
-        return statsSince;
+    public LocalDateTime startTime() {
+        return startTime;
     }
 
     /**
@@ -128,11 +128,12 @@ public class IoStatisticsManager {
      * @param statType Type of statistics which tracked names need to extract.
      * @return Set of present names for given statType
      */
-    public Set<String> deriveStatNames(IoStatisticsType statType) {
+    public Set<String> deriveStatisticNames(IoStatisticsType statType) {
         assert statType != null;
 
         return statByType.get(statType).keySet().stream()
-            .map(v -> v.name()).collect(Collectors.toSet());
+            .map(IoStatisticsHolderKey::name)
+            .collect(Collectors.toSet());
     }
 
     /**
@@ -142,11 +143,13 @@ public class IoStatisticsManager {
      * @param statType Type of statistics which tracked names need to extract.
      * @return Set of present names for given statType
      */
-    public Set<String> deriveStatSubNames(IoStatisticsType statType, String name) {
+    public Set<String> deriveStatisticSubNames(IoStatisticsType statType, String name) {
         assert statType != null;
 
         return statByType.get(statType).keySet().stream()
-            .filter(k -> k.name().equalsIgnoreCase(name) && k.subName() != null).map(k -> k.subName()).collect(Collectors.toSet());
+            .filter(k -> k.name().equalsIgnoreCase(name) && k.subName() != null)
+            .map(IoStatisticsHolderKey::subName)
+            .collect(Collectors.toSet());
     }
 
     /**
@@ -155,7 +158,7 @@ public class IoStatisticsManager {
      * @param subName subName of statistics which need to take, e.g. index name.
      * @return Tracked physical reads by types since last reset statistics.
      */
-    public Map<String, Long> physicalReadsByTypes(IoStatisticsType statType, String name, String subName) {
+    public Map<String, Long> physicalReadsMap(IoStatisticsType statType, String name, String subName) {
         IoStatisticsHolder statHolder = statByType.get(statType).get(new IoStatisticsHolderKey(name, subName));
 
         return (statHolder != null) ? statHolder.physicalReadsMap() : Collections.emptyMap();

@@ -43,16 +43,16 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
     public static final String PHYSICAL_READS_INNER = "PHYSICAL_READS_INNER";
 
     /** */
-    private LongAdder logicalReadLeafCntr = new LongAdder();
+    private LongAdder logicalReadLeafCtr = new LongAdder();
 
     /** */
-    private LongAdder logicalReadInnerCntr = new LongAdder();
+    private LongAdder logicalReadInnerCtr = new LongAdder();
 
     /** */
-    private LongAdder physicalReadLeafCntr = new LongAdder();
+    private LongAdder physicalReadLeafCtr = new LongAdder();
 
     /** */
-    private LongAdder physicalReadInnerCntr = new LongAdder();
+    private LongAdder physicalReadInnerCtr = new LongAdder();
 
     /** */
     private final String cacheName;
@@ -77,15 +77,16 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
 
         switch (idxPageType) {
             case INNER:
-                logicalReadInnerCntr.increment();
+                logicalReadInnerCtr.increment();
 
-                IoStatisticsHelper.trackLogicalReadQuery(pageAddr);
+                IoStatisticsQueryHelper.trackLogicalReadQuery(pageAddr);
 
                 break;
-            case LEAF:
-                logicalReadLeafCntr.increment();
 
-                IoStatisticsHelper.trackLogicalReadQuery(pageAddr);
+            case LEAF:
+                logicalReadLeafCtr.increment();
+
+                IoStatisticsQueryHelper.trackLogicalReadQuery(pageAddr);
 
                 break;
         }
@@ -98,19 +99,18 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
 
         switch (idxPageType) {
             case INNER:
-                logicalReadInnerCntr.increment();
+                logicalReadInnerCtr.increment();
+                physicalReadInnerCtr.increment();
 
-                physicalReadInnerCntr.increment();
-
-                IoStatisticsHelper.trackPhysicalAndLogicalReadQuery(pageAddr);
+                IoStatisticsQueryHelper.trackPhysicalAndLogicalReadQuery(pageAddr);
 
                 break;
+
             case LEAF:
-                logicalReadLeafCntr.increment();
+                logicalReadLeafCtr.increment();
+                physicalReadLeafCtr.increment();
 
-                physicalReadLeafCntr.increment();
-
-                IoStatisticsHelper.trackPhysicalAndLogicalReadQuery(pageAddr);
+                IoStatisticsQueryHelper.trackPhysicalAndLogicalReadQuery(pageAddr);
 
                 break;
         }
@@ -118,21 +118,20 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
 
     /** {@inheritDoc} */
     @Override public long logicalReads() {
-        return logicalReadLeafCntr.longValue() + logicalReadInnerCntr.longValue();
+        return logicalReadLeafCtr.longValue() + logicalReadInnerCtr.longValue();
     }
 
     /** {@inheritDoc} */
     @Override public long physicalReads() {
-        return physicalReadLeafCntr.longValue() + physicalReadInnerCntr.longValue();
+        return physicalReadLeafCtr.longValue() + physicalReadInnerCtr.longValue();
     }
 
     /** {@inheritDoc} */
     @Override public Map<String, Long> logicalReadsMap() {
         Map<String, Long> res = new HashMap<>(3);
 
-        res.put(LOGICAL_READS_LEAF, logicalReadLeafCntr.longValue());
-
-        res.put(LOGICAL_READS_INNER, logicalReadInnerCntr.longValue());
+        res.put(LOGICAL_READS_LEAF, logicalReadLeafCtr.longValue());
+        res.put(LOGICAL_READS_INNER, logicalReadInnerCtr.longValue());
 
         return res;
     }
@@ -141,22 +140,18 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
     @Override public Map<String, Long> physicalReadsMap() {
         Map<String, Long> res = new HashMap<>(3);
 
-        res.put(PHYSICAL_READS_LEAF, physicalReadLeafCntr.longValue());
-
-        res.put(PHYSICAL_READS_INNER, physicalReadInnerCntr.longValue());
+        res.put(PHYSICAL_READS_LEAF, physicalReadLeafCtr.longValue());
+        res.put(PHYSICAL_READS_INNER, physicalReadInnerCtr.longValue());
 
         return res;
     }
 
     /** {@inheritDoc} */
     @Override public void resetStatistics() {
-        logicalReadLeafCntr.reset();
-
-        logicalReadInnerCntr.reset();
-
-        physicalReadLeafCntr.reset();
-
-        physicalReadInnerCntr.reset();
+        logicalReadLeafCtr.reset();
+        logicalReadInnerCtr.reset();
+        physicalReadLeafCtr.reset();
+        physicalReadInnerCtr.reset();
     }
 
     /**
@@ -213,10 +208,10 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "IoStatisticsHolderIndex{" + "logicalReadLeafCntr=" + logicalReadLeafCntr +
-            ", logicalReadInnerCntr=" + logicalReadInnerCntr +
-            ", physicalReadLeafCntr=" + physicalReadLeafCntr +
-            ", physicalReadInnerCntr=" + physicalReadInnerCntr +
+        return "IoStatisticsHolderIndex{" + "logicalReadLeafCtr=" + logicalReadLeafCtr +
+            ", logicalReadInnerCtr=" + logicalReadInnerCtr +
+            ", physicalReadLeafCtr=" + physicalReadLeafCtr +
+            ", physicalReadInnerCtr=" + physicalReadInnerCtr +
             ", cacheName='" + cacheName + '\'' +
             ", idxName='" + idxName + '\'' +
             '}';

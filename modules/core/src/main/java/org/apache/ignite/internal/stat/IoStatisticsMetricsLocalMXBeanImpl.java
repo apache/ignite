@@ -43,7 +43,7 @@ public class IoStatisticsMetricsLocalMXBeanImpl implements IoStatisticsMetricsMX
 
     /** {@inheritDoc} */
     @Override public LocalDateTime getStartGatheringStatistics() {
-        return statMgr.statsSince();
+        return statMgr.startTime();
     }
 
     /** {@inheritDoc} */
@@ -90,7 +90,7 @@ public class IoStatisticsMetricsLocalMXBeanImpl implements IoStatisticsMetricsMX
     private String formattedStats(IoStatisticsType statType, String name, String subName) {
         Map<String, Long> logicalReads = statMgr.logicalReadsMap(statType, name, subName);
 
-        Map<String, Long> physicalReads = statMgr.physicalReadsByTypes(statType, name, subName);
+        Map<String, Long> physicalReads = statMgr.physicalReadsMap(statType, name, subName);
 
         String stats = Stream.concat(logicalReads.entrySet().stream(), physicalReads.entrySet().stream())
             .map(e -> e.getKey() + "=" + e.getValue())
@@ -141,16 +141,16 @@ public class IoStatisticsMetricsLocalMXBeanImpl implements IoStatisticsMetricsMX
 
     /** {@inheritDoc} */
     @Override public Set<String> getStatHashIndexesNames(String cacheGrpName) {
-        return statMgr.deriveStatSubNames(IoStatisticsType.HASH_INDEX, cacheGrpName);
+        return statMgr.deriveStatisticSubNames(IoStatisticsType.HASH_INDEX, cacheGrpName);
     }
 
     /** {@inheritDoc} */
     @Override public Set<String> getStatSortedIndexesNames(String cacheGrpName) {
-        return statMgr.deriveStatSubNames(IoStatisticsType.SORTED_INDEX, cacheGrpName);
+        return statMgr.deriveStatisticSubNames(IoStatisticsType.SORTED_INDEX, cacheGrpName);
     }
 
     /** {@inheritDoc} */
     @Override public Set<String> getStatCachesNames() {
-        return statMgr.deriveStatNames(IoStatisticsType.CACHE_GROUP);
+        return statMgr.deriveStatisticNames(IoStatisticsType.CACHE_GROUP);
     }
 }

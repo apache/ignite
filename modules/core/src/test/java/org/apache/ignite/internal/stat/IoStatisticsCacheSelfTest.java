@@ -175,7 +175,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
 
         IoStatisticsManager ioStatMgr = ignite.context().ioStats();
 
-        Set<String> statisticCacheNames = ioStatMgr.deriveStatNames(IoStatisticsType.CACHE_GROUP);
+        Set<String> statisticCacheNames = ioStatMgr.deriveStatisticNames(IoStatisticsType.CACHE_GROUP);
 
         Assert.assertEquals(ALL_CACHE_GROUP_NAMES, statisticCacheNames);
 
@@ -194,7 +194,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
 
         IoStatisticsManager ioStatMgr = ignite.context().ioStats();
 
-        Set<String> statisticCacheNames = ioStatMgr.deriveStatNames(IoStatisticsType.CACHE_GROUP);
+        Set<String> statisticCacheNames = ioStatMgr.deriveStatisticNames(IoStatisticsType.CACHE_GROUP);
 
         Assert.assertEquals(ALL_CACHE_GROUP_NAMES, statisticCacheNames);
 
@@ -214,7 +214,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
 
         IoStatisticsManager ioStatMgr = ignite.context().ioStats();
 
-        Set<String> statisticCacheNames = ioStatMgr.deriveStatNames(IoStatisticsType.CACHE_GROUP);
+        Set<String> statisticCacheNames = ioStatMgr.deriveStatisticNames(IoStatisticsType.CACHE_GROUP);
 
         Assert.assertEquals(ALL_CACHE_GROUP_NAMES, statisticCacheNames);
 

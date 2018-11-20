@@ -31,13 +31,15 @@ import java.util.concurrent.atomic.LongAdder;
 public class IoStatisticsHolderQuery implements IoStatisticsHolder {
     /** */
     public static final String PHYSICAL_READS = "PHYSICAL_READS";
-    /** */
-    public static final String LOGICAL_READS = "LOGICAL_READS";
-    /** */
-    private LongAdder logicalReadCntr = new LongAdder();
 
     /** */
-    private LongAdder physicalReadCntr = new LongAdder();
+    public static final String LOGICAL_READS = "LOGICAL_READS";
+
+    /** */
+    private LongAdder logicalReadCtr = new LongAdder();
+
+    /** */
+    private LongAdder physicalReadCtr = new LongAdder();
 
     /** */
     private final String qryId;
@@ -51,24 +53,24 @@ public class IoStatisticsHolderQuery implements IoStatisticsHolder {
 
     /** {@inheritDoc} */
     @Override public void trackLogicalRead(long pageAddr) {
-        logicalReadCntr.increment();
+        logicalReadCtr.increment();
     }
 
     /** {@inheritDoc} */
     @Override public void trackPhysicalAndLogicalRead(long pageAddr) {
-        logicalReadCntr.increment();
+        logicalReadCtr.increment();
 
-        physicalReadCntr.increment();
+        physicalReadCtr.increment();
     }
 
     /** {@inheritDoc} */
     @Override public long logicalReads() {
-        return logicalReadCntr.longValue();
+        return logicalReadCtr.longValue();
     }
 
     /** {@inheritDoc} */
     @Override public long physicalReads() {
-        return physicalReadCntr.longValue();
+        return physicalReadCtr.longValue();
     }
 
     /** {@inheritDoc} */
@@ -91,9 +93,9 @@ public class IoStatisticsHolderQuery implements IoStatisticsHolder {
 
     /** {@inheritDoc} */
     @Override public void resetStatistics() {
-        logicalReadCntr.reset();
+        logicalReadCtr.reset();
 
-        physicalReadCntr.reset();
+        physicalReadCtr.reset();
     }
 
     /**
@@ -111,8 +113,8 @@ public class IoStatisticsHolderQuery implements IoStatisticsHolder {
      * @param physicalReads Physical reads which will be added to current query statistics,
      */
     public void merge(long logicalReads, long physicalReads) {
-        logicalReadCntr.add(logicalReads);
+        logicalReadCtr.add(logicalReads);
 
-        physicalReadCntr.add(physicalReads);
+        physicalReadCtr.add(physicalReads);
     }
 }

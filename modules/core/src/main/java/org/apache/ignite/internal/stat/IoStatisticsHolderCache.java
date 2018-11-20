@@ -28,14 +28,16 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
  */
 public class IoStatisticsHolderCache implements IoStatisticsHolder {
     /** */
-    public static final String PHYSICAL_READS = "PHYSICAL_READS";
-    /** */
-    public static final String LOGICAL_READS = "LOGICAL_READS";
-    /** */
-    private LongAdder logicalReadCntr = new LongAdder();
+    private static final String PHYSICAL_READS = "PHYSICAL_READS";
 
     /** */
-    private LongAdder physicalReadCntr = new LongAdder();
+    private static final String LOGICAL_READS = "LOGICAL_READS";
+
+    /** */
+    private LongAdder logicalReadCtr = new LongAdder();
+
+    /** */
+    private LongAdder physicalReadCtr = new LongAdder();
 
     /** */
     private final String cacheName;
@@ -54,9 +56,9 @@ public class IoStatisticsHolderCache implements IoStatisticsHolder {
         int pageIoType = PageIO.getType(pageAddr);
 
         if (pageIoType == PageIO.T_DATA) {
-            logicalReadCntr.increment();
+            logicalReadCtr.increment();
 
-            IoStatisticsHelper.trackLogicalReadQuery(pageAddr);
+            IoStatisticsQueryHelper.trackLogicalReadQuery(pageAddr);
         }
 
     }
@@ -66,22 +68,22 @@ public class IoStatisticsHolderCache implements IoStatisticsHolder {
         int pageIoType = PageIO.getType(pageAddr);
 
         if (pageIoType == PageIO.T_DATA) {
-            logicalReadCntr.increment();
+            logicalReadCtr.increment();
 
-            physicalReadCntr.increment();
+            physicalReadCtr.increment();
 
-            IoStatisticsHelper.trackPhysicalAndLogicalReadQuery(pageAddr);
+            IoStatisticsQueryHelper.trackPhysicalAndLogicalReadQuery(pageAddr);
         }
     }
 
     /** {@inheritDoc} */
     @Override public long logicalReads() {
-        return logicalReadCntr.longValue();
+        return logicalReadCtr.longValue();
     }
 
     /** {@inheritDoc} */
     @Override public long physicalReads() {
-        return physicalReadCntr.longValue();
+        return physicalReadCtr.longValue();
     }
 
     /** {@inheritDoc} */
@@ -104,15 +106,14 @@ public class IoStatisticsHolderCache implements IoStatisticsHolder {
 
     /** {@inheritDoc} */
     @Override public void resetStatistics() {
-        logicalReadCntr.reset();
-
-        physicalReadCntr.reset();
+        logicalReadCtr.reset();
+        physicalReadCtr.reset();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "IoStatisticsHolderCache{" + "logicalReadCntr=" + logicalReadCntr +
-            ", physicalReadCntr=" + physicalReadCntr +
+        return "IoStatisticsHolderCache{" + "logicalReadCtr=" + logicalReadCtr +
+            ", physicalReadCtr=" + physicalReadCtr +
             ", cacheName='" + cacheName + '\'' +
             '}';
     }

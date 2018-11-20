@@ -166,15 +166,15 @@ public class IoStatisticsBasicIndexSelfTest extends GridCommonAbstractTest {
     private void checkStat() {
         IoStatisticsManager ioStat = grid().context().ioStats();
 
-        Set<String> hashIndexes = ioStat.deriveStatNames(IoStatisticsType.HASH_INDEX);
+        Set<String> hashIndexes = ioStat.deriveStatisticNames(IoStatisticsType.HASH_INDEX);
 
         Assert.assertEquals(PK_HASH_INDEXES, hashIndexes);
 
-        Set<String> sortedIndexCaches = ioStat.deriveStatNames(IoStatisticsType.SORTED_INDEX);
+        Set<String> sortedIndexCaches = ioStat.deriveStatisticNames(IoStatisticsType.SORTED_INDEX);
 
         Assert.assertEquals(1, sortedIndexCaches.size());
 
-        Set<String> sortedIdxNames = ioStat.deriveStatSubNames(IoStatisticsType.SORTED_INDEX,
+        Set<String> sortedIdxNames = ioStat.deriveStatisticSubNames(IoStatisticsType.SORTED_INDEX,
             sortedIndexCaches.toArray()[0].toString());
 
         Assert.assertEquals(sortedIndexCaches.toString(), indexes.size() + NUMBER_OF_PK_SORTED_INDEXES, sortedIdxNames.size());
