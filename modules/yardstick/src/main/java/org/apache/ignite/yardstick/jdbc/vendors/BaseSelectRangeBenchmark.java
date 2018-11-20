@@ -167,10 +167,11 @@ public abstract class BaseSelectRangeBenchmark extends AbstractJdbcBenchmark {
     }
 
     /**
-     * Generate Person record and fill with it specified
+     * Generate Person record and fill with it specified statement.
      *
-     * @param insPers Ins pers.
-     * @param id Id.
+     * @param insPers PreparedStatement which parametets to fill.
+     * @param id person's id.
+     * @param orgId id of organization, this person associated with.
      */
     static PreparedStatement fillPersonArgs(PreparedStatement insPers, long id, long orgId) throws SQLException {
         insPers.setLong(1, id);
