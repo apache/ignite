@@ -280,30 +280,17 @@ public class CachesRegistry {
      */
     private IgniteInternalFuture<?> persistCacheConfigurations(List<DynamicCacheDescriptor> cacheDescriptors) {
         List<StoredCacheData> cacheConfigsToPersist = cacheDescriptors.stream()
-            .map(DynamicCacheDescriptor::toStoredData)
+            .map(cacheDesc -> new StoredCacheData(cacheDesc.cacheConfiguration()).sql(cacheDesc.sql()))
             .collect(Collectors.toList());
 
-        // Pre-create cache work directories if they don't exist.
-        for (StoredCacheData data : cacheConfigsToPersist) {
-            try {
-                cctx.pageStore().checkAndInitCacheWorkDir(data.config());
-            }
-            catch (IgniteCheckedException e) {
-                if (!cctx.kernalContext().isStopping()) {
-                    cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
-
-                    U.error(log, "Failed to initialize cache work directory for " + data.config(), e);
-                }
-            }
-        }
-
         return cctx.kernalContext().closure().runLocalSafe(() -> {
-            try {
-                for (StoredCacheData data : cacheConfigsToPersist)
-                    cctx.pageStore().storeCacheData(data, false);
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Error while saving cache configurations on disk", e);
+            for (StoredCacheData data : cacheConfigsToPersist) {
+                try {
+                    cctx.database().storeCacheConfiguration(data, false);
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Error while saving cache configurations on disk " + data.config().getName(), e);
+                }
             }
         });
     }

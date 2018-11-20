@@ -32,6 +32,7 @@ import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -50,6 +51,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.persistence.evict.FairFifoPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.NoOpPageEvictionTracker;
@@ -941,6 +943,34 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public void releaseHistoryForPreloading() {
         // No-op
+    }
+
+    /**
+     * @return stored cache configurations.
+     * @throws IgniteCheckedException if read failed.
+     */
+    public Map<String, StoredCacheData> readStoredCacheConfiguration() throws IgniteCheckedException {
+        // No-op
+        return Collections.emptyMap();
+    }
+
+    /**
+     * Store cache configuration.
+     *
+     * @param cacheData Cache data.
+     * @param overwrite Overwrite.
+     */
+    public void storeCacheConfiguration(StoredCacheData cacheData, boolean overwrite) throws IgniteCheckedException {
+        // No-op
+    }
+
+    /**
+     * Remove stored cache configuration.
+     *
+     * @param cacheConfig Cache configuration to remove.
+     */
+    public void removeCacheConfiguration(CacheConfiguration<?, ?> cacheConfig) throws IgniteCheckedException {
+        //No-op
     }
 
     /**

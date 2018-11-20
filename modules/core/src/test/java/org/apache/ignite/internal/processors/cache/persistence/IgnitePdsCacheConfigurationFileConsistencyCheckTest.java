@@ -17,12 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import java.io.BufferedOutputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FilenameFilter;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.Ignite;
@@ -36,17 +30,12 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_TMP_FILENAME;
 
 /**
  * Tests that ignite can start when caches' configurations with same name in different groups stored.
@@ -72,11 +61,11 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         return cfg.setDiscoverySpi(new TcpDiscoverySpi()
-                .setIpFinder(IP_FINDER))
-                .setDataStorageConfiguration(new DataStorageConfiguration()
-                        .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                                .setMaxSize(200 * 1024 * 1024)
-                                .setPersistenceEnabled(true)));
+            .setIpFinder(IP_FINDER))
+            .setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                    .setMaxSize(200 * 1024 * 1024)
+                    .setPersistenceEnabled(true)));
     }
 
     /** {@inheritDoc} */
@@ -119,48 +108,12 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
 
         desc = ig0.context().cache().cacheDescriptor(cacheName(3));
 
-        assertEquals("expected that group of " + cacheName(3) + " is " + EVEN_GROUP_NAME, EVEN_GROUP_NAME,
-                desc.groupDescriptor().groupName());
+        assertEquals(
+            "expected that group of " + cacheName(3) + " is " + EVEN_GROUP_NAME,
+            EVEN_GROUP_NAME,
+            desc.groupDescriptor().groupName()
+        );
 
-    }
-
-    /**
-     * Check that cache_data.dat.tmp files are deleted after node restarts.
-     *
-     * @throws Exception If failed.
-     */
-    public void testTmpCacheConfigurationsDelete() throws Exception {
-        IgniteEx ig0 = (IgniteEx)startGrids(NODES);
-
-        ig0.cluster().active(true);
-
-        startCaches(ig0);
-
-        DynamicCacheDescriptor desc = ig0.context().cache().cacheDescriptor(cacheName(3));
-
-        storeTmpCacheData(desc);
-
-        stopAllGrids();
-
-        startGrids(NODES);
-
-        for (int i = 0; i < NODES; i++) {
-            IgniteEx ig = grid(i);
-
-            GridCacheSharedContext sharedCtx = ig.context().cache().context();
-
-            FilePageStoreManager pageStore = (FilePageStoreManager) sharedCtx.pageStore();
-
-            File[] tmpFile = pageStore.cacheWorkDir(true, ODD_GROUP_NAME).listFiles(new FilenameFilter() {
-                @Override public boolean accept(File dir, String name) {
-                    return name.endsWith(CACHE_DATA_TMP_FILENAME);
-                }
-            });
-
-            assertNotNull(tmpFile);
-
-            assertEquals(0, tmpFile.length);
-        }
     }
 
     /**
@@ -181,8 +134,7 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
 
         stopAllGrids();
 
-        GridTestUtils.assertThrowsAnyCause(log, () -> startGrids(NODES), IgniteCheckedException.class,
-                desc.cacheName() + CACHE_DATA_FILENAME);
+        GridTestUtils.assertThrowsAnyCause(log, () -> startGrids(NODES), IgniteCheckedException.class, null);
     }
 
     /**
@@ -197,13 +149,11 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
 
             GridCacheSharedContext sharedCtx = ig.context().cache().context();
 
-            FilePageStoreManager pageStore = (FilePageStoreManager) sharedCtx.pageStore();
-
             StoredCacheData corrData = cacheDescr.toStoredData();
 
             corrData.config().setGroupName(ODD_GROUP_NAME);
 
-            pageStore.storeCacheData(corrData, true);
+            sharedCtx.database().storeCacheConfiguration(corrData, true);
         }
     }
 
@@ -214,24 +164,16 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
      * @throws IgniteCheckedException If fails.
      */
     private void storeTmpCacheData(DynamicCacheDescriptor cacheDescr) throws Exception {
-        Marshaller marshaller = new JdkMarshaller();
-
         for (int i = 0; i < NODES; i++) {
             IgniteEx ig = grid(i);
 
             GridCacheSharedContext sharedCtx = ig.context().cache().context();
 
-            FilePageStoreManager pageStore = (FilePageStoreManager) sharedCtx.pageStore();
-
             StoredCacheData data = cacheDescr.toStoredData();
 
             data.config().setGroupName(ODD_GROUP_NAME);
 
-            File tmp = new File(pageStore.cacheWorkDir(true, ODD_GROUP_NAME), data.config().getName() + CACHE_DATA_TMP_FILENAME);
-
-            try (OutputStream stream = new BufferedOutputStream(new FileOutputStream(tmp))) {
-                marshaller.marshal(data, stream);
-            }
+            sharedCtx.database().storeCacheConfiguration(data, true);
         }
     }
 
@@ -247,18 +189,23 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
 
             GridCacheSharedContext sharedCtx = ig.context().cache().context();
 
-            FilePageStoreManager pageStore = (FilePageStoreManager) sharedCtx.pageStore();
-
             StoredCacheData data = cacheDescr.toStoredData();
 
             data.config().setGroupName(ODD_GROUP_NAME);
 
-            File config = new File(pageStore.cacheWorkDir(true, ODD_GROUP_NAME), data.config().getName() + CACHE_DATA_FILENAME);
+            MetaStorage storage = sharedCtx.database().metaStorage();
 
-            try (DataOutputStream os = new DataOutputStream(new FileOutputStream(config))) {
-                os.writeLong(-1L);
+            String key =
+                ((GridCacheDatabaseSharedManager)sharedCtx.database()).getCacheConfigMetastoreKey(data.config());
+
+            sharedCtx.database().checkpointReadLock();
+
+            try {
+                storage.write(key, 1L);
             }
-
+            finally {
+                sharedCtx.database().checkpointReadUnlock();
+            }
         }
     }
 
@@ -270,9 +217,9 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
 
         for (int i = 0; i < CACHES; i++) {
             ccfg.add(new CacheConfiguration<>(cacheName(i))
-                    .setGroupName(i % 2 == 0 ? ODD_GROUP_NAME : EVEN_GROUP_NAME)
-                    .setBackups(1)
-                    .setAffinity(new RendezvousAffinityFunction(false, 32)));
+                .setGroupName(i % 2 == 0 ? ODD_GROUP_NAME : EVEN_GROUP_NAME)
+                .setBackups(1)
+                .setAffinity(new RendezvousAffinityFunction(false, 32)));
         }
 
         ignite.createCaches(ccfg);

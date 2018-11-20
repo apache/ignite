@@ -372,46 +372,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void storeCacheData(StoredCacheData cacheData, boolean overwrite) throws IgniteCheckedException {
-        File cacheWorkDir = cacheWorkDir(cacheData.config());
-        File file;
-
-        checkAndInitCacheWorkDir(cacheWorkDir);
-
-        assert cacheWorkDir.exists() : "Work directory does not exist: " + cacheWorkDir;
-
-        if (cacheData.config().getGroupName() != null)
-            file = new File(cacheWorkDir, cacheData.config().getName() + CACHE_DATA_FILENAME);
-        else
-            file = new File(cacheWorkDir, CACHE_DATA_FILENAME);
-
-        Path filePath = file.toPath();
-
-        try {
-            if (overwrite || !Files.exists(filePath) || Files.size(filePath) == 0) {
-                File tmp = new File(file.getParent(), file.getName() + TMP_SUFFIX);
-
-                if (tmp.exists() && !tmp.delete()) {
-                    log.warning("Failed to delete temporary cache config file" +
-                            "(make sure Ignite process has enough rights):" + file.getName());
-                }
-
-                // Pre-existing file will be truncated upon stream open.
-                try (OutputStream stream = new BufferedOutputStream(new FileOutputStream(tmp))) {
-                    marshaller.marshal(cacheData, stream);
-                }
-
-                Files.move(tmp.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            }
-        }
-        catch (IOException ex) {
-            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, ex));
-
-            throw new IgniteCheckedException("Failed to persist cache configuration: " + cacheData.config().getName(), ex);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public void shutdownForCacheGroup(CacheGroupContext grp, boolean destroy) throws IgniteCheckedException {
         grpsWithoutIdx.remove(grp.groupId());
 

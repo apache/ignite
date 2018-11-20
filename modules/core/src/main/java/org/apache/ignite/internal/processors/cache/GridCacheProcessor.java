@@ -268,6 +268,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** MBean group for cache group metrics */
     private final String CACHE_GRP_METRICS_MBEAN_GRP = "Cache groups";
 
+     /** Future that will be done when stored caches configuration will be moved from disk to metastore. */
+    private GridFutureAdapter<Void> moveCacheConfigurationToMetastoreFut = new GridFutureAdapter();
+
     /** Protector of initialization of specific value. */
     private final InitializationProtector initializationProtector = new InitializationProtector();
 
@@ -885,8 +888,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             addCacheOnJoin(cfg, false, caches, templates);
         }
 
-        if (CU.isPersistenceEnabled(ctx.config()) && ctx.cache().context().pageStore() != null) {
-            Map<String, StoredCacheData> storedCaches = ctx.cache().context().pageStore().readCacheConfigurations();
+        if (CU.isPersistenceEnabled(ctx.config())) {
+            boolean needMoveCfgs = false;
+
+            Map<String, StoredCacheData> storedCaches = ctx.cache().context().database().readStoredCacheConfiguration();
+
+            if(F.isEmpty(storedCaches) && ctx.cache().context().pageStore() != null){
+               storedCaches = ctx.cache().context().pageStore().readCacheConfigurations();
+
+               needMoveCfgs = true;
+            }
 
             if (!F.isEmpty(storedCaches)) {
                 for (StoredCacheData storedCacheData : storedCaches.values()) {
@@ -902,6 +913,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         validateCacheConfigurationOnRestore(cfg, cfgFromStore);
                     }
                 }
+
+                if(needMoveCfgs)
+                    moveCachesConfigurationFromDiskToMetastore(storedCaches.values());
             }
         }
     }
@@ -933,6 +947,40 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (storedVal != staticCfgVal) {
             throw new IgniteCheckedException("Encrypted flag value differs. Static config value is '" + staticCfgVal +
                 "' and value stored on the disk is '" + storedVal + "'");
+        }
+    }
+
+    /**
+     * Moves stored caches configuration from disk to metastore. After moving caches configuration will be removed from
+     * disk.
+     *
+     * @param storedCaches Stored caches configuration.
+     */
+    public void moveCachesConfigurationFromDiskToMetastore(Collection<StoredCacheData> storedCaches) {
+        if (!F.isEmpty(storedCaches)) {
+            sharedCtx.kernalContext().closure().runLocalSafe(() -> {
+                try {
+                    // Await while metastore will be ready for read/write operations.
+                    moveCacheConfigurationToMetastoreFut.get();
+
+                    for (StoredCacheData storedCache : storedCaches) {
+                        try {
+                            sharedCtx.database().storeCacheConfiguration(storedCache, false);
+
+                            ctx.cache().context().pageStore().removeCacheData(storedCache);
+                        }
+                        catch (IgniteCheckedException e){
+                            U.error(log, "Failed to move cache configuration from disk to metastore " + storedCache, e);
+                        }
+                    }
+
+                    if(log.isInfoEnabled())
+                        log.info(storedCaches.size() + " caches configuration were moved to metastore.");
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to await metastore ready for read/write operations.", e);
+                }
+            });
         }
     }
 
@@ -1347,13 +1395,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             U.stopLifecycleAware(log, lifecycleAwares(ctx.group(), cache.configuration(), ctx.store().configuredStore()));
 
-            IgnitePageStoreManager pageStore;
-
-            if (destroy && (pageStore = sharedCtx.pageStore()) != null) {
+            if (destroy && CU.isPersistenceEnabled(ctx.gridConfig())) {
                 try {
-                    pageStore.removeCacheData(new StoredCacheData(ctx.config()));
-                }
-                catch (IgniteCheckedException e) {
+                    sharedCtx.database().removeCacheConfiguration(ctx.config());
+                } catch (IgniteCheckedException e) {
                     U.error(log, "Failed to delete cache configuration data while destroying cache" +
                         "[cache=" + ctx.name() + "]", e);
                 }
@@ -4029,9 +4074,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public void saveCacheConfiguration(DynamicCacheDescriptor desc) throws IgniteCheckedException {
         assert desc != null;
 
-        if (sharedCtx.pageStore() != null && !sharedCtx.kernalContext().clientNode() &&
-            isPersistentCache(desc.cacheConfiguration(), sharedCtx.gridConfig().getDataStorageConfiguration()))
-            sharedCtx.pageStore().storeCacheData(desc.toStoredData(), true);
+        if (!sharedCtx.kernalContext().clientNode() &&
+                isPersistentCache(desc.cacheConfiguration(), sharedCtx.gridConfig().getDataStorageConfiguration()))
+            sharedCtx.database().storeCacheConfiguration(desc.toStoredData(), true);
     }
 
     /**

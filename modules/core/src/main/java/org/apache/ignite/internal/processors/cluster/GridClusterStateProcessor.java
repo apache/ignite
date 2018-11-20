@@ -881,8 +881,15 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         if (activate && CU.isPersistenceEnabled(ctx.config())) {
             try {
-                Map<String, StoredCacheData> cfgs = ctx.cache().context().pageStore().readCacheConfigurations();
+                Map<String, StoredCacheData> cfgs = ctx.cache().context().database().readStoredCacheConfiguration();
 
+                if(F.isEmpty(cfgs)){
+                    cfgs = ctx.cache().context().pageStore().readCacheConfigurations();
+
+                    if(!F.isEmpty(cfgs))
+                        ctx.cache().moveCachesConfigurationFromDiskToMetastore(cfgs.values());
+
+                }
                 if (!F.isEmpty(cfgs))
                     storedCfgs = new ArrayList<>(cfgs.values());
             }

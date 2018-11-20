@@ -203,13 +203,6 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
     public Map<String, StoredCacheData> readCacheConfigurations() throws IgniteCheckedException;
 
     /**
-     * @param cacheData Cache configuration.
-     * @param overwrite Whether stored configuration should be overwritten if it exists.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void storeCacheData(StoredCacheData cacheData, boolean overwrite) throws IgniteCheckedException;
-
-    /**
      * Remove cache configuration data file.
      *
      * @param cacheData Cache configuration.

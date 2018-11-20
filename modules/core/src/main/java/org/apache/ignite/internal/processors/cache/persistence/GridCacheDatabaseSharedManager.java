@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
@@ -50,8 +51,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
@@ -110,6 +113,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
@@ -188,6 +192,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** MemoryPolicyConfiguration name reserved for meta store. */
     public static final String METASTORE_DATA_REGION_NAME = "metastoreMemPlc";
 
+    /** Delimiter between cache group name and cache name in metastore key . */
+    private static final String CACHE_GRP_CACHE_NAME_METASTORE_KEY_DELIMITER = ".";
+
     /** Skip sync. */
     private final boolean skipSync = IgniteSystemProperties.getBoolean(IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC);
 
@@ -239,12 +246,21 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Prefix for meta store records which means that checkpoint entry for some group is not applicable for WAL rebalance. */
     private static final String CHECKPOINT_INAPPLICABLE_FOR_REBALANCE = "cp-wal-rebalance-inapplicable-";
 
+    /** Metastorage config prefix. */
+    private static final String STORE_CACHE_PREFIX = "cache.";
+
     /** WAL marker predicate for meta store. */
-    private static final IgnitePredicate<String> WAL_KEY_PREFIX_PRED = new IgnitePredicate<String>() {
-        @Override public boolean apply(String key) {
-            return key.startsWith(WAL_KEY_PREFIX);
-        }
-    };
+    private static final IgnitePredicate<String> WAL_KEY_PREFIX_PRED = key -> key.startsWith(WAL_KEY_PREFIX);
+
+    /** Cache prefix predicate for metastore key. */
+    private static final IgnitePredicate<String> CACHE_KEY_PREFIX_PRED =
+        key -> key != null && key.startsWith(STORE_CACHE_PREFIX);
+
+    /** Capacity for StringBuilder in metastore key creation.
+     * Evaluation: prefix_len + delimiter + max_len_hash + sign */
+    private static final int METASTORE_KEY_SB_CAPACITY = STORE_CACHE_PREFIX.length() +
+        CACHE_GRP_CACHE_NAME_METASTORE_KEY_DELIMITER.length() + String.valueOf(Integer.MIN_VALUE).length();
+
 
     /** Timeout between partition file destroy and checkpoint to handle it. */
     private static final long PARTITION_DESTROY_CHECKPOINT_TIMEOUT = 30 * 1000; // 30 Seconds.
@@ -359,6 +375,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** File I/O factory for writing checkpoint markers. */
     private final FileIOFactory ioFactory;
 
+    /** Future that will be done when stored cache configurations from metastore were read. */
+    private final GridFutureAdapter<Map<String, StoredCacheData>> readStoredCacheCfgFut = new GridFutureAdapter<>();
+
+    /** Metastore ready for read write operations flag. */
+    private final GridFutureAdapter<Void> metastoreReadyForReadWriteOps = new GridFutureAdapter<>();
+
+    /** Futures will be done, when new stored caches configuration were write to metastore. */
+    private final GridCompoundFuture saveCacheCfgFuts = new GridCompoundFuture<>();
+
     /** Timeout for checkpoint read lock acquisition in milliseconds. */
     private volatile long checkpointReadLockTimeout;
 
@@ -402,12 +427,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** */
     private void notifyMetastorageReadyForRead() throws IgniteCheckedException {
+        log.info("Metastore ready for read operations!");
+
         for (MetastorageLifecycleListener lsnr : metastorageLifecycleLsnrs)
             lsnr.onReadyForRead(metaStorage);
     }
 
     /** */
     private void notifyMetastorageReadyForReadWrite() throws IgniteCheckedException {
+        log.info("Metastore ready for write operations!");
+
+        metastoreReadyForReadWriteOps.onDone();
+
         for (MetastorageLifecycleListener lsnr : metastorageLifecycleLsnrs)
             lsnr.onReadyForReadWrite(metaStorage);
     }
@@ -713,6 +744,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 fillWalDisabledGroups();
 
+                readStoredCacheCfgFut.onDone(readStoredCacheConfiguration0());
+
                 notifyMetastorageReadyForRead();
             }
             finally {
@@ -856,6 +889,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 metaStorage = createMetastorage(false);
 
             notifyMetastorageReadyForReadWrite();
+
+            if(!saveCacheCfgFuts.futures().isEmpty())
+                saveCacheCfgFuts.get();
 
             U.log(log, "Finish recovery performed in " + (System.currentTimeMillis() - time) + " ms.");
         }
@@ -1037,11 +1073,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         super.onKernalStop0(cancel);
 
-        unregisterMetricsMBean(
-            cctx.gridConfig(),
-            MBEAN_GROUP,
-            MBEAN_NAME
-        );
+        unregisterMetricsMBean(cctx.gridConfig(), MBEAN_GROUP, MBEAN_NAME);
 
         metaStorage = null;
     }
@@ -1500,21 +1532,210 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
         }
 
-        if (cctx.pageStore() != null) {
-            for (IgniteBiTuple<CacheGroupContext, Boolean> tup : stoppedGrps) {
-                CacheGroupContext grp = tup.get1();
+        for (IgniteBiTuple<CacheGroupContext, Boolean> tup : stoppedGrps) {
+            CacheGroupContext grp = tup.get1();
 
-                if (grp.affinityNode()) {
-                    try {
-                        cctx.pageStore().shutdownForCacheGroup(grp, tup.get2());
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to gracefully clean page store resources for destroyed cache " +
-                            "[cache=" + grp.cacheOrGroupName() + "]", e);
-                    }
+            if(tup.get2())
+                removeCacheConfiguration(grp);
+
+            if (grp.affinityNode() && cctx.pageStore() != null) {
+                try {
+                    cctx.pageStore().shutdownForCacheGroup(grp, tup.get2());
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to gracefully clean page store resources for destroyed cache " +
+                        "[cache=" + grp.cacheOrGroupName() + "]", e);
                 }
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, StoredCacheData> readStoredCacheConfiguration() throws IgniteCheckedException {
+        return readStoredCacheCfgFut.get();
+    }
+
+    /**
+     * Read stored caches configurations from metastore.
+     *
+     * @return readed caches configurations.
+     * @throws IgniteCheckedException if read failed.
+     */
+    private Map<String, StoredCacheData> readStoredCacheConfiguration0() throws IgniteCheckedException {
+        Map<String, StoredCacheData> storedCaches = new HashMap<>();
+
+        Map<String, StoredCacheData> readCacheData =
+            (Map<String, StoredCacheData>)metaStorage.readForPredicate(CACHE_KEY_PREFIX_PRED);
+
+        for (StoredCacheData cacheData : readCacheData.values())
+            storedCaches.put(cacheData.config().getName(), cacheData);
+
+        return storedCaches;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void storeCacheConfiguration(
+        StoredCacheData cacheData,
+        boolean overwrite
+    ) throws IgniteCheckedException {
+        assert cacheData != null;
+
+        if (metastoreReadyForReadWriteOps.isDone())
+            storeCacheConfiguration0(cacheData, overwrite);
+        else {
+            IgniteInternalFuture<?> fut = cctx.kernalContext().closure().runLocalSafe(() -> {
+                try {
+                    metastoreReadyForReadWriteOps.get();
+
+                    storeCacheConfiguration0(cacheData, overwrite);
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to store cache configuration! " + cacheData, e);
+                }
+            });
+
+            saveCacheCfgFuts.add(fut);
+        }
+    }
+
+    /**
+     * Removes record from metastore associated with {@code key}.
+     * @param key Metastore record key.
+     * @throws IgniteCheckedException If remove failed.
+     */
+    private void remove(String key) throws IgniteCheckedException {
+        assert key != null;
+
+        context().database().checkpointReadLock();
+
+        try{
+            metaStorage.remove(key);
+        } finally {
+            context().database().checkpointReadUnlock();
+        }
+    }
+
+    /**
+     * Writes {@code rec} to metastore by {@code key}.
+     *
+     * @param key Metastore record key.
+     * @param rec Record.
+     * @throws IgniteCheckedException If write failed.
+     */
+    private void write(String key, Serializable rec) throws IgniteCheckedException {
+        assert key != null;
+        assert rec != null;
+
+        context().database().checkpointReadLock();
+
+        try{
+            metaStorage.write(key, rec);
+        } finally {
+            context().database().checkpointReadUnlock();
+        }
+
+    }
+
+    /** {@inheritDoc} */
+    @Override public void removeCacheConfiguration(CacheConfiguration<?, ?> cacheCfg) throws IgniteCheckedException {
+        context().database().checkpointReadLock();
+
+        try {
+            remove(getCacheConfigMetastoreKey(cacheCfg));
+        }
+        finally {
+            context().database().checkpointReadUnlock();
+        }
+    }
+
+    /**
+     * Store cache configuration routine.
+     */
+    private void storeCacheConfiguration0(StoredCacheData cacheData, boolean overwrite) throws IgniteCheckedException {
+        assert cacheData != null;
+
+        context().database().checkpointReadLock();
+
+        try {
+            String key = getCacheConfigMetastoreKey(cacheData.config());
+
+            StoredCacheData old = (StoredCacheData)metaStorage.read(key);
+
+            if (old == null || overwrite)
+                write(key, cacheData);
+        }
+        finally {
+            context().database().checkpointReadUnlock();
+        }
+    }
+
+    /**
+     * Creates metastore key for cache configuration.
+     *
+     * @param cacheCfg cache configuration.
+     * @return metastore key.
+     */
+    String getCacheConfigMetastoreKey(CacheConfiguration<?, ?> cacheCfg) {
+        String cacheName = cacheCfg.getName();
+        String cacheGrpName = cacheCfg.getGroupName() != null ? cacheCfg.getGroupName() : cacheName;
+
+        return getCacheGroupMetastoreKeyPrefixSb(cacheGrpName).append(cacheName.hashCode()).toString();
+    }
+
+    /**
+     * Creates metastore key prefix for all caches from {@code cacheGrpName} group.
+     *
+     * @param cacheGrpName Cache group name.
+     * @return StringBuilder with metastore key prefix.
+     */
+    private StringBuilder getCacheGroupMetastoreKeyPrefixSb(String cacheGrpName){
+        assert cacheGrpName != null;
+
+        return new StringBuilder(METASTORE_KEY_SB_CAPACITY)
+            .append(STORE_CACHE_PREFIX)
+            .append(cacheGrpName.hashCode())
+            .append(CACHE_GRP_CACHE_NAME_METASTORE_KEY_DELIMITER);
+    }
+
+    /**
+     * Creates metastore key prefix for all caches from {@code cacheGrpName} group.
+     *
+     * @param cacheGrpName Cache group name.
+     * @return Metastore key prefix.
+     */
+    private String getCacheGroupMetastoreKeyPrefix(String cacheGrpName){
+        return getCacheGroupMetastoreKeyPrefixSb(cacheGrpName).toString();
+    }
+
+    /**
+     * @param grp Group.
+     */
+    private Collection<StoredCacheData> removeCacheConfiguration(CacheGroupContext grp) {
+        checkpointReadLock();
+
+        Collection<StoredCacheData> rmvCaches = Collections.emptySet();
+
+        String cacheGrpPrefix = getCacheGroupMetastoreKeyPrefix(grp.cacheOrGroupName());
+
+        try {
+            Map<String, StoredCacheData> cacheData = (Map<String, StoredCacheData>)metaStorage
+                .readForPredicate(key -> key != null && key.startsWith(cacheGrpPrefix));
+
+            rmvCaches = cacheData.values();
+
+            for (String key : cacheData.keySet())
+                remove(key);
+
+        }
+        catch (IgniteCheckedException e) {
+            log.error("Failed to clean cache group configuration from metastorage [group=" +
+                grp.cacheOrGroupName() + "]", e);
+        }
+        finally {
+            checkpointReadUnlock();
+        }
+
+        return rmvCaches;
     }
 
     /**
@@ -4572,9 +4793,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         try {
             if (enabled)
-                metaStorage.remove(key);
+                remove(key);
             else {
-                metaStorage.write(key, true);
+                write(key, true);
 
                 lastCheckpointInapplicableForWalRebalance(grpId);
             }
@@ -4613,7 +4834,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             long lastCpTs = lastCp != null ? lastCp.timestamp() : 0;
 
             if (lastCpTs != 0)
-                metaStorage.write(checkpointInapplicableCpAndGroupIdToKey(lastCpTs, grpId), true);
+                write(checkpointInapplicableCpAndGroupIdToKey(lastCpTs, grpId), true);
         }
         catch (IgniteCheckedException e) {
             log.error("Failed to mark last checkpoint as inapplicable for WAL rebalance for group: " + grpId, e);
