@@ -136,7 +136,7 @@ public abstract class BaseSelectRangeBenchmark extends AbstractJdbcBenchmark {
         long maxSalary = minSalary + args.sqlRange() - 1;
 
         select0.setLong(1, minSalary);
-        select0.setLong(1, maxSalary);
+        select0.setLong(2, maxSalary);
 
         long rsCnt = 0;
 
