@@ -95,7 +95,7 @@ public class TensorFlowInferenceExample {
             System.out.println("Local model time: " + (t2 - t1) / 1000 + " s");
 
             System.out.println("Testing distributed model...");
-            try (InfModel<double[], Future<Long>> distributedMdl = new IgniteDistributedInfModelBuilder(ignite, 4)
+            try (InfModel<double[], Future<Long>> distributedMdl = new IgniteDistributedInfModelBuilder(ignite, 4, 4)
                          .build(reader, parser)) {
                 List<Future<?>> futures = new ArrayList<>(images.size());
                 for (MnistUtils.MnistLabeledImage image : images)

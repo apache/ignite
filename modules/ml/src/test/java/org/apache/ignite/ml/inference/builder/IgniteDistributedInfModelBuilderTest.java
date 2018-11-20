@@ -57,7 +57,7 @@ public class IgniteDistributedInfModelBuilderTest extends GridCommonAbstractTest
 
     /** */
     public void testBuild() throws ExecutionException, InterruptedException {
-        AsyncInfModelBuilder mdlBuilder = new IgniteDistributedInfModelBuilder(ignite, 1);
+        AsyncInfModelBuilder mdlBuilder = new IgniteDistributedInfModelBuilder(ignite, 1, 1);
 
         InfModel<Integer, Future<Integer>> infMdl = mdlBuilder.build(
             InfModelBuilderTestUtil.getReader(),
