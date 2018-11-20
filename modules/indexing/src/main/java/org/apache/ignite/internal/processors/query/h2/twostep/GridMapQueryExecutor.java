@@ -98,8 +98,10 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.thread.IgniteThread;
+import org.h2.api.ErrorCode;
 import org.h2.command.Prepared;
 import org.h2.jdbc.JdbcResultSet;
+import org.h2.jdbc.JdbcSQLException;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
@@ -986,8 +988,8 @@ public class GridMapQueryExecutor {
 
                     qr.addResult(qryIdx, qry, node.id(), rs, params);
 
-                    if (qryResults.cancelled()) {
-                        qryResults.result(qryIdx).close();
+                    if (qr.cancelled()) {
+                        qr.result(qryIdx).close();
 
                         throw new QueryCancelledException(
                             String.format("The query was cancelled while executing [query=%s, localNodeId=%s, reason=%s, timeout=%s ms]",
@@ -1320,13 +1322,13 @@ public class GridMapQueryExecutor {
                 lazyWorker.submit(new Runnable() {
                     @Override public void run() {
                         try {
-                            sendNextPage(nodeRess, node, qryResults, req.query(), req.segmentId(), req.pageSize(), false);
+                            sendNextPage(nodeRess, node, qr, req.query(), req.segmentId(), req.pageSize(), false);
                         }
                         catch (Throwable e) {
                             JdbcSQLException sqlEx = X.cause(e, JdbcSQLException.class);
 
                             if (sqlEx != null && sqlEx.getErrorCode() == ErrorCode.STATEMENT_WAS_CANCELED)
-                                sendError(node, qryResults.queryRequestId(), new QueryCancelledException(
+                                sendError(node, qr.queryRequestId(), new QueryCancelledException(
                                     String.format("The query was cancelled while executing [queryId=%d, nodeId=%s, requestId=%s, reason=%s]",
                                         req.query(),
                                         node.id(),

@@ -164,14 +164,6 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    public void testRemoteQueryWithMergeTableCancel0() throws Exception {
-        testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_2, 1, TimeUnit.MILLISECONDS, false,
-            CANCELLED_BY_CLIENT);
-    }
-
-    /**
      * Query with far less complex sql and expected to be executed faster than timeout
      *
      * @throws Exception If failed.
@@ -199,21 +191,11 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
     }
 
     /**
-     * Query possibly could be executed faster than timeout.
-     *
-     * @throws Exception If failed.
-     */
-    public void testRemoteQueryWithoutMergeTableCancel0() throws Exception {
-        testQueryCancel(2*CACHE_SIZE, VAL_SIZE, QRY_3, 1, TimeUnit.MILLISECONDS, false,
-            CANCELLED_BY_CLIENT);
-    }
-
-    /**
      * Query with far less complex sql and expected to be executed faster than timeout.
      *
      * @throws Exception If failed.
      */
-    public void testRemoteQueryWithoutMergeTableCancel1() throws Exception {
+    public void testRemoteQueryWithoutMergeTableCancel() throws Exception {
         testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_3, 500, TimeUnit.MILLISECONDS, false, null);
     }
 
