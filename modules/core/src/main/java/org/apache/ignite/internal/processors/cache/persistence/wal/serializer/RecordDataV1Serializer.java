@@ -230,7 +230,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         if (encSpi instanceof NoopEncryptionSpi)
             return false;
 
-        if (!(rec instanceof WalRecordCacheGroupAware) || rec instanceof MetastoreDataRecord)
+        if (!(rec instanceof WalRecordCacheGroupAware))
             return false;
 
         return needEncryption(((WalRecordCacheGroupAware)rec).groupId());
