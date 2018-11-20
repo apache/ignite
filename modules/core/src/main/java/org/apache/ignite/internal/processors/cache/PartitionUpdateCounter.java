@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.GridLongList;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -180,14 +181,31 @@ public class PartitionUpdateCounter {
 
     /**
      * Flushes pending update counters closing all possible gaps.
+     *
+     * @return Even-length array of pairs [start, end] for each gap.
      */
-    public synchronized void finalizeUpdateCounters() {
-        Item last = queue.pollLast();
+    public synchronized GridLongList finalizeUpdateCounters() {
+        Item item = poll();
 
-        if (last != null)
-            update(last.start + last.delta);
+        GridLongList gaps = null;
 
-        queue.clear();
+        while (item != null) {
+            if (gaps == null)
+                gaps = new GridLongList((queue.size() + 1) * 2);
+
+            long start = cntr.get() + 1;
+            long end = item.start;
+
+            gaps.add(start);
+            gaps.add(end);
+
+            // Close pending ranges.
+            update(item.start + item.delta);
+
+            item = poll();
+        }
+
+        return gaps;
     }
 
     /**
