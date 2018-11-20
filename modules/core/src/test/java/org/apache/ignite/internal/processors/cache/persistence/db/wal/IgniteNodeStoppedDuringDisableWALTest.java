@@ -23,7 +23,6 @@ import java.nio.file.FileVisitResult;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.HashMap;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -178,7 +177,7 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
         boolean fail = false;
 
         try (WALIterator it = sharedContext.wal().replay(null)) {
-            dbMgr.applyUpdatesOnRecovery(it, (tup) -> true, (entry) -> true, new HashMap<>());
+            dbMgr.applyUpdatesOnRecovery(it, (ptr, rec) -> true, (entry) -> true);
         }
         catch (IgniteCheckedException e) {
             if (nodeStopPoint.needCleanUp)
