@@ -67,7 +67,6 @@ public class ComplexSecondaryKeyUnwrapSelfTest extends GridCommonAbstractTest {
      * Test using secondary index with simple PK.
      */
     public void testSecondaryIndexSimplePk() {
-        //ToDo: IGNITE-8386: need to add DATE type into the test.
         HashMap<String, String> types = new HashMap() {
             {
                 put("boolean", "1");
