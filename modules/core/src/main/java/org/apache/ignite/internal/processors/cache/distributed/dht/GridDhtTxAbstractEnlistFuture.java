@@ -640,12 +640,13 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
         onEntryProcessed(entry.key(), updRes);
 
-        if (!updRes.success() || op == EnlistOperation.LOCK)
+        if (!updRes.success()
+            || updRes.filtered()
+            || op == EnlistOperation.LOCK)
             return;
 
-        if (!updRes.filtered())
-            cctx.shared().mvccCaching().addEnlisted(entry.key(), updRes.newValue(), 0, 0, lockVer,
-                updRes.oldValue(), tx.local(), tx.topologyVersion(), mvccSnapshot, cctx.cacheId(), tx, null, -1);
+        cctx.shared().mvccCaching().addEnlisted(entry.key(), updRes.newValue(), 0, 0, lockVer,
+            updRes.oldValue(), tx.local(), tx.topologyVersion(), mvccSnapshot, cctx.cacheId(), tx, null, -1);
 
         addToBatch(entry.key(), val, updRes.mvccHistory(), entry.context().cacheId(), backups);
     }
