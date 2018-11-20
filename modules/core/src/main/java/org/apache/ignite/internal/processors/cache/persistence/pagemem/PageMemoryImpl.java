@@ -87,6 +87,8 @@ import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
+import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -225,7 +227,10 @@ public class PageMemoryImpl implements PageMemoryEx {
     private IgniteWriteAheadLogManager walMgr;
 
     /** */
-    private GridEncryptionManager encMgr;
+    private final GridEncryptionManager encMgr;
+
+    /** */
+    private final EncryptionSpi encSpi;
 
     /** */
     private final IgniteLogger log;
@@ -321,6 +326,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         storeMgr = ctx.pageStore();
         walMgr = ctx.wal();
         encMgr = ctx.kernalContext().encryption();
+        encSpi = ctx.gridConfig().getEncryptionSpi();
 
         assert storeMgr != null;
         assert walMgr != null;
@@ -985,7 +991,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public int realPageSize(int grpId) {
-        if (encMgr.groupKey(grpId) == null)
+        if ((encSpi instanceof NoopEncryptionSpi) || encMgr.groupKey(grpId) == null)
             return pageSize();
 
         return encPageSize;
