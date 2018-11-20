@@ -129,7 +129,7 @@
         <yardstick.version>0.8.3</yardstick.version>
         <zkclient.version>0.5</zkclient.version>
         <zookeeper.version>3.4.13</zookeeper.version>
-        <zstd.version>1.3.7-1</zstd.version>
+        <zstd.version>1.3.7-2</zstd.version>
 
         <!-- OSGI Manifest generation default property values -->
         <osgi.import.package>*</osgi.import.package>
