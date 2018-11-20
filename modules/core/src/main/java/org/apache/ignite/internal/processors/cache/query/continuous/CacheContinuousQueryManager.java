@@ -295,6 +295,13 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
             long gapStart = gaps.get(i * 2);
             long gapStop = gaps.get(i * 2 + 1);
 
+            /*
+             * No user listeners should be called by this invocation. In the common case of partitioned cache or
+             * replicated cache with non-local-only listener gaps (dummy filtered CQ events) will be added to the
+             * backup queue without passing it to any listener. In the special case of local-only listener on
+             * replicated cache there is no backup queues used at all and therefore no gaps occur - all unfiltered
+             * events are passed to listeners upon arrive.
+             */
             for (long cntr = gapStart; cntr <= gapStop; cntr++)
                 skipUpdateEvent(lsnrs, null, part, cntr, false, topVer);
         }
