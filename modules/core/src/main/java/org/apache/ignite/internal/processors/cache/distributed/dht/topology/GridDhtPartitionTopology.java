@@ -25,6 +25,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
@@ -327,10 +328,10 @@ public interface GridDhtPartitionTopology {
      * This method should be called on topology coordinator after all partition messages are received.
      *
      * @param resTopVer Exchange result version.
-     * @param discoEvt Discovery event for which we detect lost partitions.
+     * @param discoEvt Discovery event for which we detect lost partitions if {@link EventType#EVT_CACHE_REBALANCE_PART_DATA_LOST} event should be fired.
      * @return {@code True} if partitions state got updated.
      */
-    public boolean detectLostPartitions(AffinityTopologyVersion resTopVer, DiscoveryEvent discoEvt);
+    public boolean detectLostPartitions(AffinityTopologyVersion resTopVer, @Nullable DiscoveryEvent discoEvt);
 
     /**
      * Resets the state of all LOST partitions to OWNING.
@@ -345,17 +346,20 @@ public interface GridDhtPartitionTopology {
     public Collection<Integer> lostPartitions();
 
     /**
+     * Pre-processes partition update counters before exchange.
+     */
+    void finalizeUpdateCounters();
+
+    /**
      * @return Partition update counters.
      */
     public CachePartitionFullCountersMap fullUpdateCounters();
 
     /**
      * @param skipZeros {@code True} for adding zero counter to map.
-     * @param finalizeCntrsBeforeCollecting {@code True} indicates that partition counters should be finalized.
      * @return Partition update counters.
      */
-    public CachePartitionPartialCountersMap localUpdateCounters(boolean skipZeros,
-        boolean finalizeCntrsBeforeCollecting);
+    public CachePartitionPartialCountersMap localUpdateCounters(boolean skipZeros);
 
     /**
      * @return Partition cache sizes.

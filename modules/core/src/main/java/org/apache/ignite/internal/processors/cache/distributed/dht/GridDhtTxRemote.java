@@ -94,6 +94,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
      * @param nearXidVer Near transaction ID.
      * @param txNodes Transaction nodes mapping.
      * @param storeWriteThrough Cache store write through flag.
+     * @param txLbl Transaction label.
      */
     public GridDhtTxRemote(
         GridCacheSharedContext ctx,
@@ -115,7 +116,8 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         @Nullable UUID subjId,
         int taskNameHash,
         boolean single,
-        boolean storeWriteThrough) {
+        boolean storeWriteThrough,
+        @Nullable String txLbl) {
         super(
             ctx,
             nodeId,
@@ -129,7 +131,8 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
             timeout,
             txSize,
             subjId,
-            taskNameHash
+            taskNameHash,
+            txLbl
         );
 
         assert nearNodeId != null;
@@ -169,6 +172,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
      * @param timeout Timeout.
      * @param txSize Expected transaction size.
      * @param storeWriteThrough Cache store write through flag.
+     * @param txLbl Transaction label.
      */
     public GridDhtTxRemote(
         GridCacheSharedContext ctx,
@@ -188,7 +192,8 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         int txSize,
         @Nullable UUID subjId,
         int taskNameHash,
-        boolean storeWriteThrough) {
+        boolean storeWriteThrough,
+        @Nullable String txLbl) {
         super(
             ctx,
             nodeId,
@@ -202,7 +207,8 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
             timeout,
             txSize,
             subjId,
-            taskNameHash
+            taskNameHash,
+            txLbl
         );
 
         assert nearNodeId != null;

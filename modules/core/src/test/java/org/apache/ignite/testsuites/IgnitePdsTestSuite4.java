@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.cache.ResetLostPartitionTest;
 import org.apache.ignite.internal.processors.cache.IgniteClusterActivateDeactivateTestWithPersistenceAndMemoryReuse;
 import org.apache.ignite.internal.processors.cache.persistence.FreeListLazyInitializationTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes;
@@ -49,6 +50,8 @@ public class IgnitePdsTestSuite4 extends TestSuite {
         suite.addTestSuite(FreeListLazyInitializationTest.class);
 
         suite.addTestSuite(IgnitePdsPartitionPreloadTest.class);
+
+        suite.addTestSuite(ResetLostPartitionTest.class);
 
         return suite;
     }

@@ -603,7 +603,6 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * Test object.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class TestObject implements Serializable {
         /** */
         @QuerySqlField

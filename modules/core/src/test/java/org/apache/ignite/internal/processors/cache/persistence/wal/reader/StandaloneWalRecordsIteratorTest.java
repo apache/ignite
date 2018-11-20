@@ -20,7 +20,8 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
-import java.nio.file.StandardOpenOption;
+import java.util.List;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -30,17 +31,23 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.pagemem.wal.record.SnapshotRecord;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
@@ -89,11 +96,9 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Check correct closing file descriptors.
      *
-     * @throws Exception if test failed.
      */
-    public void testCorrectClosingFileDescriptors() throws Exception {
+    private String createWalFiles() throws Exception {
         IgniteEx ig = (IgniteEx)startGrid();
 
         String archiveWalDir = getArchiveWalDirPath(ig);
@@ -118,13 +123,79 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
 
         stopGrid();
 
+        return archiveWalDir;
+    }
+
+    /**
+     * Check correct closing file descriptors.
+     *
+     * @throws Exception if test failed.
+     */
+    public void testCorrectClosingFileDescriptors() throws Exception {
+
         // Iterate by all archived WAL segments.
-        createWalIterator(archiveWalDir).forEach(x -> {
+        createWalIterator(createWalFiles()).forEach(x -> {
         });
 
         assertTrue("At least one WAL file must be opened!", CountedFileIO.getCountOpenedWalFiles() > 0);
 
         assertTrue("All WAL files must be closed at least ones!", CountedFileIO.getCountOpenedWalFiles() <= CountedFileIO.getCountClosedWalFiles());
+    }
+
+    /**
+     * Check correct check bounds.
+     *
+     * @throws Exception if test failed.
+     */
+    public void testStrictBounds() throws Exception {
+        String dir = createWalFiles();
+
+        FileWALPointer lowBound = null, highBound = null;
+
+        for (IgniteBiTuple<WALPointer, WALRecord> p : createWalIterator(dir, null, null, false)) {
+            if (lowBound == null)
+                lowBound = (FileWALPointer) p.get1();
+
+            highBound = (FileWALPointer) p.get1();
+        }
+
+        assertNotNull(lowBound);
+
+        assertNotNull(highBound);
+
+        createWalIterator(dir, lowBound, highBound, true);
+
+        final FileWALPointer lBound = lowBound;
+        final FileWALPointer hBound = highBound;
+
+        //noinspection ThrowableNotThrown
+        GridTestUtils.assertThrows(log, () -> {
+            createWalIterator(dir, new FileWALPointer(lBound.index() - 1, 0, 0), hBound, true);
+
+            return 0;
+        } , IgniteCheckedException.class, null);
+
+        //noinspection ThrowableNotThrown
+        GridTestUtils.assertThrows(log, () -> {
+            createWalIterator(dir, lBound, new FileWALPointer(hBound.index() + 1, 0, 0), true);
+
+            return 0;
+        }, IgniteCheckedException.class, null);
+
+        List<FileDescriptor> walFiles = listWalFiles(dir);
+
+        assertNotNull(walFiles);
+
+        assertTrue(!walFiles.isEmpty());
+
+        assertTrue(walFiles.get(new Random().nextInt(walFiles.size())).file().delete());
+
+        //noinspection ThrowableNotThrown
+        GridTestUtils.assertThrows(log, () -> {
+            createWalIterator(dir, lBound, hBound, true);
+
+            return 0;
+        }, IgniteCheckedException.class, null);
     }
 
     /**
@@ -140,6 +211,41 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
         params.ioFactory(new CountedFileIOFactory());
 
         return new IgniteWalIteratorFactory(log).iterator(params.filesOrDirs(walDir));
+    }
+
+
+    /**
+     * @param walDir Wal directory.
+     */
+    private List<FileDescriptor> listWalFiles(String walDir) throws IgniteCheckedException {
+        IteratorParametersBuilder params = new IteratorParametersBuilder();
+
+        params.ioFactory(new RandomAccessFileIOFactory());
+
+        return new IgniteWalIteratorFactory(log).resolveWalFiles(params.filesOrDirs(walDir));
+    }
+
+    /**
+     * @param walDir Wal directory.
+     * @param lowBound Low bound.
+     * @param highBound High bound.
+     * @param strictCheck Strict check.
+     */
+    private WALIterator createWalIterator(String walDir, FileWALPointer lowBound, FileWALPointer highBound, boolean strictCheck)
+                    throws IgniteCheckedException {
+        IteratorParametersBuilder params = new IteratorParametersBuilder();
+
+        params.ioFactory(new RandomAccessFileIOFactory()).
+            filesOrDirs(walDir).
+            strictBoundsCheck(strictCheck);
+
+        if (lowBound != null)
+            params.from(lowBound);
+
+        if (lowBound != null)
+            params.to(highBound);
+
+        return new IgniteWalIteratorFactory(log).iterator(params);
     }
 
     /**
@@ -161,11 +267,6 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
      *
      */
     private static class CountedFileIOFactory extends RandomAccessFileIOFactory {
-        /** {@inheritDoc} */
-        @Override public FileIO create(File file) throws IOException {
-            return create(file, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
-        }
-
         /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
             return new CountedFileIO(file, modes);

@@ -105,7 +105,6 @@ public class CassandraHelper {
                 NoHostAvailableException ex = (NoHostAvailableException)e;
 
                 for (Map.Entry<InetSocketAddress, Throwable> entry : ex.getErrors().entrySet()) {
-                    //noinspection ThrowableResultOfMethodCallIgnored
                     Throwable error = entry.getValue();
 
                     if (error instanceof DriverException &&

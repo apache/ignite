@@ -53,13 +53,13 @@ import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntry
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.util.deque.FastSizeDeque;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -79,15 +79,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
  */
 public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements Comparable<GridDhtLocalPartition>, GridReservable {
     /** */
-    private static final GridCacheMapEntryFactory ENTRY_FACTORY = new GridCacheMapEntryFactory() {
-        @Override public GridCacheMapEntry create(
-            GridCacheContext ctx,
-            AffinityTopologyVersion topVer,
-            KeyCacheObject key
-        ) {
-            return new GridDhtCacheEntry(ctx, topVer, key);
-        }
-    };
+    private static final GridCacheMapEntryFactory ENTRY_FACTORY = GridDhtCacheEntry::new;
 
     /** Maximum size for delete queue. */
     public static final int MAX_DELETE_QUEUE_SIZE = Integer.getInteger(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, 200_000);
@@ -180,7 +172,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param grp Cache group.
      * @param id Partition ID.
      */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     public GridDhtLocalPartition(GridCacheSharedContext ctx,
         CacheGroupContext grp,
         int id) {
@@ -1098,7 +1089,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                             hld.cctx.events().addEvent(cached.partition(),
                                 cached.key(),
                                 ctx.localNodeId(),
-                                (IgniteUuid)null,
+                                null,
+                                null,
                                 null,
                                 EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
                                 null,
@@ -1224,7 +1216,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"OverlyStrongTypeCast"})
     @Override public boolean equals(Object obj) {
         return obj instanceof GridDhtLocalPartition && (obj == this || ((GridDhtLocalPartition)obj).id() == id);
     }
@@ -1372,9 +1363,11 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
     /**
      * Flushes pending update counters closing all possible gaps.
+     *
+     * @return Even-length array of pairs [start, end] for each gap.
      */
-    public void finalizeUpdateCountres() {
-        store.finalizeUpdateCountres();
+    public GridLongList finalizeUpdateCounters() {
+        return store.finalizeUpdateCounters();
     }
 
     /**

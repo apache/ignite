@@ -75,7 +75,6 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
     private boolean ipFinderUseLocPorts;
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"IfMayBeConditional", "deprecation"})
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
 
@@ -339,7 +338,6 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private void doTestForward() throws Exception {
         InetAddress locHost = InetAddress.getByName("127.0.0.1");
 
