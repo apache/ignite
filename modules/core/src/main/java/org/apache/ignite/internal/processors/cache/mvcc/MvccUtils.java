@@ -100,13 +100,13 @@ public class MvccUtils {
     /** */
     public static final int MVCC_VISIBLE = 2;
 
-    /** */
+    /** A special version visible by everyone */
     public static final MvccVersion INITIAL_VERSION =
         mvccVersion(MVCC_CRD_START_CNTR, MVCC_INITIAL_CNTR, MVCC_START_OP_CNTR);
 
-    /** */
-    public static final MvccVersion MVCC_VERSION_NA =
-        mvccVersion(MVCC_CRD_COUNTER_NA, MVCC_COUNTER_NA, MVCC_OP_COUNTER_NA);
+    /** A special snapshot for which all committed versions are visible */
+    public static final MvccSnapshot MVCC_MAX_SNAPSHOT =
+        new MvccSnapshotWithoutTxs(Long.MAX_VALUE, Long.MAX_VALUE, MVCC_READ_OP_CNTR, MVCC_COUNTER_NA);
 
     /** */
     private static final MvccClosure<Integer> getVisibleState = new GetVisibleState();
@@ -184,7 +184,14 @@ public class MvccUtils {
         if ((mvccOpCntr & MVCC_HINTS_MASK) != 0)
             return (byte)(mvccOpCntr >>> MVCC_HINTS_BIT_OFF);
 
-        return proc.state(mvccCrd, mvccCntr);
+        byte state = proc.state(mvccCrd, mvccCntr);
+
+        if ((state == TxState.NA || state == TxState.PREPARED)
+            && (proc.currentCoordinator() == null // Recovery from WAL.
+            || mvccCrd < proc.currentCoordinator().coordinatorVersion()))
+            state = TxState.ABORTED;
+
+        return state;
     }
 
     /**
@@ -242,7 +249,11 @@ public class MvccUtils {
         if (mvccCntr > snapshotCntr) // we don't see future updates
             return false;
 
-        if (mvccCntr == snapshotCntr) {
+        // Basically we can make fast decision about visibility if found rows from the same transaction.
+        // But we can't make such decision for read-only queries,
+        // because read-only queries use last committed version in it's snapshot which could be actually aborted
+        // (during transaction recovery we do not know whether recovered transaction was committed or aborted).
+        if (mvccCntr == snapshotCntr && snapshotOpCntr != MVCC_READ_OP_CNTR) {
             assert opCntr <= snapshotOpCntr : "rowVer=" + mvccVersion(mvccCrd, mvccCntr, opCntr) + ", snapshot=" + snapshot;
 
             return opCntr < snapshotOpCntr; // we don't see own pending updates

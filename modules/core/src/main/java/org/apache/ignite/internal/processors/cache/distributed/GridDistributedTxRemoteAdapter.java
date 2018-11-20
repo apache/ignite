@@ -50,9 +50,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWra
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
@@ -117,7 +114,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     private boolean started;
 
     /** {@code True} only if all write entries are locked by this transaction. */
-    @SuppressWarnings("UnusedDeclaration")
     @GridToStringInclude
     private volatile int commitAllowed;
 
@@ -127,6 +123,10 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
     /** {@code True} if tx should skip adding itself to completed version map on finish. */
     private boolean skipCompletedVers;
+
+    /** Transaction label. */
+    @GridToStringInclude
+    @Nullable private String txLbl;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -149,6 +149,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
      * @param txSize Expected transaction size.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
+     * @param txLbl Transaction label.
      */
     public GridDistributedTxRemoteAdapter(
         GridCacheSharedContext<?, ?> ctx,
@@ -163,7 +164,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
         long timeout,
         int txSize,
         @Nullable UUID subjId,
-        int taskNameHash
+        int taskNameHash,
+        String txLbl
     ) {
         super(
             ctx,
@@ -181,6 +183,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
             taskNameHash);
 
         this.invalidate = invalidate;
+        this.txLbl = txLbl;
 
         commitVersion(commitVer);
 
@@ -431,7 +434,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     /**
      * @throws IgniteCheckedException If commit failed.
      */
-    @SuppressWarnings({"CatchGenericClass"})
     private void commitIfLocked() throws IgniteCheckedException {
         if (state() == COMMITTING) {
             for (IgniteTxEntry txEntry : writeEntries()) {
@@ -770,15 +772,15 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                         // Apply update counters.
                         if (txCntrs != null)
-                            applyPartitionsUpdatesCounters(txCntrs.updateCounters());
+                            cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCntrs.updateCounters());
 
-                            cctx.mvccCaching().onTxFinished(this, true);
+                        cctx.mvccCaching().onTxFinished(this, true);
 
-                            if (!near() && !F.isEmpty(dataEntries) && cctx.wal() != null) {
-                                // Set new update counters for data entries received from persisted tx entries.
-                                List<DataEntry> entriesWithCounters = dataEntries.stream()
-                                        .map(tuple -> tuple.get1().partitionCounter(tuple.get2().updateCounter()))
-                                        .collect(Collectors.toList());
+                        if (!near() && !F.isEmpty(dataEntries) && cctx.wal() != null) {
+                            // Set new update counters for data entries received from persisted tx entries.
+                            List<DataEntry> entriesWithCounters = dataEntries.stream()
+                                .map(tuple -> tuple.get1().partitionCounter(tuple.get2().updateCounter()))
+                                .collect(Collectors.toList());
 
                             cctx.wal().log(new DataRecord(entriesWithCounters));
                         }
@@ -921,7 +923,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                 TxCounters counters = txCounters(false);
 
                 if (counters != null)
-                    applyPartitionsUpdatesCounters(counters.updateCounters());
+                    cctx.tm().txHandler().applyPartitionsUpdatesCounters(counters.updateCounters());
 
                 state(ROLLED_BACK);
 
@@ -996,37 +998,9 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
         }
     }
 
-    /**
-     * Applies partition counters updates for mvcc transactions.
-     *
-     * @param counters Counters values to be updated.
-     */
-    private void applyPartitionsUpdatesCounters(Iterable<PartitionUpdateCountersMessage> counters) {
-        if (counters == null)
-            return;
-
-        int cacheId = CU.UNDEFINED_CACHE_ID;
-        GridDhtPartitionTopology top = null;
-
-        for (PartitionUpdateCountersMessage counter : counters) {
-            if (counter.cacheId() != cacheId) {
-                GridCacheContext ctx0 = cctx.cacheContext(cacheId = counter.cacheId());
-
-                assert ctx0.mvccEnabled();
-
-                top = ctx0.topology();
-            }
-
-            assert top != null;
-
-            for (int i = 0; i < counter.size(); i++) {
-                GridDhtLocalPartition part = top.localPartition(counter.partition(i));
-
-                assert part != null;
-
-                part.updateCounter(counter.initialCounter(i), counter.updatesCount(i));
-            }
-        }
+    /** {@inheritDoc} */
+    @Override public String label() {
+        return txLbl;
     }
 
     /** {@inheritDoc} */

@@ -33,10 +33,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.failure.FailureContext;
-import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.InvalidEnvironmentException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -64,7 +61,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
@@ -130,7 +126,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     protected GridCacheVersion minVer;
 
     /** Flag indicating with TM commit happened. */
-    @SuppressWarnings("UnusedDeclaration")
     protected volatile int doneFlag;
 
     /** Committed versions, relative to base. */
@@ -404,7 +399,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"RedundantTypeArguments"})
     @Nullable @Override public GridTuple<CacheObject> peek(
         GridCacheContext cacheCtx,
         boolean failFast,
@@ -431,7 +425,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @param entries Entries to lock or {@code null} if use default {@link IgniteInternalTx#optimisticLockEntries()}.
      * @throws IgniteCheckedException If prepare step failed.
      */
-    @SuppressWarnings({"CatchGenericClass"})
     public void userPrepare(@Nullable Collection<IgniteTxEntry> entries) throws IgniteCheckedException {
         if (state() != PREPARING) {
             if (remainingTime() == -1)
@@ -557,7 +550,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CatchGenericClass"})
     @Override public void userCommit() throws IgniteCheckedException {
         TransactionState state = state();
 

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -30,10 +31,10 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
@@ -60,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrep
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxRemote;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridInvokeValue;
+import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
@@ -73,6 +75,8 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxRemote;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.PartitionCountersNeighborcastRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.PartitionCountersNeighborcastResponse;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
@@ -255,6 +259,20 @@ public class IgniteTxHandler {
             new CI2<UUID, GridCacheTxRecoveryResponse>() {
                 @Override public void apply(UUID nodeId, GridCacheTxRecoveryResponse res) {
                     processCheckPreparedTxResponse(nodeId, res);
+                }
+            });
+
+        ctx.io().addCacheHandler(0, PartitionCountersNeighborcastRequest.class,
+            new CI2<UUID, PartitionCountersNeighborcastRequest>() {
+                @Override public void apply(UUID nodeId, PartitionCountersNeighborcastRequest req) {
+                    processPartitionCountersRequest(nodeId, req);
+                }
+            });
+
+        ctx.io().addCacheHandler(0, PartitionCountersNeighborcastResponse.class,
+            new CI2<UUID, PartitionCountersNeighborcastResponse>() {
+                @Override public void apply(UUID nodeId, PartitionCountersNeighborcastResponse res) {
+                    processPartitionCountersResponse(nodeId, res);
                 }
             });
     }
@@ -491,7 +509,8 @@ public class IgniteTxHandler {
                     req.txSize(),
                     req.transactionNodes(),
                     req.subjectId(),
-                    req.taskNameHash()
+                    req.taskNameHash(),
+                    req.txLabel()
                 );
 
                 tx = ctx.tm().onCreated(null, tx);
@@ -669,7 +688,12 @@ public class IgniteTxHandler {
     private boolean needRemap(AffinityTopologyVersion expVer,
         AffinityTopologyVersion curVer,
         GridNearTxPrepareRequest req) {
-        if (expVer.equals(curVer))
+        if (curVer.equals(expVer))
+            return false;
+
+        AffinityTopologyVersion lastAffChangedTopVer = ctx.exchange().lastAffinityChangedTopologyVersion(expVer);
+
+        if (curVer.compareTo(expVer) <= 0 && curVer.compareTo(lastAffChangedTopVer) >= 0)
             return false;
 
         // TODO IGNITE-6754 check mvcc crd for mvcc enabled txs.
@@ -1664,8 +1688,10 @@ public class IgniteTxHandler {
                     req.subjectId(),
                     req.taskNameHash(),
                     single,
-                    req.storeWriteThrough());
+                    req.storeWriteThrough(),
+                    req.txLabel());
 
+                tx.onePhaseCommit(req.onePhaseCommit());
                 tx.writeVersion(req.writeVersion());
 
                 tx = ctx.tm().onCreated(null, tx);
@@ -1829,8 +1855,6 @@ public class IgniteTxHandler {
         assert keys != null && (vals == null || vals.size() == keys.size());
         assert tx != null;
 
-        WALPointer ptr = null;
-
         GridDhtCacheAdapter dht = ctx.dht();
 
         tx.addActiveCache(ctx, false);
@@ -1950,16 +1974,11 @@ public class IgniteTxHandler {
                         updRes.oldValue(), tx.local(), tx.topologyVersion(), snapshot, ctx.cacheId(), tx, futId, batchNum);
 
                 assert updRes.updateFuture() == null : "Entry should not be locked on the backup";
-
-                ptr = updRes.loggedPointer();
             }
             finally {
                 locPart.release();
             }
         }
-
-        if (ptr != null && !ctx.tm().logTxRecords())
-            ctx.shared().wal().flush(ptr, true);
     }
 
     /**
@@ -2011,7 +2030,8 @@ public class IgniteTxHandler {
                     req.nearWrites(),
                     req.txSize(),
                     req.subjectId(),
-                    req.taskNameHash()
+                    req.taskNameHash(),
+                    req.txLabel()
                 );
 
                 tx.writeVersion(req.writeVersion());
@@ -2151,5 +2171,111 @@ public class IgniteTxHandler {
             res.txState(fut.tx().txState());
 
         fut.onResult(nodeId, res);
+    }
+
+    /**
+     * @param nodeId Node id.
+     * @param req Request.
+     */
+    private void processPartitionCountersRequest(UUID nodeId, PartitionCountersNeighborcastRequest req) {
+        applyPartitionsUpdatesCounters(req.updateCounters());
+
+        try {
+            ctx.io().send(nodeId, new PartitionCountersNeighborcastResponse(req.futId()), SYSTEM_POOL);
+        }
+        catch (ClusterTopologyCheckedException ignored) {
+            if (txRecoveryMsgLog.isDebugEnabled())
+                txRecoveryMsgLog.debug("Failed to send partition counters response, node left [node=" + nodeId + ']');
+        }
+        catch (IgniteCheckedException e) {
+            U.error(txRecoveryMsgLog, "Failed to send partition counters response [node=" + nodeId + ']', e);
+        }
+    }
+
+    /**
+     * @param nodeId Node id.
+     * @param res Response.
+     */
+    private void processPartitionCountersResponse(UUID nodeId, PartitionCountersNeighborcastResponse res) {
+        PartitionCountersNeighborcastFuture fut = ((PartitionCountersNeighborcastFuture)ctx.mvcc().future(res.futId()));
+
+        if (fut == null) {
+            log.warning("Failed to find future for partition counters response [futId=" + res.futId() +
+                ", node=" + nodeId + ']');
+
+            return;
+        }
+
+        fut.onResult(nodeId);
+    }
+
+    /**
+     * Applies partition counter updates for mvcc transactions.
+     *
+     * @param counters Counter values to be updated.
+     */
+    public void applyPartitionsUpdatesCounters(Iterable<PartitionUpdateCountersMessage> counters) {
+        if (counters == null)
+            return;
+
+        int cacheId = CU.UNDEFINED_CACHE_ID;
+        GridDhtPartitionTopology top = null;
+
+        for (PartitionUpdateCountersMessage counter : counters) {
+            if (counter.cacheId() != cacheId) {
+                GridCacheContext ctx0 = ctx.cacheContext(cacheId = counter.cacheId());
+
+                assert ctx0.mvccEnabled();
+
+                top = ctx0.topology();
+            }
+
+            assert top != null;
+
+            for (int i = 0; i < counter.size(); i++) {
+                GridDhtLocalPartition part = top.localPartition(counter.partition(i));
+
+                assert part != null;
+
+                part.updateCounter(counter.initialCounter(i), counter.updatesCount(i));
+            }
+        }
+    }
+
+    /**
+     * @param tx Transaction.
+     * @param node Backup node.
+     * @return Partition counters for the given backup node.
+     */
+    @Nullable public List<PartitionUpdateCountersMessage> filterUpdateCountersForBackupNode(
+        IgniteInternalTx tx, ClusterNode node) {
+        TxCounters txCntrs = tx.txCounters(false);
+
+        if (txCntrs == null || F.isEmpty(txCntrs.updateCounters()))
+            return null;
+
+        Collection<PartitionUpdateCountersMessage> updCntrs = txCntrs.updateCounters();
+
+        List<PartitionUpdateCountersMessage> res = new ArrayList<>(updCntrs.size());
+
+        AffinityTopologyVersion top = tx.topologyVersionSnapshot();
+
+        for (PartitionUpdateCountersMessage partCntrs : updCntrs) {
+            GridCacheAffinityManager affinity = ctx.cacheContext(partCntrs.cacheId()).affinity();
+
+            PartitionUpdateCountersMessage resCntrs = new PartitionUpdateCountersMessage(partCntrs.cacheId(), partCntrs.size());
+
+            for (int i = 0; i < partCntrs.size(); i++) {
+                int part = partCntrs.partition(i);
+
+                if (affinity.backupByPartition(node, part, top))
+                    resCntrs.add(part, partCntrs.initialCounter(i), partCntrs.updatesCount(i));
+            }
+
+            if (resCntrs.size() > 0)
+                res.add(resCntrs);
+        }
+
+        return res;
     }
 }

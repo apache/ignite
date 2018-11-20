@@ -108,7 +108,7 @@ public class H2ConnectionLeaksSelfTest extends GridCommonAbstractTest {
                     try {
                         IgniteH2Indexing idx = (IgniteH2Indexing)grid(1).context().query().getIndexing();
 
-                        idx.executeStatement(CACHE_NAME, "select *");
+                        idx.connections().executeStatement(CACHE_NAME, "select *");
                     }
                     catch (Exception e) {
                         // No-op.
@@ -160,7 +160,7 @@ public class H2ConnectionLeaksSelfTest extends GridCommonAbstractTest {
                 Map<Thread, ?> conns = perThreadConnections(i);
 
                 for(Thread t : conns.keySet())
-                    log.error("Connection is not closed for thread: " + t.getName());
+                    log.error("+++ Connection is not closed for thread: " + t.getName());
             }
 
             fail("H2 JDBC connections leak detected. See the log above.");
@@ -172,6 +172,6 @@ public class H2ConnectionLeaksSelfTest extends GridCommonAbstractTest {
      * @return Per-thread connections.
      */
     private Map<Thread, ?> perThreadConnections(int nodeIdx) {
-        return ((IgniteH2Indexing)grid(nodeIdx).context().query().getIndexing()).perThreadConnections();
+        return ((IgniteH2Indexing)grid(nodeIdx).context().query().getIndexing()).connections().connectionsForThread();
     }
 }

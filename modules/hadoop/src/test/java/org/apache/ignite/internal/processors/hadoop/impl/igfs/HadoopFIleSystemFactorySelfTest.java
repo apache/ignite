@@ -115,7 +115,6 @@ public class HadoopFIleSystemFactorySelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testCustomFactory() throws Exception {
         assert START_CNT.get() == 1;
         assert STOP_CNT.get() == 0;

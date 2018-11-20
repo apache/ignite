@@ -122,7 +122,7 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
         }
 
         switch (writer.state()) {
-            case 7:
+            case 8:
                 if (!writer.writeCollection("keys", keys, MessageCollectionItemType.MSG))
                     return false;
 
@@ -144,7 +144,7 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
             return false;
 
         switch (reader.state()) {
-            case 7:
+            case 8:
                 keys = reader.readCollection("keys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -164,7 +164,7 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 8;
+        return 9;
     }
 
     /** {@inheritDoc} */

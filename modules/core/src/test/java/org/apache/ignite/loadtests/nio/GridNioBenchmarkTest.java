@@ -57,7 +57,6 @@ public class GridNioBenchmarkTest {
      * @throws UnknownHostException If can't connect to given hist,
      * @throws IgniteCheckedException If NIO server initialisation failed.
      */
-    @SuppressWarnings("ConstantConditions")
     public void run() throws UnknownHostException, IgniteCheckedException {
         GridNioServerListener<ByteBuffer> lsnr = new GridNioServerListenerAdapter<ByteBuffer>() {
             @Override public void onConnected(GridNioSession ses) {

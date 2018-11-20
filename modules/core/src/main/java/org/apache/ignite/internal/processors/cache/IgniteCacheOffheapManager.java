@@ -23,8 +23,8 @@ import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -412,6 +412,25 @@ public interface IgniteCacheOffheapManager {
     /**
      * @param cctx Cache context.
      * @param key Key.
+     * @param val Value.
+     * @param ver Version.
+     * @param expireTime Expire time.
+     * @param part Partition.
+     * @param mvccVer Mvcc version.
+     * @throws IgniteCheckedException If failed.
+     */
+    void mvccApplyUpdate(
+        GridCacheContext cctx,
+        KeyCacheObject key,
+        CacheObject val,
+        GridCacheVersion ver,
+        long expireTime,
+        GridDhtLocalPartition part,
+        MvccVersion mvccVer) throws IgniteCheckedException;
+
+    /**
+     * @param cctx Cache context.
+     * @param key Key.
      * @param partId Partition number.
      * @param part Partition.
      * @throws IgniteCheckedException If failed.
@@ -588,6 +607,14 @@ public interface IgniteCacheOffheapManager {
      * @return Number of entries.
      */
     public long totalPartitionEntriesCount(int part);
+
+    /**
+     * Preload a partition. Must be called under partition reservation for DHT caches.
+     *
+     * @param part Partition.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void preloadPartition(int part) throws IgniteCheckedException;
 
     /**
      *
@@ -915,6 +942,24 @@ public interface IgniteCacheOffheapManager {
         public void invoke(GridCacheContext cctx, KeyCacheObject key, OffheapInvokeClosure c) throws IgniteCheckedException;
 
         /**
+         *
+         * @param cctx Cache context.
+         * @param key Key.
+         * @param val Value.
+         * @param ver Version.
+         * @param expireTime Expire time.
+         * @param mvccVer Mvcc version.
+         * @throws IgniteCheckedException
+         */
+        void mvccApplyUpdate(GridCacheContext cctx,
+            KeyCacheObject key,
+            CacheObject val,
+            GridCacheVersion ver,
+            long expireTime,
+            MvccVersion mvccVer
+        ) throws IgniteCheckedException;
+
+        /**
          * @param cctx Cache context.
          * @param key Key.
          * @param partId Partition number.
@@ -1054,7 +1099,7 @@ public interface IgniteCacheOffheapManager {
         /**
          * @param cntr Counter.
          */
-        void updateInitialCounter(long cntr);
+        public void updateInitialCounter(long cntr);
 
         /**
          * Inject rows cache cleaner.
@@ -1067,8 +1112,18 @@ public interface IgniteCacheOffheapManager {
          * Return PendingTree for data store.
          *
          * @return PendingTree instance.
-         * @throws IgniteCheckedException
          */
-        PendingEntriesTree pendingTree();
+        public PendingEntriesTree pendingTree();
+
+        /**
+         * Flushes pending update counters closing all possible gaps.
+         */
+        public void finalizeUpdateCountres();
+
+        /**
+         * Preload a store into page memory.
+         * @throws IgniteCheckedException If failed.
+         */
+        public void preload() throws IgniteCheckedException;
     }
 }

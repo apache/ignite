@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.query;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
@@ -97,7 +96,6 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void doTestIndexingSpiWithTx(IgniteEx ignite, int key) throws Exception {
         final IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
