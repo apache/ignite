@@ -2216,7 +2216,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         ClusterNode n0 = null;
 
         for (ClusterNode node : affNodes) {
-            if ((canRemap || discovery().alive(node) && isOwner(node, partitionId))) {
+            if ((canRemap || discovery().alive(node)) && isOwner(node, partitionId)) {
                 if (locMacs.equals(node.attribute(ATTR_MACS)))
                     return node;
 
