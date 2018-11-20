@@ -22,7 +22,6 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -33,23 +32,24 @@ import org.apache.ignite.IgniteIllegalStateException;
  * IO statistics manager to manage of gathering IO statistics.
  */
 public class IoStatisticsManager {
-    /** No OP statistic handler. */
-    public final static IoStatisticsHolder NO_OP_STATISTIC_HOLDER = new IoStatisticsHolderNoOp();
-
     /** */
     public final static String HASH_PK_INDEX_NAME = "PK";
 
     /** All statistic holders */
-    private final Map<IoStatisticsType, Map<StatisticsHolderKey, IoStatisticsHolder>> statisticsHolders = new EnumMap<>(IoStatisticsType.class);
-
-    {
-        for (IoStatisticsType types : IoStatisticsType.values()) {
-            statisticsHolders.put(types, new ConcurrentHashMap<>());
-        }
-    }
+    private final Map<IoStatisticsType, Map<IoStatisticsHolderKey, IoStatisticsHolder>> statByType;
 
     /** Time of since statistics start gathering. */
     private volatile LocalDateTime statsSince = LocalDateTime.now();
+
+    /**
+     * Constructor.
+     */
+    public IoStatisticsManager() {
+        statByType = new EnumMap<>(IoStatisticsType.class);
+
+        for (IoStatisticsType types : IoStatisticsType.values())
+            statByType.put(types, new ConcurrentHashMap<>());
+    }
 
     /**
      * Create and register statistics holder.
@@ -58,8 +58,8 @@ public class IoStatisticsManager {
      * @param name Name of element of statistics.
      * @return created statistics holder.
      */
-    public IoStatisticsHolder createAndRegisterStatHolder(IoStatisticsType type, String name) {
-        return createAndRegisterStatHolder(type, name, null);
+    public IoStatisticsHolder register(IoStatisticsType type, String name) {
+        return register(type, name, null);
     }
 
     /**
@@ -70,32 +70,32 @@ public class IoStatisticsManager {
      * @param subName Subname of element of statistics.
      * @return created statistics holder.
      */
-    public IoStatisticsHolder createAndRegisterStatHolder(IoStatisticsType type, String name, String subName) {
-        if (statisticsHolders.isEmpty())
+    public IoStatisticsHolder register(IoStatisticsType type, String name, String subName) {
+        if (statByType.isEmpty())
             throw new IgniteIllegalStateException("IO Statistics manager has been stopped and can'be used");
 
         IoStatisticsHolder statHolder;
 
-        StatisticsHolderKey statisticsHolderKey;
+        IoStatisticsHolderKey statisticsHolderKey;
         switch (type) {
             case CACHE_GROUP:
                 statHolder = new IoStatisticsHolderCache(name);
 
-                statisticsHolderKey = new StatisticsHolderKey(name);
+                statisticsHolderKey = new IoStatisticsHolderKey(name);
 
                 break;
             case HASH_INDEX:
             case SORTED_INDEX:
                 statHolder = new IoStatisticsHolderIndex(name, subName);
 
-                statisticsHolderKey = new StatisticsHolderKey(name, subName);
+                statisticsHolderKey = new IoStatisticsHolderKey(name, subName);
 
                 break;
             default:
                 throw new IgniteException("Gathering IO statistics for " + type + "doesn't support");
         }
 
-        IoStatisticsHolder existedStatisitcHolder = statisticsHolders.get(type).putIfAbsent(statisticsHolderKey, statHolder);
+        IoStatisticsHolder existedStatisitcHolder = statByType.get(type).putIfAbsent(statisticsHolderKey, statHolder);
 
         return (existedStatisitcHolder != null) ? existedStatisitcHolder : statHolder;
     }
@@ -104,14 +104,14 @@ public class IoStatisticsManager {
      * Remove all holders.
      */
     public void stop() {
-        statisticsHolders.clear();
+        statByType.clear();
     }
 
     /**
      * Reset statistics
      */
-    public void resetStats() {
-        statisticsHolders.forEach((t, s) ->
+    public void reset() {
+        statByType.forEach((t, s) ->
             s.forEach((k, sh) -> sh.resetStatistics())
         );
 
@@ -126,7 +126,7 @@ public class IoStatisticsManager {
     }
 
     /**
-     * Extract all tracked names for given statisitcs type.
+     * Extract all tracked names for given statistics type.
      *
      * @param statType Type of statistics which tracked names need to extract.
      * @return Set of present names for given statType
@@ -134,8 +134,8 @@ public class IoStatisticsManager {
     public Set<String> deriveStatNames(IoStatisticsType statType) {
         assert statType != null;
 
-        return statisticsHolders.get(statType).keySet().stream()
-            .map(v -> v.key1).collect(Collectors.toSet());
+        return statByType.get(statType).keySet().stream()
+            .map(v -> v.name()).collect(Collectors.toSet());
     }
 
     /**
@@ -148,8 +148,8 @@ public class IoStatisticsManager {
     public Set<String> deriveStatSubNames(IoStatisticsType statType, String name) {
         assert statType != null;
 
-        return statisticsHolders.get(statType).keySet().stream()
-            .filter(k -> k.key1.equalsIgnoreCase(name) && k.key2 != null).map(k -> k.key2).collect(Collectors.toSet());
+        return statByType.get(statType).keySet().stream()
+            .filter(k -> k.name().equalsIgnoreCase(name) && k.subName() != null).map(k -> k.subName()).collect(Collectors.toSet());
     }
 
     /**
@@ -159,18 +159,9 @@ public class IoStatisticsManager {
      * @return Tracked physical reads by types since last reset statistics.
      */
     public Map<String, Long> physicalReadsByTypes(IoStatisticsType statType, String name, String subName) {
-        IoStatisticsHolder statHolder = statisticsHolders.get(statType).get(new StatisticsHolderKey(name, subName));
+        IoStatisticsHolder statHolder = statByType.get(statType).get(new IoStatisticsHolderKey(name, subName));
 
         return (statHolder != null) ? statHolder.physicalReadsMap() : Collections.emptyMap();
-    }
-
-    /**
-     * @param statType Type of statistics which need to take.
-     * @param name name of statistics which need to take, e.g. cache name
-     * @return Number of physical reads since last reset statistics.
-     */
-    public Long physicalReads(IoStatisticsType statType, String name) {
-        return physicalReads(statType, name, null);
     }
 
     /**
@@ -180,7 +171,7 @@ public class IoStatisticsManager {
      * @return Number of physical reads since last reset statistics.
      */
     public Long physicalReads(IoStatisticsType statType, String name, String subName) {
-        IoStatisticsHolder statHolder = statisticsHolders.get(statType).get(new StatisticsHolderKey(name, subName));
+        IoStatisticsHolder statHolder = statByType.get(statType).get(new IoStatisticsHolderKey(name, subName));
 
         return (statHolder != null) ? statHolder.physicalReads() : null;
     }
@@ -191,19 +182,10 @@ public class IoStatisticsManager {
      * @param subName subName of statistics which need to take, e.g. index name.
      * @return Tracked logical reads by types since last reset statistics.
      */
-    public Map<String, Long> logicalReadsByTypes(IoStatisticsType statType, String name, String subName) {
-        IoStatisticsHolder statHolder = statisticsHolders.get(statType).get(new StatisticsHolderKey(name, subName));
+    public Map<String, Long> logicalReadsMap(IoStatisticsType statType, String name, String subName) {
+        IoStatisticsHolder statHolder = statByType.get(statType).get(new IoStatisticsHolderKey(name, subName));
 
         return (statHolder != null) ? statHolder.logicalReadsMap() : Collections.emptyMap();
-    }
-
-    /**
-     * @param statType Type of statistics which need to take.
-     * @param name name of statistics which need to take, e.g. cache name
-     * @return Number of logical reads since last reset statistics.
-     */
-    public Long logicalReads(IoStatisticsType statType, String name) {
-        return logicalReads(statType, name, null);
     }
 
     /**
@@ -213,57 +195,8 @@ public class IoStatisticsManager {
      * @return Number of logical reads since last reset statistics.
      */
     public Long logicalReads(IoStatisticsType statType, String name, String subName) {
-        IoStatisticsHolder statHolder = statisticsHolders.get(statType).get(new StatisticsHolderKey(name, subName));
+        IoStatisticsHolder stat = statByType.get(statType).get(new IoStatisticsHolderKey(name, subName));
 
-        return (statHolder != null) ? statHolder.logicalReads() : null;
-    }
-
-    /**
-     *
-     */
-    private class StatisticsHolderKey {
-        /** */
-        private String key1;
-        /** */
-        private String key2;
-
-        /**
-         * @param first First param.
-         */
-        StatisticsHolderKey(String first) {
-            this(first, null);
-        }
-
-        /**
-         * @param key1 First key.
-         * @param key2 Second key.
-         */
-        StatisticsHolderKey(String key1, String key2) {
-            assert key1 != null;
-
-            this.key1 = key1;
-            this.key2 = key2;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-            StatisticsHolderKey key = (StatisticsHolderKey)o;
-            return Objects.equals(key1, key.key1) &&
-                Objects.equals(key2, key.key2);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return Objects.hash(key1, key2);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return key2 == null ? key1 : key1 + "." + key2;
-        }
+        return (stat != null) ? stat.logicalReads() : null;
     }
 }

@@ -75,7 +75,7 @@ public class IoStatisticsManagerSelfTest extends GridCommonAbstractTest {
     private void ioStatGlobalPageTrackTest(boolean isPersistent) throws Exception {
         IoStatisticsManager ioStatMgr = prepareData(isPersistent);
 
-        long physicalReadsCnt = ioStatMgr.physicalReads(IoStatisticsType.CACHE_GROUP, DEFAULT_CACHE_NAME);
+        long physicalReadsCnt = ioStatMgr.physicalReads(IoStatisticsType.CACHE_GROUP, DEFAULT_CACHE_NAME, null);
 
         if (isPersistent)
             Assert.assertTrue(physicalReadsCnt>0);
@@ -103,7 +103,7 @@ public class IoStatisticsManagerSelfTest extends GridCommonAbstractTest {
 
         IgniteCache cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        ioStatMgr.resetStats();
+        ioStatMgr.reset();
 
         for (int i = 0; i < RECORD_COUNT; i++)
             cache.put("KEY-" + i, "VAL-" + i);

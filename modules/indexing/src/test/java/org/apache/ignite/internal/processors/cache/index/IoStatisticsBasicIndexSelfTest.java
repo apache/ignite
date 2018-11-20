@@ -187,7 +187,7 @@ public class IoStatisticsBasicIndexSelfTest extends GridCommonAbstractTest {
             Assert.assertTrue(logicalReads > 0);
         }
 
-        ioStat.resetStats();
+        ioStat.reset();
     }
 
     /** */

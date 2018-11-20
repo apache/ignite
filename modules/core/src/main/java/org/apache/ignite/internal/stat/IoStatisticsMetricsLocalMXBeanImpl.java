@@ -48,7 +48,7 @@ public class IoStatisticsMetricsLocalMXBeanImpl implements IoStatisticsMetricsMX
 
     /** {@inheritDoc} */
     @Override public void resetStatistics() {
-        statMgr.resetStats();
+        statMgr.reset();
     }
 
     /** {@inheritDoc} */
@@ -58,12 +58,12 @@ public class IoStatisticsMetricsLocalMXBeanImpl implements IoStatisticsMetricsMX
 
     /** {@inheritDoc} */
     @Override public Long getCachePhysicalReadsStatistics(String cacheGrpName) {
-        return statMgr.physicalReads(IoStatisticsType.CACHE_GROUP, cacheGrpName);
+        return statMgr.physicalReads(IoStatisticsType.CACHE_GROUP, cacheGrpName, null);
     }
 
     /** {@inheritDoc} */
     @Override public Long getCacheLogicalReadsStatistics(String cacheGrpName) {
-        return statMgr.logicalReads(IoStatisticsType.CACHE_GROUP, cacheGrpName);
+        return statMgr.logicalReads(IoStatisticsType.CACHE_GROUP, cacheGrpName, null);
     }
 
     /** {@inheritDoc} */
@@ -88,7 +88,7 @@ public class IoStatisticsMetricsLocalMXBeanImpl implements IoStatisticsMetricsMX
      * @return String presentation of IO statistics for given parameters.
      */
     private String formattedStats(IoStatisticsType statType, String name, String subName) {
-        Map<String, Long> logicalReads = statMgr.logicalReadsByTypes(statType, name, subName);
+        Map<String, Long> logicalReads = statMgr.logicalReadsMap(statType, name, subName);
 
         Map<String, Long> physicalReads = statMgr.physicalReadsByTypes(statType, name, subName);
 
@@ -113,28 +113,28 @@ public class IoStatisticsMetricsLocalMXBeanImpl implements IoStatisticsMetricsMX
 
     /** {@inheritDoc} */
     @Override public Long getIndexLeafLogicalReadsStatistics(String cacheGrpName, String idxName) {
-        Map<String, Long> logicalReads = statMgr.logicalReadsByTypes(getIndexStatType(idxName), cacheGrpName, idxName);
+        Map<String, Long> logicalReads = statMgr.logicalReadsMap(getIndexStatType(idxName), cacheGrpName, idxName);
 
         return logicalReads.get(IoStatisticsHolderIndex.LOGICAL_READS_LEAF);
     }
 
     /** {@inheritDoc} */
     @Override public Long getIndexLeafPhysicalReadsStatistics(String cacheGrpName, String idxName) {
-        Map<String, Long> logicalReads = statMgr.logicalReadsByTypes(getIndexStatType(idxName), cacheGrpName, idxName);
+        Map<String, Long> logicalReads = statMgr.logicalReadsMap(getIndexStatType(idxName), cacheGrpName, idxName);
 
         return logicalReads.get(IoStatisticsHolderIndex.PHYSICAL_READS_LEAF);
     }
 
     /** {@inheritDoc} */
     @Override public Long getIndexInnerLogicalReadsStatistics(String cacheGrpName, String idxName) {
-        Map<String, Long> logicalReads = statMgr.logicalReadsByTypes(getIndexStatType(idxName), cacheGrpName, idxName);
+        Map<String, Long> logicalReads = statMgr.logicalReadsMap(getIndexStatType(idxName), cacheGrpName, idxName);
 
         return logicalReads.get(IoStatisticsHolderIndex.LOGICAL_READS_INNER);
     }
 
     /** {@inheritDoc} */
     @Override public Long getIndexInnerPhysicalReadsStatistics(String cacheGrpName, String idxName) {
-        Map<String, Long> logicalReads = statMgr.logicalReadsByTypes(getIndexStatType(idxName), cacheGrpName, idxName);
+        Map<String, Long> logicalReads = statMgr.logicalReadsMap(getIndexStatType(idxName), cacheGrpName, idxName);
 
         return logicalReads.get(IoStatisticsHolderIndex.PHYSICAL_READS_INNER);
     }

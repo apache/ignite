@@ -143,7 +143,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        ignite.context().ioStats().resetStats();
+        ignite.context().ioStats().reset();
     }
 
     /**
@@ -180,7 +180,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
         Assert.assertEquals(ALL_CACHE_GROUP_NAMES, statisticCacheNames);
 
         Stream.of(ATOMIC_CACHE_NAME, TRANSACTIONAL_CACHE_NAME, MVCC_CACHE_NAME).forEach((cacheName) -> {
-            long logicalReads = ioStatMgr.logicalReads(IoStatisticsType.CACHE_GROUP, cacheName);
+            long logicalReads = ioStatMgr.logicalReads(IoStatisticsType.CACHE_GROUP, cacheName, null);
 
             Assert.assertTrue(logicalReads > RECORD_COUNT);
         });
@@ -198,7 +198,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
 
         Assert.assertEquals(ALL_CACHE_GROUP_NAMES, statisticCacheNames);
 
-        long logicalReads = ioStatMgr.logicalReads(IoStatisticsType.CACHE_GROUP, CACHE_GROUP_NAME);
+        long logicalReads = ioStatMgr.logicalReads(IoStatisticsType.CACHE_GROUP, CACHE_GROUP_NAME, null);
 
         Assert.assertEquals(RECORD_COUNT * 6, logicalReads);
     }
@@ -220,7 +220,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
 
         Assert.assertTrue(statisticCacheNames.contains(cacheName));
 
-        long logicalReadsCache = ioStatMgr.logicalReads(IoStatisticsType.CACHE_GROUP, cacheName);
+        long logicalReadsCache = ioStatMgr.logicalReads(IoStatisticsType.CACHE_GROUP, cacheName, null);
 
         Assert.assertEquals(dataPageReads, logicalReadsCache);
 
@@ -249,7 +249,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
             }
         }
 
-        ignite.context().ioStats().resetStats();
+        ignite.context().ioStats().reset();
 
         for (String cacheName : cacheNames) {
 

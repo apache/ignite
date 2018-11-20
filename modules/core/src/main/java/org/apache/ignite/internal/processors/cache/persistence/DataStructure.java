@@ -32,7 +32,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseL
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
-import org.apache.ignite.internal.stat.IoStatisticsManager;
+import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
@@ -355,7 +355,7 @@ public abstract class DataStructure implements PageLockListener {
      * @throws IgniteCheckedException if failed.
      */
     protected final void init(long pageId, PageIO init) throws IgniteCheckedException {
-        PageHandler.initPage(pageMem, grpId, pageId, init, wal, this, IoStatisticsManager.NO_OP_STATISTIC_HOLDER);
+        PageHandler.initPage(pageMem, grpId, pageId, init, wal, this, IoStatisticsHolderNoOp.INSTANCE);
     }
 
     /**

@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseL
 import org.apache.ignite.internal.processors.cache.query.continuous.CounterSkipContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
+import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.stat.IoStatisticsType;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -76,7 +77,6 @@ import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOADED;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
 import static org.apache.ignite.internal.stat.IoStatisticsManager.HASH_PK_INDEX_NAME;
-import static org.apache.ignite.internal.stat.IoStatisticsManager.NO_OP_STATISTIC_HOLDER;
 
 /**
  *
@@ -248,15 +248,14 @@ public class CacheGroupContext {
         mxBean = new CacheGroupMetricsMXBeanImpl(this);
 
         if (systemCache()) {
-            statHolderIdx = NO_OP_STATISTIC_HOLDER;
-
-            statHolderData = NO_OP_STATISTIC_HOLDER;
+            statHolderIdx = IoStatisticsHolderNoOp.INSTANCE;
+            statHolderData = IoStatisticsHolderNoOp.INSTANCE;
         }
         else {
-            statHolderIdx = ctx.kernalContext().ioStats().createAndRegisterStatHolder(IoStatisticsType.HASH_INDEX,
+            statHolderIdx = ctx.kernalContext().ioStats().register(IoStatisticsType.HASH_INDEX,
                 cacheOrGroupName(), HASH_PK_INDEX_NAME);
 
-            statHolderData = ctx.kernalContext().ioStats().createAndRegisterStatHolder(IoStatisticsType.CACHE_GROUP,
+            statHolderData = ctx.kernalContext().ioStats().register(IoStatisticsType.CACHE_GROUP,
                 cacheOrGroupName());
         }
     }

@@ -45,7 +45,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
-import org.apache.ignite.internal.stat.IoStatisticsManager;
+import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.GridArrays;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.F;
@@ -169,7 +169,7 @@ public abstract class PagesList extends DataStructure {
 
                 while (nextId != 0) {
                     final long pageId = nextId;
-                    final long page = acquirePage(pageId, IoStatisticsManager.NO_OP_STATISTIC_HOLDER);
+                    final long page = acquirePage(pageId, IoStatisticsHolderNoOp.INSTANCE);
 
                     try {
                         long pageAddr = readLock(pageId, page); // No concurrent recycling on init.
@@ -214,7 +214,7 @@ public abstract class PagesList extends DataStructure {
 
                         while (prevId != 0L) {
                             final long pageId = prevId;
-                            final long page = acquirePage(pageId, IoStatisticsManager.NO_OP_STATISTIC_HOLDER);
+                            final long page = acquirePage(pageId, IoStatisticsHolderNoOp.INSTANCE);
                             try  {
                                 long pageAddr = readLock(pageId, page);
 
@@ -294,7 +294,7 @@ public abstract class PagesList extends DataStructure {
                                 }
 
                                 curId = nextPageId;
-                                curPage = acquirePage(curId, IoStatisticsManager.NO_OP_STATISTIC_HOLDER);
+                                curPage = acquirePage(curId, IoStatisticsHolderNoOp.INSTANCE);
                                 curAddr = writeLock(curId, curPage);
 
                                 curIo = PagesListMetaIO.VERSIONS.latest();
@@ -305,7 +305,7 @@ public abstract class PagesList extends DataStructure {
                                 releaseAndClose(curId, curPage, curAddr);
 
                                 curId = nextPageId;
-                                curPage = acquirePage(curId, IoStatisticsManager.NO_OP_STATISTIC_HOLDER);
+                                curPage = acquirePage(curId, IoStatisticsHolderNoOp.INSTANCE);
                                 curAddr = writeLock(curId, curPage);
 
                                 curIo = PagesListMetaIO.VERSIONS.forPage(curAddr);
@@ -328,7 +328,7 @@ public abstract class PagesList extends DataStructure {
         while (nextPageId != 0L) {
             long pageId = nextPageId;
 
-            long page = acquirePage(pageId, IoStatisticsManager.NO_OP_STATISTIC_HOLDER);
+            long page = acquirePage(pageId, IoStatisticsHolderNoOp.INSTANCE);
             try {
                 long pageAddr = writeLock(pageId, page);
 
@@ -572,7 +572,7 @@ public abstract class PagesList extends DataStructure {
 
                 while (tailId != 0L) {
                     final long pageId = tailId;
-                    final long page = acquirePage(pageId, IoStatisticsManager.NO_OP_STATISTIC_HOLDER);
+                    final long page = acquirePage(pageId, IoStatisticsHolderNoOp.INSTANCE);
                     try {
                         long pageAddr = readLock(pageId, page);
 

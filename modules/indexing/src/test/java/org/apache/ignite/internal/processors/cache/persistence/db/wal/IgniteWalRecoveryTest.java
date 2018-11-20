@@ -86,6 +86,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaS
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.F;
@@ -110,7 +111,6 @@ import org.junit.Assert;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
-import static org.apache.ignite.internal.stat.IoStatisticsManager.NO_OP_STATISTIC_HOLDER;
 
 /**
  *
@@ -1459,7 +1459,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                 ignite0.context().cache().context().database().checkpointReadLock();
 
                 try {
-                    long page = pageMem.acquirePage(fullId.groupId(), fullId.pageId(), NO_OP_STATISTIC_HOLDER, true);
+                    long page = pageMem.acquirePage(
+                        fullId.groupId(), fullId.pageId(), IoStatisticsHolderNoOp.INSTANCE, true);
 
                     try {
                         long bufPtr = pageMem.writeLock(fullId.groupId(), fullId.pageId(), page, true);

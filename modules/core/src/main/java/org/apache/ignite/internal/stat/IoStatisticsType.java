@@ -22,12 +22,15 @@ package org.apache.ignite.internal.stat;
  * Type of statistics.
  */
 public enum IoStatisticsType {
-    /** */
-    SORTED_INDEX,
-    /** */
-    HASH_INDEX,
-    /** */
+    /** Cache group. */
     CACHE_GROUP,
-    /** */
+
+    /** Hash index. */
+    HASH_INDEX,
+
+    /** Sorted index. */
+    SORTED_INDEX,
+
+    /** SQL. */
     SQL
 }

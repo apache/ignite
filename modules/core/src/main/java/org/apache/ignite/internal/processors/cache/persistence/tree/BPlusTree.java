@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHan
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandlerWrapper;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
+import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.stat.IoStatisticsManager;
 import org.apache.ignite.internal.util.GridArrays;
 import org.apache.ignite.internal.util.GridLongList;
@@ -5814,6 +5815,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return Statistics holder to track IO operations.
      */
     protected IoStatisticsHolder statisticsHolder() {
-        return IoStatisticsManager.NO_OP_STATISTIC_HOLDER;
+        return IoStatisticsHolderNoOp.INSTANCE;
     }
 }

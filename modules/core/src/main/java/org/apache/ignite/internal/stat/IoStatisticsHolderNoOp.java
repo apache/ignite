@@ -25,6 +25,16 @@ import java.util.Map;
  * No Operation IO statistics holder. Use in case statistics shouldn't be gathered.
  */
 public class IoStatisticsHolderNoOp implements IoStatisticsHolder {
+    /** No-op statistics. */
+    public static final IoStatisticsHolderNoOp INSTANCE = new IoStatisticsHolderNoOp();
+
+    /**
+     * Private constructor.
+     */
+    private IoStatisticsHolderNoOp() {
+        // No-op.
+    }
+
     /** {@inheritDoc} */
     @Override public void trackLogicalRead(long pageAddr) {
     }
@@ -55,5 +65,6 @@ public class IoStatisticsHolderNoOp implements IoStatisticsHolder {
 
     /** {@inheritDoc} */
     @Override public void resetStatistics() {
+        // No-op.
     }
 }
