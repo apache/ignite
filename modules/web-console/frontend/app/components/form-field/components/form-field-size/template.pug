@@ -22,8 +22,8 @@ include /app/helpers/jade/mixins
     required: '$ctrl.required',
     disabled: '$ctrl.ngDisabled'
 })
-    +form-field__tooltip({ title: '{{::$ctrl.tip}}' })(
-        ng-if='::$ctrl.tip'
+    +form-field__tooltip({title: '{{$ctrl.tip}}'})(
+        ng-if='$ctrl.tip'
     )
 
 .form-field__control.form-field__control-group(ng-form='$ctrl.innerForm')
@@ -39,6 +39,7 @@ include /app/helpers/jade/mixins
         max='{{ $ctrl.max ? $ctrl.max / $ctrl.sizeScale.value : "" }}'
         ng-required='$ctrl.required'
         ng-disabled='$ctrl.ngDisabled'
+        ignite-form-field-input-autofocus='{{$ctrl.autofocus}}'
     )
     button.select-toggle(
         bs-select

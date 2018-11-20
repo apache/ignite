@@ -21,11 +21,15 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -35,12 +39,12 @@ import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
@@ -54,6 +58,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -67,10 +72,10 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static final int TEST_SIZE = 100_000;
+    private static final int TEST_SIZE = SF.applyLB(100_000, 10_000);
 
     /** */
-    private static final long TOPOLOGY_STILLNESS_TIME = 30_000L;
+    private static final long TOPOLOGY_STILLNESS_TIME = SF.applyLB(30_000, 5_000);
 
     /** partitioned cache name. */
     protected static final String CACHE_NAME_DHT_PARTITIONED = "cacheP";
@@ -133,7 +138,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         cachePCfg2.setRebalanceMode(CacheRebalanceMode.SYNC);
         cachePCfg2.setBackups(1);
         cachePCfg2.setRebalanceOrder(2);
-        cachePCfg2.setRebalanceDelay(5000);
+        cachePCfg2.setRebalanceDelay(SF.applyLB(5000, 500));
 
         CacheConfiguration<Integer, Integer> cacheRCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
@@ -177,12 +182,16 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
      * @param iter Iteration.
      */
     protected void generateData(Ignite ignite, String name, int from, int iter) {
-        for (int i = from; i < from + TEST_SIZE; i++) {
-            if ((i + 1) % (TEST_SIZE / 10) == 0)
-                log.info("Prepared " + (i + 1) * 100 / (TEST_SIZE) + "% entries. [count=" + TEST_SIZE +
-                    ", iteration=" + iter + ", cache=" + name + "]");
+        try (IgniteDataStreamer<Integer, Integer> dataStreamer = ignite.dataStreamer(name)) {
+            dataStreamer.allowOverwrite(true);
 
-            ignite.cache(name).put(i, i + name.hashCode() + iter);
+            for (int i = from; i < from + TEST_SIZE; i++) {
+                if ((i + 1) % (TEST_SIZE / 10) == 0)
+                    log.info("Prepared " + (i + 1) * 100 / (TEST_SIZE) + "% entries. [count=" + TEST_SIZE +
+                        ", iteration=" + iter + ", cache=" + name + "]");
+
+                dataStreamer.addData(i, i + name.hashCode() + iter);
+            }
         }
     }
 
@@ -192,26 +201,46 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
      * @param iter Iteration.
      */
     protected void checkData(Ignite ignite, int from, int iter) {
-        checkData(ignite, CACHE_NAME_DHT_PARTITIONED, from, iter);
-        checkData(ignite, CACHE_NAME_DHT_PARTITIONED_2, from, iter);
-        checkData(ignite, CACHE_NAME_DHT_REPLICATED, from, iter);
-        checkData(ignite, CACHE_NAME_DHT_REPLICATED_2, from, iter);
+        checkData(ignite, CACHE_NAME_DHT_PARTITIONED, from, iter, true);
+        checkData(ignite, CACHE_NAME_DHT_PARTITIONED_2, from, iter, true);
+        checkData(ignite, CACHE_NAME_DHT_REPLICATED, from, iter, true);
+        checkData(ignite, CACHE_NAME_DHT_REPLICATED_2, from, iter, true);
     }
 
     /**
      * @param ignite Ignite.
+     * @param name Cache name.
      * @param from Start from key.
      * @param iter Iteration.
-     * @param name Cache name.
+     * @param scan If true then "scan" query will be used instead of "get" in a loop. Should be "false" when run in
+     *      parallel with other operations. Otherwise should be "true", because it's much faster in such situations.
      */
-    protected void checkData(Ignite ignite, String name, int from, int iter) {
-        for (int i = from; i < from + TEST_SIZE; i++) {
-            if ((i + 1) % (TEST_SIZE / 10) == 0)
-                log.info("<" + name + "> Checked " + (i + 1) * 100 / (TEST_SIZE) + "% entries. [count=" + TEST_SIZE +
-                    ", iteration=" + iter + ", cache=" + name + "]");
+    protected void checkData(Ignite ignite, String name, int from, int iter, boolean scan) {
+        IgniteCache<Integer, Integer> cache = ignite.cache(name);
 
-            assertEquals("Value does not match [key=" + i + ", cache=" + name + ']',
-                ignite.cache(name).get(i), i + name.hashCode() + iter);
+        if (scan) {
+            AtomicInteger cnt = new AtomicInteger();
+
+            cache.query(new ScanQuery<Integer, Integer>((k, v) -> k >= from && k < from + TEST_SIZE)).forEach(entry -> {
+                if (cnt.incrementAndGet() % (TEST_SIZE / 10) == 0)
+                    log.info("<" + name + "> Checked " + cnt.get() * 100 / TEST_SIZE + "% entries. [count=" +
+                        TEST_SIZE + ", iteration=" + iter + ", cache=" + name + "]");
+
+                assertEquals("Value does not match [key=" + entry.getKey() + ", cache=" + name + ']',
+                    entry.getValue().intValue(), entry.getKey() + name.hashCode() + iter);
+            });
+
+            assertEquals(TEST_SIZE, cnt.get());
+        }
+        else {
+            for (int i = from; i < from + TEST_SIZE; i++) {
+                if ((i + 1) % (TEST_SIZE / 10) == 0)
+                    log.info("<" + name + "> Checked " + (i + 1) * 100 / (TEST_SIZE) + "% entries. [count=" +
+                        TEST_SIZE + ", iteration=" + iter + ", cache=" + name + "]");
+
+                assertEquals("Value does not match [key=" + i + ", cache=" + name + ']',
+                    cache.get(i).intValue(), i + name.hashCode() + iter);
+            }
         }
     }
 
@@ -309,7 +338,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         Thread t2 = new Thread() {
             @Override public void run() {
                 while (!concurrentStartFinished)
-                    checkData(ignite, CACHE_NAME_DHT_PARTITIONED, 0, 0);
+                    checkData(ignite, CACHE_NAME_DHT_PARTITIONED, 0, 0, false);
             }
         };
 
@@ -340,7 +369,6 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     protected void checkSupplyContextMapIsEmpty() throws Exception {
         for (Ignite g : G.allGrids()) {
             for (GridCacheAdapter c : ((IgniteEx)g).context().cache().internalCaches()) {

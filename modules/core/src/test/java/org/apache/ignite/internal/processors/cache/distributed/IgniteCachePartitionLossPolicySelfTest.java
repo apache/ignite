@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -29,11 +28,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.CacheException;
+import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheRebalancingEvent;
@@ -42,7 +43,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestDelayingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsAbstractMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.util.typedef.F;
@@ -52,18 +53,19 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static java.util.Arrays.asList;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 
 /**
  *
  */
 public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private boolean client;
@@ -72,34 +74,34 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     private PartitionLossPolicy partLossPlc;
 
     /** */
-    protected static final String CACHE_NAME = "partitioned";
+    private int backups;
 
     /** */
-    private int backups = 0;
+    private final AtomicBoolean delayPartExchange = new AtomicBoolean();
 
     /** */
-    private final AtomicBoolean delayPartExchange = new AtomicBoolean(false);
-
-    /** */
-    private final TopologyChanger killSingleNode = new TopologyChanger(false, Arrays.asList(3), Arrays.asList(0, 1, 2, 4),0);
+    private final TopologyChanger killSingleNode = new TopologyChanger(
+        false, asList(3), asList(0, 1, 2, 4), 0
+    );
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
+        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         cfg.setCommunicationSpi(new TestDelayingCommunicationSpi() {
+            /** {@inheritDoc} */
             @Override protected boolean delayMessage(Message msg, GridIoMessage ioMsg) {
-                return delayPartExchange.get() && (msg instanceof GridDhtPartitionsFullMessage || msg instanceof GridDhtPartitionsAbstractMessage);
+                return delayPartExchange.get() &&
+                    (msg instanceof GridDhtPartitionsFullMessage || msg instanceof GridDhtPartitionsAbstractMessage);
             }
 
-            @Override protected int delayMillis() {
-                return 250;
-            }
         });
 
         cfg.setClientMode(client);
+
+        cfg.setConsistentId(gridName);
 
         cfg.setCacheConfiguration(cacheConfiguration());
 
@@ -110,7 +112,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
      * @return Cache configuration.
      */
     protected CacheConfiguration<Integer, Integer> cacheConfiguration() {
-        CacheConfiguration<Integer, Integer> cacheCfg = new CacheConfiguration<>(CACHE_NAME);
+        CacheConfiguration<Integer, Integer> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setBackups(backups);
@@ -129,6 +131,8 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
+
+        cleanPersistenceDir();
 
         delayPartExchange.set(false);
 
@@ -177,7 +181,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     public void testReadWriteSafeAfterKillTwoNodes() throws Exception {
         partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
 
-        checkLostPartition(true, true, new TopologyChanger(false, Arrays.asList(3, 2), Arrays.asList(0, 1, 4), 0));
+        checkLostPartition(true, true, new TopologyChanger(false, asList(3, 2), asList(0, 1, 4), 0));
     }
 
     /**
@@ -186,7 +190,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     public void testReadWriteSafeAfterKillTwoNodesWithDelay() throws Exception {
         partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
 
-        checkLostPartition(true, true, new TopologyChanger(false, Arrays.asList(3, 2), Arrays.asList(0, 1, 4), 20));
+        checkLostPartition(true, true, new TopologyChanger(false, asList(3, 2), asList(0, 1, 4), 20));
     }
 
     /**
@@ -197,7 +201,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
         backups = 1;
 
-        checkLostPartition(true, true, new TopologyChanger(true, Arrays.asList(3, 2, 1), Arrays.asList(0, 4), 0));
+        checkLostPartition(true, true, new TopologyChanger(true, asList(3, 2, 1), asList(0, 4), 0));
     }
 
     /**
@@ -206,7 +210,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     public void testReadWriteSafeAfterKillCrd() throws Exception {
         partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
 
-        checkLostPartition(true, true, new TopologyChanger(true, Arrays.asList(3, 0), Arrays.asList(1, 2, 4), 0));
+        checkLostPartition(true, true, new TopologyChanger(true, asList(3, 0), asList(1, 2, 4), 0));
     }
 
     /**
@@ -217,7 +221,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
         backups = 1;
 
-        checkLostPartition(true, true, new TopologyChanger(true, Arrays.asList(3, 2), Arrays.asList(0, 1, 4), 0));
+        checkLostPartition(true, true, new TopologyChanger(true, asList(3, 2), asList(0, 1, 4), 0));
     }
 
     /**
@@ -228,7 +232,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
         backups = 1;
 
-        checkLostPartition(true, true, new TopologyChanger(true, Arrays.asList(3, 0), Arrays.asList(1, 2, 4), 0));
+        checkLostPartition(true, true, new TopologyChanger(true, asList(3, 0), asList(1, 2, 4), 0));
     }
 
     /**
@@ -241,13 +245,13 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
         topChanger.changeTopology();
 
         for (Ignite ig : G.allGrids()) {
-            IgniteCache<Integer, Integer> cache = ig.cache(CACHE_NAME);
+            IgniteCache<Integer, Integer> cache = ig.cache(DEFAULT_CACHE_NAME);
 
             Collection<Integer> lost = cache.lostPartitions();
 
             assertTrue("[grid=" + ig.name() + ", lost=" + lost.toString() + ']', lost.isEmpty());
 
-            int parts = ig.affinity(CACHE_NAME).partitions();
+            int parts = ig.affinity(DEFAULT_CACHE_NAME).partitions();
 
             for (int i = 0; i < parts; i++) {
                 cache.get(i);
@@ -268,26 +272,10 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
         int part = topChanger.changeTopology().get(0);
 
-        // Wait for all grids (servers and client) have same topology version
-        // to make sure that all nodes received map with lost partition.
-        GridTestUtils.waitForCondition(() -> {
-            AffinityTopologyVersion last = null;
-            for (Ignite ig : G.allGrids()) {
-                AffinityTopologyVersion ver = ((IgniteEx) ig).context().cache().context().exchange().readyAffinityVersion();
-
-                if (last != null && !last.equals(ver))
-                    return false;
-
-                last = ver;
-            }
-
-            return true;
-        }, 10000);
-
         for (Ignite ig : G.allGrids()) {
             info("Checking node: " + ig.cluster().localNode().id());
 
-            IgniteCache<Integer, Integer> cache = ig.cache(CACHE_NAME);
+            IgniteCache<Integer, Integer> cache = ig.cache(DEFAULT_CACHE_NAME);
 
             verifyCacheOps(canWrite, safe, part, ig);
 
@@ -303,8 +291,11 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
             verifyCacheOps(canWrite, safe, part, ig);
 
             // Validate queries.
-            validateQuery(safe, part, ig);
+            validateQuery(safe, ig);
         }
+
+        checkNewNode(true, canWrite, safe, part);
+        checkNewNode(false, canWrite, safe, part);
 
         // Check that partition state does not change after we start a new node.
         IgniteEx grd = startGrid(3);
@@ -314,22 +305,55 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
         for (Ignite ig : G.allGrids())
             verifyCacheOps(canWrite, safe, part, ig);
 
-        ignite(4).resetLostPartitions(Collections.singletonList(CACHE_NAME));
+        ignite(4).resetLostPartitions(Collections.singletonList(DEFAULT_CACHE_NAME));
 
         awaitPartitionMapExchange(true, true, null);
 
         for (Ignite ig : G.allGrids()) {
-            IgniteCache<Integer, Integer> cache = ig.cache(CACHE_NAME);
+            IgniteCache<Integer, Integer> cache = ig.cache(DEFAULT_CACHE_NAME);
 
             assertTrue(cache.lostPartitions().isEmpty());
 
-            int parts = ig.affinity(CACHE_NAME).partitions();
+            int parts = ig.affinity(DEFAULT_CACHE_NAME).partitions();
 
             for (int i = 0; i < parts; i++) {
                 cache.get(i);
 
                 cache.put(i, i);
             }
+        }
+    }
+
+    /**
+     * @param client Client flag.
+     * @param canWrite Can write flag.
+     * @param safe Safe flag.
+     * @param part List of lost partitions.
+     * @throws Exception If failed to start a new node.
+     */
+    private void checkNewNode(
+        boolean client,
+        boolean canWrite,
+        boolean safe,
+        int part
+    ) throws Exception {
+        this.client = client;
+
+        try {
+            IgniteEx cl = startGrid("newNode");
+
+            CacheGroupContext grpCtx = cl.context().cache().cacheGroup(cacheId(DEFAULT_CACHE_NAME));
+
+            assertTrue(grpCtx.needsRecovery());
+
+            verifyCacheOps(canWrite, safe, part, cl);
+
+            validateQuery(safe, cl);
+        }
+        finally {
+            stopGrid("newNode", false);
+
+            this.client = false;
         }
     }
 
@@ -341,14 +365,14 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
      * @param ig Ignite instance.
      */
     private void verifyCacheOps(boolean canWrite, boolean safe, int part, Ignite ig) {
-        IgniteCache<Integer, Integer> cache = ig.cache(CACHE_NAME);
+        IgniteCache<Integer, Integer> cache = ig.cache(DEFAULT_CACHE_NAME);
 
         Collection<Integer> lost = cache.lostPartitions();
 
         assertTrue("Failed to find expected lost partition [exp=" + part + ", lost=" + lost + ']',
             lost.contains(part));
 
-        int parts = ig.affinity(CACHE_NAME).partitions();
+        int parts = ig.affinity(DEFAULT_CACHE_NAME).partitions();
 
         // Check read.
         for (int i = 0; i < parts; i++) {
@@ -396,7 +420,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
      * @return List of partitions that aren't primary or backup for specified nodes.
      */
     protected List<Integer> noPrimaryOrBackupPartition(List<Integer> nodes) {
-        Affinity<Object> aff = ignite(4).affinity(CACHE_NAME);
+        Affinity<Object> aff = ignite(4).affinity(DEFAULT_CACHE_NAME);
 
         List<Integer> parts = new ArrayList<>();
 
@@ -420,19 +444,8 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
         return parts;
     }
 
-    /**
-     * Validate query execution on a node.
-     *
-     * @param safe Safe flag.
-     * @param part Partition.
-     * @param node Node.
-     */
-    protected void validateQuery(boolean safe, int part, Ignite node) {
-        // No-op.
-    }
-
     /** */
-    class TopologyChanger {
+    private class TopologyChanger {
         /** Flag to delay partition exchange */
         private boolean delayExchange;
 
@@ -451,8 +464,12 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
          * @param aliveNodes List of nodes to be alive.
          * @param stopDelay Delay between stopping nodes.
          */
-        public TopologyChanger(boolean delayExchange, List<Integer> killNodes, List<Integer> aliveNodes,
-            long stopDelay) {
+        public TopologyChanger(
+            boolean delayExchange,
+            List<Integer> killNodes,
+            List<Integer> aliveNodes,
+            long stopDelay
+        ) {
             this.delayExchange = delayExchange;
             this.killNodes = killNodes;
             this.aliveNodes = aliveNodes;
@@ -466,10 +483,10 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
         protected List<Integer> changeTopology() throws Exception {
             startGrids(4);
 
-            Affinity<Object> aff = ignite(0).affinity(CACHE_NAME);
+            Affinity<Object> aff = ignite(0).affinity(DEFAULT_CACHE_NAME);
 
             for (int i = 0; i < aff.partitions(); i++)
-                ignite(0).cache(CACHE_NAME).put(i, i);
+                ignite(0).cache(DEFAULT_CACHE_NAME).put(i, i);
 
             client = true;
 
@@ -497,14 +514,13 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
                 lostMap.add(semaphoreMap);
 
-
                 grid(i).events().localListen(new P1<Event>() {
                     @Override public boolean apply(Event evt) {
                         assert evt.type() == EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
 
                         CacheRebalancingEvent cacheEvt = (CacheRebalancingEvent)evt;
 
-                        if (F.eq(CACHE_NAME, cacheEvt.cacheName())) {
+                        if (F.eq(DEFAULT_CACHE_NAME, cacheEvt.cacheName())) {
                             if (semaphoreMap.containsKey(cacheEvt.partition()))
                                 semaphoreMap.get(cacheEvt.partition()).release();
                         }
@@ -512,7 +528,6 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
                         return true;
                     }
                 }, EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST);
-
             }
 
             if (delayExchange)
@@ -550,4 +565,124 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
         }
     }
 
+    /**
+     * Validate query execution on a node.
+     *
+     * @param safe Safe flag.
+     * @param node Node.
+     */
+    private void validateQuery(boolean safe, Ignite node) {
+        // Get node lost and remaining partitions.
+        IgniteCache<?, ?> cache = node.cache(DEFAULT_CACHE_NAME);
+
+        Collection<Integer> lostParts = cache.lostPartitions();
+
+        int part = cache.lostPartitions().stream().findFirst().orElseThrow(AssertionFailedError::new);
+
+        Integer remainingPart = null;
+
+        for (int i = 0; i < node.affinity(DEFAULT_CACHE_NAME).partitions(); i++) {
+            if (lostParts.contains(i))
+                continue;
+
+            remainingPart = i;
+
+            break;
+        }
+
+        assertNotNull("Failed to find a partition that isn't lost", remainingPart);
+
+        // 1. Check query against all partitions.
+        validateQuery0(safe, node);
+
+        // 2. Check query against LOST partition.
+        validateQuery0(safe, node, part);
+
+        // 3. Check query on remaining partition.
+        checkQueryPasses(node, false, remainingPart);
+
+        if (shouldExecuteLocalQuery(node, remainingPart))
+            checkQueryPasses(node, true, remainingPart);
+
+        // 4. Check query over two partitions - normal and LOST.
+        validateQuery0(safe, node, part, remainingPart);
+    }
+
+    /**
+     * Query validation routine.
+     *
+     * @param safe Safe flag.
+     * @param node Node.
+     * @param parts Partitions.
+     */
+    private void validateQuery0(boolean safe, Ignite node, int... parts) {
+        if (safe)
+            checkQueryFails(node, false, parts);
+        else
+            checkQueryPasses(node, false, parts);
+
+        if (shouldExecuteLocalQuery(node, parts)) {
+            if (safe)
+                checkQueryFails(node, true, parts);
+            else
+                checkQueryPasses(node, true, parts);
+        }
+    }
+
+    /**
+     * @return true if the given node is primary for all given partitions.
+     */
+    private boolean shouldExecuteLocalQuery(Ignite node, int... parts) {
+        if (parts == null || parts.length == 0)
+            return false;
+
+        int numOfPrimaryParts = 0;
+
+        for (int nodePrimaryPart : node.affinity(DEFAULT_CACHE_NAME).primaryPartitions(node.cluster().localNode())) {
+            for (int part : parts) {
+                if (part == nodePrimaryPart)
+                    numOfPrimaryParts++;
+            }
+        }
+
+        return numOfPrimaryParts == parts.length;
+    }
+
+    /**
+     * @param node Node.
+     * @param loc Local flag.
+     * @param parts Partitions.
+     */
+    protected void checkQueryPasses(Ignite node, boolean loc, int... parts) {
+        // Scan queries don't support multiple partitions.
+        if (parts != null && parts.length > 1)
+            return;
+
+        // TODO Local scan queries fail in non-safe modes - https://issues.apache.org/jira/browse/IGNITE-10059.
+        if (loc)
+            return;
+
+        IgniteCache cache = node.cache(DEFAULT_CACHE_NAME);
+
+        ScanQuery qry = new ScanQuery();
+
+        if (parts != null && parts.length > 0)
+            qry.setPartition(parts[0]);
+
+        if (loc)
+            qry.setLocal(true);
+
+        cache.query(qry).getAll();
+    }
+
+    /**
+     * @param node Node.
+     * @param loc Local flag.
+     * @param parts Partitions.
+     */
+    protected void checkQueryFails(Ignite node, boolean loc, int... parts) {
+        // TODO Scan queries never fail due to partition loss - https://issues.apache.org/jira/browse/IGNITE-9902.
+        // TODO Need to add an actual check after https://issues.apache.org/jira/browse/IGNITE-9902 is fixed.
+        // No-op.
+    }
 }

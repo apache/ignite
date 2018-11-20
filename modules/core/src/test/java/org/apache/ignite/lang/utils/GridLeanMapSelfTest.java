@@ -102,7 +102,6 @@ public class GridLeanMapSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     public void testEmptyMap() throws Exception {
         Map<String, String> map = new GridLeanMap<>(0);
 

@@ -43,6 +43,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
@@ -81,8 +82,11 @@ import org.apache.ignite.internal.util.OffheapReadWriteLock;
 import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.internal.util.lang.GridInClosure3X;
 import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
+import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -116,7 +120,7 @@ import static org.apache.ignite.internal.util.GridUnsafe.wrapPointer;
  * Note that first 8 bytes of page header are used either for page marker or for next relative pointer depending
  * on whether the page is in use or not.
  */
-@SuppressWarnings({"LockAcquiredButNotSafelyReleased", "FieldAccessedSynchronizedAndUnsynchronized"})
+@SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
 public class PageMemoryImpl implements PageMemoryEx {
     /** */
     public static final long PAGE_MARKER = 0x0000000000000001L;
@@ -190,6 +194,9 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** Page size. */
     private final int sysPageSize;
 
+    /** Encrypted page size. */
+    private final int encPageSize;
+
     /** Shared context. */
     private final GridCacheSharedContext<?, ?> ctx;
 
@@ -216,6 +223,12 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** */
     private IgniteWriteAheadLogManager walMgr;
+
+    /** */
+    private final GridEncryptionManager encMgr;
+
+    /** */
+    private final EncryptionSpi encSpi;
 
     /** */
     private final IgniteLogger log;
@@ -310,11 +323,16 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         storeMgr = ctx.pageStore();
         walMgr = ctx.wal();
+        encMgr = ctx.kernalContext().encryption();
+        encSpi = ctx.gridConfig().getEncryptionSpi();
 
         assert storeMgr != null;
         assert walMgr != null;
+        assert encMgr != null;
 
         sysPageSize = pageSize + PAGE_OVERHEAD;
+
+        encPageSize = CU.encryptedPageSize(pageSize, ctx.kernalContext().config().getEncryptionSpi());
 
         rwLock = new OffheapReadWriteLock(128);
 
@@ -386,8 +404,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("OverlyStrongTypeCast")
-    @Override public void stop() throws IgniteException {
+    @Override public void stop(boolean deallocate) throws IgniteException {
         if (log.isDebugEnabled())
             log.debug("Stopping page memory.");
 
@@ -398,7 +415,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 seg.close();
         }
 
-        directMemoryProvider.shutdown();
+        directMemoryProvider.shutdown(deallocate);
     }
 
     /** {@inheritDoc} */
@@ -484,7 +501,8 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         seg.writeLock().lock();
 
-        boolean isTrackingPage = changeTracker != null && trackingIO.trackingPageFor(pageId, pageSize()) == pageId;
+        boolean isTrackingPage =
+            changeTracker != null && trackingIO.trackingPageFor(pageId, realPageSize(grpId)) == pageId;
 
         try {
             long relPtr = seg.loadedPages.get(
@@ -526,9 +544,9 @@ public class PageMemoryImpl implements PageMemoryEx {
                 // We are inside segment write lock, so no other thread can pin this tracking page yet.
                 // We can modify page buffer directly.
                 if (PageIO.getType(pageAddr) == 0) {
-                    trackingIO.initNewPage(pageAddr, pageId, pageSize());
+                    trackingIO.initNewPage(pageAddr, pageId, realPageSize(grpId));
 
-                    if (!ctx.wal().disabled(fullId.groupId()))
+                    if (!ctx.wal().disabled(fullId.groupId())) {
                         if (!ctx.wal().isAlwaysWriteFullPages())
                             ctx.wal().log(
                                 new InitNewPageRecord(
@@ -538,8 +556,11 @@ public class PageMemoryImpl implements PageMemoryEx {
                                     trackingIO.getVersion(), pageId
                                 )
                             );
-                        else
-                            ctx.wal().log(new PageSnapshot(fullId, absPtr + PAGE_OVERHEAD, pageSize()));
+                        else {
+                            ctx.wal().log(new PageSnapshot(fullId, absPtr + PAGE_OVERHEAD, pageSize(),
+                                realPageSize(fullId.groupId())));
+                        }
+                    }
                 }
             }
 
@@ -841,11 +862,15 @@ public class PageMemoryImpl implements PageMemoryEx {
         if (rmv)
             seg.loadedPages.remove(grpId, PageIdUtils.effectivePageId(pageId));
 
-        if (seg.segCheckpointPages != null)
-            seg.segCheckpointPages.remove(new FullPageId(pageId, grpId));
+        Collection<FullPageId> cpPages = seg.segCheckpointPages;
 
-        if (seg.dirtyPages != null)
-            seg.dirtyPages.remove(new FullPageId(pageId, grpId));
+        if (cpPages != null)
+            cpPages.remove(new FullPageId(pageId, grpId));
+
+        Collection<FullPageId> dirtyPages = seg.dirtyPages;
+
+        if (dirtyPages != null)
+            dirtyPages.remove(new FullPageId(pageId, grpId));
 
         return relPtr;
     }
@@ -944,6 +969,14 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** {@inheritDoc} */
     @Override public int systemPageSize() {
         return sysPageSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int realPageSize(int grpId) {
+        if ((encSpi instanceof NoopEncryptionSpi) || encMgr.groupKey(grpId) == null)
+            return pageSize();
+
+        return encPageSize;
     }
 
     /** {@inheritDoc} */
@@ -1627,7 +1660,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     void beforeReleaseWrite(FullPageId pageId, long ptr, boolean pageWalRec) {
         if (walMgr != null && (pageWalRec || walMgr.isAlwaysWriteFullPages()) && !walMgr.disabled(pageId.groupId())) {
             try {
-                walMgr.log(new PageSnapshot(pageId, ptr, pageSize()));
+                walMgr.log(new PageSnapshot(pageId, ptr, pageSize(), realPageSize(pageId.groupId())));
             }
             catch (IgniteCheckedException e) {
                 // TODO ignite-db.
@@ -1857,7 +1890,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         private static final int ACQUIRED_PAGES_PADDING = 4;
 
         /** Page ID to relative pointer map. */
-        private LoadedPagesMap loadedPages;
+        private final LoadedPagesMap loadedPages;
 
         /** Pointer to acquired pages integer counter. */
         private long acquiredPagesPtr;
@@ -1869,7 +1902,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         private long memPerTbl;
 
         /** Pages marked as dirty since the last checkpoint. */
-        private Collection<FullPageId> dirtyPages = new GridConcurrentHashSet<>();
+        private volatile Collection<FullPageId> dirtyPages = new GridConcurrentHashSet<>();
 
         /** */
         private volatile Collection<FullPageId> segCheckpointPages;

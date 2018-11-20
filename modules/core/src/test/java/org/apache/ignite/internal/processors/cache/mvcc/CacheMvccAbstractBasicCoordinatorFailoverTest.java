@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -52,10 +52,8 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
-import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  * Base class for Mvcc coordinator failover test.
@@ -73,6 +71,8 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
         ReadMode readMode,
         WriteMode writeMode
     ) throws Exception {
+        assert concurrency == PESSIMISTIC && isolation == REPEATABLE_READ;
+
         testSpi = true;
 
         startGrids(3);
@@ -169,7 +169,7 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
 
         final int KEYS = 100;
 
-        final Map<Integer, Integer> vals = new HashMap<>();
+        final Map<Integer, Integer> vals = new LinkedHashMap<>();
 
         for (int i = 0; i < KEYS; i++)
             vals.put(i, 0);
@@ -298,7 +298,7 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
                     Integer val = 1;
 
                     while (!done.get()) {
-                        Map<Integer, Integer> vals = new HashMap<>();
+                        Map<Integer, Integer> vals = new LinkedHashMap<>();
 
                         for (int i = 0; i < KEYS; i++)
                             vals.put(i, val);
@@ -479,9 +479,6 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
             ", crdChangeCnt=" + crdChangeCnt +
             ", readInTx=" + readInTx + ']');
 
-        TransactionConcurrency concurrency = readMode == ReadMode.GET ? OPTIMISTIC : PESSIMISTIC; // TODO IGNITE-7184
-        TransactionIsolation isolation = readMode == ReadMode.GET ? SERIALIZABLE : REPEATABLE_READ; // TODO IGNITE-7184
-
         testSpi = true;
 
         client = false;
@@ -510,7 +507,7 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
 
         final IgniteCache cache = getNode.createCache(ccfg);
 
-        final Set<Integer> keys = new HashSet<>();
+        final Set<Integer> keys = new TreeSet<>();
 
         List<Integer> keys1 = primaryKeys(jcache(COORDS), 10);
         List<Integer> keys2 = primaryKeys(jcache(COORDS + 1), 10);
@@ -518,7 +515,7 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
         keys.addAll(keys1);
         keys.addAll(keys2);
 
-        Map<Integer, Integer> vals = new HashMap();
+        Map<Integer, Integer> vals = new LinkedHashMap();
 
         for (Integer key : keys)
             vals.put(key, -1);
@@ -544,7 +541,7 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
                 Map<Integer, Integer> res = null;
 
                 if (readInTx) {
-                    try (Transaction tx = getNode.transactions().txStart(concurrency, isolation)) {
+                    try (Transaction tx = getNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         res = readAllByMode(cache, keys, readMode, INTEGER_CODEC);
 
                         tx.rollback();
@@ -581,7 +578,7 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
             stopGrid(i);
 
         for (int i = 0; i < 10; i++) {
-            vals = new HashMap();
+            vals = new LinkedHashMap();
 
             for (Integer key : keys)
                 vals.put(key, i);
@@ -636,7 +633,7 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
 
         final IgniteCache cache = client.createCache(ccfg);
 
-        final Map<Integer, Integer> vals = new HashMap();
+        final Map<Integer, Integer> vals = new LinkedHashMap<>();
 
         for (int i = 0; i < 100; i++)
             vals.put(i, i);

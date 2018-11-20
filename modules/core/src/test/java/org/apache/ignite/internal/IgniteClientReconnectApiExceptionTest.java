@@ -65,7 +65,7 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnectAbstractTest {
 
     /** Cache key for test put and invoke operation after reconnect */
-    private final static int CACHE_PUT_INVOKE_KEY = 10010;
+    private static final int CACHE_PUT_INVOKE_KEY = 10010;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

@@ -19,12 +19,11 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.temporal.ChronoUnit;
-import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -57,6 +56,9 @@ public class CreateTableWithDateKeySelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
+
+        ignite = null;
+        initCache = null;
     }
 
     /** */
@@ -64,11 +66,13 @@ public class CreateTableWithDateKeySelfTest extends GridCommonAbstractTest {
         final String creationQry = "CREATE TABLE %s (id DATE primary key, dateField DATE) " +
             "WITH \"cache_name=%s, WRAP_VALUE=false\"";
 
-        final Date key = new Date();
+        Map<java.sql.Date, java.sql.Date> ent = new HashMap<>();
 
-        final Date val = Date.from(Instant.now().minus(1, ChronoUnit.DAYS));
+        ent.put(java.sql.Date.valueOf("2018-09-01"), java.sql.Date.valueOf("2018-09-02"));
 
-        checkInsertUpdateDelete(creationQry, "Tab1", key, val);
+        ent.put(java.sql.Date.valueOf("2018-09-03"), java.sql.Date.valueOf("2018-09-04"));
+
+        checkInsertUpdateDelete(creationQry, "Tab1", ent);
     }
 
     /** */
@@ -76,11 +80,13 @@ public class CreateTableWithDateKeySelfTest extends GridCommonAbstractTest {
         final String creationQry = "CREATE TABLE %s (id TIME primary key, dateField TIME) " +
             "WITH \"cache_name=%s, WRAP_VALUE=false\"";
 
-        final Time key = Time.valueOf(LocalTime.now());
+        Map<Time, Time> ent = new HashMap<>();
 
-        final Time val = Time.valueOf(LocalTime.now());
+        ent.put(Time.valueOf(LocalTime.now()), Time.valueOf(LocalTime.now().minusHours(1)));
 
-        checkInsertUpdateDelete(creationQry, "Tab2", key, val);
+        ent.put(Time.valueOf(LocalTime.now().minusHours(2)), Time.valueOf(LocalTime.now().minusHours(3)));
+
+        checkInsertUpdateDelete(creationQry, "Tab2", ent);
     }
 
     /** */
@@ -88,11 +94,14 @@ public class CreateTableWithDateKeySelfTest extends GridCommonAbstractTest {
         final String creationQry = "CREATE TABLE %s (id TIMESTAMP primary key, dateField TIMESTAMP) " +
             "WITH \"cache_name=%s, WRAP_VALUE=false\"";
 
-        final Timestamp key = Timestamp.valueOf(LocalDateTime.now());
+        Map<Timestamp, Timestamp> ent = new HashMap<>();
 
-        final Timestamp val = Timestamp.valueOf(LocalDateTime.now());
+        ent.put(Timestamp.valueOf(LocalDateTime.now()), Timestamp.valueOf(LocalDateTime.now().minusHours(1)));
 
-        checkInsertUpdateDelete(creationQry, "Tab3", key, val);
+        ent.put(Timestamp.valueOf(LocalDateTime.now().minusHours(2)),
+            Timestamp.valueOf(LocalDateTime.now().minusHours(3)));
+
+        checkInsertUpdateDelete(creationQry, "Tab3", ent);
     }
 
     /**
@@ -100,16 +109,15 @@ public class CreateTableWithDateKeySelfTest extends GridCommonAbstractTest {
      *
      * @param creationQry Create table query.
      * @param tblName Table name.
-     * @param key Sample key.
-     * @param val Sample value.
+     * @param entries Map with Key-Value pairs
      * @param <K> Type of key.
      * @param <V> Type of value.
      */
     private <K, V> void checkInsertUpdateDelete(
         final String creationQry,
         final String tblName,
-        final K key,
-        final V val) {
+        final Map<K, V> entries
+    ) {
         final String cacheName = "TABLE_CACHE_" + tblName;
 
         try (FieldsQueryCursor<List<?>> cur = initCache.query(
@@ -126,21 +134,30 @@ public class CreateTableWithDateKeySelfTest extends GridCommonAbstractTest {
 
         IgniteCache<K, V> cache = ignite.getOrCreateCache(cacheName);
 
-        try (FieldsQueryCursor<List<?>> cur = cache.query(new SqlFieldsQuery(
-            "INSERT INTO " + tblName + " VALUES(?, ?)").setArgs(key, val))) {
+        for (Map.Entry<K, V> e : entries.entrySet()) {
+            try (FieldsQueryCursor<List<?>> cur = cache.query(new SqlFieldsQuery(
+                "INSERT INTO " + tblName + " VALUES(?, ?)").setArgs(e.getKey(), e.getValue()))) {
 
-            assertNotNull(cur);
+                assertNotNull(cur);
 
-            List<List<?>> rows = cur.getAll();
+                List<List<?>> rows = cur.getAll();
 
-            assertEquals(1, rows.size());
+                assertEquals(1, rows.size());
 
-            assertEquals(1L, rows.get(0).get(0));
+                assertEquals(1L, rows.get(0).get(0));
+            }
         }
 
-        assertSelection(tblName, cache, key, val);
+        K key = null;
+        V val = null;
+        for (Map.Entry<K, V> e : entries.entrySet()) {
+            assertSelection(tblName, cache, e.getKey(), e.getValue());
 
-        assertEquals(val, cache.get(key));
+            assertEquals(e.getValue(), cache.get(e.getKey()));
+
+            key = e.getKey();
+            val = e.getValue();
+        }
 
         cache.remove(key);
 

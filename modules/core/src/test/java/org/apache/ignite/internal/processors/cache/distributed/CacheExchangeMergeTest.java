@@ -93,7 +93,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static final long WAIT_SECONDS = 15;
+    private static final long WAIT_SECONDS = 45;
 
     /** */
     private ThreadLocal<Boolean> client = new ThreadLocal<>();
@@ -457,6 +457,8 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMergeServerAndClientJoin1() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10186");
+
         final IgniteEx srv0 = startGrid(0);
 
         mergeExchangeWaitVersion(srv0, 3);
@@ -935,8 +937,6 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
         testSpi = true;
 
         Ignite srv0 = startGrids(srvs);
-
-        mergeExchangeWaitVersion(srv0, 6);
 
         CountDownLatch latch = blockExchangeFinish(srvs, mode);
 

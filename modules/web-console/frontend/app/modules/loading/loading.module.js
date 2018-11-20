@@ -22,5 +22,5 @@ import IgniteLoadingService from './loading.service';
 
 angular
     .module('ignite-console.loading', [])
-    .directive(...IgniteLoadingDirective)
-    .service(...IgniteLoadingService);
+    .directive('igniteLoading', IgniteLoadingDirective)
+    .service('IgniteLoading', IgniteLoadingService);

@@ -40,14 +40,14 @@ public class IgniteCacheUnionDuplicatesTest extends AbstractH2CompareQueryTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setCacheConfiguration(cacheConfiguration("orgCache", PARTITIONED, Integer.class, Organization.class));
+        cfg.setCacheConfiguration(cacheConfiguration("part", PARTITIONED, Integer.class, Organization.class));
 
         return cfg;
     }
 
     /** {@inheritDoc} */
     @Override protected void createCaches() {
-        pCache = ignite.cache("orgCache");
+        pCache = ignite.cache("part");
     }
 
     /** {@inheritDoc} */
@@ -82,6 +82,8 @@ public class IgniteCacheUnionDuplicatesTest extends AbstractH2CompareQueryTest {
     /** {@inheritDoc} */
     @Override protected Statement initializeH2Schema() throws SQLException {
         Statement st = super.initializeH2Schema();
+
+        st.executeUpdate("CREATE SCHEMA \"part\";");
 
         st.execute("create table \"part\".ORGANIZATION" +
             "  (_key int not null," +

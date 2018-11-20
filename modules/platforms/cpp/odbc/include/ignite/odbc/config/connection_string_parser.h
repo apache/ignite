@@ -119,10 +119,10 @@ namespace ignite
                  *
                  * @param str String to parse.
                  * @param len String length.
-                 * @param delimeter Delimeter.
+                 * @param delimiter delimiter.
                  * @param diag Diagnostics collector.
                  */
-                void ParseConnectionString(const char* str, size_t len, char delimeter,
+                void ParseConnectionString(const char* str, size_t len, char delimiter,
                     diagnostic::DiagnosticRecordStorage* diag);
 
                 /**

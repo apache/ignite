@@ -29,7 +29,6 @@ import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
-import org.apache.ignite.thread.IgniteThread;
 
 /**
  * Usage of {@link ImputerTrainer} to fill missed data ({@code Double.NaN}) values in the chosen columns.
@@ -45,59 +44,53 @@ import org.apache.ignite.thread.IgniteThread;
  */
 public class Step_2_Imputing {
     /** Run example. */
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) {
         System.out.println();
         System.out.println(">>> Tutorial step 2 (imputing) example started.");
 
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                Step_2_Imputing.class.getSimpleName(), () -> {
-                try {
-                    IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
+            try {
+                IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
 
-                    IgniteBiFunction<Integer, Object[], Vector> featureExtractor
-                        = (k, v) -> VectorUtils.of((double) v[0], (double) v[5], (double) v[6]);
+                IgniteBiFunction<Integer, Object[], Vector> featureExtractor
+                    = (k, v) -> VectorUtils.of((double) v[0], (double) v[5], (double) v[6]);
 
-                    IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double) v[1];
+                IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double) v[1];
 
-                    IgniteBiFunction<Integer, Object[], Vector> imputingPreprocessor = new ImputerTrainer<Integer, Object[]>()
-                        .fit(ignite,
-                            dataCache,
-                            featureExtractor // "pclass", "sibsp", "parch"
-                        );
-
-                    DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
-
-                    // Train decision tree model.
-                    DecisionTreeNode mdl = trainer.fit(
-                        ignite,
+                IgniteBiFunction<Integer, Object[], Vector> imputingPreprocessor = new ImputerTrainer<Integer, Object[]>()
+                    .fit(ignite,
                         dataCache,
-                        imputingPreprocessor,
-                        lbExtractor
+                        featureExtractor // "pclass", "sibsp", "parch"
                     );
 
-                    System.out.println("\n>>> Trained model: " + mdl);
+                DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
 
-                    double accuracy = Evaluator.evaluate(
-                        dataCache,
-                        mdl,
-                        imputingPreprocessor,
-                        lbExtractor,
-                        new Accuracy<>()
-                    );
+                // Train decision tree model.
+                DecisionTreeNode mdl = trainer.fit(
+                    ignite,
+                    dataCache,
+                    imputingPreprocessor,
+                    lbExtractor
+                );
 
-                    System.out.println("\n>>> Accuracy " + accuracy);
-                    System.out.println("\n>>> Test Error " + (1 - accuracy));
+                System.out.println("\n>>> Trained model: " + mdl);
 
-                    System.out.println(">>> Tutorial step 2 (imputing) example completed.");
-                }
-                catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                }
-            });
+                double accuracy = Evaluator.evaluate(
+                    dataCache,
+                    mdl,
+                    imputingPreprocessor,
+                    lbExtractor,
+                    new Accuracy<>()
+                );
 
-            igniteThread.start();
-            igniteThread.join();
+                System.out.println("\n>>> Accuracy " + accuracy);
+                System.out.println("\n>>> Test Error " + (1 - accuracy));
+
+                System.out.println(">>> Tutorial step 2 (imputing) example completed.");
+            }
+            catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
         }
     }
 }

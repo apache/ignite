@@ -850,8 +850,12 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     public void testDeactivateActivate() throws Exception {
         assertClusterState(true);
 
-        changeClusterState(false);
-        changeClusterState(true);
+        changeClusterState(GridRestCommand.CLUSTER_DEACTIVATE);
+        changeClusterState(GridRestCommand.CLUSTER_ACTIVATE);
+
+        // same for deprecated.
+        changeClusterState(GridRestCommand.CLUSTER_INACTIVE);
+        changeClusterState(GridRestCommand.CLUSTER_ACTIVE);
 
         initCache();
     }
@@ -1424,6 +1428,25 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
                 assertEquals(publicCache.getConfiguration(CacheConfiguration.class).getCacheMode(), cacheMode);
             }
         }
+
+        // Test that caches not included.
+        ret = content(null, GridRestCommand.TOPOLOGY,
+            "attr", "false",
+            "mtr", "false",
+            "caches", "false"
+        );
+
+        info("Topology command result: " + ret);
+
+        res = jsonResponse(ret);
+
+        assertEquals(gridCount(), res.size());
+
+        for (JsonNode node : res) {
+            assertTrue(node.get("attributes").isNull());
+            assertTrue(node.get("metrics").isNull());
+            assertTrue(node.get("caches").isNull());
+        }
     }
 
     /**
@@ -1442,6 +1465,12 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         assertTrue(res.get("attributes").isObject());
         assertTrue(res.get("metrics").isObject());
+
+        JsonNode caches = res.get("caches");
+
+        assertTrue(caches.isArray());
+        assertFalse(caches.isNull());
+        assertEquals(grid(0).context().cache().publicCaches().size(), caches.size());
 
         ret = content(null, GridRestCommand.NODE,
             "attr", "false",
@@ -1468,6 +1497,22 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         res = jsonResponse(ret);
 
         assertTrue(res.isNull());
+
+        // Check that caches not included.
+        ret = content(null, GridRestCommand.NODE,
+            "id", grid(0).localNode().id().toString(),
+            "attr", "false",
+            "mtr", "false",
+            "caches", "false"
+        );
+
+        info("Topology command result: " + ret);
+
+        res = jsonResponse(ret);
+
+        assertTrue(res.get("attributes").isNull());
+        assertTrue(res.get("metrics").isNull());
+        assertTrue(res.get("caches").isNull());
     }
 
     /**
@@ -2797,7 +2842,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
          * @return This helper for chaining method calls.
          */
         public VisorGatewayArgument forNode(ClusterNode node) {
-            put("p1", node != null ? node.id().toString() :  null);
+            put("p1", node != null ? node.id().toString() : null);
 
             return this;
         }
@@ -2991,18 +3036,17 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     /**
      * Change cluster state and test new state.
      *
-     * @param state Desired state.
+     * @param cmd Command.
      * @throws Exception If failed.
      */
-    private void changeClusterState(boolean state) throws Exception {
-        GridRestCommand cmd = state ? GridRestCommand.CLUSTER_ACTIVE : GridRestCommand.CLUSTER_INACTIVE;
-
+    private void changeClusterState(GridRestCommand cmd) throws Exception {
         String ret = content(null, cmd);
 
         JsonNode res = jsonResponse(ret);
 
-        assertTrue(res.isNull());
+        assertFalse(res.isNull());
+        assertTrue(res.asText().startsWith(cmd.key()));
 
-        assertClusterState(state);
+        assertClusterState(cmd == GridRestCommand.CLUSTER_ACTIVATE || cmd == GridRestCommand.CLUSTER_ACTIVE);
     }
 }

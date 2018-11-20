@@ -133,7 +133,6 @@ public class LogRegMultiClassTrainerTest extends TrainerTest {
             VectorUtils.of(10, -10)
         );
 
-
         for (Vector vec : vectors) {
             TestUtils.assertEquals(originalMdl.apply(vec), updatedOnSameDS.apply(vec), PRECISION);
             TestUtils.assertEquals(originalMdl.apply(vec), updatedOnEmptyDS.apply(vec), PRECISION);

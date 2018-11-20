@@ -94,7 +94,8 @@ public final class UpdatePlanBuilder {
      * @return Update plan.
      */
     public static UpdatePlan planForStatement(Prepared prepared, boolean loc, IgniteH2Indexing idx,
-        @Nullable Connection conn, @Nullable SqlFieldsQuery fieldsQry, @Nullable Integer errKeysPos)
+        @Nullable Connection conn, @Nullable SqlFieldsQuery fieldsQry, @Nullable Integer errKeysPos,
+        boolean dmlInsideTxAllowed)
         throws IgniteCheckedException {
         assert !prepared.isQuery();
 
@@ -104,14 +105,15 @@ public final class UpdatePlanBuilder {
 
         boolean mvccEnabled = false;
 
-        GridCacheContext cctx = null;
+        GridCacheContext prevCctx = null;
 
-        // check all involved caches
         for (Object o : parser.objectsMap().values()) {
             if (o instanceof GridSqlInsert)
                 o = ((GridSqlInsert)o).into();
             else if (o instanceof GridSqlMerge)
                 o = ((GridSqlMerge)o).into();
+            else if (o instanceof GridSqlUpdate)
+                o = ((GridSqlUpdate)o).target();
             else if (o instanceof GridSqlDelete)
                 o = ((GridSqlDelete)o).from();
 
@@ -124,10 +126,24 @@ public final class UpdatePlanBuilder {
                         ((GridSqlTable)o).tableName() + "'", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
                 }
 
-                if (cctx == null)
-                    mvccEnabled = (cctx = (((GridSqlTable)o).dataTable()).cache()).mvccEnabled();
-                else if (((GridSqlTable)o).dataTable().cache().mvccEnabled() != mvccEnabled)
-                    MvccUtils.throwAtomicityModesMismatchException(cctx, ((GridSqlTable)o).dataTable().cache());
+                if (prevCctx == null) {
+                    prevCctx = (((GridSqlTable)o).dataTable()).cache();
+
+                    mvccEnabled = prevCctx.mvccEnabled();
+
+                    if (!mvccEnabled && !dmlInsideTxAllowed && prevCctx.cache().context().tm().inUserTx()) {
+                        throw new IgniteSQLException("DML statements are not allowed inside a transaction over " +
+                            "cache(s) with TRANSACTIONAL atomicity mode (change atomicity mode to " +
+                            "TRANSACTIONAL_SNAPSHOT or disable this error message with system property " +
+                            "\"IGNITE_ALLOW_DML_INSIDE_TRANSACTION\" [cacheName=" + prevCctx.name() + ']');
+                    }
+                }
+                else {
+                    GridCacheContext cctx = ((GridSqlTable)o).dataTable().cache();
+
+                    if (cctx.mvccEnabled() != mvccEnabled)
+                        MvccUtils.throwAtomicityModesMismatchException(prevCctx, cctx);
+                }
             }
         }
 
@@ -493,7 +509,6 @@ public final class UpdatePlanBuilder {
      * @return The update plan for this command.
      * @throws IgniteCheckedException if failed.
      */
-    @SuppressWarnings("ConstantConditions")
     public static UpdatePlan planForBulkLoad(SqlBulkLoadCommand cmd, GridH2Table tbl) throws IgniteCheckedException {
         GridH2RowDescriptor desc = tbl.rowDescriptor();
 
@@ -829,7 +844,7 @@ public final class UpdatePlanBuilder {
     /**
      * Simple supplier that just takes specified element of a given row.
      */
-    private final static class PlainValueSupplier implements KeyValueSupplier {
+    private static final class PlainValueSupplier implements KeyValueSupplier {
         /** Index of column to use. */
         private final int colIdx;
 
