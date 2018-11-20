@@ -46,6 +46,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheConfigurationVersion;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
@@ -67,6 +68,7 @@ import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
@@ -93,6 +95,12 @@ class ClusterCachesInfo {
 
     /** Cache templates. */
     private final ConcurrentMap<String, DynamicCacheDescriptor> registeredTemplates = new ConcurrentHashMap<>();
+
+    /** Caches configuration version. */
+    private final ConcurrentMap<String, GridCacheConfigurationVersion> cachesConfigurationVer = new ConcurrentHashMap<>();
+
+    /** Missing cache groups. */
+    private final ConcurrentMap<Integer, CacheGroupDescriptor> missingCacheGrps = new ConcurrentHashMap<>();
 
     /** Caches currently being restarted. */
     private final Collection<String> restartingCaches = new GridConcurrentHashSet<>();
@@ -155,6 +163,8 @@ class ClusterCachesInfo {
 
         if (conflictErr != null)
             throw new IgniteCheckedException("Failed to start configured cache. " + conflictErr);
+
+        // TODO: IGNITE-8717 this.cachesConfigurationVer.putAll(joinDiscoData.cachesConfigurationVersion());
     }
 
     /**
@@ -411,7 +421,7 @@ class ClusterCachesInfo {
             requests.add(DynamicCacheChangeRequest.stopRequest(ctx, cacheName, cacheDescr.sql(), true));
         }
 
-        processCacheChangeRequests(exchangeActions, requests, topVer,false);
+        processCacheChangeRequests(exchangeActions, requests, topVer, false);
 
         failMsg.exchangeActions(exchangeActions);
     }
@@ -995,6 +1005,8 @@ class ClusterCachesInfo {
             templates.put(desc.cacheName(), cacheData);
         }
 
+        Map<String, GridCacheConfigurationVersion> cacheVers = new HashMap<>(cachesConfigurationVer);
+
         Collection<String> restarting = new HashSet<>(restartingCaches);
 
         return new CacheNodeCommonDiscoveryData(caches,
@@ -1002,6 +1014,7 @@ class ClusterCachesInfo {
             cacheGrps,
             ctx.discovery().clientNodesMap(),
             restarting);
+            // TODO: IGNITE-8717 cacheVers);
     }
 
     /**
@@ -1229,6 +1242,12 @@ class ClusterCachesInfo {
                 grpData.config().getNodeFilter(),
                 grpData.config().getCacheMode());
         }
+
+        // Missing cache groups must be skipped on restoring data from disk.
+        for (Integer locCacheGrpId : locCacheGrps.keySet()) {
+            if (!cachesData.cacheGroups().containsKey(locCacheGrpId))
+                missingCacheGrps.put(locCacheGrpId, locCacheGrps.get(locCacheGrpId));
+        }
     }
 
     /**
@@ -1237,6 +1256,8 @@ class ClusterCachesInfo {
     private void cleanCachesAndGroups() {
         registeredCaches.clear();
         registeredCacheGrps.clear();
+        missingCacheGrps.clear();
+        cachesConfigurationVer.clear();
         ctx.discovery().cleanCachesAndGroups();
     }
 
@@ -1250,7 +1271,7 @@ class ClusterCachesInfo {
             ctx.cache().saveCacheConfiguration(desc);
         }
         catch (IgniteCheckedException e) {
-            log.error("Error while saving cache configuration to disk, cfg = " + desc.cacheConfiguration(), e);
+            U.error(log, "Error while saving cache configuration to disk, cfg = " + desc, e);
         }
     }
 
@@ -1364,8 +1385,11 @@ class ClusterCachesInfo {
      * @return Exchange action.
      * @throws IgniteCheckedException If configuration validation failed.
      */
-    public ExchangeActions onStateChangeRequest(ChangeGlobalStateMessage msg, AffinityTopologyVersion topVer, DiscoveryDataClusterState curState)
-        throws IgniteCheckedException {
+    public ExchangeActions onStateChangeRequest(
+        ChangeGlobalStateMessage msg,
+        AffinityTopologyVersion topVer,
+        DiscoveryDataClusterState curState
+    ) throws IgniteCheckedException {
         ExchangeActions exchangeActions = new ExchangeActions();
 
         if (msg.activate() == curState.active())
@@ -1457,6 +1481,68 @@ class ClusterCachesInfo {
 
         return exchangeActions;
     }
+
+    /**
+     * @param cacheName Cache name.
+     * @return Cache configuration version or {@code null}, if configuration not found.
+     */
+    GridCacheConfigurationVersion getVersion(@NotNull String cacheName) { return cachesConfigurationVer.get(cacheName); }
+
+    /**
+     * Creates cache configuration version for {@code desc}, if it isn't present.
+     *
+     * @param desc Cache descriptor.
+     * @return Cache configuration version for cache with {@code desc} descriptor.
+     */
+    GridCacheConfigurationVersion getOrCreateVersion(DynamicCacheDescriptor desc) {
+        return getOrCreateVersion(desc.cacheName(), desc.staticallyConfigured());
+    }
+
+    /**
+     * Creates cache configuration version for {@code cacheName}, if it isn't present.
+     *
+     * @param cacheName Cache name.
+     * @param staticallyConfigured Statically configured cache flag.
+     * @return Cache configuration version for cache with {@code cacheName} name.
+     */
+    GridCacheConfigurationVersion getOrCreateVersion(@NotNull String cacheName, boolean staticallyConfigured) {
+        GridCacheConfigurationVersion ver = getVersion(cacheName);
+
+        if (ver == null) {
+            ver = new GridCacheConfigurationVersion(cacheName, staticallyConfigured);
+
+            GridCacheConfigurationVersion old = cachesConfigurationVer.putIfAbsent(cacheName, ver);
+
+            if (old != null)
+                ver = old;
+        }
+
+        return ver;
+    }
+
+    /**
+     * Updates {@code ver}.
+     *
+     * @param ver Version for update.
+     */
+    void updateVersion(GridCacheConfigurationVersion ver) {
+        assert ver != null;
+
+        GridCacheConfigurationVersion old = cachesConfigurationVer.put(ver.cacheName(), ver);
+
+        // versions must be same (i.e. one instance) or previous version not exist or version order is correct.
+        assert old == ver || old == null || old.id() < ver.id() : F.concat(ver, " old: ", F.toString(old));
+    }
+
+    /**
+     * @return Missing cache groups id.
+     */
+    Collection<Integer> missingCacheGroups() { return missingCacheGrps.keySet(); }
+
+    /**
+     * @return Caches configuration version.
+     */
+    Map<String, GridCacheConfigurationVersion> cachesVersion() { return cachesConfigurationVer; }
 
     /**
      * @param data Joining node data.
@@ -1604,7 +1690,7 @@ class ClusterCachesInfo {
 
         //If conflict was detected we don't merge config and we leave existed config.
         if (!hasSchemaPatchConflict && !patchesToApply.isEmpty())
-            for(Map.Entry<DynamicCacheDescriptor, QuerySchemaPatch> entry: patchesToApply.entrySet()){
+            for (Map.Entry<DynamicCacheDescriptor, QuerySchemaPatch> entry : patchesToApply.entrySet()) {
                 if (entry.getKey().applySchemaPatch(entry.getValue()))
                     saveCacheConfiguration(entry.getKey());
             }
@@ -1722,7 +1808,7 @@ class ClusterCachesInfo {
      * @param grpName Group name.
      * @return Group descriptor if group found.
      */
-    @Nullable private CacheGroupDescriptor cacheGroupByName(String grpName) {
+    private @Nullable CacheGroupDescriptor cacheGroupByName(String grpName) {
         assert grpName != null;
 
         for (CacheGroupDescriptor grpDesc : registeredCacheGrps.values()) {
@@ -1737,7 +1823,7 @@ class ClusterCachesInfo {
      * @param cacheName Cache name.
      * @return Group descriptor.
      */
-    @Nullable private CacheGroupDescriptor nonSharedCacheGroupByCacheName(String cacheName) {
+    private @Nullable CacheGroupDescriptor nonSharedCacheGroupByCacheName(String cacheName) {
         assert cacheName != null;
 
         for (CacheGroupDescriptor grpDesc : registeredCacheGrps.values()) {
@@ -1818,7 +1904,10 @@ class ClusterCachesInfo {
      * @param exchActions Optional exchange actions to update if new group was added.
      * @param startedCacheCfg Started cache configuration.
      */
-    private boolean resolvePersistentFlag(@Nullable ExchangeActions exchActions, CacheConfiguration<?, ?> startedCacheCfg) {
+    private boolean resolvePersistentFlag(
+        @Nullable ExchangeActions exchActions,
+        CacheConfiguration<?, ?> startedCacheCfg
+    ) {
         if (!ctx.clientNode()) {
             // On server, we always can determine whether cache is persistent by local storage configuration.
             return CU.isPersistentCache(startedCacheCfg, ctx.config().getDataStorageConfiguration());
@@ -1937,34 +2026,28 @@ class ClusterCachesInfo {
     /**
      * @return Registered caches.
      */
-    ConcurrentMap<String, DynamicCacheDescriptor> registeredCaches() {
-        return registeredCaches;
-    }
+    ConcurrentMap<String, DynamicCacheDescriptor> registeredCaches() { return registeredCaches; }
 
     /**
      * @return Registered cache templates.
      */
-    ConcurrentMap<String, DynamicCacheDescriptor> registeredTemplates() {
-        return registeredTemplates;
-    }
+    ConcurrentMap<String, DynamicCacheDescriptor> registeredTemplates() { return registeredTemplates; }
 
     /**
      * @return Registered cache groups.
      */
-    ConcurrentMap<Integer, CacheGroupDescriptor> registeredCacheGroups() {
-        return registeredCacheGrps;
-    }
+    ConcurrentMap<Integer, CacheGroupDescriptor> registeredCacheGroups() { return registeredCacheGrps; }
 
     /**
      * Returns registered cache descriptors ordered by {@code comparator}
-     * @param comparator Comparator (DIRECT, REVERSE or custom) to order cache descriptors.
+     * @param comp Comparator (DIRECT, REVERSE or custom) to order cache descriptors.
      * @return Ordered by comparator cache descriptors.
      */
-    private Collection<DynamicCacheDescriptor> orderedCaches(Comparator<DynamicCacheDescriptor> comparator) {
-        List<DynamicCacheDescriptor> ordered = new ArrayList<>();
-        ordered.addAll(registeredCaches.values());
+    private Collection<DynamicCacheDescriptor> orderedCaches(Comparator<DynamicCacheDescriptor> comp) {
+        List<DynamicCacheDescriptor> ordered = new ArrayList<>(registeredCaches.values());
 
-        Collections.sort(ordered, comparator);
+        Collections.sort(ordered, comp);
+
         return ordered;
     }
 
@@ -1980,6 +2063,8 @@ class ClusterCachesInfo {
         registeredCacheGrps.clear();
         registeredCaches.clear();
         registeredTemplates.clear();
+        cachesConfigurationVer.clear();
+        missingCacheGrps.clear();
 
         clientReconnectReqs = null;
     }

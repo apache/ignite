@@ -117,6 +117,7 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinu
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTransactionsImpl;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
+import org.apache.ignite.internal.processors.cache.version.GridCacheConfigurationVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
@@ -1005,7 +1006,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param grpId Group ID.
      * @return Cache group.
      */
-    @Nullable public CacheGroupContext cacheGroup(int grpId) {
+    public @Nullable CacheGroupContext cacheGroup(int grpId) {
         return cacheGrps.get(grpId);
     }
 
@@ -1015,6 +1016,44 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public Collection<CacheGroupContext> cacheGroups() {
         return cacheGrps.values();
     }
+
+    /**
+     * @see ClusterCachesInfo#missingCacheGroups()
+     */
+    public Collection<Integer> missingCacheGroups() { return cachesInfo.missingCacheGroups(); }
+
+    /**
+     * @see ClusterCachesInfo#getVersion(String)
+     */
+    public GridCacheConfigurationVersion cacheVersion(String cacheName) { return cachesInfo.getVersion(cacheName); }
+
+    /**
+     * @param cacheId Cache ID.
+     * @return Cache configuration version.
+     */
+    public @Nullable GridCacheConfigurationVersion cacheVersion(int cacheId) {
+        for (GridCacheConfigurationVersion ver : cachesInfo.cachesVersion().values()) {
+            if (CU.cacheId(ver.cacheName()) == cacheId)
+                return ver;
+        }
+
+        return null;
+    }
+
+    /**
+     * @see ClusterCachesInfo#getOrCreateVersion(String, boolean)
+     */
+    public GridCacheConfigurationVersion getOrCreateCacheVersion(String cacheName, boolean staticallyConfigured) {
+        return cachesInfo.getOrCreateVersion(cacheName, staticallyConfigured);
+    }
+
+    /**
+     * @see ClusterCachesInfo#getOrCreateVersion(DynamicCacheDescriptor)
+     */
+    public GridCacheConfigurationVersion getOrCreateCacheVersion(DynamicCacheDescriptor desc){
+        return cachesInfo.getOrCreateVersion(desc);
+    }
+
 
     /** {@inheritDoc} */
     @Override public void onKernalStart(boolean active) throws IgniteCheckedException {

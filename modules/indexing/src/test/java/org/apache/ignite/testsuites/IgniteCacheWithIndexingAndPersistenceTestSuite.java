@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.SqlCacheConfigurationCheckOnNodeJoinTest;
+import org.apache.ignite.internal.processors.cache.version.GridCacheConfigurationVersionSqlSelfTest;
 import org.apache.ignite.util.GridCommandHandlerIndexingTest;
 
 /**
@@ -35,6 +36,7 @@ public class IgniteCacheWithIndexingAndPersistenceTestSuite extends TestSuite {
         suite.addTestSuite(GridCommandHandlerIndexingTest.class);
 
         suite.addTestSuite(SqlCacheConfigurationCheckOnNodeJoinTest.class);
+        suite.addTestSuite(GridCacheConfigurationVersionSqlSelfTest.class);
 
         return suite;
     }

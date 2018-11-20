@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.CheckpointBuff
 import org.apache.ignite.internal.processors.cache.transactions.TransactionIntegrityWithPrimaryIndexCorruptionTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackAsyncWithPersistenceTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxWithSmallTimeoutAndContentionOneKeyTest;
+import org.apache.ignite.internal.processors.cache.version.GridCacheConfigurationVersionSelfTest;
 
 /**
  * Test suite.
@@ -106,6 +107,7 @@ public class IgniteCacheTestSuite7 extends TestSuite {
         suite.addTestSuite(CachePageWriteLockUnlockTest.class);
 
         suite.addTestSuite(CacheConfigurationCheckOnNodeJoinTest.class);
+        suite.addTestSuite(GridCacheConfigurationVersionSelfTest.class);
 
         return suite;
     }
