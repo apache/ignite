@@ -32,22 +32,26 @@ import org.apache.ignite.yardstick.jdbc.AbstractJdbcBenchmark;
 import org.yardstickframework.BenchmarkConfiguration;
 
 /**
- * Benchmark for simple select operation, designed to compare Ignite and other DBMSes.
+ * Abstract benchmark for sql select operation, that has range in WHERE clause.Designed to compare Ignite and
+ * other DBMSes. Children specify what exactly query gets executed.
  */
-public class SelectSalaryBenchmark extends AbstractJdbcBenchmark {
+public abstract class BaseSelectRangeBenchmark extends AbstractJdbcBenchmark {
     /** Factory that hides all sql queries. */
-    private QueryFactory queries;
+    protected QueryFactory queries;
+
+    /** Number of persons in that times greater than organizations. */
+    private static final int ORG_TO_PERS_FACTOR = 10;
 
     /** Resources that should be closed. For example, opened thread local statements. */
     private List<AutoCloseable> toClose = Collections.synchronizedList(new ArrayList<>());
 
     /** Thread local select statement. */
-    private ThreadLocal<PreparedStatement> select = new ThreadLocal<PreparedStatement>() {
+    protected ThreadLocal<PreparedStatement> select = new ThreadLocal<PreparedStatement>() {
         @Override protected PreparedStatement initialValue() {
             try {
                 Connection locConn = conn.get();
 
-                PreparedStatement sel = locConn.prepareStatement(queries.selectPersonsWithSalaryBetween());
+                PreparedStatement sel = locConn.prepareStatement(testedSqlQuery());
 
                 toClose.add(sel);
 
@@ -58,6 +62,15 @@ public class SelectSalaryBenchmark extends AbstractJdbcBenchmark {
             }
         }
     };
+
+    /**
+     * Children implement this method to specify what statement to prepare.
+     * During benchmark run, this prepared statement gets executed with random parameters:
+     * minimum and maximum values for salary field (in WHERE clause).
+     *
+     * @return sql query with 2 parameters.
+     */
+    protected abstract String testedSqlQuery();
 
     /** {@inheritDoc} */
     @Override protected void setupData() throws Exception {
@@ -71,12 +84,29 @@ public class SelectSalaryBenchmark extends AbstractJdbcBenchmark {
         queries = new QueryFactory();
 
         executeUpdate(conn.get(), queries.createPersonTab());
+        executeUpdate(conn.get(), queries.createOrgTab());
 
         executeUpdate(conn.get(), queries.beforeLoad());
 
-        try (PreparedStatement ins = conn.get().prepareStatement(queries.insertIntoPerson())) {
-            for (int id = 0; id < args.range(); id++)
-                fillPersonArgs(ins, id).executeUpdate();
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        long orgRng = args.range() / ORG_TO_PERS_FACTOR;
+
+        try (PreparedStatement insOrg = conn.get().prepareStatement(queries.insertIntoOrganization())) {
+            for (long orgId = 0; orgId < orgRng; orgId++) {
+                insOrg.setLong(1, orgId);
+                insOrg.setString(2, "organization#" + orgId);
+
+                insOrg.executeUpdate();
+            }
+        }
+
+        try (PreparedStatement insPers = conn.get().prepareStatement(queries.insertIntoPerson())) {
+            for (long persId = 0; persId < args.range(); persId++) {
+                long orgId = rnd.nextLong(orgRng);
+
+                fillPersonArgs(insPers, persId, orgId).executeUpdate();
+            }
         }
 
         executeUpdate(conn.get(), queries.afterLoad());
@@ -126,6 +156,7 @@ public class SelectSalaryBenchmark extends AbstractJdbcBenchmark {
     @Override public void tearDown() throws Exception {
         try {
             executeUpdate(conn.get(), queries.dropPersonIfExist());
+            executeUpdate(conn.get(), queries.dropOrgIfExist());
 
             for (AutoCloseable stmt : toClose)
                 stmt.close();
@@ -141,11 +172,12 @@ public class SelectSalaryBenchmark extends AbstractJdbcBenchmark {
      * @param insPers Ins pers.
      * @param id Id.
      */
-    static PreparedStatement fillPersonArgs(PreparedStatement insPers, long id) throws SQLException {
+    static PreparedStatement fillPersonArgs(PreparedStatement insPers, long id, long orgId) throws SQLException {
         insPers.setLong(1, id);
-        insPers.setString(2, "firstName" + id);
-        insPers.setString(3, "lastName" + id);
-        insPers.setLong(4, id * 1000);
+        insPers.setLong(2, orgId);
+        insPers.setString(3, "firstName" + id);
+        insPers.setString(4, "lastName" + id);
+        insPers.setLong(5, id * 1000);
 
         return insPers;
     }

@@ -23,12 +23,27 @@ package org.apache.ignite.yardstick.jdbc.vendors;
 public class QueryFactory {
     /** Query that creates Person table. */
     public String createPersonTab() {
-        return "CREATE TABLE PERSON (id LONG, first_name VARCHAR(255), last_name VARCHAR(255), salary LONG);";
+        return "CREATE TABLE PERSON (" +
+            "id LONG PRIMARY KEY, " +
+            "org_id LONG, " +
+            "first_name VARCHAR(255), " +
+            "last_name VARCHAR(255), " +
+            "salary LONG);";
+    }
+
+    /** Query that creates Organization table. */
+    public String createOrgTab() {
+        return "CREATE TABLE ORGANIZATION (id LONG PRIMARY KEY, name VARCHAR(255));";
     }
 
     /** Query that drops Person table. */
     public String dropPersonIfExist() {
         return "DROP TABLE IF EXISTS PERSON;";
+    }
+
+    /** Query that drops Person table. */
+    public String dropOrgIfExist() {
+        return "DROP TABLE IF EXISTS ORGANIZATION;";
     }
 
     /** Query to execute before data upload. */
@@ -50,8 +65,24 @@ public class QueryFactory {
     }
 
 
-    /** Query that inserts new Person record. Has 4 parameters - fields of Person.*/
+    /** Query that inserts new Person record. Has 5 jdbc parameters - fields of the Person.*/
     public String insertIntoPerson() {
-        return "INSERT INTO PERSON (id, first_name, last_name, salary) values (?, ?, ?, ?)";
+        return "INSERT INTO PERSON (id, org_id, first_name, last_name, salary) values (?, ?, ?, ?, ?)";
+    }
+
+    /** Query that inserts new Organization record. Has 2 jdbc parameters - org id and org name. */
+    public String insertIntoOrganization() {
+        return "INSERT INTO ORGANIZATION (id, name) VALUES (?, ?);";
+    }
+
+    /**
+     * Query that fetches info about persons and theirs organizations for that persons who has salary in range.
+     */
+    public String selectPersonsJoinOrgWithSalaries() {
+        return "SELECT p.id, p.org_id, p.first_name, p.last_name, p.salary, o.name " +
+            "FROM PERSON p " +
+            "LEFT JOIN ORGANIZATION o " +
+            "ON p.id = o.id " +
+            "WHERE salary >= BETWEEN ? AND ?;";
     }
 }
