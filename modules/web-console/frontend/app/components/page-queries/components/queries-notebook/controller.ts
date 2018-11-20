@@ -1948,18 +1948,19 @@ export class NotebookCtrl {
     ]
 
     async renameParagraph(paragraph: Paragraph) {
-        const newName = await this.IgniteInput.input('Rename Query', 'New query name:', paragraph.name);
+        try {
+            const newName = await this.IgniteInput.input('Rename Query', 'New query name:', paragraph.name);
 
-        if (!newName)
-            return;
+            if (paragraph.name !== newName) {
+                paragraph.name = newName;
 
-        if (paragraph.name !== newName) {
-            paragraph.name = newName;
+                this.$scope.rebuildScrollParagraphs();
 
-            this.$scope.rebuildScrollParagraphs();
-
-            this.Notebook.save(this.$scope.notebook)
-                .catch(this.Messages.showError);
+                this.Notebook.save(this.$scope.notebook)
+                    .catch(this.Messages.showError);
+            }
+        } catch (ignored) {
+            // no-op
         }
     }
 
@@ -1978,7 +1979,7 @@ export class NotebookCtrl {
             this.$scope.rebuildScrollParagraphs();
 
             await this.Notebook.save(this.$scope.notebook).catch(this.Messages.showError);
-        } catch (e) {
+        } catch (ignored) {
             // no-op
         }
     }
