@@ -104,13 +104,13 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(storageCfg);
 
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
-
         CacheConfiguration[] ccfg = new CacheConfiguration[] {
             cacheConfiguration(CACHE_NAMES[0], CacheAtomicityMode.ATOMIC),
             cacheConfiguration(CACHE_NAMES[1], CacheAtomicityMode.ATOMIC),
             cacheConfiguration(CACHE_NAMES[2], CacheAtomicityMode.TRANSACTIONAL)
         };
+
+        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         cfg.setCacheConfiguration(ccfg);
 
