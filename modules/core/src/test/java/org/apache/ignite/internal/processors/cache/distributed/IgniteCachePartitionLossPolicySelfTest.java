@@ -417,7 +417,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
         // TODO aliveNodes should include node 4, but it fails due to https://issues.apache.org/jira/browse/IGNITE-5078.
         // TODO need to add 4 to the aliveNodes after IGNITE-5078 is fixed.
-        // TopologyChanger onlyCrdIsAlive = new TopologyChanger(false, Arrays.asList(1, 2, 3), Arrays.asList(0, 4), 0);
+        // TopologyChanger onlyCrdIsAlive = new TopologyChanger(4, false, Arrays.asList(1, 2, 3), Arrays.asList(0, 4), 0);
         TopologyChanger onlyCrdIsAlive = new TopologyChanger(4, false, asList(1, 2, 3), singletonList(0), 0);
 
         checkIgnore(onlyCrdIsAlive);
@@ -665,7 +665,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
             IgniteEx cl = startGrid("newNode");
 
             for (String cacheName : CACHE_NAMES) {
-                cl.cache(cacheName); // Make sure cache started on node.`
+                cl.cache(cacheName); // Make sure cache is started on node.`
 
                 CacheGroupContext grpCtx = cl.context().cache().cacheGroup(CU.cacheId(cacheName));
 
@@ -784,6 +784,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
      *
      * @param safe Safe flag.
      * @param node Node.
+     * @param cacheName Cache name.
      */
     private void validateQuery(boolean safe, Ignite node, String cacheName) {
         // Get node lost and remaining partitions.
@@ -848,6 +849,9 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     }
 
     /**
+     * @param node Node.
+     * @param cacheName Cache name.
+     * @param parts Partitions.
      * @return true if the given node is primary for all given partitions.
      */
     private boolean shouldExecuteLocalQuery(Ignite node, String cacheName, int... parts) {
@@ -869,6 +873,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     /**
      * @param node Node.
      * @param loc Local flag.
+     * @param cacheName Cache name.
      * @param parts Partitions.
      */
     protected void checkQueryPasses(Ignite node, boolean loc, String cacheName, int... parts) {
@@ -896,6 +901,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     /**
      * @param node Node.
      * @param loc Local flag.
+     * @param cacheName Cache name.
      * @param parts Partitions.
      */
     protected void checkQueryFails(Ignite node, boolean loc, String cacheName, int... parts) {
