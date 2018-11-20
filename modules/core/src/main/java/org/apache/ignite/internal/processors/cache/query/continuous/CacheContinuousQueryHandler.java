@@ -494,8 +494,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             }
 
             @Override public void skipUpdateEvent(CacheContinuousQueryEvent<K, V> evt,
-                AffinityTopologyVersion topVer,
-                boolean primary) {
+                AffinityTopologyVersion topVer, boolean primary) {
                 assert evt != null;
 
                 CacheContinuousQueryEntry e = evt.entry();

@@ -1116,16 +1116,16 @@ public interface IgniteCacheOffheapManager {
         public PendingEntriesTree pendingTree();
 
         /**
-         * Preload a store into page memory.
-         * @throws IgniteCheckedException If failed.
-         */
-        public void preload() throws IgniteCheckedException;
-
-        /**
          * Flushes pending update counters closing all possible gaps.
          *
          * @return Even-length array of pairs [start, end] for each gap.
          */
         GridLongList finalizeUpdateCounters();
+
+        /**
+         * Preload a store into page memory.
+         * @throws IgniteCheckedException If failed.
+         */
+        public void preload() throws IgniteCheckedException;
     }
 }
