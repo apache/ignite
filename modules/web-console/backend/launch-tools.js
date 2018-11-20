@@ -21,6 +21,7 @@ const _ = require('lodash');
 const http = require('http');
 const https = require('https');
 const MigrateMongoose = require('migrate-mongoose');
+const mongoose = require('mongoose');
 
 /**
  * Event listener for HTTP server "error" event.
@@ -106,4 +107,21 @@ const migrate = (dbConnectionUri, group, migrationsPath, collectionName) => {
         });
 };
 
-module.exports = { migrate, init };
+/**
+ * Check version of used MongoDB.
+ */
+const checkMongo = () => {
+    const versionValid = (mijor, minor) => mijor === 3 && minor >= 2 && minor <= 4;
+
+    const admin = new mongoose.mongo.Admin(mongoose.connection.db, null, global.Promise);
+
+    return admin.buildInfo()
+        .then((info) => {
+            const versions = info.version.split('.');
+
+            if (!versionValid(parseInt(versions[0]), parseInt(versions[1])))
+                throw Error(`Unsupported version of MongoDB ${info.version}. Supported versions: 3.2.x-3.4.x`);
+        });
+};
+
+module.exports = { checkMongo, migrate, init };

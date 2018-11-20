@@ -736,8 +736,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If fail.
      */
     private File cacheDir(final String cacheName, final String consId) throws IgniteCheckedException {
-        final String subfolderName
-            = PdsConsistentIdProcessor.genNewStyleSubfolderName(0, UUID.fromString(consId));
+        final String subfolderName = U.maskForFileName(consId);
 
         final File dbDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
 
