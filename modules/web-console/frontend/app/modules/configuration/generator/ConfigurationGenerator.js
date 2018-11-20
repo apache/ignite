@@ -1131,6 +1131,9 @@ export default class IgniteConfigurationGenerator {
         if (available('2.0.0')) {
             cfg.longProperty('failureDetectionTimeout')
                 .longProperty('clientFailureDetectionTimeout');
+
+            if (available('2.7.0'))
+                cfg.longProperty('systemWorkerBlockedTimeout');
         }
 
         _.forEach(cluster.failoverSpi, (spi) => {
@@ -1465,8 +1468,14 @@ export default class IgniteConfigurationGenerator {
             storageBean.varArgProperty('dataRegionConfigurations', 'dataRegionConfigurations', dataRegionCfgs, 'org.apache.ignite.configuration.DataRegionConfiguration');
 
         storageBean.stringProperty('storagePath')
-            .longProperty('checkpointFrequency')
-            .intProperty('checkpointThreads')
+            .longProperty('checkpointFrequency');
+
+        if (available('2.7.0')) {
+            storageBean
+                .longProperty('checkpointReadLockTimeout');
+        }
+
+        storageBean.intProperty('checkpointThreads')
             .enumProperty('checkpointWriteOrder')
             .enumProperty('walMode')
             .stringProperty('walPath')

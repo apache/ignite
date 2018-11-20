@@ -985,6 +985,7 @@ module.exports.factory = function(mongoose) {
         consistentId: String,
         failureDetectionTimeout: Number,
         clientFailureDetectionTimeout: Number,
+        systemWorkerBlockedTimeout: Number,
         workDirectory: String,
         lateAffinityAssignment: Boolean,
         utilityCacheKeepAliveTime: Number,
@@ -1054,7 +1055,8 @@ module.exports.factory = function(mongoose) {
             fileIOFactory: {type: String, enum: ['RANDOM', 'ASYNC']},
             walAutoArchiveAfterInactivity: Number,
             writeThrottlingEnabled: Boolean,
-            walCompactionEnabled: Boolean
+            walCompactionEnabled: Boolean,
+            checkpointReadLockTimeout: Number
         },
         memoryConfiguration: {
             systemCacheInitialSize: Number,
