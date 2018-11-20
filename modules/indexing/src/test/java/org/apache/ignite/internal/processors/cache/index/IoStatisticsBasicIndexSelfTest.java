@@ -46,7 +46,7 @@ import org.junit.Assert;
 /**
  * A set of basic tests for caches with indexes.
  */
-public class IoStatBasicIndexTest extends GridCommonAbstractTest {
+public class IoStatisticsBasicIndexSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
