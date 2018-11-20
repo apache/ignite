@@ -201,6 +201,8 @@ public class JdbcThinConnection implements Connection {
 
                 sendRequest(new JdbcQueryExecuteRequest(JdbcStatementType.ANY_STATEMENT_TYPE,
                     schema, 1, 1, autoCommit, sql, null));
+
+                streamState.start();
             }
         }
         else
@@ -900,6 +902,13 @@ public class JdbcThinConnection implements Connection {
 
             asyncRespReaderThread = new Thread(this::readResponses);
 
+
+        }
+
+        /**
+         * Start reader.
+         */
+        void start() {
             asyncRespReaderThread.start();
         }
 

@@ -142,7 +142,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     /**
      *
      */
-    public void testExpectSQLExceptionOnCancelingStmtWithoutQuery() throws Exception {
+    public void testCancelingStmtWithoutQuery() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 stmt.cancel();
@@ -155,7 +155,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     /**
      *
      */
-    public void testExpectSQLExceptionOnRetrievingResultSetInCanceledStatement() throws Exception {
+    public void testResultSetRetrievalInCanceledStatement() throws Exception {
         stmt.execute("SELECT 1; SELECT 2; SELECT 3;");
 
         assertNotNull(stmt.getResultSet());
@@ -174,7 +174,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     /**
      *
      */
-    public void testExpectSQLExceptionOnCancelingStmtAgainstClosedStmt() throws Exception {
+    public void testCancelClosedStmt() throws Exception {
         stmt.close();
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
@@ -189,7 +189,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     /**
      *
      */
-    public void testExpectSQLExceptionOnResultSetNextAfterCancelingStmt() throws Exception {
+    public void testResultSetNextAfterCanceling() throws Exception {
         stmt.setFetchSize(10);
 
         ResultSet rs = stmt.executeQuery("select * from Integer");
@@ -211,7 +211,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    public void testExpectSQLExceptionAndAFAPControlRetrievalAfterCancellationLongRunningQuery() throws Exception {
+    public void testCancelLongRunningQuery() throws Exception {
         GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
                 try {
@@ -245,7 +245,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     /**
      *
      */
-    public void testExpectQueryAfterCancellationPreviousQueryWorksFine() throws Exception {
+    public void testCancelAnotherStmt() throws Exception {
         stmt.setFetchSize(10);
 
         ResultSet rs = stmt.executeQuery("select * from Integer");
@@ -262,7 +262,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     /**
      *
      */
-    public void testExpectResultSet1CancellationDoesNotEffectResultSet2() throws Exception {
+    public void testCancelAnotherStmtResultSet() throws Exception {
         try (Statement anotherStmt = conn.createStatement()) {
             ResultSet rs1 = stmt.executeQuery("select * from Integer WHERE _key % 2 = 0");
 
@@ -286,7 +286,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
      *
      */
     @SuppressWarnings("unchecked")
-    public void testExpectSQLExceptionAndAFAPControlRetrievalAfterCancelingLongRunningQueryBasedOnJoins() throws Exception {
+    public void testCancelLongRunningQueryBasedOnJoins() throws Exception {
         GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
                 try {
@@ -321,7 +321,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
      *
      */
     @SuppressWarnings("unchecked")
-    public void testExpectSQLExceptionAndAFAPControlRetrievalAfterCancelingLongRunningFileUpload() throws Exception {
+    public void testCancelLongRunningFileUpload() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-10340");
 
         GridTestUtils.runAsync(new Runnable() {
@@ -359,7 +359,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
      *
      */
     @SuppressWarnings("unchecked")
-    public void testExpectSQLExceptionAndAFAPControlRetrievalAfterCancelingMultipleStatementsQuery() throws Exception {
+    public void testCancelMultipleStatementsQuery() throws Exception {
         try (Statement anotherStatment = conn.createStatement();){
             anotherStatment.setFetchSize(1);
             // Open the second cursor
@@ -404,7 +404,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     /**
      *
      */
-    public void testExpectSQLExceptionAndAFAPControlRetrievalAfterCancelinBatchQuery() throws Exception {
+    public void testCancelBatchQuery() throws Exception {
         try (Statement stmt2 = conn.createStatement()) {
             stmt2.setFetchSize(1);
             // Open the second cursor
@@ -443,7 +443,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
      *
      */
     @SuppressWarnings("unchecked")
-    public void testExpectSQLExceptionAndAFAPControlRetrievalAfterCancelinQueryWithinContextOfFullServerThreadPool()
+    public void testCancelAgainstFullServerThreadPool()
         throws Exception {
         List<Statement> statements = Collections.synchronizedList(new ArrayList<>());
         List<Connection> connections = Collections.synchronizedList(new ArrayList<>());
