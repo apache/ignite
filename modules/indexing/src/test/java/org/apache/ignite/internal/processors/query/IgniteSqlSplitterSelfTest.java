@@ -91,6 +91,8 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGridsMultiThreaded(3, false);
         Ignition.setClientMode(true);
         try {
