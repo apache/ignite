@@ -27,14 +27,21 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
  * Index statistics holder to gather statistics related to concrete index.
  */
 public class IoStatisticsHolderIndex implements IoStatisticsHolder {
+    /** Display name of hash PK index. */
+    public static final String HASH_PK_IDX_NAME = "PK";
+
     /** */
     public static final String LOGICAL_READS_LEAF = "LOGICAL_READS_LEAF";
+
     /** */
     public static final String LOGICAL_READS_INNER = "LOGICAL_READS_INNER";
+
     /** */
     public static final String PHYSICAL_READS_LEAF = "PHYSICAL_READS_LEAF";
+
     /** */
     public static final String PHYSICAL_READS_INNER = "PHYSICAL_READS_INNER";
+
     /** */
     private LongAdder logicalReadLeafCntr = new LongAdder();
 

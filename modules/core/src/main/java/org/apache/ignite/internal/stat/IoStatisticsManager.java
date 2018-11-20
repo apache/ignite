@@ -32,9 +32,6 @@ import org.apache.ignite.IgniteIllegalStateException;
  * IO statistics manager to manage of gathering IO statistics.
  */
 public class IoStatisticsManager {
-    /** */
-    public final static String HASH_PK_INDEX_NAME = "PK";
-
     /** All statistic holders */
     private final Map<IoStatisticsType, Map<IoStatisticsHolderKey, IoStatisticsHolder>> statByType;
 

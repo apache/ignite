@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.mxbean.IoStatisticsMetricsMXBean;
 
-import static org.apache.ignite.internal.stat.IoStatisticsManager.HASH_PK_INDEX_NAME;
+import static org.apache.ignite.internal.stat.IoStatisticsHolderIndex.HASH_PK_IDX_NAME;
 
 /**
  * JMX bean to expose local node IO statistics.
@@ -76,7 +76,7 @@ public class IoStatisticsMetricsLocalMXBeanImpl implements IoStatisticsMetricsMX
      * @return Type of index statistics.
      */
     private IoStatisticsType getIndexStatType(String idxName) {
-        return idxName.equals(HASH_PK_INDEX_NAME) ? IoStatisticsType.HASH_INDEX : IoStatisticsType.SORTED_INDEX;
+        return idxName.equals(HASH_PK_IDX_NAME) ? IoStatisticsType.HASH_INDEX : IoStatisticsType.SORTED_INDEX;
     }
 
     /**

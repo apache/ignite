@@ -32,7 +32,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 
-import static org.apache.ignite.internal.stat.IoStatisticsManager.HASH_PK_INDEX_NAME;
+import static org.apache.ignite.internal.stat.IoStatisticsHolderIndex.HASH_PK_IDX_NAME;
 
 /**
  * Tests for cache IO statistics for inmemory mode.
@@ -224,7 +224,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
 
         Assert.assertEquals(dataPageReads, logicalReadsCache);
 
-        long logicalReadsIdx = ioStatMgr.logicalReads(IoStatisticsType.HASH_INDEX, cacheName, HASH_PK_INDEX_NAME);
+        long logicalReadsIdx = ioStatMgr.logicalReads(IoStatisticsType.HASH_INDEX, cacheName, HASH_PK_IDX_NAME);
 
         Assert.assertEquals(idxPageReadsCnt, logicalReadsIdx);
 
@@ -244,7 +244,6 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
 
             for (int i = 0; i < cnt; i++) {
                 cache.put(i, i);
-
                 cache.put(i, i); //Second invocation required to warm up MVCC cache to fill old versions chains.
             }
         }

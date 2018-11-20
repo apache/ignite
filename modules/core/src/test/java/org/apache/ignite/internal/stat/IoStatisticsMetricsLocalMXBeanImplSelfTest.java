@@ -31,7 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.IoStatisticsMetricsMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.internal.stat.IoStatisticsManager.HASH_PK_INDEX_NAME;
+import static org.apache.ignite.internal.stat.IoStatisticsHolderIndex.HASH_PK_IDX_NAME;
 
 /**
  * Test of local node IO statistics MX bean.
@@ -88,19 +88,19 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
 
         Assert.assertEquals(1, idxHashNames.size());
 
-        Assert.assertTrue(idxHashNames.contains(HASH_PK_INDEX_NAME));
+        Assert.assertTrue(idxHashNames.contains(HASH_PK_IDX_NAME));
 
-        long idxLeafCnt = bean.getIndexLeafLogicalReadsStatistics(DEFAULT_CACHE_NAME, HASH_PK_INDEX_NAME);
+        long idxLeafCnt = bean.getIndexLeafLogicalReadsStatistics(DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME);
 
         Assert.assertEquals(cnt, idxLeafCnt);
 
-        Long aggregatedIdxLogicalRads = bean.getIndexLogicalReadsStatistics(DEFAULT_CACHE_NAME, HASH_PK_INDEX_NAME);
+        Long aggregatedIdxLogicalRads = bean.getIndexLogicalReadsStatistics(DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME);
 
         Assert.assertNotNull(aggregatedIdxLogicalRads);
 
         Assert.assertEquals(aggregatedIdxLogicalRads.longValue(), idxLeafCnt);
 
-        String formatted = bean.getIndexStatisticsFormatted(DEFAULT_CACHE_NAME, HASH_PK_INDEX_NAME);
+        String formatted = bean.getIndexStatisticsFormatted(DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME);
 
         Assert.assertEquals("HASH_INDEX default.PK [LOGICAL_READS_LEAF=100, LOGICAL_READS_INNER=0, " +
             "PHYSICAL_READS_INNER=0, PHYSICAL_READS_LEAF=0]", formatted);

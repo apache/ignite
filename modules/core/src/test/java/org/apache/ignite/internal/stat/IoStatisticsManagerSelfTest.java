@@ -29,7 +29,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 
-import static org.apache.ignite.internal.stat.IoStatisticsManager.HASH_PK_INDEX_NAME;
+import static org.apache.ignite.internal.stat.IoStatisticsHolderIndex.HASH_PK_IDX_NAME;
 
 /**
  * Tests for IO statistic manager.
@@ -82,7 +82,7 @@ public class IoStatisticsManagerSelfTest extends GridCommonAbstractTest {
         else
             Assert.assertEquals(0, physicalReadsCnt);
 
-        Long logicalReads = ioStatMgr.logicalReads(IoStatisticsType.HASH_INDEX, DEFAULT_CACHE_NAME, HASH_PK_INDEX_NAME);
+        Long logicalReads = ioStatMgr.logicalReads(IoStatisticsType.HASH_INDEX, DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME);
 
         Assert.assertNotNull(logicalReads);
 

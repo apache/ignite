@@ -76,7 +76,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOADED;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
-import static org.apache.ignite.internal.stat.IoStatisticsManager.HASH_PK_INDEX_NAME;
+import static org.apache.ignite.internal.stat.IoStatisticsHolderIndex.HASH_PK_IDX_NAME;
 
 /**
  *
@@ -253,7 +253,7 @@ public class CacheGroupContext {
         }
         else {
             statHolderIdx = ctx.kernalContext().ioStats().register(IoStatisticsType.HASH_INDEX,
-                cacheOrGroupName(), HASH_PK_INDEX_NAME);
+                cacheOrGroupName(), HASH_PK_IDX_NAME);
 
             statHolderData = ctx.kernalContext().ioStats().register(IoStatisticsType.CACHE_GROUP,
                 cacheOrGroupName());
