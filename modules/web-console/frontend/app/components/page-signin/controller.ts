@@ -67,6 +67,7 @@ export default class {
         return this.Auth.signin(this.data.email, this.data.password).catch((res) => {
             this.IgniteMessages.showError(null, res.data);
             this.setServerError(res.data);
+            this.IgniteFormUtils.triggerValidation(this.form);
         });
     }
 }
