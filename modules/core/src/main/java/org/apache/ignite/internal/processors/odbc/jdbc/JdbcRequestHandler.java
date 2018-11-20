@@ -24,6 +24,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -561,38 +562,24 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                 JdbcBulkLoadProcessor processor = new JdbcBulkLoadProcessor(blProcessor);
 
-                synchronized (cancellationProcessingMux){
-                    bulkLoadRequests.put(cursorId, processor);
+                requestToCursorMapping.put(req.requestId(), Collections.singletonList(processor));
 
-                    requestToCursorMapping.put(req.requestId(), Collections.singletonList(processor));
-                }
+                bulkLoadRequests.put(cursorId, processor);
 
                 // responces for the same query on the client side
                 return new JdbcResponse(new JdbcBulkLoadAckResult(cursorId, clientParams), req.requestId());
             }
 
             if (results.size() == 1) {
-                JdbcQueryCursor cur;
 
-                synchronized (cancellationProcessingMux) {
-                    // request was already cancelled;
-                    if (req.isCancellationSupported() && QUERY_ALREADY_CANCELLED.equals(
-                        requestToCursorMapping.get(req.requestId()))) {
-                        requestToCursorMapping.remove(req.requestId());
+                JdbcQueryCursor cur = new JdbcQueryCursor(cursorId, req.pageSize(), req.maxRows(),
+                    (QueryCursorImpl)fieldsCur);
 
-                        return exceptionToResult(new QueryCancelledException(), req.requestId());
-                    }
-                    // request wasn't cancelled;
-                    else {
-                        cur = new JdbcQueryCursor(cursorId, req.pageSize(), req.maxRows(),
-                            (QueryCursorImpl)fieldsCur);
+                if (req.isCancellationSupported() && QUERY_ALREADY_CANCELLED.equals(
+                    requestToCursorMapping.putIfAbsent(req.requestId(), Collections.singletonList(cur))))
+                    return exceptionToResult(new QueryCancelledException(), req.requestId());
 
-                        qryCursors.put(cursorId, cur);
-
-                        if (req.isCancellationSupported())
-                            requestToCursorMapping.put(req.requestId(), Collections.singletonList(cur));
-                    }
-                }
+                qryCursors.put(cursorId, cur);
 
                 cur.openIterator();
 
@@ -612,12 +599,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 }
 
                 if (res.last() && (!res.isQuery() || autoCloseCursors)) {
-                    synchronized (cancellationProcessingMux) {
-                        qryCursors.remove(cursorId);
+                    qryCursors.remove(cursorId);
 
-                        if (req.isCancellationSupported())
-                            requestToCursorMapping.remove(req.requestId());
-                    }
 
                     cur.close();
                 }
@@ -630,33 +613,23 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 boolean last = true;
 
                 List<JdbcQueryCursor> cursors = new ArrayList<>();
+                Map<Long, JdbcQueryCursor> queryCursors = new HashMap<>();
 
-                synchronized (cancellationProcessingMux) {
+                for (FieldsQueryCursor<List<?>> c : results) {
+                    JdbcQueryCursor cursor = new JdbcQueryCursor(CURSOR_ID_GEN.getAndIncrement(), req.pageSize(), req.maxRows(),
+                        (QueryCursorImpl) c);
 
-                        // request was already cancelled;
-                        if (req.isCancellationSupported() && QUERY_ALREADY_CANCELLED.equals(
-                            requestToCursorMapping.get(req.requestId()))) {
-                            requestToCursorMapping.remove(req.requestId());
+                    cursors.add(cursor);
 
-                            return exceptionToResult(new QueryCancelledException(), req.requestId());
-                        // request wasn't  cancelled;
-                        } else {
-                            requestToCursorMapping.put(req.requestId(), new ArrayList<>());
-                            for (FieldsQueryCursor<List<?>> c : results) {
-                                JdbcQueryCursor cursor = new JdbcQueryCursor(cursorId, req.pageSize(), req.maxRows(),
-                                    (QueryCursorImpl) c);
+                    if (cursor.isQuery())
+                        queryCursors.put(cursor.cursorId(), cursor);
+                }
 
-                                cursors.add(cursor);
-                                if (req.isCancellationSupported())
-                                    requestToCursorMapping.get(req.requestId()).add(cursor);
-
-                                cursorId = CURSOR_ID_GEN.getAndIncrement();
-
-                                if (cursor.isQuery())
-                                    qryCursors.put(cursorId, cursor);
-                            }
-                        }
-                    }
+                if (req.isCancellationSupported() && QUERY_ALREADY_CANCELLED.equals(
+                    requestToCursorMapping.putIfAbsent(req.requestId(), (List<Closeable>) (Object)cursors)))
+                    return exceptionToResult(new QueryCancelledException(), req.requestId());
+                else
+                    qryCursors.putAll(queryCursors);
 
                 for (JdbcQueryCursor cur : cursors) {
 
@@ -687,12 +660,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         }
         catch (Exception e) {
 
-            synchronized (cancellationProcessingMux) {
-                qryCursors.remove(cursorId);
-
-                if (req.isCancellationSupported())
-                    requestToCursorMapping.remove(req.requestId());
-            }
+            qryCursors.remove(cursorId);
 
             U.error(log, "Failed to execute SQL query [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
