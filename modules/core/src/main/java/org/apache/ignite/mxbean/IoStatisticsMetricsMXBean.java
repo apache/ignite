@@ -86,7 +86,6 @@ public interface IoStatisticsMetricsMXBean {
     @MXBeanParametersDescriptions({"Cache group name.", "Index name."})
     public String getIndexStatisticsFormatted(String cacheGrpName, String idxName);
 
-
     /**
      * Gets number of physical index page reads for given cache group and index.
      *
