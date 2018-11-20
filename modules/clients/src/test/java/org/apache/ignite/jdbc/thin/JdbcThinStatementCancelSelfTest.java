@@ -322,7 +322,8 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
      */
     @SuppressWarnings("unchecked")
     public void testExpectSQLExceptionAndAFAPControlRetrievalAfterCancelingLongRunningFileUpload() throws Exception {
-        //fail Data streamer has been closed instead of queryExecutionException
+        fail("https://issues.apache.org/jira/browse/IGNITE-10340");
+
         GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
                 try {
@@ -351,7 +352,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
             }, SQLException.class, "The query was cancelled while executing.");
         });
 
-        res.get(300, TimeUnit.MILLISECONDS);
+        res.get(1, TimeUnit.SECONDS);
     }
 
     /**
