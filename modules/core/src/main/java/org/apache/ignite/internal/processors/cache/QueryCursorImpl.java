@@ -98,7 +98,7 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
             // Handle race with cancel and make sure the iterator resources are freed correctly.
             closeIter();
 
-            throw new CacheException(new QueryCancelledException());
+            throw new CacheException(new QueryCancelledException("Query cursor was cancelled explicitly"));
         }
 
         assert iter != null;

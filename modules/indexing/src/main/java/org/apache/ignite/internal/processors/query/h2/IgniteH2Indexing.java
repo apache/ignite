@@ -1152,19 +1152,34 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final MapQueryLazyWorker lazyWorker = MapQueryLazyWorker.currentWorker();
 
         if (cancel != null) {
-            cancel.set(new Runnable() {
-                @Override public void run() {
-                    if (lazyWorker != null) {
-                        lazyWorker.submit(new Runnable() {
-                            @Override public void run() {
-                                cancelStatement(stmt);
-                            }
-                        });
+            try {
+                cancel.set(new GridQueryCancel.Cancellable() {
+                    @Override public void run() {
+                        if (lazyWorker != null) {
+                            lazyWorker.submit(new Runnable() {
+                                @Override public void run() {
+                                    cancelStatement(stmt);
+                                }
+                            });
+                        }
+                        else
+                            cancelStatement(stmt);
                     }
-                    else
-                        cancelStatement(stmt);
-                }
-            });
+
+                    @Override public String buildExceptionMessage(){
+                        return String.format(
+                            "The query was cancelled before executing [query=%s, localNodeId=%s, reason=%s, timeout=%s ms]",
+                            stmt,
+                            nodeId,
+                            timeoutMillis > 0 ? "Statement with timeout was cancelled" : "Cancelled by client",
+                            timeoutMillis
+                        );
+                    }
+                });
+            }
+            catch(QueryCancelledException e){
+                throw new CacheException(e);
+            }
         }
 
         Session ses = H2Utils.session(conn);
@@ -1181,7 +1196,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         catch (SQLException e) {
             // Throw special exception.
             if (e.getErrorCode() == ErrorCode.STATEMENT_WAS_CANCELED)
-                throw new QueryCancelledException();
+                throw new CacheException(new QueryCancelledException(String.format(
+                    "The query was cancelled while executing [query=%s, localNodeId=%s, reason=%s, timeout=%s ms]",
+                    stmt,
+                    ctx.localNodeId(),
+                    timeoutMillis > 0 ? "Statement with timeout was cancelled" : "Cancelled by client",
+                    timeoutMillis
+                )));
 
             throw new IgniteCheckedException("Failed to execute SQL query. " + e.getMessage(), e);
         }

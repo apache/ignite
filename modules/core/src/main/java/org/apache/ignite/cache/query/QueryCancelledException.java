@@ -30,6 +30,11 @@ public class QueryCancelledException extends IgniteCheckedException {
      * Default constructor.
      */
     public QueryCancelledException() {
-        super("The query was cancelled while executing.");
+        super("The query was cancelled while executing");
+    }
+
+    /** {@inheritDoc} */
+    public QueryCancelledException(String msg) {
+        super(msg, null, false);
     }
 }

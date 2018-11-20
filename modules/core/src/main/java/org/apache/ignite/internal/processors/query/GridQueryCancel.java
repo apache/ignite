@@ -25,32 +25,40 @@ import org.apache.ignite.cache.query.QueryCancelledException;
  */
 public class GridQueryCancel {
     /** No-op runnable indicating cancelled state. */
-    private static final Runnable CANCELLED = new Runnable() {
+    private static final Cancellable CANCELLED = new Cancellable() {
+
+        @Override public String buildExceptionMessage() {
+            return null; //checked
+        }
+
         @Override public void run() {
             // No-op.
         }
     };
 
     /** */
-    private static final AtomicReferenceFieldUpdater<GridQueryCancel, Runnable> STATE_UPDATER =
-        AtomicReferenceFieldUpdater.newUpdater(GridQueryCancel.class, Runnable.class, "clo");
+    private static final AtomicReferenceFieldUpdater<GridQueryCancel, Cancellable> STATE_UPDATER =
+        AtomicReferenceFieldUpdater.newUpdater(GridQueryCancel.class, Cancellable.class, "clo");
 
     /** */
-    private volatile Runnable clo;
+    private volatile Cancellable clo;
+
+    /** */
+    private volatile String msg;
 
     /**
      * Sets a cancel closure.
      *
      * @param clo Clo.
      */
-    public void set(Runnable clo) throws QueryCancelledException {
+    public void set(Cancellable clo) throws QueryCancelledException {
         assert clo != null;
 
         while(true) {
-            Runnable tmp = this.clo;
+            Cancellable tmp = this.clo;
 
             if (tmp == CANCELLED)
-                throw new QueryCancelledException();
+                throw new QueryCancelledException(msg != null ? msg : clo.buildExceptionMessage());
 
             if (STATE_UPDATER.compareAndSet(this, tmp, clo))
                 return;
@@ -62,7 +70,15 @@ public class GridQueryCancel {
      */
     public void cancel() {
         while(true) {
-            Runnable tmp = this.clo;
+            Cancellable tmp = this.clo;
+
+            if (tmp != null) {
+                String msg = tmp.buildExceptionMessage();
+
+                //CANCELLED state has null
+                if (msg != null)
+                    this.msg = msg;
+            }
 
             if (STATE_UPDATER.compareAndSet(this, tmp, CANCELLED)) {
                 if (tmp != null)
@@ -78,6 +94,16 @@ public class GridQueryCancel {
      */
     public void checkCancelled() throws QueryCancelledException {
         if (clo == CANCELLED)
-            throw new QueryCancelledException();
+            throw new QueryCancelledException(msg != null ? msg : "The query was cancelled before initialization.");
+    }
+
+    /**
+     * Special interface for closure
+     */
+    public interface Cancellable extends Runnable {
+        /**
+         * @return Message to show in case of exception
+         */
+        String buildExceptionMessage();
     }
 }

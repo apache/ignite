@@ -290,11 +290,16 @@ public class GridReduceQueryExecutor {
      */
     private void fail(ReduceQueryRun r, UUID nodeId, String msg, byte failCode) {
         if (r != null) {
-            CacheException e = new CacheException("Failed to execute map query on remote node [nodeId=" + nodeId +
-                ", errMsg=" + msg + ']');
+            CacheException e;
 
-            if (failCode == GridQueryFailResponse.CANCELLED_BY_ORIGINATOR)
-                e.addSuppressed(new QueryCancelledException());
+            if (failCode == GridQueryFailResponse.CANCELLED_BY_ORIGINATOR) {
+                e = new CacheException("Failed to execute map query on remote node [nodeId=" + nodeId +
+                    ", reason=" + msg + ']', new QueryCancelledException());
+            }
+            else {
+                e = new CacheException("Failed to execute map query on remote node [nodeId=" + nodeId +
+                    ", errMsg=" + msg + ']');
+            }
 
             r.setStateOnException(nodeId, e);
         }
@@ -798,31 +803,21 @@ public class GridReduceQueryExecutor {
 
                 final long qryReqId0 = qryReqId;
 
-                cancel.set(new Runnable() {
+                cancel.set(new GridQueryCancel.Cancellable() {
                     @Override public void run() {
                         send(finalNodes, new GridQueryCancelRequest(qryReqId0), null, false);
                     }
+
+                    @Override public String buildExceptionMessage(){
+                        return String.format(
+                            "The query was cancelled while executing [query=%s, localNodeId=%s, reason=%s, timeout=%s ms]",
+                            qry.originalSql(),
+                            ctx.localNodeId(),
+                            timeoutMillis > 0 ? "Statement with timeout was cancelled" : "Cancelled by client",
+                            timeoutMillis
+                        );
+                    }
                 });
-
-                boolean retry = false;
-
-                // Always enforce join order on map side to have consistent behavior.
-                int flags = GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER;
-
-                if (distributedJoins)
-                    flags |= GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS;
-
-                if (qry.isLocal())
-                    flags |= GridH2QueryRequest.FLAG_IS_LOCAL;
-
-                if (qry.explain())
-                    flags |= GridH2QueryRequest.FLAG_EXPLAIN;
-
-                if (isReplicatedOnly)
-                    flags |= GridH2QueryRequest.FLAG_REPLICATED;
-
-                if (lazy && mapQrys.size() == 1)
-                    flags |= GridH2QueryRequest.FLAG_LAZY;
 
                 GridH2QueryRequest req = new GridH2QueryRequest()
                     .requestId(qryReqId)
@@ -833,7 +828,7 @@ public class GridReduceQueryExecutor {
                     .partitions(convert(partsMap))
                     .queries(mapQrys)
                     .parameters(params)
-                    .flags(flags)
+                    .flags(prepareFlags(qry, lazy, mapQrys.size()))
                     .timeout(timeoutMillis)
                     .schemaName(schemaName);
 
@@ -876,31 +871,12 @@ public class GridReduceQueryExecutor {
                 else
                     spec = pspec;
 
+                boolean retry;
+
                 if (send(nodes, req, spec, false)) {
                     awaitAllReplies(r, nodes, cancel);
 
-                    if (r.hasErrorOrRetry()) {
-                        CacheException err = r.exception();
-
-                        if (err != null) {
-                            if (err.getCause() instanceof IgniteClientDisconnectedException)
-                                throw err;
-
-                            if (wasCancelled(err))
-                                throw new QueryCancelledException(); // Throw correct exception.
-
-                            throw err;
-                        }
-                        else {
-                            retry = true;
-
-                            // On-the-fly topology change must not be possible in FOR UPDATE case.
-                            assert sfuFut == null;
-
-                            // If remote node asks us to retry then we have outdated full partition map.
-                            h2.awaitForReadyTopologyVersion(r.retryTopologyVersion());
-                        }
-                    }
+                    retry = analyseCurrentRun(r, sfuFut);
                 }
                 else // Send failed.
                     retry = true;
@@ -977,8 +953,16 @@ public class GridReduceQueryExecutor {
 
                 if (e instanceof CacheException) {
                     if (wasCancelled((CacheException)e))
-                        resEx = new  CacheException("Failed to run reduce query locally.",
-                            new QueryCancelledException());
+                        resEx = new  CacheException(
+                            "Failed to run reduce query locally.",
+                            new QueryCancelledException(
+                                String.format("The query was cancelled [query=%s, localNodeId=%s, reason=%s]",
+                                    qry.originalSql(),
+                                    ctx.localNodeId(),
+                                    e.getMessage()
+                                )
+                            )
+                        );
                     else
                         resEx = (CacheException)e;
                 }
@@ -992,7 +976,14 @@ public class GridReduceQueryExecutor {
 
                 Throwable cause = e;
 
-                if (e instanceof IgniteCheckedException) {
+                if (e instanceof QueryCancelledException) {
+                    cause = new QueryCancelledException(String.format("The query was cancelled [query=%s, localNodeId=%s, reason=%s]",
+                        qry.originalSql(),
+                        ctx.localNodeId(),
+                        e.getMessage()
+                    ));
+                }
+                else if (e instanceof IgniteCheckedException) {
                     Throwable disconnectedErr =
                         ((IgniteCheckedException)e).getCause(IgniteClientDisconnectedException.class);
 
@@ -1018,6 +1009,71 @@ public class GridReduceQueryExecutor {
                 }
             }
         }
+    }
+
+    /**
+     * Analyse reduce query run to decide if retry is required.
+     *
+     * @param r Reduce query run to be analysed.
+     * @param sfuFut Grid near tx select for update future.
+     * @return {@code true} if retry is required, {@code false} otherwise.
+     * @throws IgniteCheckedException In case of reduce query run contains exception record.
+     */
+    private boolean analyseCurrentRun(ReduceQueryRun r, GridNearTxSelectForUpdateFuture sfuFut)
+        throws IgniteCheckedException {
+        if (r.hasErrorOrRetry()) {
+            if (r.exception() != null) {
+                CacheException err = r.exception();
+
+                if (err.getCause() instanceof IgniteClientDisconnectedException)
+                    throw err;
+
+                if( wasCancelled(err) || X.hasCause(err, QueryCancelledException.class))
+                    throw new QueryCancelledException(err.getMessage());
+
+                throw err;
+            }
+            else {
+                // On-the-fly topology change must not be possible in FOR UPDATE case.
+                assert sfuFut == null;
+
+                // If remote node asks us to retry then we have outdated full partition map.
+                h2.awaitForReadyTopologyVersion(r.retryTopologyVersion());
+
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Builds flag out of parameters.
+     *
+     * @param qry Query parameter holder.
+     * @param lazy If lazy execution.
+     * @param mapQrysSize Number of queries.
+     * @return flag.
+     */
+    private int prepareFlags(GridCacheTwoStepQuery qry, boolean lazy, int mapQrysSize) {
+        // Always enforce join order on map side to have consistent behavior.
+        int flags = GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER;
+
+        if (qry.distributedJoins())
+            flags |= GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS;
+
+        if (qry.isLocal())
+            flags |= GridH2QueryRequest.FLAG_IS_LOCAL;
+
+        if (qry.explain())
+            flags |= GridH2QueryRequest.FLAG_EXPLAIN;
+
+        if (qry.isReplicatedOnly())
+            flags |= GridH2QueryRequest.FLAG_REPLICATED;
+
+        if (lazy && mapQrysSize == 1)
+            flags |= GridH2QueryRequest.FLAG_LAZY;
+
+        return flags;
     }
 
     /**
@@ -1110,11 +1166,21 @@ public class GridReduceQueryExecutor {
 
             final Collection<ClusterNode> finalNodes = nodes;
 
-            cancel.set(new Runnable() {
+            cancel.set(new GridQueryCancel.Cancellable() {
                 @Override public void run() {
                     r.future().onCancelled();
 
                     send(finalNodes, new GridQueryCancelRequest(reqId), null, false);
+                }
+
+                @Override public String buildExceptionMessage(){
+                    return String.format(
+                        "The query was cancelled [query=%s, localNodeId=%s, reason=%s, timeout=%s ms]",
+                        selectQry,
+                        ctx.localNodeId(),
+                        timeoutMillis > 0 ? "Query with timeout was cancelled" : "Cancelled by client",
+                        timeoutMillis
+                    );
                 }
             });
 
@@ -1217,6 +1283,17 @@ public class GridReduceQueryExecutor {
                 }
             }
         }
+
+        r.setStateOnException(
+            ctx.localNodeId(),
+            new CacheException(new QueryCancelledException(
+                String.format("The query was cancelled while executing [query=%s, localNodeId=%s, reason=%s]",
+                    r.queryInfo().query(),
+                    ctx.localNodeId(),
+                    "Cancelled by client"
+                ))
+            )
+        );
 
         if (!runs.remove(qryReqId, r))
             U.warn(log, "Query run was already removed: " + qryReqId);
