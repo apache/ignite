@@ -1948,7 +1948,7 @@ export class NotebookCtrl {
     ]
 
     async renameParagraph(paragraph: Paragraph) {
-        const newName = await this.IgniteInput.input('Rename query', 'New query name', paragraph.name);
+        const newName = await this.IgniteInput.input('Rename Query', 'New query name:', paragraph.name);
 
         if (!newName)
             return;
