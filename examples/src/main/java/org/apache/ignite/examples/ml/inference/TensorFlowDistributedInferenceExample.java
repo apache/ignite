@@ -41,10 +41,10 @@ import org.apache.ignite.ml.util.MnistUtils;
 import org.tensorflow.Tensor;
 
 /**
- * This example demonstrates how to: load TensorFlow model into Java, make inference using this model in one thread,
- * multiple threads and in distributed environment using Apache Ignite.
+ * This example demonstrates how to: load TensorFlow model into Java, make inference in distributed environment using
+ * Apache Ignite services.
  */
-public class TensorFlowInferenceExample {
+public class TensorFlowDistributedInferenceExample {
     /** Path to the directory with saved TensorFlow model. */
     private static final String MODEL_PATH = "examples/src/main/resources/ml/mnist_tf_model";
 
@@ -83,32 +83,9 @@ public class TensorFlowInferenceExample {
                 10000
             );
 
-            System.out.println("Testing local model...");
-            long t1 = System.currentTimeMillis();
+            long t0 = System.currentTimeMillis();
 
-            try (InfModel<double[], Long> locMdl = new SingleInfModelBuilder().build(reader, parser)) {
-                for (MnistUtils.MnistLabeledImage image : images)
-                    locMdl.predict(image.getPixels());
-            }
-
-            long t2 = System.currentTimeMillis();
-            System.out.println("Local model time: " + (t2 - t1) / 1000 + " s");
-
-            System.out.println("Testing distributed model...");
-            try (InfModel<double[], Future<Long>> distributedMdl = new IgniteDistributedInfModelBuilder(ignite, 4, 4)
-                         .build(reader, parser)) {
-                List<Future<?>> futures = new ArrayList<>(images.size());
-                for (MnistUtils.MnistLabeledImage image : images)
-                    futures.add(distributedMdl.predict(image.getPixels()));
-                for (Future<?> f : futures)
-                    f.get();
-            }
-
-            long t3 = System.currentTimeMillis();
-            System.out.println("Distributed model time: " + (t3 - t2) / 1000 + " s");
-
-            System.out.println("Testing threaded model...");
-            try (InfModel<double[], Future<Long>> threadedMdl = new ThreadedInfModelBuilder(8)
+            try (InfModel<double[], Future<Long>> threadedMdl = new IgniteDistributedInfModelBuilder(ignite, 4, 4)
                 .build(reader, parser)) {
                 List<Future<?>> futures = new ArrayList<>(images.size());
                 for (MnistUtils.MnistLabeledImage image : images)
@@ -117,8 +94,9 @@ public class TensorFlowInferenceExample {
                     f.get();
             }
 
-            long t4 = System.currentTimeMillis();
-            System.out.println("Threaded model time: " + (t4 - t3) / 1000 + " s");
+            long t1 = System.currentTimeMillis();
+
+            System.out.println("Threaded model throughput: " + images.size() / ((t1 - t0) / 1000.0) + " req/sec");
         }
     }
 }
