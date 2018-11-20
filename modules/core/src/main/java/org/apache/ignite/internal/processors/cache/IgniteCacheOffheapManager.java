@@ -1091,8 +1091,10 @@ public interface IgniteCacheOffheapManager {
 
         /**
          * Flushes pending update counters closing all possible gaps.
+         *
+         * @return Even-length array of pairs [start, end] for each gap.
          */
-        public void finalizeUpdateCountres();
+        GridLongList finalizeUpdateCounters();
 
         /**
          * Preload a store into page memory.

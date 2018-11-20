@@ -1962,22 +1962,23 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 req.subjectId(),
                 req.taskNameHash());
         }
-        catch (IgniteCheckedException | IgniteException ex) {
+        catch (Throwable e) {
             GridNearTxQueryResultsEnlistResponse res = new GridNearTxQueryResultsEnlistResponse(req.cacheId(),
                 req.futureId(),
                 req.miniId(),
                 req.version(),
-                ex);
+                e);
 
             try {
                 ctx.io().send(nearNode, res, ctx.ioPolicy());
             }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to send near enlist response [" +
-                    "txId=" + req.version() +
-                    ", node=" + nodeId +
-                    ", res=" + res + ']', e);
+            catch (IgniteCheckedException ioEx) {
+                U.error(log, "Failed to send near enlist response " +
+                    "[txId=" + req.version() + ", node=" + nodeId + ", res=" + res + ']', ioEx);
             }
+
+            if (e instanceof Error)
+                throw (Error) e;
 
             return;
         }
@@ -2229,26 +2230,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
     /**
      * @param primary Primary node.
-     * @param req Request.
-     * @param e Error.
-     */
-    private void onError(UUID primary, GridDhtTxQueryEnlistRequest req, Throwable e) {
-        GridDhtTxQueryEnlistResponse res = new GridDhtTxQueryEnlistResponse(ctx.cacheId(),
-            req.dhtFutureId(),
-            req.batchId(),
-            e);
-
-        try {
-            ctx.io().send(primary, res, ctx.ioPolicy());
-        }
-        catch (IgniteCheckedException ioEx) {
-            U.error(log, "Failed to send DHT enlist reply to primary node [node: " + primary + ", req=" + req +
-                ']', ioEx);
-        }
-    }
-
-    /**
-     * @param primary Primary node.
      * @param req Message.
      * @param first Flag if this is a first request in current operation.
      */
@@ -2318,8 +2299,22 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     req + ']', ioEx);
             }
         }
-        catch (IgniteCheckedException e) {
-            onError(primary, req, e);
+        catch (Throwable e) {
+            GridDhtTxQueryEnlistResponse res = new GridDhtTxQueryEnlistResponse(ctx.cacheId(),
+                req.dhtFutureId(),
+                req.batchId(),
+                e);
+
+            try {
+                ctx.io().send(primary, res, ctx.ioPolicy());
+            }
+            catch (IgniteCheckedException ioEx) {
+                U.error(log, "Failed to send DHT enlist reply to primary node " +
+                    "[node: " + primary + ", req=" + req + ']', ioEx);
+            }
+
+            if (e instanceof Error)
+                throw (Error) e;
         }
     }
 

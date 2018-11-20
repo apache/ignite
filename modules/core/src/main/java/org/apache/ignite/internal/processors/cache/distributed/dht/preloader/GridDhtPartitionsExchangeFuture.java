@@ -1457,6 +1457,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         changeWalModeIfNeeded();
 
+        if (events().hasServerLeft())
+            finalizePartitionCounters();
+
         cctx.exchange().exchangerBlockingSectionBegin();
 
         try {
@@ -3459,6 +3462,17 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
+     * Collects non local cache groups.
+     *
+     * @return Collection of non local cache groups.
+     */
+    private List<CacheGroupContext> nonLocalCacheGroups() {
+        return cctx.cache().cacheGroups().stream()
+            .filter(grp -> !grp.isLocal() && !cacheGroupStopping(grp.groupId()))
+            .collect(Collectors.toList());
+    }
+
+    /**
      * Validates that partition update counters and cache sizes for all caches are consistent.
      */
     private void validatePartitionsState() {
@@ -3539,6 +3553,41 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         if (log.isInfoEnabled())
             log.info("Partitions assignment performed in " + (System.currentTimeMillis() - time) + " ms.");
+    }
+
+    /**
+     * Removes gaps in the local update counters. Gaps in update counters are possible on backup node when primary
+     * failed to send update counter deltas to backup.
+     */
+    private void finalizePartitionCounters() {
+        long time = System.currentTimeMillis();
+
+        try {
+            int parallelismLvl = cctx.kernalContext().config().getSystemThreadPoolSize();
+
+            // Reserve at least 2 threads for system operations.
+            parallelismLvl = Math.max(1, parallelismLvl - 2);
+
+            if (parallelismLvl > 1) {
+                U.doInParallel(parallelismLvl,
+                    cctx.kernalContext().getSystemExecutorService(),
+                    nonLocalCacheGroups(),
+                    grp -> {
+                        grp.topology().finalizeUpdateCounters();
+
+                        return null;
+                    }
+                );
+            }
+            else
+                nonLocalCacheGroups().forEach(grp -> grp.topology().finalizeUpdateCounters());
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to finalize partition counters", e);
+        }
+
+        if (log.isInfoEnabled())
+            log.info("Partition counters finalization performed in " + (System.currentTimeMillis() - time) + " ms.");
     }
 
     /**

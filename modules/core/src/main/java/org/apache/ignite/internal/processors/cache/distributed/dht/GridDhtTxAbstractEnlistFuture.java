@@ -644,7 +644,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                 updRes.oldValue(), tx.local(), tx.topologyVersion(), mvccSnapshot, cctx.cacheId(), tx, null, -1);
 
         if (op != EnlistOperation.LOCK)
-            addToBatch(entry.key(), val, updRes.mvccHistory(), entry.context().cacheId());
+            addToBatch(entry.key(), val, updRes.mvccHistory(), entry.context().cacheId(), op);
     }
 
     /**
@@ -657,7 +657,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
      * @param cacheId Cache Id.
      */
     private void addToBatch(KeyCacheObject key, Message val, List<MvccLinkAwareSearchRow> hist,
-        int cacheId) throws IgniteCheckedException {
+        int cacheId, EnlistOperation op) throws IgniteCheckedException {
         List<ClusterNode> backups = backupNodes(key);
 
         int part = cctx.affinity().partition(key);
@@ -695,13 +695,15 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
             if (batch == null)
                 batches.put(node.id(), batch = new Batch(node));
 
-            if (moving && hist0 == null) {
+            if (moving && hist0 == null && !op.isInvoke()) {
                 assert !F.isEmpty(hist);
 
                 hist0 = fetchHistoryInfo(key, hist);
             }
 
-            batch.add(key, moving ? hist0 : val);
+            Message m = moving && !op.isInvoke() ? hist0 : val;
+
+            batch.add(key, m);
 
             if (batch.size() == BATCH_SIZE) {
                 assert batches != null;
