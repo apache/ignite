@@ -71,24 +71,6 @@ mixin notebook-error
     label.col-sm-12 Notebook not accessible any more. Go back to notebooks list.
     button.h3.btn.btn-primary(ui-sref='default-state') Leave Notebook
 
-mixin paragraph-rename
-    .col-sm-6(ng-hide='paragraph.edit')
-        i.fa(ng-class='paragraphExpanded(paragraph) ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
-        label {{paragraph.name}}
-
-        .btn-group(ng-hide='notebook.paragraphs.length > 1')
-            +btn-toolbar('fa-pencil', 'paragraph.edit = true; paragraph.editName = paragraph.name; $event.stopPropagation();', 'Rename query', 'paragraph-name-{{paragraph.id}}')
-
-        .btn-group(ng-show='notebook.paragraphs.length > 1' ng-click='$event.stopPropagation();')
-            +btn-toolbar('fa-pencil', 'paragraph.edit = true; paragraph.editName = paragraph.name;', 'Rename query', 'paragraph-name-{{paragraph.id}}')
-            +btn-toolbar('fa-remove', 'removeParagraph(paragraph)', 'Remove query')
-
-    .col-sm-6(ng-show='paragraph.edit')
-        i.tipLabel.fa(style='float: left;' ng-class='paragraphExpanded(paragraph) ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
-        i.tipLabel.fa.fa-floppy-o(style='float: right;' ng-show='paragraph.editName' ng-click='renameParagraph(paragraph, paragraph.editName); $event.stopPropagation();' bs-tooltip data-title='Save query name' data-trigger='hover')
-        .input-tip
-            input.form-control(id='paragraph-name-{{paragraph.id}}' ng-model='paragraph.editName' required ng-click='$event.stopPropagation();' ignite-on-enter='renameParagraph(paragraph, paragraph.editName)' ignite-on-escape='paragraph.edit = false')
-
 mixin query-settings
     div
         .form-field--inline(
@@ -190,20 +172,6 @@ mixin query-settings
                 Use this flag as a hint for Ignite to fetch result set lazily, thus minimizing memory consumption at the cost of moderate performance hit.',
                 tipOpts: { placement: 'top' }
             })
-
-mixin query-actions
-    button.btn-ignite.btn-ignite--primary(ng-disabled='!queryAvailable(paragraph)' ng-click='execute(paragraph)')
-        span.icon-left.fa.fa-fw.fa-play(ng-hide='paragraph.executionInProgress(false)')
-        span.icon-left.fa.fa-fw.fa-refresh.fa-spin(ng-show='paragraph.executionInProgress(false)')
-        | Execute
-
-    button.btn-ignite.btn-ignite--primary(ng-disabled='!queryAvailable(paragraph)' ng-click='execute(paragraph, true)')
-        span.icon-left.fa.fa-fw.fa-play(ng-hide='paragraph.executionInProgress(true)')
-        span.icon-left.fa.fa-fw.fa-refresh.fa-spin(ng-show='paragraph.executionInProgress(true)')
-        | Execute on selected node
-
-    button.btn-ignite.btn-ignite--secondary(ng-disabled='!queryAvailable(paragraph)' ng-click='explain(paragraph)' data-placement='bottom' bs-tooltip='' data-title='{{queryTooltip(paragraph, "explain query")}}')
-        | Explain
 
 mixin table-result-heading-query
     .total.row
@@ -314,10 +282,10 @@ mixin chart-result
         label.margin-top-dflt Charts do not support #[b Explain] and #[b Scan] query
 
 mixin paragraph-scan
-    .panel-heading(bs-collapse-toggle)
-        .row
-            +paragraph-rename
-    .panel-collapse(role='tabpanel' bs-collapse-target)
+    panel-title {{ paragraph.name }}
+    panel-actions
+        query-actions-button(actions='$ctrl.scanActions' item='paragraph')
+    panel-content
         .col-sm-12.sql-controls
             .col-sm-3
                 +form-field__dropdown({
@@ -348,16 +316,6 @@ mixin paragraph-scan
 
         .col-sm-12.sql-controls
             div
-                button.btn-ignite.btn-ignite--primary(ng-disabled='!scanAvailable(paragraph)' ng-click='scan(paragraph)')
-                    span.icon-left.fa.fa-fw.fa-play(ng-hide='paragraph.checkScanInProgress(false)')
-                    span.icon-left.fa.fa-fw.fa-refresh.fa-spin(ng-show='paragraph.checkScanInProgress(false)')
-                    | Scan
-
-                button.btn-ignite.btn-ignite--primary(ng-disabled='!scanAvailable(paragraph)' ng-click='scan(paragraph, true)')
-                    span.icon-left.fa.fa-fw.fa-play(ng-hide='paragraph.checkScanInProgress(true)')
-                    span.icon-left.fa.fa-fw.fa-refresh.fa-spin(ng-show='paragraph.checkScanInProgress(true)')
-                    | Scan on selected node
-            div
 
         .col-sm-12.sql-result(ng-if='paragraph.queryExecuted() && !paragraph.scanningInProgress' ng-switch='paragraph.resultType()')
             .error(ng-switch-when='error') Error: {{paragraph.error.message}}
@@ -378,9 +336,10 @@ mixin paragraph-scan
                     a Next
 
 mixin paragraph-query
-    .row.panel-heading(bs-collapse-toggle)
-        +paragraph-rename
-    .panel-collapse.ng-animate-disabled(role='tabpanel' bs-collapse-target)
+    panel-title {{ paragraph.name }}
+    panel-actions
+        query-actions-button(actions='$ctrl.queryActions' item='paragraph')
+    panel-content
         .col-sm-12
             .col-xs-8.col-sm-9(style='border-right: 1px solid #eee')
                 .sql-editor(ignite-ace='{onLoad: aceInit(paragraph), theme: "chrome", mode: "sql", require: ["ace/ext/language_tools"],' +
@@ -418,9 +377,6 @@ mixin paragraph-query
                 .empty-caches(ng-show='caches.length == 0')
                     label No caches
         .col-sm-12.sql-controls
-            div
-                +query-actions
-
             +query-settings
         .col-sm-12.sql-result(ng-if='paragraph.queryExecuted()' ng-switch='paragraph.resultType()')
             .error(ng-switch-when='error')
@@ -510,10 +466,19 @@ div
 
     div(ng-if='notebook' ignite-loading='sqlLoading' ignite-loading-text='{{ loadingText }}' ignite-loading-position='top')
         .docs-body.paragraphs
-            .panel-group(bs-collapse ng-model='notebook.expandedParagraphs' data-allow-multiple='true' data-start-collapsed='false')
-
+            .panel-group
                 .panel-paragraph(ng-repeat='paragraph in notebook.paragraphs' id='{{paragraph.id}}' ng-form='form_{{paragraph.id}}')
-                    .panel.panel-default(ng-if='paragraph.qryType === "scan"')
+                    panel-collapsible(
+                        ng-if='paragraph.qryType === "scan"'
+                        opened='$ctrl.isParagraphOpened($index)'
+                        on-close='$ctrl.onParagraphClose($index)'
+                        on-open='$ctrl.onParagraphOpen($index)'
+                    )
                         +paragraph-scan
-                    .panel.panel-default(ng-if='paragraph.qryType === "query"')
+                    panel-collapsible(
+                        ng-if='paragraph.qryType === "query"'
+                        opened='$ctrl.isParagraphOpened($index)'
+                        on-close='$ctrl.onParagraphClose($index)'
+                        on-open='$ctrl.onParagraphOpen($index)'
+                    )
                         +paragraph-query

@@ -35,6 +35,12 @@ import cacheMetadataTemplateUrl from 'views/sql/cache-metadata.tpl.pug';
 import chartSettingsTemplateUrl from 'views/sql/chart-settings.tpl.pug';
 import messageTemplateUrl from 'views/templates/message.tpl.pug';
 
+import {default as Notebook} from '../../notebook.service';
+import {default as MessagesServiceFactory} from 'app/services/Messages.service';
+import {default as LegacyConfirmServiceFactory} from 'app/services/Confirm.service';
+import {default as InputDialog} from 'app/components/input-dialog/input-dialog.service';
+import {QueryActions} from './components/query-actions-button/controller';
+
 // Time line X axis descriptor.
 const TIME_LINE = {value: -1, type: 'java.sql.Date', label: 'TIME_LINE'};
 
@@ -68,6 +74,9 @@ const _fullColName = (col) => {
 let paragraphId = 0;
 
 class Paragraph {
+    name: string
+    qryType: 'scan' | 'query'
+
     constructor($animate, $timeout, JavaTypes, errorParser, paragraph) {
         const self = this;
 
@@ -253,12 +262,12 @@ class Paragraph {
 
 // Controller for SQL notebook screen.
 export class NotebookCtrl {
-    static $inject = ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'AgentManager', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData', 'JavaTypes', 'IgniteCopyToClipboard', 'CSV', 'IgniteErrorParser', 'DemoInfo'];
+    static $inject = ['IgniteInput', '$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'AgentManager', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData', 'JavaTypes', 'IgniteCopyToClipboard', 'CSV', 'IgniteErrorParser', 'DemoInfo'];
 
     /**
      * @param {CSV} CSV
      */
-    constructor($root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, IgniteCopyToClipboard, CSV, errorParser, DemoInfo) {
+    constructor(private IgniteInput: InputDialog, $root, private $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, private Messages: ReturnType<typeof MessagesServiceFactory>, private Confirm: ReturnType<typeof LegacyConfirmServiceFactory>, agentMgr, IgniteChartColors, private Notebook: Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, IgniteCopyToClipboard, CSV, errorParser, DemoInfo) {
         const $ctrl = this;
 
         this.CSV = CSV;
@@ -1005,23 +1014,6 @@ export class NotebookCtrl {
 
         $scope.removeNotebook = (notebook) => Notebook.remove(notebook);
 
-        $scope.renameParagraph = function(paragraph, newName) {
-            if (!newName)
-                return;
-
-            if (paragraph.name !== newName) {
-                paragraph.name = newName;
-
-                $scope.rebuildScrollParagraphs();
-
-                Notebook.save($scope.notebook)
-                    .then(() => paragraph.edit = false)
-                    .catch(Messages.showError);
-            }
-            else
-                paragraph.edit = false;
-        };
-
         $scope.addParagraph = (paragraph, sz) => {
             if ($scope.caches && $scope.caches.length > 0)
                 paragraph.cacheName = _.head($scope.caches).value;
@@ -1123,31 +1115,6 @@ export class NotebookCtrl {
 
         $scope.resultEq = function(paragraph, result) {
             return (paragraph.result === result);
-        };
-
-        $scope.removeParagraph = function(paragraph) {
-            Confirm.confirm('Are you sure you want to remove query: "' + paragraph.name + '"?')
-                .then(function() {
-                    $scope.stopRefresh(paragraph);
-
-                    const paragraph_idx = _.findIndex($scope.notebook.paragraphs, function(item) {
-                        return paragraph === item;
-                    });
-
-                    const panel_idx = _.findIndex($scope.expandedParagraphs, function(item) {
-                        return paragraph_idx === item;
-                    });
-
-                    if (panel_idx >= 0)
-                        $scope.expandedParagraphs.splice(panel_idx, 1);
-
-                    $scope.notebook.paragraphs.splice(paragraph_idx, 1);
-
-                    $scope.rebuildScrollParagraphs();
-
-                    Notebook.save($scope.notebook)
-                        .catch(Messages.showError);
-                });
         };
 
         $scope.paragraphExpanded = function(paragraph) {
@@ -1943,6 +1910,90 @@ export class NotebookCtrl {
                 $modal({scope, templateUrl: messageTemplateUrl, show: true});
             }
         };
+    }
+
+    scanActions: QueryActions<Paragraph & {type: 'scan'}> = [
+        {
+            text: 'Scan',
+            click: (p) => this.$scope.scan(p),
+            available: (p) => this.$scope.scanAvailable(p)
+        },
+        {
+            text: 'Scan on selected node',
+            click: (p) => this.$scope.scan(p, true),
+            available: (p) => this.$scope.scanAvailable(p)
+        },
+        {text: 'Rename', click: (p) => this.renameParagraph(p), available: () => true},
+        {text: 'Remove', click: (p) => this.removeParagraph(p), available: () => true}
+    ]
+
+    queryActions: QueryActions<Paragraph & {type: 'query'}> = [
+        {
+            text: 'Execute',
+            click: (p) => this.$scope.execute(p),
+            available: (p) => this.$scope.queryAvailable(p)
+        },
+        {
+            text: 'Execute on selected node',
+            click: (p) => this.$scope.execute(p, true),
+            available: (p) => this.$scope.queryAvailable(p)
+        },
+        {
+            text: 'Explain',
+            click: (p) => this.$scope.explain(p),
+            available: (p) => this.$scope.queryAvailable(p)
+        },
+        {text: 'Rename', click: (p) => this.renameParagraph(p), available: () => true},
+        {text: 'Remove', click: (p) => this.removeParagraph(p), available: () => true}
+    ]
+
+    async renameParagraph(paragraph: Paragraph) {
+        const newName = await this.IgniteInput.input('Rename query', 'New query name', paragraph.name);
+
+        if (!newName)
+            return;
+
+        if (paragraph.name !== newName) {
+            paragraph.name = newName;
+
+            this.$scope.rebuildScrollParagraphs();
+
+            this.Notebook.save(this.$scope.notebook)
+                .catch(this.Messages.showError);
+        }
+    }
+
+    async removeParagraph(paragraph: Paragraph) {
+        try {
+            await this.Confirm.confirm('Are you sure you want to remove query: "' + paragraph.name + '"?');
+            this.$scope.stopRefresh(paragraph);
+
+            const paragraph_idx = _.findIndex(this.$scope.notebook.paragraphs, (item) => paragraph === item);
+            const panel_idx = _.findIndex(this.$scope.expandedParagraphs, (item) => paragraph_idx === item);
+
+            if (panel_idx >= 0)
+                this.$scope.expandedParagraphs.splice(panel_idx, 1);
+
+            this.$scope.notebook.paragraphs.splice(paragraph_idx, 1);
+            this.$scope.rebuildScrollParagraphs();
+
+            await this.Notebook.save(this.$scope.notebook).catch(this.Messages.showError);
+        } catch (e) {
+            // This is annoying
+        }
+    }
+
+    isParagraphOpened(index: number) {
+        return this.$scope.notebook.expandedParagraphs.includes(index);
+    }
+
+    onParagraphClose(index: number) {
+        const expanded = this.$scope.notebook.expandedParagraphs;
+        expanded.splice(expanded.indexOf(index), 1);
+    }
+
+    onParagraphOpen(index: number) {
+        this.$scope.notebook.expandedParagraphs.push(index);
     }
 
     $onDestroy() {
