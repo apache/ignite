@@ -688,7 +688,12 @@ public class IgniteTxHandler {
     private boolean needRemap(AffinityTopologyVersion expVer,
         AffinityTopologyVersion curVer,
         GridNearTxPrepareRequest req) {
-        if (expVer.equals(curVer))
+        if (curVer.equals(expVer))
+            return false;
+
+        AffinityTopologyVersion lastAffChangedTopVer = ctx.exchange().lastAffinityChangedTopologyVersion(expVer);
+
+        if (curVer.compareTo(expVer) <= 0 && curVer.compareTo(lastAffChangedTopVer) >= 0)
             return false;
 
         // TODO IGNITE-6754 check mvcc crd for mvcc enabled txs.

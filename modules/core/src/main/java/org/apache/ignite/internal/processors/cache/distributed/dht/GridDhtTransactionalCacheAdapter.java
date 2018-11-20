@@ -1082,7 +1082,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             }
 
             try {
-                if (top != null && needRemap(req.topologyVersion(), top.readyTopologyVersion())) {
+                if (top != null && needRemap(req.topologyVersion(), top.readyTopologyVersion(), req.keys())) {
                     if (log.isDebugEnabled()) {
                         log.debug("Client topology version mismatch, need remap lock request [" +
                             "reqTopVer=" + req.topologyVersion() +
@@ -2122,7 +2122,10 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                 GridDhtTopologyFuture topFut = top.topologyVersionFuture();
 
-                if (!topFut.isDone() || !topFut.topologyVersion().equals(topVer)) {
+                boolean done = topFut.isDone();
+
+                if (!done || !(topFut.topologyVersion().compareTo(topVer) >= 0
+                    && ctx.shared().exchange().lastAffinityChangedTopologyVersion(topFut.initialVersion()).compareTo(topVer) <= 0)) {
                     // TODO IGNITE-7164 Wait for topology change, remap client TX in case affinity was changed.
                     top.readUnlock();
 
