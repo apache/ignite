@@ -126,33 +126,6 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    public void testGetRestartPartitioned1() throws Exception {
-        CacheConfiguration<Object, Object> cache = cacheConfiguration(PARTITIONED, 1, false);
-
-        checkRestart(cache, 1);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testGetRestartPartitioned2() throws Exception {
-        CacheConfiguration<Object, Object> cache = cacheConfiguration(PARTITIONED, 2, false);
-
-        checkRestart(cache, 2);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testGetRestartPartitionedNearEnabled() throws Exception {
-        CacheConfiguration<Object, Object> cache = cacheConfiguration(PARTITIONED, 1, true);
-
-        checkRestart(cache, 1);
-    }
-
-    /**
      * @param ccfg Cache configuration.
      * @param restartCnt Number of nodes to restart.
      * @throws Exception If failed.

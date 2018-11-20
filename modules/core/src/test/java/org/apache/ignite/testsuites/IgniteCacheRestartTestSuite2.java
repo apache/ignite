@@ -36,17 +36,8 @@ public class IgniteCacheRestartTestSuite2 extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Cache Restart Test Suite2");
 
-        suite.addTestSuite(IgniteCacheAtomicNodeRestartTest.class);
-        suite.addTestSuite(IgniteCacheAtomicReplicatedNodeRestartSelfTest.class);
-
-        suite.addTestSuite(IgniteCacheAtomicPutAllFailoverSelfTest.class);
-        suite.addTestSuite(IgniteCachePutAllRestartTest.class);
-        suite.addTestSuite(GridCachePutAllFailoverSelfTest.class);
-
-        // TODO IGNITE-4768.
-        //suite.addTestSuite(IgniteBinaryMetadataUpdateNodeRestartTest.class);
-
-        suite.addTestSuite(IgniteCacheGetRestartTest.class);
+        for(int i = 0; i < 100; i++)
+            suite.addTestSuite(IgniteCacheGetRestartTest.class);
 
         return suite;
     }
