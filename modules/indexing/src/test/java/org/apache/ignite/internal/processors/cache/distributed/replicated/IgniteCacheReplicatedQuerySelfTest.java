@@ -101,8 +101,8 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
 
         ignite1 = grid(0);
         ignite2 = grid(1);
@@ -111,19 +111,6 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
         cache1 = jcache(ignite1, CacheKey.class, CacheValue.class);
         cache2 = jcache(ignite2, CacheKey.class, CacheValue.class);
         cache3 = jcache(ignite3, CacheKey.class, CacheValue.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        ignite1 = null;
-        ignite2 = null;
-        ignite3 = null;
-
-        cache1 = null;
-        cache2 = null;
-        cache3 = null;
     }
 
     /**
@@ -432,15 +419,6 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
 
         assert entry.getKey().equals(new CacheKey(2)) || entry.getKey().equals(new CacheKey(3));
         assert !iter.hasNext();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Override public void testSqlQueryEvents() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8765");
-
-        super.testSqlQueryEvents();
     }
 
     /**
