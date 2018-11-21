@@ -502,6 +502,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                             grp.topology().detectLostPartitions(topVer, null);
 
                             assert grpHolder.affinity().lastVersion().equals(grp.affinity().lastVersion());
+
+                            topFut.validate(grp, discoCache.allNodes());
                         }
                     }
                     else if (!fetchFuts.containsKey(grp.groupId())) {
