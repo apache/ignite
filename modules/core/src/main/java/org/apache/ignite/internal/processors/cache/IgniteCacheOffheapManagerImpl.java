@@ -1210,7 +1210,27 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         Set<Integer> missing = new HashSet<>();
 
-        for (Integer p : parts.fullSet()) {
+        IgniteHistoricalIterator historicalIterator = null;
+
+        Set<Integer> fullPartitionsSet = new HashSet<>();
+
+        try {
+            historicalIterator = historicalIterator(parts.historicalMap(), missing);
+        }
+        catch (Exception e) {
+            log.error("Can not rebalance through WAL, try to full rebalance partitions.", e);
+
+            CachePartitionPartialCountersMap histMap = parts.historicalMap();
+
+            for (int p = 0; p < histMap.size(); p++) {
+                if (histMap.contains(p))
+                    fullPartitionsSet.add(p);
+            }
+        }
+
+        fullPartitionsSet.addAll(parts.fullSet());
+
+        for (Integer p : fullPartitionsSet) {
             GridCloseableIterator<CacheDataRow> partIter = reservedIterator(p, topVer);
 
             if (partIter == null) {
@@ -1221,8 +1241,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             iterators.put(p, partIter);
         }
-
-        IgniteHistoricalIterator historicalIterator = historicalIterator(parts.historicalMap(), missing);
 
         IgniteRebalanceIterator iter = new IgniteRebalanceIteratorImpl(iterators, historicalIterator);
 
