@@ -80,45 +80,45 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
     public void testLatch() throws Exception {
         checkLatch();
     }
-
-    /**
-     * Implementation of ignite data structures internally uses special system caches, need make sure
-     * that transaction on these system caches do not intersect with transactions started by user.
-     *
-     * @throws Exception If failed.
-     */
-    public void testIsolation() throws Exception {
-        Ignite ignite = grid(0);
-
-        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
-
-        cfg.setName("myCache");
-        cfg.setAtomicityMode(TRANSACTIONAL);
-        cfg.setWriteSynchronizationMode(FULL_SYNC);
-
-        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cfg);
-
-        try {
-            IgniteCountDownLatch latch = ignite.countDownLatch("latch1", 10, false, true);
-
-            assertNotNull(latch);
-
-            try (Transaction tx = ignite.transactions().txStart()) {
-                cache.put(1, 1);
-
-                assertEquals(8, latch.countDown(2));
-
-                tx.rollback();
-            }
-
-            assertEquals(0, cache.size());
-
-            assertEquals(7, latch.countDown(1));
-        }
-        finally {
-            ignite.destroyCache(cfg.getName());
-        }
-    }
+//
+//    /**
+//     * Implementation of ignite data structures internally uses special system caches, need make sure
+//     * that transaction on these system caches do not intersect with transactions started by user.
+//     *
+//     * @throws Exception If failed.
+//     */
+//    public void testIsolation() throws Exception {
+//        Ignite ignite = grid(0);
+//
+//        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+//
+//        cfg.setName("myCache");
+//        cfg.setAtomicityMode(TRANSACTIONAL);
+//        cfg.setWriteSynchronizationMode(FULL_SYNC);
+//
+//        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cfg);
+//
+//        try {
+//            IgniteCountDownLatch latch = ignite.countDownLatch("latch1", 10, false, true);
+//
+//            assertNotNull(latch);
+//
+//            try (Transaction tx = ignite.transactions().txStart()) {
+//                cache.put(1, 1);
+//
+//                assertEquals(8, latch.countDown(2));
+//
+//                tx.rollback();
+//            }
+//
+//            assertEquals(0, cache.size());
+//
+//            assertEquals(7, latch.countDown(1));
+//        }
+//        finally {
+//            ignite.destroyCache(cfg.getName());
+//        }
+//    }
 
     /**
      * @throws Exception If failed.
@@ -322,86 +322,86 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
         checkRemovedLatch(latch);
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testLatchMultinode1() throws Exception {
-        if (gridCount() == 1)
-            return;
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testLatchMultinode1() throws Exception {
+//        if (gridCount() == 1)
+//            return;
+//
+//        IgniteCountDownLatch latch = grid(0).countDownLatch("l1", 10,
+//            true,
+//            true);
+//
+//        List<IgniteInternalFuture<?>> futs = new ArrayList<>();
+//
+//        final AtomicBoolean countedDown = new AtomicBoolean();
+//
+//        CountDownLatch allLatchesObtained = new CountDownLatch(gridCount());
+//
+//        for (int i = 0; i < gridCount(); i++) {
+//            final Ignite ignite = grid(i);
+//
+//            futs.add(GridTestUtils.runAsync(new Callable<Void>() {
+//                @Override public Void call() throws Exception {
+//                    IgniteCountDownLatch latch = ignite.countDownLatch("l1", 10,
+//                        true,
+//                        false);
+//
+//                    allLatchesObtained.countDown();
+//
+//                    assertNotNull(latch);
+//
+//                    boolean wait = latch.await(30_000);
+//
+//                    assertTrue(countedDown.get());
+//
+//                    assertEquals(0, latch.count());
+//
+//                    assertTrue(wait);
+//
+//                    return null;
+//                }
+//            }));
+//        }
+//
+//        for (int i = 0; i < 10; i++) {
+//            if (i == 9) {
+//                countedDown.set(true);
+//
+//                allLatchesObtained.await();
+//            }
+//
+//            latch.countDown();
+//        }
+//
+//        for (IgniteInternalFuture<?> fut : futs)
+//            fut.get(30_000);
+//    }
 
-        IgniteCountDownLatch latch = grid(0).countDownLatch("l1", 10,
-            true,
-            true);
-
-        List<IgniteInternalFuture<?>> futs = new ArrayList<>();
-
-        final AtomicBoolean countedDown = new AtomicBoolean();
-
-        CountDownLatch allLatchesObtained = new CountDownLatch(gridCount());
-
-        for (int i = 0; i < gridCount(); i++) {
-            final Ignite ignite = grid(i);
-
-            futs.add(GridTestUtils.runAsync(new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    IgniteCountDownLatch latch = ignite.countDownLatch("l1", 10,
-                        true,
-                        false);
-
-                    allLatchesObtained.countDown();
-
-                    assertNotNull(latch);
-
-                    boolean wait = latch.await(30_000);
-
-                    assertTrue(countedDown.get());
-
-                    assertEquals(0, latch.count());
-
-                    assertTrue(wait);
-
-                    return null;
-                }
-            }));
-        }
-
-        for (int i = 0; i < 10; i++) {
-            if (i == 9) {
-                countedDown.set(true);
-
-                allLatchesObtained.await();
-            }
-
-            latch.countDown();
-        }
-
-        for (IgniteInternalFuture<?> fut : futs)
-            fut.get(30_000);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testLatchBroadcast() throws Exception {
-        Ignite ignite = grid(0);
-        ClusterGroup srvsGrp = ignite.cluster().forServers();
-
-        int numOfSrvs = srvsGrp.nodes().size();
-
-        ignite.destroyCache("testCache");
-        IgniteCache<Object, Object> cache = ignite.createCache("testCache");
-
-        for (ClusterNode node : srvsGrp.nodes())
-            cache.put(String.valueOf(node.id()), 0);
-
-        for (int i = 0; i < 500; i++) {
-            IgniteCountDownLatch latch1 = createLatch1(ignite, numOfSrvs);
-            IgniteCountDownLatch latch2 = createLatch2(ignite, numOfSrvs);
-
-            ignite.compute(srvsGrp).broadcast(new IgniteRunnableJob(latch1, latch2, i));
-            assertTrue(latch2.await(10000));
-        }
-    }
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testLatchBroadcast() throws Exception {
+//        Ignite ignite = grid(0);
+//        ClusterGroup srvsGrp = ignite.cluster().forServers();
+//
+//        int numOfSrvs = srvsGrp.nodes().size();
+//
+//        ignite.destroyCache("testCache");
+//        IgniteCache<Object, Object> cache = ignite.createCache("testCache");
+//
+//        for (ClusterNode node : srvsGrp.nodes())
+//            cache.put(String.valueOf(node.id()), 0);
+//
+//        for (int i = 0; i < 500; i++) {
+//            IgniteCountDownLatch latch1 = createLatch1(ignite, numOfSrvs);
+//            IgniteCountDownLatch latch2 = createLatch2(ignite, numOfSrvs);
+//
+//            ignite.compute(srvsGrp).broadcast(new IgniteRunnableJob(latch1, latch2, i));
+//            assertTrue(latch2.await(10000));
+//        }
+//    }
 
     /**
      * @param client Ignite client.
@@ -431,56 +431,56 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
         );
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testLatchMultinode2() throws Exception {
-        if (gridCount() == 1)
-            return;
-
-        IgniteCountDownLatch latch = grid(0).countDownLatch("l2", gridCount() * 3,
-            true,
-            true);
-
-        assertNotNull(latch);
-
-        List<IgniteInternalFuture<?>> futs = new ArrayList<>();
-
-        final AtomicInteger cnt = new AtomicInteger();
-
-        for (int i = 0; i < gridCount(); i++) {
-            final Ignite ignite = grid(i);
-
-            futs.add(GridTestUtils.runAsync(new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    IgniteCountDownLatch latch = ignite.countDownLatch("l2", 10,
-                        true,
-                        false);
-
-                    assertNotNull(latch);
-
-                    for (int i = 0; i < 3; i++) {
-                        cnt.incrementAndGet();
-
-                        latch.countDown();
-                    }
-
-                    boolean wait = latch.await(30_000);
-
-                    assertEquals(gridCount() * 3, cnt.get());
-
-                    assertEquals(0, latch.count());
-
-                    assertTrue(wait);
-
-                    return null;
-                }
-            }));
-        }
-
-        for (IgniteInternalFuture<?> fut : futs)
-            fut.get(30_000);
-    }
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testLatchMultinode2() throws Exception {
+//        if (gridCount() == 1)
+//            return;
+//
+//        IgniteCountDownLatch latch = grid(0).countDownLatch("l2", gridCount() * 3,
+//            true,
+//            true);
+//
+//        assertNotNull(latch);
+//
+//        List<IgniteInternalFuture<?>> futs = new ArrayList<>();
+//
+//        final AtomicInteger cnt = new AtomicInteger();
+//
+//        for (int i = 0; i < gridCount(); i++) {
+//            final Ignite ignite = grid(i);
+//
+//            futs.add(GridTestUtils.runAsync(new Callable<Void>() {
+//                @Override public Void call() throws Exception {
+//                    IgniteCountDownLatch latch = ignite.countDownLatch("l2", 10,
+//                        true,
+//                        false);
+//
+//                    assertNotNull(latch);
+//
+//                    for (int i = 0; i < 3; i++) {
+//                        cnt.incrementAndGet();
+//
+//                        latch.countDown();
+//                    }
+//
+//                    boolean wait = latch.await(30_000);
+//
+//                    assertEquals(gridCount() * 3, cnt.get());
+//
+//                    assertEquals(0, latch.count());
+//
+//                    assertTrue(wait);
+//
+//                    return null;
+//                }
+//            }));
+//        }
+//
+//        for (IgniteInternalFuture<?> fut : futs)
+//            fut.get(30_000);
+//    }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
