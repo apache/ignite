@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>ignite-ignored-tests</artifactId>
-    <version>2.5.1-p160-SNAPSHOT</version>
+    <version>2.5.1-p161-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
     <dependencies>
