@@ -35,6 +35,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import java.util.concurrent.ConcurrentHashMap;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 
 /**
  * Test for {@link Cache#loadAll(Set, boolean, CompletionListener)}.
@@ -45,6 +46,13 @@ public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstract
 
     /** */
     private static ConcurrentHashMap<Object, Object> storeMap;
+
+    /** {@inheritDoc} */
+    @Override protected void setUp() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
+        super.setUp();
+    }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")

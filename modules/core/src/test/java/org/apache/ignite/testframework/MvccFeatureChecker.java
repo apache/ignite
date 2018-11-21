@@ -19,10 +19,15 @@ package org.apache.ignite.testframework;
 
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 /**
@@ -102,6 +107,19 @@ public class MvccFeatureChecker {
      */
     public static boolean isSupported(CacheMode mode) {
         return mode != CacheMode.LOCAL || isSupported(Feature.LOCAL_CACHE);
+    }
+
+    /**
+     * Checks if given exception was caused by MVCC write conflict.
+     *
+     * @param e Exception.
+     */
+    public static void assertMvccWriteConflict(Exception e) {
+        IgniteSQLException sqlEx = X.cause(e, IgniteSQLException.class);
+
+        assertNotNull(sqlEx);
+
+        assertEquals(TRANSACTION_SERIALIZATION_ERROR, sqlEx.statusCode());
     }
 
     /**
