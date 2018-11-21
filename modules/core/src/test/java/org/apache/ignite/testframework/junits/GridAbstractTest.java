@@ -908,9 +908,6 @@ public abstract class GridAbstractTest extends TestCase {
      */
     protected Ignite startGrid(String igniteInstanceName, IgniteConfiguration cfg, GridSpringResourceContext ctx)
         throws Exception {
-
-        setConsistentId(cfg, igniteInstanceName);
-
         if (!isRemoteJvm(igniteInstanceName)) {
             IgniteUtils.setCurrentIgniteName(igniteInstanceName);
 
@@ -956,20 +953,6 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * @param cfg Configuration.
-     * @param igniteInstanceName Ignite instance name.
-     */
-    protected void setConsistentId(IgniteConfiguration cfg, String igniteInstanceName) {
-        if (cfg.getConsistentId() == null) {
-            String seed = igniteInstanceName != null ? igniteInstanceName : getClass().getName();
-
-            UUID uuid = UUID.nameUUIDFromBytes(seed.getBytes());
-
-            cfg.setConsistentId(uuid);
-        }
-    }
-
-    /**
      * Starts new grid at another JVM with given name.
      *
      * @param igniteInstanceName Ignite instance name.
@@ -999,7 +982,6 @@ public abstract class GridAbstractTest extends TestCase {
         IgniteConfiguration cfg = F.first(cfgMap.get1());
 
         cfg.setIgniteInstanceName(gridName);
-        cfg.setConsistentId(gridName);
         cfg.setClientMode(client);
 
         return IgnitionEx.start(cfg, cfgMap.getValue());
@@ -1065,8 +1047,6 @@ public abstract class GridAbstractTest extends TestCase {
 
         if (cfg == null)
             cfg = optimize(getConfiguration(igniteInstanceName));
-
-        setConsistentId(cfg, igniteInstanceName);
 
         if (locNode != null) {
             DiscoverySpi discoverySpi = locNode.configuration().getDiscoverySpi();

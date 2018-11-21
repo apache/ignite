@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.db.filename;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.TreeSet;
@@ -352,19 +351,13 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      * @return name of storage related subfolders
      */
     @NotNull private String genNewStyleSubfolderName(final int nodeIdx, final Ignite ignite) {
-        Serializable userDefinedConsistentID = ignite.configuration().getConsistentId();
+        final Object consistentId = ignite.cluster().localNode().consistentId();
 
-        if (userDefinedConsistentID != null)
-            return U.maskForFileName(userDefinedConsistentID.toString());
-        else {
-            final Object consistentId = ignite.cluster().localNode().consistentId();
+        assertTrue("For new style folders consistent ID should be UUID," +
+                " but actual class is " + (consistentId == null ? null : consistentId.getClass()),
+            consistentId instanceof UUID);
 
-            assertTrue("For new style folders consistent ID should be UUID," +
-                    " but actual class is " + (consistentId == null ? null : consistentId.getClass()),
-                consistentId instanceof UUID);
-
-            return PdsConsistentIdProcessor.genNewStyleSubfolderName(nodeIdx, (UUID)consistentId);
-        }
+        return PdsConsistentIdProcessor.genNewStyleSubfolderName(nodeIdx, (UUID)consistentId);
     }
 
     /**
@@ -578,8 +571,9 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
     }
 
     /**
-     * Test case If there are no matching folders, but the directory contains old-style consistent IDs. Ignite should
-     * print out a warning.
+     * Test case If there are no matching folders,
+     * but the directory contains old-style consistent IDs.
+     * Ignite should print out a warning.
      *
      * @throws Exception if failed.
      */
@@ -712,8 +706,4 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
             + " is expected to exist [" + path + "]", curFolder.exists() && curFolder.isDirectory());
     }
 
-    /** {@inheritDoc} */
-    @Override protected void setConsistentId(IgniteConfiguration cfg, String igniteInstanceName) {
-        // No-op.
-    }
 }
