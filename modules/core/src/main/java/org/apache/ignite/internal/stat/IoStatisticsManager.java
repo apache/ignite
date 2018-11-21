@@ -19,6 +19,7 @@
 package org.apache.ignite.internal.stat;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
@@ -36,7 +37,7 @@ public class IoStatisticsManager {
     private final Map<IoStatisticsType, Map<IoStatisticsHolderKey, IoStatisticsHolder>> statByType;
 
     /** Time of since statistics start gathering. */
-    private volatile OffsetDateTime startTime = OffsetDateTime.now();
+    private volatile OffsetDateTime startTime;
 
     /**
      * Constructor.
@@ -46,6 +47,8 @@ public class IoStatisticsManager {
 
         for (IoStatisticsType types : IoStatisticsType.values())
             statByType.put(types, new ConcurrentHashMap<>());
+
+        reset();
     }
 
     /**
@@ -112,7 +115,7 @@ public class IoStatisticsManager {
             s.forEach((k, sh) -> sh.resetStatistics())
         );
 
-        startTime = OffsetDateTime.now();
+        startTime = OffsetDateTime.now(ZoneOffset.UTC);
     }
 
     /**
