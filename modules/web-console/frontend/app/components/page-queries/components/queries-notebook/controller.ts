@@ -74,8 +74,8 @@ const _fullColName = (col) => {
 let paragraphId = 0;
 
 class Paragraph {
-    name: string
-    qryType: 'scan' | 'query'
+    name: string;
+    qryType: 'scan' | 'query';
 
     constructor($animate, $timeout, JavaTypes, errorParser, paragraph) {
         const self = this;
@@ -1925,7 +1925,7 @@ export class NotebookCtrl {
         },
         {text: 'Rename', click: (p) => this.renameParagraph(p), available: () => true},
         {text: 'Remove', click: (p) => this.removeParagraph(p), available: () => true}
-    ]
+    ];
 
     queryActions: QueryActions<Paragraph & {type: 'query'}> = [
         {
@@ -1945,7 +1945,7 @@ export class NotebookCtrl {
         },
         {text: 'Rename', click: (p) => this.renameParagraph(p), available: () => true},
         {text: 'Remove', click: (p) => this.removeParagraph(p), available: () => true}
-    ]
+    ];
 
     async renameParagraph(paragraph: Paragraph) {
         try {
@@ -1956,11 +1956,11 @@ export class NotebookCtrl {
 
                 this.$scope.rebuildScrollParagraphs();
 
-                this.Notebook.save(this.$scope.notebook)
+                await this.Notebook.save(this.$scope.notebook)
                     .catch(this.Messages.showError);
             }
         } catch (ignored) {
-            // no-op
+            // No-op.
         }
     }
 
@@ -1978,9 +1978,10 @@ export class NotebookCtrl {
             this.$scope.notebook.paragraphs.splice(paragraph_idx, 1);
             this.$scope.rebuildScrollParagraphs();
 
-            await this.Notebook.save(this.$scope.notebook).catch(this.Messages.showError);
+            await this.Notebook.save(this.$scope.notebook)
+                .catch(this.Messages.showError);
         } catch (ignored) {
-            // no-op
+            // No-op.
         }
     }
 
