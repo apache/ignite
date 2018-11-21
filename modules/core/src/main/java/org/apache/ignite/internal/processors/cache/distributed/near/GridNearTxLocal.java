@@ -704,19 +704,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /**
-     * Validate Tx mode.
-     *
-     * @param ctx Cache context.
-     * @throws IgniteCheckedException If tx mode is not supported.
-     */
-    protected void validateTxMode(GridCacheContext ctx) throws IgniteCheckedException {
-        if(!ctx.mvccEnabled() || pessimistic() && repeatableRead())
-            return;
-
-        throw new IgniteCheckedException("Only pessimistic repeatable read transactions are supported at the moment.");
-    }
-
-    /**
      * Internal method for put and transform operations in Mvcc mode.
      * Note: Only one of {@code map}, {@code transformMap} maps must be non-null.
      *
@@ -737,8 +724,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         @Nullable final CacheEntryPredicate filter
     ) {
         try {
-            validateTxMode(cacheCtx);
-
             MvccUtils.requestSnapshot(cacheCtx, this);
 
             beforePut(cacheCtx, retval, true);
@@ -1921,13 +1906,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         @Nullable final CacheEntryPredicate filter
     ) {
         try {
-            validateTxMode(cacheCtx);
-
-            if (mvccSnapshot == null) {
-                MvccUtils.mvccTracker(cacheCtx, this);
-
-                assert mvccSnapshot != null;
-            }
+            MvccUtils.requestSnapshot(cacheCtx, this);
 
             beforeRemove(cacheCtx, retval, true);
         }
@@ -2187,13 +2166,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final boolean needVer) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
-
-        try {
-            validateTxMode(cacheCtx);
-        }
-        catch (IgniteCheckedException e) {
-            return new GridFinishedFuture(e);
-        }
 
         if (cacheCtx.mvccEnabled() && !isOperationAllowed(true))
             return txTypeMismatchFinishFuture();

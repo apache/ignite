@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSizeWithConcurr
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccTransactionsTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccVacuumTest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCachePeekTest;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUnsupportedTxModesTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorMvccSelfTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
@@ -60,6 +61,8 @@ public class IgniteCacheMvccTestSuite extends TestSuite {
         suite.addTestSuite(CacheMvccOperationChecksTest.class);
 
         suite.addTestSuite(CacheMvccRemoteTxOnNearNodeStartTest.class);
+
+        suite.addTestSuite(MvccUnsupportedTxModesTest.class);
 
         suite.addTestSuite(MvccCachePeekTest.class);
 
