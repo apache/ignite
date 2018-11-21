@@ -83,6 +83,6 @@ public class QueryFactory {
             "FROM PERSON p " +
             "LEFT JOIN ORGANIZATION o " +
             "ON p.id = o.id " +
-            "WHERE salary >= BETWEEN ? AND ?;";
+            "WHERE salary BETWEEN ? AND ?;";
     }
 }
