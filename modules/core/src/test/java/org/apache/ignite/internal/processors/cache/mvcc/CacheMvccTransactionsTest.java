@@ -201,6 +201,34 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
                         val = (Integer)checkAndGet(false, cache, key, SCAN, GET);
 
                         assertNull(val);
+
+                        val = cache.getAndPutIfAbsent(key, 1);
+
+                        assertNull(val);
+
+                        val = (Integer)checkAndGet(false, cache, key, SCAN, GET);
+
+                        assertEquals((Integer)1, val);
+
+                        val = cache.getAndPutIfAbsent(key, 1);
+
+                        assertEquals((Integer)1, val);
+
+                        val = (Integer)checkAndGet(false, cache, key, SCAN, GET);
+
+                        assertEquals((Integer)1, val);
+
+                        assertFalse(cache.remove(key, 2));
+
+                        val = (Integer)checkAndGet(false, cache, key, SCAN, GET);
+
+                        assertEquals((Integer)1, val);
+
+                        cache.remove(key, 1);
+
+                        val = (Integer)checkAndGet(false, cache, key, SCAN, GET);
+
+                        assertNull(val);
                     }
                 }
                 catch (Exception e) {
