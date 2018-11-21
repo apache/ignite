@@ -19,7 +19,6 @@ package org.apache.ignite.examples.ml.inference;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -31,11 +30,9 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.inference.InfModel;
 import org.apache.ignite.ml.inference.builder.IgniteDistributedInfModelBuilder;
-import org.apache.ignite.ml.inference.builder.SingleInfModelBuilder;
-import org.apache.ignite.ml.inference.builder.ThreadedInfModelBuilder;
 import org.apache.ignite.ml.inference.parser.InfModelParser;
 import org.apache.ignite.ml.inference.parser.TensorFlowSavedModelInfModelParser;
-import org.apache.ignite.ml.inference.reader.DirectoryInfModelReader;
+import org.apache.ignite.ml.inference.reader.FileSystemInfModelReader;
 import org.apache.ignite.ml.inference.reader.InfModelReader;
 import org.apache.ignite.ml.util.MnistUtils;
 import org.tensorflow.Tensor;
@@ -61,7 +58,7 @@ public class TensorFlowDistributedInferenceExample {
             if (mdlRsrc == null)
                 throw new IllegalArgumentException("Resource not found [resource_path=" + MODEL_PATH + "]");
 
-            InfModelReader reader = new DirectoryInfModelReader(mdlRsrc.getPath());
+            InfModelReader reader = new FileSystemInfModelReader(mdlRsrc.getPath());
 
             InfModelParser<double[], Long> parser = new TensorFlowSavedModelInfModelParser<double[], Long>("serve")
 

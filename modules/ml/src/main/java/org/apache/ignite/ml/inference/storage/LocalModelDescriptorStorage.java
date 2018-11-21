@@ -24,7 +24,7 @@ import org.apache.ignite.ml.inference.ModelDescriptor;
 /**
  * Model descriptor storage based on local hash map.
  */
-public class HashMapModelDescriptorStorage implements ModelDescriptorStorage {
+public class LocalModelDescriptorStorage implements ModelDescriptorStorage {
     /** Hash map model storage. */
     private final Map<String, ModelDescriptor> models = new ConcurrentHashMap<>();
 

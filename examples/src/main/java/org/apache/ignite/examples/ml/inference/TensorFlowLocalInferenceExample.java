@@ -27,7 +27,7 @@ import org.apache.ignite.ml.inference.InfModel;
 import org.apache.ignite.ml.inference.builder.SingleInfModelBuilder;
 import org.apache.ignite.ml.inference.parser.InfModelParser;
 import org.apache.ignite.ml.inference.parser.TensorFlowSavedModelInfModelParser;
-import org.apache.ignite.ml.inference.reader.DirectoryInfModelReader;
+import org.apache.ignite.ml.inference.reader.FileSystemInfModelReader;
 import org.apache.ignite.ml.inference.reader.InfModelReader;
 import org.apache.ignite.ml.util.MnistUtils;
 import org.tensorflow.Tensor;
@@ -51,17 +51,15 @@ public class TensorFlowLocalInferenceExample {
         if (mdlRsrc == null)
             throw new IllegalArgumentException("Resource not found [resource_path=" + MODEL_PATH + "]");
 
-        InfModelReader reader = new DirectoryInfModelReader(mdlRsrc.getPath());
+        InfModelReader reader = new FileSystemInfModelReader(mdlRsrc.getPath());
 
         InfModelParser<double[], Long> parser = new TensorFlowSavedModelInfModelParser<double[], Long>("serve")
-
             .withInput("Placeholder", doubles -> {
                 float[][][] reshaped = new float[1][28][28];
                 for (int i = 0; i < doubles.length; i++)
                     reshaped[0][i / 28][i % 28] = (float)doubles[i];
                 return Tensor.create(reshaped);
             })
-
             .withOutput(Collections.singletonList("ArgMax"), collectedTensors -> {
                 return collectedTensors.get("ArgMax").copyTo(new long[1])[0];
             });

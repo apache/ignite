@@ -30,7 +30,7 @@ import org.apache.ignite.ml.inference.InfModel;
 import org.apache.ignite.ml.inference.builder.ThreadedInfModelBuilder;
 import org.apache.ignite.ml.inference.parser.InfModelParser;
 import org.apache.ignite.ml.inference.parser.TensorFlowSavedModelInfModelParser;
-import org.apache.ignite.ml.inference.reader.DirectoryInfModelReader;
+import org.apache.ignite.ml.inference.reader.FileSystemInfModelReader;
 import org.apache.ignite.ml.inference.reader.InfModelReader;
 import org.apache.ignite.ml.util.MnistUtils;
 import org.tensorflow.Tensor;
@@ -55,7 +55,7 @@ public class TensorFlowThreadedInferenceExample {
         if (mdlRsrc == null)
             throw new IllegalArgumentException("Resource not found [resource_path=" + MODEL_PATH + "]");
 
-        InfModelReader reader = new DirectoryInfModelReader(mdlRsrc.getPath());
+        InfModelReader reader = new FileSystemInfModelReader(mdlRsrc.getPath());
 
         InfModelParser<double[], Long> parser = new TensorFlowSavedModelInfModelParser<double[], Long>("serve")
 
