@@ -68,18 +68,19 @@ public class DirectorySerializer {
      */
     @SuppressWarnings("unchecked")
     public static void deserialize(Path path, byte[] data) throws IOException, ClassNotFoundException {
-        ByteArrayInputStream bais = new ByteArrayInputStream(data);
-        ObjectInputStream ois = new ObjectInputStream(bais);
-        Map<String, byte[]> files = (Map<String, byte[]>)ois.readObject();
+        try (ByteArrayInputStream bais = new ByteArrayInputStream(data);
+             ObjectInputStream ois = new ObjectInputStream(bais)) {
+            Map<String, byte[]> files = (Map<String, byte[]>)ois.readObject();
 
-        for (Map.Entry<String, byte[]> file : files.entrySet()) {
-            Path dst = path.resolve(file.getKey());
-            File dstFile = dst.toFile();
-            Files.createDirectories(dstFile.getParentFile().toPath());
-            Files.createFile(dstFile.toPath());
-            try (FileOutputStream fos = new FileOutputStream(dstFile)) {
-                fos.write(file.getValue());
-                fos.flush();
+            for (Map.Entry<String, byte[]> file : files.entrySet()) {
+                Path dst = path.resolve(file.getKey());
+                File dstFile = dst.toFile();
+                Files.createDirectories(dstFile.getParentFile().toPath());
+                Files.createFile(dstFile.toPath());
+                try (FileOutputStream fos = new FileOutputStream(dstFile)) {
+                    fos.write(file.getValue());
+                    fos.flush();
+                }
             }
         }
     }
