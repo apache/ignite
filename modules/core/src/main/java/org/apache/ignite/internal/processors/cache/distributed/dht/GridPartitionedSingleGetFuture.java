@@ -228,7 +228,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      */
     @SuppressWarnings("unchecked")
     private void map(final AffinityTopologyVersion topVer, boolean remap) {
-        ClusterNode node = mapKeyToNode(topVer,remap);
+        ClusterNode node = mapKeyToNode(topVer, remap);
 
         if (node == null) {
             assert isDone() : this;
