@@ -19,7 +19,6 @@
 package org.apache.ignite.internal.stat;
 
 import java.lang.management.ManagementFactory;
-import java.util.Set;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerInvocationHandler;
 import javax.management.ObjectName;
@@ -74,38 +73,51 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
     public void testIndexBasic() throws Exception {
         IoStatisticsMetricsMXBean bean = ioStatMXBean();
 
-        Assert.assertNotNull(bean.getStartGatheringStatistics());
+        Assert.assertNotNull(bean.getStartTime());
 
-        bean.resetStatistics();
+        bean.reset();
 
-        Assert.assertNotNull(bean.getStartGatheringStatistics());
+        Assert.assertNotNull(bean.getStartTime());
 
         int cnt = 100;
 
         populateCache(cnt);
 
-        Set<String> idxHashNames = bean.getStatHashIndexesNames(DEFAULT_CACHE_NAME);
+        long idxLeafLogicalCnt = bean.getIndexLeafLogicalReads(DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME);
 
-        Assert.assertEquals(1, idxHashNames.size());
+        Assert.assertEquals(cnt, idxLeafLogicalCnt);
 
-        Assert.assertTrue(idxHashNames.contains(HASH_PK_IDX_NAME));
+        long idxLeafPhysicalCnt = bean.getIndexLeafPhysicalReads(DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME);
 
-        long idxLeafCnt = bean.getIndexLeafLogicalReadsStatistics(DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME);
+        Assert.assertEquals(0, idxLeafPhysicalCnt);
 
-        Assert.assertEquals(cnt, idxLeafCnt);
+        long idxInnerLogicalCnt = bean.getIndexInnerLogicalReads(DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME);
 
-        Long aggregatedIdxLogicalRads = bean.getIndexLogicalReadsStatistics(DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME);
+        Assert.assertEquals(0, idxInnerLogicalCnt);
 
-        Assert.assertNotNull(aggregatedIdxLogicalRads);
+        long idxInnerPhysicalCnt = bean.getIndexInnerPhysicalReads(DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME);
 
-        Assert.assertEquals(aggregatedIdxLogicalRads.longValue(), idxLeafCnt);
+        Assert.assertEquals(0, idxInnerPhysicalCnt);
 
-        String formatted = bean.getIndexStatisticsFormatted(DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME);
+        Long aggregatedIdxLogicalReads = bean.getIndexLogicalReads(DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME);
 
-        Assert.assertEquals("HASH_INDEX default.PK [LOGICAL_READS_LEAF=100, LOGICAL_READS_INNER=0, " +
+        Assert.assertNotNull(aggregatedIdxLogicalReads);
+
+        Assert.assertEquals(aggregatedIdxLogicalReads.longValue(), idxLeafLogicalCnt + idxLeafPhysicalCnt +
+            idxInnerLogicalCnt + idxInnerPhysicalCnt);
+
+        Long aggregatedIdxPhysicalReads = bean.getIndexPhysicalReads(DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME);
+
+        Assert.assertNotNull(aggregatedIdxPhysicalReads);
+
+        Assert.assertEquals(0, aggregatedIdxPhysicalReads.longValue());
+
+        String formatted = bean.getIndexStatistics(DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME);
+
+        Assert.assertEquals("HASH_INDEX default.HASH_PK [LOGICAL_READS_LEAF=100, LOGICAL_READS_INNER=0, " +
             "PHYSICAL_READS_INNER=0, PHYSICAL_READS_LEAF=0]", formatted);
 
-        String unexistedStats = bean.getIndexStatisticsFormatted("unknownCache", "unknownIdx");
+        String unexistedStats = bean.getIndexStatistics("unknownCache", "unknownIdx");
 
         Assert.assertEquals("SORTED_INDEX unknownCache.unknownIdx []", unexistedStats);
     }
@@ -118,11 +130,11 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
     public void testCacheBasic() throws Exception {
         IoStatisticsMetricsMXBean bean = ioStatMXBean();
 
-        Assert.assertNotNull(bean.getStartGatheringStatistics());
+        Assert.assertNotNull(bean.getStartTime());
 
-        bean.resetStatistics();
+        bean.reset();
 
-        Assert.assertNotNull(bean.getStartGatheringStatistics());
+        Assert.assertNotNull(bean.getStartTime());
 
         int cnt = 100;
 
@@ -130,23 +142,23 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
 
         populateCache(cnt);
 
-        Set<String> cacheNames = bean.getStatCachesNames();
-
-        Assert.assertEquals(1, cacheNames.size());
-
-        Assert.assertTrue(cacheNames.contains(DEFAULT_CACHE_NAME));
-
-        Long cacheLogicalReadsCnt = bean.getCacheLogicalReadsStatistics(DEFAULT_CACHE_NAME);
+        Long cacheLogicalReadsCnt = bean.getCacheGroupLogicalReads(DEFAULT_CACHE_NAME);
 
         Assert.assertNotNull(cacheLogicalReadsCnt);
 
         Assert.assertEquals(cnt, cacheLogicalReadsCnt.longValue());
 
-        String formatted = bean.getCacheStatisticsFormatted(DEFAULT_CACHE_NAME);
+        Long cachePhysicalReadsCnt = bean.getCacheGroupPhysicalReads(DEFAULT_CACHE_NAME);
+
+        Assert.assertNotNull(cachePhysicalReadsCnt);
+
+        Assert.assertEquals(0, cachePhysicalReadsCnt.longValue());
+
+        String formatted = bean.getCacheGroupStatistics(DEFAULT_CACHE_NAME);
 
         Assert.assertEquals("CACHE_GROUP default [LOGICAL_READS=100, PHYSICAL_READS=0]", formatted);
 
-        String unexistedStats = bean.getCacheStatisticsFormatted("unknownCache");
+        String unexistedStats = bean.getCacheGroupStatistics("unknownCache");
 
         Assert.assertEquals("CACHE_GROUP unknownCache []", unexistedStats);
     }
@@ -162,7 +174,7 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
 
         clearCache(cnt);
 
-        bean.resetStatistics();
+        bean.reset();
     }
 
     /**

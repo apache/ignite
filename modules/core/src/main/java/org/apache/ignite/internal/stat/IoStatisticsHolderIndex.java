@@ -22,13 +22,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Index statistics holder to gather statistics related to concrete index.
  */
 public class IoStatisticsHolderIndex implements IoStatisticsHolder {
     /** Display name of hash PK index. */
-    public static final String HASH_PK_IDX_NAME = "PK";
+    public static final String HASH_PK_IDX_NAME = "HASH_PK";
 
     /** */
     public static final String LOGICAL_READS_LEAF = "LOGICAL_READS_LEAF";
@@ -208,12 +209,12 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "IoStatisticsHolderIndex{" + "logicalReadLeafCtr=" + logicalReadLeafCtr +
-            ", logicalReadInnerCtr=" + logicalReadInnerCtr +
-            ", physicalReadLeafCtr=" + physicalReadLeafCtr +
-            ", physicalReadInnerCtr=" + physicalReadInnerCtr +
-            ", cacheName='" + cacheName + '\'' +
-            ", idxName='" + idxName + '\'' +
-            '}';
+        return S.toString(IoStatisticsHolderIndex.class, this,
+            "logicalReadLeafCtr", logicalReadLeafCtr,
+            "logicalReadInnerCtr", logicalReadInnerCtr,
+            "physicalReadLeafCtr", physicalReadLeafCtr,
+            "physicalReadInnerCtr", physicalReadInnerCtr,
+            "cacheName", cacheName,
+            "idxName", idxName);
     }
 }

@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Cache statistics holder to gather statistics related to concrete cache.
@@ -112,9 +113,9 @@ public class IoStatisticsHolderCache implements IoStatisticsHolder {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "IoStatisticsHolderCache{" + "logicalReadCtr=" + logicalReadCtr +
-            ", physicalReadCtr=" + physicalReadCtr +
-            ", cacheName='" + cacheName + '\'' +
-            '}';
+        return S.toString(IoStatisticsHolderCache.class, this,
+            "logicalReadCtr", logicalReadCtr,
+            "physicalReadCtr", physicalReadCtr,
+            "cacheName", cacheName);
     }
 }

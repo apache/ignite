@@ -21,6 +21,7 @@ package org.apache.ignite.internal.stat;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.LongAdder;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Query Statistics holder to gather statistics related to concrete query.
@@ -116,5 +117,12 @@ public class IoStatisticsHolderQuery implements IoStatisticsHolder {
         logicalReadCtr.add(logicalReads);
 
         physicalReadCtr.add(physicalReads);
+    }
+
+    @Override public String toString() {
+        return S.toString(IoStatisticsHolderQuery.class, this,
+            "logicalReadCtr", logicalReadCtr,
+            "physicalReadCtr", physicalReadCtr,
+            "qryId", qryId);
     }
 }

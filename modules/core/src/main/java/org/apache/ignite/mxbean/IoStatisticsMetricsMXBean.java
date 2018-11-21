@@ -18,8 +18,7 @@
 
 package org.apache.ignite.mxbean;
 
-import java.time.LocalDateTime;
-import java.util.Set;
+import java.time.OffsetDateTime;
 
 /**
  * This interface defines JMX view for IO statistics.
@@ -31,13 +30,13 @@ public interface IoStatisticsMetricsMXBean {
      * @return Start time of gathering statistics.
      */
     @MXBeanDescription("Start time of gathering staistics.")
-    public LocalDateTime getStartGatheringStatistics();
+    public OffsetDateTime getStartTime();
 
     /**
      * Reset all IO statistics.
      */
     @MXBeanDescription("Reset gathered statistics.")
-    public void resetStatistics();
+    public void reset();
 
     /**
      * Gets string presentation of cache group IO statistics for given cache group.
@@ -48,7 +47,7 @@ public interface IoStatisticsMetricsMXBean {
     @MXBeanDescription("String presentation of cache group IO statistics.")
     @MXBeanParametersNames("cacheGrpName")
     @MXBeanParametersDescriptions("Cache group name.")
-    public String getCacheStatisticsFormatted(String cacheGrpName);
+    public String getCacheGroupStatistics(String cacheGrpName);
 
     /**
      * Gets number of physical page reads for given cache group.
@@ -60,7 +59,7 @@ public interface IoStatisticsMetricsMXBean {
         "Can return null in case such statistics doesn't exists.")
     @MXBeanParametersNames("cacheGrpName")
     @MXBeanParametersDescriptions("Cache group name.")
-    public Long getCachePhysicalReadsStatistics(String cacheGrpName);
+    public Long getCacheGroupPhysicalReads(String cacheGrpName);
 
     /**
      * Gets number of logical page reads for given cache group.
@@ -72,7 +71,7 @@ public interface IoStatisticsMetricsMXBean {
         "Can return null in case such statistics doesn't exists.")
     @MXBeanParametersNames("cacheGrpName")
     @MXBeanParametersDescriptions("Cache group name.")
-    public Long getCacheLogicalReadsStatistics(String cacheGrpName);
+    public Long getCacheGroupLogicalReads(String cacheGrpName);
 
     /**
      * Gets string presentation of index IO statistics for given cache group and index.
@@ -84,7 +83,7 @@ public interface IoStatisticsMetricsMXBean {
     @MXBeanDescription("String presentation of index IO statistics.")
     @MXBeanParametersNames({"cacheGrpName", "idxName"})
     @MXBeanParametersDescriptions({"Cache group name.", "Index name."})
-    public String getIndexStatisticsFormatted(String cacheGrpName, String idxName);
+    public String getIndexStatistics(String cacheGrpName, String idxName);
 
     /**
      * Gets number of physical index page reads for given cache group and index.
@@ -97,7 +96,7 @@ public interface IoStatisticsMetricsMXBean {
         "Can return null in case such statistics doesn't exists.")
     @MXBeanParametersNames({"cacheGrpName", "idxName"})
     @MXBeanParametersDescriptions({"Cache group name.", "Index name."})
-    public Long getIndexPhysicalReadsStatistics(String cacheGrpName, String idxName);
+    public Long getIndexPhysicalReads(String cacheGrpName, String idxName);
 
     /**
      * Gets number of logical index page reads for given cache group and index.
@@ -110,7 +109,7 @@ public interface IoStatisticsMetricsMXBean {
         "Can return null in case such statistics doesn't exists.")
     @MXBeanParametersNames({"cacheGrpName", "idxName"})
     @MXBeanParametersDescriptions({"Cache group name.", "Index name."})
-    public Long getIndexLogicalReadsStatistics(String cacheGrpName, String idxName);
+    public Long getIndexLogicalReads(String cacheGrpName, String idxName);
 
 
     /**
@@ -124,7 +123,7 @@ public interface IoStatisticsMetricsMXBean {
         "Can return null in case such statistics doesn't exists.")
     @MXBeanParametersNames({"cacheGrpName", "idxName"})
     @MXBeanParametersDescriptions({"Cache group name.", "Index name."})
-    public Long getIndexLeafLogicalReadsStatistics(String cacheGrpName, String idxName);
+    public Long getIndexLeafLogicalReads(String cacheGrpName, String idxName);
 
     /**
      * Gets number of physical leaf index's page reads for given cache group and index.
@@ -137,7 +136,7 @@ public interface IoStatisticsMetricsMXBean {
         "Can return null in case such statistics doesn't exists.")
     @MXBeanParametersNames({"cacheGrpName", "idxName"})
     @MXBeanParametersDescriptions({"Cache group name.", "Index name."})
-    public Long getIndexLeafPhysicalReadsStatistics(String cacheGrpName, String idxName);
+    public Long getIndexLeafPhysicalReads(String cacheGrpName, String idxName);
 
     /**
      * Gets number of logical inner index's page reads for given cache group and index.
@@ -150,7 +149,7 @@ public interface IoStatisticsMetricsMXBean {
         "Can return null in case such statistics doesn't exists.")
     @MXBeanParametersNames({"cacheGrpName", "idxName"})
     @MXBeanParametersDescriptions({"Cache group name.", "Index name."})
-    public Long getIndexInnerLogicalReadsStatistics(String cacheGrpName, String idxName);
+    public Long getIndexInnerLogicalReads(String cacheGrpName, String idxName);
 
     /**
      * Gets number of physical inner index's page reads for given cache group and index.
@@ -164,30 +163,6 @@ public interface IoStatisticsMetricsMXBean {
         "Can return null in case such statistics doesn't exists.")
     @MXBeanParametersNames({"cacheGrpName", "idxName"})
     @MXBeanParametersDescriptions({"Cache group name.", "Index name."})
-    public Long getIndexInnerPhysicalReadsStatistics(String cacheGrpName, String idxName);
-
-    /**
-     * @param cacheGrpName Name of cache group.
-     * @return Names of hash indexes registered to gather IO statistics.
-     */
-    @MXBeanDescription("Name of hash indexes registered to gather IO statisitcs for given cache group.")
-    @MXBeanParametersNames("cacheGrpName")
-    @MXBeanParametersDescriptions("Cache group name.")
-    public Set<String> getStatHashIndexesNames(String cacheGrpName);
-
-    /**
-     * @param cacheGrpName Name of cache group.
-     * @return Names of sorted indexes registered to gather IO statistics.
-     */
-    @MXBeanDescription("Name of sorted indexes registered to gather IO statisitcs for given cache group.")
-    @MXBeanParametersNames("cacheGrpName")
-    @MXBeanParametersDescriptions("Cache group name.")
-    public Set<String> getStatSortedIndexesNames(String cacheGrpName);
-
-    /**
-     * @return Names of caches registered to gather IO statistics.
-     */
-    @MXBeanDescription("Name of cache groups registered to gather IO statistics.")
-    public Set<String> getStatCachesNames();
+    public Long getIndexInnerPhysicalReads(String cacheGrpName, String idxName);
 
 }
