@@ -209,9 +209,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         ignite0.cluster().active(true);
 
-        Serializable consistentId = (Serializable)ignite0.cluster().localNode().consistentId();
-
-        String subfolderName = genNewStyleSubfolderName(0, (UUID)consistentId);
+        String subfolderName = genDbSubfolderName(ignite0, 0);
 
         int cacheObjectsToWrite = 10_000;
 
@@ -540,7 +538,10 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      * @return folder file name.
      */
     @NotNull private String genDbSubfolderName(Ignite ignite, int nodeIdx) {
-        return genNewStyleSubfolderName(nodeIdx, (UUID)ignite.cluster().localNode().consistentId());
+        if (ignite.configuration().getConsistentId() != null)
+            return U.maskForFileName(ignite.cluster().localNode().consistentId().toString());
+        else
+            return genNewStyleSubfolderName(nodeIdx, (UUID)ignite.cluster().localNode().consistentId());
     }
 
     /**
