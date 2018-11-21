@@ -60,6 +60,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -571,14 +572,17 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If test failed.
      */
     public void testExternalClassesAtEventP2pDisabled() throws Exception {
-        testExternalClassesAtEvent0(true);
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
 
+        testExternalClassesAtEvent0(true);
     }
 
     /**
      * @throws Exception If test failed.
      */
     public void testExternalClassesAtEvent() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+
         testExternalClassesAtEvent0(false);
     }
 

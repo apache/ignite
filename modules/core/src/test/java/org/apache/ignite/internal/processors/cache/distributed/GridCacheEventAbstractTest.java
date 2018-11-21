@@ -40,6 +40,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
 
 import static org.apache.ignite.events.EventType.EVTS_CACHE;
@@ -73,6 +74,13 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      */
     protected boolean partitioned() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void setUp() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+
+        super.setUp();
     }
 
     /** {@inheritDoc} */

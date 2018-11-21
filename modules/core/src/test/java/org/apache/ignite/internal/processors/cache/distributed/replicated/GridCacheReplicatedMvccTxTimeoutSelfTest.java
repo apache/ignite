@@ -15,24 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteTxTimeoutAbstractTest;
+
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
- *
+ * Simple cache test.
  */
-public class GridCacheInterceptorTransactionalRebalanceTest extends GridAbstractCacheInterceptorRebalanceTest {
+public class GridCacheReplicatedMvccTxTimeoutSelfTest extends IgniteTxTimeoutAbstractTest {
     /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.INTERCEPTOR);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        super.setUp();
-    }
+        CacheConfiguration ccfg = defaultCacheConfiguration();
 
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return CacheAtomicityMode.TRANSACTIONAL;
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
+        ccfg.setCacheMode(REPLICATED);
+
+        cfg.setCacheConfiguration(ccfg);
+
+        return cfg;
     }
 }

@@ -37,6 +37,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 
@@ -108,6 +109,8 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testAtomicLongLocal() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
         mode = CacheMode.LOCAL;
 
         try {
@@ -148,6 +151,8 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testOneAsyncOpLocal() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
         mode = CacheMode.LOCAL;
 
         try {
@@ -188,6 +193,8 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testSeveralAsyncOpsLocal() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
         mode = CacheMode.LOCAL;
 
         try {
@@ -228,6 +235,8 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testSyncOpAsyncCommitLocal() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
         mode = CacheMode.LOCAL;
 
         try {
@@ -268,6 +277,8 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testAsyncOpsAsyncCommitLocal() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
         mode = CacheMode.LOCAL;
 
         try {
