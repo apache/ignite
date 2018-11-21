@@ -33,6 +33,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.cluster.ClusterGroup;
@@ -522,7 +523,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         if (type == SQL_FIELDS || type == SPI)
             return (CacheQueryFuture<R>)(loc ? qryMgr.queryFieldsLocal(bean) :
                 qryMgr.queryFieldsDistributed(bean, nodes));
-        else
             return (CacheQueryFuture<R>)(loc ? qryMgr.queryLocal(bean) : qryMgr.queryDistributed(bean, nodes));
     }
 
@@ -537,6 +537,10 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         cctx.checkSecurity(SecurityPermission.CACHE_READ);
 
         if (nodes.isEmpty()) {
+            if(!checkLostPartitions())
+                throw new IgniteCheckedException("Failed to execute scan query because cache partition has been " +
+                    "lost [cacheName=" + cctx.name() + ", part=" + part + "]");
+
             if (part != null && forceLocal)
                 throw new IgniteCheckedException("No queryable nodes for partition " + part
                     + " [forced local query=" + this + "]");
@@ -585,6 +589,15 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
             it = qryMgr.scanQueryDistributed(this, nodes);
 
         return mvccTracker != null ? new MvccTrackingIterator(it, mvccTracker) : it;
+    }
+
+    private boolean checkLostPartitions() {
+        PartitionLossPolicy lossPolicy = cctx.cache().configuration().getPartitionLossPolicy();
+
+        boolean partWasLost = cctx.cache().lostPartitions().contains(part);
+        boolean isSafeLossPolicy = lossPolicy == PartitionLossPolicy.READ_ONLY_SAFE ||
+            lossPolicy == PartitionLossPolicy.READ_WRITE_SAFE;
+        return !partWasLost || !isSafeLossPolicy;
     }
 
     /**

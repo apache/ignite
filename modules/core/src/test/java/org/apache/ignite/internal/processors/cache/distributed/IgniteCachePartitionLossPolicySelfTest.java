@@ -32,6 +32,7 @@ import javax.cache.CacheException;
 import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -812,6 +813,26 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
         // TODO Scan queries never fail due to partition loss - https://issues.apache.org/jira/browse/IGNITE-9902.
         // TODO Need to add an actual check after https://issues.apache.org/jira/browse/IGNITE-9902 is fixed.
         // No-op.
+        if(parts.length == 0)
+            return;
+
+        IgniteCache cache = node.cache(DEFAULT_CACHE_NAME);
+
+        ScanQuery qry = new ScanQuery();
+        qry.setPartition(parts[0]);
+        if (loc)
+            qry.setLocal(true);
+
+        try {
+            cache.query(qry).getAll();
+        } catch (Throwable e) {
+            if(!e.getMessage().contains("Failed to execute scan query because cache partition has been lost"))
+                throw e;
+            else
+                return;
+        }
+
+        fail("Query should was fallen");
     }
 
     /** */
