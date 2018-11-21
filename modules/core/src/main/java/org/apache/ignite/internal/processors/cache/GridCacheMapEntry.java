@@ -1161,6 +1161,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 updRes.filtered(true);
 
+                if(retVal)
+                    updRes.prevValue(res.oldValue());
+
                 return updRes;
             }
             else if(noCreate && !invoke && res.resultType() == ResultType.PREV_NULL)
@@ -5484,6 +5487,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     }
 
                     updRes.filtered(true);
+
+                    if(needVal)
+                        updRes.prevValue(res.oldValue());
 
                     resFut.onDone(updRes);
 
