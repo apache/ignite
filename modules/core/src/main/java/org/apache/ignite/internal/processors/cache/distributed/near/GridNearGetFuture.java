@@ -147,7 +147,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         if (lockedTopVer != null) {
             canRemap = false;
 
-            map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), lockedTopVer);
+            map(keys, Collections.emptyMap(), lockedTopVer, false);
         }
         else {
             AffinityTopologyVersion mapTopVer = topVer;
@@ -158,7 +158,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     tx.topologyVersion();
             }
 
-            map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), mapTopVer);
+            map(keys, Collections.emptyMap(), mapTopVer, false);
         }
 
         markInitialized();
@@ -245,7 +245,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
     private void map(
         Collection<KeyCacheObject> keys,
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mapped,
-        final AffinityTopologyVersion topVer
+        final AffinityTopologyVersion topVer,
+        boolean remap
     ) {
         Collection<ClusterNode> affNodes = CU.affinityNodes(cctx, topVer);
 
@@ -268,7 +269,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             try {
                 // Assign keys to primary nodes.
                 for (KeyCacheObject key : keys)
-                    savedEntries = map(key, mappings, topVer, mapped, savedEntries);
+                    savedEntries = map(key, mappings, topVer, mapped, savedEntries, remap);
 
                 success = true;
             }
@@ -339,7 +340,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         ", invalidParts=" + invalidParts + ']';
 
                     // Remap recursively.
-                    map(remapKeys, mappings, updTopVer);
+                    map(remapKeys, mappings, updTopVer, remap);
                 }
 
                 // Add new future.
@@ -418,7 +419,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings,
         AffinityTopologyVersion topVer,
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mapped,
-        Map<KeyCacheObject, GridNearCacheEntry> saved
+        Map<KeyCacheObject, GridNearCacheEntry> saved,
+        boolean remap
     ) {
         int part = cctx.affinity().partition(key);
 
@@ -494,7 +496,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         }
                     }
 
-                    ClusterNode affNode = cctx.selectAffinityNodeBalanced(affNodes, part, canRemap);
+                    ClusterNode affNode = cctx.selectAffinityNodeBalanced(affNodes, part, canRemap, remap);
 
                     if (affNode == null) {
                         onDone(serverNotFoundError(part, topVer));
@@ -934,7 +936,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             // Try getting value from alive nodes.
             if (!canRemap) {
                 // Remap
-                map(keys.keySet(), F.t(node, keys), topVer);
+                map(keys.keySet(), F.t(node, keys), topVer, true);
 
                 onDone(Collections.<K, V>emptyMap());
             }
@@ -945,7 +947,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 cctx.shared().exchange().affinityReadyFuture(updTopVer).listen(f -> {
                     try {
                         // Remap.
-                        map(keys.keySet(), F.t(node, keys), f.get());
+                        map(keys.keySet(), F.t(node, keys), f.get(), true);
 
                         onDone(Collections.<K, V>emptyMap());
 
@@ -994,7 +996,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         @Override public boolean apply(KeyCacheObject key) {
                             return invalidParts.contains(cctx.affinity().partition(key));
                         }
-                    }), F.t(node, keys), topVer);
+                    }), F.t(node, keys), topVer, true);
 
                     postProcessResultAndDone(res);
 
@@ -1014,7 +1016,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             @Override public boolean apply(KeyCacheObject key) {
                                 return invalidParts.contains(cctx.affinity().partition(key));
                             }
-                        }), F.t(node, keys), readyTopVer);
+                        }), F.t(node, keys), readyTopVer, true);
 
                         postProcessResultAndDone(res);
                     }

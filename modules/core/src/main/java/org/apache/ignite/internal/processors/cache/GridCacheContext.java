@@ -2232,9 +2232,10 @@ public class GridCacheContext<K, V> implements Externalizable {
     @Nullable public ClusterNode selectAffinityNodeBalanced(
         List<ClusterNode> affNodes,
         int partitionId,
-        boolean canRemap
+        boolean canRemap,
+        boolean remap
     ) {
-        if (!readLoadBalancingEnabled) {
+        if (!readLoadBalancingEnabled || remap) {
             if (!canRemap) {
                 for (ClusterNode node : affNodes) {
                     if (ctx.discovery().alive(node))
@@ -2257,7 +2258,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         ClusterNode n0 = null;
 
         for (ClusterNode node : affNodes) {
-            if ((canRemap || discovery().alive(node) && isOwner(node, partitionId))) {
+            if ((canRemap || discovery().alive(node)) && isOwner(node, partitionId)) {
                 if (locMacs.equals(node.attribute(ATTR_MACS)))
                     return node;
 

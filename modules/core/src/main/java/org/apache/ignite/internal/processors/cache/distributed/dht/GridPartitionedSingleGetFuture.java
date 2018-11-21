@@ -220,15 +220,15 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
             return;
         }
 
-        map(topVer);
+        map(topVer, false);
     }
 
     /**
      * @param topVer Topology version.
      */
     @SuppressWarnings("unchecked")
-    private void map(final AffinityTopologyVersion topVer) {
-        ClusterNode node = mapKeyToNode(topVer);
+    private void map(final AffinityTopologyVersion topVer, boolean remap) {
+        ClusterNode node = mapKeyToNode(topVer,remap);
 
         if (node == null) {
             assert isDone() : this;
@@ -264,7 +264,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                     ", invalidParts=" + invalidParts + ']';
 
                 // Remap recursively.
-                map(updTopVer);
+                map(updTopVer, remap);
             }
             else {
                 fut.listen(new CI1<IgniteInternalFuture<GridCacheEntryInfo>>() {
@@ -342,7 +342,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * @param topVer Topology version.
      * @return Primary node or {@code null} if future was completed.
      */
-    @Nullable private ClusterNode mapKeyToNode(AffinityTopologyVersion topVer) {
+    @Nullable private ClusterNode mapKeyToNode(AffinityTopologyVersion topVer, boolean remap) {
         int part = cctx.affinity().partition(key);
 
         List<ClusterNode> affNodes = cctx.affinity().nodesByPartition(part, topVer);
@@ -367,7 +367,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
             }
         }
 
-        ClusterNode affNode = cctx.selectAffinityNodeBalanced(affNodes, part, canRemap);
+        ClusterNode affNode = cctx.selectAffinityNodeBalanced(affNodes, part, canRemap, remap);
 
         if (affNode == null) {
             onDone(serverNotFoundError(part, topVer));
@@ -642,7 +642,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
 
             }
             else
-                map(topVer);
+                map(topVer,false);
 
             return false;
         }
@@ -782,7 +782,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 if (error != null)
                     onDone(error);
 
-                map(topVer);
+                map(topVer, true);
             }
         });
     }
