@@ -131,7 +131,7 @@ public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
 //        suite.addTest(new TestSuite(GridCachePartitionedSetSelfTest.class));
 //        suite.addTest(new TestSuite(IgnitePartitionedSetNoBackupsSelfTest.class));
 //        suite.addTest(new TestSuite(GridCachePartitionedAtomicSetSelfTest.class));
-        for (int i = 0; i < 1_000; i++)
+        for (int i = 0; i < 500; i++)
             suite.addTest(new TestSuite(IgnitePartitionedCountDownLatchSelfTest.class));
 
 //        suite.addTest(new TestSuite(IgniteDataStructureWithJobTest.class));
