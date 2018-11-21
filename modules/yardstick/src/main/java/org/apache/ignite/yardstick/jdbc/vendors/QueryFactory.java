@@ -23,27 +23,27 @@ package org.apache.ignite.yardstick.jdbc.vendors;
 public class QueryFactory {
     /** Query that creates Person table. */
     public String createPersonTab() {
-        return "CREATE TABLE PERSON (" +
-            "id LONG PRIMARY KEY, " +
-            "org_id LONG, " +
+        return "CREATE TABLE PUBLIC.PERSON (" +
+            "id BIGINT PRIMARY KEY, " +
+            "org_id BIGINT, " +
             "first_name VARCHAR(255), " +
             "last_name VARCHAR(255), " +
-            "salary LONG);";
+            "salary BIGINT);";
     }
 
     /** Query that creates Organization table. */
     public String createOrgTab() {
-        return "CREATE TABLE ORGANIZATION (id LONG PRIMARY KEY, name VARCHAR(255));";
+        return "CREATE TABLE PUBLIC.ORGANIZATION (id BIGINT PRIMARY KEY, name VARCHAR(255));";
     }
 
     /** Query that drops Person table. */
     public String dropPersonIfExist() {
-        return "DROP TABLE IF EXISTS PERSON;";
+        return "DROP TABLE IF EXISTS PUBLIC.PERSON;";
     }
 
     /** Query that drops Person table. */
     public String dropOrgIfExist() {
-        return "DROP TABLE IF EXISTS ORGANIZATION;";
+        return "DROP TABLE IF EXISTS PUBLIC.ORGANIZATION;";
     }
 
     /** Query to execute before data upload. */
@@ -61,18 +61,18 @@ public class QueryFactory {
      * PreparedStatement.
      */
     public String selectPersonsWithSalaryBetween() {
-        return "SELECT ID FROM PERSON WHERE SALARY BETWEEN ? AND ?";
+        return "SELECT ID FROM PUBLIC.PERSON WHERE SALARY BETWEEN ? AND ?";
     }
 
 
     /** Query that inserts new Person record. Has 5 jdbc parameters - fields of the Person.*/
     public String insertIntoPerson() {
-        return "INSERT INTO PERSON (id, org_id, first_name, last_name, salary) values (?, ?, ?, ?, ?)";
+        return "INSERT INTO PUBLIC.PERSON (id, org_id, first_name, last_name, salary) values (?, ?, ?, ?, ?)";
     }
 
     /** Query that inserts new Organization record. Has 2 jdbc parameters - org id and org name. */
     public String insertIntoOrganization() {
-        return "INSERT INTO ORGANIZATION (id, name) VALUES (?, ?);";
+        return "INSERT INTO PUBLIC.ORGANIZATION (id, name) VALUES (?, ?);";
     }
 
     /**
@@ -80,8 +80,8 @@ public class QueryFactory {
      */
     public String selectPersonsJoinOrgWithSalaries() {
         return "SELECT p.id, p.org_id, p.first_name, p.last_name, p.salary, o.name " +
-            "FROM PERSON p " +
-            "LEFT JOIN ORGANIZATION o " +
+            "FROM PUBLIC.PERSON p " +
+            "LEFT JOIN PUBLIC.ORGANIZATION o " +
             "ON p.id = o.id " +
             "WHERE salary BETWEEN ? AND ?;";
     }
