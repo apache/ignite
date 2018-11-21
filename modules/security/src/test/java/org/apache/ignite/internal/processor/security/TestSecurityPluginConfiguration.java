@@ -1,5 +1,8 @@
 package org.apache.ignite.internal.processor.security;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
@@ -12,17 +15,9 @@ public class TestSecurityPluginConfiguration implements PluginConfiguration {
     public static final String DFLT_TEST_SECURITY_PROCESSOR_CLS_NAME =
         "org.apache.ignite.internal.processor.security.TestSecurityProcessor";
 
-    /** Security permission set. */
-    private SecurityPermissionSet prmSet;
+    private TestSecurityData nodeSecData = new TestSecurityData();
 
-    /** Login. */
-    private String login;
-
-    /** Password. */
-    private String pwd;
-
-    /** User object. */
-    private Object userObj;
+    private Collection<TestSecurityData> clientsSecData = new ArrayList<>();
 
     /** Security processor class name. */
     private String secProcCls;
@@ -31,14 +26,14 @@ public class TestSecurityPluginConfiguration implements PluginConfiguration {
      * Getting security permission set.
      */
     public SecurityPermissionSet getPermissions() {
-        return prmSet;
+        return nodeSecData.getPermissions();
     }
 
     /**
      * @param prmSet Security permission set.
      */
     public TestSecurityPluginConfiguration setPermissions(SecurityPermissionSet prmSet) {
-        this.prmSet = prmSet;
+        nodeSecData.setPermissions(prmSet);
 
         return this;
     }
@@ -47,14 +42,14 @@ public class TestSecurityPluginConfiguration implements PluginConfiguration {
      * Login.
      */
     public String getLogin() {
-        return login;
+        return nodeSecData.getLogin();
     }
 
     /**
      * @param login Login.
      */
     public TestSecurityPluginConfiguration setLogin(String login) {
-        this.login = login;
+        nodeSecData.setLogin(login);
 
         return this;
     }
@@ -63,39 +58,43 @@ public class TestSecurityPluginConfiguration implements PluginConfiguration {
      * Password.
      */
     public String getPwd() {
-        return pwd;
+        return nodeSecData.getPwd();
     }
 
     /**
      * @param pwd Password.
      */
     public TestSecurityPluginConfiguration setPwd(String pwd) {
-        this.pwd = pwd;
+        nodeSecData.setPwd(pwd);
 
         return this;
     }
 
-    /**
-     * User object.
-     */
-    public Object getUserObj() {
-        return userObj;
-    }
-
-    /**
-     * @param userObj User object.
-     */
-    public TestSecurityPluginConfiguration setUserObj(Object userObj) {
-        this.userObj = userObj;
+    public TestSecurityPluginConfiguration nodeSecData(TestSecurityData nodeSecData) {
+        this.nodeSecData = nodeSecData;
 
         return this;
+    }
+
+    public TestSecurityData nodeSecData() {
+        return nodeSecData;
+    }
+
+    public TestSecurityPluginConfiguration clientSecData(TestSecurityData... data) {
+        clientsSecData.addAll(Arrays.asList(data));
+
+        return this;
+    }
+
+    public Collection<TestSecurityData> clientsSecData() {
+        return clientsSecData;
     }
 
     /**
      * Getting security processor class name.
      */
     public String getSecurityProcessorClass() {
-        if(F.isEmpty(secProcCls))
+        if (F.isEmpty(secProcCls))
             return DFLT_TEST_SECURITY_PROCESSOR_CLS_NAME;
 
         return secProcCls;

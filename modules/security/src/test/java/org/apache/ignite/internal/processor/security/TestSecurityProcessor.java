@@ -79,7 +79,14 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
 
     /** {@inheritDoc} */
     @Override public SecurityContext authenticate(AuthenticationContext ctx) throws IgniteCheckedException {
-        return null;
+        return new TestSecurityContext(
+            new TestSecuritySubject()
+                .setType(ctx.subjectType())
+                .setId(ctx.subjectId())
+                .setAddr(ctx.address())
+                .setLogin(ctx.credentials().getLogin())
+                .setPerms(PERMS.get(ctx.credentials()))
+        );
     }
 
     /** {@inheritDoc} */
@@ -118,20 +125,24 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     @Override public void start() throws IgniteCheckedException {
         super.start();
 
-        SecurityCredentials cred = new SecurityCredentials(
-            configuration().getLogin(), configuration().getPwd(), configuration().getUserObj()
-        );
+        TestSecurityData nodeSecData = configuration().nodeSecData();
 
-        PERMS.put(cred, configuration().getPermissions());
+        PERMS.put(nodeSecData.credentials(), nodeSecData.getPermissions());
 
-        ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS, cred);
+        ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS, nodeSecData.credentials());
+
+        for(TestSecurityData data : configuration().clientsSecData())
+            PERMS.put(data.credentials(), data.getPermissions());
     }
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         super.stop(cancel);
 
-        PERMS.remove(ctx.nodeAttribute(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS));
+        PERMS.remove(configuration().nodeSecData().credentials());
+
+        for(TestSecurityData data : configuration().clientsSecData())
+            PERMS.remove(data.credentials());
     }
 
     /**

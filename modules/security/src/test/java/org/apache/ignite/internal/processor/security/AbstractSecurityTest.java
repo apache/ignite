@@ -44,7 +44,6 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
                 new TestSecurityPluginConfiguration()
                     .setLogin(login)
                     .setPwd(pwd)
-                    .setUserObj(userObj)
                     .setPermissions(prmSet)
             );
     }
