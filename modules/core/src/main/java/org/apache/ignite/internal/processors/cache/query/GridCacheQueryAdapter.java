@@ -537,13 +537,17 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         cctx.checkSecurity(SecurityPermission.CACHE_READ);
 
         if (nodes.isEmpty()) {
-            if(isSafeLossPolicy())
-                throw new IgniteCheckedException("Failed to execute scan query because cache partition has been " +
-                    "lost [cacheName=" + cctx.name() + ", part=" + part + "]");
+            if (part != null) {
+                if (forceLocal) {
+                    throw new IgniteCheckedException("No queryable nodes for partition " + part
+                        + " [forced local query=" + this + "]");
+                }
 
-            if (part != null && forceLocal)
-                throw new IgniteCheckedException("No queryable nodes for partition " + part
-                    + " [forced local query=" + this + "]");
+                if(isSafeLossPolicy()) {
+                    throw new IgniteCheckedException("Failed to execute scan query because cache partition has been " +
+                        "lost [cacheName=" + cctx.name() + ", part=" + part + "]");
+                }
+            }
 
             return new GridEmptyCloseableIterator();
         }
