@@ -30,6 +30,12 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
     private long updateCntr;
 
     /** */
+    private long maxUpdateCntr;
+
+    /** */
+    private long updateCntrGap;
+
+    /** */
     private long globalRmvId;
 
     /** TODO: Partition size may be long */
@@ -53,6 +59,8 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
         int grpId,
         long pageId,
         long updateCntr,
+        long maxUpdateCntr,
+        long updateCntrGap,
         long globalRmvId,
         int partSize,
         long cntrsPageId,
@@ -62,6 +70,8 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
         super(grpId, pageId);
 
         this.updateCntr = updateCntr;
+        this.maxUpdateCntr = maxUpdateCntr;
+        this.updateCntrGap = updateCntrGap;
         this.globalRmvId = globalRmvId;
         this.partSize = partSize;
         this.state = state;
@@ -109,6 +119,9 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
         PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
 
         io.setUpdateCounter(pageAddr, updateCntr);
+        io.setMaxUpdateCounter(pageAddr, maxUpdateCntr);
+        io.setUpdateCounterGap(pageAddr, updateCntrGap);
+        io.setMaxUpdateCounter(pageAddr, updateCntr);
         io.setGlobalRemoveId(pageAddr, globalRmvId);
         io.setSize(pageAddr, partSize);
         io.setCountersPageId(pageAddr, cntrsPageId);

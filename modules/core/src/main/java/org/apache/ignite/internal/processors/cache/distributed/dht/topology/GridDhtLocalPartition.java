@@ -966,10 +966,20 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return Next update index.
      */
     public long nextUpdateCounter(int cacheId, AffinityTopologyVersion topVer, boolean primary, @Nullable Long primaryCntr) {
-        long nextCntr = store.nextUpdateCounter();
+        long nextCntr;
+
+        if (primaryCntr == null) // Primary node.
+            nextCntr = store.nextUpdateCounter();
+        else {
+            assert primaryCntr != 0;
+
+            nextCntr = primaryCntr;
+
+            store.updateCounter(nextCntr);
+        }
 
         if (grp.sharedGroup())
-            grp.onPartitionCounterUpdate(cacheId, id, primaryCntr != null ? primaryCntr : nextCntr, topVer, primary);
+            grp.onPartitionCounterUpdate(cacheId, id, nextCntr, topVer, primary);
 
         return nextCntr;
     }
@@ -1020,6 +1030,19 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     public void updateCounter(long start, long delta) {
          store.updateCounter(start, delta);
+    }
+
+    /**
+     * Reset partition counters.
+     */
+    public void resetCounters() {
+        long updateCntr = updateCounter();
+
+        updateCounter(updateCntr, -updateCntr);
+
+        initialUpdateCounter(0);
+
+        updateCounter(0);
     }
 
     /**

@@ -34,7 +34,13 @@ public class PagePartitionMetaIO extends PageMetaIO {
     private static final int UPDATE_CNTR_OFF = SIZE_OFF + 8;
 
     /** */
-    private static final int GLOBAL_RMV_ID_OFF = UPDATE_CNTR_OFF + 8;
+    private static final int MAX_UPDATE_CNTR_OFF = UPDATE_CNTR_OFF + 8;
+
+    /** */
+    private static final int UPDATE_CNTR_GAP = MAX_UPDATE_CNTR_OFF + 8;
+
+    /** */
+    private static final int GLOBAL_RMV_ID_OFF = UPDATE_CNTR_GAP + 8;
 
     /** */
     private static final int PARTITION_STATE_OFF = GLOBAL_RMV_ID_OFF + 8;
@@ -57,6 +63,8 @@ public class PagePartitionMetaIO extends PageMetaIO {
 
         setSize(pageAddr, 0);
         setUpdateCounter(pageAddr, 0);
+        setMaxUpdateCounter(pageAddr, 0);
+        setUpdateCounterGap(pageAddr, 0);
         setGlobalRemoveId(pageAddr, 0);
         setPartitionState(pageAddr, (byte)-1);
         setCountersPageId(pageAddr, 0);
@@ -107,6 +115,48 @@ public class PagePartitionMetaIO extends PageMetaIO {
             return false;
 
         PageUtils.putLong(pageAddr, UPDATE_CNTR_OFF, cntr);
+
+        return true;
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @return Max partition update counter.
+     */
+    public long getMaxUpdateCounter(long pageAddr) {
+        return PageUtils.getLong(pageAddr, MAX_UPDATE_CNTR_OFF);
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param cntr Max partition update counter.
+     */
+    public boolean setMaxUpdateCounter(long pageAddr, long cntr) {
+        if (getUpdateCounter(pageAddr) == cntr)
+            return false;
+
+        PageUtils.putLong(pageAddr, MAX_UPDATE_CNTR_OFF, cntr);
+
+        return true;
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @return Partition update counter.
+     */
+    public long getUpdateCounterGap(long pageAddr) {
+        return PageUtils.getLong(pageAddr, UPDATE_CNTR_GAP);
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param cntr Partition update counter.
+     */
+    public boolean setUpdateCounterGap(long pageAddr, long cntr) {
+        if (getUpdateCounterGap(pageAddr) == cntr)
+            return false;
+
+        PageUtils.putLong(pageAddr, UPDATE_CNTR_GAP, cntr);
 
         return true;
     }

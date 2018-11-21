@@ -793,7 +793,7 @@ public class CacheGroupContext {
     /**
      * Pre-create partitions that resides in page memory or WAL and restores their state.
      */
-    public long restorePartitionStates(Map<GroupPartitionId, PartitionRecoverState> partitionRecoveryStates) throws IgniteCheckedException {
+    public long restorePartitionStates(Map<GroupPartitionId, Integer> partitionRecoveryStates) throws IgniteCheckedException {
         if (isLocal() || !affinityNode() || !dataRegion().config().isPersistenceEnabled())
             return 0;
 
@@ -805,7 +805,7 @@ public class CacheGroupContext {
         PageMemoryEx pageMem = (PageMemoryEx)dataRegion().pageMemory();
 
         for (int p = 0; p < affinity().partitions(); p++) {
-            PartitionRecoverState recoverState = partitionRecoveryStates.get(new GroupPartitionId(grpId, p));
+            Integer state = partitionRecoveryStates.get(new GroupPartitionId(grpId, p));
 
             if (ctx.pageStore().exists(grpId, p)) {
                 ctx.pageStore().ensure(grpId, p);
@@ -842,18 +842,10 @@ public class CacheGroupContext {
                         try {
                             PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
 
-                            if (recoverState != null) {
-                                io.setPartitionState(pageAddr, (byte) recoverState.stateId());
+                            if (state != null) {
+                                io.setPartitionState(pageAddr, (byte)state.intValue());
 
-                                changed = updateState(part, recoverState.stateId());
-
-                                if (recoverState.stateId() == GridDhtPartitionState.OWNING.ordinal()
-                                    || (recoverState.stateId() == GridDhtPartitionState.MOVING.ordinal()
-                                    && part.initialUpdateCounter() < recoverState.updateCounter())) {
-                                    part.initialUpdateCounter(recoverState.updateCounter());
-
-                                    changed = true;
-                                }
+                                changed = updateState(part, state);
 
                                 if (log.isInfoEnabled())
                                     log.warning("Restored partition state (from WAL) " +
@@ -883,12 +875,10 @@ public class CacheGroupContext {
                     ctx.database().checkpointReadUnlock();
                 }
             }
-            else if (recoverState != null) {
+            else if (state != null) {
                 GridDhtLocalPartition part = topology().forceCreatePartition(p);
 
-                offheap().onPartitionInitialCounterUpdated(p, recoverState.updateCounter());
-
-                updateState(part, recoverState.stateId());
+                updateState(part, state);
 
                 processed++;
 

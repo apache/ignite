@@ -59,6 +59,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheTtlManager;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteHistoricalIterator;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -252,6 +253,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             freeList.saveMetadata();
 
             long updCntr = store.updateCounter();
+            long maxUpdCntr = store.partUpdateCounter().maxUpdateCounter();
+            long updCntrGap = store.partUpdateCounter().updateCounterGap();
             long size = store.fullSize();
             long rmvId = globalRemoveId().get();
 
@@ -300,6 +303,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         PagePartitionMetaIO io = PageIO.getPageIO(partMetaPageAddr);
 
                         changed |= io.setUpdateCounter(partMetaPageAddr, updCntr);
+                        changed |= io.setMaxUpdateCounter(partMetaPageAddr, maxUpdCntr);
+                        changed |= io.setUpdateCounterGap(partMetaPageAddr, updCntrGap);
                         changed |= io.setGlobalRemoveId(partMetaPageAddr, rmvId);
                         changed |= io.setSize(partMetaPageAddr, size);
 
@@ -374,6 +379,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                                 grpId,
                                 partMetaId,
                                 updCntr,
+                                maxUpdCntr,
+                                updCntrGap,
                                 rmvId,
                                 (int)size, // TODO: Partition size may be long
                                 cntrsPageId,
@@ -1452,7 +1459,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                                 if (grp.sharedGroup())
                                     cacheSizes = readSharedGroupCacheSizes(pageMem, grpId, io.getCountersPageId(pageAddr));
 
-                                delegate0.init(io.getSize(pageAddr), io.getUpdateCounter(pageAddr), cacheSizes);
+                                long lwm = io.getUpdateCounter(pageAddr);
+                                long hwm = io.getMaxUpdateCounter(pageAddr);
+                                long cnt = io.getUpdateCounterGap(pageAddr);
+
+                                delegate0.init(io.getSize(pageAddr), lwm, hwm, cnt, cacheSizes);
 
                                 globalRemoveId().setIfGreater(io.getGlobalRemoveId(pageAddr));
                             }
@@ -1678,6 +1689,17 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             }
         }
 
+        @Override public PartitionUpdateCounter partUpdateCounter() {
+            try {
+                CacheDataStore delegate0 = init0(true);
+
+                return delegate0 == null ? null : delegate0.partUpdateCounter();
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
         /** {@inheritDoc} */
         @Override public long getAndIncrementUpdateCounter(long delta) {
             try {
@@ -1691,7 +1713,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes) {
+        @Override public void init(long size, long lwm, long hwm, long cnt, @Nullable Map<Integer, Long> cacheSizes) {
             throw new IllegalStateException("Should be never called.");
         }
 

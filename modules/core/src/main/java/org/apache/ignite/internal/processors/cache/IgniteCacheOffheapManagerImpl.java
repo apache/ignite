@@ -1443,7 +1443,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         private final CacheDataTree dataTree;
 
         /** Update counter. */
-        protected final PartitionUpdateCounter pCntr = new PartitionUpdateCounter(log);
+        protected final PartitionUpdateCounter pCntr;
 
         /** Partition size. */
         private final AtomicLong storageSize = new AtomicLong();
@@ -1476,6 +1476,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             this.name = name;
             this.rowStore = rowStore;
             this.dataTree = dataTree;
+            pCntr = grp.mvccEnabled() ? new MvccPartitionUpdateCounter(log) : new DefaultPartitionUpdateCounter(log);
         }
 
         /**
@@ -1569,6 +1570,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             return pCntr.get();
         }
 
+        @Override public PartitionUpdateCounter partUpdateCounter() {
+            return pCntr;
+        }
+
         /** {@inheritDoc} */
         @Override public void updateCounter(long val) {
             pCntr.update(val);
@@ -1581,7 +1586,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public void finalizeUpdateCountres() {
-            pCntr.finalizeUpdateCountres();
+            pCntr.finalizeUpdateCounters();
         }
 
         /** {@inheritDoc} */
@@ -3000,8 +3005,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes) {
-            pCntr.init(updCntr);
+        @Override public void init(long size, long lwm, long hwm, long cnt, @Nullable Map<Integer, Long> cacheSizes) {
+            pCntr.init(lwm, hwm, cnt);
 
             storageSize.set(size);
 

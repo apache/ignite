@@ -2132,11 +2132,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             if (marked) {
                                 updateLocal(locPart.id(), locPart.state(), updSeq, resTopVer);
 
-                                long updateCntr = locPart.updateCounter();
-
-                                //Set update counters to 0, for full rebalance.
-                                locPart.updateCounter(updateCntr, -updateCntr);
-                                locPart.initialUpdateCounter(0);
+                                // Reset counters to zero for triggering full rebalance.
+                                locPart.resetCounters();
                             }
                         }
                     }

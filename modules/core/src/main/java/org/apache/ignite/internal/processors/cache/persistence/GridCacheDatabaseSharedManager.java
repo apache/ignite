@@ -2062,7 +2062,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     private void restorePartitionStates(
         Collection<CacheGroupContext> forGroups,
-        Map<GroupPartitionId, PartitionRecoverState> partitionStates
+        Map<GroupPartitionId, Integer> partitionStates
     ) throws IgniteCheckedException {
         long startRestorePart = U.currentTimeMillis();
 
@@ -2317,7 +2317,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         @Nullable WALIterator it,
         IgnitePredicate<IgniteBiTuple<WALPointer, WALRecord>> recPredicate,
         IgnitePredicate<DataEntry> entryPredicate,
-        Map<GroupPartitionId, PartitionRecoverState> partitionRecoveryStates
+        Map<GroupPartitionId, Integer> partitionRecoveryStates
     ) throws IgniteCheckedException {
         cctx.walState().runWithOutWAL(() -> {
             if (it != null) {
@@ -2469,11 +2469,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             metaStateRecord.groupId(), metaStateRecord.partitionId()
                         );
 
-                        PartitionRecoverState state = new PartitionRecoverState(
-                            (int)metaStateRecord.state(), metaStateRecord.updateCounter()
-                        );
-
-                        restoreLogicalState.partitionRecoveryStates.put(groupPartitionId, state);
+                        restoreLogicalState.partitionRecoveryStates.put(groupPartitionId, (int)metaStateRecord.state());
 
                         break;
 
@@ -4900,7 +4896,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     private class RestoreLogicalState extends RestoreStateContext {
         /** States of partitions recovered during applying logical updates. */
-        private final Map<GroupPartitionId, PartitionRecoverState> partitionRecoveryStates = new HashMap<>();
+        private final Map<GroupPartitionId, Integer> partitionRecoveryStates = new HashMap<>();
 
         /**
          * @param lastArchivedSegment Last archived segment index.

@@ -1580,9 +1580,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             updateCntr0 = nextPartitionCounter(topVer, tx == null || tx.local(), updateCntr);
 
-            if (updateCntr != null && updateCntr != 0)
-                updateCntr0 = updateCntr;
-
             if (tx != null && cctx.group().persistenceEnabled() && cctx.group().walEnabled())
                 logPtr = logTxUpdate(tx, val, expireTime, updateCntr0);
 
@@ -1785,9 +1782,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             updateCntr0 = nextPartitionCounter(topVer, tx == null || tx.local(), updateCntr);
-
-            if (updateCntr != null && updateCntr != 0)
-                updateCntr0 = updateCntr;
 
             if (tx != null && cctx.group().persistenceEnabled() && cctx.group().walEnabled())
                 logPtr = logTxUpdate(tx, null, 0, updateCntr0);
@@ -2386,9 +2380,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             evtVal = (CacheObject)writeObj;
 
                         long updateCntr0 = nextPartitionCounter(topVer, primary, updateCntr);
-
-                        if (updateCntr != null)
-                            updateCntr0 = updateCntr;
 
                         onUpdateFinished(updateCntr0);
 
@@ -6385,9 +6376,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             long updateCntr0 = entry.nextPartitionCounter(topVer, primary, updateCntr);
 
-            if (updateCntr != null)
-                updateCntr0 = updateCntr;
-
             entry.logUpdate(op, updated, newVer, newExpireTime, updateCntr0);
 
             if (!entry.isNear()) {
@@ -6471,9 +6459,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 cctx.store().remove(null, entry.key);
 
             long updateCntr0 = entry.nextPartitionCounter(topVer, primary, updateCntr);
-
-            if (updateCntr != null)
-                updateCntr0 = updateCntr;
 
             entry.logUpdate(op, null, newVer, 0, updateCntr0);
 
