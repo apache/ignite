@@ -17,8 +17,15 @@
 
 package org.apache.ignite.yardstick;
 
+import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -36,6 +43,7 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.yardstick.io.FileUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
@@ -52,6 +60,9 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
  * Standalone Ignite node.
  */
 public class IgniteNode implements BenchmarkServer {
+    /** Default port range */
+    private static final String DFLT_PORT_RANGE = "47500..47549";
+
     /** Grid instance. */
     private Ignite ignite;
 
@@ -189,6 +200,11 @@ public class IgniteNode implements BenchmarkServer {
             c.setDataStorageConfiguration(pcCfg);
         }
 
+        // If we use TcpDiscoverySpi try to set addresses from SERVER_HOSTS property to
+        // TcpDiscoveryIpFinder configuration.
+        if (c.getDiscoverySpi() instanceof TcpDiscoverySpi)
+            replaceAdrList(c, cfg);
+
         ignite = IgniteSpring.start(c, appCtx);
 
         BenchmarkUtils.println("Configured marshaller: " + ignite.cluster().localNode().attribute(ATTR_MARSHALLER));
@@ -199,7 +215,8 @@ public class IgniteNode implements BenchmarkServer {
      * @return Tuple with grid configuration and Spring application context.
      * @throws Exception If failed.
      */
-    public static IgniteBiTuple<IgniteConfiguration, ? extends ApplicationContext> loadConfiguration(String springCfgPath)
+    public static IgniteBiTuple<IgniteConfiguration, ? extends ApplicationContext> loadConfiguration(
+        String springCfgPath)
         throws Exception {
         URL url;
 
@@ -260,5 +277,140 @@ public class IgniteNode implements BenchmarkServer {
      */
     public Ignite ignite() {
         return ignite;
+    }
+
+    /**
+     * Replaces addresses in IpFinder list.
+     *
+     * @param c Ignite configuration.
+     * @param cfg Benchmark configuration.
+     */
+    private void replaceAdrList(IgniteConfiguration c, BenchmarkConfiguration cfg) {
+        if (cfg.customProperties() == null || cfg.customProperties().get("SERVER_HOSTS") == null)
+            return;
+
+        String prop = cfg.customProperties().get("SERVER_HOSTS");
+
+        Collection<String> adrSetFromProp = new HashSet<>(Arrays.asList(prop.split(",")));
+
+        TcpDiscoverySpi spi = (TcpDiscoverySpi)c.getDiscoverySpi();
+
+        Collection<InetSocketAddress> regAdrList = spi.getIpFinder().getRegisteredAddresses();
+
+        Collection<String> adrList = new ArrayList<>(regAdrList.size());
+
+        for (InetSocketAddress adr : regAdrList)
+            adrList.add(adr.getHostString());
+
+        if (checkIfNoLocalhost(adrSetFromProp) && checkIfOnlyLocalhost(adrList)) {
+            BenchmarkUtils.println("3");
+
+            Collection<InetSocketAddress> newAdrList = new ArrayList<>(adrSetFromProp.size());
+
+            List<String> toDisplay = new ArrayList<>(adrSetFromProp.size());
+
+            String portRange = cfg.customProperties().get("PORT_RANGE") != null ?
+                cfg.customProperties().get("PORT_RANGE") :
+                DFLT_PORT_RANGE;
+
+            for (String adr : adrSetFromProp) {
+                for (Integer port : getPortList(portRange))
+                    newAdrList.add(new InetSocketAddress(adr, port));
+
+                toDisplay.add(String.format("%s:%s", adr, portRange));
+            }
+
+            Collections.sort(toDisplay);
+
+            BenchmarkUtils.println("WARNING! Host list from SERVER_HOSTS property does not contain any " +
+                "'127.0.0.1' or 'localhost' addresses and host list from IpFinger configuration contains " +
+                "only default local addresses. ");
+
+            BenchmarkUtils.println("Assuming you want to use for IpFinder configuration addresses " +
+                "from SERVER_HOSTS property.");
+
+            BenchmarkUtils.println(String.format("Replacing list: \n %s \n to list: \n %s",
+                regAdrList, toDisplay));
+
+            spi.getIpFinder().unregisterAddresses(regAdrList);
+
+            spi.getIpFinder().registerAddresses(newAdrList);
+
+            for (String adr : IgniteUtils.allLocalIps()) {
+                if (adrSetFromProp.contains(adr)) {
+                    BenchmarkUtils.println(String.format("Setting 'localhost' property to %s", adr));
+
+                    c.setLocalHost(adr);
+                }
+            }
+        }
+    }
+
+    /**
+     * Checks if address list contains only localhost addresses.
+     *
+     * @param adrList address list.
+     * @return {@code true} if address list contains only localhost addresses  or {@code false} otherwise.
+     */
+    private boolean checkIfOnlyLocalhost(Collection<String> adrList) {
+        return countLocalAdr(adrList) == adrList.size();
+    }
+
+    /**
+     * Checks if address list contains no localhost addresses.
+     *
+     * @param adrList address list.
+     * @return {@code true} if address list contains no localhost addresses or {@code false} otherwise.
+     */
+    private boolean checkIfNoLocalhost(Collection<String> adrList) {
+        return countLocalAdr(adrList) == 0;
+    }
+
+    /**
+     * Counts localhost addresses in list.
+     *
+     * @param adrList address list.
+     * @return {@code int} Number of localhost addresses in list.
+     */
+    private int countLocalAdr(Collection<String> adrList) {
+        int locAdr = 0;
+
+        for (String adr : adrList)
+            if (adr.contains("127.0.0.1") || adr.contains("localhost"))
+                locAdr++;
+
+        return locAdr;
+    }
+
+    /**
+     * Parses portRange string.
+     *
+     * @param portRange {@code String} port range.
+     * @return {@code Collection} List of ports.
+     */
+    private Collection<Integer> getPortList(String portRange) {
+        int firstPort;
+        int lastPort;
+
+        try {
+            String[] numArr = portRange.split("\\.\\.");
+
+            firstPort = Integer.valueOf(numArr[0]);
+            lastPort = numArr.length > 1 ? Integer.valueOf(numArr[1]) : firstPort;
+        }
+        catch (ArrayIndexOutOfBoundsException | NumberFormatException e) {
+            BenchmarkUtils.println(String.format("Failed to parse PORT_RANGE property: %s; %s",
+                portRange, e.getMessage()));
+
+            throw new IllegalArgumentException(String.format("Wrong value for PORT_RANGE property: %s",
+                portRange));
+        }
+
+        Collection<Integer> res = new ArrayList<>();
+
+        for (int port = firstPort; port <= lastPort; port++)
+           res.add(port);
+
+        return res;
     }
 }
