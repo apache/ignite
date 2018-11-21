@@ -229,6 +229,8 @@ class JdbcUtils {
             return "TIMESTAMP";
         else if (Date.class.getName().equals(cls))
             return "DATE";
+        else if (BigDecimal.class.getName().equals(cls))
+            return "DECIMAL";
         else
             return "OTHER";
     }

@@ -52,9 +52,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
-import static java.sql.Types.INTEGER;
-import static java.sql.Types.OTHER;
-import static java.sql.Types.VARCHAR;
+import static java.sql.Types.*;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -158,6 +156,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             stmt.execute("CREATE INDEX IDX ON TEST (ID ASC)");
             stmt.execute("CREATE TABLE TEST_DECIMAL_COLUMN (ID INT primary key, DEC_COL DECIMAL(8, 3))");
             stmt.execute("CREATE TABLE TEST_DECIMAL_COLUMN_PRECISION (ID INT primary key, DEC_COL DECIMAL(8))");
+            stmt.execute("CREATE TABLE TEST_DECIMAL_DATE_COLUMN_META (ID INT primary key, DEC_COL DECIMAL(8), DATE_COL DATE)");
         }
     }
 
@@ -196,6 +195,42 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         assert "INTEGER".equals(meta.getColumnTypeName(2));
         assert "java.lang.Integer".equals(meta.getColumnClassName(2));
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDecimalAndDateTypeMetaData() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            Statement stmt = conn.createStatement();
+
+            ResultSet rs = stmt.executeQuery(
+                    "select t.dec_col, t.date_col from TEST_DECIMAL_DATE_COLUMN_META as t");
+
+            assert rs != null;
+
+            ResultSetMetaData meta = rs.getMetaData();
+
+            assert meta != null;
+
+            assert meta.getColumnCount() == 2;
+
+            assert "TEST_DECIMAL_DATE_COLUMN_META".equalsIgnoreCase(meta.getTableName(1));
+            assert "DEC_COL".equalsIgnoreCase(meta.getColumnName(1));
+            assert "DEC_COL".equalsIgnoreCase(meta.getColumnLabel(1));
+            assert meta.getColumnType(1) == DECIMAL;
+            assert "DECIMAL".equals(meta.getColumnTypeName(1));
+            assert "java.math.BigDecimal".equals(meta.getColumnClassName(1));
+
+            assert "TEST_DECIMAL_DATE_COLUMN_META".equalsIgnoreCase(meta.getTableName(2));
+            assert "DATE_COL".equalsIgnoreCase(meta.getColumnName(2));
+            assert "DATE_COL".equalsIgnoreCase(meta.getColumnLabel(2));
+            assert meta.getColumnType(2) == DATE;
+            assert "DATE".equals(meta.getColumnTypeName(2));
+            assert "java.sql.Date".equals(meta.getColumnClassName(2));
+
+        }
+    }
+
 
     /**
      * @throws Exception If failed.
@@ -261,7 +296,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "PUBLIC.TEST",
                 "PUBLIC.Quoted",
                 "PUBLIC.TEST_DECIMAL_COLUMN",
-                "PUBLIC.TEST_DECIMAL_COLUMN_PRECISION"));
+                "PUBLIC.TEST_DECIMAL_COLUMN_PRECISION",
+                "PUBLIC.TEST_DECIMAL_DATE_COLUMN_META"));
 
             Set<String> actualTbls = new HashSet<>(expectedTbls.size());
 
@@ -413,7 +449,10 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "PUBLIC.TEST_DECIMAL_COLUMN.ID.null",
                 "PUBLIC.TEST_DECIMAL_COLUMN.DEC_COL.null.8.3",
                 "PUBLIC.TEST_DECIMAL_COLUMN_PRECISION.ID.null",
-                "PUBLIC.TEST_DECIMAL_COLUMN_PRECISION.DEC_COL.null.8"
+                "PUBLIC.TEST_DECIMAL_COLUMN_PRECISION.DEC_COL.null.8",
+                "PUBLIC.TEST_DECIMAL_DATE_COLUMN_META.ID.null",
+                "PUBLIC.TEST_DECIMAL_DATE_COLUMN_META.DEC_COL.null.8",
+                "PUBLIC.TEST_DECIMAL_DATE_COLUMN_META.DATE_COL.null"
             ));
 
             Set<String> actualCols = new HashSet<>(expectedCols.size());
@@ -566,7 +605,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "PUBLIC.TEST.PK_PUBLIC_TEST.NAME",
                 "PUBLIC.Quoted.PK_PUBLIC_Quoted.Id",
                 "PUBLIC.TEST_DECIMAL_COLUMN.ID.ID",
-                "PUBLIC.TEST_DECIMAL_COLUMN_PRECISION.ID.ID"));
+                "PUBLIC.TEST_DECIMAL_COLUMN_PRECISION.ID.ID",
+                "PUBLIC.TEST_DECIMAL_DATE_COLUMN_META.ID.ID"));
 
             Set<String> actualPks = new HashSet<>(expectedPks.size());
 
