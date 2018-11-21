@@ -43,6 +43,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
@@ -84,6 +85,8 @@ import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
+import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -222,6 +225,12 @@ public class PageMemoryImpl implements PageMemoryEx {
     private IgniteWriteAheadLogManager walMgr;
 
     /** */
+    private final GridEncryptionManager encMgr;
+
+    /** */
+    private final EncryptionSpi encSpi;
+
+    /** */
     private final IgniteLogger log;
 
     /** Direct memory allocator. */
@@ -314,9 +323,12 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         storeMgr = ctx.pageStore();
         walMgr = ctx.wal();
+        encMgr = ctx.kernalContext().encryption();
+        encSpi = ctx.gridConfig().getEncryptionSpi();
 
         assert storeMgr != null;
         assert walMgr != null;
+        assert encMgr != null;
 
         sysPageSize = pageSize + PAGE_OVERHEAD;
 
@@ -962,7 +974,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public int realPageSize(int grpId) {
-        if (ctx.kernalContext().encryption().groupKey(grpId) == null)
+        if ((encSpi instanceof NoopEncryptionSpi) || encMgr.groupKey(grpId) == null)
             return pageSize();
 
         return encPageSize;

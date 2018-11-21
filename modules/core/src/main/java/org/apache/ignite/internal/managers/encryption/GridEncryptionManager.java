@@ -134,7 +134,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         (IgnitePredicate<String>)key -> key.startsWith(ENCRYPTION_KEY_PREFIX);
 
     /** Group encryption keys. */
-    private Map<Integer, Serializable> grpEncKeys = new HashMap<>();
+    private final ConcurrentHashMap<Integer, Serializable> grpEncKeys = new ConcurrentHashMap<>();
 
     /** Pending generate encryption key futures. */
     private ConcurrentMap<IgniteUuid, GenerateEncryptionKeyFuture> genEncKeyFuts = new ConcurrentHashMap<>();
@@ -472,6 +472,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @return Group encryption key.
      */
     @Nullable public Serializable groupKey(int grpId) {
+        if (grpEncKeys.isEmpty())
+            return null;
+
         return grpEncKeys.get(grpId);
     }
 

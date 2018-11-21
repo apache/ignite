@@ -58,6 +58,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
@@ -67,6 +68,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI2;
@@ -275,6 +277,37 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
     }
 
     /**
+     * For cache updates in shared cache group need notify others caches CQ listeners
+     * that generated counter should be skipped.
+     *
+     * @param cctx Cache context.
+     * @param part Partition.
+     * @param topVer Topology version.
+     * @param gaps Even-length array of pairs [start, end] for each gap.
+     */
+    @Nullable public void closeBackupUpdateCountersGaps(GridCacheContext cctx,
+        int part,
+        AffinityTopologyVersion topVer,
+        GridLongList gaps) {
+        assert gaps != null && gaps.size() % 2 == 0;
+
+        for (int i = 0; i < gaps.size() / 2; i++) {
+            long gapStart = gaps.get(i * 2);
+            long gapStop = gaps.get(i * 2 + 1);
+
+            /*
+             * No user listeners should be called by this invocation. In the common case of partitioned cache or
+             * replicated cache with non-local-only listener gaps (dummy filtered CQ events) will be added to the
+             * backup queue without passing it to any listener. In the special case of local-only listener on
+             * replicated cache there is no backup queues used at all and therefore no gaps occur - all unfiltered
+             * events are passed to listeners upon arrive.
+             */
+            for (long cntr = gapStart; cntr <= gapStop; cntr++)
+                skipUpdateEvent(lsnrs, null, part, cntr, false, topVer);
+        }
+    }
+
+    /**
      * @param internal Internal entry flag (internal key or not user cache).
      * @param preload Whether update happened during preloading.
      * @return Registered listeners.
@@ -385,7 +418,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         boolean recordIgniteEvt = primary && !internal && cctx.events().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
 
         for (CacheContinuousQueryListener lsnr : lsnrCol.values()) {
-            if (preload && !lsnr.notifyExisting())
+            if (preload && !lsnr.notifyExisting() || lsnr.isPrimaryOnly() && !primary)
                 continue;
 
             if (!initialized) {
@@ -406,7 +439,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 cctx.cacheId(),
                 evtType,
                 key,
-                evtType == REMOVED && lsnr.oldValueRequired() ? oldVal : newVal,
+                (!internal && evtType == REMOVED && lsnr.oldValueRequired()) ? oldVal : newVal,
                 lsnr.oldValueRequired() ? oldVal : null,
                 lsnr.keepBinary(),
                 partId,
@@ -722,12 +755,14 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
         final CacheContinuousQueryHandler hnd = clsr.apply();
 
+        boolean locOnly = cctx.isLocal() || loc;
+
         hnd.taskNameHash(taskNameHash);
         hnd.skipPrimaryCheck(skipPrimaryCheck);
         hnd.notifyExisting(notifyExisting);
         hnd.internal(internal);
         hnd.keepBinary(keepBinary);
-        hnd.localCache(cctx.isLocal());
+        hnd.localOnly(locOnly);
 
         IgnitePredicate<ClusterNode> pred = (loc || cctx.config().getCacheMode() == CacheMode.LOCAL) ?
             F.nodeForNodeId(cctx.localNodeId()) : cctx.group().nodeFilter();
@@ -739,13 +774,13 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         try {
             id = cctx.kernalContext().continuous().startRoutine(
                 hnd,
-                internal && loc,
+                locOnly,
                 bufSize,
                 timeInterval,
                 autoUnsubscribe,
                 pred).get();
 
-            if (hnd.isQuery() && cctx.userCache() && !onStart)
+            if (hnd.isQuery() && cctx.userCache() && !locOnly && !onStart)
                 hnd.waitTopologyFuture(cctx.kernalContext());
         }
         catch (NodeStoppingException e) {

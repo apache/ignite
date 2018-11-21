@@ -26,6 +26,7 @@ import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
+import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -38,6 +39,7 @@ import org.jetbrains.annotations.Nullable;
  * Minimal list API to work with primitive longs. This list exists
  * to avoid boxing/unboxing when using standard list from Java.
  */
+@IgniteCodeGeneratingFail
 public class GridLongList implements Message, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;

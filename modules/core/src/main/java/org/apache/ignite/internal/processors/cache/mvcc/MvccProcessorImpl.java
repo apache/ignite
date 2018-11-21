@@ -93,6 +93,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -288,10 +289,11 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
     /** {@inheritDoc} */
     @Override public void ensureStarted() throws IgniteCheckedException {
-        if (!ctx.clientNode() && txLog == null) {
+        if (!ctx.clientNode()) {
             assert mvccEnabled && mvccSupported;
 
-            txLog = new TxLog(ctx, ctx.cache().context().database());
+            if (txLog == null)
+                txLog = new TxLog(ctx, ctx.cache().context().database());
 
             startVacuumWorkers();
 
@@ -319,23 +321,34 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** {@inheritDoc} */
-    @Override public void afterInitialise(IgniteCacheDatabaseSharedManager mgr) {
-        // No-op.
+    @Override public void beforeResumeWalLogging(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
+        // In case of blt changed we should re-init TX_LOG cache.
+        txLogPageStoreInit(mgr);
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ConstantConditions")
-    @Override public void beforeMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
+    @Override public void beforeBinaryMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
+        txLogPageStoreInit(mgr);
+    }
+
+    /**
+     * @param mgr Database shared manager.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void txLogPageStoreInit(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
         assert CU.isPersistenceEnabled(ctx.config());
-        assert txLog == null;
 
         ctx.cache().context().pageStore().initialize(TX_LOG_CACHE_ID, 1,
             TX_LOG_CACHE_NAME, mgr.dataRegion(TX_LOG_CACHE_NAME).memoryMetrics());
-    }
 
-    /** {@inheritDoc} */
-    @Override public void afterMemoryRestore(IgniteCacheDatabaseSharedManager mgr) {
-        // No-op.
+        boolean hasMvccCaches = ctx.cache().cacheGroups().stream().filter(CacheGroupContext::persistenceEnabled)
+            .anyMatch(g -> g.config().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT);
+
+        if (hasMvccCaches) {
+            txLog = new TxLog(ctx, mgr);
+
+            mvccEnabled = true;
+        }
     }
 
     /** {@inheritDoc} */
@@ -1095,8 +1108,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             }
 
             if (workers == null) {
-                if (log.isInfoEnabled())
-                    log.info("Attempting to stop inactive vacuum.");
+                if (log.isDebugEnabled() && mvccEnabled())
+                    log.debug("Attempting to stop inactive vacuum.");
 
                 return;
             }
@@ -1244,10 +1257,13 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                                                 && crd.coordinatorVersion() >= snapshot.coordinatorVersion();
 
                                             for (TxKey key : waitMap.keySet()) {
-                                                assert key.major() == snapshot.coordinatorVersion()
+                                                if (!( key.major() == snapshot.coordinatorVersion()
                                                     && key.minor() > snapshot.cleanupVersion()
-                                                    || key.major() > snapshot.coordinatorVersion() :
-                                                    "key=" + key + ", snapshot=" + snapshot;
+                                                    || key.major() > snapshot.coordinatorVersion())) {
+                                                    byte state = state(key.major(), key.minor());
+
+                                                    assert state == TxState.ABORTED : "tx state=" + state;
+                                                }
                                             }
                                         }
 
@@ -1255,15 +1271,14 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
                                         if (log.isDebugEnabled())
                                             log.debug("Vacuum completed. " + metrics);
-                                    }
-                                    catch (NodeStoppingException ignored) {
-                                        if (log.isDebugEnabled())
-                                            log.debug("Cannot complete vacuum (node is stopping).");
+                                    } catch (Throwable e) {
+                                        if (X.hasCause(e, NodeStoppingException.class)) {
+                                            if (log.isDebugEnabled())
+                                                log.debug("Cannot complete vacuum (node is stopping).");
 
-                                        metrics = new VacuumMetrics();
-                                    }
-                                    catch (Throwable e) {
-                                        ex = new GridClosureException(e);
+                                            metrics = new VacuumMetrics();
+                                        } else
+                                            ex = new GridClosureException(e);
                                     }
 
                                     res.onDone(metrics, ex);
@@ -2394,27 +2409,27 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                     entry = cctx.cache().entryEx(key);
                 }
 
-                cctx.shared().database().checkpointReadLock();
-
                 int cleaned = 0;
 
                 try {
-                    if (cleanupRows != null)
-                        cleaned = part.dataStore().cleanup(cctx, cleanupRows);
+                    cctx.shared().database().checkpointReadLock();
 
-                    if (rest != null) {
-                        if (rest.getClass() == ArrayList.class) {
-                            for (MvccDataRow row : ((List<MvccDataRow>)rest)) {
-                                part.dataStore().updateTxState(cctx, row);
-                            }
+                    try {
+                        if (cleanupRows != null)
+                            cleaned = part.dataStore().cleanup(cctx, cleanupRows);
+
+                        if (rest != null) {
+                            if (rest.getClass() == ArrayList.class) {
+                                for (MvccDataRow row : ((List<MvccDataRow>) rest)) {
+                                    part.dataStore().updateTxState(cctx, row);
+                                }
+                            } else
+                                part.dataStore().updateTxState(cctx, (MvccDataRow) rest);
                         }
-                        else
-                            part.dataStore().updateTxState(cctx, (MvccDataRow)rest);
+                    } finally {
+                        cctx.shared().database().checkpointReadUnlock();
                     }
-                }
-                finally {
-                    cctx.shared().database().checkpointReadUnlock();
-
+                } finally {
                     entry.unlockEntry();
                     cctx.evicts().touch(entry, AffinityTopologyVersion.NONE);
 

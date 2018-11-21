@@ -226,7 +226,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private CacheWeakQueryIteratorsHolder<Map.Entry<K, V>> itHolder;
 
     /** Affinity node. */
-    private boolean affNode;
+    private volatile boolean affNode;
 
     /** Conflict resolver. */
     private CacheVersionConflictResolver conflictRslvr;
@@ -238,7 +238,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private CountDownLatch startLatch = new CountDownLatch(1);
 
     /** Topology version when cache was started on local node. */
-    private AffinityTopologyVersion locStartTopVer;
+    private volatile AffinityTopologyVersion locStartTopVer;
 
     /** Dynamic cache deployment ID. */
     private IgniteUuid dynamicDeploymentId;
@@ -271,7 +271,10 @@ public class GridCacheContext<K, V> implements Externalizable {
     private boolean readFromBackup = CacheConfiguration.DFLT_READ_FROM_BACKUP;
 
     /** Local node's MAC address. */
-    private String locMacs;
+    private volatile String locMacs;
+
+    /** Recovery mode flag. */
+    private volatile boolean recoveryMode;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -311,6 +314,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         AffinityTopologyVersion locStartTopVer,
         boolean affNode,
         boolean updatesAllowed,
+        boolean recoveryMode,
 
         /*
          * Managers in starting order!
@@ -395,9 +399,43 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         readFromBackup = cacheCfg.isReadFromBackup();
 
+        this.recoveryMode = recoveryMode;
+
+        assert kernalContext().recoveryMode() == recoveryMode;
+
+        if (!recoveryMode) {
+            locMacs = localNode().attribute(ATTR_MACS);
+
+            assert locMacs != null;
+        }
+    }
+
+    /**
+     * Called when cache was restored during recovery and node has joined to topology.
+     *
+     * @param topVer Cache topology join version.
+     * @param statisticsEnabled Flag indicates is statistics enabled or not for that cache.
+     *                          Value may be changed after node joined to topology.
+     */
+    public void finishRecovery(AffinityTopologyVersion topVer, boolean statisticsEnabled) {
+        assert recoveryMode : this;
+
+        recoveryMode = false;
+
+        locStartTopVer = topVer;
+
         locMacs = localNode().attribute(ATTR_MACS);
 
+        this.statisticsEnabled = statisticsEnabled;
+
         assert locMacs != null;
+    }
+
+    /**
+     * @return {@code True} if cache is in recovery mode.
+     */
+    public boolean isRecoveryMode() {
+        return recoveryMode;
     }
 
     /**
@@ -2204,9 +2242,14 @@ public class GridCacheContext<K, V> implements Externalizable {
      *
      * @param affNodes All affinity nodes.
      * @param canRemap Flag indicating that 'get' should be done on a locked topology version.
+     * @param partitionId Partition ID.
      * @return Affinity node to get key from or {@code null} if there is no suitable alive node.
      */
-    @Nullable public ClusterNode selectAffinityNodeBalanced(List<ClusterNode> affNodes, boolean canRemap) {
+    @Nullable public ClusterNode selectAffinityNodeBalanced(
+        List<ClusterNode> affNodes,
+        int partitionId,
+        boolean canRemap
+    ) {
         if (!readLoadBalancingEnabled) {
             if (!canRemap) {
                 for (ClusterNode node : affNodes) {
@@ -2230,7 +2273,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         ClusterNode n0 = null;
 
         for (ClusterNode node : affNodes) {
-            if (canRemap || discovery().alive(node)) {
+            if ((canRemap || discovery().alive(node) && isOwner(node, partitionId))) {
                 if (locMacs.equals(node.attribute(ATTR_MACS)))
                     return node;
 
@@ -2242,6 +2285,16 @@ public class GridCacheContext<K, V> implements Externalizable {
         }
 
         return n0;
+    }
+
+    /**
+     *  Check that node is owner for partition.
+     * @param node Cluster node.
+     * @param partitionId Partition ID.
+     * @return {@code}
+     */
+    private boolean isOwner(ClusterNode node, int partitionId) {
+        return topology().partitionState(node.id(), partitionId) == OWNING;
     }
 
     /**
