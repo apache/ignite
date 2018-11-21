@@ -219,7 +219,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
         if (affCol != null && H2Utils.equals(affCol, keyCol))
             affCol = null;
 
-        List<IndexColumn> unwrappedKeyCols = extractKeyColumns(tbl, keyCol, affCol);
+        List<IndexColumn> unwrappedKeyAndAffinityCols = extractKeyColumns(tbl, keyCol, affCol);
 
         List<IndexColumn> wrappedKeyCols = H2Utils.treeIndexColumns(tbl.rowDescriptor(),
             new ArrayList<>(2), keyCol, affCol);
@@ -239,7 +239,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
             tbl,
             true,
             false,
-            unwrappedKeyCols,
+            unwrappedKeyAndAffinityCols,
             wrappedKeyCols,
             -1
         );
@@ -286,14 +286,24 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
 
             // Add explicit affinity key index if nothing alike was found.
             if (!affIdxFound) {
-                List<IndexColumn> columns = H2Utils.treeIndexColumns(tbl.rowDescriptor(), new ArrayList<>(2), affCol, keyCol);
+                List<IndexColumn> unwrappedKeyCols = extractKeyColumns(tbl, keyCol, null);
+
+                ArrayList<IndexColumn> colsWithUnwrappedKey = new ArrayList<>(unwrappedKeyCols.size());
+
+                colsWithUnwrappedKey.add(affCol);
+
+                //We need to reorder PK columns to have affinity key as first column, that's why we can't use simple PK columns
+                H2Utils.addUniqueColumns(colsWithUnwrappedKey, unwrappedKeyCols);
+
+                List<IndexColumn> cols = H2Utils.treeIndexColumns(tbl.rowDescriptor(), new ArrayList<>(2), affCol, keyCol);
+
                 idxs.add(idx.createSortedIndex(
                     AFFINITY_KEY_IDX_NAME,
                     tbl,
                     false,
                     true,
-                    columns,
-                    columns,
+                    colsWithUnwrappedKey,
+                    cols,
                     -1)
                 );
             }
@@ -393,6 +403,12 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
         GridH2RowDescriptor desc = tbl.rowDescriptor();
 
         if (idxDesc.type() == QueryIndexType.SORTED) {
+            List<IndexColumn> unwrappedKeyCols = extractKeyColumns(tbl, keyCol, affCol);
+
+            List<IndexColumn> colsWithUnwrappedKey = new ArrayList<>(cols);
+
+            H2Utils.addUniqueColumns(colsWithUnwrappedKey, unwrappedKeyCols);
+
             cols = H2Utils.treeIndexColumns(desc, cols, keyCol, affCol);
 
             return idx.createSortedIndex(
@@ -400,7 +416,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
                 tbl,
                 false,
                 false,
-                cols,
+                colsWithUnwrappedKey,
                 cols,
                 idxDesc.inlineSize()
             );

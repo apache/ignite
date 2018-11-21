@@ -288,6 +288,19 @@ public class H2Utils {
     }
 
     /**
+     * Add only new columns to destination list.
+     *
+     * @param dest List of index columns to add new elements from src list.
+     * @param src List of IndexColumns to add to dest list.
+     */
+    public static void addUniqueColumns(List<IndexColumn> dest, List<IndexColumn> src) {
+        for (IndexColumn col : src) {
+            if (!containsColumn(dest, col))
+                dest.add(col);
+        }
+    }
+
+    /**
      * Check that given table has lazy cache and init it for such case.
      *
      * @param tbl Table to check on lazy cache
