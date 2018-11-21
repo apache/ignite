@@ -537,7 +537,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         cctx.checkSecurity(SecurityPermission.CACHE_READ);
 
         if (nodes.isEmpty()) {
-            if(!checkLostPartitions())
+            if(isSafeLossPolicy())
                 throw new IgniteCheckedException("Failed to execute scan query because cache partition has been " +
                     "lost [cacheName=" + cctx.name() + ", part=" + part + "]");
 
@@ -591,13 +591,11 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         return mvccTracker != null ? new MvccTrackingIterator(it, mvccTracker) : it;
     }
 
-    private boolean checkLostPartitions() {
+    private boolean isSafeLossPolicy() {
         PartitionLossPolicy lossPolicy = cctx.cache().configuration().getPartitionLossPolicy();
 
-        boolean partWasLost = cctx.cache().lostPartitions().contains(part);
-        boolean isSafeLossPolicy = lossPolicy == PartitionLossPolicy.READ_ONLY_SAFE ||
+        return lossPolicy == PartitionLossPolicy.READ_ONLY_SAFE ||
             lossPolicy == PartitionLossPolicy.READ_WRITE_SAFE;
-        return !partWasLost || !isSafeLossPolicy;
     }
 
     /**
