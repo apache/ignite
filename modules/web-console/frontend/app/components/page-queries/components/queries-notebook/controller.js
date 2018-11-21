@@ -14,6 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import _ from 'lodash';
 import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
 import id8 from 'app/utils/id8';
 import 'rxjs/add/operator/mergeMap';
@@ -41,7 +43,7 @@ const ROW_IDX = {value: -2, type: 'java.lang.Integer', label: 'ROW_IDX'};
 
 const NON_COLLOCATED_JOINS_SINCE = '1.7.0';
 
-const COLLOCATED_QUERY_SINCE = [['2.3.5', '2.4.0'], ['2.4.6', '2.5.0'], '2.5.2'];
+const COLLOCATED_QUERY_SINCE = [['2.3.5', '2.4.0'], ['2.4.6', '2.5.0'], ['2.5.1-p13', '2.6.0'], '2.7.0'];
 
 const ENFORCE_JOIN_SINCE = [['1.7.9', '1.8.0'], ['1.8.4', '1.9.0'], '1.9.1'];
 
@@ -251,16 +253,16 @@ class Paragraph {
 
 // Controller for SQL notebook screen.
 export class NotebookCtrl {
-    static $inject = ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'AgentManager', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData', 'JavaTypes', 'IgniteCopyToClipboard', CSV.name, 'IgniteErrorParser'];
+    static $inject = ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'AgentManager', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData', 'JavaTypes', 'IgniteCopyToClipboard', 'CSV', 'IgniteErrorParser', 'DemoInfo'];
 
     /**
      * @param {CSV} CSV
      */
-    constructor($root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, IgniteCopyToClipboard, CSV, errorParser) {
+    constructor($root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, IgniteCopyToClipboard, CSV, errorParser, DemoInfo) {
         const $ctrl = this;
 
         this.CSV = CSV;
-        Object.assign(this, { $root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, errorParser });
+        Object.assign(this, { $root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, errorParser, DemoInfo });
 
         // Define template urls.
         $ctrl.paragraphRateTemplateUrl = paragraphRateTemplateUrl;
@@ -891,37 +893,13 @@ export class NotebookCtrl {
         /**
          * Update caches list.
          */
-        const _refreshFn = () => {
-            return agentMgr.topology(true)
-                .then((nodes) => {
-                    $scope.caches = _.sortBy(_.reduce(nodes, (cachesAcc, node) => {
-                        _.forEach(node.caches, (cache) => {
-                            let item = _.find(cachesAcc, {name: cache.name});
-
-                            if (_.isNil(item)) {
-                                cache.label = maskCacheName(cache.name, true);
-                                cache.value = cache.name;
-
-                                cache.nodes = [];
-
-                                cachesAcc.push(item = cache);
-                            }
-
-                            item.nodes.push({
-                                nid: node.nodeId.toUpperCase(),
-                                ip: _.head(node.attributes['org.apache.ignite.ips'].split(', ')),
-                                version: node.attributes['org.apache.ignite.build.ver'],
-                                gridName: node.attributes['org.apache.ignite.ignite.name'],
-                                os: `${node.attributes['os.name']} ${node.attributes['os.arch']} ${node.attributes['os.version']}`,
-                                client: node.attributes['org.apache.ignite.cache.client']
-                            });
-                        });
-
-                        return cachesAcc;
-                    }, []), (cache) => cache.label.toLowerCase());
-
-                    // Reset to first cache in case of stopped selected.
-                    const cacheNames = _.map($scope.caches, (cache) => cache.value);
+        const _refreshCaches = () => {
+            return agentMgr.publicCacheNames()
+                .then((cacheNames) => {
+                    $scope.caches = _.sortBy(_.map(cacheNames, (name) => ({
+                        label: maskCacheName(name, true),
+                        value: name
+                    })), (cache) => cache.label.toLowerCase());
 
                     _.forEach($scope.notebook.paragraphs, (paragraph) => {
                         if (!_.includes(cacheNames, paragraph.cacheName))
@@ -936,6 +914,8 @@ export class NotebookCtrl {
 
                         _.forEach($scope.notebook.paragraphs, (paragraph) => $scope.execute(paragraph));
                     }
+
+                    $scope.$applyAsync();
                 })
                 .catch((err) => Messages.showError(err));
         };
@@ -950,7 +930,7 @@ export class NotebookCtrl {
             }).take(1);
 
             const refreshCaches = (period) => {
-                return timer(0, period).exhaustMap(() => _refreshFn()).merge(finishLoading$);
+                return timer(0, period).exhaustMap(() => _refreshCaches()).merge(finishLoading$);
             };
 
             this.refresh$ = awaitClusters$
@@ -988,7 +968,14 @@ export class NotebookCtrl {
                 else
                     $scope.rebuildScrollParagraphs();
             })
-            .then(() => _startWatch())
+            .then(() => {
+                if ($root.IgniteDemoMode && sessionStorage.showDemoInfo !== 'true') {
+                    sessionStorage.showDemoInfo = 'true';
+
+                    this.DemoInfo.show().then(_startWatch);
+                } else
+                    _startWatch();
+            })
             .catch(() => {
                 $scope.notebookLoadFailed = true;
 
@@ -1051,7 +1038,7 @@ export class NotebookCtrl {
         $scope.addQuery = function() {
             const sz = $scope.notebook.paragraphs.length;
 
-            ActivitiesData.post({ action: '/queries/add/query' });
+            ActivitiesData.post({ group: 'sql', action: '/queries/add/query' });
 
             const paragraph = _newParagraph({
                 name: 'Query' + (sz === 0 ? '' : sz),
@@ -1080,7 +1067,7 @@ export class NotebookCtrl {
         $scope.addScan = function() {
             const sz = $scope.notebook.paragraphs.length;
 
-            ActivitiesData.post({ action: '/queries/add/scan' });
+            ActivitiesData.post({ group: 'sql', action: '/queries/add/scan' });
 
             const paragraph = _newParagraph({
                 name: 'Scan' + (sz === 0 ? '' : sz),
@@ -1383,29 +1370,48 @@ export class NotebookCtrl {
 
         /**
          * @param {String} name Cache name.
-         * @return {Array.<String>} Nids
+         * @param {Array.<String>} nids Cache name.
+         * @return {Promise<Array.<{nid: string, ip: string, version:string, gridName: string, os: string, client: boolean}>>}
          */
-        const cacheNodes = (name) => {
-            return _.find($scope.caches, {name}).nodes;
+        const cacheNodesModel = (name, nids) => {
+            return agentMgr.topology(true)
+                .then((nodes) =>
+                    _.reduce(nodes, (acc, node) => {
+                        if (_.includes(nids, node.nodeId)) {
+                            acc.push({
+                                nid: node.nodeId.toUpperCase(),
+                                ip: _.head(node.attributes['org.apache.ignite.ips'].split(', ')),
+                                version: node.attributes['org.apache.ignite.build.ver'],
+                                gridName: node.attributes['org.apache.ignite.ignite.name'],
+                                os: `${node.attributes['os.name']} ${node.attributes['os.arch']} ${node.attributes['os.version']}`,
+                                client: node.attributes['org.apache.ignite.cache.client']
+                            });
+                        }
+
+                        return acc;
+                    }, [])
+                );
         };
 
         /**
-         * @param {String} name Cache name.
-         * @param {Boolean} local Local query.
-         * @return {String} Nid
+         * @param {string} name Cache name.
+         * @param {boolean} local Local query.
+         * @return {Promise<string>} Nid
          */
         const _chooseNode = (name, local) => {
             if (_.isEmpty(name))
                 return Promise.resolve(null);
 
-            const nodes = _.filter(cacheNodes(name), (node) => !node.client);
+            return agentMgr.cacheNodes(name)
+                .then((nids) => {
+                    if (local) {
+                        return cacheNodesModel(name, nids)
+                            .then((nodes) => Nodes.selectNode(nodes, name).catch(() => {}))
+                            .then((selectedNids) => _.head(selectedNids));
+                    }
 
-            if (local) {
-                return Nodes.selectNode(nodes, name)
-                    .then((selectedNids) => _.head(selectedNids));
-            }
-
-            return Promise.resolve(nodes[_.random(0, nodes.length - 1)].nid);
+                    return nids[_.random(0, nids.length - 1)];
+                });
         };
 
         const _executeRefresh = (paragraph) => {
@@ -1439,53 +1445,28 @@ export class NotebookCtrl {
             ${query} 
             ) LIMIT ${limitSize}`;
 
-        $scope.nonCollocatedJoinsAvailable = (paragraph) => {
-            const cache = _.find($scope.caches, {name: paragraph.cacheName});
-
-            if (cache)
-                return !!_.find(cache.nodes, (node) => Version.since(node.version, NON_COLLOCATED_JOINS_SINCE));
-
-            return false;
+        $scope.nonCollocatedJoinsAvailable = () => {
+            return Version.since(this.agentMgr.clusterVersion, NON_COLLOCATED_JOINS_SINCE);
         };
 
-        $scope.collocatedJoinsAvailable = (paragraph) => {
-            const cache = _.find($scope.caches, {name: paragraph.cacheName});
-
-            if (cache)
-                return !!_.find(cache.nodes, (node) => Version.since(node.version, ...COLLOCATED_QUERY_SINCE));
-
-            return false;
+        $scope.collocatedJoinsAvailable = () => {
+            return Version.since(this.agentMgr.clusterVersion, ...COLLOCATED_QUERY_SINCE);
         };
 
-        $scope.enforceJoinOrderAvailable = (paragraph) => {
-            const cache = _.find($scope.caches, {name: paragraph.cacheName});
-
-            if (cache)
-                return !!_.find(cache.nodes, (node) => Version.since(node.version, ...ENFORCE_JOIN_SINCE));
-
-            return false;
+        $scope.enforceJoinOrderAvailable = () => {
+            return Version.since(this.agentMgr.clusterVersion, ...ENFORCE_JOIN_SINCE);
         };
 
-        $scope.lazyQueryAvailable = (paragraph) => {
-            const cache = _.find($scope.caches, {name: paragraph.cacheName});
-
-            if (cache)
-                return !!_.find(cache.nodes, (node) => Version.since(node.version, ...LAZY_QUERY_SINCE));
-
-            return false;
+        $scope.lazyQueryAvailable = () => {
+            return Version.since(this.agentMgr.clusterVersion, ...LAZY_QUERY_SINCE);
         };
 
-        $scope.ddlAvailable = (paragraph) => {
-            const cache = _.find($scope.caches, {name: paragraph.cacheName});
-
-            if (cache)
-                return !!_.find(cache.nodes, (node) => Version.since(node.version, ...DDL_SINCE));
-
-            return false;
+        $scope.ddlAvailable = () => {
+            return Version.since(this.agentMgr.clusterVersion, ...DDL_SINCE);
         };
 
         $scope.cacheNameForSql = (paragraph) => {
-            return $scope.ddlAvailable(paragraph) && !paragraph.useAsDefaultSchema ? null : paragraph.cacheName;
+            return $scope.ddlAvailable() && !paragraph.useAsDefaultSchema ? null : paragraph.cacheName;
         };
 
         $scope.execute = (paragraph, local = false) => {
@@ -1522,7 +1503,7 @@ export class NotebookCtrl {
                                 collocated
                             };
 
-                            ActivitiesData.post({ action: '/queries/execute' });
+                            ActivitiesData.post({ group: 'sql', action: '/queries/execute' });
 
                             const qry = args.maxPages ? addLimit(args.query, args.pageSize * args.maxPages) : query;
 
@@ -1564,8 +1545,8 @@ export class NotebookCtrl {
             if (!$scope.queryAvailable(paragraph))
                 return;
 
-            Notebook.save($scope.notebook)
-                .catch(Messages.showError);
+            if (!paragraph.partialQuery)
+                Notebook.save($scope.notebook).catch(Messages.showError);
 
             _cancelRefresh(paragraph);
 
@@ -1577,11 +1558,11 @@ export class NotebookCtrl {
                     const args = paragraph.queryArgs = {
                         type: 'EXPLAIN',
                         cacheName: $scope.cacheNameForSql(paragraph),
-                        query: 'EXPLAIN ' + paragraph.query,
+                        query: 'EXPLAIN ' + (paragraph.partialQuery || paragraph.query),
                         pageSize: paragraph.pageSize
                     };
 
-                    ActivitiesData.post({ action: '/queries/explain' });
+                    ActivitiesData.post({ group: 'sql', action: '/queries/explain' });
 
                     return agentMgr.querySql(nid, args.cacheName, args.query, nonCollocatedJoins, enforceJoinOrder, false, false, args.pageSize, false, collocated);
                 })
@@ -1625,7 +1606,7 @@ export class NotebookCtrl {
                                 localNid: local ? nid : null
                             };
 
-                            ActivitiesData.post({ action: '/queries/scan' });
+                            ActivitiesData.post({ group: 'sql', action: '/queries/scan' });
 
                             return agentMgr.queryScan(nid, cacheName, filter, false, caseSensitive, false, local, pageSize);
                         })
@@ -1886,7 +1867,7 @@ export class NotebookCtrl {
             agentMgr.metadata()
                 .then((metadata) => {
                     $scope.metadata = _.sortBy(_.filter(metadata, (meta) => {
-                        const cache = _.find($scope.caches, { name: meta.cacheName });
+                        const cache = _.find($scope.caches, { value: meta.cacheName });
 
                         if (cache) {
                             meta.name = (cache.sqlSchema || '"' + meta.cacheName + '"') + '.' + meta.typeName;
@@ -1964,11 +1945,8 @@ export class NotebookCtrl {
         };
     }
 
-    $onInit() {
-
-    }
-
     $onDestroy() {
-        this.refresh$.unsubscribe();
+        if (this.refresh$)
+            this.refresh$.unsubscribe();
     }
 }

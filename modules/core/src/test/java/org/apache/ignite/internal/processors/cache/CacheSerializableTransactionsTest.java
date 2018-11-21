@@ -4672,7 +4672,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
         if (FAST)
             return;
 
-        assert updateNodes.size() > 0;
+        assert !updateNodes.isEmpty();
 
         final Ignite srv = ignite(1);
 

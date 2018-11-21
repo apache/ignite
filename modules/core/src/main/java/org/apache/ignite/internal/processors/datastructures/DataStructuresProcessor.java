@@ -193,7 +193,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      *
      */
     public void onBeforeActivate() {
-        initLatch = new CountDownLatch(1);
+        CountDownLatch latch0 = initLatch;
+
+        if (latch0 == null || latch0.getCount() == 0)
+            initLatch = new CountDownLatch(1);
     }
 
     /**
@@ -1578,7 +1581,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 hdr = (GridCacheSetHeader) cctx.cache().withNoRetries().getAndRemove(new GridCacheSetHeaderKey(name));
 
                 if (hdr != null)
-                    cctx.dataStructures().removeSetData(hdr.id());
+                    cctx.dataStructures().removeSetData(hdr.id(), hdr.separated());
             }
         };
 

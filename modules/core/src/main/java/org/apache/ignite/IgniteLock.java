@@ -122,7 +122,7 @@ public interface IgniteLock extends Lock, Closeable {
      *
      * @throws IgniteException if the node is stopped or broken in non-failoverSafe mode
      */
-    void lock() throws IgniteException;
+    @Override void lock() throws IgniteException;
 
     /**
      * Acquires the lock unless the current thread is
@@ -314,7 +314,7 @@ public interface IgniteLock extends Lock, Closeable {
      * @throws IllegalMonitorStateException if not owned by current thread
      * @throws IgniteException if node is stopped, or lock is already broken in non-failover safe mode
      */
-    void unlock() throws IgniteInterruptedException;
+    @Override void unlock() throws IgniteInterruptedException;
 
     /**
      * Returns a {@link Condition} instance for use with this

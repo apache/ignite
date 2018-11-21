@@ -18,7 +18,7 @@
 import template from './ui-ace-pom.pug';
 import controller from './ui-ace-pom.controller';
 
-export default ['igniteUiAcePom', [function() {
+export default function() {
     const link = ($scope, $el, $attrs, [igniteUiAceTabs]) => {
         if (igniteUiAceTabs.onLoad)
             $scope.onLoad = igniteUiAceTabs.onLoad;
@@ -38,4 +38,4 @@ export default ['igniteUiAcePom', [function() {
         controllerAs: 'ctrl',
         require: ['?^igniteUiAceTabs']
     };
-}]];
+}

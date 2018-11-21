@@ -81,6 +81,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
     public static final int MIN_DATA_PAGE_OVERHEAD = ITEMS_OFF + ITEM_SIZE + PAYLOAD_LEN_SIZE + LINK_SIZE;
 
     /**
+     * @param type Page type.
      * @param ver Page format version.
      */
     protected AbstractDataPageIO(int type, int ver) {
@@ -498,6 +499,23 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
         return new DataPagePayload(dataOff + PAYLOAD_LEN_SIZE + (fragmented ? LINK_SIZE : 0),
             payloadSize,
             nextLink);
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param itemId Item to position on.
+     * @param pageSize Page size.
+     * @param reqLen Required payload length.
+     * @return Offset to start of actual fragment data.
+     */
+    public int getPayloadOffset(final long pageAddr, final int itemId, final int pageSize, int reqLen) {
+        int dataOff = getDataOffset(pageAddr, itemId, pageSize);
+
+        int payloadSize = getPageEntrySize(pageAddr, dataOff, 0);
+
+        assert payloadSize >= reqLen : payloadSize;
+
+        return dataOff + PAYLOAD_LEN_SIZE + (isFragmented(pageAddr, dataOff) ? LINK_SIZE : 0);
     }
 
     /**
@@ -982,6 +1000,16 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
         int payloadSize = payload != null ? payload.length :
             Math.min(rowSize - written, getFreeSpace(pageAddr));
 
+        if (row != null) {
+            int remain = rowSize - written - payloadSize;
+            int hdrSize = row.headerSize();
+
+            // We need page header (i.e. MVCC info) is located entirely on the very first page in chain.
+            // So we force moving it to the next page if it could not fit entirely on this page.
+            if (remain > 0 && remain < hdrSize)
+                payloadSize -= hdrSize - remain;
+        }
+
         int fullEntrySize = getPageEntrySize(payloadSize, SHOW_PAYLOAD_LEN | SHOW_LINK | SHOW_ITEM);
         int dataOff = getDataOffsetForWrite(pageAddr, fullEntrySize, directCnt, indirectCnt, pageSize);
 
@@ -1225,13 +1253,6 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
 
         PageUtils.putBytes(pageAddr, dataOff, payload);
     }
-
-    /**
-     * @param row Row.
-     * @return Row size in page.
-     * @throws IgniteCheckedException if failed.
-     */
-    public abstract int getRowSize(T row) throws IgniteCheckedException;
 
     /**
      * Defines closure interface for applying computations to data page items.

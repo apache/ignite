@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.rest;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -349,7 +351,11 @@ public class GridRestProcessor extends GridProcessorAdapter {
                             .a(", params=").a(tskReq.params());
                     }
 
-                    sb.a(", err=").a(e.getMessage() != null ? e.getMessage() : e.getClass().getName()).a(']');
+                    sb.a(", err=")
+                        .a(e.getMessage() != null ? e.getMessage() : e.getClass().getName())
+                        .a(", trace=")
+                        .a(getErrorMessage(e))
+                        .a(']');
 
                     res = new GridRestResponse(STATUS_FAILED, sb.toString());
                 }
@@ -364,6 +370,21 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 return res;
             }
         });
+    }
+
+    /**
+     * @param th Th.
+     * @return Stack trace
+     */
+    private String getErrorMessage(Throwable th) {
+        if (th == null)
+            return "";
+
+        StringWriter writer = new StringWriter();
+
+        th.printStackTrace(new PrintWriter(writer));
+
+        return writer.toString();
     }
 
     /**
@@ -867,6 +888,14 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
                 break;
 
+            case CLUSTER_ACTIVE:
+            case CLUSTER_INACTIVE:
+            case CLUSTER_ACTIVATE:
+            case CLUSTER_DEACTIVATE:
+                perm = SecurityPermission.ADMIN_OPS;
+
+                break;
+
             case CACHE_METRICS:
             case CACHE_SIZE:
             case CACHE_METADATA:
@@ -880,8 +909,6 @@ public class GridRestProcessor extends GridProcessorAdapter {
             case NAME:
             case LOG:
             case CLUSTER_CURRENT_STATE:
-            case CLUSTER_ACTIVE:
-            case CLUSTER_INACTIVE:
             case AUTHENTICATE:
             case ADD_USER:
             case REMOVE_USER:

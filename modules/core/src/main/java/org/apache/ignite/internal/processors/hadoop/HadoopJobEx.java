@@ -33,21 +33,21 @@ public abstract class HadoopJobEx implements HadoopJob {
      *
      * @return Job ID.
      */
-    abstract public HadoopJobId id();
+    public abstract HadoopJobId id();
 
     /**
      * Gets job information.
      *
      * @return Job information.
      */
-    abstract public HadoopJobInfo info();
+    public abstract HadoopJobInfo info();
 
     /**
      * Gets collection of input splits for this job.
      *
      * @return Input splits.
      */
-    abstract public Collection<HadoopInputSplit> input();
+    @Override public abstract Collection<HadoopInputSplit> input();
 
     /**
      * Returns context for task execution.
@@ -56,7 +56,7 @@ public abstract class HadoopJobEx implements HadoopJob {
      * @return Task Context.
      * @throws IgniteCheckedException If failed.
      */
-    abstract public HadoopTaskContext getTaskContext(HadoopTaskInfo info) throws IgniteCheckedException;
+    public abstract HadoopTaskContext getTaskContext(HadoopTaskInfo info) throws IgniteCheckedException;
 
     /**
      * Does all the needed initialization for the job. Will be called on each node where tasks for this job must
@@ -69,7 +69,7 @@ public abstract class HadoopJobEx implements HadoopJob {
      * @param locNodeId Local node ID.
      * @throws IgniteCheckedException If failed.
      */
-    abstract public void initialize(boolean external, UUID locNodeId) throws IgniteCheckedException;
+    public abstract void initialize(boolean external, UUID locNodeId) throws IgniteCheckedException;
 
     /**
      * Release all the resources.
@@ -80,7 +80,7 @@ public abstract class HadoopJobEx implements HadoopJob {
      * @param external If {@code true} then this job instance resides in external process.
      * @throws IgniteCheckedException If failed.
      */
-    abstract public void dispose(boolean external) throws IgniteCheckedException;
+    public abstract void dispose(boolean external) throws IgniteCheckedException;
 
     /**
      * Prepare local environment for the task.
@@ -88,7 +88,7 @@ public abstract class HadoopJobEx implements HadoopJob {
      * @param info Task info.
      * @throws IgniteCheckedException If failed.
      */
-    abstract public void prepareTaskEnvironment(HadoopTaskInfo info) throws IgniteCheckedException;
+    public abstract void prepareTaskEnvironment(HadoopTaskInfo info) throws IgniteCheckedException;
 
     /**
      * Cleans up local environment of the task.
@@ -96,17 +96,17 @@ public abstract class HadoopJobEx implements HadoopJob {
      * @param info Task info.
      * @throws IgniteCheckedException If failed.
      */
-    abstract public void cleanupTaskEnvironment(HadoopTaskInfo info) throws IgniteCheckedException;
+    public abstract void cleanupTaskEnvironment(HadoopTaskInfo info) throws IgniteCheckedException;
 
     /**
      * Cleans up the job staging directory.
      */
-    abstract public void cleanupStagingDirectory();
+    public abstract void cleanupStagingDirectory();
 
     /**
      * @return Ignite work directory.
      */
-    abstract public String igniteWorkDirectory();
+    public abstract String igniteWorkDirectory();
 
     /** {@inheritDoc} */
     @Nullable @Override public String property(String name) {

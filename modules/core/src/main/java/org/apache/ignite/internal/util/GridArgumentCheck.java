@@ -170,7 +170,7 @@ public class GridArgumentCheck {
     public static void notNullOrEmpty(String value, String name) {
         notNull(value, name);
 
-        if (value.trim().length() == 0)
+        if (value.trim().isEmpty())
             throw new IllegalArgumentException(INVALID_ARG_MSG_PREFIX + name + NOT_NULL_OR_EMPTY_SUFFIX);
     }
 }

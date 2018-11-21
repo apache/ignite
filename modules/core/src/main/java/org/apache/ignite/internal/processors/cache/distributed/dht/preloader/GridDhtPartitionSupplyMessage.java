@@ -28,6 +28,7 @@ import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectMap;
+import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -45,6 +46,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * Partition supply message.
  */
+@IgniteCodeGeneratingFail
 public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage implements GridCacheDeployable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -89,10 +91,12 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
      * @param topVer Topology version.
      * @param addDepInfo Deployment info flag.
      */
-    GridDhtPartitionSupplyMessage(long rebalanceId,
+    GridDhtPartitionSupplyMessage(
+        long rebalanceId,
         int grpId,
         AffinityTopologyVersion topVer,
-        boolean addDepInfo) {
+        boolean addDepInfo
+    ) {
         this.grpId = grpId;
         this.rebalanceId = rebalanceId;
         this.topVer = topVer;
@@ -280,55 +284,55 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
         }
 
         switch (writer.state()) {
-            case 3:
+            case 4:
                 if (!writer.writeCollection("clean", clean, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
 
-            case 4:
+            case 5:
                 if (!writer.writeLong("estimatedKeysCnt", estimatedKeysCnt))
                     return false;
 
                 writer.incrementState();
 
-            case 5:
+            case 6:
                 if (!writer.writeMap("infos", infos, MessageCollectionItemType.INT, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 6:
+            case 7:
                 if (!writer.writeMap("keysPerCache", keysPerCache, MessageCollectionItemType.INT, MessageCollectionItemType.LONG))
                     return false;
 
                 writer.incrementState();
 
-            case 7:
+            case 8:
                 if (!writer.writeMap("last", last, MessageCollectionItemType.INT, MessageCollectionItemType.LONG))
                     return false;
 
                 writer.incrementState();
 
-            case 8:
+            case 9:
                 if (!writer.writeCollection("missed", missed, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
 
-            case 9:
+            case 10:
                 if (!writer.writeInt("msgSize", msgSize))
                     return false;
 
                 writer.incrementState();
 
-            case 10:
-                if (!writer.writeMessage("topVer", topVer))
+            case 11:
+                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
-            case 11:
+            case 12:
                 // Keep 'updateSeq' name for compatibility.
                 if (!writer.writeLong("updateSeq", rebalanceId))
                     return false;
@@ -351,7 +355,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
             return false;
 
         switch (reader.state()) {
-            case 3:
+            case 4:
                 clean = reader.readCollection("clean", MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
@@ -359,7 +363,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
 
                 reader.incrementState();
 
-            case 4:
+            case 5:
                 estimatedKeysCnt = reader.readLong("estimatedKeysCnt");
 
                 if (!reader.isLastRead())
@@ -367,7 +371,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
 
                 reader.incrementState();
 
-            case 5:
+            case 6:
                 infos = reader.readMap("infos", MessageCollectionItemType.INT, MessageCollectionItemType.MSG, false);
 
                 if (!reader.isLastRead())
@@ -375,7 +379,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
 
                 reader.incrementState();
 
-            case 6:
+            case 7:
                 keysPerCache = reader.readMap("keysPerCache", MessageCollectionItemType.INT, MessageCollectionItemType.LONG, false);
 
                 if (!reader.isLastRead())
@@ -383,7 +387,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
 
                 reader.incrementState();
 
-            case 7:
+            case 8:
                 last = reader.readMap("last", MessageCollectionItemType.INT, MessageCollectionItemType.LONG, false);
 
                 if (!reader.isLastRead())
@@ -391,7 +395,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
 
                 reader.incrementState();
 
-            case 8:
+            case 9:
                 missed = reader.readCollection("missed", MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
@@ -399,7 +403,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
 
                 reader.incrementState();
 
-            case 9:
+            case 10:
                 msgSize = reader.readInt("msgSize");
 
                 if (!reader.isLastRead())
@@ -407,15 +411,15 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
 
                 reader.incrementState();
 
-            case 10:
-                topVer = reader.readMessage("topVer");
+            case 11:
+                topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
 
-            case 11:
+            case 12:
                 // Keep 'updateSeq' name for compatibility.
                 rebalanceId = reader.readLong("updateSeq");
 
@@ -436,7 +440,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 12;
+        return 13;
     }
 
     /**

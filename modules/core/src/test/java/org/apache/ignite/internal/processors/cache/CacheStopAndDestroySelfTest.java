@@ -18,11 +18,15 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import javax.cache.CacheManager;
 import javax.cache.Caching;
 import javax.cache.configuration.MutableConfiguration;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -779,6 +783,70 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
         catch (IllegalStateException ignored) {
             // No-op;
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testConcurrentUseAndCloseFromClient() throws Exception {
+        testConcurrentUseAndClose(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testConcurrentUseAndCloseFromServer() throws Exception {
+        testConcurrentUseAndClose(false);
+    }
+
+    /**
+     * @param isClient Should client or server be used during the test.
+     * @throws Exception If failed.
+     */
+    private void testConcurrentUseAndClose(boolean isClient) throws Exception {
+        int threads = 8;
+        int keys = 1000;
+        int iterations = 20;
+
+        startGrid(0);
+
+        IgniteConfiguration igniteCfg = getConfiguration(getTestIgniteInstanceName(1));
+        igniteCfg.setClientMode(isClient);
+        Ignite ignite = startGrid(optimize(igniteCfg));
+
+        ExecutorService execSrvc = Executors.newFixedThreadPool(threads);
+
+        for (int i = 0; i < threads; i++) {
+            execSrvc.execute(() -> {
+                while (!Thread.interrupted()) {
+                    try {
+                        IgniteCache<Integer, String> cache = ignite.getOrCreateCache("cache");
+
+                        ThreadLocalRandom random = ThreadLocalRandom.current();
+                        int key = random.nextInt(keys);
+
+                        if (random.nextBoolean())
+                            cache.put(key, Integer.toString(key));
+                        else
+                            cache.get(key);
+                    }
+                    catch (Exception ignore) {
+                    }
+                }
+            });
+        }
+
+        for (int i = 0; i < iterations; i++) {
+            System.out.println("Iteration #" + (i + 1));
+
+            IgniteCache<Integer, String> cache = ignite.getOrCreateCache("cache");
+
+            cache.close();
+
+            Thread.sleep(100);
+        }
+
+        execSrvc.shutdownNow();
     }
 
     /**

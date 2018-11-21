@@ -98,6 +98,9 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** */
     private transient boolean locallyConfigured;
 
+    /** Encryption key. */
+    @Nullable private byte[] encKey;
+
     /**
      * @param reqId Unique request ID.
      * @param cacheName Cache stop name.
@@ -439,6 +442,20 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public void disabledAfterStart(boolean disabledAfterStart) {
         this.disabledAfterStart = disabledAfterStart;
+    }
+
+    /**
+     * @param encKey Encryption key.
+     */
+    public void encryptionKey(@Nullable byte[] encKey) {
+        this.encKey = encKey;
+    }
+
+    /**
+     * @return Encryption key.
+     */
+    @Nullable public byte[] encryptionKey() {
+        return encKey;
     }
 
     /** {@inheritDoc} */

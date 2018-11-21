@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -34,7 +33,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -43,6 +41,8 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
+import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
@@ -190,7 +191,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
     /**
      * @param client Client.
      */
-    @SuppressWarnings({"ThrowableNotThrown", "ThrowableResultOfMethodCallIgnored"})
+    @SuppressWarnings({"ThrowableNotThrown"})
     private void checkFailedCache(final Ignite client, final String cacheName) {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -223,6 +224,16 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
      */
     private static class FailedIndexing implements GridQueryIndexing {
         /** {@inheritDoc} */
+        @Override public void onClientDisconnect() throws IgniteCheckedException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public SqlFieldsQuery generateFieldsQuery(String cacheName, SqlQuery qry) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
         @Override public void start(GridKernalContext ctx, GridSpinBusyLock busyLock) throws IgniteCheckedException {
             // No-op
         }
@@ -233,14 +244,8 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V> QueryCursor<Cache.Entry<K, V>> queryDistributedSql(String schemaName, String cacheName,
-            SqlQuery qry, boolean keepBinary) throws IgniteCheckedException {
-            return null;
-        }
-
-        /** {@inheritDoc} */
         @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
-            SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, GridQueryCancel cancel) {
+            SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, MvccQueryTracker tracker, GridQueryCancel cancel) {
             return null;
         }
 
@@ -254,12 +259,6 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         @Override public long streamUpdateQuery(String schemaName, String qry, @Nullable Object[] params,
             IgniteDataStreamer<?, ?> streamer) throws IgniteCheckedException {
             return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public <K, V> QueryCursor<Cache.Entry<K, V>> queryLocalSql(String schemaName, String cacheName,
-            SqlQuery qry, IndexingQueryFilter filter, boolean keepBinary) throws IgniteCheckedException {
-            return null;
         }
 
         /** {@inheritDoc} */
@@ -312,14 +311,22 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
+        @Override public UpdateSourceIterator<?> prepareDistributedUpdate(GridCacheContext<?, ?> cctx, int[] ids, int[] parts,
+            String schema, String qry, Object[] params, int flags, int pageSize, int timeout,
+            AffinityTopologyVersion topVer,
+            MvccSnapshot mvccVer, GridQueryCancel cancel) throws IgniteCheckedException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean registerType(GridCacheContext cctx,
-            GridQueryTypeDescriptor desc) throws IgniteCheckedException {
+            GridQueryTypeDescriptor desc, boolean isSql) throws IgniteCheckedException {
             return false;
         }
 
         /** {@inheritDoc} */
         @Override public void store(GridCacheContext cctx, GridQueryTypeDescriptor type, CacheDataRow row,
-            CacheDataRow prevRow, boolean prevRowAvailable) {
+            CacheDataRow prevRow, boolean prevRowAvailable) throws IgniteCheckedException {
             // No-op.
         }
 
@@ -364,7 +371,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public void cancelAllQueries() {
+        @Override public void onKernalStop() {
             // No-op
         }
 

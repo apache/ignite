@@ -214,7 +214,6 @@ public class JobStealingFailoverSpi extends IgniteSpiAdapter implements Failover
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public ClusterNode failover(FailoverContext ctx, List<ClusterNode> top) {
         assert ctx != null;
         assert top != null;

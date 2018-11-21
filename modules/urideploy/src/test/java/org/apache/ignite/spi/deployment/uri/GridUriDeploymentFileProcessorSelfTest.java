@@ -20,10 +20,7 @@ package org.apache.ignite.spi.deployment.uri;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
@@ -128,14 +125,7 @@ public class GridUriDeploymentFileProcessorSelfTest extends GridUriDeploymentAbs
 
         try {
             // Wait for SPI
-            GridTestUtils.waitForCondition(new GridAbsPredicateX() {
-                @Override public boolean applyx() throws IgniteCheckedException {
-                    if (deployed)
-                        return getSpi().findResource(taskId) != null;
-                    else
-                        return getSpi().findResource(taskId) == null;
-                }
-            }, 5000);
+            waitForTask(taskId, deployed, 5000);
 
             if (deployed)
                 assert getSpi().findResource(taskId) != null;

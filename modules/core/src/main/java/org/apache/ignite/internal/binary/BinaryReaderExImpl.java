@@ -240,7 +240,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 footerStart = start + offset;
 
                 if (BinaryUtils.hasRaw(flags)) {
-                    footerLen = len - offset - 4;
+                    footerLen = len - offset;
                     rawOff = start + in.readIntPositioned(start + len - 4);
                 }
                 else {
@@ -2027,7 +2027,6 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
                     for (BinarySchema existingSchema : existingSchemas)
                         existingSchemaIds.add(existingSchema.schemaId());
-
 
                     throw new BinaryObjectException("Cannot find schema for object with compact footer" +
                         " [typeName=" + type.typeName() +

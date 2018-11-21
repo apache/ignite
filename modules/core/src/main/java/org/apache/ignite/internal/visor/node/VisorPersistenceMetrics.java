@@ -43,6 +43,18 @@ public class VisorPersistenceMetrics extends VisorDataTransferObject {
     private float walFsyncTimeAvg;
 
     /** */
+    private long walBufPollSpinRate;
+
+    /** */
+    private long walSz;
+
+    /** */
+    private long walLastRollOverTm;
+
+    /** */
+    private long cpTotalTm;
+
+    /** */
     private long lastCpDuration;
 
     /** */
@@ -66,6 +78,36 @@ public class VisorPersistenceMetrics extends VisorDataTransferObject {
     /** */
     private long lastCpCowPages;
 
+    /** */
+    private long dirtyPages;
+
+    /** */
+    private long pagesRead;
+
+    /** */
+    private long pagesWritten;
+
+    /** */
+    private long pagesReplaced;
+
+    /** */
+    private long offHeapSz;
+
+    /** */
+    private long offheapUsedSz;
+
+    /** */
+    private long usedCpBufPages;
+
+    /** */
+    private long usedCpBufSz;
+
+    /** */
+    private long cpBufSz;
+
+    /** */
+    private long totalSz;
+
     /**
      * Default constructor.
      */
@@ -74,21 +116,41 @@ public class VisorPersistenceMetrics extends VisorDataTransferObject {
     }
 
     /**
-     * @param metrics Persistence metrics.
+     * @param m Persistence metrics.
      */
-    public VisorPersistenceMetrics(DataStorageMetrics metrics) {
-        walLoggingRate = metrics.getWalLoggingRate();
-        walWritingRate = metrics.getWalWritingRate();
-        walArchiveSegments = metrics.getWalArchiveSegments();
-        walFsyncTimeAvg = metrics.getWalFsyncTimeAverage();
-        lastCpDuration = metrics.getLastCheckpointDuration();
-        lastCpLockWaitDuration = metrics.getLastCheckpointLockWaitDuration();
-        lastCpMmarkDuration = metrics.getLastCheckpointMarkDuration();
-        lastCpPagesWriteDuration = metrics.getLastCheckpointPagesWriteDuration();
-        lastCpFsyncDuration = metrics.getLastCheckpointFsyncDuration();
-        lastCpTotalPages = metrics.getLastCheckpointTotalPagesNumber();
-        lastCpDataPages = metrics.getLastCheckpointDataPagesNumber();
-        lastCpCowPages = metrics.getLastCheckpointCopiedOnWritePagesNumber();
+    public VisorPersistenceMetrics(DataStorageMetrics m) {
+        walLoggingRate = m.getWalLoggingRate();
+        walWritingRate = m.getWalWritingRate();
+        walArchiveSegments = m.getWalArchiveSegments();
+        walFsyncTimeAvg = m.getWalFsyncTimeAverage();
+        walBufPollSpinRate = m.getWalBuffPollSpinsRate();
+        walSz = m.getWalTotalSize();
+        walLastRollOverTm = m.getWalLastRollOverTime();
+
+        cpTotalTm = m.getCheckpointTotalTime();
+
+        lastCpDuration = m.getLastCheckpointDuration();
+        lastCpLockWaitDuration = m.getLastCheckpointLockWaitDuration();
+        lastCpMmarkDuration = m.getLastCheckpointMarkDuration();
+        lastCpPagesWriteDuration = m.getLastCheckpointPagesWriteDuration();
+        lastCpFsyncDuration = m.getLastCheckpointFsyncDuration();
+        lastCpTotalPages = m.getLastCheckpointTotalPagesNumber();
+        lastCpDataPages = m.getLastCheckpointDataPagesNumber();
+        lastCpCowPages = m.getLastCheckpointCopiedOnWritePagesNumber();
+
+        dirtyPages = m.getDirtyPages();
+        pagesRead = m.getPagesRead();
+        pagesWritten = m.getPagesWritten();
+        pagesReplaced = m.getPagesReplaced();
+
+        offHeapSz = m.getOffHeapSize();
+        offheapUsedSz = m.getOffheapUsedSize();
+
+        usedCpBufPages = m.getUsedCheckpointBufferPages();
+        usedCpBufSz = m.getUsedCheckpointBufferSize();
+        cpBufSz = m.getCheckpointBufferSize();
+
+        totalSz = m.getTotalAllocatedSize();
     }
 
     /**
@@ -101,78 +163,181 @@ public class VisorPersistenceMetrics extends VisorDataTransferObject {
     /**
      * @return Average number of bytes per second written during the last time interval.
      */
-    public float getWalWritingRate(){
+    public float getWalWritingRate() {
         return walWritingRate;
     }
 
     /**
      * @return Current number of WAL segments in the WAL archive.
      */
-    public int getWalArchiveSegments(){
+    public int getWalArchiveSegments() {
         return walArchiveSegments;
     }
 
     /**
      * @return Average WAL fsync duration in microseconds over the last time interval.
      */
-    public float getWalFsyncTimeAverage(){
+    public float getWalFsyncTimeAverage() {
         return walFsyncTimeAvg;
+    }
+
+    /**
+     * @return WAL buffer poll spins number over the last time interval.
+     */
+    public long getWalBuffPollSpinsRate() {
+        return walBufPollSpinRate;
+    }
+
+    /**
+     * @return Total size in bytes for storage WAL files.
+     */
+    public long getWalTotalSize() {
+        return walSz;
+    }
+
+    /**
+     * @return Time of the last WAL segment rollover.
+     */
+    public long getWalLastRollOverTime() {
+        return walLastRollOverTm;
+    }
+
+    /**
+     * @return Total checkpoint time from last restart.
+     */
+    public long getCheckpointTotalTime() {
+        return cpTotalTm;
     }
 
     /**
      * @return Total checkpoint duration in milliseconds.
      */
-    public long getLastCheckpointingDuration(){
+    public long getLastCheckpointingDuration() {
         return lastCpDuration;
     }
 
     /**
      * @return Checkpoint lock wait time in milliseconds.
      */
-    public long getLastCheckpointLockWaitDuration(){
+    public long getLastCheckpointLockWaitDuration() {
         return lastCpLockWaitDuration;
     }
 
     /**
      * @return Checkpoint mark duration in milliseconds.
      */
-    public long getLastCheckpointMarkDuration(){
+    public long getLastCheckpointMarkDuration() {
         return lastCpMmarkDuration;
     }
 
     /**
      * @return Checkpoint pages write phase in milliseconds.
      */
-    public long getLastCheckpointPagesWriteDuration(){
+    public long getLastCheckpointPagesWriteDuration() {
         return lastCpPagesWriteDuration;
     }
 
     /**
      * @return Checkpoint fsync time in milliseconds.
      */
-    public long getLastCheckpointFsyncDuration(){
+    public long getLastCheckpointFsyncDuration() {
         return lastCpFsyncDuration;
     }
 
     /**
      * @return Total number of pages written during the last checkpoint.
      */
-    public long getLastCheckpointTotalPagesNumber(){
+    public long getLastCheckpointTotalPagesNumber() {
         return lastCpTotalPages;
     }
 
     /**
      * @return Total number of data pages written during the last checkpoint.
      */
-    public long getLastCheckpointDataPagesNumber(){
+    public long getLastCheckpointDataPagesNumber() {
         return lastCpDataPages;
     }
 
     /**
      * @return Total number of pages copied to a temporary checkpoint buffer during the last checkpoint.
      */
-    public long getLastCheckpointCopiedOnWritePagesNumber(){
+    public long getLastCheckpointCopiedOnWritePagesNumber() {
         return lastCpCowPages;
+    }
+
+    /**
+     * @return Total dirty pages for the next checkpoint.
+     */
+    public long getDirtyPages() {
+        return dirtyPages;
+    }
+
+    /**
+     * @return The number of read pages from last restart.
+     */
+    public long getPagesRead() {
+        return pagesRead;
+    }
+
+    /**
+     * @return The number of written pages from last restart.
+     */
+    public long getPagesWritten() {
+        return pagesWritten;
+    }
+
+    /**
+     * @return The number of replaced pages from last restart.
+     */
+    public long getPagesReplaced() {
+        return pagesReplaced;
+    }
+
+    /**
+     * @return Total offheap size in bytes.
+     */
+    public long getOffHeapSize() {
+        return offHeapSz;
+    }
+
+    /**
+     * @return Total used offheap size in bytes.
+     */
+    public long getOffheapUsedSize() {
+        return offheapUsedSz;
+    }
+
+    /**
+     * @return Checkpoint buffer size in pages.
+     */
+    public long getUsedCheckpointBufferPages() {
+        return usedCpBufPages;
+    }
+
+    /**
+     * @return Checkpoint buffer size in bytes.
+     */
+    public long getUsedCheckpointBufferSize() {
+        return usedCpBufSz;
+    }
+
+    /**
+     * @return Checkpoint buffer size in bytes.
+     */
+    public long getCheckpointBufferSize() {
+        return cpBufSz;
+    }
+
+    /**
+     * @return Total size of memory allocated in bytes.
+     */
+    public long getTotalAllocatedSize() {
+        return totalSz;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
     }
 
     /** {@inheritDoc} */
@@ -189,6 +354,22 @@ public class VisorPersistenceMetrics extends VisorDataTransferObject {
         out.writeLong(lastCpTotalPages);
         out.writeLong(lastCpDataPages);
         out.writeLong(lastCpCowPages);
+
+        // V2
+        out.writeLong(walBufPollSpinRate);
+        out.writeLong(walSz);
+        out.writeLong(walLastRollOverTm);
+        out.writeLong(cpTotalTm);
+        out.writeLong(dirtyPages);
+        out.writeLong(pagesRead);
+        out.writeLong(pagesWritten);
+        out.writeLong(pagesReplaced);
+        out.writeLong(offHeapSz);
+        out.writeLong(offheapUsedSz);
+        out.writeLong(usedCpBufPages);
+        out.writeLong(usedCpBufSz);
+        out.writeLong(cpBufSz);
+        out.writeLong(totalSz);
     }
 
     /** {@inheritDoc} */
@@ -205,6 +386,23 @@ public class VisorPersistenceMetrics extends VisorDataTransferObject {
         lastCpTotalPages = in.readLong();
         lastCpDataPages = in.readLong();
         lastCpCowPages = in.readLong();
+
+        if (protoVer > V1) {
+            walBufPollSpinRate = in.readLong();
+            walSz = in.readLong();
+            walLastRollOverTm = in.readLong();
+            cpTotalTm = in.readLong();
+            dirtyPages = in.readLong();
+            pagesRead = in.readLong();
+            pagesWritten = in.readLong();
+            pagesReplaced = in.readLong();
+            offHeapSz = in.readLong();
+            offheapUsedSz = in.readLong();
+            usedCpBufPages = in.readLong();
+            usedCpBufSz = in.readLong();
+            cpBufSz = in.readLong();
+            totalSz = in.readLong();
+        }
     }
 
     /** {@inheritDoc} */

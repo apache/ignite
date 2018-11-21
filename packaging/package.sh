@@ -37,7 +37,7 @@ usage () {
 #######################################################################
 
 Prerequisites:
-     - RPM: binary archive with name 'apache-ignite-fabric-<version>-bin.zip'
+     - RPM: binary archive with name 'apache-ignite-<version>-bin.zip'
      - DEB: previously built corresponding RPM package
 
 Usage: ./$(basename ${BASH_SOURCE[0]}) --rpm,--deb [--batch]
@@ -95,7 +95,7 @@ prepEnv () {
 getBin () {
     set -x
     IGNITE_VERSION=$(cat rpm/apache-ignite.spec | grep Version: | head -1 | sed -r 's|.*:\s+(.*)|\1|')
-    BIN_NAME="apache-ignite-fabric-${IGNITE_VERSION}-bin.zip"
+    BIN_NAME="apache-ignite-${IGNITE_VERSION}-bin.zip"
     binPreparedFlag=false
 
     # Search binary in packaging root directory 

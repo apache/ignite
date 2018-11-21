@@ -25,9 +25,22 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.util.Collections;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+import org.apache.ignite.Ignite;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.testframework.GridStringLogger;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import static org.junit.Assert.assertTrue;
 
@@ -35,6 +48,10 @@ import static org.junit.Assert.assertTrue;
  * {@link ClientConfiguration} unit tests.
  */
 public class ClientConfigurationTest {
+    /** Per test timeout */
+    @Rule
+    public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);
+
     /** Serialization/deserialization. */
     @Test
     public void testSerialization() throws IOException, ClassNotFoundException {
@@ -65,5 +82,37 @@ public class ClientConfigurationTest {
         Object desTarget = in.readObject();
 
         assertTrue(Comparers.equal(target, desTarget));
+    }
+
+    /**
+     * Test check the case when {@link IgniteConfiguration#getRebalanceThreadPoolSize()} is equal to {@link
+     * IgniteConfiguration#getSystemThreadPoolSize()}
+     */
+    @Test
+    public void testRebalanceThreadPoolSize() {
+        GridStringLogger gridStrLog = new GridStringLogger();
+        gridStrLog.logLength(1024 * 100);
+
+        IgniteConfiguration cci = Config.getServerConfiguration().setClientMode(true);
+        cci.setRebalanceThreadPoolSize(cci.getSystemThreadPoolSize());
+        cci.setGridLogger(gridStrLog);
+
+        try (
+            Ignite si = Ignition.start(Config.getServerConfiguration());
+            Ignite ci = Ignition.start(cci)) {
+            Set<ClusterNode> collect = si.cluster().nodes().stream()
+                .filter(new Predicate<ClusterNode>() {
+                    @Override public boolean test(ClusterNode clusterNode) {
+                        return clusterNode.isClient();
+                    }
+                })
+                .collect(Collectors.toSet());
+
+            String log = gridStrLog.toString();
+            boolean containsMsg = log.contains("Setting the rebalance pool size has no effect on the client mode");
+
+            Assert.assertTrue(containsMsg);
+            Assert.assertEquals(1, collect.size());
+        }
     }
 }

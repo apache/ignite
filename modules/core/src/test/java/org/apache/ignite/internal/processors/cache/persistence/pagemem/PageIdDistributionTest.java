@@ -29,8 +29,6 @@ import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.FullPageIdTable;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -142,7 +140,7 @@ public class PageIdDistributionTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Uncomment and run this test manually to get data to plot histogram for per-element distance from ideal.
+     * If needed run this test manually to get data to plot histogram for per-element distance from ideal.
      * You can use Octave to plot the histogram:
      * <pre>
      *     all = csvread("histo.txt");
@@ -151,7 +149,7 @@ public class PageIdDistributionTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void _testRealHistory() throws Exception {
+    public void testRealHistory() throws Exception {
         int capacity = CACHE_IDS.length * PARTS * PAGES;
 
         info("Capacity: " + capacity);
@@ -228,7 +226,7 @@ public class PageIdDistributionTest extends GridCommonAbstractTest {
             }
         }
         finally {
-            prov.shutdown();
+            prov.shutdown(true);
         }
     }
 }

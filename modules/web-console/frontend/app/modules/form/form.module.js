@@ -41,20 +41,20 @@ angular
 
 ])
 // Field.
-.directive(...placeholder)
+.directive('bsSelect', placeholder)
 // Validators.
-.directive(...ipaddress)
-.directive(...javaKeywords)
-.directive(...javaPackageSpecified)
-.directive(...javaBuiltInClass)
-.directive(...javaIdentifier)
-.directive(...javaPackageName)
-.directive(...propertyValueSpecified)
-.directive(...propertyUnique)
-.directive(...unique)
-.directive(...uuid)
+.directive('ipaddress', ipaddress)
+.directive('javaKeywords', javaKeywords)
+.directive('javaPackageSpecified', javaPackageSpecified)
+.directive('javaBuiltInClass', javaBuiltInClass)
+.directive('javaIdentifier', javaIdentifier)
+.directive('javaPackageName', javaPackageName)
+.directive('ignitePropertyValueSpecified', propertyValueSpecified)
+.directive('ignitePropertyUnique', propertyUnique)
+.directive('igniteUnique', unique)
+.directive('uuid', uuid)
 // Helpers.
-.directive(...igniteFormFieldInputAutofocus)
+.directive('igniteFormFieldInputAutofocus', igniteFormFieldInputAutofocus)
 
 // Generator of globally unique identifier.
 .service('IgniteFormGUID', IgniteFormGUID);

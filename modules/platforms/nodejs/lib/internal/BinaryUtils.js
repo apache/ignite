@@ -306,7 +306,7 @@ class BinaryUtils {
         const BinaryObject = require('../BinaryObject');
         const objectType = typeof object;
         if (object === null) {
-            return BinaryUtils.TYPE_CODE.NULL;
+            throw Errors.IgniteClientError.unsupportedTypeError(BinaryUtils.TYPE_CODE.NULL);
         }
         else if (objectType === 'number') {
             return BinaryUtils.TYPE_CODE.DOUBLE;
@@ -495,6 +495,10 @@ class BinaryUtils {
         else if (expectedTypeCode === BinaryUtils.TYPE_CODE.BINARY_OBJECT ||
             actualTypeCode === BinaryUtils.TYPE_CODE.BINARY_OBJECT &&
             expectedTypeCode === BinaryUtils.TYPE_CODE.COMPLEX_OBJECT) {
+            return;
+        }
+        else if (expectedTypeCode === BinaryUtils.TYPE_CODE.ENUM &&
+            actualTypeCode === BinaryUtils.TYPE_CODE.BINARY_ENUM) {
             return;
         }
         else if (actualTypeCode !== expectedTypeCode) {

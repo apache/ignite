@@ -209,24 +209,20 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     }
 
     /**
-     * TODO GG-11133.
-
      * @throws Exception If failed.
      */
-    public void _testReaderTtlTx() throws Exception {
+    public void testReaderTtlTx() throws Exception {
         // IgniteProcessProxy#transactions is not implemented.
-        if (isMultiJvm())
+        if (isMultiJvm() || !txShouldBeUsed())
             return;
 
         checkReaderTtl(true);
     }
 
     /**
-     * TODO GG-11133.
-
      * @throws Exception If failed.
      */
-    public void _testReaderTtlNoTx() throws Exception {
+    public void testReaderTtlNoTx() throws Exception {
         checkReaderTtl(false);
     }
 
@@ -252,7 +248,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
         final String key = primaryKeysForCache(fullCache(), 1).get(0);
 
-        c.put(key, 1);
+        fullCache().put(key, 1);
 
         info("Finished first put.");
 
@@ -285,6 +281,8 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
                 tx.close();
         }
 
+        jcache(nearIdx).get(key); // Create entry on near node.
+
         long[] expireTimes = new long[gridCount()];
 
         for (int i = 0; i < gridCount(); i++) {
@@ -300,8 +298,8 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
             if (entryTtl != null) {
                 assertNotNull(entryTtl.get1());
                 assertNotNull(entryTtl.get2());
-                assertEquals(ttl, (long)entryTtl.get1());
-                assertTrue(entryTtl.get2() > startTime);
+                assertTrue("Invalid expire time [expire=" + entryTtl.get2() + ", start=" + startTime + ']',
+                    entryTtl.get2() > startTime);
                 expireTimes[i] = entryTtl.get2();
             }
         }
@@ -333,7 +331,6 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
             if (entryTtl != null) {
                 assertNotNull(entryTtl.get1());
                 assertNotNull(entryTtl.get2());
-                assertEquals(ttl, (long)entryTtl.get1());
                 assertTrue(entryTtl.get2() > startTime);
                 expireTimes[i] = entryTtl.get2();
             }
@@ -363,7 +360,6 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
             if (entryTtl != null) {
                 assertNotNull(entryTtl.get1());
                 assertNotNull(entryTtl.get2());
-                assertEquals(ttl, (long)entryTtl.get1());
                 assertEquals(expireTimes[i], (long)entryTtl.get2());
             }
         }

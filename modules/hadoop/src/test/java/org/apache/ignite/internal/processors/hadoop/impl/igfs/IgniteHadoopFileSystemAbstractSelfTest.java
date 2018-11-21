@@ -994,7 +994,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
      */
     public void testSetTimes() throws Exception {
         Path fsHome = new Path(primaryFsUri);
-        final Path file = new Path(fsHome, "/heartbeat");
+        final Path file = new Path(fsHome, "/heartbeatTs");
 
         fs.create(file).close();
 

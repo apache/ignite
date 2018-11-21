@@ -42,7 +42,8 @@ mixin form-field__datepicker({ label, model, name, mindate, maxdate, minview = 1
             tabindex='0'
 
             onkeydown='return false',
-            expose-ignite-form-field-control='$input'
+            ng-ref='$input'
+            ng-ref-read='ngModel'
         )&attributes(attributes.attributes)
 
     .form-field.form-field__datepicker.ignite-form-field(id=`{{ ${name} }}Field`)
@@ -57,8 +58,8 @@ mixin form-field__datepicker({ label, model, name, mindate, maxdate, minview = 1
             ng-messages=`$input.$error`
             ng-show=`($input.$dirty || $input.$touched || $input.$submitted) && $input.$invalid`
         )
-            if block
-                block
-
             if required
                 +form-field__error({ error: 'required', message: `${errLbl} could not be empty!` })
+
+            if block
+                block

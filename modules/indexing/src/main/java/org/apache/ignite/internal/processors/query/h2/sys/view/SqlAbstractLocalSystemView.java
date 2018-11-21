@@ -26,6 +26,8 @@ import org.h2.table.Column;
 import org.h2.value.Value;
 import org.h2.value.ValueNull;
 import org.h2.value.ValueString;
+import org.h2.value.ValueTime;
+import org.h2.value.ValueTimestamp;
 
 /**
  * Local system view base class (which uses only local node data).
@@ -35,7 +37,7 @@ public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
      * @param tblName Table name.
      * @param desc Description.
      * @param ctx Context.
-     * @param indexes Indexed columns.
+     * @param indexes Indexes.
      * @param cols Columns.
      */
     public SqlAbstractLocalSystemView(String tblName, String desc, GridKernalContext ctx, String[] indexes,
@@ -45,6 +47,17 @@ public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
         assert tblName != null;
         assert cols != null;
         assert indexes != null;
+    }
+
+    /**
+     * @param tblName Table name.
+     * @param desc Description.
+     * @param ctx Context.
+     * @param indexedCols Indexed columns.
+     * @param cols Columns.
+     */
+    public SqlAbstractLocalSystemView(String tblName, String desc, GridKernalContext ctx, String indexedCols, Column... cols) {
+        this(tblName, desc, ctx, new String[] {indexedCols}, cols);
     }
 
     /**
@@ -124,5 +137,30 @@ public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
         catch (RuntimeException e) {
             return null;
         }
+    }
+
+    /**
+     * Converts millis to ValueTime
+     *
+     * @param millis Millis.
+     */
+    protected static Value valueTimeFromMillis(long millis) {
+        if (millis == -1L || millis == Long.MAX_VALUE)
+            return ValueNull.INSTANCE;
+        else
+            // Note: ValueTime.fromMillis(long) method trying to convert time using timezone and return wrong result.
+            return ValueTime.fromNanos(millis * 1_000_000L);
+    }
+
+    /**
+     * Converts millis to ValueTimestamp
+     *
+     * @param millis Millis.
+     */
+    protected static Value valueTimestampFromMillis(long millis) {
+        if (millis <= 0L || millis == Long.MAX_VALUE)
+            return ValueNull.INSTANCE;
+        else
+            return ValueTimestamp.fromMillis(millis);
     }
 }

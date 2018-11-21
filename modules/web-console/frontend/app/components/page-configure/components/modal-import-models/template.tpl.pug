@@ -29,10 +29,10 @@ mixin td-ellipses-lbl(w, lbl)
             #errors-container.modal-header.header
                 button.close(type='button' ng-click='$hide()' aria-hidden='true')
                     svg(ignite-icon="cross")
-                h4.modal-title() 
+                h4.modal-title()
                     span(ng-if='!importDomain.demo') Import domain models from database
                     span(ng-if='importDomain.demo') Import domain models from demo database
-            .modal-body.theme--ignite
+            .modal-body
                 modal-import-models-step-indicator(
                     steps='$ctrl.actions'
                     current-step='importDomain.action'
@@ -74,19 +74,21 @@ mixin td-ellipses-lbl(w, lbl)
                                 label: 'JDBC driver:',
                                 model: 'selectedPreset.jdbcDriverClass',
                                 name: '"jdbcDriverClass"',
-                                enabled: true,
                                 required: true,
                                 tip: 'Fully qualified class name of JDBC driver that will be used to connect to database'
                             })
                         .pc-form-grid-col-60
-                            +form-field__text--autofocus({
+                            +form-field__text({
                                 label: 'JDBC URL:',
                                 model: 'selectedPreset.jdbcUrl',
                                 name: '"jdbcUrl"',
                                 required: true,
                                 placeholder: 'JDBC URL',
                                 tip: 'JDBC URL for connecting to database<br>Refer to your database documentation for details'
-                            })
+                            })(
+                                ignite-form-field-input-autofocus='true'
+                            )
+
                         .pc-form-grid-col-30
                             +form-field__text({
                                 label: 'User:',
@@ -98,7 +100,7 @@ mixin td-ellipses-lbl(w, lbl)
                             +form-field__password({
                                 label: 'Password:',
                                 model: 'selectedPreset.password',
-                                name: '"jdbcPassword"', 
+                                name: '"jdbcPassword"',
                                 tip: 'Password for connecting to database<br>Note, password would not be saved in preferences for security reasons'
                             })(
                                 ignite-on-enter='importDomainNext()'

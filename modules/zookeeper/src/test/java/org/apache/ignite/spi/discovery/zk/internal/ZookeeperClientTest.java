@@ -26,7 +26,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.curator.test.TestingCluster;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator.TestingCluster;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -196,12 +196,12 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
         client.createIfNeeded("/apacheIgnite/1", null, CreateMode.PERSISTENT);
         client.createIfNeeded("/apacheIgnite/2", null, CreateMode.PERSISTENT);
 
-        client.deleteAll("/apacheIgnite", Arrays.asList("1", "2"), -1);
+        client.deleteAll(Arrays.asList("/apacheIgnite/1", "/apacheIgnite/2"), -1);
 
         assertTrue(client.getChildren("/apacheIgnite").isEmpty());
 
         client.createIfNeeded("/apacheIgnite/1", null, CreateMode.PERSISTENT);
-        client.deleteAll("/apacheIgnite", Collections.singletonList("1"), -1);
+        client.deleteAll(Collections.singletonList("/apacheIgnite/1"), -1);
 
         assertTrue(client.getChildren("/apacheIgnite").isEmpty());
     }
@@ -227,12 +227,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
 
         assertEquals(cnt, client.getChildren("/apacheIgnite").size());
 
-        List<String> subPaths = new ArrayList<>(cnt);
-
-        for (int i = 0; i < cnt; i++)
-            subPaths.add(String.valueOf(i));
-
-        client.deleteAll("/apacheIgnite", subPaths, -1);
+        client.deleteAll(paths, -1);
 
         assertTrue(client.getChildren("/apacheIgnite").isEmpty());
     }
@@ -249,7 +244,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
         client.createIfNeeded("/apacheIgnite/1", null, CreateMode.PERSISTENT);
         client.createIfNeeded("/apacheIgnite/2", null, CreateMode.PERSISTENT);
 
-        client.deleteAll("/apacheIgnite", Arrays.asList("1", "2", "3"), -1);
+        client.deleteAll(Arrays.asList("/apacheIgnite/1", "/apacheIgnite/2", "/apacheIgnite/3"), -1);
 
         assertTrue(client.getChildren("/apacheIgnite").isEmpty());
     }

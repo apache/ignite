@@ -21,22 +21,13 @@ import _ from 'lodash';
  * @typedef {{x: number, y: {[key: string]: number}}} IgniteChartDataPoint
  */
 
-const RANGE_RATE_PRESET = [{
-    label: '1 min',
-    value: 1
-}, {
-    label: '5 min',
-    value: 5
-}, {
-    label: '10 min',
-    value: 10
-}, {
-    label: '15 min',
-    value: 15
-}, {
-    label: '30 min',
-    value: 30
-}];
+const RANGE_RATE_PRESET = [
+    {label: '1 min', value: 1},
+    {label: '5 min', value: 5},
+    {label: '10 min', value: 10},
+    {label: '15 min', value: 15},
+    {label: '30 min', value: 30}
+];
 
 export class IgniteChartController {
     /** @type {import('chart.js').ChartConfiguration} */
@@ -53,7 +44,7 @@ export class IgniteChartController {
 
     /**
      * @param {JQLite} $element
-     * @param {ng.IScope} $scope
+     * @param {Array<string>} IgniteChartColors
      * @param {ng.IFilterService} $filter
      */
     constructor($element, IgniteChartColors, $filter) {
@@ -71,7 +62,9 @@ export class IgniteChartController {
     }
 
     $onDestroy() {
-        if (this.chart) this.chart.destroy();
+        if (this.chart)
+            this.chart.destroy();
+
         this.$element = this.ctx = this.chart = null;
     }
 
@@ -79,30 +72,36 @@ export class IgniteChartController {
         this.chartColors = _.get(this.chartOptions, 'chartColors', this.IgniteChartColors);
     }
 
+    _refresh() {
+        this.onRefresh();
+        this.rerenderChart();
+    }
+
     /**
      * @param {{chartOptions: ng.IChangesObject<import('chart.js').ChartConfiguration>, chartTitle: ng.IChangesObject<string>, chartDataPoint: ng.IChangesObject<IgniteChartDataPoint>, chartHistory: ng.IChangesObject<Array<IgniteChartDataPoint>>}} changes
      */
-    $onChanges(changes) {
+    async $onChanges(changes) {
         if (this.chart && _.get(changes, 'refreshRate.currentValue'))
             this.onRefreshRateChanged(_.get(changes, 'refreshRate.currentValue'));
 
-        // TODO: Investigate other signaling for resetting component state.
-        if (changes.chartDataPoint && _.isNil(changes.chartDataPoint.currentValue)) {
+        if ((changes.chartDataPoint && _.isNil(changes.chartDataPoint.currentValue)) ||
+            (changes.chartHistory && _.isEmpty(changes.chartHistory.currentValue))) {
             this.clearDatasets();
+
             return;
         }
 
         if (changes.chartHistory && changes.chartHistory.currentValue && changes.chartHistory.currentValue.length !== changes.chartHistory.previousValue.length) {
             if (!this.chart)
-                this.initChart();
+                await this.initChart();
 
             this.clearDatasets();
             this.localHistory = [...changes.chartHistory.currentValue];
 
             this.newPoints.splice(0, this.newPoints.length, ...changes.chartHistory.currentValue);
 
-            this.onRefresh();
-            this.rerenderChart();
+            this._refresh();
+
             return;
         }
 
@@ -112,13 +111,15 @@ export class IgniteChartController {
 
             this.newPoints.push(this.chartDataPoint);
             this.localHistory.push(this.chartDataPoint);
+
+            this._refresh();
         }
     }
 
     async initChart() {
         /** @type {import('chart.js').ChartConfiguration} */
         this.config = {
-            type: 'line',
+            type: 'LineWithVerticalCursor',
             data: {
                 datasets: []
             },
@@ -187,8 +188,9 @@ export class IgniteChartController {
                 },
                 tooltips: {
                     mode: 'index',
-                    position: 'nearest',
+                    position: 'yCenter',
                     intersect: false,
+                    yAlign: 'center',
                     xPadding: 20,
                     yPadding: 20,
                     bodyFontSize: 13,
@@ -216,6 +218,8 @@ export class IgniteChartController {
                         duration: this.currentRange.value * 1000 * 60,
                         frameRate: 1000 / this.refreshRate || 1 / 3,
                         refresh: this.refreshRate || 3000,
+                        // Temporary workaround before https://github.com/nagix/chartjs-plugin-streaming/issues/53 resolved.
+                        // ttl: this.maxRangeInMilliseconds,
                         onRefresh: () => {
                             this.onRefresh();
                         }
@@ -228,6 +232,40 @@ export class IgniteChartController {
 
         const chartModule = await import('chart.js');
         const Chart = chartModule.default;
+
+        Chart.Tooltip.positioners.yCenter = (elements) => {
+            const chartHeight = elements[0]._chart.height;
+            const tooltipHeight = 60;
+
+            return {x: elements[0].getCenterPoint().x, y: Math.floor(chartHeight / 2) - Math.floor(tooltipHeight / 2) };
+        };
+
+
+        // Drawing vertical cursor
+        Chart.defaults.LineWithVerticalCursor = Chart.defaults.line;
+        Chart.controllers.LineWithVerticalCursor = Chart.controllers.line.extend({
+            draw(ease) {
+                Chart.controllers.line.prototype.draw.call(this, ease);
+
+                if (this.chart.tooltip._active && this.chart.tooltip._active.length) {
+                    const activePoint = this.chart.tooltip._active[0];
+                    const ctx = this.chart.ctx;
+                    const x = activePoint.tooltipPosition().x;
+                    const topY = this.chart.scales['y-axis-0'].top;
+                    const bottomY = this.chart.scales['y-axis-0'].bottom;
+
+                    // draw line
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.moveTo(x, topY);
+                    ctx.lineTo(x, bottomY);
+                    ctx.lineWidth = 0.5;
+                    ctx.strokeStyle = '#0080ff';
+                    ctx.stroke();
+                    ctx.restore();
+                }
+            }
+        });
 
         await import('chartjs-plugin-streaming');
 
@@ -256,16 +294,30 @@ export class IgniteChartController {
                     this.addDataset(key);
                 }
 
-                // Prune excessive data points.
-                if (this.maxPointsNumber && this.config.data.datasets[datasetIndex].length - this.maxPointsNumber > 0)
-                    this.config.data.datasets[datasetIndex].data.splice(0, this.config.data.datasets[datasetIndex].length - this.maxPointsNumber);
-
                 this.config.data.datasets[datasetIndex].data.push({x: dataPoint.x, y: dataPoint.y[key]});
-                this.config.data.datasets[datasetIndex].borderColor = this.chartOptions.chartColors[datasetIndex];
+                this.config.data.datasets[datasetIndex].borderColor = this.chartColors[datasetIndex];
                 this.config.data.datasets[datasetIndex].borderWidth = 2;
                 this.config.data.datasets[datasetIndex].fill = false;
             }
         });
+
+        // Temporary workaround before https://github.com/nagix/chartjs-plugin-streaming/issues/53 resolved.
+        this.pruneHistory();
+    }
+
+    // Temporary workaround before https://github.com/nagix/chartjs-plugin-streaming/issues/53 resolved.
+    pruneHistory() {
+        if (!this.xRangeUpdateInProgress) {
+            const currenTime = Date.now();
+
+            while (currenTime - this.localHistory[0].x > this.maxRangeInMilliseconds)
+                this.localHistory.shift();
+
+            this.config.data.datasets.forEach((dataset) => {
+                while (currenTime - dataset.data[0].x > this.maxRangeInMilliseconds)
+                    dataset.data.shift();
+            });
+        }
     }
 
     /**
@@ -289,8 +341,13 @@ export class IgniteChartController {
     addDataset(datasetName) {
         if (this.findDatasetIndex(datasetName) >= 0)
             throw new Error(`Dataset with name ${datasetName} is already in chart`);
-        else
-            this.config.data.datasets.push({ label: datasetName, data: [] });
+        else {
+            const datasetIsHidden = _.isNil(this.config.datasetLegendMapping[datasetName].hidden)
+                ? false
+                : this.config.datasetLegendMapping[datasetName].hidden;
+
+            this.config.data.datasets.push({ label: datasetName, data: [], hidden: datasetIsHidden });
+        }
     }
 
     findDatasetIndex(searchedDatasetLabel) {
@@ -298,14 +355,19 @@ export class IgniteChartController {
     }
 
     changeXRange(range) {
-        const deltaInMilliSeconds = range.value * 60 * 1000;
-        this.chart.config.options.plugins.streaming.duration = deltaInMilliSeconds;
+        if (this.chart) {
+            this.xRangeUpdateInProgress = true;
 
-        this.clearDatasets();
-        this.newPoints.splice(0, this.newPoints.length, ...this.localHistory);
+            this.chart.config.options.plugins.streaming.duration = range.value * 60 * 1000;
 
-        this.onRefresh();
-        this.rerenderChart();
+            this.clearDatasets();
+            this.newPoints.splice(0, this.newPoints.length, ...this.localHistory);
+
+            this.onRefresh();
+            this.rerenderChart();
+
+            this.xRangeUpdateInProgress = false;
+        }
     }
 
     onRefreshRateChanged(refreshRate) {
@@ -315,6 +377,7 @@ export class IgniteChartController {
     }
 
     rerenderChart() {
-        this.chart.update();
+        if (this.chart)
+            this.chart.update();
     }
 }

@@ -140,14 +140,25 @@ public class CacheInvokeDirectResult implements Message {
             }
         }
 
-        if (unprepareRes != null) {
-            res = ctx.toCacheObject(unprepareRes);
-
-            unprepareRes = null;
-        }
+        assert unprepareRes == null : "marshalResult() was not called for the result: " + this;
 
         if (res != null)
             res.prepareMarshal(ctx.cacheObjectContext());
+    }
+
+    /**
+     * Converts the entry processor unprepared result to a cache object instance.
+     *
+     * @param ctx Cache context.
+     */
+    public void marshalResult(GridCacheContext ctx) {
+        try {
+            if (unprepareRes != null)
+                res = ctx.toCacheObject(unprepareRes);
+        }
+        finally {
+            unprepareRes = null;
+        }
     }
 
     /**

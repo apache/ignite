@@ -151,8 +151,8 @@ BOOST_AUTO_TEST_CASE(TestEscConvertFunctionTime)
 BOOST_AUTO_TEST_CASE(TestEscConvertFunctionTimestamp)
 {
     using ignite::impl::binary::BinaryUtils;
-    Timestamp ts = common::MakeTimestampGmt(1983, 3, 14, 13, 20, 15, 999999999);
-    CheckSingleResult<Timestamp>("SELECT {fn CONVERT('1983-03-14 13:20:15.999999999', SQL_TIMESTAMP)}", ts);
+    Timestamp ts = common::MakeTimestampGmt(1983, 3, 14, 13, 20, 15, 999999000);
+    CheckSingleResult<Timestamp>("SELECT {fn CONVERT('1983-03-14 13:20:15.999999', SQL_TIMESTAMP)}", ts);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -26,46 +26,138 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
         .pca-form-column-6.pc-form-grid-row
             .pc-form-grid-col-60
-                +number('Block size:', `${model}.blockSize`, '"blockSize"', 'true', '65536', '0', 'File data block size in bytes')
+                +form-field__number({
+                    label: 'Block size:',
+                    model: `${model}.blockSize`,
+                    name: '"blockSize"',
+                    placeholder: '65536',
+                    min: '0',
+                    tip: 'File data block size in bytes'
+                })
 
             //- Since ignite 2.0
             .pc-form-grid-col-60(ng-if='$ctrl.available("2.0.0")')
-                +number('Buffer size:', `${model}.streamBufferSize`, '"streamBufferSize"', 'true', '65536', '0', 'Read/write buffer size for IGFS stream operations in bytes')
+                +form-field__number({
+                    label: 'Buffer size:',
+                    model: `${model}.streamBufferSize`,
+                    name: '"streamBufferSize"',
+                    placeholder: '65536',
+                    min: '0',
+                    tip: 'Read/write buffer size for IGFS stream operations in bytes'
+                })
 
             //- Removed in ignite 2.0
             .pc-form-grid-col-60(ng-if-start='$ctrl.available(["1.0.0", "2.0.0"])')
-                +number('Stream buffer size:', `${model}.streamBufferSize`, '"streamBufferSize"', 'true', '65536', '0', 'Read/write buffer size for IGFS stream operations in bytes')
+                +form-field__number({
+                    label: 'Stream buffer size:',
+                    model: `${model}.streamBufferSize`,
+                    name: '"streamBufferSize"',
+                    placeholder: '65536',
+                    min: '0',
+                    tip: 'Read/write buffer size for IGFS stream operations in bytes'
+                })
             .pc-form-grid-col-60(ng-if-end)
-                +number('Maximum space size:', `${model}.maxSpaceSize`, '"maxSpaceSize"', 'true', '0', '0', 'Maximum space available for data cache to store file system entries')
+                +form-field__number({
+                    label: 'Maximum space size:',
+                    model: `${model}.maxSpaceSize`,
+                    name: '"maxSpaceSize"',
+                    placeholder: '0',
+                    min: '0',
+                    tip: 'Maximum space available for data cache to store file system entries'
+                })
 
             .pc-form-grid-col-30
-                +number('Maximum task range length:', `${model}.maximumTaskRangeLength`, '"maximumTaskRangeLength"', 'true', '0', '0', 'Maximum default range size of a file being split during IGFS task execution')
+                +form-field__number({
+                    label: 'Maximum task range length:',
+                    model: `${model}.maximumTaskRangeLength`,
+                    name: '"maximumTaskRangeLength"',
+                    placeholder: '0',
+                    min: '0',
+                    tip: 'Maximum default range size of a file being split during IGFS task execution'
+                })
             .pc-form-grid-col-30
-                +number-min-max('Management port:', `${model}.managementPort`, '"managementPort"', 'true', '11400', '0', '65535', 'Port number for management endpoint')
+                +form-field__number({
+                    label: 'Management port:',
+                    model: `${model}.managementPort`,
+                    name: '"managementPort"',
+                    placeholder: '11400',
+                    min: '0',
+                    max: '65535',
+                    tip: 'Port number for management endpoint'
+                })
             .pc-form-grid-col-30
-                +number('Per node batch size:', `${model}.perNodeBatchSize`, '"perNodeBatchSize"', 'true', '100', '0', 'Number of file blocks collected on local node before sending batch to remote node')
+                +form-field__number({
+                    label: 'Per node batch size:',
+                    model: `${model}.perNodeBatchSize`,
+                    name: '"perNodeBatchSize"',
+                    placeholder: '100',
+                    min: '0',
+                    tip: 'Number of file blocks collected on local node before sending batch to remote node'
+                })
             .pc-form-grid-col-30
-                +number('Per node parallel batch count:', `${model}.perNodeParallelBatchCount`, '"perNodeParallelBatchCount"', 'true', '8', '0', 'Number of file block batches that can be concurrently sent to remote node')
+                +form-field__number({
+                    label: 'Per node parallel batch count:',
+                    model: `${model}.perNodeParallelBatchCount`,
+                    name: '"perNodeParallelBatchCount"',
+                    placeholder: '8',
+                    min: '0',
+                    tip: 'Number of file block batches that can be concurrently sent to remote node'
+                })
             .pc-form-grid-col-60
-                +number('Prefetch blocks:', `${model}.prefetchBlocks`, '"prefetchBlocks"', 'true', '0', '0', 'Number of pre-fetched blocks if specific file chunk is requested')
+                +form-field__number({
+                    label: 'Prefetch blocks:',
+                    model: `${model}.prefetchBlocks`,
+                    name: '"prefetchBlocks"',
+                    placeholder: '8',
+                    min: '0',
+                    tip: 'Number of pre-fetched blocks if specific file chunk is requested'
+                })
             .pc-form-grid-col-60
-                +number('Sequential reads before prefetch:', `${model}.sequentialReadsBeforePrefetch`, '"sequentialReadsBeforePrefetch"', 'true', '0', '0', 'Amount of sequential block reads before prefetch is triggered')
+                +form-field__number({
+                    label: 'Sequential reads before prefetch:',
+                    model: `${model}.sequentialReadsBeforePrefetch`,
+                    name: '"sequentialReadsBeforePrefetch"',
+                    placeholder: '8',
+                    min: '0',
+                    tip: 'Amount of sequential block reads before prefetch is triggered'
+                })
 
             //- Removed in ignite 2.0
             .pc-form-grid-col-60(ng-if='$ctrl.available(["1.0.0", "2.0.0"])')
-                +number('Trash purge timeout:', `${model}.trashPurgeTimeout`, '"trashPurgeTimeout"', 'true', '1000', '0', 'Maximum timeout awaiting for trash purging in case data cache oversize is detected')
+                +form-field__number({
+                    label: 'Trash purge timeout:',
+                    model: `${model}.trashPurgeTimeout`,
+                    name: '"trashPurgeTimeout"',
+                    placeholder: '1000',
+                    min: '0',
+                    tip: 'Maximum timeout awaiting for trash purging in case data cache oversize is detected'
+                })
 
             .pc-form-grid-col-60
-                +checkbox('Colocate metadata', `${model}.colocateMetadata`, '"colocateMetadata"', 'Whether to co-locate metadata on a single node')
+                +form-field__checkbox({
+                    label: 'Colocate metadata',
+                    model: `${model}.colocateMetadata`,
+                    name: '"colocateMetadata"',
+                    tip: 'Whether to co-locate metadata on a single node'
+                })
             .pc-form-grid-col-60
-                +checkbox('Relaxed consistency', `${model}.relaxedConsistency`, '"relaxedConsistency"',
-                    'If value of this flag is <b>true</b>, IGFS will skip expensive consistency checks<br/>\
-                    It is recommended to set this flag to <b>false</b> if your application has conflicting\
-                    operations, or you do not know how exactly users will use your system')
+                +form-field__checkbox({
+                    label: 'Relaxed consistency',
+                    model: `${model}.relaxedConsistency`,
+                    name: '"relaxedConsistency"',
+                    tip: 'If value of this flag is <b>true</b>, IGFS will skip expensive consistency checks<br/>\
+                         It is recommended to set this flag to <b>false</b> if your application has conflicting\
+                         operations, or you do not know how exactly users will use your system'
+                })
 
             //- Since ignite 2.0
             .pc-form-grid-col-60(ng-if='$ctrl.available("2.0.0")')
-                +checkbox('Update file length on flush', model + '.updateFileLengthOnFlush', '"updateFileLengthOnFlush"', 'Update file length on flush flag')
+                +form-field__checkbox({
+                    label: 'Update file length on flush',
+                    model: model + '.updateFileLengthOnFlush',
+                    name: '"updateFileLengthOnFlush"',
+                    tip: 'Update file length on flush flag'
+                })
 
             .pc-form-grid-col-60
                 mixin igfs-misc-path-modes

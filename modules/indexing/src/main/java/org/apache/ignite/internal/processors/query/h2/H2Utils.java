@@ -211,11 +211,13 @@ public class H2Utils {
             String typeName = rsMeta.getTableName(i);
             String name = rsMeta.getColumnLabel(i);
             String type = rsMeta.getColumnClassName(i);
+            int precision = rsMeta.getPrecision(i);
+            int scale = rsMeta.getScale(i);
 
             if (type == null) // Expression always returns NULL.
                 type = Void.class.getName();
 
-            meta.add(new H2SqlFieldMetadata(schemaName, typeName, name, type));
+            meta.add(new H2SqlFieldMetadata(schemaName, typeName, name, type, precision, scale));
         }
 
         return meta;
@@ -282,5 +284,18 @@ public class H2Utils {
         resCur.fieldsMeta(UPDATE_RESULT_META);
 
         return resCur;
+    }
+
+    /**
+     * Add only new columns to destination list.
+     *
+     * @param dest List of index columns to add new elements from src list.
+     * @param src List of IndexColumns to add to dest list.
+     */
+    public static void addUniqueColumns(List<IndexColumn> dest, List<IndexColumn> src) {
+        for (IndexColumn col : src) {
+            if (!containsColumn(dest, col))
+                dest.add(col);
+        }
     }
 }
