@@ -257,7 +257,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
         add((IgniteInternalFuture)fut);
 
         IgniteInternalFuture<GridNearTxPrepareResponse> prepFut = nearEntries ?
-            cctx.tm().txHandler().prepareNearTxLocal(req) :
+            cctx.tm().txHandler().prepareNearTxLocal(tx, req) :
             cctx.tm().txHandler().prepareColocatedTx(tx, req);
 
         prepFut.listen(new CI1<IgniteInternalFuture<GridNearTxPrepareResponse>>() {
@@ -430,6 +430,8 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
                 add((IgniteInternalFuture)fut);
 
+                tx.state(PREPARED);
+
                 try {
                     cctx.io().send(primary, req, tx.ioPolicy());
 
@@ -480,9 +482,6 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             ERR_UPD.compareAndSet(GridNearPessimisticTxPrepareFuture.this, null, err);
 
         err = this.err;
-
-        if (err == null || tx.needCheckBackup())
-            tx.state(PREPARED);
 
         if (super.onDone(tx, err)) {
             cctx.mvcc().removeVersionedFuture(this);

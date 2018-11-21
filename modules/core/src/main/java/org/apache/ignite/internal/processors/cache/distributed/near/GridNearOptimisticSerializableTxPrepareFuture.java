@@ -274,9 +274,6 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
     private boolean onComplete() {
         Throwable err0 = err;
 
-        if (err0 == null || tx.needCheckBackup())
-            tx.state(PREPARED);
-
         if (super.onDone(tx, err0)) {
             if (err0 != null)
                 tx.setRollbackOnly();
@@ -523,6 +520,8 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             }
         }
         else {
+            tx.state(PREPARED);
+
             try {
                 GridNearTxPrepareRequest req = createRequest(txNodes,
                     fut,
@@ -604,7 +603,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         final MiniFuture fut,
         final boolean nearEntries) {
         IgniteInternalFuture<GridNearTxPrepareResponse> prepFut = nearEntries ?
-            cctx.tm().txHandler().prepareNearTxLocal(req) :
+            cctx.tm().txHandler().prepareNearTxLocal(tx, req) :
             cctx.tm().txHandler().prepareColocatedTx(tx, req);
 
         prepFut.listen(new CI1<IgniteInternalFuture<GridNearTxPrepareResponse>>() {

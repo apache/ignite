@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVersion;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -56,6 +57,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
@@ -99,6 +101,9 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     /** Transaction label. */
     private @Nullable String lb;
 
+    /** Transaction from which this transaction was copied by(if it was). */
+    private GridNearTxLocal parentTx;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -122,6 +127,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
      * @param txSize Expected transaction size.
      * @param txNodes Transaction nodes mapping.
      * @param lb Transaction label.
+     * @param parentTx Transaction from which this transaction was copied by(if it was).
      */
     public GridDhtTxLocal(
         GridCacheSharedContext cctx,
@@ -146,7 +152,8 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
         Map<UUID, Collection<UUID>> txNodes,
         UUID subjId,
         int taskNameHash,
-        @Nullable String lb
+        @Nullable String lb,
+        GridNearTxLocal parentTx
     ) {
         super(
             cctx,
@@ -179,6 +186,8 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
         this.txNodes = txNodes;
 
         threadId = nearThreadId;
+
+        this.parentTx = parentTx;
 
         assert !F.eq(xidVer, nearXidVer);
 
@@ -318,6 +327,14 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
         setRollbackOnly();
 
         return rollbackDhtLocalAsync();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean state(TransactionState state) {
+        if (parentTx != null)
+            parentTx.state(state);
+
+        return super.state(state);
     }
 
     /**

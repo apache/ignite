@@ -598,7 +598,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                     assert !(m.hasColocatedCacheEntries() && m.hasNearCacheEntries()) : m;
 
                     IgniteInternalFuture<GridNearTxPrepareResponse> prepFut =
-                        m.hasNearCacheEntries() ? cctx.tm().txHandler().prepareNearTxLocal(req)
+                        m.hasNearCacheEntries() ? cctx.tm().txHandler().prepareNearTxLocal(tx, req)
                         : cctx.tm().txHandler().prepareColocatedTx(tx, req);
 
                     prepFut.listen(new CI1<IgniteInternalFuture<GridNearTxPrepareResponse>>() {
@@ -613,9 +613,9 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                     });
                 }
                 else {
-                    try {
-                        tx.state(PREPARED);
+                    tx.state(PREPARED);
 
+                    try {
                         cctx.io().send(n, req, tx.ioPolicy());
 
                         if (msgLog.isDebugEnabled()) {
