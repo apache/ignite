@@ -321,7 +321,8 @@ public class H2Utils {
             catch (IgniteCheckedException ex) {
                 throw U.convertException(ex);
             }
-
         }
+
+        return false;
     }
 }
