@@ -36,7 +36,7 @@ public class IgniteCacheRestartTestSuite2 extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Cache Restart Test Suite2");
 
-        for(int i = 0; i < 100; i++)
+        for(int i = 0; i < 60; i++)
             suite.addTestSuite(IgniteCacheGetRestartTest.class);
 
         return suite;
