@@ -81,8 +81,6 @@ public class CacheMvccClusterRestartTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9394");
-
         cleanPersistenceDir();
 
         super.beforeTest();
@@ -128,7 +126,7 @@ public class CacheMvccClusterRestartTest extends GridCommonAbstractTest {
 
         IgniteCache<Object, Object> cache = srv0.createCache(cacheConfiguration());
 
-        Set<Integer> keys = new HashSet<>(primaryKeys(cache, 1, 0));
+        Set<Integer> keys = new HashSet<>(primaryKeys(cache, 100, 0));
 
         try (Transaction tx = srv0.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             for (Integer k : keys)

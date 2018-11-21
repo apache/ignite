@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.hadoop.shuffle;
 
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.message.HadoopMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -35,6 +36,7 @@ import java.nio.ByteBuffer;
 /**
  * Direct shuffle message.
  */
+@IgniteCodeGeneratingFail
 public class HadoopDirectShuffleMessage implements Message, HadoopMessage {
     /** */
     private static final long serialVersionUID = 0L;

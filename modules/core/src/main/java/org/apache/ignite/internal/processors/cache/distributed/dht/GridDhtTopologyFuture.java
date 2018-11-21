@@ -86,4 +86,10 @@ public interface GridDhtTopologyFuture extends IgniteInternalFuture<AffinityTopo
         boolean read,
         @Nullable Object key,
         @Nullable Collection<?> keys);
+
+    /**
+     *
+     * @return {@code True} if this exchange changed affinity.
+     */
+    public boolean changedAffinity();
 }

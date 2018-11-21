@@ -36,7 +36,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
@@ -180,9 +179,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
     /** Batches already sent to remotes, but their acks are not received yet. */
     private ConcurrentMap<UUID, ConcurrentMap<Integer, Batch>> pending;
-
-    /** */
-    private WALPointer walPtr;
 
     /** Do not send DHT requests to near node. */
     protected boolean skipNearNodeUpdates;
@@ -531,12 +527,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                 }
 
                 if (!hasNext0()) {
-                    if (walPtr != null && !cctx.tm().logTxRecords()) {
-                        cctx.shared().wal().flush(walPtr, true);
-
-                        walPtr = null; // Avoid additional flushing.
-                    }
-
                     if (!F.isEmpty(batches)) {
                         // Flush incomplete batches.
                         // Need to skip batches for nodes where first request (contains tx info) is still in-flight.
@@ -628,11 +618,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
         checkCompleted();
 
         assert updRes != null && updRes.updateFuture() == null;
-
-        WALPointer ptr0 = updRes.loggedPointer();
-
-        if (ptr0 != null)
-            walPtr = ptr0;
 
         onEntryProcessed(entry.key(), updRes);
 
