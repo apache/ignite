@@ -48,10 +48,6 @@ class JdbcRequestHandlerWorker extends GridWorker {
     /** Context.*/
     private final GridKernalContext ctx;
 
-    /** Response */
-    private static final ClientListenerResponse ERR_RESPONSE = new JdbcResponse(IgniteQueryErrorCode.UNKNOWN,
-        "Connection closed.");
-
     /**
      * Constructor.
      * @param igniteInstanceName Instance name.
@@ -108,7 +104,8 @@ class JdbcRequestHandlerWorker extends GridWorker {
             T2<JdbcRequest, GridFutureAdapter<ClientListenerResponse>> req = queue.poll();
 
             while (req != null) {
-                req.get2().onDone(ERR_RESPONSE);
+                req.get2().onDone(new JdbcResponse(IgniteQueryErrorCode.UNKNOWN,"Connection closed.",
+                    req.get1().requestId()));
 
                 req = queue.poll();
             }

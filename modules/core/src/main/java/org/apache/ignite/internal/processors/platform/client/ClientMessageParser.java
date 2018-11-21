@@ -388,4 +388,17 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
         return outStream.arrayCopy();
     }
+
+    /** {@inheritDoc} */
+    @Override public int decodeCommandType(byte[] msg) {
+        assert msg != null;
+
+        BinaryInputStream inStream = new BinaryHeapInputStream(msg);
+
+        // skipHdrCheck must be true (we have 103 op code).
+        BinaryRawReaderEx reader = new BinaryReaderExImpl(marsh.context(), inStream,
+            null, null, true, true);
+
+        return reader.readShort();
+    }
 }

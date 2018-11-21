@@ -129,6 +129,9 @@ public final class IgniteQueryErrorCode {
     /** Transaction serialization error. */
     public static final int TRANSACTION_SERIALIZATION_ERROR = 5005;
 
+    /** Query canceled. */
+    public final static int QUERY_CANCELED = 57014;
+
     /** */
     private IgniteQueryErrorCode() {
         // No-op.
@@ -192,6 +195,9 @@ public final class IgniteQueryErrorCode {
 
             case TRANSACTION_SERIALIZATION_ERROR:
                 return SqlStateCode.SERIALIZATION_FAILURE;
+
+            case QUERY_CANCELED:
+                return SqlStateCode.QUERY_CANCELLED;
 
             default:
                 return SqlStateCode.INTERNAL_ERROR;

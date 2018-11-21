@@ -409,6 +409,13 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
         return writer.array();
     }
 
+    /** {@inheritDoc} */
+    @Override public int decodeCommandType(byte[] msg) {
+        assert msg != null;
+
+        return msg[0];
+    }
+
     /**
      * @param writer Writer to use.
      * @param affectedRows Affected rows.

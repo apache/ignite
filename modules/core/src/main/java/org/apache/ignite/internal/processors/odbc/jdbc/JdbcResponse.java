@@ -26,6 +26,8 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_8_0;
+
 /**
  * SQL listener response.
  */
@@ -33,6 +35,9 @@ public class JdbcResponse extends ClientListenerResponse implements JdbcRawBinar
     /** Response object. */
     @GridToStringInclude
     private JdbcResult res;
+
+    /** Request Id. */
+    private long requestId;
 
     /**
      * Default constructs is used for deserialization
@@ -45,11 +50,13 @@ public class JdbcResponse extends ClientListenerResponse implements JdbcRawBinar
      * Constructs successful rest response.
      *
      * @param res Response result.
+     * @param requestId Request Id.
      */
-    public JdbcResponse(JdbcResult res) {
+    public JdbcResponse(JdbcResult res, long requestId) {
         super(STATUS_SUCCESS, null);
 
         this.res = res;
+        this.requestId = requestId;
     }
 
     /**
@@ -57,9 +64,12 @@ public class JdbcResponse extends ClientListenerResponse implements JdbcRawBinar
      *
      * @param status Response status.
      * @param err Error, {@code null} if success is {@code true}.
+     * @param requestId Request Id.
      */
-    public JdbcResponse(int status, @Nullable String err) {
+    public JdbcResponse(int status, @Nullable String err, long requestId) {
         super(status, err);
+
+        this.requestId = requestId;
 
         assert status != STATUS_SUCCESS;
     }
@@ -71,6 +81,13 @@ public class JdbcResponse extends ClientListenerResponse implements JdbcRawBinar
         return res;
     }
 
+    /**
+     * @return Request Id.
+     */
+    public long requestId() {
+        return requestId;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(JdbcResponse.class, this, "status", status(),"err", error());
@@ -80,6 +97,9 @@ public class JdbcResponse extends ClientListenerResponse implements JdbcRawBinar
     @Override public void writeBinary(BinaryWriterExImpl writer,
         ClientListenerProtocolVersion ver) throws BinaryObjectException {
         writer.writeInt(status());
+
+        if (ver.compareTo(VER_2_8_0) >= 0)
+            writer.writeLong(requestId);
 
         if (status() == STATUS_SUCCESS) {
             writer.writeBoolean(res != null);
@@ -96,6 +116,9 @@ public class JdbcResponse extends ClientListenerResponse implements JdbcRawBinar
     @Override public void readBinary(BinaryReaderExImpl reader,
         ClientListenerProtocolVersion ver) throws BinaryObjectException {
         status(reader.readInt());
+
+        if (ver.compareTo(VER_2_8_0) >= 0)
+            requestId = reader.readLong();
 
         if (status() == STATUS_SUCCESS) {
             if (reader.readBoolean())

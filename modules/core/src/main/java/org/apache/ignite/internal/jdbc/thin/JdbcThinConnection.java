@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcOrderedBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcOrderedBatchExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCancelRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
@@ -82,7 +83,7 @@ public class JdbcThinConnection implements Connection {
     private String schema;
 
     /** Closed flag. */
-    private boolean closed;
+    private volatile boolean closed;
 
     /** Current transaction isolation. */
     private int txIsolation;
@@ -196,10 +197,12 @@ public class JdbcThinConnection implements Connection {
                         + cliIo.igniteVersion() + ']', SqlStateCode.INTERNAL_ERROR);
                 }
 
+                streamState = new StreamState((SqlSetStreamingCommand)cmd);
+
                 sendRequest(new JdbcQueryExecuteRequest(JdbcStatementType.ANY_STATEMENT_TYPE,
                     schema, 1, 1, autoCommit, sql, null));
 
-                streamState = new StreamState((SqlSetStreamingCommand)cmd);
+                streamState.start();
             }
         }
         else
@@ -767,6 +770,25 @@ public class JdbcThinConnection implements Connection {
      * @param req Request.
      * @throws SQLException On any error.
      */
+    void sendQueryCancelRequest(JdbcQueryCancelRequest req) throws SQLException {
+        ensureConnected();
+
+        try {
+            cliIo.sendCancelRequest(req);
+        }
+        catch (Exception e) {
+            onDisconnect();
+
+            throw new SQLException("Failed to communicate with Ignite cluster.", SqlStateCode.CONNECTION_FAILURE, e);
+        }
+    }
+
+    /**
+     * Send request for execution via {@link #cliIo}. Response is waited at the separate thread
+     *     (see {@link StreamState#asyncRespReaderThread}).
+     * @param req Request.
+     * @throws SQLException On any error.
+     */
     private void sendRequestNotWaitResponse(JdbcOrderedBatchExecuteRequest req) throws SQLException {
         ensureConnected();
 
@@ -880,6 +902,13 @@ public class JdbcThinConnection implements Connection {
 
             asyncRespReaderThread = new Thread(this::readResponses);
 
+
+        }
+
+        /**
+         * Start reader.
+         */
+        void start() {
             asyncRespReaderThread.start();
         }
 

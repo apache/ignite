@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
+import java.io.Closeable;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -27,9 +28,9 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 /**
  * SQL listener query fetch result.
  */
-class JdbcQueryCursor {
-    /** Query ID. */
-    private final long queryId;
+class JdbcQueryCursor implements Closeable {
+    /** Cursor ID. */
+    private final long cursorId;
 
     /** Fetch size. */
     private int pageSize;
@@ -44,22 +45,36 @@ class JdbcQueryCursor {
     private final QueryCursorImpl<List<Object>> cur;
 
     /** Query results iterator. */
-    private final Iterator<List<Object>> iter;
+    private Iterator<List<Object>> iter;
 
     /**
-     * @param queryId Query ID.
+     * @param cursorId Cursor ID.
      * @param pageSize Fetch size.
      * @param maxRows Max rows.
      * @param cur Query cursor.
      */
-    JdbcQueryCursor(long queryId, int pageSize, int maxRows, QueryCursorImpl<List<Object>> cur) {
-        this.queryId = queryId;
+    JdbcQueryCursor(long cursorId, int pageSize, int maxRows, QueryCursorImpl<List<Object>> cur) {
+        this.cursorId = cursorId;
         this.pageSize = pageSize;
         this.maxRows = maxRows;
         this.cur = cur;
+    }
+
+    /**
+     * Open iterator;
+     */
+    void openIterator (){
 
         iter = cur.iterator();
     }
+
+    /**
+     * @return Update count for not SELECT queries.
+     */
+    long updateCount() {
+        return (Long)((List<?>)cur.getAll().get(0)).get(0);
+    }
+
 
     /**
      * @return List of the rows.
@@ -105,16 +120,16 @@ class JdbcQueryCursor {
     }
 
     /**
-     * @return Query ID.
+     * @return Cursor ID.
      */
-    public long queryId() {
-        return queryId;
+    public long cursorId() {
+        return cursorId;
     }
 
     /**
      * Close the cursor.
      */
-    public void close() {
+    @Override public void close() {
         cur.close();
     }
 

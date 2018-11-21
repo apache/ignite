@@ -28,7 +28,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -41,6 +40,7 @@ import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcOrderedBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCancelRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataRequest;
@@ -74,8 +74,11 @@ public class JdbcThinTcpIo {
     /** Version 2.7.0. */
     private static final ClientListenerProtocolVersion VER_2_7_0 = ClientListenerProtocolVersion.create(2, 7, 0);
 
+    /** Version 2.8.0. */
+    private static final ClientListenerProtocolVersion VER_2_8_0 = ClientListenerProtocolVersion.create(2, 8, 0);
+
     /** Current version. */
-    public static final ClientListenerProtocolVersion CURRENT_VER = VER_2_7_0;
+    public static final ClientListenerProtocolVersion CURRENT_VER = VER_2_8_0;
 
     /** Initial output stream capacity for handshake. */
     private static final int HANDSHAKE_MSG_SIZE = 13;
@@ -108,7 +111,7 @@ public class JdbcThinTcpIo {
     private BufferedOutputStream out;
 
     /** Input stream. */
-    private BufferedInputStream in;
+    public BufferedInputStream in;
 
     /** Connected flag. */
     private boolean connected;
@@ -448,6 +451,7 @@ public class JdbcThinTcpIo {
      * @throws SQLException On error.
      */
     void sendBatchRequestNoWaitResponse(JdbcOrderedBatchExecuteRequest req) throws IOException, SQLException {
+        // TODO: 13.11.18 coniser user cancel flag here;
         synchronized (mux) {
             if (ownThread != null) {
                 throw new SQLException("Concurrent access to JDBC connection is not allowed"
@@ -506,13 +510,29 @@ public class JdbcThinTcpIo {
 
             send(writer.array());
 
-            return readResponse();
+            JdbcResponse response = readResponse();
+
+            if (srvProtocolVer.compareTo(VER_2_8_0) >= 0) {
+                while (req.requestId() != response.requestId())
+                    response = readResponse();
+            }
+
+            return response;
         }
         finally {
             synchronized (mux) {
                 ownThread = null;
             }
         }
+    }
+
+    /**
+     * Sends cancel request.
+     * @param cancellationRequest contains request id to be cancelled
+     * @throws IOException In case of IO error.
+     */
+    void sendCancelRequest(JdbcQueryCancelRequest cancellationRequest) throws IOException {
+        sendRequestRaw(cancellationRequest);
     }
 
     /**
@@ -528,7 +548,6 @@ public class JdbcThinTcpIo {
 
         return res;
     }
-
 
     /**
      * Try to guess request capacity.
@@ -560,20 +579,37 @@ public class JdbcThinTcpIo {
     }
 
     /**
+     * @param req Request.
+     * @throws IOException In case of IO error.
+     */
+    private void sendRequestRaw(JdbcRequest req) throws IOException {
+        int cap = guessCapacity(req);
+
+        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap),
+            null, null);
+
+        req.writeBinary(writer, srvProtocolVer);
+
+        send(writer.array());
+    }
+
+    /**
      * @param req JDBC request bytes.
      * @throws IOException On error.
      */
     private void send(byte[] req) throws IOException {
-        int size = req.length;
+        synchronized (mux) {
+            int size = req.length;
 
-        out.write(size & 0xFF);
-        out.write((size >> 8) & 0xFF);
-        out.write((size >> 16) & 0xFF);
-        out.write((size >> 24) & 0xFF);
+            out.write(size & 0xFF);
+            out.write((size >> 8) & 0xFF);
+            out.write((size >> 16) & 0xFF);
+            out.write((size >> 24) & 0xFF);
 
-        out.write(req);
+            out.write(req);
 
-        out.flush();
+            out.flush();
+        }
     }
 
     /**

@@ -80,8 +80,8 @@ public class JdbcThinResultSet implements ResultSet {
     /** Statement. */
     private final JdbcThinStatement stmt;
 
-    /** Query ID. */
-    private final Long qryId;
+    /** Cursor ID. */
+    private final Long cursorId;
 
     /** Metadata. */
     private List<JdbcColumnMeta> meta;
@@ -140,7 +140,7 @@ public class JdbcThinResultSet implements ResultSet {
     JdbcThinResultSet(List<List<Object>> fields, List<JdbcColumnMeta> meta) {
         stmt = null;
         fetchSize = 0;
-        qryId = -1L;
+        cursorId = -1L;
         finished = true;
         isQuery = true;
         updCnt = -1;
@@ -160,7 +160,7 @@ public class JdbcThinResultSet implements ResultSet {
      * Creates new result set.
      *
      * @param stmt Statement.
-     * @param qryId Query ID.
+     * @param cursorId Cursor ID.
      * @param fetchSize Fetch size.
      * @param finished Finished flag.
      * @param rows Rows.
@@ -169,13 +169,13 @@ public class JdbcThinResultSet implements ResultSet {
      * @param updCnt Update count.
      * @param closeStmt Close statement on the result set close.
      */
-    JdbcThinResultSet(JdbcThinStatement stmt, long qryId, int fetchSize, boolean finished,
+    JdbcThinResultSet(JdbcThinStatement stmt, long cursorId, int fetchSize, boolean finished,
         List<List<Object>> rows, boolean isQuery, boolean autoClose, long updCnt, boolean closeStmt) {
         assert stmt != null;
         assert fetchSize > 0;
 
         this.stmt = stmt;
-        this.qryId = qryId;
+        this.cursorId = cursorId;
         this.fetchSize = fetchSize;
         this.finished = finished;
         this.isQuery = isQuery;
@@ -194,10 +194,10 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public boolean next() throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         if ((rowsIter == null || !rowsIter.hasNext()) && !finished) {
-            JdbcQueryFetchResult res = stmt.conn.sendRequest(new JdbcQueryFetchRequest(qryId, fetchSize));
+            JdbcQueryFetchResult res = stmt.conn.sendRequest(new JdbcQueryFetchRequest(cursorId, fetchSize));
 
             rows = res.items();
             finished = res.last();
@@ -240,8 +240,8 @@ public class JdbcThinResultSet implements ResultSet {
             return;
 
         try {
-            if (!finished || (isQuery && !autoClose))
-                stmt.conn.sendRequest(new JdbcQueryCloseRequest(qryId));
+            if (!(stmt != null && stmt.cancelled()) && (!finished || (isQuery && !autoClose)))
+                stmt.conn.sendRequest(new JdbcQueryCloseRequest(cursorId));
         }
         finally {
             closed = true;
@@ -257,7 +257,7 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public boolean wasNull() throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
         ensureHasCurrentRow();
 
         return wasNull;
@@ -564,21 +564,21 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public InputStream getAsciiStream(int colIdx) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Streams are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public InputStream getUnicodeStream(int colIdx) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Streams are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public InputStream getBinaryStream(int colIdx) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Stream are not supported.");
     }
@@ -676,47 +676,47 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public InputStream getAsciiStream(String colLb) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Streams are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public InputStream getUnicodeStream(String colLb) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Streams are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public InputStream getBinaryStream(String colLb) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Streams are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public SQLWarning getWarnings() throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         return null;
     }
 
     /** {@inheritDoc} */
     @Override public void clearWarnings() throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
     }
 
     /** {@inheritDoc} */
     @Override public String getCursorName() throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         return null;
     }
 
     /** {@inheritDoc} */
     @Override public ResultSetMetaData getMetaData() throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         if (jdbcMeta == null)
             jdbcMeta = new JdbcThinResultSetMetadata(meta());
@@ -738,7 +738,7 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public int findColumn(final String colLb) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         Integer order = columnOrder().get(colLb.toUpperCase());
 
@@ -752,14 +752,14 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public Reader getCharacterStream(int colIdx) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Streams are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public Reader getCharacterStream(String colLb) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Streams are not supported.");
     }
@@ -800,91 +800,91 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public boolean isBeforeFirst() throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         return curPos == 0 && rowsIter != null && rowsIter.hasNext();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isAfterLast() throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         return finished && rowsIter == null && curRow == null;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isFirst() throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         return curPos == 1;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isLast() throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         return finished && rowsIter != null && !rowsIter.hasNext() && curRow != null;
     }
 
     /** {@inheritDoc} */
     @Override public void beforeFirst() throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLException("Result set is forward-only.");
     }
 
     /** {@inheritDoc} */
     @Override public void afterLast() throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLException("Result set is forward-only.");
     }
 
     /** {@inheritDoc} */
     @Override public boolean first() throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLException("Result set is forward-only.");
     }
 
     /** {@inheritDoc} */
     @Override public boolean last() throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLException("Result set is forward-only.");
     }
 
     /** {@inheritDoc} */
     @Override public int getRow() throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         return isAfterLast() ? 0 : curPos;
     }
 
     /** {@inheritDoc} */
     @Override public boolean absolute(int row) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLException("Result set is forward-only.");
     }
 
     /** {@inheritDoc} */
     @Override public boolean relative(int rows) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLException("Result set is forward-only.");
     }
 
     /** {@inheritDoc} */
     @Override public boolean previous() throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLException("Result set is forward-only.");
     }
 
     /** {@inheritDoc} */
     @Override public void setFetchDirection(int direction) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         if (direction != FETCH_FORWARD)
             throw new SQLFeatureNotSupportedException("Only forward direction is supported");
@@ -892,14 +892,14 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public int getFetchDirection() throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         return FETCH_FORWARD;
     }
 
     /** {@inheritDoc} */
     @Override public void setFetchSize(int fetchSize) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         if (fetchSize <= 0)
             throw new SQLException("Fetch size must be greater than zero.");
@@ -909,357 +909,357 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public int getFetchSize() throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         return fetchSize;
     }
 
     /** {@inheritDoc} */
     @Override public int getType() throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         return stmt.getResultSetType();
     }
 
     /** {@inheritDoc} */
     @Override public int getConcurrency() throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         return CONCUR_READ_ONLY;
     }
 
     /** {@inheritDoc} */
     @Override public boolean rowUpdated() throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         return false;
     }
 
     /** {@inheritDoc} */
     @Override public boolean rowInserted() throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         return false;
     }
 
     /** {@inheritDoc} */
     @Override public boolean rowDeleted() throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         return false;
     }
 
     /** {@inheritDoc} */
     @Override public void updateNull(int colIdx) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateBoolean(int colIdx, boolean x) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateByte(int colIdx, byte x) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateShort(int colIdx, short x) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateInt(int colIdx, int x) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateLong(int colIdx, long x) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateFloat(int colIdx, float x) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateDouble(int colIdx, double x) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateBigDecimal(int colIdx, BigDecimal x) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateString(int colIdx, String x) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateBytes(int colIdx, byte[] x) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateDate(int colIdx, Date x) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateTime(int colIdx, Time x) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateTimestamp(int colIdx, Timestamp x) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateAsciiStream(int colIdx, InputStream x, int len) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateBinaryStream(int colIdx, InputStream x, int len) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateCharacterStream(int colIdx, Reader x, int len) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateObject(int colIdx, Object x, int scaleOrLen) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateObject(int colIdx, Object x) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateNull(String colLb) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateBoolean(String colLb, boolean x) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateByte(String colLb, byte x) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateShort(String colLb, short x) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateInt(String colLb, int x) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateLong(String colLb, long x) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateFloat(String colLb, float x) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateDouble(String colLb, double x) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateBigDecimal(String colLb, BigDecimal x) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateString(String colLb, String x) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateBytes(String colLb, byte[] x) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateDate(String colLb, Date x) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateTime(String colLb, Time x) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateTimestamp(String colLb, Timestamp x) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateAsciiStream(String colLb, InputStream x, int len) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateBinaryStream(String colLb, InputStream x, int len) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateCharacterStream(String colLb, Reader reader, int len) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateObject(String colLb, Object x, int scaleOrLen) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateObject(String colLb, Object x) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void insertRow() throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateRow() throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void deleteRow() throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void refreshRow() throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Row refreshing is not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void cancelRowUpdates() throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Row updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void moveToInsertRow() throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void moveToCurrentRow() throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         if (getConcurrency() == CONCUR_READ_ONLY)
             throw new SQLException("The result set concurrency is CONCUR_READ_ONLY");
@@ -1267,7 +1267,7 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public Statement getStatement() throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         return stmt;
     }
@@ -1279,28 +1279,28 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public Ref getRef(int colIdx) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public Blob getBlob(int colIdx) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public Clob getClob(int colIdx) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public Array getArray(int colIdx) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
@@ -1312,28 +1312,28 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public Ref getRef(String colLb) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public Blob getBlob(String colLb) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public Clob getClob(String colLb) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public Array getArray(String colLb) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
@@ -1423,35 +1423,35 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public RowId getRowId(int colIdx) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public RowId getRowId(String colLb) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateRowId(int colIdx, RowId x) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateRowId(String colLb, RowId x) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public int getHoldability() throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         return HOLD_CURSORS_OVER_COMMIT;
     }
@@ -1463,70 +1463,70 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public void updateNString(int colIdx, String nStr) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateNString(String colLb, String nStr) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateNClob(int colIdx, NClob nClob) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateNClob(String colLb, NClob nClob) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public NClob getNClob(int colIdx) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public NClob getNClob(String colLb) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public SQLXML getSQLXML(int colIdx) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public SQLXML getSQLXML(String colLb) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateSQLXML(int colIdx, SQLXML xmlObj) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateSQLXML(String colLb, SQLXML xmlObj) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
@@ -1543,210 +1543,210 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public Reader getNCharacterStream(int colIdx) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public Reader getNCharacterStream(String colLb) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateNCharacterStream(int colIdx, Reader x, long len) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateNCharacterStream(String colLb, Reader reader, long len) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateAsciiStream(int colIdx, InputStream x, long len) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateBinaryStream(int colIdx, InputStream x, long len) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateCharacterStream(int colIdx, Reader x, long len) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateAsciiStream(String colLb, InputStream x, long len) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateBinaryStream(String colLb, InputStream x, long len) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateCharacterStream(String colLb, Reader reader, long len) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateBlob(int colIdx, InputStream inputStream, long len) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateBlob(String colLb, InputStream inputStream, long len) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateClob(int colIdx, Reader reader, long len) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateClob(String colLb, Reader reader, long len) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateNClob(int colIdx, Reader reader, long len) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateNClob(String colLb, Reader reader, long len) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateNCharacterStream(int colIdx, Reader x) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateNCharacterStream(String colLb, Reader reader) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateAsciiStream(int colIdx, InputStream x) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateBinaryStream(int colIdx, InputStream x) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateCharacterStream(int colIdx, Reader x) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateAsciiStream(String colLb, InputStream x) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateBinaryStream(String colLb, InputStream x) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateCharacterStream(String colLb, Reader reader) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateBlob(int colIdx, InputStream inputStream) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateBlob(String colLb, InputStream inputStream) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateClob(int colIdx, Reader reader) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateClob(String colLb, Reader reader) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateNClob(int colIdx, Reader reader) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void updateNClob(String colLb, Reader reader) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
@@ -1837,7 +1837,7 @@ public class JdbcThinResultSet implements ResultSet {
      * @throws SQLException In case of error.
      */
     private Object getValue(int colIdx) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
         ensureHasCurrentRow();
 
         try {
@@ -1853,13 +1853,16 @@ public class JdbcThinResultSet implements ResultSet {
     }
 
     /**
-     * Ensures that result set is not closed.
+     * Ensures that result set is not closed or cancelled.
      *
-     * @throws SQLException If result set is closed.
+     * @throws SQLException If result set is closed or cancelled.
      */
-    private void ensureNotClosed() throws SQLException {
+    private void ensureAlive() throws SQLException {
         if (closed)
             throw new SQLException("Result set is closed.", SqlStateCode.INVALID_CURSOR_STATE);
+
+        if (stmt != null && stmt.cancelled())
+            throw new SQLException("The query was cancelled while executing.", SqlStateCode.QUERY_CANCELLED);
     }
 
     /**
@@ -1881,7 +1884,7 @@ public class JdbcThinResultSet implements ResultSet {
             throw new SQLException("Server cursor is already closed.", SqlStateCode.INVALID_CURSOR_STATE);
 
         if (!metaInit) {
-          JdbcQueryMetadataResult res = stmt.conn.sendRequest(new JdbcQueryMetadataRequest(qryId));
+          JdbcQueryMetadataResult res = stmt.conn.sendRequest(new JdbcQueryMetadataRequest(cursorId));
 
            meta = res.meta();
 
