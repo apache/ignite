@@ -355,4 +355,12 @@ public interface GridQueryIndexing {
      * @return Row cache cleaner.
      */
     public GridQueryRowCacheCleaner rowCacheCleaner(int cacheGroupId);
+
+    /**
+     * Check if H2 registered not started cache.
+     *
+     * @param cacheId Cache id.
+     * @return {@code true} in case H2 has registered table for not started cache.
+     */
+    boolean isOnlyH2RegisteredType(int cacheId);
 }

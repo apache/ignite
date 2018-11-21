@@ -924,8 +924,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     req
                 );
             }
-            else if (cctx.localNode().isClient())
-                cctx.kernalContext().cache().createLazyCache(cacheDesc);
+            else
+                cctx.kernalContext().cache().initializeH2ForCache(cacheDesc);
         }
 
         Map<StartCacheInfo, IgniteCheckedException> failedCaches = cctx.cache().prepareStartCachesIfPossible(startCacheInfos.keySet());

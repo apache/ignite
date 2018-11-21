@@ -388,5 +388,10 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         @Override public GridQueryRowCacheCleaner rowCacheCleaner(int cacheGroupId) {
             return null;
         }
+
+        /** {@inheritDoc} */
+        @Override public boolean isOnlyH2RegisteredType(int cacheId) {
+            return false;
+        }
     }
 }

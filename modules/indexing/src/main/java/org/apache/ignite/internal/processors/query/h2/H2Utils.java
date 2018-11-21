@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.engine.Session;
 import org.h2.jdbc.JdbcConnection;
 import org.h2.result.SortOrder;
@@ -304,14 +305,23 @@ public class H2Utils {
      * Check that given table has lazy cache and init it for such case.
      *
      * @param tbl Table to check on lazy cache
+     * @return {@code true} in case cache has been fully inited and started.
      */
-    public static void checkAndInitLazyCache(GridH2Table tbl) {
-        if(tbl != null && tbl.isCacheLazy()){
+    public static boolean checkAndInitLazyCache(GridH2Table tbl) {
+        if (tbl != null && tbl.isCacheLazy()) {
             String cacheName = tbl.cacheInfo().config().getName();
 
             GridKernalContext ctx = tbl.cacheInfo().context();
 
-            ctx.cache().initializeLazyCache(cacheName);
+            try {
+                Boolean res = ctx.cache().dynamicStartCache(null, cacheName, null, false, true, true).get();
+
+                return U.firstNotNull(res, Boolean.FALSE);
+            }
+            catch (IgniteCheckedException ex) {
+                throw U.convertException(ex);
+            }
+
         }
     }
 }

@@ -1418,9 +1418,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         String cacheName = op.cacheName();
 
-        if(ctx.cache().isCacheLazy(cacheName))
-            ctx.cache().initializeLazyCache(cacheName);
-
         GridCacheAdapter cache = ctx.cache().internalCache(cacheName);
 
         if (cache == null || !F.eq(depId, cache.context().dynamicDeploymentId()))
@@ -1609,33 +1606,40 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     QueryTypeIdKey altTypeId = cand.alternativeTypeId();
                     QueryTypeDescriptorImpl desc = cand.descriptor();
 
-                    if (typesByName.putIfAbsent(new QueryTypeNameKey(cacheName, desc.name()), desc) != null)
-                        throw new IgniteCheckedException("Type with name '" + desc.name() + "' already indexed " +
-                            "in cache '" + cacheName + "'.");
+                    //Skip register types on non affinity nodes.
+                    if (cctx.affinityNode()) {
+                        if (typesByName.putIfAbsent(new QueryTypeNameKey(cacheName, desc.name()), desc) != null &&
+                            !idx.isOnlyH2RegisteredType(cctx.cacheId()))
+                            throw new IgniteCheckedException("Type with name '" + desc.name() + "' already indexed " +
+                                "in cache '" + cacheName + "'.");
 
-                    types.put(typeId, desc);
+                        types.put(typeId, desc);
 
-                    if (altTypeId != null)
-                        types.put(altTypeId, desc);
+                        if (altTypeId != null)
+                            types.put(altTypeId, desc);
 
-                    for (QueryIndexDescriptorImpl idx : desc.indexes0()) {
-                        QueryIndexKey idxKey = new QueryIndexKey(schemaName, idx.name());
+                        for (QueryIndexDescriptorImpl idx : desc.indexes0()) {
+                            QueryIndexKey idxKey = new QueryIndexKey(schemaName, idx.name());
 
-                        QueryIndexDescriptorImpl oldIdx = idxs.putIfAbsent(idxKey, idx);
+                            QueryIndexDescriptorImpl oldIdx = idxs.putIfAbsent(idxKey, idx);
 
-                        if (oldIdx != null) {
-                            throw new IgniteException("Duplicate index name [cache=" + cacheName +
-                                ", schemaName=" + schemaName + ", idxName=" + idx.name() +
-                                ", existingTable=" + oldIdx.typeDescriptor().tableName() +
-                                ", table=" + desc.tableName() + ']');
+                            if (oldIdx != null) {
+                                throw new IgniteException("Duplicate index name [cache=" + cacheName +
+                                    ", schemaName=" + schemaName + ", idxName=" + idx.name() +
+                                    ", existingTable=" + oldIdx.typeDescriptor().tableName() +
+                                    ", table=" + desc.tableName() + ']');
+                            }
                         }
                     }
+                    else
+                        typesByName.putIfAbsent(new QueryTypeNameKey(cacheName, desc.name()), desc);
 
                     if (idx != null)
                         idx.registerType(cctx, desc, isSql);
                 }
 
-                cacheNames.add(CU.mask(cacheName));
+                if (cctx.affinityNode())
+                    cacheNames.add(CU.mask(cacheName));
             }
             catch (IgniteCheckedException | RuntimeException e) {
                 onCacheStop0(cctx, true);
@@ -2620,8 +2624,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Descriptors.
      */
     public Collection<GridQueryTypeDescriptor> types(@Nullable String cacheName) {
-        if(ctx.cache().isCacheLazy(cacheName))
-            return Collections.emptyList();
 
         Collection<GridQueryTypeDescriptor> cacheTypes = new ArrayList<>();
 

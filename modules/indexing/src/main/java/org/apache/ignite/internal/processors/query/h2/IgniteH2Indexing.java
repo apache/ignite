@@ -74,7 +74,6 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.processors.query.h2.affinity.PartitionInfo;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
@@ -101,6 +100,7 @@ import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
+import org.apache.ignite.internal.processors.query.h2.affinity.PartitionInfo;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeNoDataIndex;
@@ -316,6 +316,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     public GridKernalContext kernalContext() {
         return ctx;
     }
+
+    /** Registered caches. */
+    private final Map<Integer, GridCacheContextInfo> registeredTypes = new ConcurrentHashMap<>();
 
     /**
      * @param c Connection.
@@ -2457,6 +2460,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     @Override public boolean registerType(GridCacheContextInfo cctx, GridQueryTypeDescriptor type, boolean isSql)
         throws IgniteCheckedException {
+        GridCacheContextInfo prevCtx = registeredTypes.putIfAbsent(cctx.cacheId(), cctx);
+
+        if (prevCtx != null) {
+            if (cctx.isCacheContextInited())
+                prevCtx.initLazyCacheContext(cctx.gridCacheContext());
+            return false;
+        }
+
+
         validateTypeDescriptor(type);
 
         String schemaName = schema(cctx.name());
@@ -2600,6 +2612,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     public void removeDataTable(GridH2Table h2Tbl) {
         dataTables.remove(h2Tbl.identifier(), h2Tbl);
+
+        registeredTypes.remove(h2Tbl.cacheId());
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isOnlyH2RegisteredType(int cacheId) {
+        GridCacheContextInfo info = registeredTypes.get(cacheId);
+
+        return (info != null) && info.isCacheContextInited();
     }
 
     /**

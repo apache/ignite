@@ -276,9 +276,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** Cache recovery lifecycle state and actions. */
     private final CacheRecoveryLifecycle recovery = new CacheRecoveryLifecycle();
 
-    /** Lazy caches map, contains not started client caches */
-    private final Map<Integer, GridCacheContextInfo> lazyCacheMap = new ConcurrentHashMap<>();
-
     /**
      * @param ctx Kernal context.
      */
@@ -1288,74 +1285,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Unregister lazy cache if it present.
-     *
-     * @param cacheName Name of lazy cache which need to unregister.
-     */
-    public void unregisterLazyCache(String cacheName) {
-        GridCacheContextInfo lazyCacheCtx = lazyCacheMap.remove(CU.cacheId(cacheName));
-
-        if (lazyCacheCtx != null)
-            ctx.query().onCacheStop0(lazyCacheCtx, true);
-
-    }
-
-    /**
-     * Check given cache for lazy state.
-     *
-     * @param cacheName Name of cache which need to check on lazy state.
-     * @return {@code true} in case cache is lazy
-     */
-    public boolean isCacheLazy(String cacheName) {
-        Integer cacheId = CU.cacheId(cacheName);
-
-        return lazyCacheMap.containsKey(cacheId);
-    }
-
-    /**
-     * Initialize and start lazy cache.
-     *
-     * @param cacheName Name of lazy cache.
-     * @return {@code true} in case cash has been fully inited and started.
-     */
-    public boolean initializeLazyCache(String cacheName) {
-        assert isCacheLazy(cacheName) : cacheName;
-
-        try {
-            Boolean res = dynamicStartCache(null, cacheName, null, false, true, true).get();
-
-            return U.firstNotNull(res, Boolean.FALSE);
-        }
-        catch (IgniteCheckedException ex) {
-            throw U.convertException(ex);
-        }
-    }
-
-    /**
-     * Create cache without full initialization and start.
+     * Create H2 structures for specified not started cache without full initialization and start the cache.
      *
      * @param cacheDesc Cache descriptor for create cache.
      * @throws IgniteCheckedException If failed.
      */
-    public void createLazyCache(DynamicCacheDescriptor cacheDesc) throws IgniteCheckedException {
+    public void initializeH2ForCache(DynamicCacheDescriptor cacheDesc) throws IgniteCheckedException {
         QuerySchema schema = cacheDesc.schema() != null ? cacheDesc.schema() : new QuerySchema();
 
         GridCacheContextInfo cacheCtx = new GridCacheContextInfo(cacheDesc, ctx);
 
-        Integer lazyCacheKey = cacheCtx.cacheId();
-
-        GridCacheContextInfo prevCtx = lazyCacheMap.putIfAbsent(lazyCacheKey, cacheCtx);
-
-        if (prevCtx == null) {
-            try {
-                ctx.query().onCacheStart(cacheCtx, schema, cacheDesc.sql());
-            }
-            catch (IgniteCheckedException ex) {
-                lazyCacheMap.remove(lazyCacheKey, cacheCtx);
-
-                throw ex;
-            }
-        }
+        ctx.query().onCacheStart(cacheCtx, schema, cacheDesc.sql());
     }
 
     /**
@@ -2211,18 +2151,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         GridCacheContext cctx = cacheContexts.get(cacheInfo);
 
                         if (!cctx.isRecoveryMode()) {
-                            GridCacheContextInfo lazyCacheCtx = lazyCacheMap.remove(cctx.cacheId());
-
-                            if (lazyCacheCtx != null)
-                                lazyCacheCtx.initLazyCacheContext(cctx);
-                            else
-                                ctx.query().onCacheStart(
-                                    new GridCacheContextInfo(cctx),
-                                    cacheInfo.getCacheDescriptor().schema() != null
-                                        ? cacheInfo.getCacheDescriptor().schema()
-                                        : new QuerySchema(),
-                                    cacheInfo.getCacheDescriptor().sql()
-                                );
+                            ctx.query().onCacheStart(
+                                new GridCacheContextInfo(cctx),
+                                cacheInfo.getCacheDescriptor().schema() != null
+                                    ? cacheInfo.getCacheDescriptor().schema()
+                                    : new QuerySchema(),
+                                cacheInfo.getCacheDescriptor().sql()
+                            );
                         }
 
                         context().exchange().exchangerUpdateHeartbeat();
@@ -2280,12 +2215,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cacheCtx.isRecoveryMode())
             finishRecovery(exchTopVer, cacheCtx);
         else {
-            GridCacheContextInfo lazyCacheCtx = lazyCacheMap.remove(cacheCtx.cacheId());
-
-            if (lazyCacheCtx != null)
-                lazyCacheCtx.initLazyCacheContext(cacheCtx);
-            else
-                ctx.query().onCacheStart(new GridCacheContextInfo(cacheCtx), desc.schema() != null ? desc.schema() : new QuerySchema(), desc.sql());
+            ctx.query().onCacheStart(new GridCacheContextInfo(cacheCtx), desc.schema() != null ? desc.schema() : new QuerySchema(), desc.sql());
 
             onCacheStarted(cacheCtx);
         }
@@ -2850,8 +2780,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             return ctx;
         }
-        else
-            unregisterLazyCache(cacheName);
 
         return null;
     }
@@ -5385,7 +5313,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ccfg = desc.cacheConfiguration();
 
             if (ccfg == null) {
-                if (failIfNotStarted && !isCacheLazy(cacheName)) {
+                if (failIfNotStarted) {
                     throw new CacheExistsException("Failed to start client cache " +
                         "(a cache with the given name is not started): " + cacheName);
                 }
