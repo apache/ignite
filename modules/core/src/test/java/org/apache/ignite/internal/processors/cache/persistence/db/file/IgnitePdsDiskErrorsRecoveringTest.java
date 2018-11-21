@@ -160,64 +160,6 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test node stopping & recovering on start marker writing fail during activation.
-     *
-     * @throws Exception If test failed.
-     */
-    public void testRecoveringOnNodeStartMarkerWriteFail() throws Exception {
-        // Fail to write node start marker tmp file at the second checkpoint. Pass only initial checkpoint.
-        ioFactory = new FilteringFileIOFactory("started.bin" + FilePageStoreManager.TMP_SUFFIX, new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), 20));
-
-        IgniteEx grid = startGrid(0);
-        grid.cluster().active(true);
-
-        for (int i = 0; i < 1000; i++) {
-            byte payload = (byte) i;
-            byte[] data = new byte[2048];
-            Arrays.fill(data, payload);
-
-            grid.cache(CACHE_NAME).put(i, data);
-        }
-
-        stopAllGrids();
-
-        boolean activationFailed = false;
-        try {
-            grid = startGrid(0);
-        }
-        catch (IgniteCheckedException e) {
-            boolean interrupted = Thread.interrupted();
-
-            if (interrupted)
-                log.warning("Ignore interrupted excpetion [" +
-                    "thread=" + Thread.currentThread().getName() + ']', e);
-
-            activationFailed = true;
-        }
-
-        Assert.assertTrue("Ignite instance startup must be failed", activationFailed);
-
-        // Grid should be automatically stopped after checkpoint fail.
-        awaitStop(grid);
-
-        // Grid should be successfully recovered after stopping.
-        ioFactory = null;
-
-        IgniteEx recoveredGrid = startGrid(0);
-        recoveredGrid.cluster().active(true);
-
-        for (int i = 0; i < 1000; i++) {
-            byte payload = (byte) i;
-            byte[] data = new byte[2048];
-            Arrays.fill(data, payload);
-
-            byte[] actualData = (byte[]) recoveredGrid.cache(CACHE_NAME).get(i);
-            Assert.assertArrayEquals(data, actualData);
-        }
-    }
-
-
-    /**
      * Test node stopping & recovering on checkpoint begin fail.
      *
      * @throws Exception If test failed.

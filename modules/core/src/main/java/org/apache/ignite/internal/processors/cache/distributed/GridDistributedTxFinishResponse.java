@@ -145,25 +145,25 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
         }
 
         switch (writer.state()) {
-            case 2:
+            case 3:
                 if (!writer.writeByte("flags", flags))
                     return false;
 
                 writer.incrementState();
 
-            case 3:
+            case 4:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 writer.incrementState();
 
-            case 4:
+            case 5:
                 if (!writer.writeInt("part", part))
                     return false;
 
                 writer.incrementState();
 
-            case 5:
+            case 6:
                 if (!writer.writeMessage("txId", txId))
                     return false;
 
@@ -185,7 +185,7 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
             return false;
 
         switch (reader.state()) {
-            case 2:
+            case 3:
                 flags = reader.readByte("flags");
 
                 if (!reader.isLastRead())
@@ -193,7 +193,7 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
 
                 reader.incrementState();
 
-            case 3:
+            case 4:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
@@ -201,7 +201,7 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
 
                 reader.incrementState();
 
-            case 4:
+            case 5:
                 part = reader.readInt("part");
 
                 if (!reader.isLastRead())
@@ -209,7 +209,7 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
 
                 reader.incrementState();
 
-            case 5:
+            case 6:
                 txId = reader.readMessage("txId");
 
                 if (!reader.isLastRead())
@@ -229,7 +229,7 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 6;
+        return 7;
     }
 
     /** {@inheritDoc} */
