@@ -2366,12 +2366,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             switch (rec.type()) {
                 case MVCC_DATA_RECORD:
                 case DATA_RECORD:
-                    checkpointReadLock();
+                    if (entryPred.apply(rec, null)) {
+                        checkpointReadLock();
 
-                    try {
-                        DataRecord dataRec = (DataRecord)rec;
+                        try {
+                            DataRecord dataRec = (DataRecord)rec;
 
-                        if (entryPred.apply(rec, null)) {
                             for (DataEntry dataEntry : dataRec.writeEntries()) {
                                 if (entryPred.apply(rec, dataEntry)) {
                                     int cacheId = dataEntry.cacheId();
@@ -2387,31 +2387,33 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 }
                             }
                         }
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException(e);
-                    }
-                    finally {
-                        checkpointReadUnlock();
+                        catch (IgniteCheckedException e) {
+                            throw new IgniteException(e);
+                        }
+                        finally {
+                            checkpointReadUnlock();
+                        }
                     }
 
                     break;
 
                 case MVCC_TX_RECORD:
-                    checkpointReadLock();
+                    if (entryPred.apply(rec, null)) {
+                        checkpointReadLock();
 
-                    try {
-                        MvccTxRecord txRecord = (MvccTxRecord)rec;
+                        try {
+                            MvccTxRecord txRecord = (MvccTxRecord)rec;
 
-                        byte txState = convertToTxState(txRecord.state());
+                            byte txState = convertToTxState(txRecord.state());
 
-                        cctx.coordinators().updateState(txRecord.mvccVersion(), txState, false);
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException(e);
-                    }
-                    finally {
-                        checkpointReadUnlock();
+                            cctx.coordinators().updateState(txRecord.mvccVersion(), txState, false);
+                        }
+                        catch (IgniteCheckedException e) {
+                            throw new IgniteException(e);
+                        }
+                        finally {
+                            checkpointReadUnlock();
+                        }
                     }
 
                     break;
