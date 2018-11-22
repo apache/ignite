@@ -49,7 +49,7 @@ public class LocalDatasetBuilderTest {
 
         AtomicLong cnt = new AtomicLong();
 
-        dataset.compute((partData, partIdx) -> {
+        dataset.compute((partData, env) -> {
            cnt.incrementAndGet();
 
            int[] arr = partData.data;
@@ -57,7 +57,7 @@ public class LocalDatasetBuilderTest {
            assertEquals(10, arr.length);
 
            for (int i = 0; i < 10; i++)
-               assertEquals(partIdx * 10 + i, arr[i]);
+               assertEquals(env.partition() * 10 + i, arr[i]);
         });
 
         assertEquals(10, cnt.intValue());
@@ -76,7 +76,7 @@ public class LocalDatasetBuilderTest {
 
         AtomicLong cnt = new AtomicLong();
 
-        dataset.compute((partData, partIdx) -> {
+        dataset.compute((partData, env) -> {
             cnt.incrementAndGet();
 
             int[] arr = partData.data;
@@ -84,7 +84,7 @@ public class LocalDatasetBuilderTest {
             assertEquals(5, arr.length);
 
             for (int i = 0; i < 5; i++)
-                assertEquals((partIdx * 5 + i) * 2, arr[i]);
+                assertEquals((env.partition() * 5 + i) * 2, arr[i]);
         });
 
         assertEquals(10, cnt.intValue());

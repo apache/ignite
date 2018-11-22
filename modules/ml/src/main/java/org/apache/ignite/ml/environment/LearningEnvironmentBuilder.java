@@ -17,8 +17,11 @@
 
 package org.apache.ignite.ml.environment;
 
+import java.util.Random;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.functions.IgniteSupplier;
 
 public interface LearningEnvironmentBuilder {
     /**
@@ -27,7 +30,9 @@ public interface LearningEnvironmentBuilder {
      * @param part Partition.
      * @return {@link LearningEnvironment} for worker on given partition.
      */
-    public LearningEnvironment buildForWorker(int part);
+    default public LearningEnvironment buildForWorker(int part) {
+        return buildForTrainer();
+    }
 
     /**
      * Builds learning environment for trainer.
@@ -39,12 +44,12 @@ public interface LearningEnvironmentBuilder {
     }
 
     /**
-     * Specifies Parallelism Strategy for LearningEnvironment.
+     * Specifies Parallelism Strategy Type for LearningEnvironment.
      *
      * @param stgyType Parallelism Strategy Type.
      * @return This object.
      */
-    public LearningEnvironmentBuilder withParallelismStrategy(ParallelismStrategy.Type stgyType);
+    public LearningEnvironmentBuilder withParallelismStrategyType(ParallelismStrategy.Type stgyType);
 
     /**
      * Specifies Parallelism Strategy for LearningEnvironment.
@@ -69,6 +74,14 @@ public interface LearningEnvironmentBuilder {
      * @return This object.
      */
     public LearningEnvironmentBuilder withRNGSeed(long seed);
+
+    /**
+     * Specify supplier of random numbers generator.
+     *
+     * @param rngSupplier Supplier of random numbers generator.
+     * @return This object.
+     */
+    public LearningEnvironmentBuilder withRNGSupplier(IgniteSupplier<Random> rngSupplier);
 
     /**
      * Get default {@link LearningEnvironmentBuilder}.

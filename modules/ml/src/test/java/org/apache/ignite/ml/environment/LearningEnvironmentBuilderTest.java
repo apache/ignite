@@ -61,10 +61,10 @@ public class LearningEnvironmentBuilderTest {
     /** */
     @Test
     public void withParallelismStrategyType() {
-        assertTrue(LearningEnvironmentBuilder.defaultBuilder().withParallelismStrategy(NO_PARALLELISM).buildForTrainer()
+        assertTrue(LearningEnvironmentBuilder.defaultBuilder().withParallelismStrategyType(NO_PARALLELISM).buildForTrainer()
             .parallelismStrategy() instanceof NoParallelismStrategy);
 
-        assertTrue(LearningEnvironmentBuilder.defaultBuilder().withParallelismStrategy(ON_DEFAULT_POOL).buildForTrainer()
+        assertTrue(LearningEnvironmentBuilder.defaultBuilder().withParallelismStrategyType(ON_DEFAULT_POOL).buildForTrainer()
             .parallelismStrategy() instanceof DefaultParallelismStrategy);
     }
 

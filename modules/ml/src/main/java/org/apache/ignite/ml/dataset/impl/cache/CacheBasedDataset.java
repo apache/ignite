@@ -30,6 +30,7 @@ import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamTransformerBuildersChain;
 import org.apache.ignite.ml.dataset.impl.cache.util.ComputeUtils;
+import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
@@ -109,13 +110,16 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
     }
 
     /** {@inheritDoc} */
-    @Override public <R> R computeWithCtx(IgniteTriFunction<C, D, Integer, R> map, IgniteBinaryOperator<R> reduce, R identity) {
+    @Override public <R> R computeWithCtx(IgniteTriFunction<C, D, LearningEnvironment, R> map, IgniteBinaryOperator<R> reduce, R identity) {
         String upstreamCacheName = upstreamCache.getName();
         String datasetCacheName = datasetCache.getName();
 
         return computeForAllPartitions(part -> {
+            LearningEnvironment env = ComputeUtils.getLearningEnvironment(ignite, datasetId, part, envBuilder);
+
             C ctx = ComputeUtils.getContext(Ignition.localIgnite(), datasetCacheName, part);
 
+            // TODO: now we can pass just learning environment and get rid of builder and part.
             D data = ComputeUtils.getData(
                 Ignition.localIgnite(),
                 upstreamCacheName,
@@ -128,8 +132,9 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
                 envBuilder
             );
 
+
             if (data != null) {
-                R res = map.apply(ctx, data, part);
+                R res = map.apply(ctx, data, env);
 
                 // Saves partition context after update.
                 ComputeUtils.saveContext(Ignition.localIgnite(), datasetCacheName, part, ctx);
@@ -142,11 +147,14 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
     }
 
     /** {@inheritDoc} */
-    @Override public <R> R compute(IgniteBiFunction<D, Integer, R> map, IgniteBinaryOperator<R> reduce, R identity) {
+    @Override public <R> R compute(IgniteBiFunction<D, LearningEnvironment, R> map, IgniteBinaryOperator<R> reduce, R identity) {
         String upstreamCacheName = upstreamCache.getName();
         String datasetCacheName = datasetCache.getName();
 
         return computeForAllPartitions(part -> {
+            LearningEnvironment env = ComputeUtils.getLearningEnvironment(Ignition.localIgnite(), datasetId, part, envBuilder);
+
+            // TODO: now we can pass just learning environment and get rid of builder and part.
             D data = ComputeUtils.getData(
                 Ignition.localIgnite(),
                 upstreamCacheName,
@@ -158,8 +166,7 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
                 partDataBuilder,
                 envBuilder
             );
-
-            return data != null ? map.apply(data, part) : null;
+            return data != null ? map.apply(data, env) : null;
         }, reduce, identity);
     }
 

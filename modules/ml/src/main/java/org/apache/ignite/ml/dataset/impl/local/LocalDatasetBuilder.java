@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionContextBuilder;
@@ -121,9 +123,14 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
 
         int ptr = 0;
 
+        List<LearningEnvironment> envs = IntStream.range(0, partitions)
+            .boxed()
+            .map(envBuilder::buildForWorker)
+            .collect(Collectors.toList());
+
         for (int part = 0; part < partitions; part++) {
             int cnt = part == partitions - 1 ? entriesList.size() - ptr : Math.min(partSize, entriesList.size() - ptr);
-            LearningEnvironment env = envBuilder.buildForWorker(part);
+            LearningEnvironment env = envs.get(part);
             UpstreamTransformer<K, V> transformer1 = upstreamTransformers.build(env);
             UpstreamTransformer<K, V> transformer2 = Utils.copy(transformer1);
             UpstreamTransformer<K, V> transformer3 = Utils.copy(transformer1);
@@ -164,7 +171,7 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
             ptr += cnt;
         }
 
-        return new LocalDataset<>(ctxList, dataList);
+        return new LocalDataset<>(envs, ctxList, dataList);
     }
 
     /** {@inheritDoc} */

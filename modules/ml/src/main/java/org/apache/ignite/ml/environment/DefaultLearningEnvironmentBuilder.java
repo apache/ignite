@@ -23,6 +23,7 @@ import org.apache.ignite.ml.environment.logging.NoOpLogger;
 import org.apache.ignite.ml.environment.parallelism.DefaultParallelismStrategy;
 import org.apache.ignite.ml.environment.parallelism.NoParallelismStrategy;
 import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
+import org.apache.ignite.ml.math.functions.IgniteSupplier;
 
 /**
  * Builder for LearningEnvironment.
@@ -34,6 +35,8 @@ public class DefaultLearningEnvironmentBuilder implements LearningEnvironmentBui
     private MLLogger.Factory loggingFactory;
     /** Random number generator seed. */
     private long seed;
+    /** Random numbers generator supplier */
+    private IgniteSupplier<Random> rngSupplier;
 
     /**
      * Creates an instance of DefaultLearningEnvironmentBuilder.
@@ -41,11 +44,19 @@ public class DefaultLearningEnvironmentBuilder implements LearningEnvironmentBui
     DefaultLearningEnvironmentBuilder() {
         parallelismStgy = NoParallelismStrategy.INSTANCE;
         loggingFactory = NoOpLogger.factory();
-        this.seed = new Random().nextLong();
+        seed = new Random().nextLong();
+        rngSupplier = Random::new;
     }
 
+    /** {@inheritDoc} */
     @Override public LearningEnvironmentBuilder withRNGSeed(long seed) {
         this.seed = seed;
+
+        return this;
+    }
+
+    @Override public LearningEnvironmentBuilder withRNGSupplier(IgniteSupplier<Random> rngSupplier) {
+        this.rngSupplier = rngSupplier;
 
         return this;
     }
@@ -58,7 +69,7 @@ public class DefaultLearningEnvironmentBuilder implements LearningEnvironmentBui
     }
 
     /** {@inheritDoc} */
-    @Override public DefaultLearningEnvironmentBuilder withParallelismStrategy(ParallelismStrategy.Type stgyType) {
+    @Override public DefaultLearningEnvironmentBuilder withParallelismStrategyType(ParallelismStrategy.Type stgyType) {
         switch (stgyType) {
             case NO_PARALLELISM:
                 this.parallelismStgy = NoParallelismStrategy.INSTANCE;
@@ -79,7 +90,9 @@ public class DefaultLearningEnvironmentBuilder implements LearningEnvironmentBui
 
     /** {@inheritDoc} */
     @Override public LearningEnvironment buildForWorker(int part) {
-        return new LearningEnvironmentImpl(part, seed, parallelismStgy, loggingFactory);
+        Random random = rngSupplier.get();
+        random.setSeed(seed);
+        return new LearningEnvironmentImpl(part, random, parallelismStgy, loggingFactory);
     }
 
     /**
@@ -99,18 +112,19 @@ public class DefaultLearningEnvironmentBuilder implements LearningEnvironmentBui
          * Creates an instance of LearningEnvironmentImpl.
          *
          * @param part Partition.
+         * @param rng Random numbers generator.
          * @param parallelismStgy Parallelism strategy.
          * @param loggingFactory Logging factory.
          */
         private LearningEnvironmentImpl(
             int part,
-            long seed,
+            Random rng,
             ParallelismStrategy parallelismStgy,
             MLLogger.Factory loggingFactory) {
             this.part = part;
             this.parallelismStgy = parallelismStgy;
             this.loggingFactory = loggingFactory;
-            randomNumGen = new Random(seed + part);
+            randomNumGen = rng;
         }
 
         /** {@inheritDoc} */

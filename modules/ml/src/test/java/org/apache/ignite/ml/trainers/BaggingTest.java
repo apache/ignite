@@ -28,6 +28,7 @@ import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictio
 import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregator;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -100,7 +101,7 @@ public class BaggingTest extends TrainerTest {
      *
      * @param counter Function specifying which data we should count.
      */
-    protected void count(IgniteTriFunction<Long, CountData, Integer, Long> counter) {
+    protected void count(IgniteTriFunction<Long, CountData, LearningEnvironment, Long> counter) {
         Map<Integer, Double[]> cacheMock = getCacheMock();
 
         CountTrainer countTrainer = new CountTrainer(counter);
@@ -164,14 +165,14 @@ public class BaggingTest extends TrainerTest {
         /**
          * Function specifying which entries to count.
          */
-        private final IgniteTriFunction<Long, CountData, Integer, Long> counter;
+        private final IgniteTriFunction<Long, CountData, LearningEnvironment, Long> counter;
 
         /**
          * Construct instance of this class.
          *
          * @param counter Function specifying which entries to count.
          */
-        public CountTrainer(IgniteTriFunction<Long, CountData, Integer, Long> counter) {
+        public CountTrainer(IgniteTriFunction<Long, CountData, LearningEnvironment, Long> counter) {
             this.counter = counter;
         }
 

@@ -345,4 +345,24 @@ public class TestUtils {
     public static LearningEnvironmentBuilder testEnvBuilder(long seed) {
         return LearningEnvironmentBuilder.defaultBuilder().withRNGSeed(seed);
     }
+
+    public static class DataWrapper<T> implements AutoCloseable {
+        T val;
+
+        public static <T> DataWrapper<T> of(T val) {
+            return new DataWrapper<>(val);
+        }
+
+        public DataWrapper(T val) {
+            this.val = val;
+        }
+
+        public T val() {
+            return val;
+        }
+
+        @Override public void close() throws Exception {
+
+        }
+    }
 }

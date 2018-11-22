@@ -39,4 +39,8 @@ public interface Model<T, V> extends IgniteFunction<T, V> {
     public default String toString(boolean pretty) {
         return getClass().getSimpleName();
     }
+
+    static <T, V> Model<T, V> constantModel(V v) {
+        return t -> v;
+    }
 }

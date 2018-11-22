@@ -55,6 +55,9 @@ public class ComputeUtils {
     /** Template of the key used to store partition {@code data} in local storage. */
     private static final String DATA_STORAGE_KEY_TEMPLATE = "part_data_storage_%s";
 
+    /** Template of the key used to store partition {@link LearningEnvironment} in local storage. */
+    private static final String ENVIRONMENT_STORAGE_KEY_TEMPLATE = "part_environment_storage_%s";
+
     /**
      * Calls the specified {@code fun} function on all partitions so that is't guaranteed that partitions with the same
      * index of all specified caches will be placed on the same node and will not be moved before computation is
@@ -134,6 +137,19 @@ public class ComputeUtils {
         return affinityCallWithRetries(ignite, cacheNames, fun, retries, 0);
     }
 
+    public static LearningEnvironment getLearningEnvironment(Ignite ignite,
+        UUID datasetId,
+        int part,
+        LearningEnvironmentBuilder envBuilder) {
+
+        PartitionLearningEnvStorage envStorage = (PartitionLearningEnvStorage)ignite
+            .cluster()
+            .nodeLocalMap()
+            .computeIfAbsent(String.format(ENVIRONMENT_STORAGE_KEY_TEMPLATE, datasetId), key -> new PartitionLearningEnvStorage());
+
+        return envStorage.computeDataIfAbsent(part, () -> envBuilder.buildForWorker(part));
+    }
+
     /**
      * Extracts partition {@code data} from the local storage, if it's not found in local storage recovers this {@code
      * data} from a partition {@code upstream} and {@code context}. Be aware that this method should be called from
@@ -161,7 +177,7 @@ public class ComputeUtils {
         String datasetCacheName, UUID datasetId,
         int part,
         PartitionDataBuilder<K, V, C, D> partDataBuilder,
-    LearningEnvironmentBuilder envBuilder) {
+        LearningEnvironmentBuilder envBuilder) {
 
         PartitionDataStorage dataStorage = (PartitionDataStorage)ignite
             .cluster()
@@ -169,7 +185,7 @@ public class ComputeUtils {
             .computeIfAbsent(String.format(DATA_STORAGE_KEY_TEMPLATE, datasetId), key -> new PartitionDataStorage());
 
         return dataStorage.computeDataIfAbsent(part, () -> {
-            LearningEnvironment env = envBuilder.buildForWorker(part);
+            LearningEnvironment env = getLearningEnvironment(ignite, datasetId, part, envBuilder);
             IgniteCache<Integer, C> learningCtxCache = ignite.cache(datasetCacheName);
             C ctx = learningCtxCache.get(part);
 
@@ -218,9 +234,6 @@ public class ComputeUtils {
 
     /**
      * Initializes partition {@code context} by loading it from a partition {@code upstream}.
-     *  @param <K> Type of a key in {@code upstream} data.
-     * @param <V> Type of a value in {@code upstream} data.
-     * @param <C> Type of a partition {@code context}.
      * @param ignite Ignite instance.
      * @param upstreamCacheName Name of an {@code upstream} cache.
      * @param filter Filter for {@code upstream} data.

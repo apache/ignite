@@ -54,10 +54,11 @@ public class SimpleLabeledDatasetTest {
             (k, v) -> VectorUtils.of(v.getAge(), v.getSalary()),
             (k, v) -> new double[] {k, v.getAge(), v.getSalary()}
         )) {
-            assertNull(dataset.compute((data, partIdx) -> {
-                actualFeatures[partIdx] = data.getFeatures();
-                actualLabels[partIdx] = data.getLabels();
-                actualRows[partIdx] = data.getRows();
+            assertNull(dataset.compute((data, env) -> {
+                int part = env.partition();
+                actualFeatures[part] = data.getFeatures();
+                actualLabels[part] = data.getLabels();
+                actualRows[part] = data.getRows();
                 return null;
             }, (k, v) -> null));
         }
