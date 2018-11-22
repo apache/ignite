@@ -129,7 +129,7 @@ public class DdlStatementsProcessor {
             if (cmd instanceof SqlCreateIndexCommand) {
                 SqlCreateIndexCommand cmd0 = (SqlCreateIndexCommand)cmd;
 
-                GridH2Table tbl = dataTableWithRetry(cmd0.schemaName(), cmd0.tableName());
+                GridH2Table tbl = idx.dataTable(cmd0.schemaName(), cmd0.tableName());
 
                 if (tbl == null)
                     throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, cmd0.tableName());
@@ -167,7 +167,7 @@ public class DdlStatementsProcessor {
             else if (cmd instanceof SqlDropIndexCommand) {
                 SqlDropIndexCommand cmd0 = (SqlDropIndexCommand)cmd;
 
-                GridH2Table tbl = dataTableForIndexWithRetry(cmd0.schemaName(), cmd0.indexName());
+                GridH2Table tbl = idx.dataTableForIndex(cmd0.schemaName(), cmd0.indexName());
 
                 if (tbl != null) {
                     isDdlSupported(tbl);
@@ -186,7 +186,7 @@ public class DdlStatementsProcessor {
             else if (cmd instanceof SqlAlterTableCommand) {
                 SqlAlterTableCommand cmd0 = (SqlAlterTableCommand)cmd;
 
-                GridH2Table tbl = dataTableWithRetry(cmd0.schemaName(), cmd0.tableName());
+                GridH2Table tbl = idx.dataTable(cmd0.schemaName(), cmd0.tableName());
 
                 if (tbl == null) {
                     throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND,
@@ -270,7 +270,7 @@ public class DdlStatementsProcessor {
 
                 isDdlOnSchemaSupported(cmd.schemaName());
 
-                GridH2Table tbl = dataTableWithRetry(cmd.schemaName(), cmd.tableName());
+                GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
 
                 if (tbl == null)
                     throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, cmd.tableName());
@@ -309,7 +309,7 @@ public class DdlStatementsProcessor {
 
                 isDdlOnSchemaSupported(cmd.schemaName());
 
-                GridH2Table tbl = dataTableForIndexWithRetry(cmd.schemaName(), cmd.indexName());
+                GridH2Table tbl = idx.dataTableForIndex(cmd.schemaName(), cmd.indexName());
 
                 if (tbl != null) {
                     isDdlSupported(tbl);
@@ -332,7 +332,7 @@ public class DdlStatementsProcessor {
 
                 isDdlOnSchemaSupported(cmd.schemaName());
 
-                GridH2Table tbl = dataTableWithRetry(cmd.schemaName(), cmd.tableName());
+                GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
 
                 if (tbl != null) {
                     if (!cmd.ifNotExists())
@@ -365,7 +365,7 @@ public class DdlStatementsProcessor {
 
                 isDdlOnSchemaSupported(cmd.schemaName());
 
-                GridH2Table tbl = dataTableWithRetry(cmd.schemaName(), cmd.tableName());
+                GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
 
                 if (tbl == null) {
                     if (!cmd.ifExists())
@@ -380,7 +380,7 @@ public class DdlStatementsProcessor {
 
                 isDdlOnSchemaSupported(cmd.schemaName());
 
-                GridH2Table tbl = dataTableWithRetry(cmd.schemaName(), cmd.tableName());
+                GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
 
                 if (tbl == null) {
                     if (!cmd.ifTableExists())
@@ -435,7 +435,7 @@ public class DdlStatementsProcessor {
 
                 isDdlOnSchemaSupported(cmd.schemaName());
 
-                GridH2Table tbl = dataTableWithRetry(cmd.schemaName(), cmd.tableName());
+                GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
 
                 if (tbl == null) {
                     if (!cmd.ifTableExists())
@@ -508,50 +508,6 @@ public class DdlStatementsProcessor {
         catch (Exception e) {
             throw new IgniteSQLException(e.getMessage(), e);
         }
-    }
-
-    /**
-     * Get table by name optionally creating missing query caches.
-     *
-     * @param schemaName Schema name.
-     * @param tableName Table name.
-     * @return Table or {@code null} if none found.
-     * @throws IgniteCheckedException If failed.
-     */
-    private GridH2Table dataTableWithRetry(String schemaName, String tableName) throws IgniteCheckedException {
-        GridH2Table tbl = idx.dataTable(schemaName, tableName);
-
-        if (tbl == null) {
-            ctx.cache().createMissingQueryCaches();
-
-            tbl = idx.dataTable(schemaName, tableName);
-        }
-
-        H2Utils.checkAndInitLazyCache(tbl);
-
-        return tbl;
-    }
-
-    /**
-     * Get table by name optionally creating missing query caches.
-     *
-     * @param schemaName Schema name.
-     * @param indexName Index name.
-     * @return Table or {@code null} if none found.
-     * @throws IgniteCheckedException If failed.
-     */
-    private GridH2Table dataTableForIndexWithRetry(String schemaName, String indexName) throws IgniteCheckedException {
-        GridH2Table tbl = idx.dataTableForIndex(schemaName, indexName);
-
-        if (tbl == null) {
-            ctx.cache().createMissingQueryCaches();
-
-            tbl = idx.dataTableForIndex(schemaName, indexName);
-        }
-
-        H2Utils.checkAndInitLazyCache(tbl);
-
-        return tbl;
     }
 
     /**

@@ -1607,7 +1607,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     QueryTypeDescriptorImpl desc = cand.descriptor();
 
                     //Skip register types on non affinity nodes.
-                    if (cctx.affinityNode()) {
+                    if (cctx.isCacheContextInited()) {
                         if (typesByName.putIfAbsent(new QueryTypeNameKey(cacheName, desc.name()), desc) != null &&
                             !idx.isOnlyH2RegisteredType(cctx.cacheId()))
                             throw new IgniteCheckedException("Type with name '" + desc.name() + "' already indexed " +
@@ -1638,7 +1638,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         idx.registerType(cctx, desc, isSql);
                 }
 
-                if (cctx.affinityNode())
+                if (cctx.isCacheContextInited())
                     cacheNames.add(CU.mask(cacheName));
             }
             catch (IgniteCheckedException | RuntimeException e) {

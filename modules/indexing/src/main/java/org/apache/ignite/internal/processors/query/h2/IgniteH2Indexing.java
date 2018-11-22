@@ -2620,7 +2620,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @Override public boolean isOnlyH2RegisteredType(int cacheId) {
         GridCacheContextInfo info = registeredTypes.get(cacheId);
 
-        return (info != null) && info.isCacheContextInited();
+        return (info != null) && !info.isCacheContextInited();
     }
 
     /**
