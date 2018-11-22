@@ -2294,14 +2294,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     ClusterNode node = evt.eventNode();
 
-                    if ((evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT) &&
-                        node.equals(cctx.coordinators().currentCoordinator())) {
-                        if (log.isInfoEnabled())
-                            log.info("Stop merge, need exchange for mvcc coordinator failure: " + node);
-
-                        break;
-                    }
-
                     if (!curFut.context().supportsMergeExchanges(node)) {
                         if (log.isInfoEnabled())
                             log.info("Stop merge, node does not support merge: " + node);

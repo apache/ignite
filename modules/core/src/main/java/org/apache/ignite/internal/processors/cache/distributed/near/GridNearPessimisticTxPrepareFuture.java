@@ -34,11 +34,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapping;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotResponseListener;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
@@ -52,7 +49,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.noCoordinatorError;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 import static org.apache.ignite.transactions.TransactionState.PREPARING;
 
@@ -285,8 +281,6 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
         AffinityTopologyVersion topVer = tx.topologyVersion();
 
-        MvccCoordinator mvccCrd = null;
-
         boolean hasNearCache = false;
 
         Map<UUID, Collection<UUID>> txNodes;
@@ -324,16 +318,6 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                 else
                     nodes = cacheCtx.affinity().nodesByKey(txEntry.key(), topVer);
 
-                if (tx.mvccSnapshot() == null && mvccCrd == null && cacheCtx.mvccEnabled()) {
-                    mvccCrd = cacheCtx.affinity().mvccCoordinator(topVer);
-
-                    if (mvccCrd == null) {
-                        onDone(noCoordinatorError(topVer));
-
-                        return;
-                    }
-                }
-
                 if (F.isEmpty(nodes)) {
                     onDone(new ClusterTopologyServerNotFoundException("Failed to map keys to nodes (partition " +
                         "is not mapped to any node) [key=" + txEntry.key() +
@@ -359,8 +343,6 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             txNodes = txMapping.transactionNodes();
         }
 
-        assert !tx.txState().mvccEnabled() || tx.mvccSnapshot() != null || mvccCrd != null;
-
         tx.transactionNodes(txNodes);
 
         if (!hasNearCache)
@@ -379,16 +361,6 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
         for (final GridDistributedTxMapping m : mappings.values()) {
             final ClusterNode primary = m.primary();
 
-            boolean needCntr = false;
-
-            if (mvccCrd != null) {
-                if (tx.onePhaseCommit() || mvccCrd.nodeId().equals(primary.id())) {
-                    needCntr = true;
-
-                    mvccCrd = null;
-                }
-            }
-
             if (primary.isLocal()) {
                 if (m.hasNearCacheEntries() && m.hasColocatedCacheEntries()) {
                     GridNearTxPrepareRequest nearReq = createRequest(txNodes,
@@ -396,8 +368,6 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                         timeout,
                         m.nearEntriesReads(),
                         m.nearEntriesWrites());
-
-                    nearReq.requestMvccCounter(needCntr);
 
                     prepareLocal(nearReq, m, ++miniId, true);
 
@@ -412,8 +382,6 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                 else {
                     GridNearTxPrepareRequest req = createRequest(txNodes, m, timeout, m.reads(), m.writes());
 
-                    req.requestMvccCounter(needCntr);
-
                     prepareLocal(req, m, ++miniId, m.hasNearCacheEntries());
                 }
             }
@@ -423,8 +391,6 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                     timeout,
                     m.reads(),
                     m.writes());
-
-                req.requestMvccCounter(needCntr);
 
                 final MiniFuture fut = new MiniFuture(m, ++miniId);
 
@@ -456,16 +422,6 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                     break;
                 }
             }
-        }
-
-        if (mvccCrd != null) {
-            assert !tx.onePhaseCommit();
-
-            MvccSnapshotFutureExt fut = new MvccSnapshotFutureExt();
-
-            cctx.coordinators().requestSnapshotAsync(tx, fut);
-
-            add((IgniteInternalFuture)fut);
         }
 
         markInitialized();
@@ -515,35 +471,6 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             "super", super.toString());
     }
 
-    /**
-     *
-     */
-    private class MvccSnapshotFutureExt extends GridFutureAdapter<Void> implements MvccSnapshotResponseListener {
-        /** {@inheritDoc} */
-        @Override public void onResponse(MvccSnapshot res) {
-            tx.mvccSnapshot(res);
-
-            onDone();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onError(IgniteCheckedException e) {
-            if (log.isDebugEnabled())
-                log.debug("Error on tx prepare [fut=" + this + ", err=" + e + ", tx=" + tx +  ']');
-
-            if (ERR_UPD.compareAndSet(GridNearPessimisticTxPrepareFuture.this, null, e))
-                tx.setRollbackOnly();
-
-            onDone(e);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(MvccSnapshotFutureExt.class, this, super.toString());
-        }
-    }
-
-
     /** */
     private class MiniFuture extends GridFutureAdapter<GridNearTxPrepareResponse> {
         /** */
@@ -583,9 +510,6 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             if (res.error() != null)
                 onError(res.error());
             else {
-                if (res.mvccSnapshot() != null)
-                    tx.mvccSnapshot(res.mvccSnapshot());
-
                 onPrepareResponse(m, res, updateMapping);
 
                 onDone(res);

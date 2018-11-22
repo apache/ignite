@@ -905,8 +905,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             tx.onePhaseCommit(),
             tx.activeCachesDeploymentEnabled());
 
-        res.mvccSnapshot(tx.mvccSnapshot());
-
         if (prepErr == null) {
             if (tx.needReturnValue() || tx.nearOnOriginatingNode() || tx.hasInterceptor())
                 addDhtValues(res);
@@ -1260,27 +1258,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     final GridNearTxPrepareResponse res = createPrepareResponse(err);
 
                     onDone(res, res.error());
-
-                    return;
-                }
-            }
-
-            if (req.requestMvccCounter()) {
-                assert last;
-
-                assert tx.txState().mvccEnabled();
-
-                try {
-                    // Request snapshot locally only because
-                    // Mvcc Coordinator is expected to be local.
-                    MvccSnapshot snapshot = cctx.coordinators().tryRequestSnapshotLocal(tx);
-
-                    assert snapshot != null : tx.topologyVersion();
-
-                    tx.mvccSnapshot(snapshot);
-                }
-                catch (ClusterTopologyCheckedException e) {
-                    onDone(e);
 
                     return;
                 }

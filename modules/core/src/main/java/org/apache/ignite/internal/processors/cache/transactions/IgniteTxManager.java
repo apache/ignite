@@ -267,7 +267,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                     // Wait some time in case there are some unprocessed messages from failed node.
                     cctx.time().addTimeoutObject(
-                        new NodeFailureTimeoutObject(evt.eventNode(), discoCache.mvccCoordinator()));
+                        new NodeFailureTimeoutObject(evt.eventNode(), cctx.coordinators().currentCoordinator()));
 
                     if (txFinishSync != null)
                         txFinishSync.onNodeLeft(nodeId);
@@ -323,7 +323,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     public void rollbackMvccTxOnCoordinatorChange() {
         for (IgniteInternalTx tx : activeTransactions()) {
-            if (tx.mvccSnapshot() != null)
+            if (tx.mvccSnapshot() != null && tx instanceof GridNearTxLocal)
                 ((GridNearTxLocal)tx).rollbackNearTxLocalAsync(false, false);
         }
     }
