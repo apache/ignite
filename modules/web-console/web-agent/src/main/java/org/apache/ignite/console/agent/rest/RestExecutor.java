@@ -125,9 +125,6 @@ public class RestExecutor implements AutoCloseable {
                 ctx.init(keyMgrs, new TrustManager[] {trustMgr}, null);
 
                 builder.sslSocketFactory(ctx.getSocketFactory(), trustMgr);
-
-                // TODO: IGNITE-9845 Investigate how to fix hostnameVerifier ???
-                builder.hostnameVerifier((hostname, session) -> true);
             }
             catch (Exception e) {
                 log.error("Failed to initialize SSL socket factory", e);

@@ -360,7 +360,6 @@ public class AgentLauncher {
             builder.sslSocketFactory(ctx.getSocketFactory(), trustMgr);
 
             OkHttpClient sslFactory = builder
-                .hostnameVerifier((hostname, session) -> true)
                 .sslSocketFactory(ctx.getSocketFactory(), trustMgr)
                 .build();
 
