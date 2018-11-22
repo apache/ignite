@@ -64,6 +64,7 @@ nobase_include_HEADERS = \
 	ignite/impl/compute/single_job_compute_task_holder.h \
 	ignite/impl/compute/multiple_job_compute_task_holder.h \
 	ignite/impl/handle_registry.h \
+	ignite/impl/helpers.h \
 	ignite/impl/ignite_binding_impl.h \
 	ignite/impl/ignite_environment.h \
 	ignite/impl/ignite_impl.h \

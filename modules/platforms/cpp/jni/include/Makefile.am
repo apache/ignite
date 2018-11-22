@@ -19,6 +19,7 @@ ACLOCAL_AMFLAGS =-I m4
 
 nobase_include_HEADERS = \
     ignite/jni/java.h \
+    ignite/jni/utils.h \
     ignite/jni/exports.h
 
 uninstall-hook:

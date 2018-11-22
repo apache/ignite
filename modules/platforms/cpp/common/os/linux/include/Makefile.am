@@ -19,6 +19,7 @@ ACLOCAL_AMFLAGS =-I m4
 
 nobase_include_HEADERS = \
     ignite/common/common.h \
+    ignite/common/dynamic_load_os.h \
     ignite/common/concurrent_os.h
 
 uninstall-hook:
