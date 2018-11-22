@@ -19,7 +19,6 @@
 package org.apache.ignite.internal.stat;
 
 import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
@@ -115,7 +114,7 @@ public class IoStatisticsManager {
             s.forEach((k, sh) -> sh.resetStatistics())
         );
 
-        startTime = OffsetDateTime.now(ZoneOffset.UTC);
+        startTime = OffsetDateTime.now();
     }
 
     /**

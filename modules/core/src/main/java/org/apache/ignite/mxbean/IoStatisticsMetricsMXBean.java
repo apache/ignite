@@ -18,8 +18,6 @@
 
 package org.apache.ignite.mxbean;
 
-import java.time.OffsetDateTime;
-
 /**
  * This interface defines JMX view for IO statistics.
  */
@@ -27,10 +25,16 @@ import java.time.OffsetDateTime;
 public interface IoStatisticsMetricsMXBean {
 
     /**
-     * @return Start time of gathering statistics.
+     * @return Start time of gathering statistics as UTC milliseconds.
      */
     @MXBeanDescription("Start time of gathering staistics.")
-    public OffsetDateTime getStartTime();
+    long getStartTime();
+
+    /**
+     * @return Start time of gathering statistics in ISO-8601 format.
+     */
+    @MXBeanDescription("Start time of gathering staistics.")
+    String getStartTimeLocal();
 
     /**
      * Reset all IO statistics.

@@ -18,7 +18,7 @@
 
 package org.apache.ignite.internal.stat;
 
-import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -41,8 +41,13 @@ public class IoStatisticsMetricsLocalMXBeanImpl implements IoStatisticsMetricsMX
     }
 
     /** {@inheritDoc} */
-    @Override public OffsetDateTime getStartTime() {
-        return statMgr.startTime();
+    @Override public long getStartTime() {
+        return statMgr.startTime().toEpochSecond();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getStartTimeLocal() {
+        return statMgr.startTime().format(DateTimeFormatter.ISO_DATE_TIME);
     }
 
     /** {@inheritDoc} */

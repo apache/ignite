@@ -19,6 +19,7 @@
 package org.apache.ignite.internal.stat;
 
 import java.lang.management.ManagementFactory;
+import java.time.format.DateTimeFormatter;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerInvocationHandler;
 import javax.management.ObjectName;
@@ -73,11 +74,17 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
     public void testIndexBasic() throws Exception {
         IoStatisticsMetricsMXBean bean = ioStatMXBean();
 
-        Assert.assertNotNull(bean.getStartTime());
+        IoStatisticsManager ioStatMgr = ignite.context().ioStats();
+
+        Assert.assertEquals(ioStatMgr.startTime().toEpochSecond(), bean.getStartTime());
+
+        Assert.assertEquals(ioStatMgr.startTime().format(DateTimeFormatter.ISO_DATE_TIME), bean.getStartTimeLocal());
 
         bean.reset();
 
-        Assert.assertNotNull(bean.getStartTime());
+        Assert.assertEquals(ioStatMgr.startTime().toEpochSecond(), bean.getStartTime());
+
+        Assert.assertEquals(ioStatMgr.startTime().format(DateTimeFormatter.ISO_DATE_TIME), bean.getStartTimeLocal());
 
         int cnt = 100;
 
@@ -130,11 +137,17 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
     public void testCacheBasic() throws Exception {
         IoStatisticsMetricsMXBean bean = ioStatMXBean();
 
-        Assert.assertNotNull(bean.getStartTime());
+        IoStatisticsManager ioStatMgr = ignite.context().ioStats();
+
+        Assert.assertEquals(ioStatMgr.startTime().toEpochSecond(), bean.getStartTime());
+
+        Assert.assertEquals(ioStatMgr.startTime().format(DateTimeFormatter.ISO_DATE_TIME), bean.getStartTimeLocal());
 
         bean.reset();
 
-        Assert.assertNotNull(bean.getStartTime());
+        Assert.assertEquals(ioStatMgr.startTime().toEpochSecond(), bean.getStartTime());
+
+        Assert.assertEquals(ioStatMgr.startTime().format(DateTimeFormatter.ISO_DATE_TIME), bean.getStartTimeLocal());
 
         int cnt = 100;
 
