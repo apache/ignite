@@ -23,6 +23,7 @@ import org.apache.ignite.ml.composition.CompositionTestSuite;
 import org.apache.ignite.ml.dataset.DatasetTestSuite;
 import org.apache.ignite.ml.environment.EnvironmentTestSuite;
 import org.apache.ignite.ml.genetic.GAGridTestSuite;
+import org.apache.ignite.ml.inference.InferenceTestSuite;
 import org.apache.ignite.ml.knn.KNNTestSuite;
 import org.apache.ignite.ml.math.MathImplMainTestSuite;
 import org.apache.ignite.ml.nn.MLPTestSuite;
@@ -32,6 +33,7 @@ import org.apache.ignite.ml.regressions.RegressionsTestSuite;
 import org.apache.ignite.ml.selection.SelectionTestSuite;
 import org.apache.ignite.ml.structures.StructuresTestSuite;
 import org.apache.ignite.ml.svm.SVMTestSuite;
+import org.apache.ignite.ml.trainers.BaggingTest;
 import org.apache.ignite.ml.tree.DecisionTreeTestSuite;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -57,7 +59,9 @@ import org.junit.runners.Suite;
     CompositionTestSuite.class,
     EnvironmentTestSuite.class,
     StructuresTestSuite.class,
-    CommonTestSuite.class
+    CommonTestSuite.class,
+    InferenceTestSuite.class,
+    BaggingTest.class
 })
 public class IgniteMLTestSuite {
     // No-op.

@@ -43,7 +43,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapping;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -69,7 +68,6 @@ import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.noCoordinatorError;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 import static org.apache.ignite.transactions.TransactionState.PREPARING;
 
@@ -380,18 +378,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 tx.colocatedLocallyMapped(true);
         }
 
-        if (write.context().mvccEnabled()) {
-            MvccCoordinator mvccCrd = write.context().affinity().mvccCoordinator(topVer);
-
-            if (mvccCrd == null) {
-                onDone(noCoordinatorError(topVer));
-
-                return;
-            }
-
-            initMvccVersionFuture(keyLockFut != null ? 2 : 1, remap);
-        }
-
         if (keyLockFut != null)
             keyLockFut.onAllKeysAdded();
 
@@ -436,8 +422,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
         boolean hasNearCache = false;
 
-        MvccCoordinator mvccCrd = null;
-
         for (IgniteTxEntry write : writes) {
             write.clearEntryReadVersion();
 
@@ -446,16 +430,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             if (updated == null)
                 // an exception occurred while transaction mapping, stop further processing
                 break;
-
-            if (write.context().mvccEnabled() && mvccCrd == null) {
-                mvccCrd = write.context().affinity().mvccCoordinator(topVer);
-
-                if (mvccCrd == null) {
-                    onDone(noCoordinatorError(topVer));
-
-                    break;
-                }
-            }
 
             if (write.context().isNear())
                 hasNearCache = true;
@@ -496,11 +470,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             return;
         }
 
-        assert !tx.txState().mvccEnabled() || mvccCrd != null;
-
-        if (mvccCrd != null)
-            initMvccVersionFuture(keyLockFut != null ? 2 : 1, remap);
-
         if (keyLockFut != null)
             keyLockFut.onAllKeysAdded();
 
@@ -524,12 +493,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     private void proceedPrepare(final Queue<GridDistributedTxMapping> mappings) {
         final GridDistributedTxMapping m = mappings.poll();
 
-        if (m == null) {
-            if (mvccVerFut != null)
-                mvccVerFut.onLockReceived();
-
+        if (m == null)
             return;
-        }
 
         proceedPrepare(m, mappings);
     }
@@ -1035,8 +1000,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                         // Proceed prepare before finishing mini future.
                         if (mappings != null)
                             parent.proceedPrepare(mappings);
-                        else if (parent.mvccVerFut != null)
-                            parent.mvccVerFut.onLockReceived();
 
                         // Finish this mini future.
                         onDone((GridNearTxPrepareResponse)null);
