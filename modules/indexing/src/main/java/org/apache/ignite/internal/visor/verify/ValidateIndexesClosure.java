@@ -296,7 +296,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
         for (Integer grpId: grpIds) {
             final CacheGroupContext grpCtx = ignite.context().cache().cacheGroup(grpId);
 
-            if (grpCtx == null) {
+            if (grpCtx == null || !grpCtx.persistenceEnabled()) {
                 integrityCheckedIndexes.incrementAndGet();
 
                 continue;
