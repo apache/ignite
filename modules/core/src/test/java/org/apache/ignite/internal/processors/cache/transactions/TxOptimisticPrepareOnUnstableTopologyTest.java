@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.TreeMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -29,8 +27,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -109,7 +107,7 @@ public class TxOptimisticPrepareOnUnstableTopologyTest extends GridCommonAbstrac
      */
     private void doPrepareOnUnstableTopology(int keys, boolean testClient, TransactionIsolation isolation,
         long timeout) throws Exception {
-        Collection<IgniteInternalFuture> futs = new ArrayList<>();
+        GridCompoundFuture<Void, Object> compFut = new GridCompoundFuture<>();
 
         AtomicBoolean stopFlag = new AtomicBoolean();
 
@@ -126,18 +124,20 @@ public class TxOptimisticPrepareOnUnstableTopologyTest extends GridCommonAbstrac
 
                     client = false;
 
-                    IgniteInternalFuture fut = runCacheOperationsAsync(grid, stopFlag, isolation, timeout, keys);
+                    IgniteInternalFuture<Void> fut = runCacheOperationsAsync(grid, stopFlag, isolation, timeout, keys);
 
-                    futs.add(fut);
+                    compFut.add(fut);
 
                     U.sleep(STARTUP_DELAY);
                 }
-            } finally {
+            }
+            finally {
                 stopFlag.set(true);
             }
 
-            for (IgniteInternalFuture fut : futs)
-                fut.get();
+            compFut.markInitialized();
+
+            compFut.get();
 
             for (int i = 0; i < GRID_CNT; i++) {
                 IgniteTxManager tm = ((IgniteKernal)grid(i)).internalCache(CACHE_NAME).context().tm();
@@ -157,7 +157,7 @@ public class TxOptimisticPrepareOnUnstableTopologyTest extends GridCommonAbstrac
      * @param keys Number of keys.
      * @return Future representing pending completion of the operation.
      */
-    private IgniteInternalFuture runCacheOperationsAsync(
+    private IgniteInternalFuture<Void> runCacheOperationsAsync(
         Ignite node,
         AtomicBoolean stopFlag,
         TransactionIsolation isolation,
@@ -192,6 +192,8 @@ public class TxOptimisticPrepareOnUnstableTopologyTest extends GridCommonAbstrac
                     U.error(log(), "Failed unlock.", e);
                 }
             }
+
+            return null;
         });
     }
 

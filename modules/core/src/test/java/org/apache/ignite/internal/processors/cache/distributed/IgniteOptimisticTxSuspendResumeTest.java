@@ -457,12 +457,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
                     tx.suspend();
 
-                    long finishTime = U.currentTimeMillis() + TX_TIMEOUT;
-
-                    do {
-                        U.sleep(TX_TIMEOUT + (TX_TIMEOUT / 4));
-                    }
-                    while (finishTime >= U.currentTimeMillis());
+                    U.sleep(TX_TIMEOUT * 2);
 
                     GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
                         @Override public Object call() throws Exception {
@@ -499,12 +494,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
                     cache.put(1, 1);
 
-                    long finishTime = U.currentTimeMillis() + TX_TIMEOUT;
-
-                    do {
-                        U.sleep(TX_TIMEOUT + (TX_TIMEOUT / 4));
-                    }
-                    while (finishTime >= U.currentTimeMillis());
+                    U.sleep(TX_TIMEOUT * 2);
 
                     GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
                         @Override public Object call() throws Exception {
@@ -704,7 +694,8 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
                     assertEquals(msg, key, cache.get(key));
                 }
             }
-        } finally {
+        }
+        finally {
             stopGrid(newNodeIdx);
 
             for (IgniteCache<Integer, Integer> cache : cacheTxMap.keySet())
@@ -801,10 +792,10 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
     }
 
     /**
-     * Generates list of keys.
+     * Generates list of keys (primary, backup and neither primary nor backup).
      *
      * @param ignite Ignite instance.
-     * @return List of different type keys mapped to cache.
+     * @return List of different keys mapped to cache name.
      */
     private Map<String, List<List<Integer>>> generateKeys(Ignite ignite, int keysCnt) {
         Map<String, List<List<Integer>>> cacheKeys = new HashMap<>();
@@ -816,6 +807,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
             List<List<Integer>> keys = new ArrayList<>();
 
+            // Generate different keys: 0 - primary, 1 - backup, 2 - neither primary nor backup.
             for (int type = 0; type < 3; type++) {
                 if (type == 1 && cfg.getCacheMode() == PARTITIONED && cfg.getBackups() == 0)
                     continue;
