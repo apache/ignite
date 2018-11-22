@@ -119,9 +119,6 @@ public class ClusterListener implements AutoCloseable {
     };
 
     /** */
-    private static final ScheduledExecutorService pool = Executors.newScheduledThreadPool(1);
-
-    /** */
     private final AgentConfiguration cfg;
 
     /** */
@@ -129,6 +126,9 @@ public class ClusterListener implements AutoCloseable {
 
     /** */
     private final RestExecutorPool restPool;
+
+    /** */
+    private static final ScheduledExecutorService pool = Executors.newScheduledThreadPool(1);
 
     /** */
     private ScheduledFuture<?> refreshTask;
