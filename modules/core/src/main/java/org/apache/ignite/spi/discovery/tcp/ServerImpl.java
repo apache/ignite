@@ -4959,11 +4959,16 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     return;
                 }
+                else if (locNodeId.equals(failedNodeId)) {
+                    segmentLocalNodeOnSendFail();
+
+                    return;
+                }
 
                 msg.verify(locNodeId);
             }
 
-            if (msg.verified() && !locNodeId.equals(failedNodeId)) {
+            if (msg.verified()) {
                 failedNode = ring.removeNode(failedNodeId);
 
                 interruptPing(failedNode);
