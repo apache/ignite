@@ -137,6 +137,16 @@ public class ComputeUtils {
         return affinityCallWithRetries(ignite, cacheNames, fun, retries, 0);
     }
 
+    /**
+     * Gets learning environment for given partition. If learning environment is not found in local node map,
+     * it will be created with specified {@link LearningEnvironmentBuilder}.
+     *
+     * @param ignite Ignite instance.
+     * @param datasetId Dataset id.
+     * @param part Partition index.
+     * @param envBuilder {@link LearningEnvironmentBuilder}.
+     * @return Learning environment for given partition.
+     */
     public static LearningEnvironment getLearningEnvironment(Ignite ignite,
         UUID datasetId,
         int part,
@@ -229,6 +239,16 @@ public class ComputeUtils {
      */
     public static void removeData(Ignite ignite, UUID datasetId) {
         ignite.cluster().nodeLocalMap().remove(String.format(DATA_STORAGE_KEY_TEMPLATE, datasetId));
+    }
+
+    /**
+     * Remove learning environment from local cache by Dataset ID.
+     *
+     * @param ignite Ingnite instance.
+     * @param datasetId Dataset ID.
+     */
+    public static void removeLearningEnv(Ignite ignite, UUID datasetId) {
+        ignite.cluster().nodeLocalMap().remove(String.format(ENVIRONMENT_STORAGE_KEY_TEMPLATE, datasetId));
     }
 
     /**

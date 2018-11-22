@@ -170,6 +170,7 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
     @Override public void close() {
         datasetCache.destroy();
         ComputeUtils.removeData(ignite, datasetId);
+        ComputeUtils.removeLearningEnv(ignite, datasetId);
     }
 
     /**
