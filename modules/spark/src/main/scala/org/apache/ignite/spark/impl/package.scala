@@ -17,18 +17,24 @@
 
 package org.apache.ignite.spark
 
+import java.net.Inet4Address
+import java.sql.{Connection, DriverManager}
+import java.util
+
 import org.apache.commons.lang.StringUtils.equalsIgnoreCase
-import org.apache.ignite.{Ignite, Ignition}
+import org.apache.ignite.{Ignite, IgniteException, Ignition}
 import org.apache.ignite.cache.{CacheMode, QueryEntity}
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.internal.processors.query.QueryUtils.normalizeSchemaName
+import org.apache.ignite.internal.util.IgniteUtils
 import org.apache.ignite.internal.util.lang.GridFunc.contains
 import org.apache.spark.Partition
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog
+import org.h2.value.DataType
 
-import scala.collection.JavaConversions._
 import scala.collection.mutable.ArrayBuffer
+import scala.collection.JavaConversions._
 
 package object impl {
     /**
@@ -124,9 +130,62 @@ package object impl {
     def sqlTableInfo[K, V](ignite: Ignite, tabName: String,
         schemaName: Option[String]): Option[(CacheConfiguration[K, V], QueryEntity)] =
         cachesForSchema[K,V](ignite, schemaName)
-            .map(ccfg ⇒ ccfg.getQueryEntities.find(_.getTableName.equalsIgnoreCase(tabName)).map(qe ⇒ (ccfg, qe)))
+            .map(ccfg ⇒ refreshQueryEntity(ignite, ccfg,
+                ccfg.getQueryEntities.find(_.getTableName.equalsIgnoreCase(tabName))).map(qe ⇒ (ccfg, qe)))
             .find(_.isDefined)
             .flatten
+
+    /**
+      * @param ignite Ignite instance.
+      * @param ccfg Cache Configuration.
+      * @param qe Query Entity.
+      * @tparam K Key class.
+      * @tparam V Value class.
+      * @return QueryEntity for a given table.
+      */
+    def refreshQueryEntity[K, V](ignite: Ignite, ccfg : CacheConfiguration[K, V], qe: Option[QueryEntity]): Option[QueryEntity] =
+        if (qe.isDefined) Some(qe.get.setFields(refreshFields(ignite, ccfg, qe.get.getTableName)))
+        else qe
+
+    /**
+      * @param ignite Ignite instance.
+      * @param ccfg Cache Configuration.
+      * @param tabName Table name.
+      * @tparam K Key class.
+      * @tparam V Value class.
+      * @return HashMap consists of fields and fields type for a given table.
+      */
+    def refreshFields[K, V](ignite: Ignite, ccfg : CacheConfiguration[K, V], tabName: String): util.LinkedHashMap[String, String] = {
+        val connection = connect(ignite)
+        val resultSet = connection.getMetaData.getColumns(null, ccfg.getSqlSchema, tabName, null)
+        val currentFieldMap = new util.LinkedHashMap[String, String]
+        while (resultSet.next) {
+            val name = resultSet.getString("COLUMN_NAME")
+            val dataType = resultSet.getShort("DATA_TYPE")
+            val typeClsName = DataType.getTypeClassName(DataType.convertSQLTypeToValueType(dataType))
+            currentFieldMap.put(name, typeClsName)
+        }
+        currentFieldMap
+    }
+
+    /**
+      * @param ignite Ignite instance.
+      * @return Thin JDBC connection to a random server node.
+      */
+    def connect(ignite: Ignite): Connection = {
+        //Randomly select one endpoint from cluster
+        val address = IgniteUtils.toInetAddresses(ignite.cluster.forServers.forRandom.node)
+            .find(_.isInstanceOf[Inet4Address]).get.getHostAddress
+        try {
+            DriverManager.getConnection("jdbc:ignite:thin://" + address)
+        }
+        catch {
+            case e: IgniteException ⇒
+                Logging.log.error("Failed to establish JDBC thin connection to cluster.", e)
+
+                throw e
+        }
+    }
 
     /**
       * @param table Table.
