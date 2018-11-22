@@ -5,6 +5,7 @@
         "ssl": false,
         "key": "serve/keys/test.key",
         "cert": "serve/keys/test.crt",
+        "ca": "serve/keys/ca.crt",
         "keyPassphrase": "password",
         "disable": {
             "signup": false

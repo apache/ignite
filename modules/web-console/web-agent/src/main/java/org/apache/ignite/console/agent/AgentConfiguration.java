@@ -121,7 +121,7 @@ public class AgentConfiguration {
     private String srvKeyStore;
 
     /** */
-    @Parameter(names = {"-skp", "--node-key-store-password"},
+    @Parameter(names = {"-skp", "--server-key-store-password"},
         description = "Optional password for server key store")
     private String srvKeyStorePass;
 

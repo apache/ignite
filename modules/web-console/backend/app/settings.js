@@ -74,6 +74,7 @@ module.exports = {
                     trustXFPHeader: true,
                     key: fs.readFileSync(nconf.get('server:key')),
                     cert: fs.readFileSync(nconf.get('server:cert')),
+                    ca: fs.readFileSync(nconf.get('server:ca')),
                     passphrase: nconf.get('server:keyPassphrase')
                 },
                 disableSignup: _isTrue('server:disable:signup')
