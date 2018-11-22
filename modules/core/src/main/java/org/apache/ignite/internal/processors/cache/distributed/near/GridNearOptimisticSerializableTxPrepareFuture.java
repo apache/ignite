@@ -274,6 +274,9 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
     private boolean onComplete() {
         Throwable err0 = err;
 
+        if (!tx.onePhaseCommit() && (err0 == null || tx.needCheckBackup()))
+            tx.state(PREPARED);
+
         if (super.onDone(tx, err0)) {
             if (err0 != null)
                 tx.setRollbackOnly();
@@ -520,7 +523,8 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             }
         }
         else {
-            tx.state(PREPARED);
+            if (tx.onePhaseCommit())
+                tx.state(PREPARED);
 
             try {
                 GridNearTxPrepareRequest req = createRequest(txNodes,

@@ -299,6 +299,9 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     private boolean onComplete() {
         Throwable err0 = err;
 
+        if (!tx.onePhaseCommit() && (err0 == null || tx.needCheckBackup()))
+            tx.state(PREPARED);
+
         if (super.onDone(tx, err0)) {
             // Don't forget to clean up.
             cctx.mvcc().removeVersionedFuture(this);
@@ -613,7 +616,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                     });
                 }
                 else {
-                    tx.state(PREPARED);
+                    if (tx.onePhaseCommit())
+                        tx.state(PREPARED);
 
                     try {
                         cctx.io().send(n, req, tx.ioPolicy());

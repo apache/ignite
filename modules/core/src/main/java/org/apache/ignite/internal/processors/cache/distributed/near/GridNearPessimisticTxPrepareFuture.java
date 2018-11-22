@@ -430,7 +430,8 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
                 add((IgniteInternalFuture)fut);
 
-                tx.state(PREPARED);
+                if (tx.onePhaseCommit())
+                    tx.state(PREPARED);
 
                 try {
                     cctx.io().send(primary, req, tx.ioPolicy());
@@ -482,6 +483,9 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             ERR_UPD.compareAndSet(GridNearPessimisticTxPrepareFuture.this, null, err);
 
         err = this.err;
+
+        if (!tx.onePhaseCommit() && (err == null || tx.needCheckBackup()))
+            tx.state(PREPARED);
 
         if (super.onDone(tx, err)) {
             cctx.mvcc().removeVersionedFuture(this);
