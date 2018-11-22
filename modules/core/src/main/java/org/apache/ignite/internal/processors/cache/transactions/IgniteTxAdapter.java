@@ -273,6 +273,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     protected ConsistentIdMapper consistentIdMapper;
 
     /** Mvcc tx update snapshot. */
+    @GridToStringInclude
     protected volatile MvccSnapshot mvccSnapshot;
 
     /** Rollback finish future. */
@@ -280,6 +281,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     private volatile IgniteInternalFuture rollbackFut;
 
     /** */
+    @SuppressWarnings("unused")
+    @GridToStringExclude
     private volatile TxCounters txCounters;
 
     /**
@@ -2228,6 +2231,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         /** {@inheritDoc} */
         @Override public void commitError(Throwable e) {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public String label() {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 

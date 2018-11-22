@@ -39,6 +39,7 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -1350,5 +1351,10 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         U.sleep(100);
 
         assertTrue(cache.localMetrics().getEntryProcessorAverageInvocationTime() > 0.0);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void setConsistentId(IgniteConfiguration cfg, String igniteInstanceName) {
+        // No-op.
     }
 }

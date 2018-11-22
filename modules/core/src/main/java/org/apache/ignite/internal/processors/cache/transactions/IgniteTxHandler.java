@@ -509,7 +509,8 @@ public class IgniteTxHandler {
                     req.txSize(),
                     req.transactionNodes(),
                     req.subjectId(),
-                    req.taskNameHash()
+                    req.taskNameHash(),
+                    req.txLabel()
                 );
 
                 tx = ctx.tm().onCreated(null, tx);
@@ -687,7 +688,12 @@ public class IgniteTxHandler {
     private boolean needRemap(AffinityTopologyVersion expVer,
         AffinityTopologyVersion curVer,
         GridNearTxPrepareRequest req) {
-        if (expVer.equals(curVer))
+        if (curVer.equals(expVer))
+            return false;
+
+        AffinityTopologyVersion lastAffChangedTopVer = ctx.exchange().lastAffinityChangedTopologyVersion(expVer);
+
+        if (curVer.compareTo(expVer) <= 0 && curVer.compareTo(lastAffChangedTopVer) >= 0)
             return false;
 
         // TODO IGNITE-6754 check mvcc crd for mvcc enabled txs.
@@ -1682,7 +1688,8 @@ public class IgniteTxHandler {
                     req.subjectId(),
                     req.taskNameHash(),
                     single,
-                    req.storeWriteThrough());
+                    req.storeWriteThrough(),
+                    req.txLabel());
 
                 tx.onePhaseCommit(req.onePhaseCommit());
                 tx.writeVersion(req.writeVersion());
@@ -1888,7 +1895,7 @@ public class IgniteTxHandler {
                     invokeArgs = invokeVal.invokeArgs();
                 }
 
-                assert entryProc != null || !op.isInvoke();
+                assert entryProc != null || !op.isInvoke() : "entryProc=" + entryProc + ", op=" + op;
 
                 GridDhtCacheEntry entry = dht.entryExx(key, tx.topologyVersion());
 
@@ -2023,7 +2030,8 @@ public class IgniteTxHandler {
                     req.nearWrites(),
                     req.txSize(),
                     req.subjectId(),
-                    req.taskNameHash()
+                    req.taskNameHash(),
+                    req.txLabel()
                 );
 
                 tx.writeVersion(req.writeVersion());

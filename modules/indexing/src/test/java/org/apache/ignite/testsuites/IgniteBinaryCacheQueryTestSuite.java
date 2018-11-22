@@ -251,6 +251,8 @@ public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
         suite.addTestSuite(ExplainSelfTest.class);
         suite.addTestSuite(RunningQueriesTest.class);
 
+        suite.addTestSuite(ComplexPrimaryKeyUnwrapSelfTest.class);
+
         suite.addTestSuite(PartitionedSqlTest.class);
         suite.addTestSuite(ReplicatedSqlTest.class);
 

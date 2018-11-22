@@ -74,16 +74,15 @@ public class LogisticRegressionSGDTrainer<P extends Serializable> extends Single
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
         IgniteFunction<Dataset<EmptyContext, SimpleLabeledDatasetData>, MLPArchitecture> archSupplier = dataset -> {
-            int cols = dataset.compute(data -> {
+            Integer cols = dataset.compute(data -> {
                 if (data.getFeatures() == null)
                     return null;
                 return data.getFeatures().length / data.getRows();
             }, (a, b) -> {
+                // If both are null then zero will be propagated, no good.
                 if (a == null)
-                    return b == null ? 0 : b;
-                if (b == null)
-                    return a;
-                return b;
+                    return b;
+                return a;
             });
 
             MLPArchitecture architecture = new MLPArchitecture(cols);
