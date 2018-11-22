@@ -1197,7 +1197,7 @@ public abstract class GridAbstractTest extends TestCase {
     }
     
      /**
-     * Whether  jobs will be cancelled forcibly before stopping grids
+     * Whether jobs will be cancelled forcibly before stopping grids
      */
     protected boolean isWillJobsCancelled() {
         return false;
