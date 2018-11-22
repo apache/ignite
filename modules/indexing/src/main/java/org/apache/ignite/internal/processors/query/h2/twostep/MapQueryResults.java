@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.ObjectPoolReusable;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
+import org.h2.engine.Session;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -64,6 +65,9 @@ class MapQueryResults {
     /** Query context. */
     private final GridH2QueryContext qctx;
 
+    /** H2 session. */
+    private final Session ses;
+
     /** Logger. */
     private final IgniteLogger log;
 
@@ -80,13 +84,14 @@ class MapQueryResults {
      * @param log Logger instance.
      */
     MapQueryResults(IgniteH2Indexing h2, long qryReqId, int qrys, @Nullable GridCacheContext<?, ?> cctx,
-        boolean forUpdate, boolean lazy, GridH2QueryContext qctx, IgniteLogger log) {
+        boolean forUpdate, boolean lazy, GridH2QueryContext qctx, Session ses, IgniteLogger log) {
         this.forUpdate = forUpdate;
         this.h2 = h2;
         this.qryReqId = qryReqId;
         this.cctx = cctx;
         this.lazy = lazy;
         this.qctx = qctx;
+        this.ses = ses;
         this.log = log;
 
         results = new AtomicReferenceArray<>(qrys);
@@ -221,5 +226,12 @@ class MapQueryResults {
      */
     public GridH2QueryContext queryContext() {
         return qctx;
+    }
+
+    /**
+     * @return H2 session of the query.
+     */
+    public Session session() {
+        return ses;
     }
 }

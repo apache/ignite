@@ -28,10 +28,12 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -118,12 +120,21 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
                 latch.countDown();
 
                 while(!end.get()) {
-                    FieldsQueryCursor<List<?>> cursor = execute(srv, query(0)
-                        .setPageSize(PAGE_SIZE_SMALL));
+                    try {
+                        FieldsQueryCursor<List<?>> cursor = execute(srv, query(0)
+                            .setPageSize(PAGE_SIZE_SMALL));
 
-                    cursor.getAll();
+                        cursor.getAll();
 
-                    queryProcessed.set(true);
+                        queryProcessed.set(true);
+                    }
+                    catch (Exception e) {
+                        if(X.cause(e, QueryRetryException.class) == null) {
+                            log.error("Unexpected exception", e);
+
+                            fail("Unexpected exception");
+                        }
+                    }
                 }
             }
         }, qryThreads, "usr-qry");

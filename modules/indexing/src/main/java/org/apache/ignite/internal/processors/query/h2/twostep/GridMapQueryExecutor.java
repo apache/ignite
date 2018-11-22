@@ -42,6 +42,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.query.QueryCancelledException;
+import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
@@ -77,6 +78,7 @@ import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
@@ -779,6 +781,10 @@ public class GridMapQueryExecutor {
                 }
             }
 
+            Connection conn = h2.connections().connectionForThread(schemaName);
+
+            H2Utils.setupConnection(conn, distributedJoinMode != OFF, enforceJoinOrder, lazy);
+
             // Prepare query context.
             GridH2QueryContext qctx = new GridH2QueryContext(ctx.localNodeId(),
                 node.id(),
@@ -793,7 +799,8 @@ public class GridMapQueryExecutor {
                 .reservations(reserved)
                 .mvccSnapshot(mvccSnapshot);
 
-            qryResults = new MapQueryResults(h2, reqId, qrys.size(), mainCctx, inTx, lazy, qctx, log);
+            qryResults = new MapQueryResults(h2, reqId, qrys.size(), mainCctx, inTx, lazy, qctx,
+                H2Utils.session(conn), log);
 
             // qctx is set, we have to release reservations inside of it.
             reserved = null;
@@ -802,10 +809,6 @@ public class GridMapQueryExecutor {
 
             if (nodeRess.put(reqId, segmentId, qryResults) != null)
                 throw new IllegalStateException();
-
-            Connection conn = h2.connections().connectionForThread(schemaName);
-
-            H2Utils.setupConnection(conn, distributedJoinMode != OFF, enforceJoinOrder, lazy);
 
             if (nodeRess.cancelled(reqId)) {
                 GridH2QueryContext.clear(ctx.localNodeId(), node.id(), reqId, qctx.type());
@@ -967,12 +970,24 @@ public class GridMapQueryExecutor {
                         sendRetry(node, reqId, segmentId, retryCause);
                     }
                     else {
-                        U.error(log, "Failed to execute local query.", e);
+                        QueryRetryException qryRetryErr = X.cause(e, QueryRetryException.class);
 
-                        sendError(node, reqId, e);
+                        if (qryRetryErr != null) {
+                            final String retryCause = String.format(
+                                "Failed to execute non-collocated query (will retry) [localNodeId=%s, rmtNodeId=%s, reqId=%s, " +
+                                    "errMsg=%s]", ctx.localNodeId(), node.id(), reqId, qryRetryErr.getMessage()
+                            );
 
-                        if (e instanceof Error)
-                            throw (Error)e;
+                            sendRetry(node, reqId, segmentId, retryCause);
+                        }
+                        else {
+                            U.error(log, "Failed to execute local query.", e);
+
+                            sendError(node, reqId, e);
+
+                            if (e instanceof Error)
+                                throw (Error)e;
+                        }
                     }
                 }
             }
@@ -1188,21 +1203,36 @@ public class GridMapQueryExecutor {
         else if (qryResults.cancelled())
             sendError(node, req.queryRequestId(), new QueryCancelledException());
         else {
-            GridH2QueryContext qctxReduce = GridH2QueryContext.get();
-
-            if (qctxReduce != null)
-                GridH2QueryContext.clearThreadLocal();
-
-            GridH2QueryContext.set(qryResults.queryContext());
-
             try {
-                sendNextPage(nodeRess, node, qryResults, req.query(), req.segmentId(), req.pageSize(), false);
-            }
-            finally {
-                GridH2QueryContext.clearThreadLocal();
+                GridH2Table.checkTablesVersionNotChanged(qryResults.session());
+
+                GridH2QueryContext qctxReduce = GridH2QueryContext.get();
 
                 if (qctxReduce != null)
-                    GridH2QueryContext.set(qctxReduce);
+                    GridH2QueryContext.clearThreadLocal();
+
+                GridH2QueryContext.set(qryResults.queryContext());
+
+                try {
+                    sendNextPage(nodeRess, node, qryResults, req.query(), req.segmentId(), req.pageSize(), false);
+                }
+                finally {
+                    GridH2QueryContext.clearThreadLocal();
+
+                    if (qctxReduce != null)
+                        GridH2QueryContext.set(qctxReduce);
+                }
+            } catch (Exception e) {
+                QueryRetryException retryEx = X.cause(e, QueryRetryException.class);
+
+                if (retryEx != null)
+                    sendError(node, req.queryRequestId(), retryEx);
+                else
+                    sendError(node, req.queryRequestId(), e);
+
+                qryResults.cancel();
+
+                qryResults.close();
             }
         }
     }
@@ -1297,6 +1327,8 @@ public class GridMapQueryExecutor {
         boolean removeMapping) {
         try {
             GridQueryNextPageResponse msg = prepareNextPage(nodeRess, node, qr, qry, segmentId, pageSize, removeMapping);
+
+            GridH2Table.checkTablesVersionNotChanged(qr.session());
 
             if (msg != null) {
                 if (node.isLocal())

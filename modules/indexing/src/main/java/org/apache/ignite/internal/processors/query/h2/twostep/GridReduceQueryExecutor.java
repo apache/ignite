@@ -49,6 +49,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.query.QueryCancelledException;
+import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
@@ -300,6 +301,10 @@ public class GridReduceQueryExecutor {
             if (failCode == GridQueryFailResponse.CANCELLED_BY_ORIGINATOR) {
                 e = new CacheException("Failed to execute map query on remote node [nodeId=" + nodeId +
                     ", errMsg=" + msg + ']', new QueryCancelledException());
+            }
+            else if (failCode == GridQueryFailResponse.RETRY_QUERY) {
+                e = new CacheException("Failed to execute map query on remote node [nodeId=" + nodeId +
+                    ", errMsg=" + msg + ']', new QueryRetryException(msg));
             }
             else {
                 e = new CacheException("Failed to execute map query on remote node [nodeId=" + nodeId +

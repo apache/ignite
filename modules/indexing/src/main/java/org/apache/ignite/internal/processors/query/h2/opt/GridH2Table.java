@@ -51,6 +51,7 @@ import org.h2.result.SortOrder;
 import org.h2.schema.SchemaObject;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
+import org.h2.table.Table;
 import org.h2.table.TableBase;
 import org.h2.table.TableType;
 import org.h2.value.DataType;
@@ -88,8 +89,11 @@ public class GridH2Table extends TableBase {
     /** */
     private boolean destroyed;
 
-    /** */
-    private final ConcurrentMap<Session, Boolean> sessions = new ConcurrentHashMap<>();
+    /** Map of sessions locks.
+     * Session -> Boolean.TRUE - for exclusive locks.
+     * Session -> (long)version - for shared locks.
+     */
+    private final ConcurrentMap<Session, Object> sessions = new ConcurrentHashMap<>();
 
     /** */
     private IndexColumn affKeyCol;
@@ -247,10 +251,10 @@ public class GridH2Table extends TableBase {
     /** {@inheritDoc} */
     @Override public boolean lock(Session ses, boolean exclusive, boolean force) {
         // In accordance with base method semantics, we'll return true if we were already exclusively locked.
-        Boolean res = sessions.get(ses);
+        Object res = sessions.get(ses);
 
         if (res != null)
-            return res;
+            return Boolean.TRUE == res;
 
         if (exclusive) {
             lock();
@@ -260,10 +264,12 @@ public class GridH2Table extends TableBase {
 
                 throw new IllegalStateException("Table " + identifierString() + " already destroyed.");
             }
-        }
 
-        // Mutate state.
-        sessions.put(ses, exclusive);
+            // Mutate state.
+            sessions.put(ses, Boolean.TRUE);
+        }
+        else
+            sessions.put(ses, ver.longValue());
 
         ses.addLock(this);
 
@@ -272,9 +278,9 @@ public class GridH2Table extends TableBase {
 
     /** {@inheritDoc} */
     @Override public void unlock(Session ses) {
-        Boolean exclusive = sessions.remove(ses);
+        Object res = sessions.remove(ses);
 
-        if (Boolean.TRUE.equals(exclusive))
+        if (Boolean.TRUE == res)
             unlock();
     }
 
@@ -1062,5 +1068,25 @@ public class GridH2Table extends TableBase {
             return false;
 
         return true;
+    }
+
+    /**
+     * @param s H2 session.
+     */
+    private void checkTableVersion(Session s) {
+        Object res = sessions.get(s);
+
+        if (res != null && res != Boolean.TRUE && ver.longValue() != (long)res)
+            throw new QueryRetryException(getName());
+    }
+
+    /**
+     * @param s H2 session.
+     */
+    public static void checkTablesVersionNotChanged(Session s) {
+        for (Table t : s.getLocks()) {
+            if (t instanceof GridH2Table)
+                ((GridH2Table)t).checkTableVersion(s);
+        }
     }
 }
