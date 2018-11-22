@@ -31,6 +31,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.yardstick.jdbc.AbstractJdbcBenchmark;
 import org.yardstickframework.BenchmarkConfiguration;
 
+import static org.yardstickframework.BenchmarkUtils.println;
+
 /**
  * Abstract benchmark for sql select operation, that has range in WHERE clause.Designed to compare Ignite and
  * other DBMSes. Children specify what exactly query gets executed.
@@ -41,6 +43,9 @@ public abstract class BaseSelectRangeBenchmark extends AbstractJdbcBenchmark {
 
     /** Number of persons in that times greater than organizations. */
     private static final int ORG_TO_PERS_FACTOR = 10;
+
+    /** Batch size */
+    private static final int BATCH_SIZE = 10_000;
 
     /** Resources that should be closed. For example, opened thread local statements. */
     private List<AutoCloseable> toClose = Collections.synchronizedList(new ArrayList<>());
@@ -83,33 +88,78 @@ public abstract class BaseSelectRangeBenchmark extends AbstractJdbcBenchmark {
 
         queries = new QueryFactory();
 
+        executeUpdate(conn.get(), queries.dropPersonIfExist());
+        executeUpdate(conn.get(), queries.dropOrgIfExist());
+
         executeUpdate(conn.get(), queries.createPersonTab());
         executeUpdate(conn.get(), queries.createOrgTab());
 
         executeUpdate(conn.get(), queries.beforeLoad());
 
+        conn.get().setAutoCommit(false);
+
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
         long orgRng = args.range() / ORG_TO_PERS_FACTOR;
 
+        println(cfg, "Populating Organization table.");
+
         try (PreparedStatement insOrg = conn.get().prepareStatement(queries.insertIntoOrganization())) {
+
+            long percent = 0;
+
             for (long orgId = 0; orgId < orgRng; orgId++) {
                 insOrg.setLong(1, orgId);
                 insOrg.setString(2, "organization#" + orgId);
 
-                insOrg.executeUpdate();
+                insOrg.addBatch();
+
+                if ((orgId +1) % BATCH_SIZE == 0) {
+                    insOrg.executeBatch();
+
+
+                    long newPercent = (orgId + 1) * 100 / orgRng;
+
+                    if (percent != newPercent) {
+                        percent = newPercent;
+
+                        println(cfg, (orgId + 1) + " out of " + orgRng + " rows have been uploaded " +
+                            "(" + percent + "%).");
+                    }
+                }
             }
         }
 
+        println(cfg, "Populating Person table.");
+
         try (PreparedStatement insPers = conn.get().prepareStatement(queries.insertIntoPerson())) {
+            long percent = 0;
+
             for (long persId = 0; persId < args.range(); persId++) {
                 long orgId = rnd.nextLong(orgRng);
 
-                fillPersonArgs(insPers, persId, orgId).executeUpdate();
+                fillPersonArgs(insPers, persId, orgId).addBatch();
+
+                if ((persId + 1) % BATCH_SIZE == 0) {
+                    insPers.executeBatch();
+
+                    long newPercent = (persId + 1) * 100 / args.range();
+
+                    if (percent != newPercent) {
+                        percent = newPercent;
+
+                        println(cfg, (persId+1) + " out of " + args.range() + " rows have been uploaded " +
+                            "(" + percent + "%).");
+                    }
+                }
             }
         }
 
+        conn.get().setAutoCommit(true);
+
         executeUpdate(conn.get(), queries.afterLoad());
+
+        println(cfg, "Database have been populated.");
     }
 
     /**
