@@ -183,7 +183,6 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
                     UpstreamTransformerBuildersChain.empty(),
                     datasetCacheName,
                     datasetId,
-                    0,
                     (env, upstream, upstreamSize, ctx) -> {
                         cnt.incrementAndGet();
 
@@ -192,7 +191,7 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
                         UpstreamEntry<Integer, Integer> e = upstream.next();
                         return new TestPartitionData(e.getKey() + e.getValue());
                     },
-                    TestUtils.testEnvBuilder()
+                    TestUtils.testEnvBuilder().buildForWorker(part)
                 ),
                 0
             );

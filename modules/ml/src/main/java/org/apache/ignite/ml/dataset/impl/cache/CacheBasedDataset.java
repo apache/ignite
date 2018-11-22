@@ -119,7 +119,6 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
 
             C ctx = ComputeUtils.getContext(Ignition.localIgnite(), datasetCacheName, part);
 
-            // TODO: now we can pass just learning environment and get rid of builder and part.
             D data = ComputeUtils.getData(
                 Ignition.localIgnite(),
                 upstreamCacheName,
@@ -127,9 +126,8 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
                 upstreamTransformers,
                 datasetCacheName,
                 datasetId,
-                part,
                 partDataBuilder,
-                envBuilder
+                env
             );
 
 
@@ -154,7 +152,6 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
         return computeForAllPartitions(part -> {
             LearningEnvironment env = ComputeUtils.getLearningEnvironment(Ignition.localIgnite(), datasetId, part, envBuilder);
 
-            // TODO: now we can pass just learning environment and get rid of builder and part.
             D data = ComputeUtils.getData(
                 Ignition.localIgnite(),
                 upstreamCacheName,
@@ -162,9 +159,8 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
                 upstreamTransformers,
                 datasetCacheName,
                 datasetId,
-                part,
                 partDataBuilder,
-                envBuilder
+                env
             );
             return data != null ? map.apply(data, env) : null;
         }, reduce, identity);

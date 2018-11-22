@@ -75,6 +75,9 @@ public class LearningEnvironmentTest {
 
     /**
      * Test random number generator provided by  {@link LearningEnvironment}.
+     * We test that:
+     * 1. Correct random generator is returned for each partition.
+     * 2. Its state is saved between compute calls (for this we do several iterations of compute).
      */
     @Test
     public void testRandomNumbersGenerator() {

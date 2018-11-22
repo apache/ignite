@@ -161,9 +161,8 @@ public class ComputeUtils {
      * @param transformersChain Upstream transformers.
      * @param datasetCacheName Name of a partition {@code context} cache.
      * @param datasetId Dataset ID.
-     * @param part Partition index.
      * @param partDataBuilder Partition data builder.
-     * @param envBuilder Learning environment builder.
+     * @param env Learning environment.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @param <C> Type of a partition {@code context}.
@@ -175,17 +174,17 @@ public class ComputeUtils {
         String upstreamCacheName, IgniteBiPredicate<K, V> filter,
         UpstreamTransformerBuildersChain<K, V> transformersChain,
         String datasetCacheName, UUID datasetId,
-        int part,
         PartitionDataBuilder<K, V, C, D> partDataBuilder,
-        LearningEnvironmentBuilder envBuilder) {
+        LearningEnvironment env) {
 
         PartitionDataStorage dataStorage = (PartitionDataStorage)ignite
             .cluster()
             .nodeLocalMap()
             .computeIfAbsent(String.format(DATA_STORAGE_KEY_TEMPLATE, datasetId), key -> new PartitionDataStorage());
 
+        final int part = env.partition();
+
         return dataStorage.computeDataIfAbsent(part, () -> {
-            LearningEnvironment env = getLearningEnvironment(ignite, datasetId, part, envBuilder);
             IgniteCache<Integer, C> learningCtxCache = ignite.cache(datasetCacheName);
             C ctx = learningCtxCache.get(part);
 

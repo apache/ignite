@@ -66,8 +66,8 @@ public interface Dataset<C extends Serializable, D extends AutoCloseable> extend
     public <R> R computeWithCtx(IgniteTriFunction<C, D, LearningEnvironment, R> map, IgniteBinaryOperator<R> reduce, R identity);
 
     /**
-     * Applies the specified {@code map} function to every partition {@code data} and partition index in the dataset
-     * and then reduces {@code map} results to final result by using the {@code reduce} function.
+     * Applies the specified {@code map} function to every partition {@code data} and {@link LearningEnvironment}
+     * in the dataset and then reduces {@code map} results to final result by using the {@code reduce} function.
      *
      * @param map Function applied to every partition {@code data} and {@link LearningEnvironment}.
      * @param reduce Function applied to results of {@code map} to get final result.
@@ -78,8 +78,9 @@ public interface Dataset<C extends Serializable, D extends AutoCloseable> extend
     public <R> R compute(IgniteBiFunction<D, LearningEnvironment, R> map, IgniteBinaryOperator<R> reduce, R identity);
 
     /**
-     * Applies the specified {@code map} function to every partition {@code data}, {@code context} and partition
-     * index in the dataset and then reduces {@code map} results to final result by using the {@code reduce} function.
+     * Applies the specified {@code map} function to every partition {@code data}, {@code context} and
+     * {@link LearningEnvironment} in the dataset and then reduces {@code map} results to final
+     * result by using the {@code reduce} function.
      *
      * @param map Function applied to every partition {@code data}, {@code context} and {@link LearningEnvironment}.
      * @param reduce Function applied to results of {@code map} to get final result.
@@ -91,8 +92,8 @@ public interface Dataset<C extends Serializable, D extends AutoCloseable> extend
     }
 
     /**
-     * Applies the specified {@code map} function to every partition {@code data} and partition index in the dataset
-     * and then reduces {@code map} results to final result by using the {@code reduce} function.
+     * Applies the specified {@code map} function to every partition {@code data} and {@link LearningEnvironment}
+     * in the dataset and then reduces {@code map} results to final result by using the {@code reduce} function.
      *
      * @param map Function applied to every partition {@code data} and {@link LearningEnvironment}.
      * @param reduce Function applied to results of {@code map} to get final result.
@@ -114,7 +115,7 @@ public interface Dataset<C extends Serializable, D extends AutoCloseable> extend
      * @return Final result.
      */
     public default <R> R computeWithCtx(IgniteBiFunction<C, D, R> map, IgniteBinaryOperator<R> reduce, R identity) {
-        return computeWithCtx((ctx, data, partIdx) -> map.apply(ctx, data), reduce, identity);
+        return computeWithCtx((ctx, data, env) -> map.apply(ctx, data), reduce, identity);
     }
 
     /**
@@ -128,7 +129,7 @@ public interface Dataset<C extends Serializable, D extends AutoCloseable> extend
      * @return Final result.
      */
     public default <R> R compute(IgniteFunction<D, R> map, IgniteBinaryOperator<R> reduce, R identity) {
-        return compute((data, partIdx) -> map.apply(data), reduce, identity);
+        return compute((data, env) -> map.apply(data), reduce, identity);
     }
 
     /**
@@ -141,7 +142,7 @@ public interface Dataset<C extends Serializable, D extends AutoCloseable> extend
      * @return Final result.
      */
     public default <R> R computeWithCtx(IgniteBiFunction<C, D, R> map, IgniteBinaryOperator<R> reduce) {
-        return computeWithCtx((ctx, data, partIdx) -> map.apply(ctx, data), reduce);
+        return computeWithCtx((ctx, data, env) -> map.apply(ctx, data), reduce);
     }
 
     /**
@@ -154,24 +155,25 @@ public interface Dataset<C extends Serializable, D extends AutoCloseable> extend
      * @return Final result.
      */
     public default <R> R compute(IgniteFunction<D, R> map, IgniteBinaryOperator<R> reduce) {
-        return compute((data, partIdx) -> map.apply(data), reduce);
+        return compute((data, env) -> map.apply(data), reduce);
     }
 
     /**
-     * Applies the specified {@code map} function to every partition {@code data}, {@code context} and partition
-     * index in the dataset.
+     * Applies the specified {@code map} function to every partition {@code data}, {@code context} and
+     * {@link LearningEnvironment} in the dataset.
      *
      * @param map Function applied to every partition {@code data}, {@code context} and partition index.
      */
     public default void computeWithCtx(IgniteTriConsumer<C, D, LearningEnvironment> map) {
-        computeWithCtx((ctx, data, partIdx) -> {
-            map.accept(ctx, data, partIdx);
+        computeWithCtx((ctx, data, env) -> {
+            map.accept(ctx, data, env);
             return null;
         }, (a, b) -> null);
     }
 
     /**
-     * Applies the specified {@code map} function to every partition {@code data} in the dataset and partition index.
+     * Applies the specified {@code map} function to every partition {@code data} in the dataset and
+     * {@link LearningEnvironment}.
      *
      * @param map Function applied to every partition {@code data} and partition index.
      */
@@ -197,7 +199,7 @@ public interface Dataset<C extends Serializable, D extends AutoCloseable> extend
      * @param map Function applied to every partition {@code data}.
      */
     public default void compute(IgniteConsumer<D> map) {
-        compute((data, partIdx) -> map.accept(data));
+        compute((data, env) -> map.accept(data));
     }
 
     /**
