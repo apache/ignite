@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.commandline;
 
 import java.io.Console;
-import java.io.IOException;
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -36,7 +34,6 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeTask;
@@ -69,7 +66,6 @@ import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
 import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -120,7 +116,6 @@ import org.apache.ignite.internal.visor.verify.VisorViewCacheCmd;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheTask;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheTaskResult;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
@@ -665,35 +660,7 @@ public class CommandHandler {
         return executeTaskByNameOnNode(client, taskCls.getName(), taskArgs, null);
     }
 
-    /**
-     * @param client Client.
-     * @return List of hosts.
-     */
-    private Stream<IgniteBiTuple<GridClientNode, String>> listHosts(GridClient client) throws GridClientException {
-        return client.compute()
-            .nodes(GridClientNode::connectable)
-            .stream()
-            .flatMap(node -> Stream.concat(
-                node.tcpAddresses() == null ? Stream.empty() : node.tcpAddresses().stream(),
-                node.tcpHostNames() == null ? Stream.empty() : node.tcpHostNames().stream()
-            )
-            .map(addr -> new IgniteBiTuple<>(node, addr + ":" + node.tcpPort())));
-    }
 
-    /**
-     * @param client Client.
-     * @return List of hosts.
-     */
-    private Stream<IgniteBiTuple<GridClientNode, List<String>>> listHostsByClientNode(
-        GridClient client) throws GridClientException {
-        return client.compute().nodes(GridClientNode::connectable).stream()
-            .map(node -> new IgniteBiTuple<>(node,
-                Stream.concat(
-                    node.tcpAddresses() == null ? Stream.empty() : node.tcpAddresses().stream(),
-                    node.tcpHostNames() == null ? Stream.empty() : node.tcpHostNames().stream()
-                )
-                    .map(addr -> addr + ":" + node.tcpPort()).collect(Collectors.toList())));
-    }
 
     /**
      * @param client Client
@@ -703,12 +670,7 @@ public class CommandHandler {
      * @return Task result.
      * @throws GridClientException If failed to execute task.
      */
-    @SuppressWarnings("unchecked")
-    private <R> R executeTaskByNameOnNode(
-        GridClient client,
-        String taskClsName,
-        Object taskArgs,
-        UUID nodeId
+    private <R> R executeTaskByNameOnNode(GridClient client, String taskClsName, Object taskArgs, UUID nodeId
     ) throws GridClientException {
         GridClientCompute compute = client.compute();
 
@@ -728,34 +690,22 @@ public class CommandHandler {
         GridClientNode node = null;
 
         if (nodeId == null) {
+            Collection<GridClientNode> nodes = compute.nodes(GridClientNode::connectable);
+
             // Prefer node from connect string.
-            final String cfgAddr = clientCfg.getServers().iterator().next();
+            String origAddr = clientCfg.getServers().iterator().next();
 
-            String[] parts = cfgAddr.split(":");
+            for (GridClientNode clientNode : nodes) {
+                Iterator<String> it = F.concat(clientNode.tcpAddresses().iterator(), clientNode.tcpHostNames().iterator());
 
-            if (DFLT_HOST.equals(parts[0])) {
-                InetAddress addr;
+                while (it.hasNext()) {
+                    if (origAddr.equals(it.next() + ":" + clientNode.tcpPort())) {
+                        node = clientNode;
 
-                try {
-                    addr = IgniteUtils.getLocalHost();
+                        break;
+                    }
                 }
-                catch (IOException e) {
-                    throw new GridClientException("Can't get localhost name.", e);
-                }
-
-                if (addr.isLoopbackAddress())
-                    throw new GridClientException("Can't find localhost name.");
-
-                String origAddr = addr.getHostName() + ":" + parts[1];
-
-                node = listHosts(client).filter(tuple -> origAddr.equals(tuple.get2())).findFirst().map(IgniteBiTuple::get1).orElse(null);
-
-                if (node == null)
-                    node = listHostsByClientNode(client).filter(tuple -> tuple.get2().size() == 1 && cfgAddr.equals(tuple.get2().get(0))).
-                        findFirst().map(IgniteBiTuple::get1).orElse(null);
             }
-            else
-                node = listHosts(client).filter(tuple -> cfgAddr.equals(tuple.get2())).findFirst().map(IgniteBiTuple::get1).orElse(null);
 
             // Otherwise choose random node.
             if (node == null)
