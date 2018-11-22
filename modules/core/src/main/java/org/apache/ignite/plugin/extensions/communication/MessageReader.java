@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
@@ -228,6 +229,14 @@ public interface MessageReader {
      * @return {@link IgniteUuid}.
      */
     public IgniteUuid readIgniteUuid(String name);
+
+    /**
+     * Reads {@link AffinityTopologyVersion}.
+     *
+     * @param name Field name.
+     * @return {@link AffinityTopologyVersion}.
+     */
+    public AffinityTopologyVersion readAffinityTopologyVersion(String name);
 
     /**
      * Reads nested message.
