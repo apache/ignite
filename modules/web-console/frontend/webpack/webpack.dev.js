@@ -23,9 +23,15 @@ const commonCfg = require('./webpack.common');
 
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
+const backendProtocol = process.env.BACKEND_PROTOCOL || 'http';
 const backendPort = process.env.BACKEND_PORT || 3000;
-const devServerPort = process.env.PORT || 9000;
 const devServerHost = process.env.HOST || '0.0.0.0';
+const devServerPort = process.env.PORT || 9000;
+
+console.log(`BACKEND_PROTOCOL: ${backendProtocol}`);
+console.log(`BACKEND_PORT: ${backendPort}`);
+console.log(`DEV server HOST: ${devServerHost}`);
+console.log(`DEV server PORT: ${devServerPort}`);
 
 module.exports = merge(commonCfg, {
     mode: 'development',
@@ -70,17 +76,17 @@ module.exports = merge(commonCfg, {
         inline: true,
         proxy: {
             '/socket.io': {
-                target: `//localhost:${backendPort}`,
+                target: `${backendProtocol}://localhost:${backendPort}`,
                 ws: true,
                 secure: false
             },
             '/agents': {
-                target: `//localhost:${backendPort}`,
+                target: `${backendProtocol}://localhost:${backendPort}`,
                 ws: true,
                 secure: false
             },
             '/api/*': {
-                target: `//localhost:${backendPort}`,
+                target: `${backendProtocol}://localhost:${backendPort}`,
                 secure: false
             }
         },
