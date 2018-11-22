@@ -17,10 +17,19 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.testframework.MvccFeatureChecker;
+
 /**
  * Tests peek modes with near tx cache.
  */
 public class IgniteCacheTxNearPeekModesTest extends IgniteCacheTxPeekModesTest {
+    /** {@inheritDoc} */
+    @Override protected void setUp() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+
+        super.setUp();
+    }
+
     /** {@inheritDoc} */
     @Override protected boolean hasNearCache() {
         return true;

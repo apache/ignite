@@ -197,40 +197,40 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         addTestIfNeeded(suite, IgniteCacheTxStoreSessionWriteBehindTest.class, ignoredTests);//
         addTestIfNeeded(suite, IgniteCacheTxStoreSessionWriteBehindCoalescingTest.class, ignoredTests);//
 
-        addTestIfNeeded(suite, IgniteCacheAtomicNoReadThroughTest.class, ignoredTests);
-        addTestIfNeeded(suite, IgniteCacheAtomicNearEnabledNoReadThroughTest.class, ignoredTests);
-        addTestIfNeeded(suite, IgniteCacheAtomicLocalNoReadThroughTest.class, ignoredTests);
-        addTestIfNeeded(suite, IgniteCacheTxNoReadThroughTest.class, ignoredTests);
-        addTestIfNeeded(suite, IgniteCacheTxNearEnabledNoReadThroughTest.class, ignoredTests);
-        addTestIfNeeded(suite, IgniteCacheTxLocalNoReadThroughTest.class, ignoredTests);
+        addTestIfNeeded(suite, IgniteCacheAtomicNoReadThroughTest.class, ignoredTests);//
+        addTestIfNeeded(suite, IgniteCacheAtomicNearEnabledNoReadThroughTest.class, ignoredTests);//
+        addTestIfNeeded(suite, IgniteCacheAtomicLocalNoReadThroughTest.class, ignoredTests);//
+        addTestIfNeeded(suite, IgniteCacheTxNoReadThroughTest.class, ignoredTests);//
+        addTestIfNeeded(suite, IgniteCacheTxNearEnabledNoReadThroughTest.class, ignoredTests);//
+        addTestIfNeeded(suite, IgniteCacheTxLocalNoReadThroughTest.class, ignoredTests);//
 
-        addTestIfNeeded(suite, IgniteCacheAtomicNoLoadPreviousValueTest.class, ignoredTests);
-        addTestIfNeeded(suite, IgniteCacheAtomicNearEnabledNoLoadPreviousValueTest.class, ignoredTests);
-        addTestIfNeeded(suite, IgniteCacheAtomicLocalNoLoadPreviousValueTest.class, ignoredTests);
-        addTestIfNeeded(suite, IgniteCacheTxNoLoadPreviousValueTest.class, ignoredTests);
-        addTestIfNeeded(suite, IgniteCacheTxNearEnabledNoLoadPreviousValueTest.class, ignoredTests);
-        addTestIfNeeded(suite, IgniteCacheTxLocalNoLoadPreviousValueTest.class, ignoredTests);
+        addTestIfNeeded(suite, IgniteCacheAtomicNoLoadPreviousValueTest.class, ignoredTests);//
+        addTestIfNeeded(suite, IgniteCacheAtomicNearEnabledNoLoadPreviousValueTest.class, ignoredTests);//
+        addTestIfNeeded(suite, IgniteCacheAtomicLocalNoLoadPreviousValueTest.class, ignoredTests);//
+        addTestIfNeeded(suite, IgniteCacheTxNoLoadPreviousValueTest.class, ignoredTests);//
+        addTestIfNeeded(suite, IgniteCacheTxNearEnabledNoLoadPreviousValueTest.class, ignoredTests);//
+        addTestIfNeeded(suite, IgniteCacheTxLocalNoLoadPreviousValueTest.class, ignoredTests);//
 
-        addTestIfNeeded(suite, IgniteCacheAtomicNoWriteThroughTest.class, ignoredTests);
-        addTestIfNeeded(suite, IgniteCacheAtomicNearEnabledNoWriteThroughTest.class, ignoredTests);
-        addTestIfNeeded(suite, IgniteCacheAtomicLocalNoWriteThroughTest.class, ignoredTests);
-        addTestIfNeeded(suite, IgniteCacheTxNoWriteThroughTest.class, ignoredTests);
-        addTestIfNeeded(suite, IgniteCacheTxNearEnabledNoWriteThroughTest.class, ignoredTests);
-        addTestIfNeeded(suite, IgniteCacheTxLocalNoWriteThroughTest.class, ignoredTests);
+        addTestIfNeeded(suite, IgniteCacheAtomicNoWriteThroughTest.class, ignoredTests);//
+        addTestIfNeeded(suite, IgniteCacheAtomicNearEnabledNoWriteThroughTest.class, ignoredTests);//
+        addTestIfNeeded(suite, IgniteCacheAtomicLocalNoWriteThroughTest.class, ignoredTests);//
+        addTestIfNeeded(suite, IgniteCacheTxNoWriteThroughTest.class, ignoredTests);//
+        addTestIfNeeded(suite, IgniteCacheTxNearEnabledNoWriteThroughTest.class, ignoredTests);//
+        addTestIfNeeded(suite, IgniteCacheTxLocalNoWriteThroughTest.class, ignoredTests);//
 
-        addTestIfNeeded(suite, IgniteCacheAtomicPeekModesTest.class, ignoredTests);
-        addTestIfNeeded(suite, IgniteCacheAtomicNearPeekModesTest.class, ignoredTests);
-        addTestIfNeeded(suite, IgniteCacheAtomicReplicatedPeekModesTest.class, ignoredTests);
-        addTestIfNeeded(suite, IgniteCacheAtomicLocalPeekModesTest.class, ignoredTests);
-        addTestIfNeeded(suite, IgniteCacheTxPeekModesTest.class, ignoredTests);
-        addTestIfNeeded(suite, IgniteCacheTxNearPeekModesTest.class, ignoredTests);
-        addTestIfNeeded(suite, IgniteCacheTxLocalPeekModesTest.class, ignoredTests);
-        addTestIfNeeded(suite, IgniteCacheTxReplicatedPeekModesTest.class, ignoredTests);
+        addTestIfNeeded(suite, IgniteCacheAtomicPeekModesTest.class, ignoredTests);//
+        addTestIfNeeded(suite, IgniteCacheAtomicNearPeekModesTest.class, ignoredTests);//
+        addTestIfNeeded(suite, IgniteCacheAtomicReplicatedPeekModesTest.class, ignoredTests);//
+        addTestIfNeeded(suite, IgniteCacheAtomicLocalPeekModesTest.class, ignoredTests);//
+        addTestIfNeeded(suite, IgniteCacheTxPeekModesTest.class, ignoredTests);//
+        addTestIfNeeded(suite, IgniteCacheTxNearPeekModesTest.class, ignoredTests);//
+        addTestIfNeeded(suite, IgniteCacheTxLocalPeekModesTest.class, ignoredTests);//
+        addTestIfNeeded(suite, IgniteCacheTxReplicatedPeekModesTest.class, ignoredTests);//
 
-        addTestIfNeeded(suite, IgniteCacheInvokeReadThroughSingleNodeTest.class, ignoredTests);
-        addTestIfNeeded(suite, IgniteCacheInvokeReadThroughTest.class, ignoredTests);
-        addTestIfNeeded(suite, IgniteCacheReadThroughStoreCallTest.class, ignoredTests);
-        addTestIfNeeded(suite, GridCacheVersionMultinodeTest.class, ignoredTests);
+        addTestIfNeeded(suite, IgniteCacheInvokeReadThroughSingleNodeTest.class, ignoredTests);//
+        addTestIfNeeded(suite, IgniteCacheInvokeReadThroughTest.class, ignoredTests);//
+        addTestIfNeeded(suite, IgniteCacheReadThroughStoreCallTest.class, ignoredTests);//
+        addTestIfNeeded(suite, GridCacheVersionMultinodeTest.class, ignoredTests);//
 
         addTestIfNeeded(suite, IgniteCacheNearReadCommittedTest.class, ignoredTests);
         addTestIfNeeded(suite, IgniteCacheAtomicCopyOnReadDisabledTest.class, ignoredTests);

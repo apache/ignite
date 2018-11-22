@@ -22,12 +22,25 @@ import junit.framework.TestSuite;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.GridCacheMultinodeUpdateAtomicNearEnabledSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheMultinodeUpdateAtomicSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheVersionMultinodeTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicLocalPeekModesTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicNearPeekModesTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicPeekModesTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicReplicatedPeekModesTest;
 import org.apache.ignite.internal.processors.cache.integration.IgniteCacheAtomicLoadAllTest;
 import org.apache.ignite.internal.processors.cache.integration.IgniteCacheAtomicLoaderWriterTest;
 import org.apache.ignite.internal.processors.cache.integration.IgniteCacheAtomicLocalLoadAllTest;
+import org.apache.ignite.internal.processors.cache.integration.IgniteCacheAtomicLocalNoLoadPreviousValueTest;
+import org.apache.ignite.internal.processors.cache.integration.IgniteCacheAtomicLocalNoReadThroughTest;
+import org.apache.ignite.internal.processors.cache.integration.IgniteCacheAtomicLocalNoWriteThroughTest;
+import org.apache.ignite.internal.processors.cache.integration.IgniteCacheAtomicNearEnabledNoLoadPreviousValueTest;
+import org.apache.ignite.internal.processors.cache.integration.IgniteCacheAtomicNearEnabledNoReadThroughTest;
+import org.apache.ignite.internal.processors.cache.integration.IgniteCacheAtomicNearEnabledNoWriteThroughTest;
+import org.apache.ignite.internal.processors.cache.integration.IgniteCacheAtomicNoLoadPreviousValueTest;
+import org.apache.ignite.internal.processors.cache.integration.IgniteCacheAtomicNoReadThroughTest;
+import org.apache.ignite.internal.processors.cache.integration.IgniteCacheAtomicNoWriteThroughTest;
 import org.apache.ignite.internal.processors.cache.integration.IgniteCacheAtomicStoreSessionTest;
 import org.apache.ignite.internal.processors.cache.integration.IgniteCacheAtomicStoreSessionWriteBehindTest;
-import org.apache.ignite.internal.processors.cache.integration.IgniteCacheTxStoreSessionWriteBehindCoalescingTest;
 
 /**
  *
@@ -43,6 +56,7 @@ public class IgniteCacheMvccTestSuite4 extends TestSuite {
 
         // Skip classes that already contains Mvcc tests
         // ignoredTests.add(GridCacheTransformEventSelfTest.class);
+        ignoredTests.add(GridCacheVersionMultinodeTest.class);
 
         // Optimistic tx tests.
         // ignoredTests.add(GridCacheColocatedOptimisticTransactionSelfTest.class);
@@ -59,6 +73,19 @@ public class IgniteCacheMvccTestSuite4 extends TestSuite {
         ignoredTests.add(IgniteCacheAtomicLoaderWriterTest.class);
         ignoredTests.add(IgniteCacheAtomicStoreSessionTest.class);
         ignoredTests.add(IgniteCacheAtomicStoreSessionWriteBehindTest.class);
+        ignoredTests.add(IgniteCacheAtomicNoReadThroughTest.class);
+        ignoredTests.add(IgniteCacheAtomicNearEnabledNoReadThroughTest.class);
+        ignoredTests.add(IgniteCacheAtomicLocalNoReadThroughTest.class);
+        ignoredTests.add(IgniteCacheAtomicNoLoadPreviousValueTest.class);
+        ignoredTests.add(IgniteCacheAtomicNearEnabledNoLoadPreviousValueTest.class);
+        ignoredTests.add(IgniteCacheAtomicLocalNoLoadPreviousValueTest.class);
+        ignoredTests.add(IgniteCacheAtomicNoWriteThroughTest.class);
+        ignoredTests.add(IgniteCacheAtomicNearEnabledNoWriteThroughTest.class);
+        ignoredTests.add(IgniteCacheAtomicLocalNoWriteThroughTest.class);
+        ignoredTests.add(IgniteCacheAtomicPeekModesTest.class);
+        ignoredTests.add(IgniteCacheAtomicNearPeekModesTest.class);
+        ignoredTests.add(IgniteCacheAtomicReplicatedPeekModesTest.class);
+        ignoredTests.add(IgniteCacheAtomicLocalPeekModesTest.class);
 
 
 
@@ -69,13 +96,13 @@ public class IgniteCacheMvccTestSuite4 extends TestSuite {
         // Skip classes which Mvcc implementations are added in this method below.
         // TODO IGNITE-10175: refactor these tests (use assume) to support both mvcc and non-mvcc modes after moving to JUnit4/5.
         // ignoredTests.add(GridCachePartitionedTxSingleThreadedSelfTest.class); // See GridCachePartitionedMvccTxSingleThreadedSelfTest
-        //ignoredTests.add()
+
 
 
         TestSuite suite = new TestSuite("IgniteCache Mvcc Test Suite part 4");
 
         // TODO UNCOMMENT!! suite.addTest(IgniteCacheTestSuite4.suite(ignoredTests));
-        suite.addTestSuite(IgniteCacheTxStoreSessionWriteBehindCoalescingTest.class);
+        suite.addTestSuite(GridCacheVersionMultinodeTest.class);
 
         // Add Mvcc clones.
         // suite.addTestSuite(GridCachePartitionedMvccTxSingleThreadedSelfTest.class);
