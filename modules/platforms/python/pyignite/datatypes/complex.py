@@ -21,7 +21,7 @@ from pyignite.constants import *
 from pyignite.exceptions import ParseError
 from pyignite.utils import entity_id, hashcode, is_hinted
 from .base import IgniteDataType
-from .internal import AnyDataObject
+from .internal import AnyDataObject, infer_from_python
 from .type_codes import *
 
 
@@ -107,7 +107,7 @@ class ObjectArrayObject(IgniteDataType):
         buffer = bytes(header)
 
         for x in value:
-            buffer += AnyDataObject.from_python(x)
+            buffer += infer_from_python(x)
         return buffer
 
 
@@ -274,14 +274,8 @@ class Map(IgniteDataType):
         buffer = bytes(header)
 
         for k, v in value.items():
-            if is_hinted(k):
-                buffer += k[1].from_python(k[0])
-            else:
-                buffer += AnyDataObject.from_python(k)
-            if is_hinted(v):
-                buffer += v[1].from_python(v[0])
-            else:
-                buffer += AnyDataObject.from_python(v)
+            buffer += infer_from_python(k)
+            buffer += infer_from_python(v)
         return buffer
 
 
