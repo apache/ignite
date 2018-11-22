@@ -1909,7 +1909,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             ignite1.configuration().getDiscoverySpi().failNode(coord.localNode().id(), null);
 
-            assertTrue(failedLatch.await(5000, MILLISECONDS));
+            assertTrue(failedLatch.await(1000, MILLISECONDS));
 
             waitNodeStop(coord.name());
 
