@@ -260,7 +260,8 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
 
                 Map<PartitionKey, ValidateIndexesPartitionResult> partRes = fut.get();
 
-                partResults.putAll(partRes);
+                if (!partRes.isEmpty() && partRes.entrySet().stream().anyMatch(e -> !e.getValue().issues().isEmpty()))
+                    partResults.putAll(partRes);
             }
 
             for (; curIdx < procIdxFutures.size(); curIdx++) {
@@ -268,7 +269,8 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
 
                 Map<String, ValidateIndexesPartitionResult> idxRes = fut.get();
 
-                idxResults.putAll(idxRes);
+                if (!idxRes.isEmpty() && idxRes.entrySet().stream().anyMatch(e -> !e.getValue().issues().isEmpty()))
+                    idxResults.putAll(idxRes);
             }
 
             log.warning("ValidateIndexesClosure finished: processed " + totalPartitions + " partitions and "
