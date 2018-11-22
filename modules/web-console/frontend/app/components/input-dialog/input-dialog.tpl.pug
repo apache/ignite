@@ -39,6 +39,7 @@ include /app/helpers/jade/mixins
                             ignite-form-field-input-autofocus='true'
                             ignite-on-enter='form.$valid && ctrl.confirm()'
                         )
+
                 .row(ng-switch-when='number')
                     .col-100
                         +form-field__number({
@@ -53,6 +54,55 @@ include /app/helpers/jade/mixins
                             required: true
                         })
 
+                .row(ng-switch-when='email')
+                    .col-100
+                        +form-field__email({
+                            label: '{{ ctrl.options.label }}',
+                            model: 'ctrl.options.value',
+                            name: '"email"',
+                            required: true,
+                            placeholder: 'Input email'
+                        })(
+                            ignite-form-field-input-autofocus='true'
+                            ignite-on-enter='form.$valid && ctrl.confirm()'
+                        )
+
+                .row(ng-switch-when='date')
+                    .col-100
+                        .form-field--inline
+                            +form-field__datepicker({
+                                label: '{{ ctrl.options.label }}',
+                                model: 'ctrl.options.value',
+                                name: '"date"',
+                                minview: 0,
+                                format: 'dd/MM/yyyy'
+                            })
+
+                .row(ng-switch-when='time')
+                    .col-100
+                        .form-field--inline
+                            +form-field__timepicker({
+                                label: '{{ ctrl.options.label }}',
+                                model: 'ctrl.options.value',
+                                name: '"time"'
+                            })
+
+                .row(ng-switch-when='date-and-time')
+                    .col-100
+                        .form-field--inline
+                            +form-field__datepicker({
+                                label: '{{ ctrl.options.label }}',
+                                model: 'ctrl.options.value',
+                                name: '"date"',
+                                minview: 0,
+                                format: 'dd/MM/yyyy'
+                            })
+                        .form-field--inline
+                            +form-field__timepicker({
+                                model: 'ctrl.options.value',
+                                format: '{{ ctrl.options.format }}',
+                                name: '"time"'
+                            })
             .modal-footer
                 div
                     button#copy-btn-cancel.btn-ignite.btn-ignite--link-success(ng-click='$hide()') Cancel

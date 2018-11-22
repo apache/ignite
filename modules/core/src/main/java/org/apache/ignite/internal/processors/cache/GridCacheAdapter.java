@@ -147,6 +147,7 @@ import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
@@ -823,9 +824,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
-        //TODO IGNITE-7955
-        MvccUtils.verifyMvccOperationSupport(ctx, "Peek");
-
         PeekModes modes = parsePeekModes(peekModes, false);
 
         KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
@@ -897,7 +895,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     ctx.shared().database().checkpointReadLock();
 
                     try {
-                        cacheVal = e.peek(modes.heap, modes.offheap, topVer, plc);
+                        cacheVal = ctx.mvccEnabled()
+                            ? e.mvccPeek(modes.heap && !modes.offheap)
+                            : e.peek(modes.heap, modes.offheap, topVer, plc);
                     }
                     catch (GridCacheEntryRemovedException ignore) {
                         if (log.isDebugEnabled())
@@ -1975,7 +1975,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 return new GridFinishedFuture<>(e);
             }
 
-            tx = ctx.tm().threadLocalTx(ctx);
+            tx = checkCurrentTx();
         }
 
         if (tx == null || tx.implicit()) {
@@ -2313,6 +2313,19 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         needVer);
                 }
             }, ctx.operationContextPerCall(), /*retry*/false);
+        }
+    }
+
+    /** */
+    protected GridNearTxLocal checkCurrentTx() {
+        if (!ctx.mvccEnabled())
+            return ctx.tm().threadLocalTx(ctx);
+
+        try {
+            return MvccUtils.currentTx(ctx.kernalContext(), null);
+        }
+        catch (MvccUtils.UnsupportedTxModeException | MvccUtils.NonMvccTransactionException e) {
+            throw new TransactionException(e.getMessage());
         }
     }
 
@@ -4241,7 +4254,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         awaitLastFut();
 
-        GridNearTxLocal tx = ctx.tm().threadLocalTx(ctx);
+        GridNearTxLocal tx = checkCurrentTx();
 
         if (tx == null || tx.implicit()) {
             TransactionConfiguration tCfg = CU.transactionConfiguration(ctx, ctx.kernalContext().config());
@@ -4344,7 +4357,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (log.isDebugEnabled())
             log.debug("Performing async op: " + op);
 
-        GridNearTxLocal tx = ctx.tm().threadLocalTx(ctx);
+        GridNearTxLocal tx = checkCurrentTx();
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 

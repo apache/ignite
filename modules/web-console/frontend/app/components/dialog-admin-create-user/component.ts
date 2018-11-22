@@ -15,8 +15,13 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
-import './style.scss';
+import template from './template.pug';
+import {DialogAdminCreateUser} from './controller';
 
-export default angular
-    .module('ignite-console.ignite-status', []);
+export default {
+    template,
+    controller: DialogAdminCreateUser,
+    bindings: {
+        close: '&onHide'
+    }
+};

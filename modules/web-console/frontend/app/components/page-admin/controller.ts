@@ -15,13 +15,14 @@
  * limitations under the License.
  */
 
-@import "../../../public/stylesheets/variables";
+import UserNotificationsService from '../user-notifications/service';
 
-// Statuses coloring
-.ignite-status__active {
-  color: $ignite-status-active !important;
-}
+export default class PageAdminCtrl {
+    static $inject = ['UserNotifications'];
 
-.ignite-status__inactive {
-  color: $ignite-status-inactive;
+    constructor(private UserNotifications: UserNotificationsService) {}
+
+    changeUserNotifications() {
+        this.UserNotifications.editor();
+    }
 }

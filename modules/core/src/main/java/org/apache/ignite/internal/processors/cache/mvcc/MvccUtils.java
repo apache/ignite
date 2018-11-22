@@ -100,13 +100,13 @@ public class MvccUtils {
     /** */
     public static final int MVCC_VISIBLE = 2;
 
-    /** */
+    /** A special version visible by everyone */
     public static final MvccVersion INITIAL_VERSION =
         mvccVersion(MVCC_CRD_START_CNTR, MVCC_INITIAL_CNTR, MVCC_START_OP_CNTR);
 
-    /** */
-    public static final MvccVersion MVCC_VERSION_NA =
-        mvccVersion(MVCC_CRD_COUNTER_NA, MVCC_COUNTER_NA, MVCC_OP_COUNTER_NA);
+    /** A special snapshot for which all committed versions are visible */
+    public static final MvccSnapshot MVCC_MAX_SNAPSHOT =
+        new MvccSnapshotWithoutTxs(Long.MAX_VALUE, Long.MAX_VALUE, MVCC_READ_OP_CNTR, MVCC_COUNTER_NA);
 
     /** */
     private static final MvccClosure<Integer> getVisibleState = new GetVisibleState();
@@ -184,7 +184,14 @@ public class MvccUtils {
         if ((mvccOpCntr & MVCC_HINTS_MASK) != 0)
             return (byte)(mvccOpCntr >>> MVCC_HINTS_BIT_OFF);
 
-        return proc.state(mvccCrd, mvccCntr);
+        byte state = proc.state(mvccCrd, mvccCntr);
+
+        if ((state == TxState.NA || state == TxState.PREPARED)
+            && (proc.currentCoordinator() == null // Recovery from WAL.
+            || mvccCrd < proc.currentCoordinator().coordinatorVersion()))
+            state = TxState.ABORTED;
+
+        return state;
     }
 
     /**
@@ -670,6 +677,26 @@ public class MvccUtils {
      * @return Currently started user transaction, or {@code null} if none started.
      */
     @Nullable public static GridNearTxLocal tx(GridKernalContext ctx, @Nullable GridCacheVersion txId) {
+        try {
+            return currentTx(ctx, txId);
+        }
+        catch (UnsupportedTxModeException e) {
+            throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        }
+        catch (NonMvccTransactionException e) {
+            throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH);
+        }
+    }
+
+    /**
+     * @param ctx Grid kernal context.
+     * @param txId Transaction ID.
+     * @return Currently started user transaction, or {@code null} if none started.
+     * @throws UnsupportedTxModeException If transaction mode is not supported when MVCC is enabled.
+     * @throws NonMvccTransactionException If started transaction spans non MVCC caches.
+     */
+    @Nullable public static GridNearTxLocal currentTx(GridKernalContext ctx,
+        @Nullable GridCacheVersion txId) throws UnsupportedTxModeException, NonMvccTransactionException {
         IgniteTxManager tm = ctx.cache().context().tm();
 
         IgniteInternalTx tx0 = txId == null ? tm.tx() : tm.tx(txId);
@@ -680,22 +707,18 @@ public class MvccUtils {
             if (!tx.pessimistic() || !tx.repeatableRead()) {
                 tx.setRollbackOnly();
 
-                throw new IgniteSQLException("Only pessimistic repeatable read transactions are supported at the moment.",
-                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
+                throw new UnsupportedTxModeException();
             }
 
             if (!tx.isOperationAllowed(true)) {
                 tx.setRollbackOnly();
 
-                throw new IgniteSQLException("SQL queries and cache operations " +
-                    "may not be used in the same transaction.", IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH);
+                throw new NonMvccTransactionException();
             }
         }
 
         return tx;
     }
-
 
     /**
      * @param ctx Grid kernal context.
@@ -916,6 +939,26 @@ public class MvccUtils {
         @Override public MvccVersion apply(GridCacheContext cctx, MvccSnapshot snapshot, long mvccCrd, long mvccCntr,
             int mvccOpCntr, long newMvccCrd, long newMvccCntr, int newMvccOpCntr) {
             return newMvccCrd == MVCC_CRD_COUNTER_NA ? null : mvccVersion(newMvccCrd, newMvccCntr, newMvccOpCntr);
+        }
+    }
+
+    /** */
+    public static class UnsupportedTxModeException extends IgniteCheckedException {
+        /** */
+        private static final long serialVersionUID = 0L;
+        /** */
+        private UnsupportedTxModeException() {
+            super("Only pessimistic repeatable read transactions are supported when MVCC is enabled.");
+        }
+    }
+
+    /** */
+    public static class NonMvccTransactionException extends IgniteCheckedException {
+        /** */
+        private static final long serialVersionUID = 0L;
+        /** */
+        private NonMvccTransactionException() {
+            super("Operations on MVCC caches are not permitted in transactions spanning non MVCC caches.");
         }
     }
 }

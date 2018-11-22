@@ -15,32 +15,27 @@
  * limitations under the License.
  */
 
-connected-clusters-cell-status {
-    $color-active: #417505;
-    $color-not-active: #ee2b27;
+import {component} from './component';
 
-    display: block;
+export default angular.module('ignite-console.form-signup', [])
+    .component('formSignup', component);
 
-    div {
-        display: flex;
+export interface ISignupData {
+    email: string,
+    password: string,
+    firstName: string,
+    lastName: string,
+    phone?: string,
+    company: string,
+    country: string
+}
 
-        &:before {
-            content: '●';
-
-            position: relative;
-            height: 16px;
-            margin-right: 10px;
-            
-            font-size: 24px;
-            line-height: 19px;
-        }
-    }
-
-    .#{&}-active {
-        color: $color-active;
-    }
-
-    .#{&}-not-active {
-        color: $color-not-active;
-    }
+export interface ISignupFormController extends ng.IFormController {
+    email: ng.INgModelController,
+    password: ng.INgModelController,
+    firstName: ng.INgModelController,
+    lastName: ng.INgModelController,
+    phone: ng.INgModelController,
+    company: ng.INgModelController,
+    country: ng.INgModelController
 }

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.mvcc.msg;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccLongList;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
@@ -33,6 +34,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  *
  */
+@IgniteCodeGeneratingFail
 public class MvccSnapshotResponse implements MvccMessage, MvccSnapshot, MvccLongList {
     /** */
     private static final long serialVersionUID = 0L;

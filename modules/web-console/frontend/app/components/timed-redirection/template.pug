@@ -14,11 +14,9 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-web-console-header
+.timed-redirection--wrapper
+    h1 {{::$ctrl.headerText}}
 
-.container--responsive.body-container
-    .error-page
-        h1.error-page__title 404
-        h2.error-page__description Page not found
+    .sub-header {{::$ctrl.subHeaderText}}
 
-web-console-footer
+    .redirection-text You’ll be redirected back automatically in {{$ctrl.secondsLeft}} seconds, or #[a(ng-click='$ctrl.go()') click here] to redirect now.
