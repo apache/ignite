@@ -210,7 +210,7 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
                         log.info("Restart node [node=" + nodeIdx + ", client=" + clientMode + ']');
 
                         try {
-                            Ignite ignite = startGrid(nodeIdx); //~~! here in try/finally
+                            Ignite ignite = startGrid(nodeIdx);
 
                             IgniteCache<Object, Object> cache;
 
