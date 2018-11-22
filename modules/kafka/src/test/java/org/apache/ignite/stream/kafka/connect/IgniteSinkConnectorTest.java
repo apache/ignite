@@ -139,8 +139,6 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testSinkPutsWithoutTransformation() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9872");
-
         Map<String, String> sinkProps = makeSinkProps(Utils.join(TOPICS, ","));
 
         sinkProps.remove(IgniteSinkConstants.SINGLE_TUPLE_EXTRACTOR_CLASS);
