@@ -1894,25 +1894,30 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testFailedCoordinatorNode() throws Exception {
-        IgniteEx coord = startGrid(0);
+        try {
+            IgniteEx coord = startGrid(0);
 
-        IgniteEx ignite1 = startGrid(1);
+            IgniteEx ignite1 = startGrid(1);
 
-        CountDownLatch failedLatch = new CountDownLatch(1);
+            CountDownLatch failedLatch = new CountDownLatch(1);
 
-        ignite1.events().localListen(evt -> {
-            failedLatch.countDown();
+            ignite1.events().localListen(evt -> {
+                failedLatch.countDown();
 
-            return false;
-        }, EVT_NODE_FAILED);
+                return false;
+            }, EVT_NODE_FAILED);
 
-        ignite1.configuration().getDiscoverySpi().failNode(coord.localNode().id(), null);
+            ignite1.configuration().getDiscoverySpi().failNode(coord.localNode().id(), null);
 
-        assertTrue(failedLatch.await(5000, MILLISECONDS));
+            assertTrue(failedLatch.await(5000, MILLISECONDS));
 
-        waitNodeStop(coord.name());
+            waitNodeStop(coord.name());
 
-        assertEquals(1, ignite1.context().discovery().allNodes().size());
+            assertEquals(1, ignite1.context().discovery().allNodes().size());
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 
     /**
