@@ -45,12 +45,14 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Predicate;
@@ -60,6 +62,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
@@ -139,6 +142,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDat
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -2197,7 +2201,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         cctx.walState().runWithOutWAL(() -> {
             if (it != null)
-                applyUpdates(it, stopPred, entryPred, false, null);
+                applyUpdates(it, stopPred, entryPred, false, null, false);
         });
     }
 
@@ -2208,14 +2212,20 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param entryPred Data record and corresponding data entries predicate.
      * @param lockEntries If true, update will be performed under entry lock.
      * @param onWalPointerApplied Listener to be invoked after every WAL record applied.
+     * @param asyncApply If true, updates applying will be delegated to the striped executor.
      */
     public void applyUpdates(
         WALIterator it,
         @Nullable IgniteBiPredicate<WALPointer, WALRecord> stopPred,
         IgniteBiPredicate<WALRecord, DataEntry> entryPred,
         boolean lockEntries,
-        IgniteInClosure<WALPointer> onWalPointerApplied
+        IgniteInClosure<WALPointer> onWalPointerApplied,
+        boolean asyncApply
     ) {
+        StripedExecutor exec = cctx.kernalContext().getStripedExecutorService();
+
+        AtomicReference<IgniteCheckedException> applyError = new AtomicReference<>();
+
         while (it.hasNext()) {
             IgniteBiTuple<WALPointer, WALRecord> next = it.next();
 
@@ -2239,8 +2249,33 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                                     GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
-                                    if (cacheCtx != null)
-                                        applyUpdate(cacheCtx, dataEntry, lockEntries);
+                                    if (cacheCtx != null) {
+                                        if (asyncApply) {
+                                            if (applyError.get() != null)
+                                                throw applyError.get();
+
+                                            exec.execute(dataEntry.partitionId(), () -> {
+                                                try {
+                                                    if (applyError.get() != null)
+                                                        return;
+
+                                                    checkpointReadLock();
+
+                                                    try {
+                                                        applyUpdate(cacheCtx, dataEntry, lockEntries);
+                                                    }
+                                                    finally {
+                                                        checkpointReadUnlock();
+                                                    }
+                                                }
+                                                catch (IgniteCheckedException e) {
+                                                    applyError.compareAndSet(null, e);
+                                                }
+                                            });
+                                        }
+                                        else
+                                            applyUpdate(cacheCtx, dataEntry, lockEntries);
+                                    }
                                     else if (log != null)
                                         log.warning("Cache is not started. Updates cannot be applied " +
                                             "[cacheId=" + cacheId + ']');
@@ -2285,6 +2320,27 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (onWalPointerApplied != null)
                 onWalPointerApplied.apply(rec.position());
         }
+
+        if (applyError.get() != null)
+            throw new IgniteException(applyError.get()); // Fail-fast check.
+        else {
+            CountDownLatch stripesClearLatch = new CountDownLatch(exec.stripes());
+
+            // We have to ensure that all asynchronous updates are done.
+            // StripedExecutor guarantees ordering inside stripe - it would enough to await "finishing" tasks.
+            for (int i = 0; i < exec.stripes(); i++)
+                exec.execute(i, stripesClearLatch::countDown);
+
+            try {
+                stripesClearLatch.await();
+            }
+            catch (InterruptedException e) {
+                throw new IgniteInterruptedException(e);
+            }
+        }
+
+        if (applyError.get() != null)
+            throw new IgniteException(applyError.get());
     }
 
     /**
