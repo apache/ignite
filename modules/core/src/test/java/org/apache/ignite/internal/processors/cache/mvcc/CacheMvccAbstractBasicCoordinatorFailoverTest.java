@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,19 +28,27 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.distributed.TestCacheNodeExcludingFilter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccSnapshotResponse;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -674,5 +683,180 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
 
         for (Ignite node : G.allGrids())
             checkActiveQueriesCleanup(node);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMultipleCoordinatorsLeft2Persistence() throws Exception {
+        persistence = true;
+
+        checkCoordinatorsLeft(2, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMultipleCoordinatorsLeft3Persistence() throws Exception {
+        persistence = true;
+
+        checkCoordinatorsLeft(3, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMultipleCoordinatorsLeft4() throws Exception {
+        checkCoordinatorsLeft(4, true);
+    }
+
+    /**
+     * @param num Number of coordinators to stop.
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("unchecked")
+    private void checkCoordinatorsLeft(int num, boolean stopCrdFirst) throws Exception {
+        disableScheduledVacuum = true;
+
+        final int DATA_NODES = 3;
+
+        final int NODES = num + DATA_NODES;
+
+        nodeAttr = CRD_ATTR;
+
+        // Do not use startMultithreaded here.
+        startGrids(num);
+
+        nodeAttr = null;
+
+        startGridsMultiThreaded(num, DATA_NODES);
+
+        List<Ignite> victims = new ArrayList<>(num);
+        List<Ignite> survivors = new ArrayList<>(DATA_NODES);
+
+        for (int i = 0; i < NODES; i++) {
+            if (i < num)
+                victims.add(grid(i));
+            else
+                survivors.add(grid(i));
+        }
+
+        if (log.isInfoEnabled()) {
+            log.info("Nodes to be stopped [" +
+                victims.stream().
+                    map(n -> n.cluster().localNode().id().toString())
+                    .collect(Collectors.joining(", ")) + ']');
+
+            log.info("Nodes not to be stopped [" +
+                survivors.stream().
+                    map(n -> n.cluster().localNode().id().toString())
+                    .collect(Collectors.joining(", ")) + ']');
+        }
+
+        Ignite nearNode = survivors.get(0);
+
+        if (persistence)
+            nearNode.cluster().active(true);
+
+        CacheConfiguration ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, DATA_NODES - 1, DFLT_PARTITION_COUNT)
+            .setNodeFilter(new CoordinatorNodeFilter());
+
+        IgniteCache cache = nearNode.createCache(ccfg);
+
+        try (Transaction tx = nearNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            for (int key = 0; key < 10; key++)
+                cache.put(key, 1);
+
+            tx.commit();
+        }
+
+        List<Thread> stopThreads = victims.stream()
+            .map(v -> new Thread(() -> stopGrid(v.name())))
+            .collect(Collectors.toList());
+
+        ScanQuery<Object, Object> scan = new ScanQuery<>();
+
+        QueryCursor<Cache.Entry<Object, Object>> cur = survivors.get(0).cache(DEFAULT_CACHE_NAME).query(scan);
+
+        Iterator<Cache.Entry<Object, Object>> it = cur.iterator();
+
+        assertTrue(it.hasNext());
+        assertEquals(1, it.next().getValue());
+
+        if (log.isInfoEnabled())
+            log.info("Start stopping nodes.");
+
+        // Stop nodes and join threads.
+        if (stopCrdFirst) {
+            for (Thread t : stopThreads)
+                t.start();
+        }
+        else  {
+            // We should stop the oldest node last.
+            GridCachePartitionExchangeManager exch = ((IgniteEx)survivors.get(1)).context().cache().context().exchange();
+
+            GridDhtTopologyFuture lastFinished = exch.lastFinishedFuture();
+
+            for (int i = 1; i < stopThreads.size(); i++)
+                stopThreads.get(i).start();
+
+            while (lastFinished == exch.lastTopologyFuture())
+                doSleep(1);
+
+            stopThreads.get(0).start();
+        }
+
+        for (Thread t : stopThreads)
+            t.join();
+
+        if (log.isInfoEnabled())
+            log.info("All nodes stopped.");
+
+        assertTrue(it.hasNext());
+        assertEquals(1, it.next().getValue());
+
+        for (Ignite node : survivors) {
+            for (int key = 0; key < 10; key++)
+                assertEquals(1, node.cache(DEFAULT_CACHE_NAME).get(key));
+        }
+
+        try (Transaction tx = nearNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            for (int key = 0; key < 10; key++)
+                cache.put(key, 2);
+
+            tx.commit();
+        }
+        catch (Exception e) {
+            stopAllGrids(true);
+
+            fail(X.getFullStackTrace(e));
+        }
+
+        for (Ignite node : survivors) {
+            for (int key = 0; key < 10; key++)
+                assertEquals(2, node.cache(DEFAULT_CACHE_NAME).get(key));
+        }
+
+        try (Transaction tx = nearNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            for (int key = 0; key < 10; key++)
+                cache.put(key, 3);
+
+            tx.commit();
+        }
+        catch (Exception e) {
+            stopAllGrids(true);
+
+            fail(X.getFullStackTrace(e));
+        }
+
+        for (Ignite node : survivors) {
+            for (int key = 0; key < 10; key++)
+                assertEquals(3, node.cache(DEFAULT_CACHE_NAME).get(key));
+        }
+
+        while (it.hasNext())
+            assertEquals(1, (int)it.next().getValue());
+
+        cur.close();
     }
 }

@@ -56,7 +56,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridLongList;
@@ -152,9 +151,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** */
     private volatile AffinityTopologyVersion rebalancedTopVer = AffinityTopologyVersion.NONE;
 
-    /** */
-    private volatile MvccCoordinator mvccCrd;
-
     /**
      * @param ctx Cache shared context.
      * @param grp Cache group.
@@ -247,11 +243,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public MvccCoordinator mvccCoordinator() {
-        return mvccCrd;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean holdsLock() {
         return lock.isWriteLockedByCurrentThread() || lock.getReadHoldCount() > 0;
     }
@@ -260,7 +251,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     @Override public void updateTopologyVersion(
         GridDhtTopologyFuture exchFut,
         @NotNull DiscoCache discoCache,
-        MvccCoordinator mvccCrd,
         long updSeq,
         boolean stopping
     ) throws IgniteInterruptedCheckedException {
@@ -287,7 +277,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             lastTopChangeVer = exchTopVer;
 
             this.discoCache = discoCache;
-            this.mvccCrd = mvccCrd;
         }
         finally {
             lock.writeLock().unlock();
