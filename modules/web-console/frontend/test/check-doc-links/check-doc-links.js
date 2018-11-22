@@ -66,7 +66,8 @@ const findLinks = (acc, ast) => {
 
                 try {
                     acc.push([JSON.parse(compiledAttr).href, ast.filePath]);
-                } catch (e) {
+                }
+                catch (e) {
                     console.log(ast.filePath, e);
                 }
             }

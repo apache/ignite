@@ -945,6 +945,8 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
                                 tx.commit();
 
+                                v++;
+
                                 first = false;
                             }
 
@@ -952,10 +954,8 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                                 Map<Integer, Integer> res = readAllByMode(cache.cache, keys, readMode, INTEGER_CODEC);
 
                                 for (Integer k : keys)
-                                    assertEquals("key=" + k, v, (Object)res.get(k));
+                                    assertEquals("key=" + k, v - 1, (Object)res.get(k));
                             }
-
-                            v++;
                         }
                         catch (Exception e) {
                             handleTxException(e);
@@ -1367,6 +1367,13 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                 }
             }, readers, "reader");
 
+            GridTestUtils.runAsync(() -> {
+                while (System.currentTimeMillis() < stopTime)
+                    doSleep(1000);
+
+                stop.set(true);
+            });
+
             while (System.currentTimeMillis() < stopTime && !stop.get()) {
                 Thread.sleep(1000);
 
@@ -1408,8 +1415,10 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
                             Ignite srv = startGrid(idx);
 
+                            cache0 = new TestCache(srv.cache(DEFAULT_CACHE_NAME));
+
                             synchronized (caches) {
-                                caches.set(idx, new TestCache(srv.cache(DEFAULT_CACHE_NAME)));
+                                caches.set(idx, cache0);
                             }
 
                             awaitPartitionMapExchange();
@@ -1422,8 +1431,6 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                     }
                 }
             }
-
-            stop.set(true);
 
             Exception ex = null;
 

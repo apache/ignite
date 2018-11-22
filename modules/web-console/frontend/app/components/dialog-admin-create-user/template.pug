@@ -14,11 +14,24 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-web-console-header
+.modal-dialog(ng-click='$event.stopPropagation()' )
+    form.modal-content(
+        name='$ctrl.form' novalidate
+        ignite-loading='createUser'
+        ignite-loading-text='Creating user…'
+    )
+        .modal-header
+            h4.modal-title Create User
 
-.container--responsive.body-container
-    .error-page
-        h1.error-page__title 403
-        h2.error-page__description You are not authorized
-
-web-console-footer
+            button.close(type='button' aria-label='Close' ng-click='$ctrl.close()')
+                svg(ignite-icon="cross")
+        .modal-body
+            form-signup(
+                outer-form='$ctrl.form'
+                ng-model='$ctrl.data'
+                server-error='$ctrl.serverError'
+            )
+        .modal-footer
+            div
+                button.btn-ignite.btn-ignite--link-success(ng-click='$ctrl.close()') Cancel
+                button.btn-ignite.btn-ignite--success(ng-click='$ctrl.createUser()') Create user

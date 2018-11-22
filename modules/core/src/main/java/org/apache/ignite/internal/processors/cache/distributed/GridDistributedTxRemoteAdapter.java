@@ -954,6 +954,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
         catch (IgniteCheckedException | RuntimeException | Error e) {
             state(UNKNOWN);
 
+            U.error(log, "Error during tx rollback.", e);
+
             if (e instanceof IgniteCheckedException)
                 throw new IgniteException(e);
             else if (e instanceof RuntimeException)

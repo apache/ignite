@@ -15,12 +15,16 @@
  * limitations under the License.
  */
 
-import './style.scss';
-import template from './template.pug';
+import {StatusOptions} from './index';
+import {Status} from './controller';
+import {component} from './component';
 
-export default {
-    template,
+export const componentFactory = (options: StatusOptions) => ({
+    ...component,
     bindings: {
-        status: '<'
+        value: '<'
+    },
+    controller: class extends Status {
+        options = options
     }
-};
+});
