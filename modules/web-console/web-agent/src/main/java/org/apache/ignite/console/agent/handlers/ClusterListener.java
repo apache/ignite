@@ -95,8 +95,8 @@ public class ClusterListener implements AutoCloseable {
     /** */
     private static final String EVENT_CLUSTER_DISCONNECTED = "cluster:disconnected";
 
-    /** Default timeout. */
-    private static final long DFLT_TIMEOUT = 3000L;
+    /** Topology refresh frequency. */
+    private static final long REFRESH_FREQ = 3000L;
 
     /** JSON object mapper. */
     private static final ObjectMapper MAPPER = new GridJettyObjectMapper();
@@ -182,7 +182,7 @@ public class ClusterListener implements AutoCloseable {
     public void watch() {
         safeStopRefresh();
 
-        refreshTask = pool.scheduleWithFixedDelay(watchTask, 0L, DFLT_TIMEOUT, TimeUnit.MILLISECONDS);
+        refreshTask = pool.scheduleWithFixedDelay(watchTask, 0L, REFRESH_FREQ, TimeUnit.MILLISECONDS);
     }
 
     /** {@inheritDoc} */
