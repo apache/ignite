@@ -90,7 +90,7 @@ public interface IgniteCacheOffheapManager {
      * @return Number of processed partitions.
      * @throws IgniteCheckedException If failed.
      */
-    long restorePartitionStates(Map<GroupPartitionId, PartitionRecoverState> partitionRecoveryStates) throws IgniteCheckedException;
+    long restorePartitionStates(Map<GroupPartitionId, Integer> partitionRecoveryStates) throws IgniteCheckedException;
 
     /**
      * Partition counter update callback. May be overridden by plugin-provided subclasses.

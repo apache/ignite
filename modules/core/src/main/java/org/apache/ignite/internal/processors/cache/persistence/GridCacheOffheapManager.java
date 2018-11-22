@@ -408,7 +408,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /** {@inheritDoc} */
-    @Override public long restorePartitionStates(Map<GroupPartitionId, PartitionRecoverState> partitionRecoveryStates) throws IgniteCheckedException {
+    @Override public long restorePartitionStates(Map<GroupPartitionId, Integer> partitionRecoveryStates) throws IgniteCheckedException {
         if (grp.isLocal() || !grp.affinityNode() || !grp.dataRegion().config().isPersistenceEnabled())
             return 0;
 
@@ -420,7 +420,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
 
         for (int p = 0; p < grp.affinity().partitions(); p++) {
-            PartitionRecoverState recoverState = partitionRecoveryStates.get(new GroupPartitionId(grp.groupId(), p));
+            Integer recoverState = partitionRecoveryStates.get(new GroupPartitionId(grp.groupId(), p));
 
             if (ctx.pageStore().exists(grp.groupId(), p)) {
                 ctx.pageStore().ensure(grp.groupId(), p);
@@ -458,17 +458,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
 
                             if (recoverState != null) {
-                                io.setPartitionState(pageAddr, (byte) recoverState.stateId());
+                                io.setPartitionState(pageAddr, (byte) recoverState.intValue());
 
-                                changed = updateState(part, recoverState.stateId());
-
-                                if (recoverState.stateId() == GridDhtPartitionState.OWNING.ordinal()
-                                    || (recoverState.stateId() == GridDhtPartitionState.MOVING.ordinal()
-                                    && part.initialUpdateCounter() < recoverState.updateCounter())) {
-                                    part.initialUpdateCounter(recoverState.updateCounter());
-
-                                    changed = true;
-                                }
+                                changed = updateState(part, recoverState);
 
                                 if (log.isDebugEnabled())
                                     log.debug("Restored partition state (from WAL) " +
@@ -501,9 +493,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             else if (recoverState != null) {
                 GridDhtLocalPartition part = grp.topology().forceCreatePartition(p);
 
-                onPartitionInitialCounterUpdated(p, recoverState.updateCounter());
-
-                updateState(part, recoverState.stateId());
+                updateState(part, recoverState);
 
                 processed++;
 

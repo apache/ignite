@@ -5480,7 +5480,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
          */
         private void restorePartitionStates(
             Collection<CacheGroupContext> forGroups,
-            Map<GroupPartitionId, PartitionRecoverState> partitionStates
+            Map<GroupPartitionId, Integer> partitionStates
         ) throws IgniteCheckedException {
             long startRestorePart = U.currentTimeMillis();
 

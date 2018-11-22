@@ -1959,32 +1959,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * @param forGroups Cache groups.
-     * @param partitionStates Partition states.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void restorePartitionStates(
-        Collection<CacheGroupContext> forGroups,
-        Map<GroupPartitionId, Integer> partitionStates
-    ) throws IgniteCheckedException {
-        long startRestorePart = U.currentTimeMillis();
-
-        if (log.isInfoEnabled())
-            log.info("Restoring partition state for local groups.");
-
-        long totalProcessed = 0;
-
-        for (CacheGroupContext grp : forGroups)
-            totalProcessed += grp.restorePartitionStates(partitionStates);
-
-        if (log.isInfoEnabled())
-            log.info("Finished restoring partition state for local groups [" +
-                "groupsProcessed" + forGroups.size() +
-                "partitionsProcessed=" + totalProcessed +
-                ", time=" + (U.currentTimeMillis() - startRestorePart) + "ms]");
-    }
-
-    /**
      * Called when all partitions have been fully restored and pre-created on node start.
      *
      * Starts checkpointing process and initiates first checkpoint.
@@ -4896,7 +4870,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /**
          * @return Map of restored partition states for cache groups.
          */
-        public Map<GroupPartitionId, PartitionRecoverState> partitionRecoveryStates() {
+        public Map<GroupPartitionId, Integer> partitionRecoveryStates() {
             return Collections.unmodifiableMap(partitionRecoveryStates);
         }
     }
