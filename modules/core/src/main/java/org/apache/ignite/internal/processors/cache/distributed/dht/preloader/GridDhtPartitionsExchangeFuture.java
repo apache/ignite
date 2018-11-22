@@ -593,7 +593,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * @return First event discovery event.1
+     * @return First event discovery event.
      *
      */
     public DiscoveryEvent firstEvent() {
@@ -3566,27 +3566,24 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * failed to send update counter deltas to backup.
      */
     private void finalizePartitionCounters() {
+        int parallelismLvl = cctx.kernalContext().config().getSystemThreadPoolSize();
+
+        // Reserve at least 2 threads for system operations.
+        parallelismLvl = Math.max(1, parallelismLvl - 2);
+
         long time = System.currentTimeMillis();
 
         try {
-            int parallelismLvl = cctx.kernalContext().config().getSystemThreadPoolSize();
+            U.<CacheGroupContext, Void>doInParallel(
+                parallelismLvl,
+                cctx.kernalContext().getSystemExecutorService(),
+                nonLocalCacheGroups(),
+                grp -> {
+                    grp.topology().finalizeUpdateCounters();
 
-            // Reserve at least 2 threads for system operations.
-            parallelismLvl = Math.max(1, parallelismLvl - 2);
-
-            if (parallelismLvl > 1) {
-                U.doInParallel(parallelismLvl,
-                    cctx.kernalContext().getSystemExecutorService(),
-                    nonLocalCacheGroups(),
-                    grp -> {
-                        grp.topology().finalizeUpdateCounters();
-
-                        return null;
-                    }
-                );
-            }
-            else
-                nonLocalCacheGroups().forEach(grp -> grp.topology().finalizeUpdateCounters());
+                    return null;
+                }
+            );
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to finalize partition counters", e);
