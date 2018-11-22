@@ -65,12 +65,12 @@ for section in requirement_sections:
             if is_a_requirement(line):
                 requirements[section].append(line)
 
-with open('README.md', 'r') as readme_file:
+with open('README.md', 'r', encoding='utf-8') as readme_file:
     long_description = readme_file.read()
 
 setuptools.setup(
     name='pyignite',
-    version='0.3.1',
+    version='0.3.3',
     python_requires='>={}.{}'.format(*PYTHON_REQUIRED),
     author='Dmitry Melnichuk',
     author_email='dmitry.melnichuk@nobitlost.com',
