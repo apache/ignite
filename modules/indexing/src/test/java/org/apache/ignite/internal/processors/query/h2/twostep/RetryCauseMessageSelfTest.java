@@ -362,7 +362,6 @@ public class RetryCauseMessageSelfTest extends GridCommonAbstractTest {
      * Wrapper around @{GridMapQueryExecutor}
      */
     private abstract static class MockGridMapQueryExecutor extends GridMapQueryExecutor {
-
         /**
          * Wrapped executor
          */
@@ -387,18 +386,8 @@ public class RetryCauseMessageSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override GridSpinBusyLock busyLock() {
-            return startedExecutor.busyLock();
-        }
-
-        /** {@inheritDoc} */
         @Override public void onCacheStop(String cacheName) {
             startedExecutor.onCacheStop(cacheName);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int registeredLazyWorkers() {
-            return startedExecutor.registeredLazyWorkers();
         }
     }
 }

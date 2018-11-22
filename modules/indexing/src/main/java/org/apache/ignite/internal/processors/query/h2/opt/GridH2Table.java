@@ -23,14 +23,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
@@ -38,7 +36,6 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
-import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.command.dml.Insert;
@@ -89,15 +86,6 @@ public class GridH2Table extends TableBase {
     private final Map<String, GridH2IndexBase> tmpIdxs = new HashMap<>();
 
     /** */
-    private final ReadWriteLock lock;
-
-    /** Number of reading threads which currently move execution from query pool to dedicated thread. */
-    private final AtomicInteger lazyTransferCnt = new AtomicInteger();
-
-    /** Has writer that waits lock in the loop. */
-    private volatile boolean hasWaitedWriter;
-
-    /** */
     private boolean destroyed;
 
     /** */
@@ -123,6 +111,12 @@ public class GridH2Table extends TableBase {
 
     /** Flag remove index or not when table will be destroyed. */
     private volatile boolean rmIndex;
+
+    /** Exclusive lock. */
+    private final Lock lock;
+
+    /** Table version. The version is changed when exclusive lock is acquired (DDL operation is started). */
+    private final LongAdder ver = new LongAdder();
 
     /**
      * Creates table.
@@ -200,7 +194,7 @@ public class GridH2Table extends TableBase {
 
         sysIdxsCnt = idxs.size();
 
-        lock = new ReentrantReadWriteLock();
+        lock = new ReentrantLock();
     }
 
     /**
@@ -258,13 +252,14 @@ public class GridH2Table extends TableBase {
         if (res != null)
             return res;
 
-        // Acquire the lock.
-        lock(exclusive);
+        if (exclusive) {
+            lock();
 
-        if (destroyed) {
-            unlock(exclusive);
+            if (destroyed) {
+                unlock();
 
-            throw new IllegalStateException("Table " + identifierString() + " already destroyed.");
+                throw new IllegalStateException("Table " + identifierString() + " already destroyed.");
+            }
         }
 
         // Mutate state.
@@ -273,6 +268,14 @@ public class GridH2Table extends TableBase {
         ses.addLock(this);
 
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unlock(Session ses) {
+        Boolean exclusive = sessions.remove(ses);
+
+        if (Boolean.TRUE.equals(exclusive))
+            unlock();
     }
 
     /**
@@ -290,53 +293,13 @@ public class GridH2Table extends TableBase {
     }
 
     /**
-     * Acquire table lock.
-     *
-     * @param exclusive Exclusive flag.
+     * Acquire exclusive table lock.
      */
-    private void lock(boolean exclusive) {
-        Lock l = exclusive ? lock.writeLock() : lock.readLock();
-
+    private void lock() {
         try {
-            if (exclusive) {
-                // Attempting to obtain exclusive lock for DDL.
-                // Lock is considered acquired only if "lazyTransferCnt" is zero, meaning that 
-                // currently there are no reader threads moving query execution from query 
-                // pool to dedicated thread.
-                // It is possible that reader which is currently transferring execution gets
-                // queued after the write lock we are trying to acquire. So we use timed waiting
-                // and a loop to avoid deadlocks.
-                for (;;) {
-                    if (l.tryLock(200, TimeUnit.MILLISECONDS)) {
-                        if (lazyTransferCnt.get() == 0)
-                            break;
-                        else
-                            l.unlock();
-                    }
+            lock.lockInterruptibly();
 
-                    hasWaitedWriter = true;
-
-                    Thread.yield();
-                }
-
-                hasWaitedWriter = false;
-            }
-            else {
-                // Attempt to acquire read lock (query execution, DML, cache update).
-                // If query is being executed inside a query pool, we do not want it to be blocked
-                // for a long time, as it would prevent other queries from being executed. So we
-                // wait a little and then force transfer to dedicated thread by throwing special
-                // timeout exception.GridNioSslSelfTest
-                // If query is not in the query pool, then we simply wait for lock acquisition.
-                if (isSqlNotInLazy()) {
-                    if (hasWaitedWriter || !l.tryLock(200, TimeUnit.MILLISECONDS)) {
-                        throw new GridH2RetryException("Long wait on Table lock: [tableName=" + getName()
-                            + ", hasWaitedWriter=" + hasWaitedWriter + ']');
-                    }
-                }
-                else
-                    l.lockInterruptibly();
-            }
+            ver.increment();
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -346,57 +309,10 @@ public class GridH2Table extends TableBase {
     }
 
     /**
-     * Release table lock.
-     *
-     * @param exclusive Exclusive flag.
+     * Release exclusive table lock.
      */
-    private void unlock(boolean exclusive) {
-        Lock l = exclusive ? lock.writeLock() : lock.readLock();
-
-        l.unlock();
-    }
-
-    /**
-     * Check if table is being locked in not lazy thread by SQL query.
-     *
-     * @return {@code True} if is in query pool.
-     */
-    private static boolean isSqlNotInLazy() {
-        return GridH2QueryContext.get() != null && MapQueryLazyWorker.currentWorker() == null;
-    }
-
-    /**
-     * Callback invoked when session is to be transferred to lazy thread. In order to prevent concurrent changes
-     * by DDL during move we increment counter before releasing read lock.
-     *
-     * @param ses Session.
-     */
-    public void onLazyTransferStarted(Session ses) {
-        assert sessions.containsKey(ses) : "Detached session have not locked the table: " + getName();
-
-        lazyTransferCnt.incrementAndGet();
-
-        lock.readLock().unlock();
-    }
-
-    /**
-     * Callback invoked when lazy transfer finished. Acquire the lock, decrement transfer counter.
-     *
-     * @param ses Session to detach.
-     */
-    public void onLazyTransferFinished(Session ses) {
-        assert sessions.containsKey(ses) : "Attached session have not locked the table: " + getName();
-
-        try {
-            lock.readLock().lockInterruptibly();
-
-            lazyTransferCnt.decrementAndGet();
-        }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-
-            throw new IgniteInterruptedException("Thread got interrupted while trying to acquire table lock.", e);
-        }
+    private void unlock() {
+        lock.unlock();
     }
 
     /**
@@ -414,7 +330,7 @@ public class GridH2Table extends TableBase {
 
     /** {@inheritDoc} */
     @Override public void removeChildrenAndResources(Session ses) {
-        lock(true);
+        lock();
 
         try {
             super.removeChildrenAndResources(ses);
@@ -446,7 +362,7 @@ public class GridH2Table extends TableBase {
 
         }
         finally {
-            unlock(true);
+            unlock();
         }
     }
 
@@ -454,7 +370,7 @@ public class GridH2Table extends TableBase {
      * Destroy the table.
      */
     public void destroy() {
-        lock(true);
+        lock();
 
         try {
             ensureNotDestroyed();
@@ -468,7 +384,7 @@ public class GridH2Table extends TableBase {
                     index(i).destroy(rmIndex);
         }
         finally {
-            unlock(true);
+            unlock();
         }
     }
 
@@ -479,16 +395,6 @@ public class GridH2Table extends TableBase {
      */
     public void setRemoveIndexOnDestroy(boolean rmIndex){
         this.rmIndex = rmIndex;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void unlock(Session ses) {
-        Boolean exclusive = sessions.remove(ses);
-
-        if (exclusive == null)
-            return;
-
-        unlock(exclusive);
     }
 
     /**
@@ -533,7 +439,7 @@ public class GridH2Table extends TableBase {
             prevRow0.prepareValuesCache();
 
         try {
-            lock(false);
+            long v0 = ver.longValue();
 
             try {
                 ensureNotDestroyed();
@@ -562,9 +468,15 @@ public class GridH2Table extends TableBase {
                     for (GridH2IndexBase idx : tmpIdxs.values())
                         addToIndex(idx, row0, prevRow0);
                 }
+
+                if (v0 != ver.longValue())
+                    throw new QueryRetryException(getName());
             }
-            finally {
-                unlock(false);
+            catch (Exception e) {
+                if (v0 != ver.longValue())
+                    throw new QueryRetryException(getName(), e);
+                else
+                    throw e;
             }
         }
         finally {
@@ -585,7 +497,7 @@ public class GridH2Table extends TableBase {
     public boolean remove(CacheDataRow row) throws IgniteCheckedException {
         GridH2Row row0 = desc.createRow(row);
 
-        lock(false);
+        long ver0 = ver.longValue();
 
         try {
             ensureNotDestroyed();
@@ -608,10 +520,16 @@ public class GridH2Table extends TableBase {
                 size.decrement();
             }
 
+            if (ver0 != ver.longValue())
+                throw new QueryRetryException(getName());
+
             return rmv;
         }
-        finally {
-            unlock(false);
+        catch (Exception e) {
+            if (ver0 != ver.longValue())
+                throw new QueryRetryException(getName(), e);
+            else
+                throw e;
         }
     }
 
@@ -661,7 +579,7 @@ public class GridH2Table extends TableBase {
     public void proposeUserIndex(Index idx) throws IgniteCheckedException {
         assert idx instanceof GridH2IndexBase;
 
-        lock(true);
+        lock();
 
         try {
             ensureNotDestroyed();
@@ -676,7 +594,7 @@ public class GridH2Table extends TableBase {
             assert oldTmpIdx == null;
         }
         finally {
-            unlock(true);
+            unlock();
         }
     }
 
@@ -688,7 +606,7 @@ public class GridH2Table extends TableBase {
      * @return Temporary index with given name.
      */
     private Index commitUserIndex(Session ses, String idxName) {
-        lock(true);
+        lock();
 
         try {
             ensureNotDestroyed();
@@ -721,7 +639,7 @@ public class GridH2Table extends TableBase {
             return idx;
         }
         finally {
-            unlock(true);
+            unlock();
         }
     }
 
@@ -731,7 +649,7 @@ public class GridH2Table extends TableBase {
      * @param idxName Index name.
      */
     public void rollbackUserIndex(String idxName) {
-        lock(true);
+        lock();
 
         try {
             ensureNotDestroyed();
@@ -741,7 +659,7 @@ public class GridH2Table extends TableBase {
             assert rmvIdx != null;
         }
         finally {
-            unlock(true);
+            unlock();
         }
     }
 
@@ -773,7 +691,7 @@ public class GridH2Table extends TableBase {
      * @param h2Idx the index to remove
      */
     public void removeIndex(Session session, Index h2Idx) {
-        lock(true);
+        lock();
 
         try {
             ArrayList<Index> idxs = new ArrayList<>(this.idxs);
@@ -802,7 +720,7 @@ public class GridH2Table extends TableBase {
             this.idxs = idxs;
         }
         finally {
-            unlock(true);
+            unlock();
         }
     }
 
@@ -984,7 +902,7 @@ public class GridH2Table extends TableBase {
     public void addColumns(List<QueryField> cols, boolean ifNotExists) {
         assert !ifNotExists || cols.size() == 1;
 
-        lock(true);
+        lock();
 
         try {
             int pos = columns.length;
@@ -1023,7 +941,7 @@ public class GridH2Table extends TableBase {
             setModified();
         }
         finally {
-            unlock(true);
+            unlock();
         }
     }
 
@@ -1036,7 +954,7 @@ public class GridH2Table extends TableBase {
     public void dropColumns(List<String> cols, boolean ifExists) {
         assert !ifExists || cols.size() == 1;
 
-        lock(true);
+        lock();
 
         try {
             int size = columns.length;
@@ -1086,7 +1004,7 @@ public class GridH2Table extends TableBase {
             setModified();
         }
         finally {
-            unlock(true);
+            unlock();
         }
     }
 

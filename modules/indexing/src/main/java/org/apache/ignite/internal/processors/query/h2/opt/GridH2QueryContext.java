@@ -27,7 +27,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -339,30 +338,38 @@ public class GridH2QueryContext {
     }
 
     /**
-     * Sets current thread local context. This method must be called when all the non-volatile properties are
-     * already set to ensure visibility for other threads.
+     * Register context & set current thread local context.
+     * This method must be called when all the non-volatile
+     * properties are already set to ensure visibility for other threads.
      *
      * @param x Query context.
      */
-     public static void set(GridH2QueryContext x) {
+     public static void register(GridH2QueryContext x) {
          assert qctx.get() == null;
 
          // We need MAP query context to be available to other threads to run distributed joins.
-         if (x.key.type == MAP && x.distributedJoinMode() != OFF && qctxs.putIfAbsent(x.key, x) != null
-             && MapQueryLazyWorker.currentWorker() == null)
+         if (x.key.type == MAP && x.distributedJoinMode() != OFF && qctxs.putIfAbsent(x.key, x) != null)
              throw new IllegalStateException("Query context is already set.");
 
          qctx.set(x);
     }
 
     /**
+     * Sets current thread local context.
+     *
+     * @param x Query context.
+     */
+    public static void set(GridH2QueryContext x) {
+        assert qctx.get() == null : "Exist ctx=" + qctx.get() + ", new ctx=" + x;
+        assert x != null;
+
+        qctx.set(x);
+    }
+
+    /**
      * Drops current thread local context.
      */
     public static void clearThreadLocal() {
-        GridH2QueryContext x = qctx.get();
-
-        assert x != null;
-
         qctx.remove();
     }
 

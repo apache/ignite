@@ -32,10 +32,6 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -241,8 +237,6 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
 
         stopGrid(3);
 
-        assertNoWorkers();
-
         // Test server node leave with active worker.
         FieldsQueryCursor<List<?>> cursor2 = execute(srv1, baseQuery().setPageSize(PAGE_SIZE_SMALL));
 
@@ -257,8 +251,6 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
         finally {
             cursor2.close();
         }
-
-        assertNoWorkers();
     }
 
     /**
@@ -272,13 +264,11 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
         List<List<?>> rows = execute(node, baseQuery()).getAll();
 
         assertBaseQueryResults(rows);
-        assertNoWorkers();
 
         // Get data in several pages.
         rows = execute(node, baseQuery().setPageSize(PAGE_SIZE_SMALL)).getAll();
 
         assertBaseQueryResults(rows);
-        assertNoWorkers();
 
         // Test full iteration.
         rows = new ArrayList<>();
@@ -291,7 +281,6 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
         cursor.close();
 
         assertBaseQueryResults(rows);
-        assertNoWorkers();
 
         // Test partial iteration with cursor close.
         try (FieldsQueryCursor<List<?>> partialCursor = execute(node, baseQuery().setPageSize(PAGE_SIZE_SMALL))) {
@@ -300,8 +289,6 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
             for (int i = 0; i < 30; i++)
                 iter.next();
         }
-
-        assertNoWorkers();
 
         // Test execution of multiple queries at a time.
         List<Iterator<List<?>>> iters = new ArrayList<>();
@@ -370,8 +357,6 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
         FieldsQueryCursor<List<?>> cursor0 = execute(node, query(KEY_CNT - PAGE_SIZE_SMALL + 1).setPageSize(PAGE_SIZE_SMALL));
 
         Iterator<List<?>> it = cursor0.iterator();
-
-        assertNoWorkers();
 
         while (it.hasNext())
             rows.add(it.next());
@@ -479,41 +464,6 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
      * @return Lazy mode.
      */
     protected abstract boolean lazy();
-
-    /**
-     * Make sure that are no active lazy workers.
-     *
-     * @throws Exception If failed.
-     */
-    private void assertNoWorkers() throws Exception {
-        if (!GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                for (Ignite node : Ignition.allGrids()) {
-                    IgniteH2Indexing idx = (IgniteH2Indexing) ((IgniteKernal)node).context().query().getIndexing();
-
-                    if (idx.mapQueryExecutor().registeredLazyWorkers() != 0)
-                        return false;
-                }
-
-                return MapQueryLazyWorker.activeCount() == 0;
-            }
-        }, 1000L)) {
-            log.error("Lazy workers on nodes:");
-
-            for (Ignite node : Ignition.allGrids()) {
-                IgniteH2Indexing idx = (IgniteH2Indexing) ((IgniteKernal)node).context().query().getIndexing();
-
-                if (idx.mapQueryExecutor().registeredLazyWorkers() != 0) {
-                    log.error("[node=" + node + ", " + "registeredLazyWorkers="
-                        + idx.mapQueryExecutor().registeredLazyWorkers() + ']');
-                }
-
-                log.error("Active lazy workers: " + MapQueryLazyWorker.activeCount());
-
-                fail("There are not stopped lazy workers. See error message above.");
-            }
-        }
-    }
 
     /**
      * Get name for ID.

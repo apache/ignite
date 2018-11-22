@@ -950,7 +950,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException {
                     assert GridH2QueryContext.get() == null;
 
-                    GridH2QueryContext.set(ctx);
+                    GridH2QueryContext.register(ctx);
 
                     GridRunningQueryInfo run = new GridRunningQueryInfo(qryIdGen.incrementAndGet(), qry0,
                         SQL_FIELDS, schemaName, U.currentTimeMillis(), cancel, true);
@@ -2136,7 +2136,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         try {
-            GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, 0, PREPARE)
+            GridH2QueryContext.register(new GridH2QueryContext(locNodeId, locNodeId, 0, PREPARE)
                 .distributedJoinMode(distributedJoinMode(qry.isLocal(), qry.isDistributedJoins())));
 
             try {

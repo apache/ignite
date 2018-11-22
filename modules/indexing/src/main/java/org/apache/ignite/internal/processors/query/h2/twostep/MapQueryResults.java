@@ -24,7 +24,10 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
+import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.ObjectPoolReusable;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -46,9 +49,6 @@ class MapQueryResults {
     /** */
     private final GridCacheContext<?, ?> cctx;
 
-    /** Lazy worker. */
-    private volatile MapQueryLazyWorker lazyWorker;
-
     /** Lazy mode. */
     private boolean lazy;
 
@@ -58,24 +58,35 @@ class MapQueryResults {
     /** {@code SELECT FOR UPDATE} flag. */
     private final boolean forUpdate;
 
+    /** Detached connection. */
+    private ObjectPoolReusable<H2ConnectionWrapper> detachedConn;
+
+    /** Query context. */
+    private final GridH2QueryContext qctx;
+
     /** Logger. */
     private final IgniteLogger log;
 
     /**
      * Constructor.
+     *
      * @param h2 Indexing instance.
      * @param qryReqId Query request ID.
      * @param qrys Number of queries.
      * @param cctx Cache context.
      * @param forUpdate {@code SELECT FOR UPDATE} flag.
+     * @param lazy Lazy flag.
+     * @param qctx Query context.
+     * @param log Logger instance.
      */
     MapQueryResults(IgniteH2Indexing h2, long qryReqId, int qrys, @Nullable GridCacheContext<?, ?> cctx,
-        boolean forUpdate, boolean lazy, IgniteLogger log) {
+        boolean forUpdate, boolean lazy, GridH2QueryContext qctx, IgniteLogger log) {
         this.forUpdate = forUpdate;
         this.h2 = h2;
         this.qryReqId = qryReqId;
         this.cctx = cctx;
         this.lazy = lazy;
+        this.qctx = qctx;
         this.log = log;
 
         results = new AtomicReferenceArray<>(qrys);
@@ -101,20 +112,6 @@ class MapQueryResults {
      */
     GridQueryCancel queryCancel(int qryIdx) {
         return cancels[qryIdx];
-    }
-
-    /**
-     * @param lazyWorker Lazy worker.
-     */
-    void lazyWorker(MapQueryLazyWorker lazyWorker) {
-        this.lazyWorker = lazyWorker;
-    }
-
-    /**
-     * @return Lazy worker.
-     */
-    MapQueryLazyWorker lazyWorker() {
-        return lazyWorker;
     }
 
     /**
@@ -162,15 +159,7 @@ class MapQueryResults {
                 cancel.cancel();
         }
 
-        if (!lazy)
-            close();
-        else {
-            if (lazyWorker != null) {
-                lazyWorker.submitStopTask(this::close);
-
-                lazyWorker.stop(false);
-            }
-        }
+        close();
     }
 
     /**
@@ -211,5 +200,26 @@ class MapQueryResults {
      */
     public boolean isForUpdate() {
         return forUpdate;
+    }
+
+    /**
+     * @return Detached connection.
+     */
+    ObjectPoolReusable<H2ConnectionWrapper> detachedConnection() {
+        return detachedConn;
+    }
+
+    /**
+     * @param conn Detached connection.
+     */
+    void detachedConnection(ObjectPoolReusable<H2ConnectionWrapper> conn) {
+        detachedConn = conn;
+    }
+
+    /**
+     * @return Query context.
+     */
+    public GridH2QueryContext queryContext() {
+        return qctx;
     }
 }
