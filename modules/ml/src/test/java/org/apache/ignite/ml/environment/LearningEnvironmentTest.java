@@ -81,7 +81,7 @@ public class LearningEnvironmentTest {
      */
     @Test
     public void testRandomNumbersGenerator() {
-        // We make such builders that provide as functions returning partition index as random number generator nextInt
+        // We make such builders that provide as functions returning partition index * iteration as random number generator nextInt
         LearningEnvironmentBuilder envBuilder = getBuilder();
         int partitions = 10;
         int iterations = 2;
@@ -127,46 +127,93 @@ public class LearningEnvironmentTest {
         assertEquals(expected, result);
     }
 
+    /** Get cache mock */
     private Map<Integer, Integer> getCacheMock(int partsCount) {
         return IntStream.range(0, partsCount).boxed().collect(Collectors.toMap(x -> x, x -> x));
     }
 
+    /** Get cache mock */
     private LearningEnvironmentBuilder getBuilder() {
         return new PartitionDependentLearningEnvironmentBuilder(part -> TestUtils.testEnvBuilder().withRNGSupplier(() -> new MockRandom(part)));
     }
 
+    /**
+     * Partition builder dependent from parition.
+     */
     private static class PartitionDependentLearningEnvironmentBuilder implements LearningEnvironmentBuilder {
         /** Dependency between partition and {@link LearningEnvironmentBuilder} which should be used on it. */
         private IgniteFunction<Integer, LearningEnvironmentBuilder> builderDep;
 
+        /**
+         * Construct instance of this class with (partition -> {@link LearningEnvironmentBuilder}) dependency.
+         *
+         * @param builderDep Function describing (partition -> {@link LearningEnvironmentBuilder}) dependency.
+         */
         public PartitionDependentLearningEnvironmentBuilder(IgniteFunction<Integer, LearningEnvironmentBuilder> builderDep) {
             this.builderDep = builderDep;
         }
 
+        /** {@inheritDoc} */
         @Override public LearningEnvironment buildForWorker(int part) {
             return builderDep.apply(part).buildForWorker(part);
         }
 
+        /**
+         * Sets specified parallelism  strategy type for all partitions.
+         *
+         * @param stgyType Parallelism strategy type.
+         * @return This object.
+         */
         @Override public LearningEnvironmentBuilder withParallelismStrategyType(ParallelismStrategy.Type stgyType) {
             return compose(x -> x.withParallelismStrategyType(stgyType));
         }
 
+        /**
+         * Sets specified parallelism  strategy for all partitions.
+         *
+         * @param stgy Parallelism strategy type.
+         * @return This object.
+         */
         @Override public LearningEnvironmentBuilder withParallelismStrategy(ParallelismStrategy stgy) {
             return compose(x -> x.withParallelismStrategy(stgy));
         }
 
+        /**
+         * Sets specified logging factory for all partitions.
+         *
+         * @param loggingFactory Parallelism strategy type.
+         * @return This object.
+         */
         @Override public LearningEnvironmentBuilder withLoggingFactory(MLLogger.Factory loggingFactory) {
             return compose(x -> x.withLoggingFactory(loggingFactory));
         }
 
+        /**
+         * Sets specified random numbers generator seed for all partitions.
+         *
+         * @param seed Random numbers generator seed.
+         * @return This object.
+         */
         @Override public LearningEnvironmentBuilder withRNGSeed(long seed) {
             return compose(x -> x.withRNGSeed(seed));
         }
 
+        /**
+         * Sets supplier of random numbers generator for all partitions.
+         *
+         * @param rngSupplier Supplier of random numbers generator.
+         * @return This object.
+         */
         @Override public LearningEnvironmentBuilder withRNGSupplier(IgniteSupplier<Random> rngSupplier) {
             return compose(x -> x.withRNGSupplier(rngSupplier));
         }
 
+        /**
+         * Composes dependency with {@link LearningEnvironmentBuilder} transformation.
+         *
+         * @param other Learning environment builder.
+         * @return This object.
+         */
         private PartitionDependentLearningEnvironmentBuilder compose(IgniteFunction<LearningEnvironmentBuilder, LearningEnvironmentBuilder> other) {
             builderDep.andThen(other);
 
@@ -174,18 +221,28 @@ public class LearningEnvironmentTest {
         }
     }
 
+    /** Mock random numners generator. */
     private static class MockRandom extends Random {
-        private int startConzt;
+        /** Start value.  */
+        private int startVal;
+
+        /** Iteration. */
         private int iter;
 
-        public MockRandom(int startConzt) {
-            this.startConzt = startConzt;
+        /**
+         * Constructs instance of this class with a specified start value.
+         *
+         * @param startVal Start value.
+         */
+        public MockRandom(int startVal) {
+            this.startVal = startVal;
             iter = 0;
         }
 
+        /** {@inheritDoc} */
         @Override public int nextInt() {
             iter++;
-            return startConzt * iter;
+            return startVal * iter;
         }
     }
 }
