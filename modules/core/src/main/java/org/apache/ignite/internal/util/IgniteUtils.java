@@ -10782,40 +10782,92 @@ public abstract class IgniteUtils {
     ) throws IgniteCheckedException, IgniteInterruptedCheckedException {
         if(srcDatas.isEmpty())
             return Collections.emptyList();
+
         int[] batchSizes = calculateOptimalBatchSizes(parallelismLvl, srcDatas.size());
 
-        List<List<T>> batches = new ArrayList<>(batchSizes.length);
+        List<Batch<T, R>> batches = new ArrayList<>(batchSizes.length);
+
+        // Set for sharing batches between executor and current thread.
+        // If executor cannot perform immediately, we will execute task in the current thread.
+        Set<Batch<T, R>> sharedBatchesSet = new GridConcurrentHashSet<>(batchSizes.length);
 
         Iterator<T> iterator = srcDatas.iterator();
 
-        for (int batchSize : batchSizes) {
-            List<T> batch = new ArrayList<>(batchSize);
+        for (int idx = 0; idx < batchSizes.length; idx++) {
+            int batchSize = batchSizes[idx];
+
+            Batch<T, R> batch = new Batch<>(batchSize);
 
             for (int i = 0; i < batchSize; i++)
-                batch.add(iterator.next());
+                batch.addTask(iterator.next());
 
             batches.add(batch);
         }
 
-        List<Future<Collection<R>>> consumerFutures = batches.stream()
-            .filter(batch -> !batch.isEmpty())
-            .map(batch -> executorSvc.submit(() -> {
-                Collection<R> results = new ArrayList<>(batch.size());
+        batches = batches.stream()
+            .filter(batch -> !batch.tasks.isEmpty())
+            // Add to set only after check that batch is not empty.
+            .peek(sharedBatchesSet::add)
+            // Setup future in batch for waiting result.
+            .peek(batch -> batch.future = executorSvc.submit(() -> {
+                // Batch was stolen by the main stream.
+                if (!sharedBatchesSet.remove(batch)) {
+                    return null;
+                }
 
-                for (T item : batch)
+                Collection<R> results = new ArrayList<>(batch.tasks.size());
+
+                for (T item : batch.tasks)
                     results.add(operation.accept(item));
 
                 return results;
             }))
             .collect(Collectors.toList());
 
-        Throwable error =null;
+        Throwable error = null;
 
+        // Stealing jobs if executor is busy and cannot process task immediately.
+        // Perform batches in a current thread.
+        for (Batch<T, R> batch : sharedBatchesSet) {
+            // Executor steal task.
+            if (!sharedBatchesSet.remove(batch))
+                continue;
+
+            Collection<R> res = new ArrayList<>(batch.tasks.size());
+
+            try {
+                for (T item : batch.tasks)
+                    res.add(operation.accept(item));
+
+                batch.result(res);
+            }
+            catch (IgniteCheckedException e) {
+                batch.result(e);
+            }
+        }
+
+        // Final result collection.
         Collection<R> results = new ArrayList<>(srcDatas.size());
 
-        for (Future<Collection<R>> future : consumerFutures) {
+        for (Batch<T, R> batch: batches) {
             try {
-                results.addAll(future.get());
+                Throwable err = batch.error;
+
+                if (err != null) {
+                    if (error == null)
+                        error = err;
+                    else
+                        error.addSuppressed(err);
+
+                    continue;
+                }
+
+                Collection<R> res = batch.result();
+
+                if (res != null)
+                    results.addAll(res);
+                else
+                    assert error != null;
             }
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -10850,6 +10902,60 @@ public abstract class IgniteUtils {
         }
 
         return results;
+    }
+
+    /**
+     * The batch of tasks with a batch index in global array.
+     */
+    private static class Batch<T,R> {
+        /** List tasks. */
+        private final List<T> tasks;
+
+        /** */
+        private Collection<R> result;
+
+        /** */
+        private Throwable error;
+
+        /** */
+        private Future<Collection<R>> future;
+
+        /**
+         * @param batchSize Batch size.
+         */
+        private Batch(int batchSize) {
+            this.tasks = new ArrayList<>(batchSize);
+        }
+
+        /**
+         * @param task Add task.
+         */
+        public void addTask(T task){
+            tasks.add(task);
+        }
+
+        /**
+         * @param res Setup results for tasks.
+         */
+        public void result(Collection<R> res) {
+            this.result = res;
+        }
+
+        /**
+         * @param e Throwable if task was completed with error.
+         */
+        public void result(Throwable e) {
+            this.error = e;
+        }
+
+        /**
+         * Get tasks results.
+         */
+        public Collection<R> result() throws ExecutionException, InterruptedException {
+            assert future != null;
+
+            return result != null ? result : future.get();
+        }
     }
 
     /**

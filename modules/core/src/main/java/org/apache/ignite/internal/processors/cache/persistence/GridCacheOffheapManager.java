@@ -71,6 +71,7 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemor
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PagesAllocationRange;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionRecoverState;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionCountersIO;
@@ -111,6 +112,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
     /** */
     private ReuseListImpl reuseList;
+
+    /** Flag indicates that all group partitions have restored their state from page memory / disk. */
+    private volatile boolean partitionStatesRestored;
 
     /** {@inheritDoc} */
     @Override protected void initPendingTree(GridCacheContext cctx) throws IgniteCheckedException {
@@ -394,6 +398,142 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
         else if (needSnapshot)
             tryAddEmptyPartitionToSnapshot(store, ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long restorePartitionStates(Map<GroupPartitionId, PartitionRecoverState> partitionRecoveryStates) throws IgniteCheckedException {
+        if (grp.isLocal() || !grp.affinityNode() || !grp.dataRegion().config().isPersistenceEnabled())
+            return 0;
+
+        if (partitionStatesRestored)
+            return 0;
+
+        long processed = 0;
+
+        PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
+
+        for (int p = 0; p < grp.affinity().partitions(); p++) {
+            PartitionRecoverState recoverState = partitionRecoveryStates.get(new GroupPartitionId(grp.groupId(), p));
+
+            if (ctx.pageStore().exists(grp.groupId(), p)) {
+                ctx.pageStore().ensure(grp.groupId(), p);
+
+                if (ctx.pageStore().pages(grp.groupId(), p) <= 1) {
+                    if (log.isDebugEnabled())
+                        log.debug("Skipping partition on recovery (pages less than 1) " +
+                            "[grp=" + grp.cacheOrGroupName() + ", p=" + p + "]");
+
+                    continue;
+                }
+
+                if (log.isDebugEnabled())
+                    log.debug("Creating partition on recovery (exists in page store) " +
+                        "[grp=" + grp.cacheOrGroupName() + ", p=" + p + "]");
+
+                processed++;
+
+                GridDhtLocalPartition part = grp.topology().forceCreatePartition(p);
+
+                onPartitionInitialCounterUpdated(p, 0);
+
+                ctx.database().checkpointReadLock();
+
+                try {
+                    long partMetaId = pageMem.partitionMetaPageId(grp.groupId(), p);
+                    long partMetaPage = pageMem.acquirePage(grp.groupId(), partMetaId);
+
+                    try {
+                        long pageAddr = pageMem.writeLock(grp.groupId(), partMetaId, partMetaPage);
+
+                        boolean changed = false;
+
+                        try {
+                            PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
+
+                            if (recoverState != null) {
+                                io.setPartitionState(pageAddr, (byte) recoverState.stateId());
+
+                                changed = updateState(part, recoverState.stateId());
+
+                                if (recoverState.stateId() == GridDhtPartitionState.OWNING.ordinal()
+                                    || (recoverState.stateId() == GridDhtPartitionState.MOVING.ordinal()
+                                    && part.initialUpdateCounter() < recoverState.updateCounter())) {
+                                    part.initialUpdateCounter(recoverState.updateCounter());
+
+                                    changed = true;
+                                }
+
+                                if (log.isDebugEnabled())
+                                    log.debug("Restored partition state (from WAL) " +
+                                        "[grp=" + grp.cacheOrGroupName() + ", p=" + p + ", state=" + part.state() +
+                                        ", updCntr=" + part.initialUpdateCounter() + "]");
+                            }
+                            else {
+                                int stateId = (int) io.getPartitionState(pageAddr);
+
+                                changed = updateState(part, stateId);
+
+                                if (log.isDebugEnabled())
+                                    log.debug("Restored partition state (from page memory) " +
+                                        "[grp=" + grp.cacheOrGroupName() + ", p=" + p + ", state=" + part.state() +
+                                        ", updCntr=" + part.initialUpdateCounter() + ", stateId=" + stateId + "]");
+                            }
+                        }
+                        finally {
+                            pageMem.writeUnlock(grp.groupId(), partMetaId, partMetaPage, null, changed);
+                        }
+                    }
+                    finally {
+                        pageMem.releasePage(grp.groupId(), partMetaId, partMetaPage);
+                    }
+                }
+                finally {
+                    ctx.database().checkpointReadUnlock();
+                }
+            }
+            else if (recoverState != null) {
+                GridDhtLocalPartition part = grp.topology().forceCreatePartition(p);
+
+                onPartitionInitialCounterUpdated(p, recoverState.updateCounter());
+
+                updateState(part, recoverState.stateId());
+
+                processed++;
+
+                if (log.isDebugEnabled())
+                    log.debug("Restored partition state (from WAL) " +
+                        "[grp=" + grp.cacheOrGroupName() + ", p=" + p + ", state=" + part.state() +
+                        ", updCntr=" + part.initialUpdateCounter() + "]");
+            }
+            else {
+                if (log.isDebugEnabled())
+                    log.debug("Skipping partition on recovery (no page store OR wal state) " +
+                        "[grp=" + grp.cacheOrGroupName() + ", p=" + p + "]");
+            }
+        }
+
+        partitionStatesRestored = true;
+
+        return processed;
+    }
+
+    /**
+     * @param part Partition to restore state for.
+     * @param stateId State enum ordinal.
+     * @return Updated flag.
+     */
+    private boolean updateState(GridDhtLocalPartition part, int stateId) {
+        if (stateId != -1) {
+            GridDhtPartitionState state = GridDhtPartitionState.fromOrdinal(stateId);
+
+            assert state != null;
+
+            part.restoreState(state == GridDhtPartitionState.EVICTED ? GridDhtPartitionState.RENTING : state);
+
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -1630,6 +1770,18 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
+        @Override public boolean isEmpty() {
+            try {
+                CacheDataStore delegate0 = init0(true);
+
+                return delegate0 == null || delegate0.isEmpty();
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
         @Override public long cacheSize(int cacheId) {
             try {
                 CacheDataStore delegate0 = init0(true);
@@ -1722,12 +1874,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public void finalizeUpdateCountres() {
+        @Override public GridLongList finalizeUpdateCounters() {
             try {
                 CacheDataStore delegate0 = init0(true);
 
-                if (delegate0 != null)
-                    delegate0.finalizeUpdateCountres();
+                return delegate0 != null ? delegate0.finalizeUpdateCounters() : null;
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

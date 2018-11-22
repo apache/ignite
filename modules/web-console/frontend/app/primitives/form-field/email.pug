@@ -29,10 +29,10 @@ mixin form-field__email({ label, model, name, disabled, required, placeholder, t
             ng-messages=`$input.$error`
             ng-show=`($input.$dirty || $input.$touched || $input.$submitted) && $input.$invalid`
         )
-            if block
-                block
-
             if required
                 +form-field__error({ error: 'required', message: `${errLbl} could not be empty!` })
 
             +form-field__error({ error: 'email', message: `${errLbl} has invalid format!` })
+
+            if block
+                block
