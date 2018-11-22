@@ -20,6 +20,7 @@ import inspect
 from pyignite.constants import *
 from pyignite.exceptions import ParseError
 from pyignite.utils import entity_id, hashcode, is_hinted
+from .base import IgniteDataType
 from .internal import AnyDataObject
 from .type_codes import *
 
@@ -30,7 +31,7 @@ __all__ = [
 ]
 
 
-class ObjectArrayObject:
+class ObjectArrayObject(IgniteDataType):
     """
     Array of objects of any type. Its Python representation is
     tuple(type_id, iterable of any type).
@@ -110,7 +111,7 @@ class ObjectArrayObject:
         return buffer
 
 
-class WrappedDataObject:
+class WrappedDataObject(IgniteDataType):
     """
     One or more binary objects can be wrapped in an array. This allows reading,
     storing, passing and writing objects efficiently without understanding
@@ -195,7 +196,7 @@ class CollectionObject(ObjectArrayObject):
         )
 
 
-class Map:
+class Map(IgniteDataType):
     """
     Dictionary type, payload-only.
 
@@ -323,7 +324,7 @@ class MapObject(Map):
         return super().from_python(value, type_id)
 
 
-class BinaryObject:
+class BinaryObject(IgniteDataType):
     type_code = TC_COMPLEX_OBJECT
 
     USER_TYPE = 0x0001
