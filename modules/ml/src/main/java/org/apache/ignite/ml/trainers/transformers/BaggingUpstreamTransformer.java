@@ -40,7 +40,7 @@ public class BaggingUpstreamTransformer<K, V> implements UpstreamTransformer<K, 
     private long seed;
 
     /**
-     * Get builder of {@link BaggingUpstreamTransformer}.
+     * Get builder of {@link BaggingUpstreamTransformer} for a model with a specified index in ensemble.
      *
      * @param subsampleRatio Subsample ratio.
      * @param modelIdx Index of model in ensemble.
@@ -50,18 +50,6 @@ public class BaggingUpstreamTransformer<K, V> implements UpstreamTransformer<K, 
      */
     public static <K, V> UpstreamTransformerBuilder<K, V> builder(double subsampleRatio, int modelIdx) {
         return env -> new BaggingUpstreamTransformer<>(env.randomNumbersGenerator().nextLong() + modelIdx, subsampleRatio);
-    }
-
-    /**
-     * Get builder of {@link BaggingUpstreamTransformer}.
-     *
-     * @param subsampleRatio Subsample ratio.
-     * @param <K> Type of upstream keys.
-     * @param <V> Type of upstream values.
-     * @return Builder of {@link BaggingUpstreamTransformer}.
-     */
-    public static <K, V> UpstreamTransformerBuilder<K, V> builder(double subsampleRatio) {
-        return builder(subsampleRatio, -1);
     }
 
     /**

@@ -71,7 +71,6 @@ public class TrainerTransformers {
      * @param <L> Type of labels.
      * @return Bagged trainer.
      */
-    // TODO: IGNITE-10296: Inject capabilities of seeding through learning environment (remove).
     public static <M extends Model<Vector, Double>, L> DatasetTrainer<ModelsComposition, L> makeBagged(
         DatasetTrainer<M, L> trainer,
         int ensembleSize,
@@ -178,7 +177,8 @@ public class TrainerTransformers {
         }
 
         for (int i = 0; i < ensembleSize; i++) {
-            DatasetBuilder<K, V> newBuilder = datasetBuilder.withUpstreamTransformer(BaggingUpstreamTransformer.builder(subsampleRatio, i));
+            DatasetBuilder<K, V> newBuilder =
+                datasetBuilder.withUpstreamTransformer(BaggingUpstreamTransformer.builder(subsampleRatio, i));
             tasks.add(
                 trainingTaskGenerator.apply(newBuilder, i, mappings != null ? extractors.get(i) : extractor));
         }
