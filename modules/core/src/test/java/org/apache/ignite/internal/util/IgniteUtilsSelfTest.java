@@ -401,48 +401,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
-     * @throws Exception If failed.
-     */
-    public void testParseIsoDate() throws Exception {
-        Calendar cal = U.parseIsoDate("2009-12-08T13:30:44.000Z");
-
-        assert cal.get(Calendar.YEAR) == 2009;
-        assert cal.get(Calendar.MONTH) == 11;
-        assert cal.get(Calendar.DAY_OF_MONTH) == 8;
-        assert cal.get(Calendar.HOUR_OF_DAY) == 13;
-        assert cal.get(Calendar.MINUTE) == 30;
-        assert cal.get(Calendar.SECOND) == 44;
-        assert cal.get(Calendar.MILLISECOND) == 0;
-        assert cal.get(Calendar.ZONE_OFFSET) == 0 :
-            "Unexpected value: " + cal.get(Calendar.ZONE_OFFSET);
-
-        cal = U.parseIsoDate("2009-12-08T13:30:44.000+03:00");
-
-        assert cal.get(Calendar.YEAR) == 2009;
-        assert cal.get(Calendar.MONTH) == 11;
-        assert cal.get(Calendar.DAY_OF_MONTH) == 8;
-        assert cal.get(Calendar.HOUR_OF_DAY) == 13;
-        assert cal.get(Calendar.MINUTE) == 30;
-        assert cal.get(Calendar.SECOND) == 44;
-        assert cal.get(Calendar.MILLISECOND) == 0;
-        assert cal.get(Calendar.ZONE_OFFSET) == 3 * 60 * 60 * 1000 :
-            "Unexpected value: " + cal.get(Calendar.ZONE_OFFSET);
-
-        cal = U.parseIsoDate("2009-12-08T13:30:44.000+0300");
-
-        assert cal.get(Calendar.YEAR) == 2009;
-        assert cal.get(Calendar.MONTH) == 11;
-        assert cal.get(Calendar.DAY_OF_MONTH) == 8;
-        assert cal.get(Calendar.HOUR_OF_DAY) == 13;
-        assert cal.get(Calendar.MINUTE) == 30;
-        assert cal.get(Calendar.SECOND) == 44;
-        assert cal.get(Calendar.MILLISECOND) == 0;
-        assert cal.get(Calendar.ZONE_OFFSET) == 3 * 60 * 60 * 1000 :
-            "Unexpected value: " + cal.get(Calendar.ZONE_OFFSET);
-    }
-
-    /**
      * @throws Exception If test failed.
      */
     public void testPeerDeployAware0() throws Exception {
