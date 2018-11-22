@@ -810,9 +810,6 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
      * @param parts Partitions.
      */
     protected void checkQueryFails(Ignite node, boolean loc, int... parts) {
-        // TODO Scan queries never fail due to partition loss - https://issues.apache.org/jira/browse/IGNITE-9902.
-        // TODO Need to add an actual check after https://issues.apache.org/jira/browse/IGNITE-9902 is fixed.
-        // No-op.
         if(parts.length == 0)
             return;
 

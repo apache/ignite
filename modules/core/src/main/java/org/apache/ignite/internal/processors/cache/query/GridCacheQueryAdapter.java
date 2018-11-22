@@ -595,6 +595,9 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         return mvccTracker != null ? new MvccTrackingIterator(it, mvccTracker) : it;
     }
 
+    /**
+     * @return true if current PartitionLossPolicy corresponds to *_SAFE values.
+     */
     private boolean isSafeLossPolicy() {
         PartitionLossPolicy lossPolicy = cctx.cache().configuration().getPartitionLossPolicy();
 
