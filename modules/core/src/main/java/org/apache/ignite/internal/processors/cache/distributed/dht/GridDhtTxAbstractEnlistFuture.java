@@ -914,7 +914,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
     @NotNull private List<ClusterNode> backupNodes(int part) {
         List<ClusterNode> nodes = cctx.topology().nodes(part, tx.topologyVersion());
 
-        assert nodes.size() > 0 && nodes.get(0).isLocal();
+        assert !nodes.isEmpty() && nodes.get(0).isLocal();
 
         return nodes.subList(1, nodes.size());
     }
