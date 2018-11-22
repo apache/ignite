@@ -1195,6 +1195,13 @@ public abstract class GridAbstractTest extends TestCase {
             stopGridErr = true;
         }
     }
+    
+     /**
+     * Whether  jobs will be cancelled forcibly before stopping grids
+     */
+    protected boolean isWillJobsCancelled() {
+        return false;
+    }
 
     /**
      *
@@ -1829,7 +1836,7 @@ public abstract class GridAbstractTest extends TestCase {
                 }
 
                 if (isSafeTopology()) {
-                    stopAllGrids(false);
+                    stopAllGrids(isWillJobsCancelled());
 
                     if (stopGridErr) {
                         err = new RuntimeException("Not all Ignite instances has been stopped. " +
