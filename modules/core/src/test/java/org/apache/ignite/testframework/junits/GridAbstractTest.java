@@ -1836,7 +1836,7 @@ public abstract class GridAbstractTest extends TestCase {
                 }
 
                 if (isSafeTopology()) {
-                    stopAllGrids(isCancelJobsAfterTestsStopped());
+                    stopAllGrids(cancelJobsAfterTestsStopped());
 
                     if (stopGridErr) {
                         err = new RuntimeException("Not all Ignite instances has been stopped. " +
