@@ -55,6 +55,9 @@ import org.yardstickframework.BenchmarkServer;
 import org.yardstickframework.BenchmarkUtils;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
+import static org.apache.ignite.yardstick.IgniteBenchmarkUtils.checkIfNoLocalhost;
+import static org.apache.ignite.yardstick.IgniteBenchmarkUtils.checkIfOnlyLocalhost;
+import static org.apache.ignite.yardstick.IgniteBenchmarkUtils.getPortList;
 
 /**
  * Standalone Ignite node.
@@ -286,12 +289,22 @@ public class IgniteNode implements BenchmarkServer {
      * @param cfg Benchmark configuration.
      */
     private void replaceAdrList(IgniteConfiguration c, BenchmarkConfiguration cfg) {
-        if (cfg.customProperties() == null || cfg.customProperties().get("SERVER_HOSTS") == null)
+        if (cfg.customProperties() == null)
             return;
 
-        String prop = cfg.customProperties().get("SERVER_HOSTS");
+        if (cfg.customProperties().get("SET_IPFINDER") == null
+            || !Boolean.valueOf(cfg.customProperties().get("SET_IPFINDER")))
+            return;
 
-        Collection<String> adrSetFromProp = new HashSet<>(Arrays.asList(prop.split(",")));
+        if (cfg.customProperties().get("SERVER_HOSTS") == null)
+            return;
+
+        String hosts = cfg.customProperties().get("SERVER_HOSTS");
+
+        Collection<String> adrSetFromProp = new HashSet<>(Arrays.asList(hosts.split(",")));
+
+        if(adrSetFromProp.isEmpty())
+            return;
 
         TcpDiscoverySpi spi = (TcpDiscoverySpi)c.getDiscoverySpi();
 
@@ -303,8 +316,6 @@ public class IgniteNode implements BenchmarkServer {
             adrList.add(adr.getHostString());
 
         if (checkIfNoLocalhost(adrSetFromProp) && checkIfOnlyLocalhost(adrList)) {
-            BenchmarkUtils.println("3");
-
             Collection<InetSocketAddress> newAdrList = new ArrayList<>(adrSetFromProp.size());
 
             List<String> toDisplay = new ArrayList<>(adrSetFromProp.size());
@@ -317,7 +328,7 @@ public class IgniteNode implements BenchmarkServer {
                 for (Integer port : getPortList(portRange))
                     newAdrList.add(new InetSocketAddress(adr, port));
 
-                toDisplay.add(String.format("%s:%s", adr, portRange));
+                toDisplay.add(String.format("/%s:%s", adr, portRange));
             }
 
             Collections.sort(toDisplay);
@@ -344,73 +355,5 @@ public class IgniteNode implements BenchmarkServer {
                 }
             }
         }
-    }
-
-    /**
-     * Checks if address list contains only localhost addresses.
-     *
-     * @param adrList address list.
-     * @return {@code true} if address list contains only localhost addresses  or {@code false} otherwise.
-     */
-    private boolean checkIfOnlyLocalhost(Collection<String> adrList) {
-        return countLocalAdr(adrList) == adrList.size();
-    }
-
-    /**
-     * Checks if address list contains no localhost addresses.
-     *
-     * @param adrList address list.
-     * @return {@code true} if address list contains no localhost addresses or {@code false} otherwise.
-     */
-    private boolean checkIfNoLocalhost(Collection<String> adrList) {
-        return countLocalAdr(adrList) == 0;
-    }
-
-    /**
-     * Counts localhost addresses in list.
-     *
-     * @param adrList address list.
-     * @return {@code int} Number of localhost addresses in list.
-     */
-    private int countLocalAdr(Collection<String> adrList) {
-        int locAdr = 0;
-
-        for (String adr : adrList)
-            if (adr.contains("127.0.0.1") || adr.contains("localhost"))
-                locAdr++;
-
-        return locAdr;
-    }
-
-    /**
-     * Parses portRange string.
-     *
-     * @param portRange {@code String} port range.
-     * @return {@code Collection} List of ports.
-     */
-    private Collection<Integer> getPortList(String portRange) {
-        int firstPort;
-        int lastPort;
-
-        try {
-            String[] numArr = portRange.split("\\.\\.");
-
-            firstPort = Integer.valueOf(numArr[0]);
-            lastPort = numArr.length > 1 ? Integer.valueOf(numArr[1]) : firstPort;
-        }
-        catch (ArrayIndexOutOfBoundsException | NumberFormatException e) {
-            BenchmarkUtils.println(String.format("Failed to parse PORT_RANGE property: %s; %s",
-                portRange, e.getMessage()));
-
-            throw new IllegalArgumentException(String.format("Wrong value for PORT_RANGE property: %s",
-                portRange));
-        }
-
-        Collection<Integer> res = new ArrayList<>();
-
-        for (int port = firstPort; port <= lastPort; port++)
-           res.add(port);
-
-        return res;
     }
 }
