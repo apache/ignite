@@ -356,7 +356,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return {@code True} if partition is empty.
      */
     public boolean isEmpty() {
-        return store.fullSize() == 0 && internalSize() == 0;
+        return store.isEmpty() && internalSize() == 0;
     }
 
     /**
