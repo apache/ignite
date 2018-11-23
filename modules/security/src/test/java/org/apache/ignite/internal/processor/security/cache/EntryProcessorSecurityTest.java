@@ -75,7 +75,7 @@ public class EntryProcessorSecurityTest extends AbstractCacheSecurityTest {
             c.call();
         }
         catch (Throwable e) {
-            assertCauseMessage(e);
+            assertCause(e);
         }
     }
 

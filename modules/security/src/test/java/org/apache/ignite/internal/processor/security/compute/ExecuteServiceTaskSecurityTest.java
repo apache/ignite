@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processor.security.compute;
 import java.util.concurrent.ExecutionException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processor.security.AbstractContextResolverSecurityProcessorTest;
+import org.apache.ignite.internal.processor.security.AbstractResolveSecurityContextTest;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -32,7 +32,7 @@ import static org.junit.Assert.assertThat;
 /**
  * Security tests for an execute server task.
  */
-public class ExecuteServiceTaskSecurityTest extends AbstractContextResolverSecurityProcessorTest {
+public class ExecuteServiceTaskSecurityTest extends AbstractResolveSecurityContextTest {
     /** */
     public void testExecute() throws Exception {
         successExecute(clntAllPerms, clntReadOnlyPerm);
@@ -75,7 +75,7 @@ public class ExecuteServiceTaskSecurityTest extends AbstractContextResolverSecur
      * @param remote Remote node.
      */
     private void failExecute(IgniteEx initiator, IgniteEx remote) {
-        assertCauseMessage(
+        assertCause(
             GridTestUtils.assertThrowsWithCause(
                 () -> {
                     try {

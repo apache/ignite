@@ -26,11 +26,10 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
      * @param instanceName Instance name.
      * @param login Login.
      * @param pwd Password.
-     * @param userObj User object.
      * @param prmSet Security permission set.
      */
     protected IgniteConfiguration getConfiguration(String instanceName,
-        String login, String pwd, Object userObj, SecurityPermissionSet prmSet) throws Exception {
+        String login, String pwd, SecurityPermissionSet prmSet) throws Exception {
 
         return getConfiguration(instanceName)
             .setDataStorageConfiguration(
@@ -52,22 +51,19 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
      * @param idx Index.
      * @param login Login.
      * @param pwd Password.
-     * @param userObj User object.
      * @param prmSet Security permission set.
      */
-    protected IgniteConfiguration getConfiguration(int idx, String login, String pwd, Object userObj,
+    protected IgniteConfiguration getConfiguration(int idx, String login, String pwd,
         SecurityPermissionSet prmSet) throws Exception {
-        return getConfiguration(getTestIgniteInstanceName(idx), login, pwd, userObj, prmSet);
+        return getConfiguration(getTestIgniteInstanceName(idx), login, pwd, prmSet);
     }
 
     /**
-     * @param idx Index.
      * @param login Login.
-     * @param pwd Password.
      * @param prmSet Security permission set.
      */
-    protected IgniteEx startGrid(int idx, String login, String pwd, SecurityPermissionSet prmSet) throws Exception {
-        return startGrid(getConfiguration(idx, login, pwd, null, prmSet));
+    protected IgniteEx startGrid(String login, SecurityPermissionSet prmSet) throws Exception {
+        return startGrid(login, "", prmSet, false);
     }
 
     /**
@@ -81,6 +77,18 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
 
     /**
      * @param login Login.
+     * @param prmSet Security permission set.
+     * @param isClient Is client.
+     */
+    protected IgniteEx startGrid(String login, SecurityPermissionSet prmSet,
+        boolean isClient) throws Exception {
+        return startGrid(
+            getConfiguration(G.allGrids().size(), login, "", prmSet).setClientMode(isClient)
+        );
+    }
+
+    /**
+     * @param login Login.
      * @param pwd Password.
      * @param prmSet Security permission set.
      * @param isClient Is client.
@@ -88,27 +96,7 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
     protected IgniteEx startGrid(String login, String pwd, SecurityPermissionSet prmSet,
         boolean isClient) throws Exception {
         return startGrid(
-            getConfiguration(G.allGrids().size(), login, pwd, null, prmSet).setClientMode(isClient)
-        );
-    }
-
-    /**
-     * @param userObj User object.
-     * @param prmSet Security permission set.
-     */
-    protected IgniteEx startGrid(Object userObj, SecurityPermissionSet prmSet) throws Exception {
-        return startGrid(userObj, prmSet, false);
-    }
-
-    /**
-     * @param userObj User object.
-     * @param prmSet Security permission set.
-     * @param isClient Is client.
-     */
-    protected IgniteEx startGrid(Object userObj, SecurityPermissionSet prmSet, boolean isClient)
-        throws Exception {
-        return startGrid(
-            getConfiguration(G.allGrids().size(), null, null, userObj, prmSet).setClientMode(isClient)
+            getConfiguration(G.allGrids().size(), login, pwd, prmSet).setClientMode(isClient)
         );
     }
 
@@ -120,38 +108,20 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
      */
     protected IgniteEx startGrid(String instanceName, String login, String pwd,
         SecurityPermissionSet prmSet) throws Exception {
-        return startGrid(getConfiguration(instanceName, login, pwd, null, prmSet));
-    }
-
-    /**
-     * @param idx Index.
-     * @param userObj User object.
-     * @param prmSet Security permission set.
-     */
-    protected IgniteEx startGrid(int idx, Object userObj, SecurityPermissionSet prmSet) throws Exception {
-        return startGrid(getConfiguration(idx, null, null, userObj, prmSet));
-    }
-
-    /**
-     * @param instanceName Instance name.
-     * @param userObj User object.
-     * @param prmSet Security permission set.
-     */
-    protected IgniteEx startGrid(String instanceName, Object userObj, SecurityPermissionSet prmSet) throws Exception {
-        return startGrid(getConfiguration(instanceName, null, null, userObj, prmSet));
+        return startGrid(getConfiguration(instanceName, login, pwd, prmSet));
     }
 
     /**
      * Getting security permission set builder.
      */
     protected SecurityPermissionSetBuilder builder() {
-        return SecurityPermissionSetBuilder.create().defaultAllowAll(true);
+        return SecurityPermissionSetBuilder.create().defaultAllowAll(false);
     }
 
     /**
      * Getting allow all security permissions.
      */
     protected SecurityPermissionSet allowAll() {
-        return builder().build();
+        return builder().defaultAllowAll(true).build();
     }
 }

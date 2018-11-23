@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processor.security.cache.EntryProcessorSecurit
 import org.apache.ignite.internal.processor.security.cache.IgniteDataStreamerSecurityTest;
 import org.apache.ignite.internal.processor.security.cache.LoadCacheSecurityTest;
 import org.apache.ignite.internal.processor.security.cache.ScanQuerySecurityTest;
+import org.apache.ignite.internal.processor.security.client.thin.ThinClientSecurityTest;
 import org.apache.ignite.internal.processor.security.compute.ComputeTaskSecurityTest;
 import org.apache.ignite.internal.processor.security.compute.DistributedClosureSecurityTest;
 import org.apache.ignite.internal.processor.security.compute.ExecuteServiceTaskSecurityTest;
@@ -54,6 +55,7 @@ public class SecurityContextResolverSecurityProcessorTestSuite extends TestSuite
         suite.addTest(new TestSuite(EntryProcessorSecurityTest.class));
         suite.addTest(new TestSuite(IgniteDataStreamerSecurityTest.class));
         suite.addTest(new TestSuite(LoadCacheSecurityTest.class));
+        suite.addTest(new TestSuite(ThinClientSecurityTest.class));
 
         return suite;
     }

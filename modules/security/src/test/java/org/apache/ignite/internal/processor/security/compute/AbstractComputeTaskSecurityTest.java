@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.processor.security.compute;
 
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processor.security.AbstractContextResolverSecurityProcessorTest;
+import org.apache.ignite.internal.processor.security.AbstractResolveSecurityContextTest;
 
 /**
  * Abstract compute security test.
  */
-public abstract class AbstractComputeTaskSecurityTest extends AbstractContextResolverSecurityProcessorTest {
+public abstract class AbstractComputeTaskSecurityTest extends AbstractResolveSecurityContextTest {
     /** */
     public void test() {
         checkSuccess(srvAllPerms, clntAllPerms);

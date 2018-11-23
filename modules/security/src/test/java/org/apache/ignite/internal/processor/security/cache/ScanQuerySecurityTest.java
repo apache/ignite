@@ -66,7 +66,7 @@ public class ScanQuerySecurityTest extends AbstractCacheSecurityTest {
     private void failQuery(IgniteEx initiator, IgniteEx remote, String cacheName) {
         assert !remote.localNode().isClient();
 
-        assertCauseMessage(
+        assertCause(
             GridTestUtils.assertThrowsWithCause(
                 () -> {
                     initiator.cache(cacheName).query(
@@ -109,7 +109,7 @@ public class ScanQuerySecurityTest extends AbstractCacheSecurityTest {
     private void failTransform(IgniteEx initiator, IgniteEx remote, String cacheName) {
         assert !remote.localNode().isClient();
 
-        assertCauseMessage(
+        assertCause(
             GridTestUtils.assertThrowsWithCause(
                 () -> {
                     initiator.cache(cacheName).query(

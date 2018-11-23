@@ -32,7 +32,7 @@ import static org.junit.Assert.assertThat;
 /**
  *
  */
-public class AbstractContextResolverSecurityProcessorTest extends AbstractSecurityTest {
+public class AbstractResolveSecurityContextTest extends AbstractSecurityTest {
     /** Cache name for tests. */
     protected static final String CACHE_NAME = "TEST_CACHE";
 
@@ -55,15 +55,17 @@ public class AbstractContextResolverSecurityProcessorTest extends AbstractSecuri
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        srvAllPerms = startGrid("user_0", builder().build());
+        srvAllPerms = startGrid("srv_all_perms", allowAll());
 
-        clntAllPerms = startGrid("user_1", builder().build(), true);
+        clntAllPerms = startGrid("clnt_all_perms", allowAll(), true);
 
-        srvReadOnlyPerm = startGrid("user_2",
-            builder().appendCachePermissions(CACHE_NAME, CACHE_READ).build());
+        srvReadOnlyPerm = startGrid("srv_read_only_perm",
+            builder().defaultAllowAll(true)
+                .appendCachePermissions(CACHE_NAME, CACHE_READ).build());
 
-        clntReadOnlyPerm = startGrid("user_3",
-            builder().appendCachePermissions(CACHE_NAME, CACHE_READ).build(), true);
+        clntReadOnlyPerm = startGrid("clnt_read_only_perm",
+            builder().defaultAllowAll(true)
+                .appendCachePermissions(CACHE_NAME, CACHE_READ).build(), true);
 
         grid(0).cluster().active(true);
     }
@@ -78,11 +80,11 @@ public class AbstractContextResolverSecurityProcessorTest extends AbstractSecuri
     }
 
     /**
-     * Assert that the passed throwable contains a cause exception with given type and message.
+     * Assert that the passed throwable contains a cause exception with given type.
      *
      * @param throwable Throwable.
      */
-    protected void assertCauseMessage(Throwable throwable) {
+    protected void assertCause(Throwable throwable) {
         assertThat(X.cause(throwable, SecurityException.class), notNullValue());
     }
 }

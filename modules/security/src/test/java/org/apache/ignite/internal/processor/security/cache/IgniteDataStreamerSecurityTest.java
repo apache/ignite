@@ -39,7 +39,7 @@ public class IgniteDataStreamerSecurityTest extends AbstractCacheSecurityTest {
     private void failReceiver(IgniteEx initiator, IgniteEx remote) {
         assert !remote.localNode().isClient();
 
-        assertCauseMessage(
+        assertCause(
             GridTestUtils.assertThrowsWithCause(
                 () -> {
                     try (IgniteDataStreamer<Integer, Integer> strm = initiator.dataStreamer(CACHE_WITHOUT_PERMS)) {

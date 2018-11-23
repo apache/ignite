@@ -73,7 +73,7 @@ public class LoadCacheSecurityTest extends AbstractCacheSecurityTest {
     private void failLoad(IgniteEx initiator, IgniteEx remote) {
         assert !remote.localNode().isClient();
 
-        assertCauseMessage(
+        assertCause(
             GridTestUtils.assertThrowsWithCause(
                 () -> initiator.<Integer, Integer>cache(CACHE_WITHOUT_PERMS)
                     .loadCache(

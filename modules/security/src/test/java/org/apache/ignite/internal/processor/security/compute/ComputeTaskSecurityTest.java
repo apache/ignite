@@ -92,7 +92,7 @@ public class ComputeTaskSecurityTest extends AbstractComputeTaskSecurityTest {
      */
     private void failCompute(IgniteEx initiator, IgniteEx remote,
         TriConsumer<IgniteCompute, String, Integer> consumer) {
-        assertCauseMessage(
+        assertCause(
             GridTestUtils.assertThrowsWithCause(
                 () -> consumer.accept(initiator.compute(), "fail_key", -1)
                 , SecurityException.class

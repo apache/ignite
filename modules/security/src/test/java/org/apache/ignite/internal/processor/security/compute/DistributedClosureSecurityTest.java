@@ -194,7 +194,7 @@ public class DistributedClosureSecurityTest extends AbstractComputeTaskSecurityT
      */
     private void failClosure(IgniteEx initiator, IgniteEx remote,
         TriConsumer<IgniteCompute, String, Integer> consumer) {
-        assertCauseMessage(
+        assertCause(
             GridTestUtils.assertThrowsWithCause(
                 () ->
                     consumer.accept(

@@ -67,7 +67,7 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
                 .setType(REMOTE_NODE)
                 .setId(node.id())
                 .setAddr(new InetSocketAddress(F.first(node.addresses()), 0))
-                .setLogin(cred.getUserObject())
+                .setLogin(cred.getLogin())
                 .setPerms(PERMS.get(cred))
         );
     }
@@ -131,7 +131,7 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
 
         ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS, nodeSecData.credentials());
 
-        for(TestSecurityData data : configuration().clientsSecData())
+        for (TestSecurityData data : configuration().clientsSecData())
             PERMS.put(data.credentials(), data.getPermissions());
     }
 
@@ -141,7 +141,7 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
 
         PERMS.remove(configuration().nodeSecData().credentials());
 
-        for(TestSecurityData data : configuration().clientsSecData())
+        for (TestSecurityData data : configuration().clientsSecData())
             PERMS.remove(data.credentials());
     }
 
