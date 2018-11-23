@@ -82,8 +82,9 @@ public class RestExecutor implements AutoCloseable {
      * @param keyStorePwd Optional password for key store.
      * @param trustStore Optional path to trust store file.
      * @param trustStorePwd Optional password for trust store.
+     * @throws Exception if failed to create HTTP client.
      */
-    public RestExecutor(String keyStore, String keyStorePwd, String trustStore, String trustStorePwd) {
+    public RestExecutor(String keyStore, String keyStorePwd, String trustStore, String trustStorePwd) throws Exception {
         Dispatcher dispatcher = new Dispatcher();
 
         dispatcher.setMaxRequests(Integer.MAX_VALUE);
@@ -128,6 +129,8 @@ public class RestExecutor implements AutoCloseable {
             }
             catch (Exception e) {
                 log.error("Failed to initialize SSL socket factory", e);
+
+                throw e;
             }
         }
 
@@ -152,13 +155,10 @@ public class RestExecutor implements AutoCloseable {
 
             int status = holder.getSuccessStatus();
 
-            switch (status) {
-                case STATUS_SUCCESS:
-                    return RestResult.success(holder.getResponse(), holder.getSessionToken());
+            if (status == STATUS_SUCCESS)
+                return RestResult.success(holder.getResponse(), holder.getSessionToken());
 
-                default:
-                    return RestResult.fail(status, holder.getError());
-            }
+            return RestResult.fail(status, holder.getError());
         }
 
         if (res.code() == 401)

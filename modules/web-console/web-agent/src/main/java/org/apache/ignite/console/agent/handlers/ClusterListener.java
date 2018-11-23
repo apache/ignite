@@ -386,9 +386,9 @@ public class ClusterListener implements AutoCloseable {
          *
          * @param params Command params.
          * @return Command result.
-         * @throws IOException If failed to execute.
+         * @throws Exception If failed to execute.
          */
-        private RestResult restCommand(Map<String, Object> params) throws IOException {
+        private RestResult restCommand(Map<String, Object> params) throws Exception {
             if (!F.isEmpty(sesTok))
                 params.put("sessionToken", sesTok);
             else if (!F.isEmpty(cfg.nodeLogin()) && !F.isEmpty(cfg.nodePassword())) {
@@ -431,8 +431,9 @@ public class ClusterListener implements AutoCloseable {
          *
          * @param attrs Whether to collect attributes.
          * @return REST result.
+         * @throws Exception If failed to collect topology.
          */
-        private RestResult topology(boolean attrs) throws IOException {
+        private RestResult topology(boolean attrs) throws Exception {
             Map<String, Object> params = U.newHashMap(4);
 
             params.put("cmd", "top");
@@ -447,9 +448,9 @@ public class ClusterListener implements AutoCloseable {
          * @param ver Cluster version.
          * @param nid Node ID.
          * @return Cluster active state.
-         * @throws IOException If failed to collect cluster active state.
+         * @throws Exception If failed to collect cluster active state.
          */
-        public boolean active(IgniteProductVersion ver, UUID nid) throws IOException {
+        public boolean active(IgniteProductVersion ver, UUID nid) throws Exception {
             // 1.x clusters are always active.
             if (ver.compareTo(IGNITE_2_0) < 0)
                 return true;

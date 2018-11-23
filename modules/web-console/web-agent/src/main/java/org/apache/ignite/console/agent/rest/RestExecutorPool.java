@@ -48,8 +48,19 @@ public class RestExecutorPool implements AutoCloseable {
      * @param trustStorePwd Optional password for trust key store.
      * @return New or existing REST executor.
      */
-    public RestExecutor open(String name, String clientStore, String clientPwd, String trustStore, String trustStorePwd) {
-        return pool.computeIfAbsent(name, (s) -> new RestExecutor(clientStore, clientPwd, trustStore, trustStorePwd));
+    public RestExecutor open(
+        String name,
+        String clientStore,
+        String clientPwd,
+        String trustStore,
+        String trustStorePwd
+    ) throws Exception {
+        RestExecutor exec = pool.get(name);
+
+        if (exec == null)
+            exec = pool.putIfAbsent(name, new RestExecutor(clientStore, clientPwd, trustStore, trustStorePwd));
+
+        return exec;
     }
 
     /**

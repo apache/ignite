@@ -21,12 +21,13 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import javax.net.ssl.SSLHandshakeException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -37,7 +38,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 /**
  * Test for RestExecutor.
@@ -46,14 +49,26 @@ public class RestExecutorSelfTest {
     /** Name of the cache created by default in the cluster. */
     private static final String DEFAULT_CACHE_NAME = "default";
 
+    /** Path to certificates and configs. */
+    private static final String PATH_TO_RESOURCES = "modules/web-console/web-agent/src/test/resources/";
+
     /** JSON object mapper. */
     private static final ObjectMapper MAPPER = new GridJettyObjectMapper();
 
     /** */
-    private static final List<String> NODE_URI = Collections.singletonList("http://localhost:8080");
+    private static final String HTTP_URI = "http://localhost:8080";
 
     /** */
-    public static IgniteConfiguration getServerConfiguration() {
+    private static final String HTTPS_URI = "https://localhost:8080";
+
+    /** */
+    @Rule
+    public final ExpectedException ruleForExpectedException = ExpectedException.none();
+
+    /**
+     * @return Base configuration for cluster node.
+     */
+    private IgniteConfiguration baseNodeConfiguration() {
         TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
 
         ipFinder.registerAddresses(Collections.singletonList(new InetSocketAddress("127.0.0.1", 47500)));
@@ -62,17 +77,31 @@ public class RestExecutorSelfTest {
 
         discoverySpi.setIpFinder(ipFinder);
 
-        IgniteConfiguration igniteCfg = new IgniteConfiguration();
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
-        igniteCfg.setDiscoverySpi(discoverySpi);
+        cfg.setDiscoverySpi(discoverySpi);
 
         CacheConfiguration<Integer, String> dfltCacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
-        igniteCfg.setCacheConfiguration(dfltCacheCfg);
+        cfg.setCacheConfiguration(dfltCacheCfg);
 
-        igniteCfg.setIgniteInstanceName(UUID.randomUUID().toString());
+        cfg.setIgniteInstanceName(UUID.randomUUID().toString());
 
-        return igniteCfg;
+        return cfg;
+    }
+
+    /**
+     * @return Node configuration with enabled SSL for REST.
+     */
+    private IgniteConfiguration sslNodeConfiguration() {
+        IgniteConfiguration cfg = baseNodeConfiguration();
+
+        ConnectorConfiguration conCfg = new ConnectorConfiguration();
+        conCfg.setJettyPath(resolvePath("jetty-with-ssl.xml"));
+
+        cfg.setConnectorConfiguration(conCfg);
+
+        return cfg;
     }
 
     /**
@@ -94,22 +123,33 @@ public class RestExecutorSelfTest {
     }
 
     /**
+     * @param file File name.
+     * @return Path to file.
+     */
+    private String resolvePath(String file) {
+        return PATH_TO_RESOURCES + file;
+    }
+
+    /**
+     * Try to execute REST command and check response.
      *
-     * @param srvCfg
-     * @param keyStore
-     * @param keyStorePwd
-     * @param trustStore
-     * @param trustStorePwd
+     * @param nodeCfg Node configuration.
+     * @param uri Node URI.
+     * @param keyStore Key store.
+     * @param keyStorePwd Key store password.
+     * @param trustStore Trust store.
+     * @param trustStorePwd Trust store password.
      * @throws Exception If failed.
      */
     private void checkRest(
-        IgniteConfiguration srvCfg,
+        IgniteConfiguration nodeCfg,
+        String uri,
         String keyStore,
         String keyStorePwd,
         String trustStore,
         String trustStorePwd
     ) throws Exception {
-        try(Ignite ignite = Ignition.getOrStart(srvCfg)) {
+        try(Ignite ignite = Ignition.getOrStart(nodeCfg)) {
             RestExecutor exec = new RestExecutor(keyStore, keyStorePwd, trustStore, trustStorePwd);
 
             Map<String, Object> params = new HashMap<>();
@@ -118,7 +158,7 @@ public class RestExecutorSelfTest {
             params.put("mtr", false);
             params.put("caches", false);
 
-            RestResult res = exec.sendRequest(NODE_URI, params, null);
+            RestResult res = exec.sendRequest(Collections.singletonList(uri), params, null);
 
             JsonNode json = toJson(res);
 
@@ -134,21 +174,41 @@ public class RestExecutorSelfTest {
         }
     }
 
-    /**
-     * Test REST commands.
-     */
+    /** */
     @Test
-    public void testRest() throws Exception {
-        checkRest(getServerConfiguration(), null, null, null, null);
+    public void nodeNoSslAgentNoSsl() throws Exception {
+        checkRest(baseNodeConfiguration(), HTTP_URI, null, null, null, null);
+    }
+
+    /** */
+    @Test
+    public void nodeNoSslAgentWithSsl() throws Exception {
+        ruleForExpectedException.expect(SSLHandshakeException.class);
+        checkRest(
+            baseNodeConfiguration(),
+            HTTPS_URI,
+            resolvePath("client.jks"), "123456",
+            resolvePath("ca.jks"), "123456"
+        );
+    }
+
+    /** */
+    @Test
+    public void nodeWithSslAgentNoSsl() throws Exception {
+        ruleForExpectedException.expect(IOException.class);
+        checkRest(sslNodeConfiguration(), HTTP_URI, null, null, null, null);
     }
 
     /**
      * Test REST commands with SSL.
      */
     @Test
-    public void testRestWithSsl() throws Exception {
-        checkRest(getServerConfiguration(),
-            "client.jks", "123456",
-            "ca.jks", "123456");
+    public void nodeWithSslAgentWithSsl() throws Exception {
+        checkRest(
+            sslNodeConfiguration(),
+            HTTPS_URI,
+            resolvePath("client.jks"), "123456",
+            resolvePath("ca.jks"), "123456"
+        );
     }
 }
