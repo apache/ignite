@@ -19,13 +19,17 @@ package org.apache.ignite.ml.environment;
 
 import java.util.Map;
 import java.util.Random;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
+import org.apache.ignite.ml.dataset.UpstreamEntry;
+import org.apache.ignite.ml.dataset.UpstreamTransformer;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
@@ -82,7 +86,8 @@ public class LearningEnvironmentTest {
     @Test
     public void testRandomNumbersGenerator() {
         // We make such builders that provide as functions returning partition index * iteration as random number generator nextInt
-        LearningEnvironmentBuilder envBuilder = getBuilder(part -> TestUtils.testEnvBuilder().withRNGSupplier(() -> new MockRandom(part)));
+        LearningEnvironmentBuilder envBuilder =
+            getBuilder(part -> TestUtils.testEnvBuilder().withRNGSupplier(() -> new MockRandom(part)));
         int partitions = 10;
         int iterations = 2;
 

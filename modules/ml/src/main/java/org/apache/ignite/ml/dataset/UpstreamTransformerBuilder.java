@@ -19,6 +19,11 @@ package org.apache.ignite.ml.dataset;
 
 import org.apache.ignite.ml.environment.LearningEnvironment;
 
+/**
+ * Builder of {@link UpstreamTransformerBuilder}.
+ * @param <K> Type of keys in upstream.
+ * @param <V> Type of values in upstream.
+ */
 public interface UpstreamTransformerBuilder<K, V> {
     /**
      * Create Upstream environment based on learning environment.

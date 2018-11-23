@@ -298,7 +298,7 @@ public class DatasetFactory {
      * partition {@code data} to be {@link SimpleLabeledDatasetData}.
      *
      * @param datasetBuilder Dataset builder.
-     * @param enviBuilder Learning environment builder.
+     * @param envBuilder Learning environment builder.
      * @param featureExtractor Feature extractor used to extract features and build {@link SimpleLabeledDatasetData}.
      * @param lbExtractor Label extractor used to extract labels and buikd {@link SimpleLabeledDatasetData}.
      * @param <K> Type of a key in {@code upstream} data.
@@ -307,12 +307,12 @@ public class DatasetFactory {
      */
     public static <K, V> SimpleLabeledDataset<EmptyContext> createSimpleLabeledDataset(
         DatasetBuilder<K, V> datasetBuilder,
-        LearningEnvironmentBuilder enviBuilder,
+        LearningEnvironmentBuilder envBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, double[]> lbExtractor) {
         return createSimpleLabeledDataset(
             datasetBuilder,
-            enviBuilder,
+            envBuilder,
             new EmptyContextBuilder<>(),
             featureExtractor,
             lbExtractor
@@ -471,7 +471,6 @@ public class DatasetFactory {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Dataset.
      */
-    // TODO: check parameters order.
     public static <K, V> SimpleLabeledDataset<EmptyContext> createSimpleLabeledDataset(Map<K, V> upstreamMap,
         LearningEnvironmentBuilder envBuilder,
         int partitions, IgniteBiFunction<K, V, Vector> featureExtractor,

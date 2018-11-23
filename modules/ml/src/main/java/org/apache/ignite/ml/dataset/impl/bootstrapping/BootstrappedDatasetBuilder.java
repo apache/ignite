@@ -20,6 +20,7 @@ package org.apache.ignite.ml.dataset.impl.bootstrapping;
 import java.util.Arrays;
 import java.util.Iterator;
 import org.apache.commons.math3.distribution.PoissonDistribution;
+import org.apache.commons.math3.random.Well19937c;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
@@ -79,8 +80,13 @@ public class BootstrappedDatasetBuilder<K,V> implements PartitionDataBuilder<K,V
         BootstrappedVector[] dataset = new BootstrappedVector[Math.toIntExact(upstreamDataSize)];
 
         int cntr = 0;
-        // TODO: use rng from env.
-        PoissonDistribution poissonDistribution = new PoissonDistribution(subsampleSize);
+
+        PoissonDistribution poissonDistribution = new PoissonDistribution(
+            new Well19937c(env.randomNumbersGenerator().nextLong()),
+            subsampleSize,
+            PoissonDistribution.DEFAULT_EPSILON,
+            PoissonDistribution.DEFAULT_MAX_ITERATIONS);
+
         while(upstreamData.hasNext()) {
             UpstreamEntry<K, V> nextRow = upstreamData.next();
             Vector features = featureExtractor.apply(nextRow.getKey(), nextRow.getValue());

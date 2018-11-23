@@ -96,7 +96,7 @@ public class GDBOnTreesLearningStrategy  extends GDBLearningStrategy {
                 long startTs = System.currentTimeMillis();
                 models.add(decisionTreeTrainer.fit(dataset));
                 double learningTime = (double)(System.currentTimeMillis() - startTs) / 1000.0;
-                environment.logger(getClass()).log(MLLogger.VerboseLevel.LOW, "One model training time was %.2fs", learningTime);
+                trainerEnvironment.logger(getClass()).log(MLLogger.VerboseLevel.LOW, "One model training time was %.2fs", learningTime);
             }
         }
         catch (Exception e) {

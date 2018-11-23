@@ -59,7 +59,7 @@ public interface PartitionContextBuilder<K, V, C extends Serializable> extends S
      * constraint. This constraint is omitted to allow upstream data transformers in {@link DatasetBuilder} replicating
      * entries. For example it can be useful for bootstrapping.
      *
-     * @param env LEarning environment.
+     * @param env Learning environment.
      * @param upstreamData Partition {@code upstream} data.
      * @param upstreamDataSize Partition {@code upstream} data size.
      * @return Partition {@code context}.

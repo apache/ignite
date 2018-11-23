@@ -35,6 +35,7 @@ import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 public class LocalDataset<C extends Serializable, D extends AutoCloseable> implements Dataset<C, D> {
     /** Partition {@code data} storage. */
     private final List<LearningEnvironment> envs;
+
     /** Partition {@code context} storage. */
     private final List<C> ctx;
 
@@ -45,6 +46,7 @@ public class LocalDataset<C extends Serializable, D extends AutoCloseable> imple
      * Constructs a new instance of dataset based on local data structures such as {@code Map} and {@code List} and
      * doesn't requires Ignite environment.
      *
+     * @param envs List of {@link LearningEnvironment}.
      * @param ctx Partition {@code context} storage.
      * @param data Partition {@code data} storage.
      */

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.environment;
 
+import java.io.Serializable;
 import java.util.Random;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.environment.logging.NoOpLogger;
@@ -26,15 +27,21 @@ import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 
 /**
- * Builder for LearningEnvironment.
+ * Builder for {@link LearningEnvironment}.
  */
-public class DefaultLearningEnvironmentBuilder implements LearningEnvironmentBuilder {
+public class DefaultLearningEnvironmentBuilder implements LearningEnvironmentBuilder, Serializable {
+    /** Serial version id. */
+    private static final long serialVersionUID = 8502532880517447662L;
+
     /** Parallelism strategy. */
     private ParallelismStrategy parallelismStgy;
+
     /** Logging factory. */
     private MLLogger.Factory loggingFactory;
+
     /** Random number generator seed. */
     private long seed;
+
     /** Random numbers generator supplier */
     private IgniteSupplier<Random> rngSupplier;
 
@@ -55,6 +62,7 @@ public class DefaultLearningEnvironmentBuilder implements LearningEnvironmentBui
         return this;
     }
 
+    /** {@inheritDoc} */
     @Override public LearningEnvironmentBuilder withRNGSupplier(IgniteSupplier<Random> rngSupplier) {
         this.rngSupplier = rngSupplier;
 
@@ -101,10 +109,13 @@ public class DefaultLearningEnvironmentBuilder implements LearningEnvironmentBui
     private class LearningEnvironmentImpl implements LearningEnvironment {
         /** Parallelism strategy. */
         private final ParallelismStrategy parallelismStgy;
+
         /** Logging factory. */
         private final MLLogger.Factory loggingFactory;
+
         /** Partition. */
         private final int part;
+
         /** Random numbers generator. */
         private final Random randomNumGen;
 

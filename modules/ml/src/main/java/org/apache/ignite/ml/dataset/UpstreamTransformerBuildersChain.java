@@ -63,6 +63,11 @@ public class UpstreamTransformerBuildersChain<K, V> implements Serializable {
         list = new ArrayList<>();
     }
 
+    /**
+     * Constructs instance of this class from the specified list of {@link UpstreamTransformerBuilder}.
+     *
+     * @param list
+     */
     private UpstreamTransformerBuildersChain(List<UpstreamTransformerBuilder<K, V>> list) {
         this.list = list;
     }
@@ -80,12 +85,17 @@ public class UpstreamTransformerBuildersChain<K, V> implements Serializable {
         return new UpstreamTransformerBuildersChain<>(newList);
     }
 
+    /**
+     * Build upstream transformer from learning environment.
+     *
+     * @param env Learning environment.
+     * @return Upstream transformer.
+     */
     public UpstreamTransformer<K, V> build(LearningEnvironment env) {
         UpstreamTransformer<K, V> res = x -> x;
 
-        for (UpstreamTransformerBuilder<K, V> builder : list) {
+        for (UpstreamTransformerBuilder<K, V> builder : list)
             res = res.then(builder.build(env));
-        }
 
         return res;
     }

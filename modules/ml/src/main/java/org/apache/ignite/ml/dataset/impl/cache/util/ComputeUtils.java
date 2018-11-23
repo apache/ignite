@@ -26,6 +26,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
@@ -152,12 +154,13 @@ public class ComputeUtils {
         int part,
         LearningEnvironmentBuilder envBuilder) {
 
-        PartitionLearningEnvStorage envStorage = (PartitionLearningEnvStorage)ignite
+        @SuppressWarnings("unchecked")
+        ConcurrentMap<Integer, LearningEnvironment> envStorage = (ConcurrentMap<Integer, LearningEnvironment>)ignite
             .cluster()
             .nodeLocalMap()
-            .computeIfAbsent(String.format(ENVIRONMENT_STORAGE_KEY_TEMPLATE, datasetId), key -> new PartitionLearningEnvStorage());
+            .computeIfAbsent(String.format(ENVIRONMENT_STORAGE_KEY_TEMPLATE, datasetId), key -> new ConcurrentHashMap<>());
 
-        return envStorage.computeDataIfAbsent(part, () -> envBuilder.buildForWorker(part));
+        return envStorage.computeIfAbsent(part, envBuilder::buildForWorker);
     }
 
     /**
@@ -379,7 +382,7 @@ public class ComputeUtils {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Number of entries supplied by the iterator.
      */
-    private static  <K, V> long computeCount(
+    private static <K, V> long computeCount(
         IgniteCache<K, V> cache,
         ScanQuery<K, V> qry,
         UpstreamTransformer<K, V> transformer,

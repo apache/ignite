@@ -23,6 +23,9 @@ import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 
+/**
+ * Builder of learning environment.
+ */
 public interface LearningEnvironmentBuilder {
     /**
      * Builds {@link LearningEnvironment} for worker on given partition.

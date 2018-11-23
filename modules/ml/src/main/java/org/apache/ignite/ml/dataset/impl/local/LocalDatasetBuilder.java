@@ -123,9 +123,7 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
 
         int ptr = 0;
 
-        List<LearningEnvironment> envs = IntStream.range(0, partitions)
-            .boxed()
-            .map(envBuilder::buildForWorker)
+        List<LearningEnvironment> envs = IntStream.range(0, partitions).boxed().map(envBuilder::buildForWorker)
             .collect(Collectors.toList());
 
         for (int part = 0; part < partitions; part++) {
@@ -135,28 +133,23 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
             UpstreamTransformer<K, V> transformer2 = Utils.copy(transformer1);
             UpstreamTransformer<K, V> transformer3 = Utils.copy(transformer1);
 
-            if (!upstreamTransformers.isTrivial()) {
+            if (!upstreamTransformers.isTrivial())
                 cnt = (int)transformer1.apply(Utils.asStream(new IteratorWindow<>(thirdKeysIter, k -> k, cnt))).count();
-            }
 
             Iterator<UpstreamEntry<K, V>> iter;
-            if (upstreamTransformers.isTrivial()) {
+            if (upstreamTransformers.isTrivial())
                 iter = new IteratorWindow<>(firstKeysIter, k -> k, cnt);
-            }
-            else {
+            else
                 iter = transformer2.apply(Utils.asStream(new IteratorWindow<>(firstKeysIter, k -> k, cnt))).iterator();
-            }
 
             C ctx = cnt > 0 ? partCtxBuilder.build(env, iter, cnt) : null;
 
             Iterator<UpstreamEntry<K, V>> iter1;
-            if (upstreamTransformers.isTrivial()) {
+            if (upstreamTransformers.isTrivial())
                 iter1 = transformer3.apply(
                     Utils.asStream(new IteratorWindow<>(secondKeysIter, k -> k, cnt))).iterator();
-            }
-            else {
+            else
                 iter1 = new IteratorWindow<>(secondKeysIter, k -> k, cnt);
-            }
 
             D data = cnt > 0 ? partDataBuilder.build(
                 env,

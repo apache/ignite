@@ -45,8 +45,8 @@ public class GDBLearningStrategy {
     /** Learning environment builder. */
     protected LearningEnvironmentBuilder envBuilder;
 
-    /** Learning environment. */
-    protected LearningEnvironment environment;
+    /** Learning environment used for trainer. */
+    protected LearningEnvironment trainerEnvironment;
 
     /** Count of iterations. */
     protected int cntOfIterations;
@@ -129,7 +129,7 @@ public class GDBLearningStrategy {
             long startTs = System.currentTimeMillis();
             models.add(trainer.fit(datasetBuilder, featureExtractor, lbExtractorWrap));
             double learningTime = (double)(System.currentTimeMillis() - startTs) / 1000.0;
-            environment.logger(getClass()).log(MLLogger.VerboseLevel.LOW, "One model training time was %.2fs", learningTime);
+            trainerEnvironment.logger(getClass()).log(MLLogger.VerboseLevel.LOW, "One model training time was %.2fs", learningTime);
         }
 
         return models;
@@ -165,7 +165,7 @@ public class GDBLearningStrategy {
      */
     public GDBLearningStrategy withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
         this.envBuilder = envBuilder;
-        this.environment = envBuilder.buildForTrainer();
+        this.trainerEnvironment = envBuilder.buildForTrainer();
         return this;
     }
 
