@@ -355,6 +355,11 @@ namespace ignite
             /**
              * Start string array read.
              *
+             * Every time you get a BinaryStringArrayReader from BinaryReader
+             * you start reading session. Only one single reading session can be
+             * open at a time. So it is not allowed to start new reading session
+             * until all elements of the collection have been read.
+             *
              * @param fieldName Field name.
              * @return String array reader.
              */
@@ -362,6 +367,11 @@ namespace ignite
 
             /**
              * Start array read.
+             *
+             * Every time you get a BinaryArrayReader from BinaryReader you
+             * start reading session. Only one single reading session can be
+             * open at a time. So it is not allowed to start new reading session
+             * until all elements of the collection have been read.
              *
              * @param fieldName Field name.
              * @return Array reader.
@@ -378,6 +388,11 @@ namespace ignite
 
             /**
              * Start collection read.
+             *
+             * Every time you get a BinaryCollectionReader from BinaryReader you
+             * start reading session. Only one single reading session can be
+             * open at a time. So it is not allowed to start new reading session
+             * until all elements of the collection have been read.
              *
              * @param fieldName Field name.
              * @return Collection reader.
@@ -411,9 +426,8 @@ namespace ignite
              *
              * Every time you get a BinaryMapReader from BinaryReader you start
              * reading session. Only one single reading session can be open at
-             * a time. So it is not allowed to start new reading session without
-             * calling BinaryMapReader::Close() method prior on obtained
-             * BinaryMapWriter class instance.
+             * a time. So it is not allowed to start new reading session until
+             * all elements of the collection have been read.
              *
              * @param fieldName Field name.
              * @return Map reader.
