@@ -396,9 +396,6 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
                 add((IgniteInternalFuture)fut);
 
-                if (tx.onePhaseCommit())
-                    tx.state(PREPARED);
-
                 try {
                     cctx.io().send(primary, req, tx.ioPolicy());
 
@@ -440,7 +437,8 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
         err = this.err;
 
-        if (!tx.onePhaseCommit() && (err == null || tx.needCheckBackup()))
+        if ((!tx.onePhaseCommit() || tx.mappings().get(cctx.localNodeId()) == null) &&
+            (err == null || tx.needCheckBackup()))
             tx.state(PREPARED);
 
         if (super.onDone(tx, err)) {
