@@ -149,7 +149,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
         assertFalse(ipFinder.isShared());
     }
 
-     /**
+    /**
      * Tests ability to marshal non-serializable objects.
      *
      * @throws IgniteCheckedException If marshalling failed.
@@ -168,7 +168,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
         assertTrue(bean.isFlag());
     }
 
-     /**
+    /**
      * Tests ability to marshal non-serializable objects.
      *
      * @throws IgniteCheckedException If marshalling failed.
@@ -393,9 +393,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
      * WARNING! Requires a lot of heap space. Should not be run on CI.
      * Minimal memory requirement is about 6-7 gigabytes of heap.
      */
-    public void testAllocationOverflow() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10192");
-
+    public void _testAllocationOverflow() {
         allocationOverflowCheck(() -> marshaller().marshal(new HugeObject()));
 
         allocationOverflowCheck(() -> marshaller().marshal(new short[1 << 30]));
