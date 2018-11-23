@@ -328,7 +328,6 @@ public class DdlStatementsProcessor {
                 }
             }
             else if (stmt0 instanceof GridSqlCreateTable) {
-                //todo MY_TODO написать тест, возмжно это уже лишнее
                 ctx.security().authorize(null, SecurityPermission.CACHE_CREATE, SecurityContextHolder.get());
 
                 GridSqlCreateTable cmd = (GridSqlCreateTable)stmt0;
