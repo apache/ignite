@@ -217,6 +217,9 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     private void checkEntryProcessorNodeJoin(boolean invokeAll) throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10391");
+
         final AtomicBoolean stop = new AtomicBoolean();
         final AtomicReference<Throwable> error = new AtomicReference<>();
         final int started = 6;
