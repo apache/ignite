@@ -121,6 +121,12 @@ import org.apache.log4j.Priority;
 import org.apache.log4j.RollingFileAppender;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.rules.TestName;
+import org.junit.rules.TestRule;
+import org.junit.runners.model.Statement;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.FileSystemXmlApplicationContext;
@@ -142,9 +148,6 @@ import static org.apache.ignite.testframework.config.GridTestProperties.IGNITE_C
     "JUnitTestCaseWithNonTrivialConstructors"
 })
 public abstract class GridAbstractTest extends TestCase {
-    /** Persistence in tests allowed property. */
-    public static final String PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY = "PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY";
-
     /**************************************************************
      * DO NOT REMOVE TRANSIENT - THIS OBJECT MIGHT BE TRANSFERRED *
      *                  TO ANOTHER NODE.                          *
@@ -168,6 +171,16 @@ public abstract class GridAbstractTest extends TestCase {
 
     /** */
     protected static final String DEFAULT_CACHE_NAME = "default";
+
+    /** Supports obtaining test name for JUnit4 cases. */
+    @Rule public transient TestName nameRule = new TestName();
+
+    /** Manages test execution and reporting. */
+    @Rule public transient TestRule runRule = (base, description) -> new Statement() {
+        @Override public void evaluate() throws Throwable {
+            runTest(base);
+        }
+    };
 
     /** */
     private transient boolean startGrid;
@@ -198,12 +211,6 @@ public abstract class GridAbstractTest extends TestCase {
 
     /** Lazily initialized current test method. */
     private volatile Method currTestMtd;
-
-    /**
-     *
-     */
-    private static final boolean PERSISTENCE_ALLOWED =
-        IgniteSystemProperties.getBoolean(PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, true);
 
     /**
      *
@@ -253,6 +260,13 @@ public abstract class GridAbstractTest extends TestCase {
         log = new GridTestLog4jLogger();
 
         this.startGrid = startGrid;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getName() {
+        String junit3Name = super.getName();
+
+        return junit3Name != null ? junit3Name : nameRule.getMethodName();
     }
 
     /**
@@ -573,7 +587,8 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
+    @Before
+    @Override public void setUp() throws Exception {
         stopGridErr = false;
 
         clsLdr = Thread.currentThread().getContextClassLoader();
@@ -917,9 +932,6 @@ public abstract class GridAbstractTest extends TestCase {
      */
     protected Ignite startGrid(String igniteInstanceName, IgniteConfiguration cfg, GridSpringResourceContext ctx)
         throws Exception {
-
-        checkConfiguration(cfg);
-
         if (!isRemoteJvm(igniteInstanceName)) {
             IgniteUtils.setCurrentIgniteName(igniteInstanceName);
 
@@ -962,30 +974,6 @@ public abstract class GridAbstractTest extends TestCase {
         }
         else
             return startRemoteGrid(igniteInstanceName, null, ctx);
-    }
-
-    /**
-     * @param cfg Config.
-     */
-    protected void checkConfiguration(IgniteConfiguration cfg) {
-        if (cfg == null)
-            return;
-
-        if (!PERSISTENCE_ALLOWED) {
-            String errorMsg = "PERSISTENCE IS NOT ALLOWED IN THIS SUITE, PUT YOUR TEST TO ANOTHER ONE!";
-
-            DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
-
-            if (dsCfg != null) {
-                assertFalse(errorMsg, dsCfg.getDefaultDataRegionConfiguration().isPersistenceEnabled());
-
-                DataRegionConfiguration[] dataRegionConfigurations = dsCfg.getDataRegionConfigurations();
-
-                if (dataRegionConfigurations != null)
-                    for (DataRegionConfiguration dataRegionConfiguration : dataRegionConfigurations)
-                        assertFalse(errorMsg, dataRegionConfiguration.isPersistenceEnabled());
-            }
-        }
     }
 
     /**
@@ -1084,8 +1072,6 @@ public abstract class GridAbstractTest extends TestCase {
         if (cfg == null)
             cfg = optimize(getConfiguration(igniteInstanceName));
 
-        checkConfiguration(cfg);
-
         if (locNode != null) {
             DiscoverySpi discoverySpi = locNode.configuration().getDiscoverySpi();
 
@@ -1124,8 +1110,6 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws IgniteCheckedException On error.
      */
     protected IgniteConfiguration optimize(IgniteConfiguration cfg) throws IgniteCheckedException {
-        checkConfiguration(cfg);
-
         if (cfg.getLocalHost() == null) {
             if (cfg.getDiscoverySpi() instanceof TcpDiscoverySpi) {
                 cfg.setLocalHost("127.0.0.1");
@@ -1742,8 +1726,6 @@ public abstract class GridAbstractTest extends TestCase {
 
         cfg.setFailureHandler(getFailureHandler(igniteInstanceName));
 
-        checkConfiguration(cfg);
-
         return cfg;
     }
 
@@ -1788,7 +1770,8 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /** {@inheritDoc} */
-    @Override protected void tearDown() throws Exception {
+    @After
+    @Override public void tearDown() throws Exception {
         long dur = System.currentTimeMillis() - ts;
 
         info(">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
@@ -2116,12 +2099,24 @@ public abstract class GridAbstractTest extends TestCase {
     /** {@inheritDoc} */
     @SuppressWarnings({"ProhibitedExceptionDeclared"})
     @Override protected void runTest() throws Throwable {
+        runTest(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                GridAbstractTest.super.runTest();
+            }
+        });
+    }
+
+    /** */
+    private void runTest(Statement testRoutine) throws Throwable {
         final AtomicReference<Throwable> ex = new AtomicReference<>();
 
         Thread runner = new IgniteThread(getTestIgniteInstanceName(), "test-runner", new Runnable() {
             @Override public void run() {
                 try {
-                    runTestInternal();
+                    if (forceFailure)
+                        fail("Forced failure: " + forceFailureMsg);
+
+                    testRoutine.evaluate();
                 }
                 catch (Throwable e) {
                     IgniteClosure<Throwable, Throwable> hnd = errorHandler();
@@ -2198,17 +2193,6 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * @throws Throwable If failed.
-     */
-    @SuppressWarnings({"ProhibitedExceptionDeclared"})
-    private void runTestInternal() throws Throwable {
-        if (forceFailure)
-            fail("Forced failure: " + forceFailureMsg);
-        else
-            super.runTest();
-    }
-
-    /**
      * @return Test case timeout.
      */
     protected long getTestTimeout() {
@@ -2230,7 +2214,7 @@ public abstract class GridAbstractTest extends TestCase {
     /**
      * @param store Store.
      */
-    protected <T> Factory<T> singletonFactory(T store) {
+    protected static <T> Factory<T> singletonFactory(T store) {
         return notSerializableProxy(new FactoryBuilder.SingletonFactory<>(store), Factory.class);
     }
 
@@ -2238,7 +2222,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param obj Object that should be wrap proxy
      * @return Created proxy.
      */
-    protected <T> T notSerializableProxy(final T obj) {
+    protected static <T> T notSerializableProxy(final T obj) {
         Class<T> cls = (Class<T>)obj.getClass();
 
         Class<T>[] interfaces = (Class<T>[])cls.getInterfaces();
@@ -2256,7 +2240,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param itfClses Interfaces that should be implemented by proxy (vararg parameter)
      * @return Created proxy.
      */
-    protected <T> T notSerializableProxy(final T obj, Class<? super T> itfCls, Class<? super T>... itfClses) {
+    protected static <T> T notSerializableProxy(final T obj, Class<? super T> itfCls, Class<? super T>... itfClses) {
         Class<?>[] itfs = Arrays.copyOf(itfClses, itfClses.length + 3);
 
         itfs[itfClses.length] = itfCls;
@@ -2279,7 +2263,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param obj Object that must not be changed after serialization/deserialization.
      * @return An object to return from writeReplace()
      */
-    private Object supressSerialization(Object obj) {
+    private static Object supressSerialization(Object obj) {
         SerializableProxy res = new SerializableProxy(UUID.randomUUID());
 
         serializedObj.put(res.uuid, obj);
@@ -2386,7 +2370,7 @@ public abstract class GridAbstractTest extends TestCase {
             U.sleep(millis);
         }
         catch (Exception e) {
-            throw new IgniteException();
+            throw new IgniteException(e);
         }
     }
 
@@ -2395,7 +2379,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param cacheName Cache name.
      * @return Cache group ID for given cache name.
      */
-    protected final int groupIdForCache(Ignite node, String cacheName) {
+    protected static final int groupIdForCache(Ignite node, String cacheName) {
         for (CacheGroupContext grp : ((IgniteKernal)node).context().cache().cacheGroups()) {
             if (grp.hasCache(cacheName))
                 return grp.groupId();

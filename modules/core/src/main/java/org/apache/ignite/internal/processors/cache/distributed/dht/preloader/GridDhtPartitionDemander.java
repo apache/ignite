@@ -70,7 +70,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.jetbrains.annotations.Nullable;
 
@@ -933,8 +932,8 @@ public class GridDhtPartitionDemander {
                         cached.touch(topVer); // Start tracking.
 
                         if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED) && !cached.isInternal())
-                            cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(),
-                                (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, entry.value(), true, null,
+                            cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(), null,
+                                null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, entry.value(), true, null,
                                 false, null, null, null, true);
                     }
                     else {

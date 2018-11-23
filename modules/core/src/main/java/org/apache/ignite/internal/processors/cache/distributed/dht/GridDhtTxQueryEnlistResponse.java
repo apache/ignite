@@ -117,7 +117,7 @@ public class GridDhtTxQueryEnlistResponse extends GridCacheIdMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 6;
+        return 7;
     }
 
     /** {@inheritDoc} */
@@ -135,19 +135,19 @@ public class GridDhtTxQueryEnlistResponse extends GridCacheIdMessage {
         }
 
         switch (writer.state()) {
-            case 3:
+            case 4:
                 if (!writer.writeInt("batchId", batchId))
                     return false;
 
                 writer.incrementState();
 
-            case 4:
+            case 5:
                 if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 5:
+            case 6:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
@@ -169,7 +169,7 @@ public class GridDhtTxQueryEnlistResponse extends GridCacheIdMessage {
             return false;
 
         switch (reader.state()) {
-            case 3:
+            case 4:
                 batchId = reader.readInt("batchId");
 
                 if (!reader.isLastRead())
@@ -177,7 +177,7 @@ public class GridDhtTxQueryEnlistResponse extends GridCacheIdMessage {
 
                 reader.incrementState();
 
-            case 4:
+            case 5:
                 errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
@@ -185,7 +185,7 @@ public class GridDhtTxQueryEnlistResponse extends GridCacheIdMessage {
 
                 reader.incrementState();
 
-            case 5:
+            case 6:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())

@@ -612,16 +612,15 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
     /**
      * JUnit.
-     *
-     * @throws Exception In case of error.
      */
-    public void testSimpleCustomTableName() throws Exception {
-        CacheConfiguration cacheConf = new CacheConfiguration<>(cacheConfiguration())
+    public void testSimpleCustomTableName() {
+        CacheConfiguration<Integer, Object> cacheConf = new CacheConfiguration<Integer, Object>(cacheConfiguration())
             .setName(DEFAULT_CACHE_NAME)
             .setQueryEntities(Arrays.asList(
                 new QueryEntity(Integer.class, Type1.class),
                 new QueryEntity(Integer.class, Type2.class)
             ));
+
         final IgniteCache<Integer, Object> cache = ignite().getOrCreateCache(cacheConf);
 
         cache.put(10, new Type1(1, "Type1 record #1"));
@@ -934,12 +933,12 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
     /**
      * JUnit.
-     *
-     * @throws Exception In case of error.
      */
-    public void testObjectQueryWithSwap() throws Exception {
+    public void testObjectQueryWithSwap() {
         CacheConfiguration<Integer, ObjectValue> config = new CacheConfiguration<Integer, ObjectValue>(cacheConfiguration());
+
         config.setOnheapCacheEnabled(true);
+
         IgniteCache<Integer, ObjectValue> cache = jcache(ignite(), config, Integer.class, ObjectValue.class);
 
         boolean partitioned = cache.getConfiguration(CacheConfiguration.class).getCacheMode() == PARTITIONED;
@@ -1155,15 +1154,15 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
     /**
      * JUnit.
-     *
-     * @throws Exception In case of error.
      */
-    public void testTwoObjectsTextSearch() throws Exception {
-        CacheConfiguration conf = new CacheConfiguration(cacheConfiguration());
+    public void testTwoObjectsTextSearch() {
+        CacheConfiguration<Object, Object> conf = new CacheConfiguration<>(cacheConfiguration());
+
         conf.setQueryEntities(Arrays.asList(
-            new QueryEntity(Integer.class, ObjectValue.class),
-            new QueryEntity(String.class, ObjectValueOther.class)
+           new QueryEntity(Integer.class, ObjectValue.class),
+           new QueryEntity(String.class, ObjectValueOther.class)
         ));
+
         IgniteCache<Object, Object> c = jcache(ignite(), conf, Object.class, Object.class);
 
         c.put(1, new ObjectValue("ObjectValue str", 1));
@@ -1475,6 +1474,8 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
             IgnitePredicate<Event> pred = new IgnitePredicate<Event>() {
                 @Override public boolean apply(Event evt) {
                     assert evt instanceof CacheQueryExecutedEvent;
+
+                    System.out.println(">>> EVENT");
 
                     if (evtsDisabled)
                         fail("Cache events are disabled");

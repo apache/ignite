@@ -17,8 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.GET;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SCAN;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.WriteMode.PUT;
@@ -140,5 +144,36 @@ public class CacheMvccPartitionedCoordinatorFailoverTest extends CacheMvccAbstra
      */
     public void testReadInProgressCoordinatorFailsSimple_FromServerPutGet() throws Exception {
         readInProgressCoordinatorFailsSimple(false, null, GET, PUT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testActivateDeactivateCLuster() throws Exception {
+        disableScheduledVacuum = true;
+        persistence = true;
+
+        final int DATA_NODES = 3;
+
+        // Do not use startMultithreaded here.
+        startGrids(DATA_NODES);
+
+        Ignite near = grid(DATA_NODES - 1);
+
+        CacheConfiguration ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, DATA_NODES - 1, DFLT_PARTITION_COUNT);
+
+        near.cluster().active(true);
+
+        IgniteCache cache = near.createCache(ccfg);
+
+        cache.put(1, 1);
+
+        near.cluster().active(false);
+
+        stopGrid(0);
+
+        near.cluster().active(true);
+
+        assertEquals(1, cache.get(1));
     }
 }
