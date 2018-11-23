@@ -98,6 +98,43 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
         activateCachesRestore(5, true);
     }
 
+    /**
+     * Test deactivation on cluster that is not yet activated.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDeactivateInactiveCluster() throws Exception {
+        ccfgs = new CacheConfiguration[] {
+            new CacheConfiguration<>("test_cache_1")
+                .setGroupName("test_cache"),
+            new CacheConfiguration<>("test_cache_2")
+                .setGroupName("test_cache")
+        };
+
+        Ignite ignite = startGrids(3);
+
+        ignite.cluster().active(true);
+
+        ignite.cache("test_cache_1")
+            .put("key1", "val1");
+        ignite.cache("test_cache_2")
+            .put("key1", "val1");
+
+        ignite.cluster().active(false);
+
+        assertFalse(ignite.cluster().active());
+
+        stopAllGrids();
+
+        ignite = startGrids(2);
+
+        assertFalse(ignite.cluster().active());
+
+        ignite.cluster().active(false);
+
+        assertFalse(ignite.cluster().active());
+    }
+
     /** */
     private Map<Integer, Integer> startGridsAndLoadData(int srvs) throws Exception {
         Ignite srv = startGrids(srvs);
