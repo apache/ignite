@@ -901,7 +901,11 @@ public class CommandHandler {
         VisorValidateIndexesTaskResult taskRes = executeTaskByNameOnNode(
             client, VALIDATE_INDEXES_TASK, taskArg, null);
 
+        boolean errors = false;
+
         if (!F.isEmpty(taskRes.exceptions())) {
+            errors = true;
+
             log("Index validation failed on nodes:");
 
             for (Map.Entry<UUID, Exception> e : taskRes.exceptions().entrySet()) {
@@ -912,8 +916,6 @@ public class CommandHandler {
                 nl();
             }
         }
-
-        boolean errors = false;
 
         for (Map.Entry<UUID, VisorValidateIndexesJobResult> nodeEntry : taskRes.results().entrySet()) {
             if (!nodeEntry.getValue().hasIssues())
