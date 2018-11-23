@@ -910,6 +910,8 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         CountDownLatch tx2Latch = new CountDownLatch(1);
         CountDownLatch commitLatch = new CountDownLatch(1);
 
+        final long commitLatchTimeoutSeconds = 60;
+
         // Start tx holding topology.
         IgniteInternalFuture txFut = runAsync(new Runnable() {
             @Override public void run() {
@@ -920,7 +922,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                     txLatch.countDown();
 
-                    assertTrue(U.await(commitLatch, 10, TimeUnit.SECONDS));
+                    assertTrue(U.await(commitLatch, commitLatchTimeoutSeconds, TimeUnit.SECONDS));
 
                     tx.commit();
 
@@ -951,7 +953,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                             crd.cache(CACHE_NAME).put(keys.get(0), 0);
 
-                            assertTrue(U.await(commitLatch, 10, TimeUnit.SECONDS));
+                            assertTrue(U.await(commitLatch, commitLatchTimeoutSeconds, TimeUnit.SECONDS));
 
                             tx.commit();
 

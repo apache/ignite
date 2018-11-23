@@ -23,6 +23,7 @@
     <modelVersion>4.0.0</modelVersion>
     <properties>
         <commons.math.version>3.6.1</commons.math.version>
+        <tensorflow.version>1.12.0</tensorflow.version>
     </properties>
 
     <parent>
@@ -113,6 +114,18 @@
             <groupId>com.zaxxer</groupId>
             <artifactId>SparseBitSet</artifactId>
             <version>1.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.tensorflow</groupId>
+            <artifactId>tensorflow</artifactId>
+            <version>${tensorflow.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.tensorflow</groupId>
+            <artifactId>proto</artifactId>
+            <version>${tensorflow.version}</version>
         </dependency>
 
         <dependency>

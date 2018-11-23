@@ -1043,6 +1043,13 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_FORCE_MVCC_MODE_IN_TESTS = "IGNITE_FORCE_MVCC_MODE_IN_TESTS";
 
     /**
+     * Allows to log additional information about all restored partitions after binary and logical recovery phases.
+     *
+     * Default is {@code true}.
+     */
+    public static final String IGNITE_RECOVERY_VERBOSE_LOGGING = "IGNITE_RECOVERY_VERBOSE_LOGGING";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

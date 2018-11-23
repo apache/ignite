@@ -1163,6 +1163,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 updRes.filtered(true);
 
+                if(retVal)
+                    updRes.prevValue(res.oldValue());
+
                 return updRes;
             }
             else if(noCreate && !invoke && res.resultType() == ResultType.PREV_NULL)
@@ -1607,7 +1610,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 cctx.events().addEvent(partition(),
                     key,
                     evtNodeId,
-                    tx == null ? null : tx.xid(),
+                    tx,
+                    null,
                     newVer,
                     EVT_CACHE_OBJECT_PUT,
                     val,
@@ -1818,7 +1822,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 cctx.events().addEvent(partition(),
                     key,
                     evtNodeId,
-                    tx == null ? null : tx.xid(), newVer,
+                    tx,
+                    null,
+                    newVer,
                     EVT_CACHE_OBJECT_REMOVED,
                     null,
                     false,
@@ -2152,7 +2158,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     if (transformCloClsName != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) {
                         evtOld = cctx.unwrapTemporary(old);
 
-                        cctx.events().addEvent(partition(), key, cctx.localNodeId(), null,
+                        cctx.events().addEvent(partition(), key, cctx.localNodeId(),null, null,
                             (GridCacheVersion)null, EVT_CACHE_OBJECT_READ, evtOld, evtOld != null || hadVal, evtOld,
                             evtOld != null || hadVal, subjId, transformCloClsName, taskName, keepBinary);
                     }
@@ -2161,7 +2167,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         if (evtOld == null)
                             evtOld = cctx.unwrapTemporary(old);
 
-                        cctx.events().addEvent(partition(), key, cctx.localNodeId(), null,
+                        cctx.events().addEvent(partition(), key, cctx.localNodeId(), null, null,
                             (GridCacheVersion)null, EVT_CACHE_OBJECT_PUT, updated, updated != null, evtOld,
                             evtOld != null || hadVal, subjId, null, taskName, keepBinary);
                     }
@@ -2182,7 +2188,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     CacheObject evtOld = null;
 
                     if (transformCloClsName != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ))
-                        cctx.events().addEvent(partition(), key, cctx.localNodeId(), null,
+                        cctx.events().addEvent(partition(), key, cctx.localNodeId(), null, null,
                             (GridCacheVersion)null, EVT_CACHE_OBJECT_READ, evtOld, evtOld != null || hadVal, evtOld,
                             evtOld != null || hadVal, subjId, transformCloClsName, taskName, keepBinary);
 
@@ -2190,7 +2196,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         if (evtOld == null)
                             evtOld = cctx.unwrapTemporary(old);
 
-                        cctx.events().addEvent(partition(), key, cctx.localNodeId(), null, (GridCacheVersion)null,
+                        cctx.events().addEvent(partition(), key, cctx.localNodeId(), null, null, (GridCacheVersion)null,
                             EVT_CACHE_OBJECT_REMOVED, null, false, evtOld, evtOld != null || hadVal, subjId, null,
                             taskName, keepBinary);
                     }
@@ -2427,6 +2433,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     key,
                     evtNodeId,
                     null,
+                    null,
                     updateVer,
                     EVT_CACHE_OBJECT_READ,
                     evtOld, evtOld != null,
@@ -2453,6 +2460,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     cctx.events().addEvent(partition(),
                         key,
                         evtNodeId,
+                        null,
                         null,
                         updateVer,
                         EVT_CACHE_OBJECT_PUT,
@@ -2482,6 +2490,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     cctx.events().addEvent(partition(),
                         key,
                         evtNodeId,
+                        null,
                         null,
                         updateVer,
                         EVT_CACHE_OBJECT_REMOVED,
@@ -5532,6 +5541,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     updRes.filtered(true);
 
+                    if(needVal)
+                        updRes.prevValue(res.oldValue());
+
                     resFut.onDone(updRes);
 
                     return;
@@ -6727,12 +6739,14 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         ensureFreeSpace();
 
+        CacheObject val = null;
+        CacheObject oldVal = null;
+
         lockEntry();
 
         try {
             checkObsolete();
 
-            CacheObject val = null;
 
             for (int i = 0; i < entries.size(); i++) {
                 GridCacheMvccEntryInfo info = (GridCacheMvccEntryInfo)entries.get(i);
@@ -6753,7 +6767,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     info.newMvccTxState());
             }
 
-            CacheObject oldVal = null;
 
             // Assume list contains  only previous committed row and rows changed by the current tx.
             if (!entries.isEmpty()) {
@@ -6800,7 +6813,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
         }
 
-        return new GridCacheUpdateTxResult(true, logPtr);
+        GridCacheUpdateTxResult res = new GridCacheUpdateTxResult(true, logPtr);
+
+        res.newValue(val);
+        res.oldValue(oldVal);
+
+        return res;
     }
 
     /**
