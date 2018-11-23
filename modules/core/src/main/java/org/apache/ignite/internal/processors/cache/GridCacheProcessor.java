@@ -2028,14 +2028,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     cacheInfo -> {
                         GridCacheContext<?, ?> cctx = cacheContexts.get(cacheInfo);
 
-                        if (!cctx.isRecoveryMode()) {
+//                        if (!cctx.isRecoveryMode()) {
                             ctx.query().onCacheStart(
                                 cctx,
                                 cacheInfo.getCacheDescriptor().schema() != null
                                     ? cacheInfo.getCacheDescriptor().schema()
                                     : new QuerySchema()
                             );
-                        }
+//                        }
                     }
                 );
             }
@@ -2078,11 +2078,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     ) throws IgniteCheckedException {
         GridCacheContext cacheCtx = prepareCacheContext(startCfg, desc, reqNearCfg, exchTopVer, disabledAfterStart);
 
+        ctx.query().onCacheStart(cacheCtx, desc.schema() != null ? desc.schema() : new QuerySchema());
+
         if (cacheCtx.isRecoveryMode())
             finishRecovery(exchTopVer, cacheCtx);
         else {
-            ctx.query().onCacheStart(cacheCtx, desc.schema() != null ? desc.schema() : new QuerySchema());
-
             onCacheStarted(cacheCtx);
         }
     }
@@ -2436,7 +2436,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         grp.onCacheStarted(cacheCtx);
 
-        ctx.query().onCacheStart(cacheCtx, desc.schema() != null ? desc.schema() : new QuerySchema());
+        //ctx.query().onCacheStart(cacheCtx, desc.schema() != null ? desc.schema() : new QuerySchema());
 
         if (log.isInfoEnabled()) {
             log.info("Started cache in recovery mode [name=" + cfg.getName() +
