@@ -34,7 +34,8 @@ public class IgniteDynamicCacheStartFailWithPersistenceTest extends IgniteAbstra
         return 5 * 60 * 1000;
     }
 
-    protected boolean persistenceEnabled() {
+    /** {@inheritDoc} */
+    @Override protected boolean persistenceEnabled() {
         return true;
     }
 
