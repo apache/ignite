@@ -48,7 +48,7 @@ class ZkRuntimeState {
     int joinDataPartCnt;
 
     /** */
-    long gridStartTime;
+    volatile long gridStartTime;
 
     /** */
     volatile boolean joined;
