@@ -1463,6 +1463,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
          * @return Store delegate.
          * @throws IgniteCheckedException If failed.
          */
+        @SuppressWarnings("SizeReplaceableByIsEmpty")
         private CacheDataStore init0(boolean checkExists) throws IgniteCheckedException {
             CacheDataStore delegate0 = delegate;
 
@@ -1573,6 +1574,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     pendingTree = pendingTree0;
 
+                    // TODO IGNITE-10390 replace size() > 0 with isEmpty()
                     if (!hasPendingEntries && pendingTree0.size() > 0)
                         hasPendingEntries = true;
 
