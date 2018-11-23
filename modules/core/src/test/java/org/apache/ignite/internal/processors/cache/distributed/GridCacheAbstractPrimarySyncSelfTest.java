@@ -46,14 +46,6 @@ public abstract class GridCacheAbstractPrimarySyncSelfTest extends GridCommonAbs
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
-        if (nearConfiguration() != null)
-            MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
-        super.setUp();
-    }
-
-    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -79,6 +71,9 @@ public abstract class GridCacheAbstractPrimarySyncSelfTest extends GridCommonAbs
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        if (nearConfiguration() != null)
+            MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+
         assert GRID_CNT > 1;
 
         startGrids(GRID_CNT);

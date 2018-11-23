@@ -55,7 +55,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
     private static final GridCacheTestStore store = new GridCacheTestStore();
 
     /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
+    @Override public void setUp() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
 
         super.setUp();

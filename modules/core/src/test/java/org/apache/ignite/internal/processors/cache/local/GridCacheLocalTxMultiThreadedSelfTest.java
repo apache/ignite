@@ -35,10 +35,10 @@ public class GridCacheLocalTxMultiThreadedSelfTest extends IgniteTxMultiThreaded
     private static final boolean CACHE_DEBUG = false;
 
     /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
+    @Override protected void beforeTestsStarted() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
-        super.setUp();
+        super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */

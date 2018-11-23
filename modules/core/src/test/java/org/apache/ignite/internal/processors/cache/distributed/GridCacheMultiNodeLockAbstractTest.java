@@ -65,7 +65,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
     private static Collection<IgnitePredicate<Event>> lsnrs = new ArrayList<>();
 
     /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
+    @Override public void setUp() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
 

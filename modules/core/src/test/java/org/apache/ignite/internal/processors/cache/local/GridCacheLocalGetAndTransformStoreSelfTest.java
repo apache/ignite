@@ -28,7 +28,7 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
  */
 public class GridCacheLocalGetAndTransformStoreSelfTest extends GridCacheGetAndTransformStoreAbstractTest {
     /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
+    @Override public void setUp() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
         super.setUp();

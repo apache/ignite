@@ -44,7 +44,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
  */
 public class GridCacheLocalTxTimeoutSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
+    @Override public void setUp() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
         super.setUp();

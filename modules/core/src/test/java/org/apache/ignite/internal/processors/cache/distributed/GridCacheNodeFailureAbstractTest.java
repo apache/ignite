@@ -77,7 +77,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
     private static final List<Ignite> IGNITEs = new ArrayList<>();
 
     /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
+    @Override public void setUp() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
         super.setUp();

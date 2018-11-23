@@ -32,10 +32,10 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
  */
 public class GridCacheLocalTxSingleThreadedSelfTest extends IgniteTxSingleThreadedAbstractTest {
     /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
+    @Override public void beforeTestsStarted() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
-        super.setUp();
+        super.beforeTestsStarted();
     }
 
     /** Cache debug flag. */

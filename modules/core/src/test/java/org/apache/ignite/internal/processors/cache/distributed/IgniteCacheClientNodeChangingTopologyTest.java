@@ -141,10 +141,10 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     }
 
     /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
+    @Override public void beforeTestsStarted() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
-        super.setUp();
+        super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */
