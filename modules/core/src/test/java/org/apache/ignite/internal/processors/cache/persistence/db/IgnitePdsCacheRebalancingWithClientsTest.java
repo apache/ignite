@@ -36,7 +36,9 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
@@ -49,6 +51,18 @@ public class IgnitePdsCacheRebalancingWithClientsTest extends GridCommonAbstract
     /** Block message predicate to set to Communication SPI in node configuration. */
     private IgniteBiPredicate<ClusterNode, Message> blockMessagePredicate;
 
+    /** */
+    private final static int CACHE1_PARTS_NUM = 8;
+
+    /** */
+    private final static int CACHE2_PARTS_NUM = 16;
+
+    /** */
+    private final static int CACHE3_PARTS_NUM = 32;
+
+    /** */
+    private final static String CACHE3_NAME = "cache3";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -56,19 +70,19 @@ public class IgnitePdsCacheRebalancingWithClientsTest extends GridCommonAbstract
         CacheConfiguration ccfg1 = new CacheConfiguration("cache1")
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)
             .setCacheMode(CacheMode.REPLICATED)
-            .setAffinity(new RendezvousAffinityFunction(false, 8));
+            .setAffinity(new RendezvousAffinityFunction(false, CACHE1_PARTS_NUM));
 
         CacheConfiguration ccfg2 = new CacheConfiguration("cache2")
             .setBackups(1)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setCacheMode(CacheMode.PARTITIONED)
-            .setAffinity(new RendezvousAffinityFunction(false, 16));
+            .setAffinity(new RendezvousAffinityFunction(false, CACHE2_PARTS_NUM));
 
-        CacheConfiguration ccfg3 = new CacheConfiguration("cache3")
+        CacheConfiguration ccfg3 = new CacheConfiguration(CACHE3_NAME)
             .setBackups(1)
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)
             .setCacheMode(CacheMode.PARTITIONED)
-            .setAffinity(new RendezvousAffinityFunction(false, 32));
+            .setAffinity(new RendezvousAffinityFunction(false, CACHE3_PARTS_NUM));
 
         cfg.setCacheConfiguration(ccfg1, ccfg2, ccfg3);
 
@@ -96,7 +110,8 @@ public class IgnitePdsCacheRebalancingWithClientsTest extends GridCommonAbstract
     }
 
     /**
-     *
+     * Verifies that if client joins topology during rebalancing process, rebalancing finishes successfully,
+     * all partitions are owned as expected upon completion rebalancing.
      */
     public void testClientJoinsDuringRebalancing() throws Exception {
         Ignite ig0 = startGrids(2);
@@ -112,7 +127,7 @@ public class IgnitePdsCacheRebalancingWithClientsTest extends GridCommonAbstract
 
         cleanPersistenceFiles(ig1Name);
 
-        int groupId = ((IgniteEx) ig0).cachex("cache3").context().groupId();
+        int groupId = ((IgniteEx) ig0).cachex(CACHE3_NAME).context().groupId();
 
         blockMessagePredicate = (node, msg) -> {
             if (msg instanceof GridDhtPartitionDemandMessage)
@@ -127,12 +142,22 @@ public class IgnitePdsCacheRebalancingWithClientsTest extends GridCommonAbstract
 
         stopGrid("client");
 
+        CacheGroupMetricsMXBean mxBean = ig1.cachex(CACHE3_NAME).context().group().mxBean();
+
+        assertTrue("Unexpected moving partitions count: " + mxBean.getLocalNodeMovingPartitionsCount(),
+            mxBean.getLocalNodeMovingPartitionsCount() == CACHE3_PARTS_NUM);
+
         TestRecordingCommunicationSpi commSpi = (TestRecordingCommunicationSpi) ig1
             .configuration().getCommunicationSpi();
 
         commSpi.stopBlock();
 
-        Thread.sleep(30_000);
+        boolean waitResult = GridTestUtils.waitForCondition(
+            () -> mxBean.getLocalNodeMovingPartitionsCount() == 0,
+            30_000);
+
+        assertTrue("Failed to wait for owning all partitions, parts in moving state: "
+            + mxBean.getLocalNodeMovingPartitionsCount(), waitResult);
     }
 
     private void cleanPersistenceFiles(String igName) throws Exception {

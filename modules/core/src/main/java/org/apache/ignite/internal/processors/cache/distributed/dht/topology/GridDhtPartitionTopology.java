@@ -374,10 +374,8 @@ public interface GridDhtPartitionTopology {
 
     /**
      * Owns all moving partitions for the given topology version.
-     *
-     * @param topVer Topology version.
      */
-    public void ownMoving(AffinityTopologyVersion topVer);
+    public void ownMoving();
 
     /**
      * @param part Evicted partition.

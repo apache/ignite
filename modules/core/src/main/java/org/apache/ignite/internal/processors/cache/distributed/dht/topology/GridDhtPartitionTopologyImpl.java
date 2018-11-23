@@ -2585,7 +2585,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public void ownMoving(AffinityTopologyVersion topVer) {
+    @Override public void ownMoving() {
         lock.writeLock().lock();
 
         try {
@@ -2596,8 +2596,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     try {
                         if (reserved && locPart.state() == MOVING)
                             grp.topology().own(locPart);
-                        else // topology changed, rebalancing must be restarted
-                            return;
                     }
                     finally {
                         if (reserved)
