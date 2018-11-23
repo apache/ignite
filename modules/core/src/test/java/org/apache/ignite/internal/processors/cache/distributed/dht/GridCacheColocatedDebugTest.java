@@ -540,7 +540,6 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      * @param isolation Transaction isolation.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("AssertEqualsBetweenInconvertibleTypes")
     private void checkDistributedPut(boolean explicitTx, boolean separate, TransactionConcurrency concurrency,
         TransactionIsolation isolation) throws Exception {
         storeEnabled = false;
@@ -630,7 +629,6 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      * @param isolation Transaction isolation.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("AssertEqualsBetweenInconvertibleTypes")
     private void checkNonLocalPuts(boolean explicitTx, boolean separate, TransactionConcurrency concurrency,
         TransactionIsolation isolation) throws Exception {
         storeEnabled = false;
@@ -811,7 +809,6 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      * @param isolation Transaction isolation.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("AssertEqualsBetweenInconvertibleTypes")
     private void checkRollback(boolean separate, TransactionConcurrency concurrency, TransactionIsolation isolation)
         throws Exception {
         storeEnabled = false;

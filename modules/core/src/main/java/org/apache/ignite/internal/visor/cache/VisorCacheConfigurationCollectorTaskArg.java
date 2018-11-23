@@ -92,7 +92,7 @@ public class VisorCacheConfigurationCollectorTaskArg extends VisorDataTransferOb
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         cacheNames = U.readCollection(in);
 
-        if (getProtocolVersion() > V1)
+        if (protoVer > V1)
             regex = U.readString(in);
     }
 

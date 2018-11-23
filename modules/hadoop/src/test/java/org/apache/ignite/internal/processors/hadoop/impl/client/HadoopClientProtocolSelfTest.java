@@ -136,7 +136,6 @@ public class HadoopClientProtocolSelfTest extends HadoopAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ConstantConditions")
     private void tstNextJobId() throws Exception {
         IgniteHadoopClientProtocolProvider provider = provider();
 
@@ -423,7 +422,6 @@ public class HadoopClientProtocolSelfTest extends HadoopAbstractSelfTest {
      * @param path Path.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ConstantConditions")
     private static void dumpIgfs(IgniteFileSystem igfs, IgfsPath path) throws Exception {
         IgfsFile file = igfs.info(path);
 

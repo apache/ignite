@@ -17,22 +17,16 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -47,78 +41,7 @@ public class H2ResultSetIteratorNullifyOnEndSelfTest extends GridCommonAbstractT
     private static final int PERSON_COUNT = 20;
 
     /** */
-    private static final String SELECT_ALL_SQL = "SELECT p.* FROM Person p ORDER BY p.salary";
-
-    /** */
     private static final String SELECT_MAX_SAL_SQLF = "select max(salary) from Person";
-
-    /**
-     * Non local SQL check nullification after close
-     */
-    public void testSqlQueryClose() {
-        SqlQuery<String, Person> qry = new SqlQuery<>(Person.class, SELECT_ALL_SQL);
-
-        QueryCursor<Cache.Entry<String, Person>> qryCurs = cache().query(qry);
-
-        qryCurs.iterator();
-
-        qryCurs.close();
-
-        H2ResultSetIterator h2It = extractIteratorInnerGridIteratorInnerH2ResultSetIterator(qryCurs);
-
-        checkIterator(h2It);
-    }
-
-    /**
-     * Non local SQL check nullification after complete
-     */
-    public void testSqlQueryComplete() {
-        SqlQuery<String, Person> qry = new SqlQuery<>(Person.class, SELECT_ALL_SQL);
-
-        QueryCursor<Cache.Entry<String, Person>> qryCurs = cache().query(qry);
-
-        qryCurs.getAll();
-
-        H2ResultSetIterator h2It = extractIteratorInnerGridIteratorInnerH2ResultSetIterator(qryCurs);
-
-        checkIterator(h2It);
-    }
-
-    /**
-     * Local SQL check nullification after close
-     */
-    public void testSqlQueryLocalClose() {
-        SqlQuery<String, Person> qry = new SqlQuery<>(Person.class, SELECT_ALL_SQL);
-
-        qry.setLocal(true);
-
-        QueryCursor<Cache.Entry<String, Person>> qryCurs = cache().query(qry);
-
-        qryCurs.iterator();
-
-        qryCurs.close();
-
-        H2ResultSetIterator h2It = extractIterableInnerH2ResultSetIterator(qryCurs);
-
-        checkIterator(h2It);
-    }
-
-    /**
-     * Local SQL check nullification after complete
-     */
-    public void testSqlQueryLocalComplete() {
-        SqlQuery<String, Person> qry = new SqlQuery<>(Person.class, SELECT_ALL_SQL);
-
-        qry.setLocal(true);
-
-        QueryCursor<Cache.Entry<String, Person>> qryCurs = cache().query(qry);
-
-        qryCurs.getAll();
-
-        H2ResultSetIterator h2It = extractIterableInnerH2ResultSetIterator(qryCurs);
-
-        checkIterator(h2It);
-    }
 
     /**
      * Non local SQL Fields check nullification after close
@@ -200,45 +123,6 @@ public class H2ResultSetIteratorNullifyOnEndSelfTest extends GridCommonAbstractT
     }
 
     /**
-     * Extract H2ResultSetIterator by reflection for non local SQL cases
-     * @param qryCurs source cursor
-     * @return target iterator or null of not extracted
-     */
-    private H2ResultSetIterator extractIteratorInnerGridIteratorInnerH2ResultSetIterator(
-        QueryCursor<Cache.Entry<String, Person>> qryCurs) {
-        if (QueryCursorImpl.class.isAssignableFrom(qryCurs.getClass())) {
-            Iterator inner = GridTestUtils.getFieldValue(qryCurs, QueryCursorImpl.class, "iter");
-
-            GridQueryCacheObjectsIterator it = GridTestUtils.getFieldValue(inner, inner.getClass(), "val$iter0");
-
-            Iterator<List<?>> h2RsIt = GridTestUtils.getFieldValue(it, GridQueryCacheObjectsIterator.class, "iter");
-
-            if (H2ResultSetIterator.class.isAssignableFrom(h2RsIt.getClass()))
-                return (H2ResultSetIterator)h2RsIt;
-        }
-        return null;
-    }
-
-    /**
-     * Extract H2ResultSetIterator by reflection for local SQL cases.
-     *
-     * @param qryCurs source cursor
-     * @return target iterator or null of not extracted
-     */
-    private H2ResultSetIterator extractIterableInnerH2ResultSetIterator(
-        QueryCursor<Cache.Entry<String, Person>> qryCurs) {
-        if (QueryCursorImpl.class.isAssignableFrom(qryCurs.getClass())) {
-            Iterable iterable = GridTestUtils.getFieldValue(qryCurs, QueryCursorImpl.class, "iterExec");
-
-            Iterator h2RsIt = GridTestUtils.getFieldValue(iterable, iterable.getClass(), "val$i");
-
-            if (H2ResultSetIterator.class.isAssignableFrom(h2RsIt.getClass()))
-                return (H2ResultSetIterator)h2RsIt;
-        }
-        return null;
-    }
-
-    /**
      * Extract H2ResultSetIterator by reflection for SQL Fields cases.
      *
      * @param qryCurs source cursor
@@ -254,67 +138,6 @@ public class H2ResultSetIteratorNullifyOnEndSelfTest extends GridCommonAbstractT
                 return (H2ResultSetIterator)h2RsIt;
         }
         return null;
-    }
-
-    /**
-     * "onClose" should remove links to data.
-     */
-    public void testOnClose() {
-        try {
-            GridCloseableIterator it = indexing().queryLocalSql(
-                indexing().schema(cache().getName()),
-                cache().getName(),
-                SELECT_ALL_SQL,
-                null,
-                Collections.emptySet(),
-                "Person",
-                null,
-                null);
-
-            if (H2ResultSetIterator.class.isAssignableFrom(it.getClass())) {
-                H2ResultSetIterator h2it = (H2ResultSetIterator)it;
-
-                h2it.onClose();
-
-                assertNull(GridTestUtils.getFieldValue(h2it, H2ResultSetIterator.class, "data"));
-            }
-            else
-                fail();
-        }
-        catch (IgniteCheckedException e) {
-            fail(e.getMessage());
-        }
-    }
-
-    /**
-     * Complete iterate should remove links to data.
-     */
-    public void testOnComplete() {
-        try {
-            GridCloseableIterator it = indexing().queryLocalSql(
-                indexing().schema(cache().getName()),
-                cache().getName(),
-                SELECT_ALL_SQL,
-                null,
-                Collections.emptySet(),
-                "Person",
-                null,
-                null);
-
-            if (H2ResultSetIterator.class.isAssignableFrom(it.getClass())) {
-                H2ResultSetIterator h2it = (H2ResultSetIterator)it;
-
-                while (h2it.onHasNext())
-                    h2it.onNext();
-
-                assertNull(GridTestUtils.getFieldValue(h2it, H2ResultSetIterator.class, "data"));
-            }
-            else
-                fail();
-        }
-        catch (IgniteCheckedException e) {
-            fail(e.getMessage());
-        }
     }
 
     /** {@inheritDoc} */
@@ -333,15 +156,6 @@ public class H2ResultSetIteratorNullifyOnEndSelfTest extends GridCommonAbstractT
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
-    }
-
-    /**
-     * @return H2 indexing instance.
-     */
-    private IgniteH2Indexing indexing() {
-        GridQueryProcessor qryProcessor = grid(0).context().query();
-
-        return GridTestUtils.getFieldValue(qryProcessor, GridQueryProcessor.class, "idx");
     }
 
     /**

@@ -96,7 +96,6 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void doTestIndexingSpiWithTx(IgniteEx ignite, int key) throws Exception {
         final IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 

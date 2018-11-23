@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.io.Console;
+import java.io.IOException;
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -33,6 +36,7 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeTask;
@@ -64,6 +68,7 @@ import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
 import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -95,6 +100,7 @@ import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 import org.apache.ignite.internal.visor.tx.VisorTxTask;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
+import org.apache.ignite.internal.visor.verify.IndexIntegrityCheckIssue;
 import org.apache.ignite.internal.visor.verify.IndexValidationIssue;
 import org.apache.ignite.internal.visor.verify.ValidateIndexesPartitionResult;
 import org.apache.ignite.internal.visor.verify.VisorContentionTask;
@@ -113,9 +119,11 @@ import org.apache.ignite.internal.visor.verify.VisorViewCacheCmd;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheTask;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheTaskResult;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
+import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
@@ -579,6 +587,35 @@ public class CommandHandler {
     }
 
     /**
+     * @param client Client.
+     *
+     * @return List of hosts.
+     */
+    private Stream<IgniteBiTuple<GridClientNode, String>> listHosts(GridClient client) throws GridClientException {
+        return client.compute().nodes(GridClientNode::connectable).stream()
+            .flatMap(node -> Stream.concat(
+                node.tcpAddresses() == null ? Stream.empty() : node.tcpAddresses().stream(),
+                node.tcpHostNames() == null ? Stream.empty() : node.tcpHostNames().stream()
+            )
+            .map(addr -> new IgniteBiTuple<>(node, addr + ":" + node.tcpPort())));
+    }
+
+    /**
+     * @param client Client.
+     *
+     * @return List of hosts.
+     */
+    private Stream<IgniteBiTuple<GridClientNode, List<String>>> listHostsByClientNode(GridClient client) throws GridClientException {
+        return client.compute().nodes(GridClientNode::connectable).stream()
+            .map(node -> new IgniteBiTuple<>(node,
+                Stream.concat(
+                    node.tcpAddresses() == null ? Stream.empty() : node.tcpAddresses().stream(),
+                    node.tcpHostNames() == null ? Stream.empty() : node.tcpHostNames().stream()
+                )
+                .map(addr -> addr + ":" + node.tcpPort()).collect(Collectors.toList())));
+    }
+
+    /**
      * @param client Client
      * @param taskClsName Task class name.
      * @param taskArgs Task args.
@@ -586,7 +623,11 @@ public class CommandHandler {
      * @return Task result.
      * @throws GridClientException If failed to execute task.
      */
-    private <R> R executeTaskByNameOnNode(GridClient client, String taskClsName, Object taskArgs, UUID nodeId
+    private <R> R executeTaskByNameOnNode(
+        GridClient client,
+        String taskClsName,
+        Object taskArgs,
+        UUID nodeId
     ) throws GridClientException {
         GridClientCompute compute = client.compute();
 
@@ -606,22 +647,34 @@ public class CommandHandler {
         GridClientNode node = null;
 
         if (nodeId == null) {
-            Collection<GridClientNode> nodes = compute.nodes(GridClientNode::connectable);
-
             // Prefer node from connect string.
-            String origAddr = clientCfg.getServers().iterator().next();
+            final String cfgAddr = clientCfg.getServers().iterator().next();
 
-            for (GridClientNode clientNode : nodes) {
-                Iterator<String> it = F.concat(clientNode.tcpAddresses().iterator(), clientNode.tcpHostNames().iterator());
+            String[] parts = cfgAddr.split(":");
 
-                while (it.hasNext()) {
-                    if (origAddr.equals(it.next() + ":" + clientNode.tcpPort())) {
-                        node = clientNode;
+            if (DFLT_HOST.equals(parts[0])) {
+                InetAddress addr;
 
-                        break;
-                    }
+                try {
+                    addr = IgniteUtils.getLocalHost();
                 }
+                catch (IOException e) {
+                    throw new GridClientException("Can't get localhost name.", e);
+                }
+
+                if (addr.isLoopbackAddress())
+                    throw new GridClientException("Can't find localhost name.");
+
+                String origAddr = addr.getHostName() + ":" + parts[1];
+
+                node = listHosts(client).filter(tuple -> origAddr.equals(tuple.get2())).findFirst().map(IgniteBiTuple::get1).orElse(null);
+
+                if (node == null)
+                    node = listHostsByClientNode(client).filter(tuple -> tuple.get2().size() == 1 && cfgAddr.equals(tuple.get2().get(0))).
+                        findFirst().map(IgniteBiTuple::get1).orElse(null);
             }
+            else
+                node = listHosts(client).filter(tuple -> cfgAddr.equals(tuple.get2())).findFirst().map(IgniteBiTuple::get1).orElse(null);
 
             // Otherwise choose random node.
             if (node == null)
@@ -759,23 +812,22 @@ public class CommandHandler {
     private void cacheValidateIndexes(GridClient client, CacheArguments cacheArgs) throws GridClientException {
         VisorValidateIndexesTaskArg taskArg = new VisorValidateIndexesTaskArg(
             cacheArgs.caches(),
+            cacheArgs.nodeId() != null ? Collections.singleton(cacheArgs.nodeId()) : null,
             cacheArgs.checkFirst(),
             cacheArgs.checkThrough()
         );
 
-        UUID nodeId = cacheArgs.nodeId() == null ? BROADCAST_UUID : cacheArgs.nodeId();
-
         VisorValidateIndexesTaskResult taskRes = executeTaskByNameOnNode(
-            client, VALIDATE_INDEXES_TASK, taskArg, nodeId);
+            client, VALIDATE_INDEXES_TASK, taskArg, null);
 
         if (!F.isEmpty(taskRes.exceptions())) {
             log("Index validation failed on nodes:");
 
             for (Map.Entry<UUID, Exception> e : taskRes.exceptions().entrySet()) {
-                log("Node ID = " + e.getKey());
+                log(i("Node ID = " + e.getKey()));
 
-                log("Exception message:");
-                log(e.getValue().getMessage());
+                log(i("Exception message:"));
+                log(i(e.getValue().getMessage(), 2));
                 nl();
             }
         }
@@ -783,18 +835,30 @@ public class CommandHandler {
         boolean errors = false;
 
         for (Map.Entry<UUID, VisorValidateIndexesJobResult> nodeEntry : taskRes.results().entrySet()) {
+            if (!nodeEntry.getValue().hasIssues())
+                continue;
+
+            errors = true;
+
+            log("Index issues found on node " + nodeEntry.getKey() + ":");
+
+            Collection<IndexIntegrityCheckIssue> integrityCheckFailures = nodeEntry.getValue().integrityCheckFailures();
+
+            if (!integrityCheckFailures.isEmpty()) {
+                for (IndexIntegrityCheckIssue is : integrityCheckFailures)
+                    log(i(is.toString()));
+            }
+
             Map<PartitionKey, ValidateIndexesPartitionResult> partRes = nodeEntry.getValue().partitionResult();
 
             for (Map.Entry<PartitionKey, ValidateIndexesPartitionResult> e : partRes.entrySet()) {
                 ValidateIndexesPartitionResult res = e.getValue();
 
                 if (!res.issues().isEmpty()) {
-                    errors = true;
-
-                    log(e.getKey().toString() + " " + e.getValue().toString());
+                    log(i(e.getKey().toString() + " " + e.getValue().toString()));
 
                     for (IndexValidationIssue is : res.issues())
-                        log(is.toString());
+                        log(i(is.toString(), 2));
                 }
             }
 
@@ -804,20 +868,20 @@ public class CommandHandler {
                 ValidateIndexesPartitionResult res = e.getValue();
 
                 if (!res.issues().isEmpty()) {
-                    errors = true;
-
-                    log("SQL Index " + e.getKey() + " " + e.getValue().toString());
+                    log(i("SQL Index " + e.getKey() + " " + e.getValue().toString()));
 
                     for (IndexValidationIssue is : res.issues())
-                        log(is.toString());
+                        log(i(is.toString(),2));
                 }
             }
         }
 
         if (!errors)
-            log("validate_indexes has finished, no issues found.");
+            log("no issues found.");
         else
-            log("validate_indexes has finished with errors (listed above).");
+            log("issues found (listed above).");
+
+        nl();
     }
 
     /**
@@ -1843,12 +1907,6 @@ public class CommandHandler {
 
         Command cmd = commands.get(0);
 
-        boolean hasUsr = F.isEmpty(user);
-        boolean hasPwd = F.isEmpty(pwd);
-
-        if (hasUsr != hasPwd)
-            throw new IllegalArgumentException("Both user and password should be specified");
-
         return new Arguments(cmd, host, port, user, pwd, baselineAct, baselineArgs, txArgs, cacheArgs, walAct, walArgs,
             pingTimeout, pingInterval, autoConfirmation);
     }
@@ -2409,50 +2467,100 @@ public class CommandHandler {
 
             clientCfg.setServers(Collections.singletonList(args.host() + ":" + args.port()));
 
-            if (!F.isEmpty(args.user())) {
-                clientCfg.setSecurityCredentialsProvider(
-                    new SecurityCredentialsBasicProvider(new SecurityCredentials(args.user(), args.password())));
-            }
+            boolean tryConnectAgain = true;
 
-            try (GridClient client = GridClientFactory.start(clientCfg)) {
-                switch (args.command()) {
-                    case ACTIVATE:
-                        activate(client);
+            int tryConnectMaxCount=3;
 
-                        break;
+            while (tryConnectAgain) {
+                tryConnectAgain = false;
 
-                    case DEACTIVATE:
-                        deactivate(client);
+                if (!F.isEmpty(args.getUserName())) {
+                    SecurityCredentialsProvider securityCredential = clientCfg.getSecurityCredentialsProvider();
 
-                        break;
+                    if (securityCredential == null) {
+                        securityCredential = new SecurityCredentialsBasicProvider(
+                            new SecurityCredentials(args.getUserName(), args.getPassword())
+                        );
 
-                    case STATE:
-                        state(client);
+                        clientCfg.setSecurityCredentialsProvider(securityCredential);
+                    }
+                    final SecurityCredentials credential = securityCredential.credentials();
+                    credential.setLogin(args.getUserName());
+                    credential.setPassword(args.getPassword());
+                }
 
-                        break;
+                try (GridClient client = GridClientFactory.start(clientCfg)) {
+                    switch (args.command()) {
+                        case ACTIVATE:
+                            activate(client);
 
-                    case BASELINE:
-                        baseline(client, args.baselineAction(), args.baselineArguments());
+                            break;
 
-                        break;
+                        case DEACTIVATE:
+                            deactivate(client);
 
-                    case TX:
-                        transactions(client, args.transactionArguments());
+                            break;
 
-                        break;
+                        case STATE:
+                            state(client);
 
-                    case CACHE:
-                        cache(client, args.cacheArgs());
+                            break;
 
-                        break;
+                        case BASELINE:
+                            baseline(client, args.baselineAction(), args.baselineArguments());
 
-                    case WAL:
-                        wal(client, args.walAction(), args.walArguments());
+                            break;
 
-                        break;
+                        case TX:
+                            transactions(client, args.transactionArguments());
+
+                            break;
+
+                        case CACHE:
+                            cache(client, args.cacheArgs());
+
+                            break;
+
+                        case WAL:
+                            wal(client, args.walAction(), args.walArguments());
+
+                            break;
+                    }
+                }
+                catch (Throwable e) {
+                    if (tryConnectMaxCount > 0 && isAuthError(e)) {
+                        System.out.println("Authentication error, try connection again.");
+
+                        final Console console = System.console();
+
+                        if (console != null) {
+                            if (F.isEmpty(args.getUserName()))
+                                args.setUserName(console.readLine("user: "));
+
+                            args.setPassword(new String(console.readPassword("password: ")));
+                        }
+                        else {
+                            Scanner scanner = new Scanner(System.in);
+
+                            if (F.isEmpty(args.getUserName())){
+                                System.out.println("user: ");
+
+                                args.setUserName(scanner.next());
+                            }
+
+                            System.out.println("password: ");
+
+                            args.setPassword(scanner.next());
+                        }
+
+                        tryConnectAgain = true;
+
+                        tryConnectMaxCount--;
+                    }
+                    else
+                        throw e;
                 }
             }
-
             return EXIT_CODE_OK;
         }
         catch (IllegalArgumentException e) {

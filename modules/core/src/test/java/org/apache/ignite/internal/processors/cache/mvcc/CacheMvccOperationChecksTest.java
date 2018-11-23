@@ -26,7 +26,6 @@ import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -106,14 +105,6 @@ public class CacheMvccOperationChecksTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
-    public void testPeekOperationsUnsupported() throws Exception {
-        checkOperationUnsupported("localPeek", m("Peek"), t(Object.class, CachePeekMode[].class), 1,
-            new CachePeekMode[]{CachePeekMode.NEAR});
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
     public void testEvictOperationsUnsupported() throws Exception {
         checkOperationUnsupported("localEvict", m("Evict"), t(Collection.class), Collections.singleton(1));
     }
@@ -162,7 +153,6 @@ public class CacheMvccOperationChecksTest extends CacheMvccAbstractTest {
 
             try (IgniteCache<Integer, String> cache = node.createCache(cfg)) {
                 GridTestUtils.assertThrows(log, new Callable<Void>() {
-                    @SuppressWarnings("unchecked")
                     @Override public Void call() throws Exception {
                         try {
                             Object o = U.invoke(null, cache, mtdName, paramTypes, args);

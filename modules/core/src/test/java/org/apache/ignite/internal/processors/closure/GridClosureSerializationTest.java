@@ -56,7 +56,7 @@ public class GridClosureSerializationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "Convert2Lambda"})
+    @SuppressWarnings({"Convert2Lambda"})
     public void testSerializationFailure() throws Exception {
         final IgniteEx ignite0 = grid(0);
         final IgniteEx ignite1 = grid(1);
@@ -77,7 +77,7 @@ public class GridClosureSerializationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "Convert2Lambda"})
+    @SuppressWarnings({"Convert2Lambda"})
     public void testExceptionSerializationFailure() throws Exception {
         final IgniteEx ignite0 = grid(0);
         final IgniteEx ignite1 = grid(1);
@@ -98,7 +98,7 @@ public class GridClosureSerializationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "Convert2Lambda"})
+    @SuppressWarnings({"Convert2Lambda"})
     public void testAttributesSerializationFailure() throws Exception {
         final IgniteEx ignite0 = grid(0);
         final IgniteEx ignite1 = grid(1);

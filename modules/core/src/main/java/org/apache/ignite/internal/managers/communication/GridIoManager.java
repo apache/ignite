@@ -136,7 +136,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     public static final String DIRECT_PROTO_VER_ATTR = "comm.direct.proto.ver";
 
     /** Direct protocol version. */
-    public static final byte DIRECT_PROTO_VER = 2;
+    public static final byte DIRECT_PROTO_VER = 3;
 
     /** Current IO policy. */
     private static final ThreadLocal<Byte> CUR_PLC = new ThreadLocal<>();
@@ -729,7 +729,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     @SuppressWarnings({"deprecation", "SynchronizationOnLocalVariableOrMethodParameter"})
     @Override public void onKernalStart0() throws IgniteCheckedException {
         discoLsnr = new GridLocalEventListener() {
-            @SuppressWarnings({"TooBroadScope", "fallthrough"})
+            @SuppressWarnings({"TooBroadScope"})
             @Override public void onEvent(Event evt) {
                 assert evt instanceof DiscoveryEvent : "Invalid event: " + evt;
 
@@ -924,7 +924,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param msg Message bytes.
      * @param msgC Closure to call when message processing finished.
      */
-    @SuppressWarnings("fallthrough")
     private void onMessage0(UUID nodeId, GridIoMessage msg, IgniteRunnable msgC) {
         assert nodeId != null;
         assert msg != null;
@@ -2058,7 +2057,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param topic Listener's topic.
      * @param lsnr Listener to add.
      */
-    @SuppressWarnings({"deprecation", "SynchronizationOnLocalVariableOrMethodParameter"})
+    @SuppressWarnings({"deprecation"})
     public void addMessageListener(Object topic, final GridMessageListener lsnr) {
         assert lsnr != null;
         assert topic != null;
@@ -2159,7 +2158,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param lsnr Listener to remove.
      * @return Whether or not the lsnr was removed.
      */
-    @SuppressWarnings({"deprecation", "SynchronizationOnLocalVariableOrMethodParameter"})
+    @SuppressWarnings({"deprecation"})
     public boolean removeMessageListener(Object topic, @Nullable GridMessageListener lsnr) {
         assert topic != null;
 
@@ -2459,7 +2458,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "ConstantConditions",
+        @SuppressWarnings({"ConstantConditions",
             "OverlyStrongTypeCast"})
         @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             if (!(msg instanceof GridIoUserMessage)) {
