@@ -1833,12 +1833,10 @@ public class IgnitionEx {
                                 new IgniteException(S.toString(GridWorker.class, deadWorker))));
                     }
                 },
-                // TODO: TXDR temporary workaround that is needed for 'db-snapshot-executor' threads, for example.
-                180_000,
-//                IgniteSystemProperties.getLong(IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT,
-//                    cfg.getSystemWorkerBlockedTimeout() != null
-//                    ? cfg.getSystemWorkerBlockedTimeout()
-//                    : cfg.getFailureDetectionTimeout()),
+                IgniteSystemProperties.getLong(IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT,
+                    cfg.getSystemWorkerBlockedTimeout() != null
+                    ? cfg.getSystemWorkerBlockedTimeout()
+                    : cfg.getFailureDetectionTimeout()),
                 log);
 
             stripedExecSvc = new StripedExecutor(
