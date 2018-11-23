@@ -122,6 +122,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     /** */
     private volatile WALDisableContext walDisableContext;
 
+    /** Denies or allows WAL disabling. */
+    private volatile boolean prohibitDisabling;
+
     /**
      * Constructor.
      *
@@ -266,6 +269,24 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * Denies or allows WAL disabling with subsequent {@link #init(Collection, boolean)} call.
+     *
+     * @param val denial status.
+     */
+    public void prohibitWALDisabling(boolean val) {
+        prohibitDisabling = val;
+    }
+
+    /**
+     * Reports whether WAL disabling with subsequent {@link #init(Collection, boolean)} is denied.
+     *
+     * @return denial status.
+     */
+    public boolean prohibitWALDisabling() {
+        return prohibitDisabling;
+    }
+
+    /**
      * Initiate WAL mode change operation.
      *
      * @param cacheNames Cache names.
@@ -273,6 +294,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * @return Future completed when operation finished.
      */
     public IgniteInternalFuture<Boolean> init(Collection<String> cacheNames, boolean enabled) {
+        if (!enabled && prohibitDisabling)
+            return errorFuture("WAL disabling is prohibited.");
+
         if (F.isEmpty(cacheNames))
             return errorFuture("Cache names cannot be empty.");
 

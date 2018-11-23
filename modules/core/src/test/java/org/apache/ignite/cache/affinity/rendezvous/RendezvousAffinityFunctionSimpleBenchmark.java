@@ -549,24 +549,20 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
      *
      */
     public void testAffinityCompatibility() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10191");
-
-        mode = TopologyModificationMode.ADD;
-
         AffinityFunction aff0 = new RendezvousAffinityFunction(true, 1024);
 
-        // Use the full copy of the old implementaion of the RendezvousAffinityFunction to check the compatibility.
+        // Use the full copy of the old implementation of the RendezvousAffinityFunction to check the compatibility.
         AffinityFunction aff1 = new RendezvousAffinityFunctionOld(true, 1024);
         GridTestUtils.setFieldValue(aff1, "ignite", ignite);
 
-        affinityCompatibility(aff0, aff1);
+        structuralCompatibility(aff0, aff1);
     }
 
     /**
      * @param aff0 Affinity function to compare.
      * @param aff1 Affinity function to compare.
      */
-    private void affinityCompatibility(AffinityFunction aff0, AffinityFunction aff1) {
+    private void structuralCompatibility(AffinityFunction aff0, AffinityFunction aff1) {
         int[] nodesCnts = {64, 100, 200, 300, 400, 500, 600};
 
         final int backups = 2;
@@ -576,12 +572,22 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
         for (int nodesCnt : nodesCnts) {
             List<ClusterNode> nodes = createBaseNodes(nodesCnt);
 
-            List<List<ClusterNode>> assignment0 = assignPartitions(aff0, nodes, null, backups, 0).get2();
+            List<Integer> structure0 = structureOf(assignPartitions(aff0, nodes, null, backups, 0).get2());
 
-            List<List<ClusterNode>> assignment1 = assignPartitions(aff1, nodes, null, backups, 0).get2();
+            List<Integer> structure1 = structureOf(assignPartitions(aff1, nodes, null, backups, 0).get2());
 
-            assertEquals (assignment0, assignment1);
+            assertEquals (structure0, structure1);
         }
+    }
+
+    /** */
+    private List<Integer> structureOf(List<List<ClusterNode>> assignment) {
+        List<Integer> res = new ArrayList<>();
+
+        for (List<ClusterNode> nodes : assignment)
+            res.add(nodes != null && !nodes.contains(null) ? nodes.size() : null);
+
+        return res;
     }
 
     /**

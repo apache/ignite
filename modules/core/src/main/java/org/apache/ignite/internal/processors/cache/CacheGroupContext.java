@@ -20,9 +20,8 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Iterator;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -42,17 +41,11 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCach
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
-import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
-import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionRecoverState;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.query.continuous.CounterSkipContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -64,7 +57,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.jetbrains.annotations.Nullable;
 
@@ -115,10 +107,9 @@ public class CacheGroupContext {
     /** */
     private final boolean storeCacheId;
 
-    /** */
-    private volatile List<GridCacheContext> caches;
+    /** We modify content under lock, by making defencive copy, field always contains unmodifiable list. */
+    private volatile List<GridCacheContext> caches = Collections.unmodifiableList(new ArrayList<>());
 
-    /** */
     private volatile List<GridCacheContext> contQryCaches;
 
     /** */
@@ -152,16 +143,16 @@ public class CacheGroupContext {
     private final ReuseList reuseList;
 
     /** */
-    private boolean drEnabled;
+    private volatile boolean drEnabled;
 
     /** */
-    private boolean qryEnabled;
+    private volatile boolean qryEnabled;
 
     /** */
-    private boolean mvccEnabled;
+    private final boolean mvccEnabled;
 
     /** MXBean. */
-    private CacheGroupMetricsMXBean mxBean;
+    private final CacheGroupMetricsMXBean mxBean;
 
     /** */
     private volatile boolean localWalEnabled;
@@ -171,9 +162,6 @@ public class CacheGroupContext {
 
     /** Flag indicates that cache group is under recovering and not attached to topology. */
     private final AtomicBoolean recoveryMode;
-
-    /** Flag indicates that all group partitions have restored their state from page memory / disk. */
-    private volatile boolean partitionStatesRestored;
 
     /**
      * @param ctx Context.
@@ -235,8 +223,6 @@ public class CacheGroupContext {
         mvccEnabled = ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
 
         log = ctx.kernalContext().log(getClass());
-
-        caches = new ArrayList<>();
 
         mxBean = new CacheGroupMetricsMXBeanImpl(this);
     }
@@ -307,10 +293,9 @@ public class CacheGroupContext {
     public boolean hasCache(String cacheName) {
         List<GridCacheContext> caches = this.caches;
 
-        for (int i = 0; i < caches.size(); i++) {
-            if (caches.get(i).name().equals(cacheName))
+        for (GridCacheContext cacheContext : caches)
+            if (cacheContext.name().equals(cacheName))
                 return true;
-        }
 
         return false;
     }
@@ -322,11 +307,17 @@ public class CacheGroupContext {
         assert cacheType.userCache() == cctx.userCache() : cctx.name();
         assert grpId == cctx.groupId() : cctx.name();
 
-        ArrayList<GridCacheContext> caches = new ArrayList<>(this.caches);
+        final boolean add;
 
-        assert sharedGroup() || caches.isEmpty();
+        synchronized (this) {
+            List<GridCacheContext> copy = new ArrayList<>(caches);
 
-        boolean add = caches.add(cctx);
+            assert sharedGroup() || copy.isEmpty();
+
+            add = copy.add(cctx);
+
+            caches = Collections.unmodifiableList(copy);
+        }
 
         assert add : cctx.name();
 
@@ -335,39 +326,39 @@ public class CacheGroupContext {
 
         if (!drEnabled && cctx.isDrEnabled())
             drEnabled = true;
-
-        this.caches = caches;
     }
 
     /**
      * @param cctx Cache context.
      */
     private void removeCacheContext(GridCacheContext cctx) {
-        ArrayList<GridCacheContext> caches = new ArrayList<>(this.caches);
+        final List<GridCacheContext> copy;
 
-        // It is possible cache was not added in case of errors on cache start.
-        for (Iterator<GridCacheContext> it = caches.iterator(); it.hasNext();) {
-            GridCacheContext next = it.next();
+        synchronized (this) {
+            copy = new ArrayList<>(caches);
 
-            if (next == cctx) {
-                assert sharedGroup() || caches.size() == 1 : caches.size();
+            for (GridCacheContext next : copy) {
+                if (next == cctx) {
+                    assert sharedGroup() || copy.size() == 1 : copy.size();
 
-                it.remove();
+                    copy.remove(next);
 
-                break;
+                    break;
+                }
             }
+
+            caches = Collections.unmodifiableList(copy);
         }
 
         if (QueryUtils.isEnabled(cctx.config())) {
             boolean qryEnabled = false;
 
-            for (int i = 0; i < caches.size(); i++) {
-                if (QueryUtils.isEnabled(caches.get(i).config())) {
+            for (GridCacheContext cacheContext : copy)
+                if (QueryUtils.isEnabled(cacheContext.config())) {
                     qryEnabled = true;
 
                     break;
                 }
-            }
 
             this.qryEnabled = qryEnabled;
         }
@@ -375,18 +366,15 @@ public class CacheGroupContext {
         if (cctx.isDrEnabled()) {
             boolean drEnabled = false;
 
-            for (int i = 0; i < caches.size(); i++) {
-                if (caches.get(i).isDrEnabled()) {
+            for (GridCacheContext cacheContext : copy)
+                if (QueryUtils.isEnabled(cacheContext.config())) {
                     drEnabled = true;
 
                     break;
                 }
-            }
 
             this.drEnabled = drEnabled;
         }
-
-        this.caches = caches;
     }
 
     /**
@@ -408,11 +396,8 @@ public class CacheGroupContext {
     public void unwindUndeploys() {
         List<GridCacheContext> caches = this.caches;
 
-        for (int i = 0; i < caches.size(); i++) {
-            GridCacheContext cctx = caches.get(i);
-
+        for (GridCacheContext cctx : caches)
             cctx.deploy().unwind(cctx);
-        }
     }
 
     /**
@@ -450,9 +435,7 @@ public class CacheGroupContext {
 
         List<GridCacheContext> caches = this.caches;
 
-        for (int i = 0; i < caches.size(); i++) {
-            GridCacheContext cctx = caches.get(i);
-
+        for (GridCacheContext cctx : caches)
             if (!cctx.config().isEventsDisabled() && cctx.recordEvent(type)) {
                 cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(),
                     cctx.localNode(),
@@ -463,7 +446,6 @@ public class CacheGroupContext {
                     discoType,
                     discoTs));
             }
-        }
     }
 
     /**
@@ -478,9 +460,7 @@ public class CacheGroupContext {
 
         List<GridCacheContext> caches = this.caches;
 
-        for (int i = 0; i < caches.size(); i++) {
-            GridCacheContext cctx = caches.get(i);
-
+        for (GridCacheContext cctx : caches)
             if (!cctx.config().isEventsDisabled())
                 cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(),
                     cctx.localNode(),
@@ -490,7 +470,6 @@ public class CacheGroupContext {
                     null,
                     0,
                     0));
-        }
     }
 
     /**
@@ -517,14 +496,13 @@ public class CacheGroupContext {
     ) {
         List<GridCacheContext> caches = this.caches;
 
-        for (int i = 0; i < caches.size(); i++) {
-            GridCacheContext cctx = caches.get(i);
-
+        for (GridCacheContext cctx : caches)
             if (!cctx.config().isEventsDisabled())
                 cctx.events().addEvent(part,
                     key,
                     evtNodeId,
-                    (IgniteUuid)null,
+                    null,
+                    null,
                     null,
                     type,
                     newVal,
@@ -535,7 +513,6 @@ public class CacheGroupContext {
                     null,
                     null,
                     keepBinary);
-        }
     }
 
     /**
@@ -804,144 +781,6 @@ public class CacheGroupContext {
     }
 
     /**
-     * Pre-create partitions that resides in page memory or WAL and restores their state.
-     */
-    public long restorePartitionStates(Map<GroupPartitionId, PartitionRecoverState> partitionRecoveryStates) throws IgniteCheckedException {
-        if (isLocal() || !affinityNode() || !dataRegion().config().isPersistenceEnabled())
-            return 0;
-
-        if (partitionStatesRestored)
-            return 0;
-
-        long processed = 0;
-
-        PageMemoryEx pageMem = (PageMemoryEx)dataRegion().pageMemory();
-
-        for (int p = 0; p < affinity().partitions(); p++) {
-            PartitionRecoverState recoverState = partitionRecoveryStates.get(new GroupPartitionId(grpId, p));
-
-            if (ctx.pageStore().exists(grpId, p)) {
-                ctx.pageStore().ensure(grpId, p);
-
-                if (ctx.pageStore().pages(grpId, p) <= 1) {
-                    if (log.isDebugEnabled())
-                        log.debug("Skipping partition on recovery (pages less than 1) " +
-                            "[grp=" + cacheOrGroupName() + ", p=" + p + "]");
-
-                    continue;
-                }
-
-                if (log.isDebugEnabled())
-                    log.debug("Creating partition on recovery (exists in page store) " +
-                        "[grp=" + cacheOrGroupName() + ", p=" + p + "]");
-
-                processed++;
-
-                GridDhtLocalPartition part = topology().forceCreatePartition(p);
-
-                offheap().onPartitionInitialCounterUpdated(p, 0);
-
-                ctx.database().checkpointReadLock();
-
-                try {
-                    long partMetaId = pageMem.partitionMetaPageId(grpId, p);
-                    long partMetaPage = pageMem.acquirePage(grpId, partMetaId);
-
-                    try {
-                        long pageAddr = pageMem.writeLock(grpId, partMetaId, partMetaPage);
-
-                        boolean changed = false;
-
-                        try {
-                            PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
-
-                            if (recoverState != null) {
-                                io.setPartitionState(pageAddr, (byte) recoverState.stateId());
-
-                                changed = updateState(part, recoverState.stateId());
-
-                                if (recoverState.stateId() == GridDhtPartitionState.OWNING.ordinal()
-                                    || (recoverState.stateId() == GridDhtPartitionState.MOVING.ordinal()
-                                    && part.initialUpdateCounter() < recoverState.updateCounter())) {
-                                    part.initialUpdateCounter(recoverState.updateCounter());
-
-                                    changed = true;
-                                }
-
-                                if (log.isInfoEnabled())
-                                    log.warning("Restored partition state (from WAL) " +
-                                        "[grp=" + cacheOrGroupName() + ", p=" + p + ", state=" + part.state() +
-                                        ", updCntr=" + part.initialUpdateCounter() + "]");
-                            }
-                            else {
-                                int stateId = (int) io.getPartitionState(pageAddr);
-
-                                changed = updateState(part, stateId);
-
-                                if (log.isDebugEnabled())
-                                    log.debug("Restored partition state (from page memory) " +
-                                        "[grp=" + cacheOrGroupName() + ", p=" + p + ", state=" + part.state() +
-                                        ", updCntr=" + part.initialUpdateCounter() + ", stateId=" + stateId + "]");
-                            }
-                        }
-                        finally {
-                            pageMem.writeUnlock(grpId, partMetaId, partMetaPage, null, changed);
-                        }
-                    }
-                    finally {
-                        pageMem.releasePage(grpId, partMetaId, partMetaPage);
-                    }
-                }
-                finally {
-                    ctx.database().checkpointReadUnlock();
-                }
-            }
-            else if (recoverState != null) {
-                GridDhtLocalPartition part = topology().forceCreatePartition(p);
-
-                offheap().onPartitionInitialCounterUpdated(p, recoverState.updateCounter());
-
-                updateState(part, recoverState.stateId());
-
-                processed++;
-
-                if (log.isDebugEnabled())
-                    log.debug("Restored partition state (from WAL) " +
-                        "[grp=" + cacheOrGroupName() + ", p=" + p + ", state=" + part.state() +
-                        ", updCntr=" + part.initialUpdateCounter() + "]");
-            }
-            else {
-                if (log.isDebugEnabled())
-                    log.debug("Skipping partition on recovery (no page store OR wal state) " +
-                        "[grp=" + cacheOrGroupName() + ", p=" + p + "]");
-            }
-        }
-
-        partitionStatesRestored = true;
-
-        return processed;
-    }
-
-    /**
-     * @param part Partition to restore state for.
-     * @param stateId State enum ordinal.
-     * @return Updated flag.
-     */
-    private boolean updateState(GridDhtLocalPartition part, int stateId) {
-        if (stateId != -1) {
-            GridDhtPartitionState state = GridDhtPartitionState.fromOrdinal(stateId);
-
-            assert state != null;
-
-            part.restoreState(state == GridDhtPartitionState.EVICTED ? GridDhtPartitionState.RENTING : state);
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
      * @return {@code True} if current cache group is in recovery mode.
      */
     public boolean isRecoveryMode() {
@@ -976,17 +815,19 @@ public class CacheGroupContext {
 
         Set<Integer> ids = U.newHashSet(caches.size());
 
-        for (int i = 0; i < caches.size(); i++)
-            ids.add(caches.get(i).cacheId());
+        for (GridCacheContext cctx : caches)
+            ids.add(cctx.cacheId());
 
         return ids;
     }
 
     /**
      * @return Caches in this group.
+     *
+     * caches is already Unmodifiable list, so we don't need to explicitly wrap it here.
      */
     public List<GridCacheContext> caches() {
-        return this.caches;
+        return caches;
     }
 
     /**
@@ -1004,9 +845,7 @@ public class CacheGroupContext {
     public void onPartitionEvicted(int part) {
         List<GridCacheContext> caches = this.caches;
 
-        for (int i = 0; i < caches.size(); i++) {
-            GridCacheContext cctx = caches.get(i);
-
+        for (GridCacheContext cctx : caches) {
             if (cctx.isDrEnabled())
                 cctx.dr().partitionEvicted(part);
 

@@ -391,47 +391,30 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
     /**
      * Tests checks for arithmetic overflow when trying to serialize huge object.
      * WARNING! Requires a lot of heap space. Should not be run on CI.
+     * Minimal memory requirement is about 6-7 gigabytes of heap.
      */
     public void testAllocationOverflow() {
         fail("https://issues.apache.org/jira/browse/IGNITE-10192");
 
         allocationOverflowCheck(() -> marshaller().marshal(new HugeObject()));
 
-        allocationOverflowCheck(() -> {
-            marshaller().marshal(new short[1<<30]);
-            marshaller().marshal(new short[1<<30]);
-            return null;
-        });
+        allocationOverflowCheck(() -> marshaller().marshal(new short[1 << 30]));
 
-        allocationOverflowCheck(() -> {
-            marshaller().marshal(new char[1<<30]);
-            marshaller().marshal(new char[1<<30]);
-            return null;
-        });
+        allocationOverflowCheck(() -> marshaller().marshal(new char[1 << 30]));
 
-        allocationOverflowCheck(() -> {
-            marshaller().marshal(new int[1<<30]);
-            marshaller().marshal(new int[1<<30]);
-            return null;
-        });
+        allocationOverflowCheck(() -> marshaller().marshal(new int[1 << 29]));
 
-        allocationOverflowCheck(() -> {
-            marshaller().marshal(new float[1<<29]);
-            marshaller().marshal(new float[1<<29]);
-            return null;
-        });
+        allocationOverflowCheck(() -> marshaller().marshal(new float[1 << 29]));
 
-        allocationOverflowCheck(() -> {
-            marshaller().marshal(new long[1<<29]);
-            marshaller().marshal(new long[1<<29]);
-            return null;
-        });
+        allocationOverflowCheck(() -> marshaller().marshal(new long[1 << 28]));
 
-        allocationOverflowCheck(() -> {
-            marshaller().marshal(new double[1<<29]);
-            marshaller().marshal(new double[1<<29]);
-            return null;
-        });
+        allocationOverflowCheck(() -> marshaller().marshal(new double[1 << 28]));
+
+        // This particular case requires about 13G of heap space.
+        // It failed because of bug in previous implementation of GridUnsafeDataOutput, mainly line
+        // "if (bytesToAlloc < arrLen)" in method "checkArrayAllocationOverflow". That check doesn't
+        // work as desired on the length in the example below.
+        allocationOverflowCheck(() -> marshaller().marshal(new long[0x2800_0000]));
     }
 
     /**
@@ -439,8 +422,9 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
      *
      * @param call Callable that cause allocation overflow.
      */
+    @SuppressWarnings("ThrowableNotThrown")
     private void allocationOverflowCheck(Callable<?> call) {
-        GridTestUtils.assertThrowsAnyCause(log, call, IOException.class, "Impossible to allocate required memory");
+        GridTestUtils.assertThrowsAnyCause(log, call, IOException.class, "Failed to allocate required memory");
     }
 
     /**
@@ -450,10 +434,12 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.write(new byte[1 << 31 - 2]);
-            out.write(new byte[1 << 31 - 2]);
-            out.write(new byte[1 << 31 - 2]);
-            out.write(new byte[1 << 31 - 2]);
+            byte[] bytes = new byte[1 << 31 - 2];
+
+            out.write(bytes);
+            out.write(bytes);
+            out.write(bytes);
+            out.write(bytes);
         }
 
         /** {@inheritDoc} */

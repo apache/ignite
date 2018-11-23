@@ -44,6 +44,7 @@ import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.junit.Assert;
 
 /**
@@ -811,26 +812,28 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
     }
 
     /**
-     * @throws Exception if failed.
+     * @throws Exception If failed.
      */
     public void testRandomPutGetRemove() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10197");
-
-        final IgniteCache<Integer, DbValue> cache = cache(null);
+        final IgniteCache<Integer, DbValue> cache = cache(DEFAULT_CACHE_NAME);
 
         int cnt = KEYS_COUNT;
 
         Map<Integer, DbValue> map = new HashMap<>(cnt);
 
-        long seed = 1460943282308L; // System.currentTimeMillis();
+        long seed = System.currentTimeMillis();
 
-        X.println(" seed---> " + seed);
+        int iterations = SF.apply(300_000);
+
+        X.println("Seed: " + seed);
+
+        X.println("Iterations total: " + iterations);
 
         Random rnd = new GridRandom(seed);
 
-        for (int i = 0; i < 1000_000; i++) {
+        for (int i = 0; i < iterations; i++) {
             if (i % 5000 == 0)
-                X.println(" --> " + i);
+                X.println("Iteration #" + i);
 
             int key = rnd.nextInt(cnt);
 
@@ -838,27 +841,21 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
 
             switch (rnd.nextInt(3)) {
                 case 0:
-                    X.println("Put: " + key + " = " + v0);
-
                     assertEquals(map.put(key, v0), cache.getAndPut(key, v0));
 
                 case 1:
-                    X.println("Get: " + key);
-
                     assertEquals(map.get(key), cache.get(key));
 
                     break;
 
                 case 2:
-                    X.println("Rmv: " + key);
-
                     assertEquals(map.remove(key), cache.getAndRemove(key));
 
                     assertNull(cache.get(key));
             }
         }
 
-//        assertEquals(map.size(), cache.size(CachePeekMode.ALL));
+        assertEquals(map.size(), cache.size());
 
         for (Integer key : map.keySet())
             assertEquals(map.get(key), cache.get(key));
