@@ -244,7 +244,9 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         if (encSpi instanceof NoopEncryptionSpi)
             return false;
 
-        return encMgr.groupKey(grpId) != null;
+        GridEncryptionManager encMgr = cctx.kernalContext().encryption();
+
+        return encMgr != null && encMgr.groupKey(grpId) != null;
     }
 
     /**
