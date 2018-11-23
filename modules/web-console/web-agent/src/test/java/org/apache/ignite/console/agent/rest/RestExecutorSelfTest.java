@@ -17,6 +17,7 @@
 
 package org.apache.ignite.console.agent.rest;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.HashMap;
@@ -27,9 +28,15 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.junit.Assert;
 import org.junit.Test;
 
 /**
@@ -38,6 +45,9 @@ import org.junit.Test;
 public class RestExecutorSelfTest {
     /** Name of the cache created by default in the cluster. */
     private static final String DEFAULT_CACHE_NAME = "default";
+
+    /** JSON object mapper. */
+    private static final ObjectMapper MAPPER = new GridJettyObjectMapper();
 
     /** */
     private static final List<String> NODE_URI = Collections.singletonList("http://localhost:8080");
@@ -66,14 +76,41 @@ public class RestExecutorSelfTest {
     }
 
     /**
-     * Test REST commands.
+     * Convert response to JSON.
+     *
+     * @param res REST result.
+     * @return JSON object.
+     * @throws IOException If failed to parse.
      */
-    @Test
-    public void testRest() throws Exception {
-        IgniteConfiguration srvCfg = getServerConfiguration();
+    private JsonNode toJson(RestResult res) throws IOException {
+        Assert.assertNotNull(res);
 
+        String data = res.getData();
+
+        Assert.assertNotNull(data);
+        Assert.assertFalse(data.isEmpty());
+
+        return MAPPER.readTree(data);
+    }
+
+    /**
+     *
+     * @param srvCfg
+     * @param keyStore
+     * @param keyStorePwd
+     * @param trustStore
+     * @param trustStorePwd
+     * @throws Exception If failed.
+     */
+    private void checkRest(
+        IgniteConfiguration srvCfg,
+        String keyStore,
+        String keyStorePwd,
+        String trustStore,
+        String trustStorePwd
+    ) throws Exception {
         try(Ignite ignite = Ignition.getOrStart(srvCfg)) {
-            RestExecutor exec = new RestExecutor(null, null, null, null);
+            RestExecutor exec = new RestExecutor(keyStore, keyStorePwd, trustStore, trustStorePwd);
 
             Map<String, Object> params = new HashMap<>();
             params.put("cmd", "top");
@@ -83,7 +120,35 @@ public class RestExecutorSelfTest {
 
             RestResult res = exec.sendRequest(NODE_URI, params, null);
 
+            JsonNode json = toJson(res);
+
+            Assert.assertTrue(json.isArray());
+
+            for (JsonNode item : json) {
+                Assert.assertTrue(item.get("attributes").isNull());
+                Assert.assertTrue(item.get("metrics").isNull());
+                Assert.assertTrue(item.get("caches").isNull());
+            }
+
             exec.close();
         }
+    }
+
+    /**
+     * Test REST commands.
+     */
+    @Test
+    public void testRest() throws Exception {
+        checkRest(getServerConfiguration(), null, null, null, null);
+    }
+
+    /**
+     * Test REST commands with SSL.
+     */
+    @Test
+    public void testRestWithSsl() throws Exception {
+        checkRest(getServerConfiguration(),
+            "client.jks", "123456",
+            "ca.jks", "123456");
     }
 }

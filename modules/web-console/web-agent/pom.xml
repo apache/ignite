@@ -61,7 +61,7 @@
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>okhttp</artifactId>
-            <version>3.11.0</version>
+            <version>3.12.0</version>
         </dependency>
 
         <dependency>
@@ -118,6 +118,9 @@
                 <excludes>
                     <exclude>**/*.java</exclude>
                 </excludes>
+            </testResource>
+            <testResource>
+                <directory>src/test/resources</directory>
             </testResource>
         </testResources>
 
