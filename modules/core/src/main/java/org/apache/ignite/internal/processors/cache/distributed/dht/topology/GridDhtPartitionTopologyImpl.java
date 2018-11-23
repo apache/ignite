@@ -2594,7 +2594,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     boolean reserved = locPart.reserve();
 
                     try {
-                        if (reserved && locPart.state() == MOVING && lastTopChangeVer.equals(topVer))
+                        if (reserved && locPart.state() == MOVING)
                             grp.topology().own(locPart);
                         else // topology changed, rebalancing must be restarted
                             return;
