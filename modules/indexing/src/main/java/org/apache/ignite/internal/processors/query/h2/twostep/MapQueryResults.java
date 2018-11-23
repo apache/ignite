@@ -31,6 +31,8 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.h2.engine.Session;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
+
 /**
  * Mapper query results.
  */
@@ -66,7 +68,7 @@ class MapQueryResults {
     private final GridH2QueryContext qctx;
 
     /** H2 session. */
-    private final Session ses;
+    private Session ses;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -151,7 +153,7 @@ class MapQueryResults {
     /**
      * Cancels the query.
      */
-    void cancel() {
+    synchronized void cancel() {
         if (cancelled)
             return;
 
@@ -170,13 +172,19 @@ class MapQueryResults {
     /**
      *
      */
-    public void close() {
+    public synchronized void close() {
         for (int i = 0; i < results.length(); i++) {
             MapQueryResult res = results.get(i);
 
             if (res != null)
                 res.close();
         }
+
+        if (detachedConn != null)
+            detachedConn.recycle();
+
+        if (lazy)
+            release();
     }
 
     /**
@@ -208,10 +216,10 @@ class MapQueryResults {
     }
 
     /**
-     * @return Detached connection.
+     * @return {@code true} If the connection already detached.
      */
-    ObjectPoolReusable<H2ConnectionWrapper> detachedConnection() {
-        return detachedConn;
+    boolean isConnectionDetached() {
+        return detachedConn != null;
     }
 
     /**
@@ -233,5 +241,16 @@ class MapQueryResults {
      */
     public Session session() {
         return ses;
+    }
+
+    /**
+     */
+    public void release() {
+        ses = null;
+
+        GridH2QueryContext.clearThreadLocal();
+
+        if (qctx.distributedJoinMode() == OFF)
+            qctx.clearContext(false);
     }
 }

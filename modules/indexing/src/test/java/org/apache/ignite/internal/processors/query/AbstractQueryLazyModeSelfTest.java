@@ -32,6 +32,7 @@ import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -49,9 +50,6 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
 
     /** Size for small pages. */
     private static final int PAGE_SIZE_SMALL = 12;
-
-    /** Cache name. */
-    private static final String CACHE_NAME = "cache";
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -102,7 +100,8 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
     public void testTableWriteLockStarvation() throws Exception {
         final Ignite srv = startGrid(1);
 
-        srv.createCache(cacheConfiguration(4));
+        srv.createCache(cacheConfiguration(4, "pers", Person.class));
+        srv.createCache(cacheConfiguration(4, "comp", Company.class));
 
         populateBaseQueryData(srv);
 
@@ -143,8 +142,8 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
 
         assertTrue(GridTestUtils.waitForCondition(queryProcessed::get, 1000));
 
-        execute(srv, new SqlFieldsQuery("CREATE INDEX PERSON_NAME ON Person (name asc)")).getAll();
-        execute(srv, new SqlFieldsQuery("DROP INDEX PERSON_NAME")).getAll();
+        execute(srv, new SqlFieldsQuery("CREATE INDEX \"pers\".PERSON_NAME ON \"pers\".Person (name asc)")).getAll();
+        execute(srv, new SqlFieldsQuery("DROP INDEX \"pers\".PERSON_NAME")).getAll();
 
         // Test is OK in case DDL operations is passed on hi load queries pressure.
         end.set(true);
@@ -180,7 +179,8 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
         Ignite srv1 = startGrid(1);
         startGrid(2);
 
-        srv1.createCache(cacheConfiguration(1));
+        srv1.createCache(cacheConfiguration(1, "pers", Person.class));
+        srv1.createCache(cacheConfiguration(1, "comp", Company.class));
 
         populateBaseQueryData(srv1);
 
@@ -202,7 +202,8 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
     public void checkSingleNode(int parallelism) throws Exception {
         Ignite srv = startGrid();
 
-        srv.createCache(cacheConfiguration(parallelism));
+        srv.createCache(cacheConfiguration(parallelism, "pers", Person.class));
+        srv.createCache(cacheConfiguration(4, "comp", Company.class));
 
         populateBaseQueryData(srv);
 
@@ -230,7 +231,8 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
             Ignition.setClientMode(false);
         }
 
-        cli.createCache(cacheConfiguration(parallelism));
+        cli.createCache(cacheConfiguration(parallelism, "pers", Person.class));
+        cli.createCache(cacheConfiguration(4, "comp", Company.class));
 
         populateBaseQueryData(cli);
 
@@ -381,10 +383,15 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
      * @param node Node.
      */
     private static void populateBaseQueryData(Ignite node) {
-        IgniteCache<Long, Person> cache = cache(node);
+        IgniteCache<Long, Object> pers = cache(node, "pers");
 
         for (long i = 0; i < KEY_CNT; i++)
-            cache.put(i, new Person(i));
+            pers.put(i, new Person(i));
+
+        IgniteCache<Long, Object> comp = cache(node, "comp");
+
+        for (long i = 0; i < KEY_CNT; i++)
+            comp.put(i, new Company(i));
     }
 
     /**
@@ -403,12 +410,14 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
 
     /**
      * @param parallelism Query parallelism.
+     * @param name Cache name.
+     * @param valClass Value class.
      * @return Default cache configuration.
      */
-    private static CacheConfiguration<Long, Person> cacheConfiguration(int parallelism) {
+    private static CacheConfiguration<Long, Person> cacheConfiguration(int parallelism, String name, Class valClass) {
         return new CacheConfiguration<Long, Person>()
-            .setName(CACHE_NAME)
-            .setIndexedTypes(Long.class, Person.class)
+            .setName(name)
+            .setIndexedTypes(Long.class, valClass)
             .setQueryParallelism(parallelism)
             .setAffinity(new RendezvousAffinityFunction(false, 10));
     }
@@ -420,7 +429,8 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
      * @return Query.
      */
     private static SqlFieldsQuery query(long arg) {
-        return new SqlFieldsQuery("SELECT id, name FROM Person WHERE id >= " + arg);
+        return new SqlFieldsQuery(
+            "SELECT id, name FROM \"pers\".Person WHERE id >= " + arg);
     }
 
     /**
@@ -456,8 +466,8 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
      * @param node Node.
      * @return Cache.
      */
-    private static IgniteCache<Long, Person> cache(Ignite node) {
-        return node.cache(CACHE_NAME);
+    private static IgniteCache<Long, Object> cache(Ignite node, String name) {
+        return node.cache(name);
     }
 
     /**
@@ -468,8 +478,20 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
      * @return Cursor.
      */
     private FieldsQueryCursor<List<?>> execute(Ignite node, SqlFieldsQuery qry) {
-        return cache(node).query(qry.setLazy(lazy()));
+        return ((IgniteEx)node).context().query().querySqlFields(qry.setLazy(lazy()), false);
     }
+
+    /**
+     * Execute query on the given cache.
+     *
+     * @param node Node.
+     * @param sql Query.
+     * @return Cursor.
+     */
+    private FieldsQueryCursor<List<?>> execute(Ignite node, String sql) {
+        return ((IgniteEx)node).context().query().querySqlFields(new SqlFieldsQuery(sql).setLocal(lazy()), false);
+    }
+
 
     /**
      * @return Lazy mode.
@@ -504,6 +526,43 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
          * @param id ID.
          */
         public Person(long id) {
+            this.id = id;
+            this.name = nameForId(id);
+        }
+
+        /**
+         * @return ID.
+         */
+        public long id() {
+            return id;
+        }
+
+        /**
+         * @return Name.
+         */
+        public String name() {
+            return name;
+        }
+    }
+
+    /**
+     * Company class.
+     */
+    private static class Company {
+        /** ID. */
+        @QuerySqlField(index = true)
+        private long id;
+
+        /** Name. */
+        @QuerySqlField
+        private String name;
+
+        /**
+         * Constructor.
+         *
+         * @param id ID.
+         */
+        public Company(long id) {
             this.id = id;
             this.name = nameForId(id);
         }

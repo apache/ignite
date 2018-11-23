@@ -940,7 +940,7 @@ public class GridMapQueryExecutor {
             }
 
             if (!lazy)
-                releaseReservations();
+                qryResults.release();
         }
         catch (Throwable e) {
             if (qryResults != null) {
@@ -1204,7 +1204,8 @@ public class GridMapQueryExecutor {
             sendError(node, req.queryRequestId(), new QueryCancelledException());
         else {
             try {
-                GridH2Table.checkTablesVersionNotChanged(qryResults.session());
+                if (qryResults.session() != null)
+                    GridH2Table.checkTablesVersionNotChanged(qryResults.session());
 
                 GridH2QueryContext qctxReduce = GridH2QueryContext.get();
 
@@ -1275,19 +1276,15 @@ public class GridMapQueryExecutor {
             if (qr.isAllClosed()) {
                 nodeRess.remove(qr.queryRequestId(), segmentId, qr);
 
-                // Release reservations & recycle connection if the last page fetched in lazy mode.
-                if (qr.lazy()) {
-                    releaseReservations();
-
-                    if (qr.detachedConnection() != null)
-                        qr.detachedConnection().recycle();
-                }
+                // Close, release reservations, recycle connection if the last page fetched in lazy mode.
+                qr.close();
             }
         }
         else {
             // Detach connection if the result set greater than one page.
-            if (qr.lazy() && qr.detachedConnection() == null)
+            if (qr.lazy() && !qr.isConnectionDetached()) {
                 qr.detachedConnection(h2.connections().detachConnection());
+            }
         }
 
         boolean loc = node.isLocal();
@@ -1328,7 +1325,8 @@ public class GridMapQueryExecutor {
         try {
             GridQueryNextPageResponse msg = prepareNextPage(nodeRess, node, qr, qry, segmentId, pageSize, removeMapping);
 
-            GridH2Table.checkTablesVersionNotChanged(qr.session());
+            if (qr.session() != null)
+                GridH2Table.checkTablesVersionNotChanged(qr.session());
 
             if (msg != null) {
                 if (node.isLocal())
