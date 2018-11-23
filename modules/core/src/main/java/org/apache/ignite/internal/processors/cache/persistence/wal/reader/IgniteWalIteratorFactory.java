@@ -28,9 +28,11 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 import java.util.TreeSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -266,8 +268,6 @@ public class IgniteWalIteratorFactory {
         if (filesOrDirs == null || filesOrDirs.length == 0)
             return Collections.emptyList();
 
-        final FileIOFactory ioFactory = iteratorParametersBuilder.ioFactory;
-
         final TreeSet<FileDescriptor> descriptors = new TreeSet<>();
 
         for (File file : filesOrDirs) {
@@ -275,7 +275,7 @@ public class IgniteWalIteratorFactory {
                 try {
                     walkFileTree(file.toPath(), new SimpleFileVisitor<Path>() {
                         @Override public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) {
-                            addFileDescriptor(path.toFile(), ioFactory, descriptors);
+                            addFileDescriptor(path.toFile(), descriptors, iteratorParametersBuilder);
 
                             return FileVisitResult.CONTINUE;
                         }
@@ -295,31 +295,42 @@ public class IgniteWalIteratorFactory {
                 continue;
             }
 
-            addFileDescriptor(file, ioFactory, descriptors);
+            addFileDescriptor(file, descriptors, iteratorParametersBuilder);
         }
 
         return new ArrayList<>(descriptors);
     }
 
     /**
+     * @param file File
+     * @param descriptors List of descriptors
+     * @param params IteratorParametersBuilder.
+     */
+    private void addFileDescriptor(
+        File file,
+        Collection<FileDescriptor> descriptors,
+        IteratorParametersBuilder params)
+    {
+        Optional.ofNullable(getFileDescriptor(file, params.ioFactory))
+            .filter(desc -> desc.idx() >= params.lowBound.index() && desc.idx() <= params.highBound.index())
+            .ifPresent(descriptors::add);
+    }
+
+    /**
      * @param file File.
      * @param ioFactory IO factory.
-     * @param descriptors List of descriptors.
      */
-    private void addFileDescriptor(File file, FileIOFactory ioFactory, TreeSet<FileDescriptor> descriptors) {
+    private FileDescriptor getFileDescriptor(File file, FileIOFactory ioFactory) {
         if (file.length() < HEADER_RECORD_SIZE)
-            return; // Filter out this segment as it is too short.
+            return null; // Filter out this segment as it is too short.
 
         String fileName = file.getName();
 
         if (!WAL_NAME_PATTERN.matcher(fileName).matches() &&
             !WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(fileName).matches())
-            return;  // Filter out this because it is not segment file.
+            return null;  // Filter out this because it is not segment file.
 
-        FileDescriptor desc = readFileDescriptor(file, ioFactory);
-
-        if (desc != null)
-            descriptors.add(desc);
+        return readFileDescriptor(file, ioFactory);
     }
 
     /**
