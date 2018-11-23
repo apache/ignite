@@ -209,11 +209,9 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
 
                 KeyCacheObject key = cctx.toCacheKeyObject(op.isDeleteOrLock() ? cur : ((IgniteBiTuple)cur).getKey());
 
-                List<ClusterNode> nodes = cctx.affinity().nodesByKey(key, topVer);
+                ClusterNode node = cctx.affinity().primaryByKey(key, topVer);
 
-                ClusterNode node;
-
-                if (F.isEmpty(nodes) || ((node = nodes.get(0)) == null))
+                if (node == null)
                     throw new ClusterTopologyCheckedException("Failed to get primary node " +
                         "[topVer=" + topVer + ", key=" + key + ']');
 
@@ -240,8 +238,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
                     break;
                 }
 
-                batch.add(op.isDeleteOrLock() ? key : cur,
-                    op != EnlistOperation.LOCK && cctx.affinityNode() && (cctx.isReplicated() || nodes.indexOf(cctx.localNode()) > 0));
+                batch.add(op.isDeleteOrLock() ? key : cur, !node.isLocal() && isLocalBackup(op, key));
 
                 if (batch.size() == batchSize)
                     res = markReady(res, batch);
@@ -295,6 +292,16 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
             peek = FINISHED;
 
         return peek != FINISHED;
+    }
+
+    /** */
+    private boolean isLocalBackup(EnlistOperation op, KeyCacheObject key) {
+        if (!cctx.affinityNode() || op == EnlistOperation.LOCK)
+            return false;
+        else if (cctx.isReplicated())
+            return true;
+
+        return cctx.topology().nodes(key.partition(), tx.topologyVersion()).indexOf(cctx.localNode()) > 0;
     }
 
     /**
@@ -370,7 +377,8 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
                     -1,
                     this.tx.subjectId(),
                     this.tx.taskNameHash(),
-                    false);
+                    false,
+                    null);
 
                 dhtTx.mvccSnapshot(new MvccSnapshotWithoutTxs(mvccSnapshot.coordinatorVersion(),
                     mvccSnapshot.counter(), MVCC_OP_COUNTER_NA, mvccSnapshot.cleanupVersion()));
@@ -567,7 +575,6 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
      * @param err Exception.
      * @return {@code True} if future was completed by this call.
      */
-    @SuppressWarnings("unchecked")
     public boolean checkResponse(UUID nodeId, GridNearTxEnlistResponse res, Throwable err) {
         assert res != null || err != null : this;
 
@@ -603,6 +610,9 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
             this.res = res.result();
 
         assert this.res != null && (this.res.emptyResult() || needRes || this.res.invokeResult() || !this.res.success());
+
+
+        tx.hasRemoteLocks(true);
 
         return true;
     }

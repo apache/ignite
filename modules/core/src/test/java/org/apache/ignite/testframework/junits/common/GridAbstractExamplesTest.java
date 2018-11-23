@@ -20,10 +20,13 @@ package org.apache.ignite.testframework.junits.common;
 import java.io.FileReader;
 import java.util.Properties;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Base class for examples test.
  */
+@RunWith(JUnit4.class)
 public abstract class GridAbstractExamplesTest extends GridCommonAbstractTest {
     /** */
     protected static final String[] EMPTY_ARGS = new String[0];
