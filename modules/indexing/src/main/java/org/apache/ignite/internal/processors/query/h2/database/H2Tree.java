@@ -163,6 +163,8 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
     ) throws IgniteCheckedException {
         super(name, grpId, pageMem, wal, globalRmvId, metaPageId, reuseList, failureProcessor);
 
+        this.stats = stats;
+
         if (!initNew) {
             // Page is ready - read meta information.
             MetaPageInfo metaInfo = getMetaInfo();
@@ -204,8 +206,6 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
         this.rowCache = rowCache;
 
         this.log = log;
-
-        this.stats = stats;
 
         initTree(initNew, inlineSize);
     }
