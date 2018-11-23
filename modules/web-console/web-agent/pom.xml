@@ -112,6 +112,15 @@
     <build>
         <finalName>ignite-web-agent-${project.version}</finalName>
 
+        <testResources>
+            <testResource>
+                <directory>src/test/java</directory>
+                <excludes>
+                    <exclude>**/*.java</exclude>
+                </excludes>
+            </testResource>
+        </testResources>
+
         <plugins>
             <plugin>
                 <artifactId>maven-jar-plugin</artifactId>

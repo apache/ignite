@@ -433,7 +433,7 @@ public class ClusterListener implements AutoCloseable {
          * @return REST result.
          */
         private RestResult topology(boolean attrs) throws IOException {
-            Map<String, Object> params = U.newHashMap(3);
+            Map<String, Object> params = U.newHashMap(4);
 
             params.put("cmd", "top");
             params.put("attr", attrs);
