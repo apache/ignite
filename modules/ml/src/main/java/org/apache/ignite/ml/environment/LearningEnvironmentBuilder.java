@@ -17,18 +17,18 @@
 
 package org.apache.ignite.ml.environment;
 
+import java.io.Serializable;
 import java.util.Random;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.math.functions.IgniteSupplier;
 
 import static org.apache.ignite.ml.math.functions.IgniteFunction.constant;
 
 /**
  * Builder of learning environment.
  */
-public interface LearningEnvironmentBuilder {
+public interface LearningEnvironmentBuilder extends Serializable {
     /**
      * Builds {@link LearningEnvironment} for worker on given partition.
      *

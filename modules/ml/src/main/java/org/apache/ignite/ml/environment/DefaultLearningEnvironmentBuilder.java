@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.environment;
 
-import java.io.Serializable;
 import java.util.Random;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.environment.logging.NoOpLogger;
@@ -25,14 +24,13 @@ import org.apache.ignite.ml.environment.parallelism.DefaultParallelismStrategy;
 import org.apache.ignite.ml.environment.parallelism.NoParallelismStrategy;
 import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.math.functions.IgniteSupplier;
 
 import static org.apache.ignite.ml.math.functions.IgniteFunction.constant;
 
 /**
  * Builder for {@link LearningEnvironment}.
  */
-public class DefaultLearningEnvironmentBuilder implements LearningEnvironmentBuilder, Serializable {
+public class DefaultLearningEnvironmentBuilder implements LearningEnvironmentBuilder {
     /** Serial version id. */
     private static final long serialVersionUID = 8502532880517447662L;
 
