@@ -63,7 +63,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -684,6 +683,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         ctx.cache().context().database().checkpointReadLock();
 
+        DynamicCacheDescriptor cacheDesc = ctx.cache().cacheDescriptor(cctx.name());
+
+        if (cacheDesc.h2Created() && cctx.isCacheContextInited()) {
+
+            idx.initCacheContext(cctx.gridCacheContext());
+
+            return;
+        }
+
         try {
             synchronized (stateMux) {
                 boolean escape = cctx.config().isSqlEscapeAll();
@@ -812,6 +820,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         "serializer using BinaryTypeConfiguration.setSerializer() method: " + mustDeserializeClss);
                 }
             }
+
+            cacheDesc.h2Created(true);
         }
         finally {
             ctx.cache().context().database().checkpointReadUnlock();
@@ -863,18 +873,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return;
 
         try {
-            DynamicCacheDescriptor desc = ctx.cache().cacheDescriptor(cctx.name());
-
-            if (desc.h2Created() && cctx.isCacheContextInited()) {
-
-                idx.initCacheContext(cctx.gridCacheContext());
-
-                return;
-            }
-
             onCacheStart0(cctx, schema, isSql);
-
-            desc.h2Created(true);
         }
         finally {
             busyLock.leaveBusy();
@@ -887,26 +886,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cacheName Cache name.
      */
     public void onCacheStop(String cacheName) {
-        if (idx == null)
-            return;
+        GridCacheContextInfo cctx = idx.registeredCacheContext(cacheName);
 
-        if (!busyLock.enterBusy())
-            return;
-        try {
-            GridCacheContextInfo cctx = idx.registeredCacheContext(cacheName);
-
-            if (cctx != null) {
-                onCacheStop(cctx, true);
-
-                DynamicCacheDescriptor desc = ctx.cache().cacheDescriptor(cctx.name());
-
-                if (desc != null)
-                    desc.h2Created(false);
-            }
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
+        if (cctx != null)
+            onCacheStop(cctx, true);
     }
 
 
@@ -923,6 +906,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         try {
             onCacheStop0(cctx, removeIdx);
+
+            DynamicCacheDescriptor desc = ctx.cache().cacheDescriptor(cctx.name());
+
+            if (desc != null)
+                desc.h2Created(false);
         }
         finally {
             busyLock.leaveBusy();
@@ -1458,9 +1446,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         String cacheName = op.cacheName();
 
-        GridCacheAdapter cache = ctx.cache().internalCache(cacheName);
+        GridCacheContextInfo cacheCtx = idx.registeredCacheContext(cacheName);
 
-        if (cache == null || !F.eq(depId, cache.context().dynamicDeploymentId()))
+        if (cacheCtx == null || !F.eq(depId, cacheCtx.dynamicDeploymentId()))
             throw new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, cacheName);
 
         try {
@@ -1469,11 +1457,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 QueryIndexDescriptorImpl idxDesc = QueryUtils.createIndexDescriptor(type, op0.index());
 
-                GridCacheContext cctx = cache.context();
+                SchemaIndexCacheVisitor visitor;
+                if (cacheCtx.isCacheContextInited()) {
+                    GridCacheContext cctx = cacheCtx.gridCacheContext();
+                    SchemaIndexCacheFilter filter = new TableCacheFilter(cctx, op0.tableName());
 
-                SchemaIndexCacheFilter filter = new TableCacheFilter(cctx, op0.tableName());
-
-                SchemaIndexCacheVisitor visitor = new SchemaIndexCacheVisitorImpl(cctx, filter, cancelTok, op0.parallel());
+                    visitor = new SchemaIndexCacheVisitorImpl(cctx, filter, cancelTok, op0.parallel());
+                }
+                else
+                    //For not started caches we shouldn't add any data to index.
+                    visitor = clo -> {
+                    };
 
                 idx.dynamicIndexCreate(op0.schemaName(), op0.tableName(), idxDesc, op0.ifNotExists(), visitor);
             }

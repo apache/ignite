@@ -50,6 +50,8 @@ public class H2TreeClientIndex extends H2TreeIndexBase {
 
         initBaseIndex(tbl, 0, name, cols,
             pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
+
+        initDistributedJoinMessaging(tbl);
     }
 
     /** {@inheritDoc} */
