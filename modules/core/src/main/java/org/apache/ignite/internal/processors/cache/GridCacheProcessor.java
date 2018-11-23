@@ -5010,32 +5010,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Starts client caches that do not exist yet.
-     *
-     * @throws IgniteCheckedException In case of error.
-     */
-    public void createMissingQueryCaches() throws IgniteCheckedException {
-        for (Map.Entry<String, DynamicCacheDescriptor> e : cachesInfo.registeredCaches().entrySet()) {
-            DynamicCacheDescriptor desc = e.getValue();
-
-            if (isMissingQueryCache(desc))
-                dynamicStartCache(null, desc.cacheConfiguration().getName(), null, false, true, true).get();
-        }
-    }
-
-    /**
-     * Whether cache defined by provided descriptor is not yet started and has queries enabled.
-     *
-     * @param desc Descriptor.
-     * @return {@code True} if this is missing query cache.
-     */
-    private boolean isMissingQueryCache(DynamicCacheDescriptor desc) {
-        CacheConfiguration ccfg = desc.cacheConfiguration();
-
-        return !caches.containsKey(ccfg.getName()) && QueryUtils.isEnabled(ccfg);
-    }
-
-    /**
      * Registers MBean for cache components.
      *
      * @param obj Cache component.

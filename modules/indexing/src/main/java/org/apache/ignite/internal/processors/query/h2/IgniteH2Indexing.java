@@ -2344,31 +2344,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return H2 prepared statement.
      */
     private PreparedStatement prepareStatementAndCaches(Connection c, String sqlQry) {
-        boolean cachesCreated = false;
-
-        while (true) {
-            try {
-                return prepareStatement(c, sqlQry, true);
-            }
-            catch (SQLException e) {
-                if (!cachesCreated && (
-                        e.getErrorCode() == ErrorCode.SCHEMA_NOT_FOUND_1 ||
-                            e.getErrorCode() == ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1 ||
-                            e.getErrorCode() == ErrorCode.INDEX_NOT_FOUND_1)
-                        ) {
-                    try {
-                        ctx.cache().createMissingQueryCaches();
-                    }
-                    catch (IgniteCheckedException ignored) {
-                        throw new CacheException("Failed to create missing caches.", e);
-                    }
-
-                    cachesCreated = true;
-                }
-                else
-                    throw new IgniteSQLException("Failed to parse query. " + e.getMessage(),
-                        IgniteQueryErrorCode.PARSING, e);
-            }
+        try {
+            return prepareStatement(c, sqlQry, true);
+        }
+        catch (SQLException e) {
+            throw new IgniteSQLException("Failed to parse query. " + e.getMessage(),
+                IgniteQueryErrorCode.PARSING, e);
         }
     }
 
