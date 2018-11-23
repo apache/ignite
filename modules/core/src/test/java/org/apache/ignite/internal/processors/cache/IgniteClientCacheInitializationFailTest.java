@@ -390,8 +390,11 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public boolean isOnlyH2RegisteredType(int cacheId) {
-            return false;
+        @Override public GridCacheContextInfo registeredCacheContext(String cacheName) {
+            return null;
+        }
+
+        @Override public void initCacheContext(GridCacheContext ctx) {
         }
     }
 }

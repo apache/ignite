@@ -357,10 +357,17 @@ public interface GridQueryIndexing {
     public GridQueryRowCacheCleaner rowCacheCleaner(int cacheGroupId);
 
     /**
-     * Check if H2 registered not started cache.
+     * Return context for registered cache.
      *
-     * @param cacheId Cache id.
-     * @return {@code true} in case H2 has registered table for not started cache.
+     * @param cacheName Cache name.
+     * @return Cache context for registered cache or {@code null} in case the cache has not been registered.
      */
-    boolean isOnlyH2RegisteredType(int cacheId);
+    public GridCacheContextInfo registeredCacheContext(String cacheName);
+
+    /**
+     * Initialize cache context for H2 table created for not started cache.
+     *
+     * @param ctx Cache context.
+     */
+    public void initCacheContext(GridCacheContext ctx);
 }

@@ -863,12 +863,52 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return;
 
         try {
+            DynamicCacheDescriptor desc = ctx.cache().cacheDescriptor(cctx.name());
+
+            if (desc.h2Started() && cctx.isCacheContextInited()) {
+
+                idx.initCacheContext(cctx.gridCacheContext());
+
+                return;
+            }
+
             onCacheStart0(cctx, schema, isSql);
+
+            desc.h2Started(true);
         }
         finally {
             busyLock.leaveBusy();
         }
     }
+
+    /**
+     * Destroy H2 structures for not started caches.
+     *
+     * @param cacheName Cache name.
+     */
+    public void onCacheStop(String cacheName) {
+        if (idx == null)
+            return;
+
+        if (!busyLock.enterBusy())
+            return;
+        try {
+            GridCacheContextInfo cctx = idx.registeredCacheContext(cacheName);
+
+            if (cctx != null) {
+                onCacheStop(cctx, true);
+
+                DynamicCacheDescriptor desc = ctx.cache().cacheDescriptor(cctx.name());
+
+                if (desc != null)
+                    desc.h2Started(false);
+            }
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
 
     /**
      * @param cctx Cache context.
@@ -1606,33 +1646,27 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     QueryTypeIdKey altTypeId = cand.alternativeTypeId();
                     QueryTypeDescriptorImpl desc = cand.descriptor();
 
-                    //Skip register types on non affinity nodes.
-                    if (cctx.isCacheContextInited()) {
-                        if (typesByName.putIfAbsent(new QueryTypeNameKey(cacheName, desc.name()), desc) != null &&
-                            !idx.isOnlyH2RegisteredType(cctx.cacheId()))
-                            throw new IgniteCheckedException("Type with name '" + desc.name() + "' already indexed " +
-                                "in cache '" + cacheName + "'.");
+                    if (typesByName.putIfAbsent(new QueryTypeNameKey(cacheName, desc.name()), desc) != null)
+                        throw new IgniteCheckedException("Type with name '" + desc.name() + "' already indexed " +
+                            "in cache '" + cacheName + "'.");
 
-                        types.put(typeId, desc);
+                    types.put(typeId, desc);
 
-                        if (altTypeId != null)
-                            types.put(altTypeId, desc);
+                    if (altTypeId != null)
+                        types.put(altTypeId, desc);
 
-                        for (QueryIndexDescriptorImpl idx : desc.indexes0()) {
-                            QueryIndexKey idxKey = new QueryIndexKey(schemaName, idx.name());
+                    for (QueryIndexDescriptorImpl idx : desc.indexes0()) {
+                        QueryIndexKey idxKey = new QueryIndexKey(schemaName, idx.name());
 
-                            QueryIndexDescriptorImpl oldIdx = idxs.putIfAbsent(idxKey, idx);
+                        QueryIndexDescriptorImpl oldIdx = idxs.putIfAbsent(idxKey, idx);
 
-                            if (oldIdx != null) {
-                                throw new IgniteException("Duplicate index name [cache=" + cacheName +
-                                    ", schemaName=" + schemaName + ", idxName=" + idx.name() +
-                                    ", existingTable=" + oldIdx.typeDescriptor().tableName() +
-                                    ", table=" + desc.tableName() + ']');
-                            }
+                        if (oldIdx != null) {
+                            throw new IgniteException("Duplicate index name [cache=" + cacheName +
+                                ", schemaName=" + schemaName + ", idxName=" + idx.name() +
+                                ", existingTable=" + oldIdx.typeDescriptor().tableName() +
+                                ", table=" + desc.tableName() + ']');
                         }
                     }
-                    else
-                        typesByName.putIfAbsent(new QueryTypeNameKey(cacheName, desc.name()), desc);
 
                     if (idx != null)
                         idx.registerType(cctx, desc, isSql);

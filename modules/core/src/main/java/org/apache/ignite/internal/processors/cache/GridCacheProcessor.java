@@ -2780,6 +2780,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             return ctx;
         }
+        else
+            //Try to unregister H2 structures for not started caches.
+            ctx.query().onCacheStop(cacheName);
 
         return null;
     }

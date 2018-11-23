@@ -18,8 +18,6 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.GridCacheDynamicLoadOnClientPersistentTest;
-import org.apache.ignite.internal.processors.cache.GridCacheDynamicLoadOnClientTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryAsyncFailoverAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryAsyncFailoverMvccTxSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryAsyncFailoverTxReplicatedSelfTest;
@@ -54,9 +52,6 @@ public class IgniteCacheQuerySelfTestSuite4 extends TestSuite {
         suite.addTestSuite(CacheContinuousQueryAsyncFailoverTxReplicatedSelfTest.class);
         suite.addTestSuite(CacheContinuousQueryAsyncFailoverTxSelfTest.class);
         suite.addTestSuite(CacheContinuousQueryAsyncFailoverMvccTxSelfTest.class);
-
-        suite.addTestSuite(GridCacheDynamicLoadOnClientTest.class);
-        suite.addTestSuite(GridCacheDynamicLoadOnClientPersistentTest.class);
 
         return suite;
     }

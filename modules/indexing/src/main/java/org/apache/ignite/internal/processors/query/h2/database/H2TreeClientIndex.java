@@ -17,33 +17,27 @@
 
 package org.apache.ignite.internal.processors.query.h2.database;
 
-import java.util.HashSet;
 import java.util.List;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.IndexType;
 import org.h2.result.SearchRow;
-import org.h2.result.SortOrder;
-import org.h2.table.Column;
 import org.h2.table.IndexColumn;
-import org.h2.table.TableFilter;
 
 /**
- * We need indexes on the client node, but index will not contain any data.
+ * We need indexes on an not affinity nodes. The index shouldn't contains any data.
  */
-public class H2TreeNoDataIndex extends GridH2IndexBase {
+public class H2TreeClientIndex extends H2TreeIndexBase {
     /**
      * @param tbl Table.
      * @param name Index name.
      * @param pk Primary key.
      * @param colsList Index columns.
      */
-    public H2TreeNoDataIndex(
+    public H2TreeClientIndex(
         GridH2Table tbl,
         String name,
         boolean pk,
@@ -56,30 +50,11 @@ public class H2TreeNoDataIndex extends GridH2IndexBase {
 
         initBaseIndex(tbl, 0, name, cols,
             pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
-
-        initDistributedJoinMessaging(tbl);
     }
 
     /** {@inheritDoc} */
     @Override protected int segmentsCount() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder,
-        HashSet<Column> allColumnsSet) {
-        long rowCnt = getRowCountApproximation();
-
-        double baseCost = getCostRangeIndex(masks, rowCnt, filters, filter, sortOrder, false, allColumnsSet);
-
-        int mul = getDistributedMultiplier(ses, filters, filter);
-
-        return mul * baseCost;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getRowCountApproximation() {
-        return 10_000;
+        throw new IgniteSQLException("Shouldn't be invoked, due to it's not affinity node");
     }
 
     /** {@inheritDoc} */
@@ -119,7 +94,7 @@ public class H2TreeNoDataIndex extends GridH2IndexBase {
 
     /** {@inheritDoc} */
     @Override public boolean canGetFirstOrLast() {
-        return false;
+        throw new IgniteSQLException("Shouldn't be invoked, due to it's not affinity node");
     }
 
     /** {@inheritDoc} */
@@ -129,6 +104,7 @@ public class H2TreeNoDataIndex extends GridH2IndexBase {
 
     /** {@inheritDoc} */
     @Override public void destroy(boolean rmvIndex) {
+        super.destroy(rmvIndex);
     }
 
     /** {@inheritDoc} */

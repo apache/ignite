@@ -95,6 +95,8 @@ public class DynamicCacheDescriptor {
     /** */
     private final CacheGroupDescriptor grpDesc;
 
+    private boolean h2Started = false;
+
     /**
      * @param ctx Context.
      * @param cacheCfg Cache configuration.
@@ -142,6 +144,14 @@ public class DynamicCacheDescriptor {
         synchronized (schemaMux) {
             this.schema = schema.copy();
         }
+    }
+
+    public boolean h2Started() {
+        return h2Started;
+    }
+
+    public void h2Started(boolean h2Started) {
+        this.h2Started = h2Started;
     }
 
     /**
