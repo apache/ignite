@@ -122,6 +122,7 @@ import org.apache.log4j.Priority;
 import org.apache.log4j.RollingFileAppender;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.internal.AssumptionViolatedException;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.FileSystemXmlApplicationContext;
@@ -166,6 +167,9 @@ public abstract class GridAbstractTest extends TestCase {
 
     /** */
     protected static final String DEFAULT_CACHE_NAME = "default";
+
+    /** */
+    private static final AtomicLong fixtureOverhead = new AtomicLong();
 
     /** */
     private static final AtomicLong overhead = new AtomicLong();
@@ -572,6 +576,7 @@ public abstract class GridAbstractTest extends TestCase {
 
     /** {@inheritDoc} */
     @Override protected void setUp() throws Exception {
+        long t0 = System.currentTimeMillis();
         stopGridErr = false;
 
         clsLdr = Thread.currentThread().getContextClassLoader();
@@ -654,6 +659,8 @@ public abstract class GridAbstractTest extends TestCase {
         }
 
         ts = System.currentTimeMillis();
+
+        fixtureOverhead.getAndAdd(ts - t0);
     }
 
     /**
@@ -1781,75 +1788,85 @@ public abstract class GridAbstractTest extends TestCase {
 
     /** {@inheritDoc} */
     @Override protected void tearDown() throws Exception {
-        long dur = System.currentTimeMillis() - ts;
-        countedDuration.addAndGet(dur);
-
-        info(">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
-
-        TestCounters cntrs = getTestCounters();
-
-        if (isDebug())
-            info("Test counters [numOfTests=" + cntrs.getNumberOfTests() + ", started=" + cntrs.getStarted() +
-                ", stopped=" + cntrs.getStopped() + ']');
-
+        long t0 = System.currentTimeMillis();
         try {
-            afterTest();
+            long dur = t0 - ts;
+            countedDuration.addAndGet(dur);
+
+            info(">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
+            System.out.println("DURATION SO FAR " + countedDuration);
+            System.out.println("OVERHEAD SO FAR " + overhead);
+
+            TestCounters cntrs = getTestCounters();
+
+            if (isDebug())
+                info("Test counters [numOfTests=" + cntrs.getNumberOfTests() + ", started=" + cntrs.getStarted() +
+                    ", stopped=" + cntrs.getStopped() + ']');
+
+            try {
+                afterTest();
+            }
+            finally {
+                serializedObj.clear();
+
+                Exception err = null;
+
+                if (isLastTest()) {
+                    info(">>> Stopping test class: " + testClassDescription() + " <<<");
+                    System.out.println("DURATION SO FAR " + countedDuration);
+                    System.out.println("OVERHEAD SO FAR " + overhead);
+
+                    TestCounters counters = getTestCounters();
+
+                    // Stop all threads started by runMultithreaded() methods.
+                    GridTestUtils.stopThreads(log);
+
+                    // Safety.
+                    getTestResources().stopThreads();
+
+                    // Set reset flags, so counters will be reset on the next setUp.
+                    counters.setReset(true);
+
+                    try {
+                        afterTestsStopped();
+                    }
+                    catch (Exception e) {
+                        err = e;
+                    }
+
+                    if (isSafeTopology()) {
+                        stopAllGrids(false);
+
+                        if (stopGridErr) {
+                            err = new RuntimeException("Not all Ignite instances has been stopped. " +
+                                "Please, see log for details.", err);
+                        }
+                    }
+
+                    // Remove counters.
+                    tests.remove(getClass());
+
+                    // Remove resources cached in static, if any.
+                    GridClassLoaderCache.clear();
+                    U.clearClassCache();
+                    MarshallerExclusions.clearCache();
+                    BinaryEnumCache.clear();
+                }
+
+                Thread.currentThread().setContextClassLoader(clsLdr);
+
+                clsLdr = null;
+
+                cleanReferences();
+
+                if (err != null)
+                    throw err;
+            }
         }
         finally {
-            serializedObj.clear();
+            fixtureOverhead.getAndAdd(System.currentTimeMillis() - t0);
 
-            Exception err = null;
-
-            if (isLastTest()) {
-                info(">>> Stopping test class: " + testClassDescription() + " <<<");
-                System.out.println("DURATION SO FAR " + countedDuration);
-                System.out.println("OVERHEAD SO FAR " + overhead);
-
-                TestCounters counters = getTestCounters();
-
-                // Stop all threads started by runMultithreaded() methods.
-                GridTestUtils.stopThreads(log);
-
-                // Safety.
-                getTestResources().stopThreads();
-
-                // Set reset flags, so counters will be reset on the next setUp.
-                counters.setReset(true);
-
-                try {
-                    afterTestsStopped();
-                }
-                catch (Exception e) {
-                    err = e;
-                }
-
-                if (isSafeTopology()) {
-                    stopAllGrids(false);
-
-                    if (stopGridErr) {
-                        err = new RuntimeException("Not all Ignite instances has been stopped. " +
-                            "Please, see log for details.", err);
-                    }
-                }
-
-                // Remove counters.
-                tests.remove(getClass());
-
-                // Remove resources cached in static, if any.
-                GridClassLoaderCache.clear();
-                U.clearClassCache();
-                MarshallerExclusions.clearCache();
-                BinaryEnumCache.clear();
-            }
-
-            Thread.currentThread().setContextClassLoader(clsLdr);
-
-            clsLdr = null;
-
-            cleanReferences();
-
-            if (err != null)
-                throw err;
+            System.out.println("FIXTURE OVERHEAD SO FAR " + fixtureOverhead);
         }
     }
 
@@ -2117,6 +2134,8 @@ public abstract class GridAbstractTest extends TestCase {
             @Override public void run() {
                 try {
                     runTestInternal();
+                }
+                catch (AssumptionViolatedException ignored) {
                 }
                 catch (Throwable e) {
                     IgniteClosure<Throwable, Throwable> hnd = errorHandler();
