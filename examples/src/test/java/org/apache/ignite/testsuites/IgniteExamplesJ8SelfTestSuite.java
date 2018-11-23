@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.examples.BasicExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.BasicExamplesSelfTest;
@@ -45,35 +46,35 @@ public class IgniteExamplesJ8SelfTestSuite extends TestSuite {
 
         TestSuite suite = new TestSuite("Ignite Examples Test Suite");
 
-        suite.addTest(new TestSuite(CacheExamplesSelfTest.class));
-        suite.addTest(new TestSuite(BasicExamplesSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheExamplesSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(BasicExamplesSelfTest.class));
 
-//        suite.addTest(new TestSuite(ContinuationExamplesSelfTest.class));
-//        suite.addTest(new TestSuite(ContinuousMapperExamplesSelfTest.class));
-//        suite.addTest(new TestSuite(DeploymentExamplesSelfTest.class));
-        suite.addTest(new TestSuite(EventsExamplesSelfTest.class));
-//        suite.addTest(new TestSuite(LifecycleExamplesSelfTest.class));
-        suite.addTest(new TestSuite(MessagingExamplesSelfTest.class));
-//        suite.addTest(new TestSuite(MemcacheRestExamplesSelfTest.class));
-//        suite.addTest(new TestSuite(MonteCarloExamplesSelfTest.class));
-//        suite.addTest(new TestSuite(TaskExamplesSelfTest.class));
-//        suite.addTest(new TestSuite(SpringBeanExamplesSelfTest.class));
-//        suite.addTest(new TestSuite(IgfsExamplesSelfTest.class));
-//        suite.addTest(new TestSuite(CheckpointExamplesSelfTest.class));
-//        suite.addTest(new TestSuite(HibernateL2CacheExampleSelfTest.class));
-//        suite.addTest(new TestSuite(ClusterGroupExampleSelfTest.class));
+//        suite.addTest(new JUnit4TestAdapter(ContinuationExamplesSelfTest.class));
+//        suite.addTest(new JUnit4TestAdapter(ContinuousMapperExamplesSelfTest.class));
+//        suite.addTest(new JUnit4TestAdapter(DeploymentExamplesSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(EventsExamplesSelfTest.class));
+//        suite.addTest(new JUnit4TestAdapter(LifecycleExamplesSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(MessagingExamplesSelfTest.class));
+//        suite.addTest(new JUnit4TestAdapter(MemcacheRestExamplesSelfTest.class));
+//        suite.addTest(new JUnit4TestAdapter(MonteCarloExamplesSelfTest.class));
+//        suite.addTest(new JUnit4TestAdapter(TaskExamplesSelfTest.class));
+//        suite.addTest(new JUnit4TestAdapter(SpringBeanExamplesSelfTest.class));
+//        suite.addTest(new JUnit4TestAdapter(IgfsExamplesSelfTest.class));
+//        suite.addTest(new JUnit4TestAdapter(CheckpointExamplesSelfTest.class));
+//        suite.addTest(new JUnit4TestAdapter(HibernateL2CacheExampleSelfTest.class));
+//        suite.addTest(new JUnit4TestAdapter(ClusterGroupExampleSelfTest.class));
 
         // Multi-node.
-        suite.addTest(new TestSuite(CacheExamplesMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(BasicExamplesMultiNodeSelfTest.class));
-//        suite.addTest(new TestSuite(ContinuationExamplesMultiNodeSelfTest.class));
-//        suite.addTest(new TestSuite(ContinuousMapperExamplesMultiNodeSelfTest.class));
-//        suite.addTest(new TestSuite(DeploymentExamplesMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(EventsExamplesMultiNodeSelfTest.class));
-//        suite.addTest(new TestSuite(TaskExamplesMultiNodeSelfTest.class));
-//        suite.addTest(new TestSuite(MemcacheRestExamplesMultiNodeSelfTest.class));
-//        suite.addTest(new TestSuite(MonteCarloExamplesMultiNodeSelfTest.class));
-//        suite.addTest(new TestSuite(HibernateL2CacheExampleMultiNodeSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheExamplesMultiNodeSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(BasicExamplesMultiNodeSelfTest.class));
+//        suite.addTest(new JUnit4TestAdapter(ContinuationExamplesMultiNodeSelfTest.class));
+//        suite.addTest(new JUnit4TestAdapter(ContinuousMapperExamplesMultiNodeSelfTest.class));
+//        suite.addTest(new JUnit4TestAdapter(DeploymentExamplesMultiNodeSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(EventsExamplesMultiNodeSelfTest.class));
+//        suite.addTest(new JUnit4TestAdapter(TaskExamplesMultiNodeSelfTest.class));
+//        suite.addTest(new JUnit4TestAdapter(MemcacheRestExamplesMultiNodeSelfTest.class));
+//        suite.addTest(new JUnit4TestAdapter(MonteCarloExamplesMultiNodeSelfTest.class));
+//        suite.addTest(new JUnit4TestAdapter(HibernateL2CacheExampleMultiNodeSelfTest.class));
 
         return suite;
     }

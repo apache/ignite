@@ -1533,6 +1533,24 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             return storageSize.get();
         }
 
+        /**
+         * @return {@code True} if there are no items in the store.
+         */
+        @Override public boolean isEmpty() {
+            try {
+                /*
+                 * TODO https://issues.apache.org/jira/browse/IGNITE-10082
+                 * Using of counters is cheaper than tree operations. Return size checking after the ticked is resolved.
+                 */
+                return grp.mvccEnabled() ? dataTree.isEmpty() : storageSize.get() == 0;
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to perform operation.", e);
+
+                return false;
+            }
+        }
+
         /** {@inheritDoc} */
         @Override public void updateSize(int cacheId, long delta) {
             storageSize.addAndGet(delta);
