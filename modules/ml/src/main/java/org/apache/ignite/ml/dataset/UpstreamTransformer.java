@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.dataset;
 
+import java.io.Serializable;
 import java.util.stream.Stream;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
@@ -26,9 +27,25 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
  * @param <K> Type of keys in the upstream.
  * @param <V> Type of values in the upstream.
  */
+// TODO: IGNITE-10297: Investigate possibility of API change.
 @FunctionalInterface
-public interface UpstreamTransformer<K, V> extends IgniteFunction<Stream<UpstreamEntry<K, V>>, Stream<UpstreamEntry<K, V>>> {
-    default UpstreamTransformer<K, V> then(UpstreamTransformer<K, V> other) {
-        return s -> other.apply(this.apply(s));
+public interface UpstreamTransformer<K, V> extends Serializable {
+    /**
+     * Transform upstream.
+     *
+     * @param upstream Upstream to transform.
+     * @return Transformed upstream.
+     */
+    Stream<UpstreamEntry<K, V>> transform(Stream<UpstreamEntry<K, V>> upstream);
+
+    /**
+     * Get composition of this transformer and other transformer which is
+     * itself is {@link UpstreamTransformer} applying this transformer and then other transformer.
+     *
+     * @param other Other transformer.
+     * @return Composition of this and other transformer.
+     */
+    default UpstreamTransformer<K, V> andThen(UpstreamTransformer<K, V> other) {
+        return upstream -> other.transform(transform(upstream));
     }
 }

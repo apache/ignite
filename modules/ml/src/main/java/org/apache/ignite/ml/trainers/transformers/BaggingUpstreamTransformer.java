@@ -33,6 +33,9 @@ import org.apache.ignite.ml.dataset.UpstreamTransformerBuilder;
  * @param <V> Type of upstream values.
  */
 public class BaggingUpstreamTransformer<K, V> implements UpstreamTransformer<K, V> {
+    /** Serial version uid. */
+    private static final long serialVersionUID = -913152523469994149L;
+
     /** Ratio of subsample to entire upstream size */
     private double subsampleRatio;
 
@@ -64,7 +67,7 @@ public class BaggingUpstreamTransformer<K, V> implements UpstreamTransformer<K, 
     }
 
     /** {@inheritDoc} */
-    @Override public Stream<UpstreamEntry<K, V>> apply(Stream<UpstreamEntry<K, V>> upstream) {
+    @Override public Stream<UpstreamEntry<K, V>> transform(Stream<UpstreamEntry<K, V>> upstream) {
         PoissonDistribution poisson = new PoissonDistribution(
             new Well19937c(seed),
             subsampleRatio,

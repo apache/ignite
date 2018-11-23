@@ -148,12 +148,11 @@ public class BaggingTest extends TrainerTest {
      * @return Sum of parameters.
      */
     protected static Long plusOfNullables(Long a, Long b) {
-        if (a == null) {
+        if (a == null)
             return b;
-        }
-        if (b == null) {
+
+        if (b == null)
             return a;
-        }
 
         return a + b;
     }

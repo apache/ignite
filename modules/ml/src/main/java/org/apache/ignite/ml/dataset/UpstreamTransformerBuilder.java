@@ -51,7 +51,7 @@ public interface UpstreamTransformerBuilder<K, V> extends Serializable {
             UpstreamTransformer<K, V> transformer1 = self.build(env);
             UpstreamTransformer<K, V> transformer2 = other.build(env);
 
-            return upstream -> transformer2.apply(transformer1.apply(upstream));
+            return upstream -> transformer2.transform(transformer1.transform(upstream));
         };
     }
 

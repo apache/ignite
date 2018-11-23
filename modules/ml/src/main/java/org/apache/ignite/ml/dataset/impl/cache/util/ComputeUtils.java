@@ -218,7 +218,7 @@ public class ComputeUtils {
                     e -> new UpstreamEntry<>(e.getKey(), e.getValue()))) {
 
                     Iterator<UpstreamEntry<K, V>> it = cursor.iterator();
-                    Stream<UpstreamEntry<K, V>> transformedStream = transformerCopy.apply(Utils.asStream(it, cnt));
+                    Stream<UpstreamEntry<K, V>> transformedStream = transformerCopy.transform(Utils.asStream(it, cnt));
                     it = transformedStream.iterator();
 
 
@@ -296,7 +296,7 @@ public class ComputeUtils {
                 e -> new UpstreamEntry<>(e.getKey(), e.getValue()))) {
 
                 Iterator<UpstreamEntry<K, V>> it = cursor.iterator();
-                Stream<UpstreamEntry<K, V>> transformedStream = transformerCopy.apply(Utils.asStream(it, cnt));
+                Stream<UpstreamEntry<K, V>> transformedStream = transformerCopy.transform(Utils.asStream(it, cnt));
                 it = transformedStream.iterator();
 
                 Iterator<UpstreamEntry<K, V>> iter = new IteratorWithConcurrentModificationChecker<>(
@@ -386,7 +386,7 @@ public class ComputeUtils {
         try (QueryCursor<UpstreamEntry<K, V>> cursor = cache.query(qry,
             e -> new UpstreamEntry<>(e.getKey(), e.getValue()))) {
 
-            return computeCount(transformer.apply(Utils.asStream(cursor.iterator())).iterator());
+            return computeCount(transformer.transform(Utils.asStream(cursor.iterator())).iterator());
         }
     }
 

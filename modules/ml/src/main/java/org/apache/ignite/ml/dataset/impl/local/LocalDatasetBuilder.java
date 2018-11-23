@@ -132,14 +132,14 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
             UpstreamTransformer<K, V> transformer2 = Utils.copy(transformer1);
             UpstreamTransformer<K, V> transformer3 = Utils.copy(transformer1);
 
-            cnt = (int)transformer1.apply(Utils.asStream(new IteratorWindow<>(thirdKeysIter, k -> k, cnt))).count();
+            cnt = (int)transformer1.transform(Utils.asStream(new IteratorWindow<>(thirdKeysIter, k -> k, cnt))).count();
 
             Iterator<UpstreamEntry<K, V>> iter =
-                transformer2.apply(Utils.asStream(new IteratorWindow<>(firstKeysIter, k -> k, cnt))).iterator();
+                transformer2.transform(Utils.asStream(new IteratorWindow<>(firstKeysIter, k -> k, cnt))).iterator();
 
             C ctx = cnt > 0 ? partCtxBuilder.build(env, iter, cnt) : null;
 
-            Iterator<UpstreamEntry<K, V>> iter1 = transformer3.apply(
+            Iterator<UpstreamEntry<K, V>> iter1 = transformer3.transform(
                     Utils.asStream(new IteratorWindow<>(secondKeysIter, k -> k, cnt))).iterator();
 
             D data = cnt > 0 ? partDataBuilder.build(
