@@ -734,7 +734,8 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      */
     private ClusterTopologyServerNotFoundException serverNotFoundError(int part, AffinityTopologyVersion topVer) {
         return new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
-            "(all partition nodes left the grid) [topVer=" + topVer + ", part=" + part + ", cache=" + cctx.name() + ']');
+            "(all partition nodes left the grid) [topVer=" + topVer + ", nodeId=" + cctx.localNodeId() +
+            ", part=" + part + ", cache=" + cctx.name() + ']');
     }
 
     /** {@inheritDoc} */

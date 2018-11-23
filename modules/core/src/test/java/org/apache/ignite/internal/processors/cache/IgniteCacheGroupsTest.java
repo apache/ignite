@@ -78,6 +78,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicyFactory;
@@ -3835,7 +3836,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                                             cacheOperation(rnd, cache);
                                     }
                                     catch (Exception e) {
-                                        if (X.hasCause(e, CacheStoppedException.class)) {
+                                        if (X.hasCause(e, CacheStoppedException.class) ||
+                                            X.hasCause(e, ClusterTopologyServerNotFoundException.class)) {
                                             // Cache operation can be blocked on
                                             // awaiting new topology version and cancelled with CacheStoppedException cause.
 
