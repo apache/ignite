@@ -23,13 +23,16 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -100,10 +103,7 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
     public void testTableWriteLockStarvation() throws Exception {
         final Ignite srv = startGrid(1);
 
-        srv.createCache(cacheConfiguration(4, "pers", Person.class));
-        srv.createCache(cacheConfiguration(4, "comp", Company.class));
-
-        populateBaseQueryData(srv);
+        populateBaseQueryData(srv, 4);
 
         final AtomicBoolean end = new AtomicBoolean(false);
 
@@ -179,10 +179,7 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
         Ignite srv1 = startGrid(1);
         startGrid(2);
 
-        srv1.createCache(cacheConfiguration(1, "pers", Person.class));
-        srv1.createCache(cacheConfiguration(1, "comp", Company.class));
-
-        populateBaseQueryData(srv1);
+        populateBaseQueryData(srv1, 1);
 
         FieldsQueryCursor<List<?>> cursor = execute(srv1, query(0).setPageSize(pageSize));
 
@@ -202,10 +199,7 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
     public void checkSingleNode(int parallelism) throws Exception {
         Ignite srv = startGrid();
 
-        srv.createCache(cacheConfiguration(parallelism, "pers", Person.class));
-        srv.createCache(cacheConfiguration(4, "comp", Company.class));
-
-        populateBaseQueryData(srv);
+        populateBaseQueryData(srv, parallelism);
 
         checkBaseOperations(srv);
     }
@@ -231,10 +225,7 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
             Ignition.setClientMode(false);
         }
 
-        cli.createCache(cacheConfiguration(parallelism, "pers", Person.class));
-        cli.createCache(cacheConfiguration(4, "comp", Company.class));
-
-        populateBaseQueryData(cli);
+        populateBaseQueryData(cli, parallelism);
 
         checkBaseOperations(srv1);
         checkBaseOperations(srv2);
@@ -273,6 +264,8 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     private void checkBaseOperations(Ignite node) throws Exception {
+        checkQuerySplitToSeveralMapQueries(node);
+
         // Get full data.
         List<List<?>> rows = execute(node, baseQuery()).getAll();
 
@@ -328,16 +321,16 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
             }
         }
 
-        checkHoldLazyQuery(node);
+        checkHoldQuery(node);
 
-        checkShortLazyQuery(node);
+        checkShortQuery(node);
     }
 
     /**
      * @param node Ignite node.
      * @throws Exception If failed.
      */
-    public void checkHoldLazyQuery(Ignite node) throws Exception {
+    public void checkHoldQuery(Ignite node) throws Exception {
         ArrayList rows = new ArrayList<>();
 
         FieldsQueryCursor<List<?>> cursor0 = execute(node, query(BASE_QRY_ARG).setPageSize(PAGE_SIZE_SMALL));
@@ -364,7 +357,7 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
      * @param node Ignite node.
      * @throws Exception If failed.
      */
-    public void checkShortLazyQuery(Ignite node) throws Exception {
+    public void checkShortQuery(Ignite node) throws Exception {
         ArrayList rows = new ArrayList<>();
 
         FieldsQueryCursor<List<?>> cursor0 = execute(node, query(KEY_CNT - PAGE_SIZE_SMALL + 1).setPageSize(PAGE_SIZE_SMALL));
@@ -378,20 +371,48 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
     }
 
     /**
+     * @param node Ignite node.
+     * @throws Exception If failed.
+     */
+    public void checkQuerySplitToSeveralMapQueries(Ignite node) throws Exception {
+        ArrayList rows = new ArrayList<>();
+
+        FieldsQueryCursor<List<?>> cursor0 = execute(node, new SqlFieldsQuery(
+            "SELECT pers.id, pers.name" +
+            "FROM (SELECT DISTINCT p.id " +
+                "FROM \"pers\".PERSON as p) as pers " +
+            "JOIN \"pers\".PERSON p on p.id = pers.id " +
+            "JOIN (SELECT t.persId as persId, SUM(t.time) totalTime " +
+                "FROM \"persTask\".PersonTask as t GROUP BY t.persId) as task ON task.persId = pers.id")
+            .setPageSize(PAGE_SIZE_SMALL));
+
+        Iterator<List<?>> it = cursor0.iterator();
+
+        while (it.hasNext())
+            rows.add(it.next());
+
+        assertQueryResults(rows, 0);
+    }
+
+    /**
      * Populate base query data.
      *
      * @param node Node.
+     * @param parallelism Query parallelism.
      */
-    private static void populateBaseQueryData(Ignite node) {
+    private static void populateBaseQueryData(Ignite node, int parallelism) {
+        node.createCache(cacheConfiguration(parallelism, "pers", Person.class));
+        node.createCache(cacheConfiguration(parallelism, "persTask", PersonTask.class));
+
         IgniteCache<Long, Object> pers = cache(node, "pers");
 
         for (long i = 0; i < KEY_CNT; i++)
             pers.put(i, new Person(i));
 
-        IgniteCache<Long, Object> comp = cache(node, "comp");
+        IgniteCache<Long, Object> comp = cache(node, "persTask");
 
         for (long i = 0; i < KEY_CNT; i++)
-            comp.put(i, new Company(i));
+            comp.put(i, new PersonTask(i));
     }
 
     /**
@@ -482,18 +503,6 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
     }
 
     /**
-     * Execute query on the given cache.
-     *
-     * @param node Node.
-     * @param sql Query.
-     * @return Cursor.
-     */
-    private FieldsQueryCursor<List<?>> execute(Ignite node, String sql) {
-        return ((IgniteEx)node).context().query().querySqlFields(new SqlFieldsQuery(sql).setLocal(lazy()), false);
-    }
-
-
-    /**
      * @return Lazy mode.
      */
     protected abstract boolean lazy();
@@ -548,23 +557,27 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
     /**
      * Company class.
      */
-    private static class Company {
+    private static class PersonTask {
         /** ID. */
         @QuerySqlField(index = true)
         private long id;
 
+        @QuerySqlField(index = true)
+        private long persId;
+
         /** Name. */
         @QuerySqlField
-        private String name;
+        private long time;
 
         /**
          * Constructor.
          *
          * @param id ID.
          */
-        public Company(long id) {
+        public PersonTask(long id) {
             this.id = id;
-            this.name = nameForId(id);
+            this.persId = id;
+            this.time = id;
         }
 
         /**
@@ -577,8 +590,8 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
         /**
          * @return Name.
          */
-        public String name() {
-            return name;
+        public long time() {
+            return time;
         }
     }
 }

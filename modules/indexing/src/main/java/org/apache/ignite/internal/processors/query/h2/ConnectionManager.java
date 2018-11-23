@@ -503,7 +503,7 @@ public class ConnectionManager {
             }
             else {
                 for (H2ConnectionWrapper c : entry.getValue().values()) {
-                    if (now - c.statementCache().lastUsage() > stmtCleanupPeriod)
+                    if (now - c.statementCache().lastUsage() > stmtTimeout)
                         c.clearStatementCache();
                 }
             }

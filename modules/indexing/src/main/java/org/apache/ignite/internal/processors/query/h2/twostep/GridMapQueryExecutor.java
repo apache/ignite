@@ -781,10 +781,6 @@ public class GridMapQueryExecutor {
                 }
             }
 
-            Connection conn = h2.connections().connectionForThread(schemaName);
-
-            H2Utils.setupConnection(conn, distributedJoinMode != OFF, enforceJoinOrder, lazy);
-
             // Prepare query context.
             GridH2QueryContext qctx = new GridH2QueryContext(ctx.localNodeId(),
                 node.id(),
@@ -799,8 +795,7 @@ public class GridMapQueryExecutor {
                 .reservations(reserved)
                 .mvccSnapshot(mvccSnapshot);
 
-            qryResults = new MapQueryResults(h2, reqId, qrys.size(), mainCctx, inTx, lazy, qctx,
-                H2Utils.session(conn), log);
+            qryResults = new MapQueryResults(h2, reqId, qrys.size(), mainCctx, inTx, lazy, qctx, log);
 
             // qctx is set, we have to release reservations inside of it.
             reserved = null;
@@ -824,9 +819,13 @@ public class GridMapQueryExecutor {
             boolean evt = mainCctx != null && mainCctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED);
 
             for (GridCacheSqlQuery qry : qrys) {
-                ResultSet rs = null;
+                Connection conn = h2.connections().connectionForThread(schemaName);
+                log.info("+++ ID: " + reqId + ", conn=" + conn);
+
+                H2Utils.setupConnection(conn, distributedJoinMode != OFF, enforceJoinOrder, lazy);
 
                 boolean removeMapping = false;
+                ResultSet rs = null;
 
                 // If we are not the target node for this replicated query, just ignore it.
                 if (qry.node() == null || (segmentId == 0 && qry.node().equals(ctx.localNodeId()))) {
@@ -898,7 +897,7 @@ public class GridMapQueryExecutor {
                     assert rs instanceof JdbcResultSet : rs.getClass();
                 }
 
-                qryResults.addResult(qryIdx, qry, node.id(), rs, params);
+                qryResults.addResult(qryIdx, qry, node.id(), rs, params, H2Utils.session(conn));
 
                 if (qryResults.cancelled()) {
                     qryResults.result(qryIdx).close();
@@ -1204,9 +1203,6 @@ public class GridMapQueryExecutor {
             sendError(node, req.queryRequestId(), new QueryCancelledException());
         else {
             try {
-                if (qryResults.session() != null)
-                    GridH2Table.checkTablesVersionNotChanged(qryResults.session());
-
                 GridH2QueryContext qctxReduce = GridH2QueryContext.get();
 
                 if (qctxReduce != null)
@@ -1270,6 +1266,8 @@ public class GridMapQueryExecutor {
 
         boolean last = res.fetchNextPage(rows, pageSize);
 
+        res.checkTablesVersionNotChanged();
+
         if (last) {
             res.close();
 
@@ -1282,9 +1280,14 @@ public class GridMapQueryExecutor {
         }
         else {
             // Detach connection if the result set greater than one page.
-            if (qr.lazy() && !qr.isConnectionDetached()) {
-                qr.detachedConnection(h2.connections().detachConnection());
+            if (qr.lazy()) {
+                if (!res.isConnectionDetached())
+                    res.detachedConnection(h2.connections().detachConnection());
             }
+            else
+                // Release session because all result set is already copied to RAM.
+                // We don't need in check table version on fetch next page.
+                res.releaseSession();
         }
 
         boolean loc = node.isLocal();
@@ -1324,9 +1327,6 @@ public class GridMapQueryExecutor {
         boolean removeMapping) {
         try {
             GridQueryNextPageResponse msg = prepareNextPage(nodeRess, node, qr, qry, segmentId, pageSize, removeMapping);
-
-            if (qr.session() != null)
-                GridH2Table.checkTablesVersionNotChanged(qr.session());
 
             if (msg != null) {
                 if (node.isLocal())

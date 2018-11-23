@@ -28,10 +28,14 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
+import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.ObjectPoolReusable;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.h2.engine.Session;
 import org.h2.jdbc.JdbcResultSet;
 import org.h2.result.LazyResult;
 import org.h2.result.ResultInterface;
@@ -85,6 +89,9 @@ class MapQueryResult {
     /** */
     private final IgniteLogger log;
 
+    /** H2 session. */
+    private Session ses;
+
     /** */
     private int page;
 
@@ -101,22 +108,30 @@ class MapQueryResult {
     private final Object[] params;
 
     /**
+     * Detached connection.
+     * Used for lazy execution to prevent share connection between thread from QUERY thread pool.
+     */
+    private ObjectPoolReusable<H2ConnectionWrapper> detachedConn;
+
+    /**
      * @param h2 H2 indexing.
      * @param rs Result set.
      * @param cctx Cache context.
      * @param qrySrcNodeId Query source node.
      * @param qry Query.
      * @param params Query params.
+     * @param ses H2 session.
      * @param log Logger.
      */
     MapQueryResult(IgniteH2Indexing h2, ResultSet rs, @Nullable GridCacheContext cctx,
-        UUID qrySrcNodeId, GridCacheSqlQuery qry, Object[] params, IgniteLogger log) {
+        UUID qrySrcNodeId, GridCacheSqlQuery qry, Object[] params, Session ses, IgniteLogger log) {
         this.h2 = h2;
         this.cctx = cctx;
         this.qry = qry;
         this.params = params;
         this.qrySrcNodeId = qrySrcNodeId;
         this.cpNeeded = F.eq(h2.kernalContext().localNodeId(), qrySrcNodeId);
+        this.ses = ses;
         this.log = log;
 
         if (rs != null) {
@@ -266,6 +281,37 @@ class MapQueryResult {
             closed = true;
 
             U.close(rs, log);
+
+            ses = null;
+
+            if (detachedConn != null)
+                detachedConn.recycle();
         }
+    }
+
+    /** */
+    void releaseSession() {
+        ses = null;
+    }
+
+    /**
+     */
+    void checkTablesVersionNotChanged() {
+        if (ses != null)
+            GridH2Table.checkTablesVersionNotChanged(ses);
+    }
+
+    /**
+     * @param conn Detached connection.
+     */
+    public void detachedConnection(ObjectPoolReusable<H2ConnectionWrapper> conn) {
+        detachedConn = conn;
+    }
+
+    /**
+     * @return {@code true} if the connection is pulled from connection pool and not use for next incoming requests.
+     */
+    public boolean isConnectionDetached() {
+        return detachedConn != null;
     }
 }

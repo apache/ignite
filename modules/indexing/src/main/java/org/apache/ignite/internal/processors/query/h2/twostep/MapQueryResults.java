@@ -61,14 +61,8 @@ class MapQueryResults {
     /** {@code SELECT FOR UPDATE} flag. */
     private final boolean forUpdate;
 
-    /** Detached connection. */
-    private ObjectPoolReusable<H2ConnectionWrapper> detachedConn;
-
     /** Query context. */
     private final GridH2QueryContext qctx;
-
-    /** H2 session. */
-    private Session ses;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -86,14 +80,13 @@ class MapQueryResults {
      * @param log Logger instance.
      */
     MapQueryResults(IgniteH2Indexing h2, long qryReqId, int qrys, @Nullable GridCacheContext<?, ?> cctx,
-        boolean forUpdate, boolean lazy, GridH2QueryContext qctx, Session ses, IgniteLogger log) {
+        boolean forUpdate, boolean lazy, GridH2QueryContext qctx, IgniteLogger log) {
         this.forUpdate = forUpdate;
         this.h2 = h2;
         this.qryReqId = qryReqId;
         this.cctx = cctx;
         this.lazy = lazy;
         this.qctx = qctx;
-        this.ses = ses;
         this.log = log;
 
         results = new AtomicReferenceArray<>(qrys);
@@ -128,9 +121,11 @@ class MapQueryResults {
      * @param qrySrcNodeId Query source node.
      * @param rs Result set.
      * @param params Query arguments.
+     * @param session H2 Session.
      */
-    void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs, Object[] params) {
-        MapQueryResult res = new MapQueryResult(h2, rs, cctx, qrySrcNodeId, q, params, log);
+    void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs, Object[] params,
+        Session session) {
+        MapQueryResult res = new MapQueryResult(h2, rs, cctx, qrySrcNodeId, q, params, session, log);
 
         if (!results.compareAndSet(qry, null, res))
             throw new IllegalStateException();
@@ -180,9 +175,6 @@ class MapQueryResults {
                 res.close();
         }
 
-        if (detachedConn != null)
-            detachedConn.recycle();
-
         if (lazy)
             release();
     }
@@ -216,20 +208,6 @@ class MapQueryResults {
     }
 
     /**
-     * @return {@code true} If the connection already detached.
-     */
-    boolean isConnectionDetached() {
-        return detachedConn != null;
-    }
-
-    /**
-     * @param conn Detached connection.
-     */
-    void detachedConnection(ObjectPoolReusable<H2ConnectionWrapper> conn) {
-        detachedConn = conn;
-    }
-
-    /**
      * @return Query context.
      */
     public GridH2QueryContext queryContext() {
@@ -237,17 +215,8 @@ class MapQueryResults {
     }
 
     /**
-     * @return H2 session of the query.
-     */
-    public Session session() {
-        return ses;
-    }
-
-    /**
      */
     public void release() {
-        ses = null;
-
         GridH2QueryContext.clearThreadLocal();
 
         if (qctx.distributedJoinMode() == OFF)
