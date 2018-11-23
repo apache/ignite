@@ -228,7 +228,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     private final GridEncryptionManager encMgr;
 
     /** */
-    private final EncryptionSpi encSpi;
+    private final boolean encryptionDisabled;
 
     /** */
     private final IgniteLogger log;
@@ -324,7 +324,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         storeMgr = ctx.pageStore();
         walMgr = ctx.wal();
         encMgr = ctx.kernalContext().encryption();
-        encSpi = ctx.gridConfig().getEncryptionSpi();
+        encryptionDisabled = ctx.gridConfig().getEncryptionSpi() instanceof  NoopEncryptionSpi;
 
         assert storeMgr != null;
         assert walMgr != null;
@@ -974,7 +974,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public int realPageSize(int grpId) {
-        if ((encSpi instanceof NoopEncryptionSpi) || encMgr.groupKey(grpId) == null)
+        if (encryptionDisabled || encMgr.groupKey(grpId) == null)
             return pageSize();
 
         return encPageSize;
