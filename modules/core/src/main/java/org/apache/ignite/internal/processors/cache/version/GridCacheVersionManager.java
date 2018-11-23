@@ -27,6 +27,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 
@@ -63,8 +64,12 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private byte dataCenterId;
 
-    /** */
-    private long gridStartTime;
+    /**
+     * Oldest cluster node start timestamp, lazily initialized.
+     *
+     * @see DiscoverySpi#getGridStartTime().
+     */
+    private volatile long gridStartTime;
 
     /** */
     private GridCacheVersion ISOLATED_STREAMER_VER;
@@ -325,5 +330,12 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
      */
     public boolean isStartVersion(GridCacheVersion ver) {
         return startVer.equals(ver);
+    }
+
+    /**
+     * Invalidates first cluster node start timestamp, it can be reinitialized lazily in the future.
+     */
+    public void invalidateGridStartTime() {
+        gridStartTime = 0;
     }
 }
