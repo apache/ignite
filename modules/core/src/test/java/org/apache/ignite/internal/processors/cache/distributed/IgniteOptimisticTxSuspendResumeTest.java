@@ -153,6 +153,11 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
     }
 
     /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids(true);
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         for (CacheConfiguration ccfg : cacheConfigurations())
             ignite(0).destroyCache(ccfg.getName());
