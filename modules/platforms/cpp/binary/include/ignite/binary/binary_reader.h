@@ -272,7 +272,7 @@ namespace ignite
              *     to resulting array and returned value will contain required array length.
              *     -1 will be returned in case array in stream was null.
              */
-            int32_t ReadDateArray(const char* fieldName, Date* res, const int32_t len);
+            int32_t ReadDateArray(const char* fieldName, Date* res, int32_t len);
 
             /**
              * Read Timestamp. Maps to "Timestamp" type in Java.
@@ -293,7 +293,7 @@ namespace ignite
              *     to resulting array and returned value will contain required array length.
              *     -1 will be returned in case array in stream was null.
              */
-            int32_t ReadTimestampArray(const char* fieldName, Timestamp* res, const int32_t len);
+            int32_t ReadTimestampArray(const char* fieldName, Timestamp* res, int32_t len);
 
             /**
              * Read Time. Maps to "Time" type in Java.
@@ -314,7 +314,7 @@ namespace ignite
              *     to resulting array and returned value will contain required array length.
              *     -1 will be returned in case array in stream was null.
              */
-            int32_t ReadTimeArray(const char* fieldName, Time* res, const int32_t len);
+            int32_t ReadTimeArray(const char* fieldName, Time* res, int32_t len);
 
             /**
              * Read string.
@@ -408,6 +408,12 @@ namespace ignite
 
             /**
              * Start map read.
+             *
+             * Every time you get a BinaryMapReader from BinaryReader you start
+             * reading session. Only one single reading session can be open at
+             * a time. So it is not allowed to start new reading session without
+             * calling BinaryMapReader::Close() method prior on obtained
+             * BinaryMapWriter class instance.
              *
              * @param fieldName Field name.
              * @return Map reader.
