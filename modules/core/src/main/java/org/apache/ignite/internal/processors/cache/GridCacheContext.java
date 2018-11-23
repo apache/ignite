@@ -2262,14 +2262,6 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         for (ClusterNode node : affNodes) {
             if (canRemap || discovery().alive(node)) {
-                if (grp.needsRecovery()) {
-                    if (locMacs.equals(node.attribute(ATTR_MACS)))
-                        return node;
-
-                    if (r >= 0 || owning == null)
-                        owning = node;
-                }
-
                 GridDhtPartitionState partitionState = localPartitionState(node, partitionId);
 
                 if (partitionState == OWNING) {
@@ -2283,6 +2275,14 @@ public class GridCacheContext<K, V> implements Externalizable {
                 if (partitionState == MOVING) {
                     if (r >= 0 || moving == null)
                         moving = node;
+                }
+
+                if (grp.needsRecovery() && partitionState != OWNING) {
+                    if (locMacs.equals(node.attribute(ATTR_MACS)))
+                        return node;
+
+                    if (r >= 0 || owning == null)
+                        owning = node;
                 }
 
                 r--;

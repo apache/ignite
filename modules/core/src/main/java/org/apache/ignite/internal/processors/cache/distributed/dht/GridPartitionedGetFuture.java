@@ -208,7 +208,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
      * @param topVer Topology version.
      */
     private void initialMap(AffinityTopologyVersion topVer) {
-        map(keys, Collections.emptyMap(), topVer,false);
+        map(keys, Collections.emptyMap(), topVer, false);
 
         markInitialized();
     }
