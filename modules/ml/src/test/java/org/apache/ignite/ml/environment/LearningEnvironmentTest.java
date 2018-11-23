@@ -82,7 +82,7 @@ public class LearningEnvironmentTest {
     @Test
     public void testRandomNumbersGenerator() {
         // We make such builders that provide as functions returning partition index * iteration as random number generator nextInt
-        LearningEnvironmentBuilder envBuilder = getBuilder();
+        LearningEnvironmentBuilder envBuilder = getBuilder(part -> TestUtils.testEnvBuilder().withRNGSupplier(() -> new MockRandom(part)));
         int partitions = 10;
         int iterations = 2;
 
@@ -132,13 +132,17 @@ public class LearningEnvironmentTest {
         return IntStream.range(0, partsCount).boxed().collect(Collectors.toMap(x -> x, x -> x));
     }
 
-    /** Get cache mock */
-    private LearningEnvironmentBuilder getBuilder() {
-        return new PartitionDependentLearningEnvironmentBuilder(part -> TestUtils.testEnvBuilder().withRNGSupplier(() -> new MockRandom(part)));
+    /**
+     * Get {@link LearningEnvironmentBuilder} with a given dependency on from partition.
+     *
+     * @param dep Function describing dependency (partition -> learning environment builer).
+     */
+    private LearningEnvironmentBuilder getBuilder(IgniteFunction<Integer, LearningEnvironmentBuilder> dep) {
+        return new PartitionDependentLearningEnvironmentBuilder(dep);
     }
 
     /**
-     * Partition builder dependent from parition.
+     * Partition builder dependent from partition.
      */
     private static class PartitionDependentLearningEnvironmentBuilder implements LearningEnvironmentBuilder {
         /** Dependency between partition and {@link LearningEnvironmentBuilder} which should be used on it. */
@@ -149,7 +153,7 @@ public class LearningEnvironmentTest {
          *
          * @param builderDep Function describing (partition -> {@link LearningEnvironmentBuilder}) dependency.
          */
-        public PartitionDependentLearningEnvironmentBuilder(IgniteFunction<Integer, LearningEnvironmentBuilder> builderDep) {
+        PartitionDependentLearningEnvironmentBuilder(IgniteFunction<Integer, LearningEnvironmentBuilder> builderDep) {
             this.builderDep = builderDep;
         }
 
@@ -214,7 +218,8 @@ public class LearningEnvironmentTest {
          * @param other Learning environment builder.
          * @return This object.
          */
-        private PartitionDependentLearningEnvironmentBuilder compose(IgniteFunction<LearningEnvironmentBuilder, LearningEnvironmentBuilder> other) {
+        private PartitionDependentLearningEnvironmentBuilder compose(IgniteFunction<LearningEnvironmentBuilder,
+            LearningEnvironmentBuilder> other) {
             builderDep.andThen(other);
 
             return this;
@@ -223,7 +228,7 @@ public class LearningEnvironmentTest {
 
     /** Mock random numners generator. */
     private static class MockRandom extends Random {
-        /** Start value.  */
+        /** Start value. */
         private int startVal;
 
         /** Iteration. */
@@ -234,7 +239,7 @@ public class LearningEnvironmentTest {
          *
          * @param startVal Start value.
          */
-        public MockRandom(int startVal) {
+        MockRandom(int startVal) {
             this.startVal = startVal;
             iter = 0;
         }
