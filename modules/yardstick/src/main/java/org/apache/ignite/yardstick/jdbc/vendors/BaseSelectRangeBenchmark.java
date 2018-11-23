@@ -34,7 +34,7 @@ import org.yardstickframework.BenchmarkConfiguration;
 import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
- * Abstract benchmark for sql select operation, that has range in WHERE clause.Designed to compare Ignite and
+ * Abstract benchmark for sql select operation, that has range in WHERE clause. Designed to compare Ignite and
  * other DBMSes. Children specify what exactly query gets executed.
  */
 public abstract class BaseSelectRangeBenchmark extends AbstractJdbcBenchmark {
@@ -44,7 +44,7 @@ public abstract class BaseSelectRangeBenchmark extends AbstractJdbcBenchmark {
     /** Number of persons in that times greater than organizations. */
     private static final int ORG_TO_PERS_FACTOR = 10;
 
-    /** Batch size */
+    /** Size in rows of jdbc batch. Used during database population. */
     private static final int BATCH_SIZE = 10_000;
 
     /** Resources that should be closed. For example, opened thread local statements. */
@@ -88,15 +88,17 @@ public abstract class BaseSelectRangeBenchmark extends AbstractJdbcBenchmark {
 
         queries = new QueryFactory();
 
-        executeUpdate(conn.get(), queries.dropPersonIfExist());
-        executeUpdate(conn.get(), queries.dropOrgIfExist());
+        Connection conn0 = conn.get();
 
-        executeUpdate(conn.get(), queries.createPersonTab());
-        executeUpdate(conn.get(), queries.createOrgTab());
+        executeUpdate(conn0, queries.dropPersonIfExist());
+        executeUpdate(conn0, queries.dropOrgIfExist());
 
-        executeUpdate(conn.get(), queries.beforeLoad());
+        executeUpdate(conn0, queries.createPersonTab());
+        executeUpdate(conn0, queries.createOrgTab());
 
-        conn.get().setAutoCommit(false);
+        executeUpdate(conn0, queries.beforeLoad());
+
+        conn0.setAutoCommit(false);
 
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -104,7 +106,7 @@ public abstract class BaseSelectRangeBenchmark extends AbstractJdbcBenchmark {
 
         println(cfg, "Populating Organization table.");
 
-        try (PreparedStatement insOrg = conn.get().prepareStatement(queries.insertIntoOrganization())) {
+        try (PreparedStatement insOrg = conn0.prepareStatement(queries.insertIntoOrganization())) {
 
             long percent = 0;
 
@@ -132,7 +134,7 @@ public abstract class BaseSelectRangeBenchmark extends AbstractJdbcBenchmark {
 
         println(cfg, "Populating Person table.");
 
-        try (PreparedStatement insPers = conn.get().prepareStatement(queries.insertIntoPerson())) {
+        try (PreparedStatement insPers = conn0.prepareStatement(queries.insertIntoPerson())) {
             long percent = 0;
 
             for (long persId = 0; persId < args.range(); persId++) {
@@ -155,9 +157,9 @@ public abstract class BaseSelectRangeBenchmark extends AbstractJdbcBenchmark {
             }
         }
 
-        conn.get().setAutoCommit(true);
+        conn0.setAutoCommit(true);
 
-        executeUpdate(conn.get(), queries.afterLoad());
+        executeUpdate(conn0, queries.afterLoad());
 
         println(cfg, "Database have been populated.");
     }

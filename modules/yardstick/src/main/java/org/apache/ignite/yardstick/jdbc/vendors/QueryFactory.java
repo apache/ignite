@@ -64,8 +64,7 @@ public class QueryFactory {
         return "SELECT ID FROM PUBLIC.PERSON WHERE SALARY BETWEEN ? AND ?";
     }
 
-
-    /** Query that inserts new Person record. Has 5 jdbc parameters - fields of the Person.*/
+    /** Query that inserts new Person record. Has 5 jdbc parameters - fields of the Person. */
     public String insertIntoPerson() {
         return "INSERT INTO PUBLIC.PERSON (id, org_id, first_name, last_name, salary) values (?, ?, ?, ?, ?)";
     }
