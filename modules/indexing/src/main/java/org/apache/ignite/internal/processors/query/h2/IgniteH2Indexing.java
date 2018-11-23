@@ -2605,8 +2605,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         dataTables.remove(h2Tbl.identifier(), h2Tbl);
 
         registeredCaches.remove(h2Tbl.cacheName());
-
-
     }
 
     /** {@inheritDoc} */
@@ -3069,7 +3067,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             assert !prevCtx.isCacheContextInited() : prevCtx.name();
             assert prevCtx.name().equals(ctx.name()) : prevCtx.name() + " != " + ctx.name();
 
-            prevCtx.initLazyCacheContext(ctx);
+            prevCtx.initCacheContext(ctx);
         }
     }
 

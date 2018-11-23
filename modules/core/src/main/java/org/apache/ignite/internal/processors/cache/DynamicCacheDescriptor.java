@@ -95,7 +95,8 @@ public class DynamicCacheDescriptor {
     /** */
     private final CacheGroupDescriptor grpDesc;
 
-    private boolean h2Started = false;
+    /** Flag to indicate h2 structures has been created for the cache. */
+    private boolean h2Created = false;
 
     /**
      * @param ctx Context.
@@ -146,12 +147,18 @@ public class DynamicCacheDescriptor {
         }
     }
 
-    public boolean h2Started() {
-        return h2Started;
+    /**
+     * @return {@code true} in case H2 structures has been created for the cache.
+     */
+    public boolean h2Created() {
+        return h2Created;
     }
 
-    public void h2Started(boolean h2Started) {
-        this.h2Started = h2Started;
+    /**
+     * @param h2Created {@code true} in case H2 structures has been created for the cache, {@code false} otherwise.
+     */
+    public void h2Created(boolean h2Created) {
+        this.h2Created = h2Created;
     }
 
     /**

@@ -25,11 +25,11 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Cache context information.  Required to support lazy cache initialization on client nodes.
+ * Cache context information.  Required to support H2 structures for not started caches on non affinity nodes.
  */
 @GridToStringExclude
 public class GridCacheContextInfo<K, V> {
-    /** Full cache context. Can be {@code null} in case lazy cache configuration. */
+    /** Full cache context. Can be {@code null} in case a cache is not started. */
     @Nullable private volatile GridCacheContext gridCacheContext;
 
     /** Kernal context. */
@@ -62,7 +62,7 @@ public class GridCacheContextInfo<K, V> {
     }
 
     /**
-     * Constructor of lazy cache context.
+     * Constructor of not started cache context.
      *
      * @param cacheDesc Cache descriptor.
      * @param ctx Kernal context.
@@ -119,7 +119,7 @@ public class GridCacheContextInfo<K, V> {
     }
 
     /**
-     * @return Cache context. {@code null}  for lazy cache.
+     * @return Cache context. {@code null} for not started cache.
      */
     @Nullable public GridCacheContext gridCacheContext() {
         return gridCacheContext;
@@ -133,11 +133,11 @@ public class GridCacheContextInfo<K, V> {
     }
 
     /**
-     * Set real cache context in case cache has been fully inited and start.
+     * Set real cache context in case cache has been fully initted and start.
      *
-     * @param gridCacheCtx Inited cache context.
+     * @param gridCacheCtx Initted cache context.
      */
-    public void initLazyCacheContext(GridCacheContext<?, ?> gridCacheCtx) {
+    public void initCacheContext(GridCacheContext<?, ?> gridCacheCtx) {
         assert this.gridCacheContext == null : this.gridCacheContext;
         assert gridCacheCtx != null;
 
@@ -152,7 +152,7 @@ public class GridCacheContextInfo<K, V> {
     }
 
     /**
-     * @return {@code true} If Cache context is inited (not lazy).
+     * @return {@code true} If Cache context is initted.
      */
     public boolean isCacheContextInited() {
         return gridCacheContext != null;
@@ -160,6 +160,6 @@ public class GridCacheContextInfo<K, V> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "GridCacheContextInfo: " + name() + " " + (isCacheContextInited() ? "inited" : "lazy");
+        return "GridCacheContextInfo: " + name() + " " + (isCacheContextInited() ? "started" : "not started");
     }
 }

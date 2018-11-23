@@ -865,7 +865,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         try {
             DynamicCacheDescriptor desc = ctx.cache().cacheDescriptor(cctx.name());
 
-            if (desc.h2Started() && cctx.isCacheContextInited()) {
+            if (desc.h2Created() && cctx.isCacheContextInited()) {
 
                 idx.initCacheContext(cctx.gridCacheContext());
 
@@ -874,7 +874,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             onCacheStart0(cctx, schema, isSql);
 
-            desc.h2Started(true);
+            desc.h2Created(true);
         }
         finally {
             busyLock.leaveBusy();
@@ -901,7 +901,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 DynamicCacheDescriptor desc = ctx.cache().cacheDescriptor(cctx.name());
 
                 if (desc != null)
-                    desc.h2Started(false);
+                    desc.h2Created(false);
             }
         }
         finally {
@@ -1672,8 +1672,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         idx.registerType(cctx, desc, isSql);
                 }
 
-                if (cctx.isCacheContextInited())
-                    cacheNames.add(CU.mask(cacheName));
+                cacheNames.add(CU.mask(cacheName));
             }
             catch (IgniteCheckedException | RuntimeException e) {
                 onCacheStop0(cctx, true);
@@ -2658,7 +2657,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Descriptors.
      */
     public Collection<GridQueryTypeDescriptor> types(@Nullable String cacheName) {
-
         Collection<GridQueryTypeDescriptor> cacheTypes = new ArrayList<>();
 
         for (Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl> e : types.entrySet()) {

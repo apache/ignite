@@ -1728,7 +1728,7 @@ public class GridSqlQueryParser {
                 GridH2Table tbl = ((GridSqlTable)o).dataTable();
 
                 if (tbl != null) {
-                    //It's lazy cache. Can't be local.
+                    //It's not affinity cache. Can't be local.
                     if (tbl.cache() == null)
                         return false;
 

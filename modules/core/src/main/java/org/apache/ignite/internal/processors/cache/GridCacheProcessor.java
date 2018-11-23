@@ -1285,12 +1285,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Create H2 structures for specified not started cache without full initialization and start the cache.
+     * Initialize H2 structures for not started cache.
      *
-     * @param cacheDesc Cache descriptor for create cache.
+     * @param cacheDesc Cache descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    public void initializeH2ForCache(DynamicCacheDescriptor cacheDesc) throws IgniteCheckedException {
+    public void initializeH2ForNotStartedCache(DynamicCacheDescriptor cacheDesc) throws IgniteCheckedException {
         QuerySchema schema = cacheDesc.schema() != null ? cacheDesc.schema() : new QuerySchema();
 
         GridCacheContextInfo cacheCtx = new GridCacheContextInfo(cacheDesc, ctx);
