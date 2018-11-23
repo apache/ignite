@@ -28,7 +28,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
-import org.apache.ignite.ml.dataset.UpstreamTransformerBuildersChain;
+import org.apache.ignite.ml.dataset.UpstreamTransformerBuilder;
 import org.apache.ignite.ml.dataset.impl.cache.util.ComputeUtils;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
@@ -63,8 +63,8 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
     /** Filter for {@code upstream} data. */
     private final IgniteBiPredicate<K, V> filter;
 
-    /** Chain of transformers applied to upstream. */
-    private final UpstreamTransformerBuildersChain<K, V> upstreamTransformers;
+    /** Builder of transformation applied to upstream. */
+    private final UpstreamTransformerBuilder<K, V> upstreamTransformerBuilder;
 
     /** Ignite Cache with partition {@code context}. */
     private final IgniteCache<Integer, C> datasetCache;
@@ -85,7 +85,7 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
      * @param ignite Ignite instance.
      * @param upstreamCache Ignite Cache with {@code upstream} data.
      * @param filter Filter for {@code upstream} data.
-     * @param upstreamTransformers Transformers of upstream data (see description in {@link DatasetBuilder}).
+     * @param upstreamTransformerBuilder Transformer of upstream data (see description in {@link DatasetBuilder}).
      * @param datasetCache Ignite Cache with partition {@code context}.
      * @param partDataBuilder Partition {@code data} builder.
      * @param datasetId Dataset ID.
@@ -94,7 +94,7 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
         Ignite ignite,
         IgniteCache<K, V> upstreamCache,
         IgniteBiPredicate<K, V> filter,
-        UpstreamTransformerBuildersChain<K, V> upstreamTransformers,
+        UpstreamTransformerBuilder<K, V> upstreamTransformerBuilder,
         IgniteCache<Integer, C> datasetCache,
         LearningEnvironmentBuilder envBuilder,
         PartitionDataBuilder<K, V, C, D> partDataBuilder,
@@ -102,7 +102,7 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
         this.ignite = ignite;
         this.upstreamCache = upstreamCache;
         this.filter = filter;
-        this.upstreamTransformers = upstreamTransformers;
+        this.upstreamTransformerBuilder = upstreamTransformerBuilder;
         this.datasetCache = datasetCache;
         this.partDataBuilder = partDataBuilder;
         this.envBuilder = envBuilder;
@@ -123,7 +123,7 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
                 Ignition.localIgnite(),
                 upstreamCacheName,
                 filter,
-                upstreamTransformers,
+                upstreamTransformerBuilder,
                 datasetCacheName,
                 datasetId,
                 partDataBuilder,
@@ -156,7 +156,7 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
                 Ignition.localIgnite(),
                 upstreamCacheName,
                 filter,
-                upstreamTransformers,
+                upstreamTransformerBuilder,
                 datasetCacheName,
                 datasetId,
                 partDataBuilder,

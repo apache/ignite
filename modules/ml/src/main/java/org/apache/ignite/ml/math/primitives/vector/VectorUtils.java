@@ -44,7 +44,7 @@ public class VectorUtils {
      *
      * @param val Value.
      * @param n Size;
-     * @return new vector of specified size n with specified value.
+     * @return New vector of specified size n with specified value.
      */
     public static DenseVector fill(double val, int n) {
         return (DenseVector)new DenseVector(n).assign(val);

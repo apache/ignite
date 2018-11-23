@@ -54,6 +54,7 @@ public class Pipeline<K, V, R> {
     /** Final trainer stage. */
     private DatasetTrainer finalStage;
 
+    /** Learning environment builder. */
     private LearningEnvironmentBuilder envBuilder = LearningEnvironmentBuilder.defaultBuilder();
 
     /**

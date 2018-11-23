@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.dataset;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 
 /**
@@ -24,12 +25,44 @@ import org.apache.ignite.ml.environment.LearningEnvironment;
  * @param <K> Type of keys in upstream.
  * @param <V> Type of values in upstream.
  */
-public interface UpstreamTransformerBuilder<K, V> {
+@FunctionalInterface
+public interface UpstreamTransformerBuilder<K, V> extends Serializable {
     /**
-     * Create Upstream environment based on learning environment.
+     * Create {@link UpstreamTransformer} based on learning environment.
      *
      * @param env Learning environment.
      * @return Upstream transformer.
      */
     public UpstreamTransformer<K, V> build(LearningEnvironment env);
+
+    /**
+     * Combunes two builders (this and other respectfully)
+     * env -> transformer1
+     * env -> transformer2
+     * into
+     * env -> transformer2 . transformer1
+     *
+     * @param other Builder to combine with.
+     * @return Compositional builder.
+     */
+    public default UpstreamTransformerBuilder<K, V> andThen(UpstreamTransformerBuilder<K, V> other) {
+        UpstreamTransformerBuilder<K, V> self = this;
+        return env -> {
+            UpstreamTransformer<K, V> transformer1 = self.build(env);
+            UpstreamTransformer<K, V> transformer2 = other.build(env);
+
+            return upstream -> transformer2.apply(transformer1.apply(upstream));
+        };
+    }
+
+    /**
+     * Returns identity upstream transformer.
+     *
+     * @param <K> Type of keys in upstream.
+     * @param <V> Type of values in upstream.
+     * @return Identity upstream transformer.
+     */
+    public static <K, V> UpstreamTransformerBuilder<K, V> identity() {
+        return env -> upstream -> upstream;
+    }
 }

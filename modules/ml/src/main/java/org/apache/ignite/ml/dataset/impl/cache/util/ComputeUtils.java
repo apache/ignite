@@ -44,7 +44,7 @@ import org.apache.ignite.ml.dataset.PartitionContextBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.UpstreamTransformer;
-import org.apache.ignite.ml.dataset.UpstreamTransformerBuildersChain;
+import org.apache.ignite.ml.dataset.UpstreamTransformerBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
@@ -171,7 +171,7 @@ public class ComputeUtils {
      * @param ignite Ignite instance.
      * @param upstreamCacheName Name of an {@code upstream} cache.
      * @param filter Filter for {@code upstream} data.
-     * @param transformersChain Upstream transformers.
+     * @param transformerBuilder Builder of upstream transformers.
      * @param datasetCacheName Name of a partition {@code context} cache.
      * @param datasetId Dataset ID.
      * @param partDataBuilder Partition data builder.
@@ -185,7 +185,7 @@ public class ComputeUtils {
     public static <K, V, C extends Serializable, D extends AutoCloseable> D getData(
         Ignite ignite,
         String upstreamCacheName, IgniteBiPredicate<K, V> filter,
-        UpstreamTransformerBuildersChain<K, V> transformersChain,
+        UpstreamTransformerBuilder<K, V> transformerBuilder,
         String datasetCacheName, UUID datasetId,
         PartitionDataBuilder<K, V, C, D> partDataBuilder,
         LearningEnvironment env) {
@@ -208,20 +208,19 @@ public class ComputeUtils {
             qry.setPartition(part);
             qry.setFilter(filter);
 
-            UpstreamTransformer<K, V> transformer = transformersChain.build(env);
+            UpstreamTransformer<K, V> transformer = transformerBuilder.build(env);
             UpstreamTransformer<K, V> transformerCopy = Utils.copy(transformer);
 
-            long cnt = computeCount(upstreamCache, qry, transformer, transformersChain.isTrivial());
+            long cnt = computeCount(upstreamCache, qry, transformer);
 
             if (cnt > 0) {
                 try (QueryCursor<UpstreamEntry<K, V>> cursor = upstreamCache.query(qry,
                     e -> new UpstreamEntry<>(e.getKey(), e.getValue()))) {
 
                     Iterator<UpstreamEntry<K, V>> it = cursor.iterator();
-                    if (!transformersChain.isTrivial()) {
-                        Stream<UpstreamEntry<K, V>> transformedStream = transformerCopy.apply(Utils.asStream(it, cnt));
-                        it = transformedStream.iterator();
-                    }
+                    Stream<UpstreamEntry<K, V>> transformedStream = transformerCopy.apply(Utils.asStream(it, cnt));
+                    it = transformedStream.iterator();
+
 
                     Iterator<UpstreamEntry<K, V>> iter = new IteratorWithConcurrentModificationChecker<>(it, cnt,
                         "Cache expected to be not modified during dataset data building [partition=" + part + ']');
@@ -259,7 +258,7 @@ public class ComputeUtils {
      * @param ignite Ignite instance.
      * @param upstreamCacheName Name of an {@code upstream} cache.
      * @param filter Filter for {@code upstream} data.
-     * @param transformersChain Upstream data {@link Stream} transformers chain.
+     * @param transformerBuilder Upstream transformer builder.
      * @param ctxBuilder Partition {@code context} builder.
      * @param envBuilder Environment builder.
      * @param <K> Type of a key in {@code upstream} data.
@@ -269,7 +268,7 @@ public class ComputeUtils {
     public static <K, V, C extends Serializable> void initContext(
         Ignite ignite,
         String upstreamCacheName,
-        UpstreamTransformerBuildersChain<K, V> transformersChain,
+        UpstreamTransformerBuilder<K, V> transformerBuilder,
         IgniteBiPredicate<K, V> filter,
         String datasetCacheName,
         PartitionContextBuilder<K, V, C> ctxBuilder,
@@ -288,19 +287,18 @@ public class ComputeUtils {
             qry.setFilter(filter);
 
             C ctx;
-            UpstreamTransformer<K, V> transformer = transformersChain.build(env);
+            UpstreamTransformer<K, V> transformer = transformerBuilder.build(env);
             UpstreamTransformer<K, V> transformerCopy = Utils.copy(transformer);
 
-            long cnt = computeCount(locUpstreamCache, qry, transformer, transformersChain.isTrivial());
+            long cnt = computeCount(locUpstreamCache, qry, transformer);
 
             try (QueryCursor<UpstreamEntry<K, V>> cursor = locUpstreamCache.query(qry,
                 e -> new UpstreamEntry<>(e.getKey(), e.getValue()))) {
 
                 Iterator<UpstreamEntry<K, V>> it = cursor.iterator();
-                if (!transformersChain.isTrivial()) {
-                    Stream<UpstreamEntry<K, V>> transformedStream = transformerCopy.apply(Utils.asStream(it, cnt));
-                    it = transformedStream.iterator();
-                }
+                Stream<UpstreamEntry<K, V>> transformedStream = transformerCopy.apply(Utils.asStream(it, cnt));
+                it = transformedStream.iterator();
+
                 Iterator<UpstreamEntry<K, V>> iter = new IteratorWithConcurrentModificationChecker<>(
                     it,
                     cnt,
@@ -323,7 +321,7 @@ public class ComputeUtils {
      * @param ignite Ignite instance.
      * @param upstreamCacheName Name of an {@code upstream} cache.
      * @param filter Filter for {@code upstream} data.
-     * @param transformersChain Transformers of upstream data.
+     * @param transformerBuilder Builder of transformer of upstream data.
      * @param datasetCacheName Name of a partition {@code context} cache.
      * @param ctxBuilder Partition {@code context} builder.
      * @param envBuilder Environment builder.
@@ -336,12 +334,12 @@ public class ComputeUtils {
         Ignite ignite,
         String upstreamCacheName,
         IgniteBiPredicate<K, V> filter,
-        UpstreamTransformerBuildersChain<K, V> transformersChain,
+        UpstreamTransformerBuilder<K, V> transformerBuilder,
         String datasetCacheName,
         PartitionContextBuilder<K, V, C> ctxBuilder,
         LearningEnvironmentBuilder envBuilder,
         int retries) {
-        initContext(ignite, upstreamCacheName, transformersChain, filter, datasetCacheName, ctxBuilder, envBuilder, retries, 0);
+        initContext(ignite, upstreamCacheName, transformerBuilder, filter, datasetCacheName, ctxBuilder, envBuilder, retries, 0);
     }
 
     /**
@@ -377,7 +375,6 @@ public class ComputeUtils {
      * @param cache Ignite cache with upstream data.
      * @param qry Cache query.
      * @param transformer Upstream transformer.
-     * @param idTransformer If upstream transformer is trivial (identity function)
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @return Number of entries supplied by the iterator.
@@ -385,16 +382,11 @@ public class ComputeUtils {
     private static <K, V> long computeCount(
         IgniteCache<K, V> cache,
         ScanQuery<K, V> qry,
-        UpstreamTransformer<K, V> transformer,
-        boolean idTransformer) {
+        UpstreamTransformer<K, V> transformer) {
         try (QueryCursor<UpstreamEntry<K, V>> cursor = cache.query(qry,
             e -> new UpstreamEntry<>(e.getKey(), e.getValue()))) {
 
-            // 'If' statement below is just for optimization, to avoid unnecessary iterator -> stream -> iterator
-            // operations.
-            return idTransformer ?
-                computeCount(cursor.iterator()) :
-                computeCount(transformer.apply(Utils.asStream(cursor.iterator())).iterator());
+            return computeCount(transformer.apply(Utils.asStream(cursor.iterator())).iterator());
         }
     }
 

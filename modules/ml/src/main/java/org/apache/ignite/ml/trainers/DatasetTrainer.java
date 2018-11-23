@@ -42,6 +42,7 @@ import org.jetbrains.annotations.NotNull;
 public abstract class DatasetTrainer<M extends Model, L> {
     /** Learning environment builder. */
     protected LearningEnvironmentBuilder envBuilder = LearningEnvironmentBuilder.defaultBuilder();
+
     /** Learning Environment. */
     protected LearningEnvironment environment = envBuilder.buildForTrainer();
 
