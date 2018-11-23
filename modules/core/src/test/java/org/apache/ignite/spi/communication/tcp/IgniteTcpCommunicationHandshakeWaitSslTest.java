@@ -21,9 +21,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
- * Testing {@link TcpCommunicationSpi} under big cluster conditions (long DiscoverySpi delivery) and SSL enabled.
+ * Testing {@link IgniteTcpCommunicationHandshakeWaitTest} with SSL enabled.
  */
-public class IgniteTcpCommunicationBigClusterSslTest extends IgniteTcpCommunicationBigClusterTest {
+public class IgniteTcpCommunicationHandshakeWaitSslTest extends IgniteTcpCommunicationHandshakeWaitTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
