@@ -1301,8 +1301,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             if (last) {
                 recheckOnePhaseCommit();
 
-                if(tx.onePhaseCommit())
-                    tx.state(PREPARED);
+                if (tx.onePhaseCommit())
+                    tx.chainState(PREPARED);
 
                 sendPrepareRequests();
             }
