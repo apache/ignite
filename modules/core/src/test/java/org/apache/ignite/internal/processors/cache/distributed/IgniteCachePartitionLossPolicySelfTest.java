@@ -299,8 +299,6 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
      * @throws Exception if failed.
      */
     public void testReadWriteSafeWithBackupsAfterKillThreeNodesWithPersistence() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10043");
-
         partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
 
         backups = 1;
@@ -924,12 +922,12 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
             for (Map<Integer, Semaphore> map : lostMap) {
                 for (Map.Entry<Integer, Semaphore> entry : map.entrySet())
-                    assertTrue("Failed to wait for partition LOST event for partition:" + entry.getKey(), entry.getValue().tryAcquire(1));
+                    assertTrue("Failed to wait for partition LOST event for partition: " + entry.getKey(), entry.getValue().tryAcquire(1));
             }
 
             for (Map<Integer, Semaphore> map : lostMap) {
                 for (Map.Entry<Integer, Semaphore> entry : map.entrySet())
-                    assertFalse("Partition LOST event raised twice for partition:" + entry.getKey(), entry.getValue().tryAcquire(1));
+                    assertFalse("Partition LOST event raised twice for partition: " + entry.getKey(), entry.getValue().tryAcquire(1));
             }
 
             return parts;

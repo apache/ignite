@@ -21,6 +21,7 @@ import org.apache.ignite.examples.datagrid.CacheContinuousAsyncQueryExample;
 import org.apache.ignite.examples.datagrid.CacheContinuousQueryExample;
 import org.apache.ignite.examples.datagrid.CacheContinuousQueryWithTransformerExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.Test;
 
 /**
  */
@@ -28,6 +29,7 @@ public class CacheContinuousQueryExamplesSelfTest extends GridAbstractExamplesTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheContinuousAsyncQueryExample() throws Exception {
         CacheContinuousAsyncQueryExample.main(new String[] {});
     }
@@ -35,6 +37,7 @@ public class CacheContinuousQueryExamplesSelfTest extends GridAbstractExamplesTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheContinuousQueryExample() throws Exception {
         CacheContinuousQueryExample.main(new String[] {});
     }
@@ -42,6 +45,7 @@ public class CacheContinuousQueryExamplesSelfTest extends GridAbstractExamplesTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheContinuousQueryWithTransformerExample() throws Exception {
         CacheContinuousQueryWithTransformerExample.main(new String[] {});
     }
