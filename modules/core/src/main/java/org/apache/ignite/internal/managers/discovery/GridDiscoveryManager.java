@@ -2062,6 +2062,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             snap.discoCache : discoCacheHist.get(topVer);
 
         if (cache == null) {
+            AffinityTopologyVersion lastAffChangedTopVer =
+                ctx.cache().context().exchange().lastAffinityChangedTopologyVersion(topVer);
+
+            DiscoCache lastAffChangedDiscoCache = discoCacheHist.get(lastAffChangedTopVer);
+
+            if (lastAffChangedDiscoCache != null)
+                return lastAffChangedDiscoCache;
+
             CacheGroupDescriptor desc = ctx.cache().cacheGroupDescriptors().get(grpId);
 
             throw new IgniteException("Failed to resolve nodes topology [" +
