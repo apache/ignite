@@ -48,10 +48,10 @@ public class EntryProcessorSecurityTest extends AbstractCacheSecurityTest {
     private void successEntryProcessor(IgniteEx initiator, IgniteEx remote) {
         assert !remote.localNode().isClient();
 
-        new Invoke(initiator, remote).call();
-        new InvokeAll(initiator, remote).call();
-        new InvokeAsync(initiator, remote).call();
-        new InvokeAllAsync(initiator, remote).call();
+        invoke(initiator, remote);
+        invokeAll(initiator, remote);
+        invokeAsync(initiator, remote);
+        invokeAllAsync(initiator, remote);
     }
 
     /**
@@ -61,129 +61,66 @@ public class EntryProcessorSecurityTest extends AbstractCacheSecurityTest {
     private void failEntryProcessor(IgniteEx initiator, IgniteEx remote) {
         assert !remote.localNode().isClient();
 
-        failCall(new Invoke(initiator, remote));
-        failCall(new InvokeAll(initiator, remote));
-        failCall(new InvokeAsync(initiator, remote));
-        failCall(new InvokeAllAsync(initiator, remote));
+        failCall(() -> invoke(initiator, remote));
+        failCall(() -> invokeAll(initiator, remote));
+        failCall(() -> invokeAsync(initiator, remote));
+        failCall(() -> invokeAllAsync(initiator, remote));
     }
 
     /**
-     * @param c CustomInvoke.
+     * @param r Runnable.
      */
-    private void failCall(CustomInvoke c) {
+    private void failCall(Runnable r) {
         try {
-            c.call();
+            r.run();
         }
         catch (Throwable e) {
             assertCause(e);
         }
     }
 
-    /** */
-    abstract class CustomInvoke {
-        /** Initiator. */
-        protected final IgniteEx initiator;
-
-        /** Remote. */
-        protected final IgniteEx remote;
-
-        /**
-         * @param initiator Initiator.
-         * @param remote Remote.
-         */
-        protected CustomInvoke(IgniteEx initiator, IgniteEx remote) {
-            this.initiator = initiator;
-            this.remote = remote;
-        }
-
-        /**
-         * Calling of invokeXXX method
-         */
-        abstract void call();
+    /**
+     * @param initiator Initiator.
+     * @param remote Remote.
+     */
+    private void invoke(IgniteEx initiator, IgniteEx remote) {
+        initiator.<Integer, Integer>cache(CACHE_WITHOUT_PERMS).invoke(
+            primaryKey(remote),
+            new TestEntryProcessor(remote.localNode().id())
+        );
     }
 
     /**
-     * Call invoke method.
+     * @param initiator Initiator.
+     * @param remote Remote.
      */
-    class Invoke extends CustomInvoke {
-        /**
-         * @param initiator Initiator.
-         * @param remote Remote.
-         */
-        public Invoke(IgniteEx initiator, IgniteEx remote) {
-            super(initiator, remote);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void call() {
-            initiator.<Integer, Integer>cache(CACHE_WITHOUT_PERMS).invoke(
-                primaryKey(remote),
-                new TestEntryProcessor(remote.localNode().id())
-            );
-        }
+    private void invokeAsync(IgniteEx initiator, IgniteEx remote) {
+        initiator.<Integer, Integer>cache(CACHE_WITHOUT_PERMS).invokeAsync(
+            primaryKey(remote),
+            new TestEntryProcessor(remote.localNode().id())
+        ).get();
     }
 
     /**
-     * Call invokeAsync method.
+     * @param initiator Initiator.
+     * @param remote Remote.
      */
-    class InvokeAsync extends CustomInvoke {
-        /**
-         * @param initiator Initiator.
-         * @param remote Remote.
-         */
-        public InvokeAsync(IgniteEx initiator, IgniteEx remote) {
-            super(initiator, remote);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void call() {
-            initiator.<Integer, Integer>cache(CACHE_WITHOUT_PERMS).invokeAsync(
-                primaryKey(remote),
-                new TestEntryProcessor(remote.localNode().id())
-            ).get();
-        }
+    private void invokeAll(IgniteEx initiator, IgniteEx remote) {
+        initiator.<Integer, Integer>cache(CACHE_WITHOUT_PERMS).invokeAll(
+            Collections.singleton(primaryKey(remote)),
+            new TestEntryProcessor(remote.localNode().id())
+        ).values().stream().findFirst().ifPresent(EntryProcessorResult::get);
     }
 
     /**
-     * Call invokeAll method.
+     * @param initiator Initiator.
+     * @param remote Remote.
      */
-    class InvokeAll extends CustomInvoke {
-        /**
-         * @param initiator Initiator.
-         * @param remote Remote.
-         */
-        public InvokeAll(IgniteEx initiator, IgniteEx remote) {
-            super(initiator, remote);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void call() {
-            initiator.<Integer, Integer>cache(CACHE_WITHOUT_PERMS).invokeAll(
-                Collections.singleton(primaryKey(remote)),
-                new TestEntryProcessor(remote.localNode().id())
-            ).values().stream().findFirst().ifPresent(EntryProcessorResult::get);
-        }
-    }
-
-    /**
-     * Call invokeAllAsync method.
-     */
-    class InvokeAllAsync extends CustomInvoke {
-        /**
-         * @param initiator Initiator.
-         * @param remote Remote.
-         */
-        public InvokeAllAsync(IgniteEx initiator, IgniteEx remote) {
-            super(initiator, remote);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void call() {
-            initiator.<Integer, Integer>cache(CACHE_WITHOUT_PERMS).invokeAllAsync(
-                Collections.singleton(primaryKey(remote)),
-                new TestEntryProcessor(remote.localNode().id())
-            ).get().values().stream().findFirst().ifPresent(EntryProcessorResult::get);
-        }
+    private void invokeAllAsync(IgniteEx initiator, IgniteEx remote) {
+        initiator.<Integer, Integer>cache(CACHE_WITHOUT_PERMS).invokeAllAsync(
+            Collections.singleton(primaryKey(remote)),
+            new TestEntryProcessor(remote.localNode().id())
+        ).get().values().stream().findFirst().ifPresent(EntryProcessorResult::get);
     }
 
     /**
@@ -205,8 +142,9 @@ public class EntryProcessorSecurityTest extends AbstractCacheSecurityTest {
             Object... objects) throws EntryProcessorException {
             IgniteEx loc = (IgniteEx)Ignition.localIgnite();
 
-            if (remoteId.equals(loc.localNode().id()))
-                loc.context().security().authorize(CACHE_NAME, SecurityPermission.CACHE_PUT);
+            assertEquals(remoteId, loc.localNode().id());
+
+            loc.context().security().authorize(CACHE_NAME, SecurityPermission.CACHE_PUT);
 
             return null;
         }
