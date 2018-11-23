@@ -795,6 +795,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
      * Generates list of keys (primary, backup and neither primary nor backup).
      *
      * @param ignite Ignite instance.
+     * @param keysCnt The number of keys generated for each type of key.
      * @return List of different keys mapped to cache name.
      */
     private Map<String, List<List<Integer>>> generateKeys(Ignite ignite, int keysCnt) {
