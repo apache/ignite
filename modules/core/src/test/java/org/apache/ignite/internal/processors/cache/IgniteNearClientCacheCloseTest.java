@@ -113,22 +113,20 @@ public class IgniteNearClientCacheCloseTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNearCacheCloseMvccTx1() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
         nearCacheClose(1, false, TRANSACTIONAL_SNAPSHOT);
 
-        nearCacheClose(1, true, TRANSACTIONAL_SNAPSHOT);
+        if (MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.NEAR_CACHE))
+            nearCacheClose(1, true, TRANSACTIONAL_SNAPSHOT);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNearCacheCloseMvccTx2() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
         nearCacheClose(4, false, TRANSACTIONAL_SNAPSHOT);
 
-        nearCacheClose(4, true, TRANSACTIONAL_SNAPSHOT);
+        if (MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.NEAR_CACHE))
+            nearCacheClose(4, true, TRANSACTIONAL_SNAPSHOT);
     }
 
     /**

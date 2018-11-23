@@ -40,6 +40,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.junit.Assert.fail;
 
 /**
  *
@@ -104,10 +105,8 @@ public abstract class CacheEnumOperationsAbstractTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testMvccTx() throws Exception {
-//        fail("https://issues.apache.org/jira/browse/IGNITE-10260");
-
         if (!singleNode())
-            MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+            fail("https://issues.apache.org/jira/browse/IGNITE-7187");
 
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL_SNAPSHOT);
 
