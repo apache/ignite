@@ -24,7 +24,6 @@ import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.odbc.ClientConnectableNodePartitions;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
@@ -50,8 +49,7 @@ public class ClientCacheNodePartitionsRequest extends ClientCacheRequest {
         IgniteCache cache = cache(ctx);
 
         GridDiscoveryManager discovery = ctx.kernalContext().discovery();
-        Collection<ClusterNode> nodes = discovery.cacheNodes(cache.getName(),
-            new AffinityTopologyVersion(discovery.topologyVersion()));
+        Collection<ClusterNode> nodes = discovery.discoCache().cacheNodes(cache.getName());
 
         Affinity aff = ctx.kernalContext().affinity().affinityProxy(cache.getName());
 

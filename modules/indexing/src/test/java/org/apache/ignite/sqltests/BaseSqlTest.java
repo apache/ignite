@@ -486,7 +486,6 @@ public class BaseSqlTest extends GridCommonAbstractTest {
      * @param from Collection which copy is left argument of subtraction.
      * @param toRemove Right argument of subtraction.
      */
-    @SuppressWarnings("UseBulkOperation")
     private static Collection removeFromCopy(Collection<?> from, Collection<?> toRemove) {
         List<?> fromCp = new ArrayList<>(from);
 

@@ -14,15 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
 import java.io.Serializable;
+import java.util.Random;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -77,6 +81,81 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
     }
 
     /**
+     *
+     */
+    public void testMetaStorageMassivePutFixed() throws Exception {
+        IgniteEx ig = startGrid(0);
+
+        ig.cluster().active(true);
+
+        IgniteCacheDatabaseSharedManager db = ig.context().cache().context().database();
+
+        MetaStorage metaStorage = db.metaStorage();
+
+        assertNotNull(metaStorage);
+
+        Random rnd = new Random();
+
+        db.checkpointReadLock();
+
+        int size;
+        try {
+            for (int i = 0; i < 10_000; i++) {
+                size = rnd.nextBoolean() ? 3500 : 2 * 3500;
+                String key = "TEST_KEY_" + (i % 1000);
+
+                byte[] arr = new byte[size];
+                rnd.nextBytes(arr);
+
+                metaStorage.remove(key);
+
+                metaStorage.putData(key, arr/*b.toString().getBytes()*/);
+            }
+        }
+        finally {
+            db.checkpointReadUnlock();
+        }
+    }
+
+    /**
+     *
+     */
+    public void testMetaStorageMassivePutRandom() throws Exception {
+        IgniteEx ig = startGrid(0);
+
+        ig.cluster().active(true);
+
+        IgniteCacheDatabaseSharedManager db = ig.context().cache().context().database();
+
+        MetaStorage metaStorage = db.metaStorage();
+
+        assertNotNull(metaStorage);
+
+        Random rnd = new Random();
+
+        db.checkpointReadLock();
+
+        int size;
+        try {
+            for (int i = 0; i < 50_000; i++) {
+                size = 100 + rnd.nextInt(9000);
+
+                String key = "TEST_KEY_" + (i % 2_000);
+
+                byte[] arr = new byte[size];
+                rnd.nextBytes(arr);
+
+                metaStorage.remove(key);
+
+                metaStorage.putData(key, arr/*b.toString().getBytes()*/);
+            }
+        }
+        finally {
+            db.checkpointReadUnlock();
+        }
+    }
+
+    /**
      * Verifies that MetaStorage after massive amounts of keys stored and updated keys restores its state successfully
      * after restart.
      *
@@ -104,6 +183,34 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
         ig.cluster().active(true);
 
         verifyKeys(ig, KEYS_CNT, KEY_PREFIX, UPDATED_VAL_PREFIX);
+    }
+
+    /**
+     * @throws Exception If fails.
+     */
+    public void testRecoveryOfMetastorageWhenNodeNotInBaseline() throws Exception {
+        IgniteEx ig0 = startGrid(0);
+
+        ig0.cluster().active(true);
+
+        final byte KEYS_CNT = 100;
+        final String KEY_PREFIX = "test.key.";
+        final String NEW_VAL_PREFIX = "new.val.";
+        final String UPDATED_VAL_PREFIX = "updated.val.";
+
+        startGrid(1);
+
+        // Disable checkpoints in order to check whether recovery works.
+        forceCheckpoint(grid(1));
+        disableCheckpoints(grid(1));
+
+        loadKeys(grid(1), KEYS_CNT, KEY_PREFIX, NEW_VAL_PREFIX, UPDATED_VAL_PREFIX);
+
+        stopGrid(1, true);
+
+        startGrid(1);
+
+        verifyKeys(grid(1), KEYS_CNT, KEY_PREFIX, UPDATED_VAL_PREFIX);
     }
 
     /** */
@@ -143,5 +250,20 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
 
             Assert.assertEquals(valPrefix + i, val);
         }
+    }
+
+    /**
+     * Disable checkpoints on a specific node.
+     *
+     * @param node Ignite node.h
+     * @throws IgniteCheckedException If failed.
+     */
+    private void disableCheckpoints(Ignite node) throws IgniteCheckedException {
+        assert !node.cluster().localNode().isClient();
+
+        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)((IgniteEx)node).context()
+                .cache().context().database();
+
+        dbMgr.enableCheckpoints(false).get();
     }
 }

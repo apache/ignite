@@ -350,7 +350,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var qry = new SqlQuery(typeof(QueryPerson), "age < 50", loc)
             {
                 EnableDistributedJoins = distrJoin,
+#pragma warning disable 618
                 ReplicatedOnly = false,
+#pragma warning restore 618
                 Timeout = TimeSpan.FromSeconds(3)
             };
 
@@ -381,7 +383,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 EnableDistributedJoins = distrJoin,
                 EnforceJoinOrder = enforceJoinOrder,
                 Colocated = !distrJoin,
+#pragma warning disable 618
                 ReplicatedOnly = false,
+#pragma warning restore 618
                 Local = loc,
                 Timeout = TimeSpan.FromSeconds(2),
                 Lazy = lazy
@@ -761,11 +765,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestSqlQueryTimeout()
         {
             var cache = Cache();
-            PopulateCache(cache, false, 30000, x => true);
+            PopulateCache(cache, false, 20000, x => true);
 
-            var sqlQry = new SqlQuery(typeof(QueryPerson), "WHERE age < 2000")
+            var sqlQry = new SqlQuery(typeof(QueryPerson), "WHERE age < 500 AND name like '%1%'")
             {
-                Timeout = TimeSpan.FromMilliseconds(1)
+                Timeout = TimeSpan.FromMilliseconds(2)
             };
 
             // ReSharper disable once ReturnValueOfPureMethodIsNotUsed

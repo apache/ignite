@@ -21,6 +21,7 @@ import java.io.FilenameFilter;
 import java.io.RandomAccessFile;
 import java.util.Arrays;
 import java.util.Comparator;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -221,6 +222,20 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         }
 
         assertFalse(fail);
+
+        // Check compation successfully reset on blt changed.
+        stopAllGrids();
+
+        Ignite ignite = startGrids(2);
+
+        ignite.cluster().active(true);
+
+        resetBaselineTopology();
+
+        // This node will join to different blt.
+        startGrid(2);
+
+        awaitPartitionMapExchange();
     }
 
     /**
@@ -372,13 +387,12 @@ public class WalCompactionTest extends GridCommonAbstractTest {
 
         File[] cpMarkers = cpMarkersDir.listFiles(new FilenameFilter() {
             @Override public boolean accept(File dir, String name) {
-                return !(
-                    name.equals(cpMarkersToSave[0].getName()) ||
-                    name.equals(cpMarkersToSave[1].getName()) ||
-                    name.equals(cpMarkersToSave[2].getName()) ||
-                    name.equals(cpMarkersToSave[3].getName()) ||
-                    name.equals(cpMarkersToSave[4].getName())
-                );
+                for (File cpMarker : cpMarkersToSave) {
+                    if (cpMarker.getName().equals(name))
+                        return false;
+                }
+
+                return true;
             }
         });
 
