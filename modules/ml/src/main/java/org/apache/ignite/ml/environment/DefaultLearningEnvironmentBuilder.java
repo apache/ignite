@@ -24,7 +24,10 @@ import org.apache.ignite.ml.environment.logging.NoOpLogger;
 import org.apache.ignite.ml.environment.parallelism.DefaultParallelismStrategy;
 import org.apache.ignite.ml.environment.parallelism.NoParallelismStrategy;
 import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
+
+import static org.apache.ignite.ml.math.functions.IgniteFunction.constant;
 
 /**
  * Builder for {@link LearningEnvironment}.
@@ -33,74 +36,87 @@ public class DefaultLearningEnvironmentBuilder implements LearningEnvironmentBui
     /** Serial version id. */
     private static final long serialVersionUID = 8502532880517447662L;
 
-    /** Parallelism strategy. */
-    private ParallelismStrategy parallelismStgy;
+    /** Dependency (partition -> Parallelism strategy). */
+    private IgniteFunction<Integer, ParallelismStrategy> parallelismStgy;
 
-    /** Logging factory. */
-    private MLLogger.Factory loggingFactory;
+    /** Dependency (partition -> Logging factory). */
+    private IgniteFunction<Integer, MLLogger.Factory> loggingFactory;
 
-    /** Random number generator seed. */
-    private long seed;
+    /** Dependency (partition -> Random number generator seed). */
+    private IgniteFunction<Integer, Long> seed;
 
-    /** Random numbers generator supplier */
-    private IgniteSupplier<Random> rngSupplier;
+    /** Dependency (partition -> Random numbers generator supplier). */
+    private IgniteFunction<Integer, Random> rngSupplier;
 
     /**
      * Creates an instance of DefaultLearningEnvironmentBuilder.
      */
     DefaultLearningEnvironmentBuilder() {
-        parallelismStgy = NoParallelismStrategy.INSTANCE;
-        loggingFactory = NoOpLogger.factory();
-        seed = new Random().nextLong();
-        rngSupplier = Random::new;
+        parallelismStgy = constant(NoParallelismStrategy.INSTANCE);
+        loggingFactory = constant(NoOpLogger.factory());
+        seed = constant(new Random().nextLong());
+        rngSupplier = constant(new Random());
     }
 
     /** {@inheritDoc} */
-    @Override public LearningEnvironmentBuilder withRNGSeed(long seed) {
+    @Override public LearningEnvironmentBuilder withRNGSeed(IgniteFunction<Integer, Long> seed) {
         this.seed = seed;
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public LearningEnvironmentBuilder withRNGSupplier(IgniteSupplier<Random> rngSupplier) {
+    @Override public LearningEnvironmentBuilder withRandom(IgniteFunction<Integer, Random> rngSupplier) {
         this.rngSupplier = rngSupplier;
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public DefaultLearningEnvironmentBuilder withParallelismStrategy(ParallelismStrategy stgy) {
+    @Override public DefaultLearningEnvironmentBuilder withParallelismStrategy(
+        IgniteFunction<Integer, ParallelismStrategy> stgy) {
         this.parallelismStgy = stgy;
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public DefaultLearningEnvironmentBuilder withParallelismStrategyType(ParallelismStrategy.Type stgyType) {
+    @Override public DefaultLearningEnvironmentBuilder withParallelismStrategyType(
+        IgniteFunction<Integer, ParallelismStrategy.Type> stgyType) {
+        this.parallelismStgy = part -> strategyByType(stgyType.apply(part));
+
+        return this;
+    }
+
+    /**
+     * Get parallelism strategy by {@link ParallelismStrategy.Type}.
+     *
+     * @param stgyType Strategy type.
+     * @return {@link ParallelismStrategy}.
+     */
+    private static ParallelismStrategy strategyByType(ParallelismStrategy.Type stgyType) {
         switch (stgyType) {
             case NO_PARALLELISM:
-                this.parallelismStgy = NoParallelismStrategy.INSTANCE;
-                break;
+                return NoParallelismStrategy.INSTANCE;
             case ON_DEFAULT_POOL:
-                this.parallelismStgy = new DefaultParallelismStrategy();
-                break;
+                return new DefaultParallelismStrategy();
         }
-        return this;
+        throw new IllegalStateException("Wrong type");
     }
 
 
     /** {@inheritDoc} */
-    @Override public DefaultLearningEnvironmentBuilder withLoggingFactory(MLLogger.Factory loggingFactory) {
+    @Override public DefaultLearningEnvironmentBuilder withLoggingFactory(
+        IgniteFunction<Integer, MLLogger.Factory> loggingFactory) {
         this.loggingFactory = loggingFactory;
         return this;
     }
 
     /** {@inheritDoc} */
     @Override public LearningEnvironment buildForWorker(int part) {
-        Random random = rngSupplier.get();
-        random.setSeed(seed);
-        return new LearningEnvironmentImpl(part, random, parallelismStgy, loggingFactory);
+        Random random = rngSupplier.apply(part);
+        random.setSeed(seed.apply(part));
+        return new LearningEnvironmentImpl(part, random, parallelismStgy.apply(part), loggingFactory.apply(part));
     }
 
     /**

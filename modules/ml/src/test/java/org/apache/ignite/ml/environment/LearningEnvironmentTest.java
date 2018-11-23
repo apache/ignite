@@ -19,17 +19,13 @@ package org.apache.ignite.ml.environment;
 
 import java.util.Map;
 import java.util.Random;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
-import org.apache.ignite.ml.dataset.UpstreamEntry;
-import org.apache.ignite.ml.dataset.UpstreamTransformer;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
@@ -38,8 +34,6 @@ import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.environment.parallelism.DefaultParallelismStrategy;
 import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
@@ -86,8 +80,7 @@ public class LearningEnvironmentTest {
     @Test
     public void testRandomNumbersGenerator() {
         // We make such builders that provide as functions returning partition index * iteration as random number generator nextInt
-        LearningEnvironmentBuilder envBuilder =
-            getBuilder(part -> TestUtils.testEnvBuilder().withRNGSupplier(() -> new MockRandom(part)));
+        LearningEnvironmentBuilder envBuilder = TestUtils.testEnvBuilder().withRandom(MockRandom::new);
         int partitions = 10;
         int iterations = 2;
 
@@ -123,116 +116,25 @@ public class LearningEnvironmentTest {
         trainer.setEnvironmentBuilder(envBuilder);
         Model<Object, Vector> mdl = trainer.fit(getCacheMock(partitions), partitions, null, null);
 
-        Vector expected = VectorUtils.zeroes(partitions);
-        for (int i = 0; i < partitions; i++) {
-            expected.set(i, i * iterations);
-        }
+        Vector exp = VectorUtils.zeroes(partitions);
+        for (int i = 0; i < partitions; i++)
+            exp.set(i, i * iterations);
 
-        Vector result = mdl.apply(null);
-        assertEquals(expected, result);
+
+        Vector res = mdl.apply(null);
+        assertEquals(exp, res);
     }
 
     /** Get cache mock */
-    private Map<Integer, Integer> getCacheMock(int partsCount) {
-        return IntStream.range(0, partsCount).boxed().collect(Collectors.toMap(x -> x, x -> x));
-    }
-
-    /**
-     * Get {@link LearningEnvironmentBuilder} with a given dependency on from partition.
-     *
-     * @param dep Function describing dependency (partition -> learning environment builer).
-     */
-    private LearningEnvironmentBuilder getBuilder(IgniteFunction<Integer, LearningEnvironmentBuilder> dep) {
-        return new PartitionDependentLearningEnvironmentBuilder(dep);
-    }
-
-    /**
-     * Partition builder dependent from partition.
-     */
-    private static class PartitionDependentLearningEnvironmentBuilder implements LearningEnvironmentBuilder {
-        /** Dependency between partition and {@link LearningEnvironmentBuilder} which should be used on it. */
-        private IgniteFunction<Integer, LearningEnvironmentBuilder> builderDep;
-
-        /**
-         * Construct instance of this class with (partition -> {@link LearningEnvironmentBuilder}) dependency.
-         *
-         * @param builderDep Function describing (partition -> {@link LearningEnvironmentBuilder}) dependency.
-         */
-        PartitionDependentLearningEnvironmentBuilder(IgniteFunction<Integer, LearningEnvironmentBuilder> builderDep) {
-            this.builderDep = builderDep;
-        }
-
-        /** {@inheritDoc} */
-        @Override public LearningEnvironment buildForWorker(int part) {
-            return builderDep.apply(part).buildForWorker(part);
-        }
-
-        /**
-         * Sets specified parallelism  strategy type for all partitions.
-         *
-         * @param stgyType Parallelism strategy type.
-         * @return This object.
-         */
-        @Override public LearningEnvironmentBuilder withParallelismStrategyType(ParallelismStrategy.Type stgyType) {
-            return compose(x -> x.withParallelismStrategyType(stgyType));
-        }
-
-        /**
-         * Sets specified parallelism  strategy for all partitions.
-         *
-         * @param stgy Parallelism strategy type.
-         * @return This object.
-         */
-        @Override public LearningEnvironmentBuilder withParallelismStrategy(ParallelismStrategy stgy) {
-            return compose(x -> x.withParallelismStrategy(stgy));
-        }
-
-        /**
-         * Sets specified logging factory for all partitions.
-         *
-         * @param loggingFactory Parallelism strategy type.
-         * @return This object.
-         */
-        @Override public LearningEnvironmentBuilder withLoggingFactory(MLLogger.Factory loggingFactory) {
-            return compose(x -> x.withLoggingFactory(loggingFactory));
-        }
-
-        /**
-         * Sets specified random numbers generator seed for all partitions.
-         *
-         * @param seed Random numbers generator seed.
-         * @return This object.
-         */
-        @Override public LearningEnvironmentBuilder withRNGSeed(long seed) {
-            return compose(x -> x.withRNGSeed(seed));
-        }
-
-        /**
-         * Sets supplier of random numbers generator for all partitions.
-         *
-         * @param rngSupplier Supplier of random numbers generator.
-         * @return This object.
-         */
-        @Override public LearningEnvironmentBuilder withRNGSupplier(IgniteSupplier<Random> rngSupplier) {
-            return compose(x -> x.withRNGSupplier(rngSupplier));
-        }
-
-        /**
-         * Composes dependency with {@link LearningEnvironmentBuilder} transformation.
-         *
-         * @param other Learning environment builder.
-         * @return This object.
-         */
-        private PartitionDependentLearningEnvironmentBuilder compose(IgniteFunction<LearningEnvironmentBuilder,
-            LearningEnvironmentBuilder> other) {
-            builderDep.andThen(other);
-
-            return this;
-        }
+    private Map<Integer, Integer> getCacheMock(int partsCnt) {
+        return IntStream.range(0, partsCnt).boxed().collect(Collectors.toMap(x -> x, x -> x));
     }
 
     /** Mock random numners generator. */
     private static class MockRandom extends Random {
+        /** Serial version uuid. */
+        private static final long serialVersionUID = -7738558243461112988L;
+
         /** Start value. */
         private int startVal;
 

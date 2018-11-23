@@ -23,6 +23,8 @@ import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 
+import static org.apache.ignite.ml.math.functions.IgniteFunction.constant;
+
 /**
  * Builder of learning environment.
  */
@@ -47,20 +49,50 @@ public interface LearningEnvironmentBuilder {
     }
 
     /**
-     * Specifies Parallelism Strategy Type for LearningEnvironment.
+     * Specifies dependency (partition -> Parallelism Strategy Type for LearningEnvironment).
+     *
+     * @param stgyType Function describing dependency (partition -> Parallelism Strategy Type).
+     * @return This object.
+     */
+    public LearningEnvironmentBuilder withParallelismStrategyType(
+        IgniteFunction<Integer, ParallelismStrategy.Type> stgyType);
+
+    /**
+     * Specifies Parallelism Strategy Type for LearningEnvironment. Same strategy type will be used for all partitions.
      *
      * @param stgyType Parallelism Strategy Type.
      * @return This object.
      */
-    public LearningEnvironmentBuilder withParallelismStrategyType(ParallelismStrategy.Type stgyType);
+    public default LearningEnvironmentBuilder withParallelismStrategyType(ParallelismStrategy.Type stgyType) {
+        return withParallelismStrategyType(constant(stgyType));
+    }
 
     /**
-     * Specifies Parallelism Strategy for LearningEnvironment.
+     * Specifies dependency (partition -> Parallelism Strategy for LearningEnvironment).
+     *
+     * @param stgy Function describing dependency (partition -> Parallelism Strategy).
+     * @return This object.
+     */
+    public LearningEnvironmentBuilder withParallelismStrategy(IgniteFunction<Integer, ParallelismStrategy> stgy);
+
+    /**
+     * Specifies Parallelism Strategy for LearningEnvironment. Same strategy type will be used for all partitions.
      *
      * @param stgy Parallelism Strategy.
      * @return This object.
      */
-    public LearningEnvironmentBuilder withParallelismStrategy(ParallelismStrategy stgy);
+    public default LearningEnvironmentBuilder withParallelismStrategy(ParallelismStrategy stgy) {
+        return withParallelismStrategy(constant(stgy));
+    }
+
+
+    /**
+     * Specify dependency (partition -> logging factory).
+     *
+     * @param loggingFactory Function describing (partition -> logging factory).
+     * @return This object.
+     */
+    public LearningEnvironmentBuilder withLoggingFactory(IgniteFunction<Integer, MLLogger.Factory> loggingFactory);
 
     /**
      * Specify logging factory.
@@ -68,7 +100,17 @@ public interface LearningEnvironmentBuilder {
      * @param loggingFactory Logging factory.
      * @return This object.
      */
-    public LearningEnvironmentBuilder withLoggingFactory(MLLogger.Factory loggingFactory);
+    public default LearningEnvironmentBuilder withLoggingFactory(MLLogger.Factory loggingFactory) {
+        return withLoggingFactory(constant(loggingFactory));
+    }
+
+    /**
+     * Specify dependency (partition -> seed for random number generator). Same seed will be used for all partitions.
+     *
+     * @param seed Function describing dependency (partition -> seed for random number generator).
+     * @return This object.
+     */
+    public LearningEnvironmentBuilder withRNGSeed(IgniteFunction<Integer, Long> seed);
 
     /**
      * Specify seed for random number generator.
@@ -76,15 +118,27 @@ public interface LearningEnvironmentBuilder {
      * @param seed Seed for random number generator.
      * @return This object.
      */
-    public LearningEnvironmentBuilder withRNGSeed(long seed);
+    public default LearningEnvironmentBuilder withRNGSeed(long seed) {
+        return withRNGSeed(constant(seed));
+    }
 
     /**
-     * Specify supplier of random numbers generator.
+     * Specify dependency (partition -> random numbers generator).
      *
-     * @param rngSupplier Supplier of random numbers generator.
+     * @param rngSupplier Function describing dependency (partition -> random numbers generator).
      * @return This object.
      */
-    public LearningEnvironmentBuilder withRNGSupplier(IgniteSupplier<Random> rngSupplier);
+    public LearningEnvironmentBuilder withRandom(IgniteFunction<Integer, Random> rngSupplier);
+
+    /**
+     * Specify random numbers generator for learning environment. Same random will be used for all partitions.
+     *
+     * @param random Rrandom numbers generator for learning environment.
+     * @return This object.
+     */
+    public default LearningEnvironmentBuilder withRandom(Random random) {
+        return withRandom(constant(random));
+    }
 
     /**
      * Get default {@link LearningEnvironmentBuilder}.

@@ -18,7 +18,6 @@
 package org.apache.ignite.ml.math.functions;
 
 import java.io.Serializable;
-import java.util.Objects;
 import java.util.function.Function;
 
 /**
@@ -27,22 +26,15 @@ import java.util.function.Function;
  * @see java.util.function.Function
  */
 public interface IgniteFunction<T, R> extends Function<T, R>, Serializable {
+    /**
+     * {@link IgniteFunction} returning specified constant.
+     *
+     * @param r Constant to return.
+     * @param <T> Type of input.
+     * @param <R> Type of output.
+     * @return {@link IgniteFunction} returning specified constant.
+     */
     static <T, R> IgniteFunction<T, R> constant(R r) {
         return t -> r;
     }
-//    R apply(T t);
-//
-//    default <V> IgniteFunction<V, R> compose(IgniteFunction<? super V, ? extends T> before) {
-//        Objects.requireNonNull(before);
-//        return (V v) -> apply(before.apply(v));
-//    }
-//
-//    default <V> IgniteFunction<T, V> andThen(IgniteFunction<? super R, ? extends V> after) {
-//        Objects.requireNonNull(after);
-//        return (T t) -> after.apply(apply(t));
-//    }
-//
-//    static <T> IgniteFunction<T, T> identity() {
-//        return t -> t;
-//    }
 }
