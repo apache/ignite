@@ -38,26 +38,32 @@ import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
+import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -70,7 +76,9 @@ import org.apache.ignite.testframework.http.GridEmbeddedHttpServer;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assert;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertArrayEquals;
 
 /**
@@ -334,7 +342,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
             arr = new SelfReferencedJob[] {this, this};
 
-            col = Arrays.asList(this, this, this);
+            col = asList(this, this, this);
 
             newContext();
 
@@ -389,48 +397,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
                 return null;
             }
         };
-    }
-
-    /**
-     *
-     * @throws Exception If failed.
-     */
-    public void testParseIsoDate() throws Exception {
-        Calendar cal = U.parseIsoDate("2009-12-08T13:30:44.000Z");
-
-        assert cal.get(Calendar.YEAR) == 2009;
-        assert cal.get(Calendar.MONTH) == 11;
-        assert cal.get(Calendar.DAY_OF_MONTH) == 8;
-        assert cal.get(Calendar.HOUR_OF_DAY) == 13;
-        assert cal.get(Calendar.MINUTE) == 30;
-        assert cal.get(Calendar.SECOND) == 44;
-        assert cal.get(Calendar.MILLISECOND) == 0;
-        assert cal.get(Calendar.ZONE_OFFSET) == 0 :
-            "Unexpected value: " + cal.get(Calendar.ZONE_OFFSET);
-
-        cal = U.parseIsoDate("2009-12-08T13:30:44.000+03:00");
-
-        assert cal.get(Calendar.YEAR) == 2009;
-        assert cal.get(Calendar.MONTH) == 11;
-        assert cal.get(Calendar.DAY_OF_MONTH) == 8;
-        assert cal.get(Calendar.HOUR_OF_DAY) == 13;
-        assert cal.get(Calendar.MINUTE) == 30;
-        assert cal.get(Calendar.SECOND) == 44;
-        assert cal.get(Calendar.MILLISECOND) == 0;
-        assert cal.get(Calendar.ZONE_OFFSET) == 3 * 60 * 60 * 1000 :
-            "Unexpected value: " + cal.get(Calendar.ZONE_OFFSET);
-
-        cal = U.parseIsoDate("2009-12-08T13:30:44.000+0300");
-
-        assert cal.get(Calendar.YEAR) == 2009;
-        assert cal.get(Calendar.MONTH) == 11;
-        assert cal.get(Calendar.DAY_OF_MONTH) == 8;
-        assert cal.get(Calendar.HOUR_OF_DAY) == 13;
-        assert cal.get(Calendar.MINUTE) == 30;
-        assert cal.get(Calendar.SECOND) == 44;
-        assert cal.get(Calendar.MILLISECOND) == 0;
-        assert cal.get(Calendar.ZONE_OFFSET) == 3 * 60 * 60 * 1000 :
-            "Unexpected value: " + cal.get(Calendar.ZONE_OFFSET);
     }
 
     /**
@@ -875,10 +841,10 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         TcpDiscoveryNode node250ts = new TcpDiscoveryNode();
         node250ts.version(v250ts);
 
-        assertTrue(U.isOldestNodeVersionAtLeast(v240, Arrays.asList(node240, node241, node250, node250ts)));
-        assertFalse(U.isOldestNodeVersionAtLeast(v241, Arrays.asList(node240, node241, node250, node250ts)));
-        assertTrue(U.isOldestNodeVersionAtLeast(v250, Arrays.asList(node250, node250ts)));
-        assertTrue(U.isOldestNodeVersionAtLeast(v250ts, Arrays.asList(node250, node250ts)));
+        assertTrue(U.isOldestNodeVersionAtLeast(v240, asList(node240, node241, node250, node250ts)));
+        assertFalse(U.isOldestNodeVersionAtLeast(v241, asList(node240, node241, node250, node250ts)));
+        assertTrue(U.isOldestNodeVersionAtLeast(v250, asList(node250, node250ts)));
+        assertTrue(U.isOldestNodeVersionAtLeast(v250ts, asList(node250, node250ts)));
     }
 
     /**
@@ -892,7 +858,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         try {
             IgniteUtils.doInParallel(3,
                 executorService,
-                Arrays.asList(1, 2, 3),
+                asList(1, 2, 3),
                 i -> {
                     try {
                         barrier.await(1, TimeUnit.SECONDS);
@@ -920,7 +886,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         try {
             IgniteUtils.doInParallel(2,
                 executorService,
-                Arrays.asList(1, 2, 3),
+                asList(1, 2, 3),
                 i -> {
                     try {
                         barrier.await(400, TimeUnit.MILLISECONDS);
@@ -943,42 +909,171 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test optimal splitting on batch sizes.
+     */
+    public void testOptimalBatchSize() {
+        assertArrayEquals(new int[]{1}, IgniteUtils.calculateOptimalBatchSizes(1, 1));
+
+        assertArrayEquals(new int[]{2}, IgniteUtils.calculateOptimalBatchSizes(1, 2));
+
+        assertArrayEquals(new int[]{1, 1, 1, 1}, IgniteUtils.calculateOptimalBatchSizes(6, 4));
+
+        assertArrayEquals(new int[]{1}, IgniteUtils.calculateOptimalBatchSizes(4, 1));
+
+        assertArrayEquals(new int[]{1, 1}, IgniteUtils.calculateOptimalBatchSizes(4, 2));
+
+        assertArrayEquals(new int[]{1, 1, 1}, IgniteUtils.calculateOptimalBatchSizes(4, 3));
+
+        assertArrayEquals(new int[]{1, 1, 1, 1}, IgniteUtils.calculateOptimalBatchSizes(4, 4));
+
+        assertArrayEquals(new int[]{2, 1, 1, 1}, IgniteUtils.calculateOptimalBatchSizes(4, 5));
+
+        assertArrayEquals(new int[]{2, 2, 1, 1}, IgniteUtils.calculateOptimalBatchSizes(4, 6));
+
+        assertArrayEquals(new int[]{2, 2, 2, 1}, IgniteUtils.calculateOptimalBatchSizes(4, 7));
+
+        assertArrayEquals(new int[]{2, 2, 2, 2}, IgniteUtils.calculateOptimalBatchSizes(4, 8));
+
+        assertArrayEquals(new int[]{3, 2, 2, 2}, IgniteUtils.calculateOptimalBatchSizes(4, 9));
+
+        assertArrayEquals(new int[]{3, 3, 2, 2}, IgniteUtils.calculateOptimalBatchSizes(4, 10));
+    }
+
+    /**
      * Test parallel execution in order.
      */
     public void testDoInParallelResultsOrder() throws IgniteCheckedException {
         ExecutorService executorService = Executors.newFixedThreadPool(4);
 
         try {
-            testOrder(executorService, 1, 1);
-            testOrder(executorService, 2, 1);
-            testOrder(executorService, 3, 1);
-            testOrder(executorService, 9, 1);
-            testOrder(executorService, 10, 1);
-            testOrder(executorService, 9999, 1);
-
-            testOrder(executorService, 1, 2);
-            testOrder(executorService, 2, 2);
-            testOrder(executorService, 3, 2);
-            testOrder(executorService, 9, 2);
-            testOrder(executorService, 10, 2);
-            testOrder(executorService, 9999, 2);
-
-            testOrder(executorService, 1, 3);
-            testOrder(executorService, 2, 3);
-            testOrder(executorService, 3, 3);
-            testOrder(executorService, 3, 3);
-            testOrder(executorService, 10, 3);
-            testOrder(executorService, 9999, 3);
-
-            testOrder(executorService, 1, 4);
-            testOrder(executorService, 2, 4);
-            testOrder(executorService, 3, 4);
-            testOrder(executorService, 9, 4);
-            testOrder(executorService, 10, 4);
-            testOrder(executorService, 9999, 4);
+            for(int parallelism = 1; parallelism < 16; parallelism++)
+                for(int size = 0; size < 10_000; size++)
+                    testOrder(executorService, size, parallelism);
         } finally {
             executorService.shutdownNow();
         }
+    }
+
+    /**
+     * Test parallel execution steal job.
+     */
+    public void testDoInParallelWithStealingJob() throws IgniteCheckedException {
+        // Pool size should be less that input data collection.
+        ExecutorService executorService = Executors.newFixedThreadPool(1);
+
+        CountDownLatch mainThreadLatch = new CountDownLatch(1);
+        CountDownLatch poolThreadLatch = new CountDownLatch(1);
+
+        // Busy one thread from the pool.
+        executorService.submit(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    poolThreadLatch.await();
+                }
+                catch (InterruptedException e) {
+                    throw new IgniteInterruptedException(e);
+                }
+            }
+        });
+
+        List<Integer> data = asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+
+        AtomicInteger taskProcessed = new AtomicInteger();
+
+        long threadId = Thread.currentThread().getId();
+
+        AtomicInteger curThreadCnt = new AtomicInteger();
+        AtomicInteger poolThreadCnt = new AtomicInteger();
+
+        Collection<Integer> res = U.doInParallel(10,
+            executorService,
+            data,
+            new IgniteThrowableConsumer<Integer, Integer>() {
+                @Override public Integer accept(Integer cnt) throws IgniteInterruptedCheckedException {
+                    // Release thread in pool in the middle of range.
+                    if (taskProcessed.getAndIncrement() == (data.size() / 2) - 1) {
+                        poolThreadLatch.countDown();
+
+                        try {
+                            // Await thread in thread pool complete task.
+                            mainThreadLatch.await();
+                        }
+                        catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+
+                            throw new IgniteInterruptedCheckedException(e);
+                        }
+                    }
+
+                    // Increment if executed in current thread.
+                    if (Thread.currentThread().getId() == threadId)
+                        curThreadCnt.incrementAndGet();
+                    else {
+                        poolThreadCnt.incrementAndGet();
+
+                        if (taskProcessed.get() == data.size())
+                            mainThreadLatch.countDown();
+                    }
+
+                    return -cnt;
+                }
+            });
+
+        Assert.assertEquals(curThreadCnt.get() + poolThreadCnt.get(), data.size());
+        Assert.assertEquals(5, curThreadCnt.get());
+        Assert.assertEquals(5, poolThreadCnt.get());
+        Assert.assertEquals(asList(0, -1, -2, -3, -4, -5, -6, -7, -8, -9), res);
+    }
+
+    /**
+     * Test parallel execution steal job.
+     */
+    public void testDoInParallelWithStealingJobRunTaskInExecutor() throws Exception {
+        // Pool size should be less that input data collection.
+        ExecutorService executorService = Executors.newFixedThreadPool(2);
+
+        Future<?> f1 = executorService.submit(()-> runTask(executorService));
+        Future<?> f2 = executorService.submit(()-> runTask(executorService));
+        Future<?> f3 = executorService.submit(()-> runTask(executorService));
+
+        f1.get();
+        f2.get();
+        f3.get();
+    }
+
+    /**
+     *
+     * @param executorService Executor service.
+     */
+    private void runTask(ExecutorService executorService) {
+        List<Integer> data = asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+
+        long threadId = Thread.currentThread().getId();
+
+        AtomicInteger curThreadCnt = new AtomicInteger();
+
+        Collection<Integer> res;
+
+        try {
+            res = U.doInParallel(10,
+                executorService,
+                data,
+                new IgniteThrowableConsumer<Integer, Integer>() {
+                    @Override public Integer accept(Integer cnt) {
+                        if (Thread.currentThread().getId() == threadId)
+                            curThreadCnt.incrementAndGet();
+
+                        return -cnt;
+                    }
+                });
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+
+        Assert.assertTrue(curThreadCnt.get() > 0);
+        Assert.assertEquals(asList(0, -1, -2, -3, -4, -5, -6, -7, -8, -9), res);
     }
 
     /**
@@ -1023,7 +1118,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
             IgniteUtils.doInParallel(
                 1,
                 executorService,
-                Arrays.asList(1, 2, 3),
+                asList(1, 2, 3),
                 i -> {
                     if (Integer.valueOf(1).equals(i))
                         throw new IgniteCheckedException(expectedException);

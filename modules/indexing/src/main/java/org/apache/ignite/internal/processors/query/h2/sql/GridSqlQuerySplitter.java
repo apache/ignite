@@ -198,7 +198,7 @@ public class GridSqlQuerySplitter {
         // subqueries because we do not have unique FROM aliases yet.
         GridSqlQuery qry = parse(prepared, false);
 
-        String originalSql = qry.getSQL();
+        String originalSql = prepared.getSQL();
 
 //        debug("ORIGINAL", originalSql);
 
@@ -2138,15 +2138,22 @@ public class GridSqlQuerySplitter {
             case SUM: // SUM( SUM(x) ) or SUM(DISTINCT x)
             case MAX: // MAX( MAX(x) ) or MAX(DISTINCT x)
             case MIN: // MIN( MIN(x) ) or MIN(DISTINCT x)
+                GridSqlElement rdcAgg0;
+
                 if (hasDistinctAggregate) /* and has no collocated group by */ {
                     mapAgg = agg.child();
 
-                    rdcAgg = aggregate(agg.distinct(), agg.type()).addChild(column(mapAggAlias.alias()));
+                    rdcAgg0 = aggregate(agg.distinct(), agg.type()).addChild(column(mapAggAlias.alias()));
                 }
                 else {
                     mapAgg = aggregate(agg.distinct(), agg.type()).resultType(agg.resultType()).addChild(agg.child());
-                    rdcAgg = aggregate(agg.distinct(), agg.type()).addChild(column(mapAggAlias.alias()));
+
+                    rdcAgg0 = function(CAST).resultType(agg.resultType())
+                        .addChild(aggregate(agg.distinct(), agg.type()).addChild(column(mapAggAlias.alias())));
                 }
+
+                // Avoid second type upcast on reducer (e.g. Int -> (map) -> Long -> (reduce) -> BigDecimal).
+                rdcAgg = function(CAST).resultType(agg.resultType()).addChild(rdcAgg0);
 
                 break;
 

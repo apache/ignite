@@ -26,7 +26,6 @@ import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -101,14 +100,6 @@ public class CacheMvccOperationChecksTest extends CacheMvccAbstractTest {
         checkOperationUnsupported("lock", m("Lock"), t(Object.class), 1);
 
         checkOperationUnsupported("lockAll", m("Lock"), t(Collection.class), Collections.singleton(1));
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    public void testPeekOperationsUnsupported() throws Exception {
-        checkOperationUnsupported("localPeek", m("Peek"), t(Object.class, CachePeekMode[].class), 1,
-            new CachePeekMode[]{CachePeekMode.NEAR});
     }
 
     /**
