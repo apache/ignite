@@ -196,7 +196,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setAtomicConfiguration(atomicConfiguration);
+        if (atomicConfiguration != null)
+            cfg.setAtomicConfiguration(atomicConfiguration);
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
