@@ -19,6 +19,7 @@ package org.apache.ignite.internal.commandline.cache;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.commandline.OutputFormat;
+import org.apache.ignite.internal.visor.verify.CacheKind;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheCmd;
 import org.jetbrains.annotations.Nullable;
 
@@ -70,6 +71,23 @@ public class CacheArguments {
 
     /** Full config flag. */
     private boolean fullConfig;
+
+    /** Cache kind. */
+    private CacheKind cacheKind = CacheKind.ALL;
+
+    /**
+     *
+     */
+    public CacheKind getCacheKind() {
+        return cacheKind;
+    }
+
+    /**
+     * @param cacheKind Cache kind.
+     */
+    public void setCacheKind(CacheKind cacheKind) {
+        this.cacheKind = cacheKind;
+    }
 
     /**
      * @return Full config flag.

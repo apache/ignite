@@ -22,6 +22,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Set;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Arguments for {@link VisorIdleVerifyDumpTask}.
@@ -31,6 +32,8 @@ public class VisorIdleVerifyDumpTaskArg extends VisorIdleVerifyTaskArg {
     private static final long serialVersionUID = 0L;
     /** */
     private boolean skipZeros;
+    /** Cache kind. */
+    private CacheKind cacheKind;
 
     /**
      * Default constructor.
@@ -41,10 +44,12 @@ public class VisorIdleVerifyDumpTaskArg extends VisorIdleVerifyTaskArg {
     /**
      * @param caches Caches.
      * @param skipZeros Skip zeros partitions.
+     * @param cacheKind Cache kind.
      */
-    public VisorIdleVerifyDumpTaskArg(Set<String> caches, boolean skipZeros) {
+    public VisorIdleVerifyDumpTaskArg(Set<String> caches, boolean skipZeros, CacheKind cacheKind) {
         super(caches);
         this.skipZeros = skipZeros;
+        this.cacheKind = cacheKind;
     }
 
     /**
@@ -54,16 +59,32 @@ public class VisorIdleVerifyDumpTaskArg extends VisorIdleVerifyTaskArg {
         return skipZeros;
     }
 
+    /**
+     * @return Kind fo cache.
+     */
+    public CacheKind getCacheKind() {
+        return cacheKind;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         super.writeExternalData(out);
         out.writeBoolean(skipZeros);
+        U.writeEnum(out, cacheKind);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternalData(protoVer, in);
         skipZeros = in.readBoolean();
+
+        if (protoVer >= V2)
+            cacheKind = CacheKind.fromOrdinal(in.readByte());
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
     }
 
     /** {@inheritDoc} */

@@ -41,15 +41,20 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.verify.CacheKind;
+import org.apache.ignite.internal.visor.verify.VisorIdleVerifyDumpTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -176,7 +181,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                 for (String cacheName : arg.getCaches()) {
                     DynamicCacheDescriptor desc = ignite.context().cache().cacheDescriptor(cacheName);
 
-                    if (desc == null) {
+                    if (desc == null || !isCacheMatchKind(cacheName)) {
                         missingCaches.add(cacheName);
 
                         continue;
@@ -186,7 +191,8 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                 }
 
                 if (!missingCaches.isEmpty()) {
-                    StringBuilder strBuilder = new StringBuilder("The following caches do not exist: ");
+                    StringBuilder strBuilder = new StringBuilder("The following caches do not exist or does not match to " +
+                        "kind: ");
 
                     for (String name : missingCaches)
                         strBuilder.append(name).append(", ");
@@ -194,6 +200,12 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                     strBuilder.delete(strBuilder.length() - 2, strBuilder.length());
 
                     throw new IgniteException(strBuilder.toString());
+                }
+            }
+            else if (onlySpecificKindCaches()) {
+                for (DynamicCacheDescriptor desc : ignite.context().cache().cacheDescriptors().values()) {
+                    if (isCacheMatchKind(desc.cacheName()))
+                        grpIds.add(desc.groupId());
                 }
             }
             else {
@@ -257,6 +269,45 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
             }
 
             return res;
+        }
+
+        /**
+         * @return True if validates only specific kind caches, else false.
+         */
+        private boolean onlySpecificKindCaches() {
+            if (arg instanceof VisorIdleVerifyDumpTaskArg) {
+                VisorIdleVerifyDumpTaskArg vdta = (VisorIdleVerifyDumpTaskArg)arg;
+
+                if (vdta.getCacheKind() != CacheKind.ALL)
+                    return true;
+            }
+
+            return false;
+        }
+
+        /**
+         * @param cacheName Cache name.
+         */
+        private boolean isCacheMatchKind(String cacheName) {
+            if (arg instanceof VisorIdleVerifyDumpTaskArg) {
+                DataStorageConfiguration dsc = ignite.context().config().getDataStorageConfiguration();
+                DynamicCacheDescriptor desc = ignite.context().cache().cacheDescriptor(cacheName);
+                CacheConfiguration cc = desc.cacheConfiguration();
+                VisorIdleVerifyDumpTaskArg vdta = (VisorIdleVerifyDumpTaskArg)arg;
+
+                switch (vdta.getCacheKind()) {
+                    case SYSTEM:
+                        return !desc.cacheType().userCache();
+
+                    case NOT_PERSISTENT:
+                        return desc.cacheType().userCache() && !GridCacheUtils.isPersistentCache(cc, dsc);
+
+                    case PERSISTENT:
+                        return desc.cacheType().userCache() && GridCacheUtils.isPersistentCache(cc, dsc);
+                }
+            }
+
+            return true;
         }
 
         /**
