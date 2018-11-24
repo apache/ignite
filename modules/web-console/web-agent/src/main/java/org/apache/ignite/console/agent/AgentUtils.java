@@ -30,12 +30,18 @@ import java.security.KeyStore;
 import java.security.ProtectionDomain;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import java.util.Collections;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
+import okhttp3.ConnectionSpec;
+import okhttp3.OkHttpClient;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -203,7 +209,7 @@ public class AgentUtils {
      * @throws GeneralSecurityException If failed to load key store.
      * @throws IOException If failed to load key store file content.
      */
-    public static KeyStore keyStore(String pathToJks, char[] pwd) throws GeneralSecurityException, IOException {
+    private static KeyStore keyStore(String pathToJks, char[] pwd) throws GeneralSecurityException, IOException {
         KeyStore keyStore = KeyStore.getInstance("JKS");
         keyStore.load(new FileInputStream(pathToJks), pwd);
 
@@ -217,7 +223,7 @@ public class AgentUtils {
      * @throws GeneralSecurityException If failed to load key store.
      * @throws IOException If failed to load key store file content.
      */
-    public static KeyManager[] keyManagers(String pathToJks, String pwd) throws GeneralSecurityException, IOException {
+    private static KeyManager[] keyManagers(String pathToJks, String pwd) throws GeneralSecurityException, IOException {
         char[] p = pwd != null ? pwd.toCharArray() : EMPTY_PWD;
 
         KeyStore keyStore = keyStore(pathToJks, p);
@@ -235,7 +241,7 @@ public class AgentUtils {
      * @throws GeneralSecurityException If failed to load trust store.
      * @throws IOException If failed to load trust store file content.
      */
-    public static X509TrustManager trustManager(String pathToJks, String pwd) throws GeneralSecurityException, IOException {
+    private static X509TrustManager trustManager(String pathToJks, String pwd) throws GeneralSecurityException, IOException {
         char[] trustPwd = pwd != null ? pwd.toCharArray() : EMPTY_PWD;
         KeyStore trustKeyStore = keyStore(pathToJks, trustPwd);
 
@@ -248,6 +254,87 @@ public class AgentUtils {
             .filter(tm -> tm instanceof X509TrustManager)
             .findFirst()
             .orElseThrow(() -> new IllegalStateException("X509TrustManager manager not found"));
+    }
+
+    /**
+     * Parse comma-separated string to array.
+     *
+     * @param s String to parse.
+     * @return Array of strings or {@code null}.
+     */
+    @Nullable private static String[] parseArray(String s) {
+        if (F.isEmpty(s))
+            return null;
+
+        String[] res = Arrays.stream(s.split(","))
+            .map(String::trim)
+            .filter(item -> !item.isEmpty())
+            .toArray(String[]::new);
+
+        return F.isEmpty(res) ? null : res;
+    }
+
+    /**
+     * Initialize SSL.
+     *
+     * @param builder HTTP client builder.
+     * @param keyStore Optional path to key store file.
+     * @param keyStorePwd Optional password for key store.
+     * @param trustStore Optional path to trust store file.
+     * @param trustStorePwd Optional password for trust store.
+     * @param cipherSuites Optional cipher suites.
+     * @throws GeneralSecurityException If failed to load trust store.
+     * @throws IOException If failed to load trust store file content.
+     */
+    public static void initSsl(
+        OkHttpClient.Builder builder,
+        String keyStore,
+        String keyStorePwd,
+        String trustStore,
+        String trustStorePwd,
+        String cipherSuites
+    ) throws GeneralSecurityException, IOException {
+        boolean trustAll = Boolean.getBoolean("trust.all");
+        boolean hasKeyStore = keyStore != null;
+        boolean hasTrustStore = trustStore != null;
+
+        if (trustAll || hasKeyStore || hasTrustStore) {
+            if (trustAll && hasTrustStore) {
+                log.warn("Options contains both '--node-trust-store' and '-Dtrust.all=true'. " +
+                    "Option '-Dtrust.all=true' will be ignored.");
+            }
+
+            X509TrustManager trustMgr = null;
+
+            if (hasTrustStore)
+                trustMgr = trustManager(trustStore, trustStorePwd);
+            else if (trustAll) {
+                trustMgr = disabledTrustManager();
+
+                builder.hostnameVerifier((hostname, session) -> true);
+            }
+
+            KeyManager[] keyMgrs = null;
+
+            if (hasKeyStore)
+                keyMgrs = keyManagers(keyStore, keyStorePwd);
+
+            SSLContext ctx = SSLContext.getInstance("TLS");
+
+            ctx.init(keyMgrs, new TrustManager[] {trustMgr}, null);
+
+            String[] cs = parseArray(cipherSuites);
+
+            if (!F.isEmpty(cs)) {
+                ConnectionSpec spec = new ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
+                    .cipherSuites(cs)
+                    .build();
+
+                builder.connectionSpecs(Collections.singletonList(spec));
+            }
+
+            builder.sslSocketFactory(ctx.getSocketFactory(), trustMgr);
+        }
     }
 
     /**

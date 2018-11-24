@@ -19,6 +19,7 @@ package org.apache.ignite.console.agent.rest;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.UnknownServiceException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -62,6 +63,15 @@ public class RestExecutorSelfTest {
     private static final String HTTPS_URI = "https://localhost:8080";
 
     /** */
+    private static final String JETTY_WITH_SSL = "jetty-with-ssl.xml";
+
+    /** */
+    private static final String JETTY_WITH_CIPHERS = "jetty-with-ciphers.xml";
+
+    /** This cipher is disabled by default in JDK 8. */
+    private static final String MARKER_CIPHER = "TLS_DH_anon_WITH_AES_256_GCM_SHA384";
+
+    /** */
     @Rule
     public final ExpectedException ruleForExpectedException = ExpectedException.none();
 
@@ -91,13 +101,14 @@ public class RestExecutorSelfTest {
     }
 
     /**
+     * @param jettyCfg Name of file with Jetty XML config.
      * @return Node configuration with enabled SSL for REST.
      */
-    private IgniteConfiguration sslNodeConfiguration() {
+    private IgniteConfiguration sslNodeConfiguration(String jettyCfg) {
         IgniteConfiguration cfg = baseNodeConfiguration();
 
         ConnectorConfiguration conCfg = new ConnectorConfiguration();
-        conCfg.setJettyPath(resolvePath("jetty-with-ssl.xml"));
+        conCfg.setJettyPath(resolvePath(jettyCfg));
 
         cfg.setConnectorConfiguration(conCfg);
 
@@ -139,6 +150,7 @@ public class RestExecutorSelfTest {
      * @param keyStorePwd Key store password.
      * @param trustStore Trust store.
      * @param trustStorePwd Trust store password.
+     * @param cipherSuites Cipher suites.
      * @throws Exception If failed.
      */
     private void checkRest(
@@ -147,11 +159,13 @@ public class RestExecutorSelfTest {
         String keyStore,
         String keyStorePwd,
         String trustStore,
-        String trustStorePwd
+        String trustStorePwd,
+        String cipherSuites
     ) throws Exception {
-        try(Ignite ignite = Ignition.getOrStart(nodeCfg)) {
-            RestExecutor exec = new RestExecutor(keyStore, keyStorePwd, trustStore, trustStorePwd);
-
+        try(
+            Ignite ignite = Ignition.getOrStart(nodeCfg);
+            RestExecutor exec = new RestExecutor(keyStore, keyStorePwd, trustStore, trustStorePwd, cipherSuites)
+        ) {
             Map<String, Object> params = new HashMap<>();
             params.put("cmd", "top");
             params.put("attr", false);
@@ -169,26 +183,32 @@ public class RestExecutorSelfTest {
                 Assert.assertTrue(item.get("metrics").isNull());
                 Assert.assertTrue(item.get("caches").isNull());
             }
-
-            exec.close();
         }
     }
 
     /** */
     @Test
     public void nodeNoSslAgentNoSsl() throws Exception {
-        checkRest(baseNodeConfiguration(), HTTP_URI, null, null, null, null);
+        checkRest(
+            baseNodeConfiguration(),
+            HTTP_URI,
+            null, null,
+            null, null,
+            null
+        );
     }
 
     /** */
     @Test
     public void nodeNoSslAgentWithSsl() throws Exception {
+        // Check Web Agent with SSL.
         ruleForExpectedException.expect(SSLHandshakeException.class);
         checkRest(
             baseNodeConfiguration(),
             HTTPS_URI,
             resolvePath("client.jks"), "123456",
-            resolvePath("ca.jks"), "123456"
+            resolvePath("ca.jks"), "123456",
+            null
         );
     }
 
@@ -196,19 +216,62 @@ public class RestExecutorSelfTest {
     @Test
     public void nodeWithSslAgentNoSsl() throws Exception {
         ruleForExpectedException.expect(IOException.class);
-        checkRest(sslNodeConfiguration(), HTTP_URI, null, null, null, null);
+        checkRest(
+            sslNodeConfiguration(JETTY_WITH_SSL),
+            HTTP_URI,
+            null, null,
+            null, null,
+            null
+        );
     }
 
-    /**
-     * Test REST commands with SSL.
-     */
+    /** */
     @Test
     public void nodeWithSslAgentWithSsl() throws Exception {
         checkRest(
-            sslNodeConfiguration(),
+            sslNodeConfiguration(JETTY_WITH_SSL),
             HTTPS_URI,
             resolvePath("client.jks"), "123456",
-            resolvePath("ca.jks"), "123456"
+            resolvePath("ca.jks"), "123456",
+            null
         );
     }
+
+    /** */
+    @Test
+    public void nodeNoCiphersAgentWithCiphers() throws Exception {
+        ruleForExpectedException.expect(UnknownServiceException.class);
+        checkRest(
+            sslNodeConfiguration(JETTY_WITH_SSL),
+            HTTPS_URI,
+            resolvePath("client.jks"), "123456",
+            resolvePath("ca.jks"), "123456",
+            MARKER_CIPHER
+        );
+   }
+
+    /** */
+    @Test
+    public void nodeWithCiphersAgentNoCiphers() throws Exception {
+        ruleForExpectedException.expect(SSLHandshakeException.class);
+        checkRest(
+            sslNodeConfiguration(JETTY_WITH_CIPHERS),
+            HTTPS_URI,
+            resolvePath("client.jks"), "123456",
+            resolvePath("ca.jks"), "123456",
+            null
+        );
+   }
+
+    /** */
+    @Test
+    public void nodeWithCiphersAgentWithCiphers() throws Exception {
+        checkRest(
+            sslNodeConfiguration(JETTY_WITH_CIPHERS),
+            HTTPS_URI,
+            resolvePath("client.jks"), "123456",
+            resolvePath("ca.jks"), "123456",
+            MARKER_CIPHER
+        );
+   }
 }

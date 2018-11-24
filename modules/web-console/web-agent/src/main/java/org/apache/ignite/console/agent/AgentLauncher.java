@@ -40,11 +40,7 @@ import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLHandshakeException;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 import okhttp3.OkHttpClient;
 import org.apache.ignite.console.agent.handlers.ClusterListener;
 import org.apache.ignite.console.agent.handlers.DatabaseListener;
@@ -322,46 +318,19 @@ public class AgentLauncher {
         IO.Options opts = new IO.Options();
         opts.path = "/agents";
 
-        String keyStore = cfg.serverKeyStore();
-        String trustStore = cfg.serverTrustStore();
-
-        boolean trustAll = Boolean.getBoolean("trust.all");
-        boolean hasTrustStore = trustStore != null;
-        boolean hasKeyStore = keyStore != null;
-
-        if (trustAll || hasTrustStore || hasKeyStore) {
+        if (
+            Boolean.getBoolean("trust.all") ||
+            cfg.serverKeyStore() != null ||
+            cfg.serverTrustStore() != null
+        ) {
             OkHttpClient.Builder builder = new OkHttpClient.Builder();
 
-            if (hasTrustStore && trustAll) {
-                log.warn("Options contains both '--server-trust-store' and '-Dtrust.all=true'. " +
-                    "Option '-Dtrust.all=true' will be ignored.");
-            }
+            AgentUtils.initSsl(builder,
+                cfg.serverKeyStore(), cfg.serverKeyStorePassword(),
+                cfg.serverTrustStore(), cfg.serverTrustStorePassword(),
+                cfg.cipherSuites());
 
-            X509TrustManager trustMgr = null;
-
-            if (trustAll && !hasTrustStore) {
-                trustMgr = AgentUtils.disabledTrustManager();
-
-                builder.hostnameVerifier((hostname, session) -> true);
-            }
-
-            if (hasTrustStore)
-                trustMgr = AgentUtils.trustManager(trustStore, cfg.serverTrustStorePassword());
-
-            KeyManager[] keyMgrs = null;
-
-            if (hasKeyStore)
-                keyMgrs = AgentUtils.keyManagers(keyStore, cfg.serverKeyStorePassword());
-
-            SSLContext ctx = SSLContext.getInstance("TLS");
-
-            ctx.init(keyMgrs, new TrustManager[] {trustMgr}, null);
-
-            builder.sslSocketFactory(ctx.getSocketFactory(), trustMgr);
-
-            OkHttpClient sslFactory = builder
-                .sslSocketFactory(ctx.getSocketFactory(), trustMgr)
-                .build();
+            OkHttpClient sslFactory = builder.build();
 
             opts.callFactory = sslFactory;
             opts.webSocketFactory = sslFactory;

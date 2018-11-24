@@ -20,13 +20,10 @@ package org.apache.ignite.console.agent.rest;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.net.ConnectException;
+import java.security.GeneralSecurityException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -82,9 +79,17 @@ public class RestExecutor implements AutoCloseable {
      * @param keyStorePwd Optional password for key store.
      * @param trustStore Optional path to trust store file.
      * @param trustStorePwd Optional password for trust store.
-     * @throws Exception if failed to create HTTP client.
+     * @param cipherSuites Optional cipher suites.
+     * @throws GeneralSecurityException If failed to initialize SSL.
+     * @throws IOException If failed to load content of key stores.
      */
-    public RestExecutor(String keyStore, String keyStorePwd, String trustStore, String trustStorePwd) throws Exception {
+    public RestExecutor(
+        String keyStore,
+        String keyStorePwd,
+        String trustStore,
+        String trustStorePwd,
+        String cipherSuites
+    ) throws GeneralSecurityException, IOException {
         Dispatcher dispatcher = new Dispatcher();
 
         dispatcher.setMaxRequests(Integer.MAX_VALUE);
@@ -94,45 +99,7 @@ public class RestExecutor implements AutoCloseable {
             .readTimeout(0, TimeUnit.MILLISECONDS)
             .dispatcher(dispatcher);
 
-        boolean trustAll = Boolean.getBoolean("trust.all");
-        boolean hasTrustStore = trustStore != null;
-        boolean hasKeyStore = keyStore != null;
-
-        if (trustAll || hasTrustStore || hasKeyStore) {
-            try {
-                if (hasTrustStore && trustAll) {
-                    log.warning("Options contains both '--node-trust-store' and '-Dtrust.all=true'. " +
-                        "Option '-Dtrust.all=true' will be ignored.");
-                }
-
-                SSLContext ctx = SSLContext.getInstance("TLS");
-
-                X509TrustManager trustMgr = null;
-
-                if (trustAll && !hasTrustStore) {
-                    trustMgr = AgentUtils.disabledTrustManager();
-
-                    builder.hostnameVerifier((hostname, session) -> true);
-                }
-
-                if (hasTrustStore)
-                    trustMgr = AgentUtils.trustManager(trustStore, trustStorePwd);
-
-                KeyManager[] keyMgrs = null;
-
-                if (hasKeyStore)
-                    keyMgrs = AgentUtils.keyManagers(keyStore, keyStorePwd);
-
-                ctx.init(keyMgrs, new TrustManager[] {trustMgr}, null);
-
-                builder.sslSocketFactory(ctx.getSocketFactory(), trustMgr);
-            }
-            catch (Exception e) {
-                log.error("Failed to initialize SSL socket factory", e);
-
-                throw e;
-            }
-        }
+        AgentUtils.initSsl(builder, keyStore, keyStorePwd, trustStore, trustStorePwd, cipherSuites);
 
         httpClient = builder.build();
     }

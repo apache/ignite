@@ -112,7 +112,7 @@ public class AgentConfiguration {
 
     /** */
     @Parameter(names = {"-ntp", "--node-trust-store-password"},
-        description = "Password for node trust store")
+        description = "Optional password for node trust store")
     private String nodeTrustStorePass;
 
     /** */
@@ -132,8 +132,13 @@ public class AgentConfiguration {
 
     /** */
     @Parameter(names = {"-stp", "--server-trust-store-password"},
-        description = "Password for server trust store")
+        description = "Optional password for server trust store")
     private String srvTrustStorePass;
+
+    /** */
+    @Parameter(names = {"-cs", "--cipher-suites"},
+        description = "Optional comma-separated list of SSL cipher suites")
+    private String cipherSuites;
 
     /** */
     @Parameter(names = {"-h", "--help"}, help = true, description = "Print this help message")
@@ -371,6 +376,20 @@ public class AgentConfiguration {
     }
 
     /**
+     * @return SSL cipher suites.
+     */
+    public String cipherSuites() {
+        return cipherSuites;
+    }
+
+    /**
+     * @param cipherSuites SSL cipher suites.
+     */
+    public void cipherSuites(String cipherSuites) {
+        this.cipherSuites = cipherSuites;
+    }
+
+    /**
      * @return {@code true} If agent options usage should be printed.
      */
     public Boolean help() {
@@ -472,6 +491,9 @@ public class AgentConfiguration {
 
         if (srvTrustStorePass == null)
             serverTrustStorePassword(cfg.serverTrustStorePassword());
+
+        if (cipherSuites == null)
+            cipherSuites(cfg.cipherSuites());
     }
 
     /** {@inheritDoc} */

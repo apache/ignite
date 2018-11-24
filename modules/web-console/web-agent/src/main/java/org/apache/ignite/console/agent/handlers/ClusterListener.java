@@ -401,7 +401,8 @@ public class ClusterListener implements AutoCloseable {
             if (restExec == null) {
                 restExec = restPool.open("web-agent",
                     cfg.nodeKeyStore(), cfg.nodeKeyStorePassword(),
-                    cfg.nodeTrustStore(), cfg.nodeTrustStorePassword());
+                    cfg.nodeTrustStore(), cfg.nodeTrustStorePassword(),
+                    cfg.cipherSuites());
             }
 
             RestResult res = restExec.sendRequest(cfg.nodeURIs(), params, null);
@@ -481,16 +482,10 @@ public class ClusterListener implements AutoCloseable {
 
             RestResult res = restCommand(params);
 
-            switch (res.getStatus()) {
-                case STATUS_SUCCESS:
-                    if (v23)
-                        return Boolean.valueOf(res.getData());
+            if (res.getStatus() == STATUS_SUCCESS)
+                return v23 ? Boolean.valueOf(res.getData()) : res.getData().contains("\"active\":true");
 
-                    return res.getData().contains("\"active\":true");
-
-                default:
-                    throw new IOException(res.getError());
-            }
+            throw new IOException(res.getError());
         }
 
         /**
@@ -499,15 +494,12 @@ public class ClusterListener implements AutoCloseable {
          * @throws Exception if failed to extract nodes list from response.
          */
         private List<GridClientNodeBean> nodes(RestResult res) throws Exception {
-            switch (res.getStatus()) {
-                case STATUS_SUCCESS:
-                    return MAPPER.readValue(res.getData(), new TypeReference<List<GridClientNodeBean>>() {});
+            if (res.getStatus() == STATUS_SUCCESS)
+                return MAPPER.readValue(res.getData(), new TypeReference<List<GridClientNodeBean>>() {});
 
-                default:
-                    LT.warn(log, res.getError());
+            LT.warn(log, res.getError());
 
-                    throw new ConnectException();
-            }
+            throw new ConnectException();
         }
 
         /**
