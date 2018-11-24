@@ -140,6 +140,11 @@ public class HandshakeMessage implements Message {
         return true;
     }
 
+    /** */
+    public int getMessageSize() {
+        return MESSAGE_FULL_SIZE;
+    }
+
     /** {@inheritDoc} */
     @Override public short directType() {
         return TcpCommunicationSpi.HANDSHAKE_MSG_TYPE;

@@ -61,9 +61,27 @@ public class HandshakeMessage2 extends HandshakeMessage {
         this.connIdx = connIdx;
     }
 
+    /**
+     * @param nodeId Node ID.
+     * @param connectCnt Connect count.
+     * @param rcvCnt Number of received messages.
+     * @param connIdx Connection index.
+     * @param isPipe {@code True} create a socket connection.
+     */
+    public HandshakeMessage2(UUID nodeId, long connectCnt, long rcvCnt, int connIdx, boolean isPipe) {
+        this(nodeId, connectCnt, rcvCnt, connIdx);
+
+        usePipeTransfer(isPipe);
+    }
+
     /** {@inheritDoc} */
     @Override public short directType() {
         return -44;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getMessageSize() {
+        return HANDSHAKE2_MSG_FULL_SIZE;
     }
 
     /** {@inheritDoc} */

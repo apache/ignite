@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.nio.build.CompletionHandler;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -35,7 +36,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_NIO_RECOVERY_DESCR
 /**
  * Recovery information for single node.
  */
-public class GridNioRecoveryDescriptor {
+public class GridNioRecoveryDescriptor implements CompletionHandler {
     /** Timeout for outgoing recovery descriptor reservation. */
     private static final long DESC_RESERVATION_TIMEOUT =
         Math.max(1_000, IgniteSystemProperties.getLong(IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT, 5_000));
@@ -310,7 +311,7 @@ public class GridNioRecoveryDescriptor {
     /**
      * @param rcvCnt Number of messages received by remote node.
      */
-    public void onHandshake(long rcvCnt) {
+    @Override public void onHandshake(Long rcvCnt) {
         synchronized (this) {
             if (!nodeLeft)
                 ackReceived(rcvCnt);
