@@ -201,7 +201,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
      * @param topVer Topology version.
      */
     private void initialMap(AffinityTopologyVersion topVer) {
-        map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), topVer);
+        map(keys, Collections.emptyMap(), topVer, false);
 
         markInitialized();
     }
@@ -290,7 +290,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     private void map(
         Collection<KeyCacheObject> keys,
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mapped,
-        final AffinityTopologyVersion topVer
+        final AffinityTopologyVersion topVer,
+        boolean remap
     ) {
         Collection<ClusterNode> cacheNodes = CU.affinityNodes(cctx, topVer);
 
@@ -321,7 +322,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
         // Assign keys to primary nodes.
         for (KeyCacheObject key : keys)
-            hasRmtNodes |= map(key, mappings, locVals, topVer, mapped);
+            hasRmtNodes |= map(key, mappings, locVals, topVer, mapped, remap);
 
         if (isDone())
             return;
@@ -378,7 +379,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         ", invalidParts=" + invalidParts + ']';
 
                     // Remap recursively.
-                    map(remapKeys, mappings, updTopVer);
+                    map(remapKeys, mappings, updTopVer, remap);
                 }
 
                 // Add new future.
@@ -449,7 +450,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings,
         Map<K, V> locVals,
         AffinityTopologyVersion topVer,
-        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mapped
+        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mapped,
+        boolean remap
     ) {
         int part = cctx.affinity().partition(key);
 
@@ -475,7 +477,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             }
         }
 
-        ClusterNode node = cctx.selectAffinityNodeBalanced(affNodes, part, canRemap);
+        ClusterNode node = cctx.selectAffinityNodeBalanced(affNodes, part, canRemap, remap);
 
         if (node == null) {
             onDone(serverNotFoundError(topVer));
@@ -795,7 +797,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
             // Try getting from existing nodes.
             if (!canRemap) {
-                map(keys.keySet(), F.t(node, keys), topVer);
+                map(keys.keySet(), F.t(node, keys), topVer, true);
 
                 onDone(Collections.<K, V>emptyMap());
             }
@@ -808,7 +810,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
                             try {
                                 // Remap.
-                                map(keys.keySet(), F.t(node, keys), fut.get());
+                                map(keys.keySet(), F.t(node, keys), fut.get(), true);
 
                                 onDone(Collections.<K, V>emptyMap());
                             }
@@ -859,7 +861,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         @Override public boolean apply(KeyCacheObject key) {
                             return invalidParts.contains(cctx.affinity().partition(key));
                         }
-                    }), F.t(node, keys), topVer);
+                    }), F.t(node, keys), topVer, true);
 
                     postProcessResult(res);
 
@@ -882,7 +884,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                             @Override public boolean apply(KeyCacheObject key) {
                                 return invalidParts.contains(cctx.affinity().partition(key));
                             }
-                        }), F.t(node, keys), topVer);
+                        }), F.t(node, keys), topVer, true);
 
                         postProcessResult(res);
 
