@@ -36,14 +36,14 @@ import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
  * 1/k}, where {@code k} is classes count.
  */
 public class BernoulliNaiveBayesTrainer extends SingleLabelDatasetTrainer<BernoulliNaiveBayesModel> {
-    /** Precision to compare binarizeThresholds. */
+    /** Precision to compare bucketThresholds. */
     private static final double PRECISION = 1e-10;
     /* Preset prior probabilities. */
     private double[] priorProbabilities;
     /* Sets equivalent probability for all classes. */
     private boolean equiprobableClasses;
-    /** The threshold to convert a feature to a binary value. Default value is {@code 0.5}. */
-    private double binarizeThreshold = .5;
+    /** The threshold to convert a feature to a discret value. */
+    private double[] bucketThresholds;
 
     /**
      * Trains model based on the specified data.
@@ -60,7 +60,16 @@ public class BernoulliNaiveBayesTrainer extends SingleLabelDatasetTrainer<Bernou
 
     /** {@inheritDoc} */
     @Override protected boolean checkState(BernoulliNaiveBayesModel mdl) {
-        return Math.abs(mdl.getBinarizeThreshold() - binarizeThreshold) < PRECISION;
+
+        if (mdl.getBucketThresholds().length != bucketThresholds.length) {
+            return false;
+        }
+        for (int i = 0; i < bucketThresholds.length; i++) {
+            if (Math.abs(mdl.getBucketThresholds()[i] - bucketThresholds[i]) > PRECISION) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -93,7 +102,7 @@ public class BernoulliNaiveBayesTrainer extends SingleLabelDatasetTrainer<Bernou
                     onesCount = res.onesCountPerLbl.get(label);
                     for (int j = 0; j < features.size(); j++) {
                         double x = features.get(j);
-                        if (x >= binarizeThreshold)
+                        if (x >= bucketThresholds[0])
                             ++onesCount[j];
                     }
                 }
@@ -148,7 +157,7 @@ public class BernoulliNaiveBayesTrainer extends SingleLabelDatasetTrainer<Bernou
                 labels[lbl] = label;
                 ++lbl;
             }
-            return new BernoulliNaiveBayesModel(probabilities, classProbabilities, labels, binarizeThreshold, sumsHolder);
+            return new BernoulliNaiveBayesModel(probabilities, classProbabilities, labels, bucketThresholds, sumsHolder);
         }
         catch (Exception e) {
             throw new RuntimeException(e);
@@ -156,7 +165,7 @@ public class BernoulliNaiveBayesTrainer extends SingleLabelDatasetTrainer<Bernou
 
     }
 
-    /**Checks that two {@code BernoulliNaiveBayesSumsHolder} contain the same lengths of future vectors.*/
+    /** Checks that two {@code BernoulliNaiveBayesSumsHolder} contain the same lengths of future vectors. */
     private boolean checkSumsHolder(BernoulliNaiveBayesSumsHolder holder1, BernoulliNaiveBayesSumsHolder holder2) {
         if (holder1 == null || holder2 == null) {
             return false;
@@ -193,8 +202,9 @@ public class BernoulliNaiveBayesTrainer extends SingleLabelDatasetTrainer<Bernou
     }
 
     /** */
-    public void setBinarizeThreshold(double binarizeThreshold) {
-        this.binarizeThreshold = binarizeThreshold;
+    public BernoulliNaiveBayesTrainer setBucketThresholds(double[] bucketThresholds) {
+        this.bucketThresholds = bucketThresholds;
+        return this;
     }
 
     /** Sets default settings {@code equiprobableClasses} to {@code false} and removes priorProbabilities. */

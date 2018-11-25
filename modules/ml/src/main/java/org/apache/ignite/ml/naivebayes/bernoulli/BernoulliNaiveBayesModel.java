@@ -39,23 +39,23 @@ public class BernoulliNaiveBayesModel implements Model<Vector, Double>, Exportab
     /** Labels. */
     private final double[] labels;
     /** The threshold to convert a feature to a binary value.*/
-    private final double binarizeThreshold;
+    private final double[] bucketThresholds;
     /** Amount values which are abouve the threshold per label. */
     private final BernoulliNaiveBayesSumsHolder sumsHolder;
 
     /**
      * @param probabilities Probabilities of features for classes.
      * @param classProbabilities Prior probabilities for classes.
-     * @param binarizeThreshold The threshold to convert a feature to a binary value.
+     * @param bucketThresholds The threshold to convert a feature to a binary value.
      * @param sumsHolder Amount values which are abouve the threshold per label.
      * @param labels Labels.
      */
     public BernoulliNaiveBayesModel(double[][] probabilities, double[] classProbabilities, double[] labels,
-        double binarizeThreshold, BernoulliNaiveBayesSumsHolder sumsHolder) {
+        double[] bucketThresholds, BernoulliNaiveBayesSumsHolder sumsHolder) {
         this.probabilities = probabilities;
         this.classProbabilities = classProbabilities;
         this.labels = labels;
-        this.binarizeThreshold = binarizeThreshold;
+        this.bucketThresholds = bucketThresholds;
         this.sumsHolder = sumsHolder;
     }
 
@@ -97,8 +97,8 @@ public class BernoulliNaiveBayesModel implements Model<Vector, Double>, Exportab
     }
 
     /** */
-    public double getBinarizeThreshold() {
-        return binarizeThreshold;
+    public double[] getBucketThresholds() {
+        return bucketThresholds;
     }
 
     /** */
@@ -107,6 +107,12 @@ public class BernoulliNaiveBayesModel implements Model<Vector, Double>, Exportab
     }
 
     private int toZeroOne(double value) {
-        return value >= binarizeThreshold ? 1 : 0;
+
+        for (int i = 0; i < bucketThresholds.length; i++) {
+            if (value < bucketThresholds[i]) {
+                return i;
+            }
+        }
+        return bucketThresholds.length;
     }
 }
