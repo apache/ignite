@@ -1924,7 +1924,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * Test that attempting to supply invalid nested TX mode to driver fails on the client.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testInvalidNestedTxMode() {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -1940,7 +1939,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      * We have to do this without explicit {@link Connection} as long as there's no other way to bypass validation and
      * supply a malformed {@link ConnectionProperties} to {@link JdbcThinTcpIo}.
      */
-    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "ThrowFromFinallyBlock"})
     public void testInvalidNestedTxModeOnServerSide() throws SQLException, NoSuchMethodException,
         IllegalAccessException, InvocationTargetException, InstantiationException, IOException {
         ConnectionPropertiesImpl connProps = new ConnectionPropertiesImpl();

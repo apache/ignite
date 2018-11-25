@@ -875,7 +875,7 @@ public class GridMapQueryExecutor {
                 .mvccSnapshot(mvccSnapshot)
                 .lazyWorker(worker);
 
-            Connection conn = h2.connectionForSchema(schemaName);
+            Connection conn = h2.connections().connectionForThread(schemaName);
 
             H2Utils.setupConnection(conn, distributedJoinMode != OFF, enforceJoinOrder);
 
@@ -1341,7 +1341,6 @@ public class GridMapQueryExecutor {
      * @param pageSize Page size.
      * @param removeMapping Remove mapping flag.
      */
-    @SuppressWarnings("unchecked")
     private void sendNextPage(MapNodeResults nodeRess, ClusterNode node, MapQueryResults qr, int qry, int segmentId,
         int pageSize, boolean removeMapping) {
         try {

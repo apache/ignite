@@ -19,6 +19,7 @@ package org.apache.ignite.examples;
 
 import org.apache.ignite.examples.events.EventsExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.Test;
 
 /**
  * Events examples self test.
@@ -27,6 +28,7 @@ public class EventsExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEventsExample() throws Exception {
         EventsExample.main(EMPTY_ARGS);
     }

@@ -92,6 +92,15 @@ public class VisorValidateIndexesJobResult extends VisorDataTransferObject {
         return integrityCheckFailures == null ? Collections.emptyList() : integrityCheckFailures;
     }
 
+    /**
+     * @return {@code true} If any indexes issues found on node, otherwise returns {@code false}.
+     */
+    public boolean hasIssues() {
+        return (integrityCheckFailures != null && !integrityCheckFailures.isEmpty()) ||
+                (partRes != null && partRes.entrySet().stream().anyMatch(e -> !e.getValue().issues().isEmpty())) ||
+                (idxRes != null && idxRes.entrySet().stream().anyMatch(e -> !e.getValue().issues().isEmpty()));
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeMap(out, partRes);

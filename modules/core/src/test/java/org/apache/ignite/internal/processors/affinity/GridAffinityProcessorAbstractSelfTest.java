@@ -107,7 +107,6 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
      *
      * @throws Exception In case of any exception.
      */
-    @SuppressWarnings("AssertEqualsBetweenInconvertibleTypes")
     public void testAffinityProcessor() throws Exception {
         Random rnd = new Random();
 

@@ -481,7 +481,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
+    @Override public void setUp() throws Exception {
         // Disable SSL hostname verifier.
         HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() {
             @Override public boolean verify(String s, SSLSession sslSes) {
@@ -495,7 +495,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void tearDown() throws Exception {
+    @Override public void tearDown() throws Exception {
         getTestCounters().incrementStopped();
 
         super.tearDown();
@@ -528,7 +528,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @throws InterruptedException If interrupted.
      */
-    @SuppressWarnings("BusyWait")
     protected void awaitPartitionMapExchange() throws InterruptedException {
         awaitPartitionMapExchange(false, false, null);
     }
@@ -540,7 +539,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      *      be filtered
      * @throws InterruptedException If interrupted.
      */
-    @SuppressWarnings("BusyWait")
     protected void awaitPartitionMapExchange(
         boolean waitEvicts,
         boolean waitNode2PartUpdate,
