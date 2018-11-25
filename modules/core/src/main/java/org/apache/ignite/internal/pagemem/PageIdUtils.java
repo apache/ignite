@@ -164,6 +164,19 @@ public final class PageIdUtils {
     }
 
     /**
+     * @param partId Partition ID.
+     * @param pageIdx Page index.
+     * @return Page ID constructed from the given partition ID and page index.
+     */
+    public static long pageId(int partId, int pageIdx) {
+        assert partId == PageIdAllocator.INDEX_PARTITION
+            || partId >= PageIdAllocator.METASTORE_PARTITION && partId <= PageIdAllocator.MAX_PARTITION_ID :
+            "partId = " + U.hexInt(partId);
+
+        return pageId(partId, partId == PageIdAllocator.INDEX_PARTITION ? PageIdAllocator.FLAG_IDX : PageIdAllocator.FLAG_DATA, pageIdx);
+    }
+
+    /**
      * @param pageId Page ID.
      * @return Flag.
      */
