@@ -39,7 +39,7 @@ public class BernoulliNaiveBayesModel implements Model<Vector, Double>, Exportab
     /** Labels. */
     private final double[] labels;
     /** The threshold to convert a feature to a binary value.*/
-    private final double[] bucketThresholds;
+    private final double[][] bucketThresholds;
     /** Amount values which are abouve the threshold per label. */
     private final BernoulliNaiveBayesSumsHolder sumsHolder;
 
@@ -51,7 +51,7 @@ public class BernoulliNaiveBayesModel implements Model<Vector, Double>, Exportab
      * @param labels Labels.
      */
     public BernoulliNaiveBayesModel(double[][] probabilities, double[] classProbabilities, double[] labels,
-        double[] bucketThresholds, BernoulliNaiveBayesSumsHolder sumsHolder) {
+        double[][] bucketThresholds, BernoulliNaiveBayesSumsHolder sumsHolder) {
         this.probabilities = probabilities;
         this.classProbabilities = classProbabilities;
         this.labels = labels;
@@ -73,7 +73,7 @@ public class BernoulliNaiveBayesModel implements Model<Vector, Double>, Exportab
             double probabilityPower = Math.log(classProbabilities[i]);
 
             for (int j = 0; j < probabilities[0].length; j++) {
-                int x = toZeroOne(vector.get(j));
+                int x = toBucketNumber(vector.get(j), bucketThresholds[j]);
                 double p = probabilities[i][j];
                 probabilityPower += (x == 1 ? Math.log(p) : Math.log(1 - p));
             }
@@ -97,7 +97,7 @@ public class BernoulliNaiveBayesModel implements Model<Vector, Double>, Exportab
     }
 
     /** */
-    public double[] getBucketThresholds() {
+    public double[][] getBucketThresholds() {
         return bucketThresholds;
     }
 
@@ -106,13 +106,12 @@ public class BernoulliNaiveBayesModel implements Model<Vector, Double>, Exportab
         return sumsHolder;
     }
 
-    private int toZeroOne(double value) {
-
-        for (int i = 0; i < bucketThresholds.length; i++) {
-            if (value < bucketThresholds[i]) {
+    private int toBucketNumber(double value, double[] thresholds) {
+        for (int i = 0; i < thresholds.length; i++) {
+            if (value < thresholds[i]) {
                 return i;
             }
         }
-        return bucketThresholds.length;
+        return thresholds.length;
     }
 }

@@ -35,7 +35,8 @@ public class BernoulliNaiveBayesModelTest {
         };
 
         double[] classProbabilities = new double[] {6. / 13, 7. / 13};
-        BernoulliNaiveBayesModel mdl = new BernoulliNaiveBayesModel(probabilities, classProbabilities, new double[] {first, second}, new double[]{.5}, new BernoulliNaiveBayesSumsHolder());
+        double[][] thresholds = new double[][] {{.5}, {.5}, {.5}, {.5}, {.5}};
+        BernoulliNaiveBayesModel mdl = new BernoulliNaiveBayesModel(probabilities, classProbabilities, new double[] {first, second}, thresholds, new BernoulliNaiveBayesSumsHolder());
         Vector observation = VectorUtils.of(1, 0, 1, 1, 0);
 
         Assert.assertEquals(second, mdl.apply(observation), 0.0001);

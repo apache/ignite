@@ -43,7 +43,7 @@ public class BernoulliNaiveBayesTrainer extends SingleLabelDatasetTrainer<Bernou
     /* Sets equivalent probability for all classes. */
     private boolean equiprobableClasses;
     /** The threshold to convert a feature to a discret value. */
-    private double[] bucketThresholds;
+    private double[][] bucketThresholds;
 
     /**
      * Trains model based on the specified data.
@@ -65,8 +65,10 @@ public class BernoulliNaiveBayesTrainer extends SingleLabelDatasetTrainer<Bernou
             return false;
         }
         for (int i = 0; i < bucketThresholds.length; i++) {
-            if (Math.abs(mdl.getBucketThresholds()[i] - bucketThresholds[i]) > PRECISION) {
-                return false;
+            for (int j = 0; i < bucketThresholds[i].length; i++) {
+                if (Math.abs(mdl.getBucketThresholds()[i][j] - bucketThresholds[i][j]) > PRECISION) {
+                    return false;
+                }
             }
         }
         return true;
@@ -102,7 +104,7 @@ public class BernoulliNaiveBayesTrainer extends SingleLabelDatasetTrainer<Bernou
                     onesCount = res.onesCountPerLbl.get(label);
                     for (int j = 0; j < features.size(); j++) {
                         double x = features.get(j);
-                        if (x >= bucketThresholds[0])
+                        if (x >= bucketThresholds[0][0])
                             ++onesCount[j];
                     }
                 }
@@ -202,7 +204,7 @@ public class BernoulliNaiveBayesTrainer extends SingleLabelDatasetTrainer<Bernou
     }
 
     /** */
-    public BernoulliNaiveBayesTrainer setBucketThresholds(double[] bucketThresholds) {
+    public BernoulliNaiveBayesTrainer setBucketThresholds(double[][] bucketThresholds) {
         this.bucketThresholds = bucketThresholds;
         return this;
     }
@@ -212,5 +214,15 @@ public class BernoulliNaiveBayesTrainer extends SingleLabelDatasetTrainer<Bernou
         equiprobableClasses = false;
         priorProbabilities = null;
         return this;
+    }
+
+    private int toBucketNumber(double value, double[] thresholds) {
+
+        for (int i = 0; i < thresholds.length; i++) {
+            if (value < thresholds[i]) {
+                return i;
+            }
+        }
+        return thresholds.length;
     }
 }

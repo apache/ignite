@@ -52,7 +52,8 @@ public class BernoulliNaiveBayesTest {
         data.put(10, new double[] {1, 1, 0, 1, 1, scottish});
         data.put(11, new double[] {1, 0, 1, 1, 0, scottish});
         data.put(12, new double[] {1, 0, 1, 0, 0, scottish});
-        BernoulliNaiveBayesTrainer trainer = new BernoulliNaiveBayesTrainer().setBucketThresholds(new double[]{.5});
+        double[][] thresholds = new double[][] {{.5}, {.5}, {.5}, {.5}, {.5}};
+        BernoulliNaiveBayesTrainer trainer = new BernoulliNaiveBayesTrainer().setBucketThresholds(thresholds);
 
         BernoulliNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(data, 2),

@@ -59,10 +59,13 @@ public class BernoulliNaiveBayesTrainerTest extends TrainerTest {
     /** */
     private BernoulliNaiveBayesTrainer trainer;
 
+    /** */
+    private static final double[][] thresholds = new double[][] {{.5}, {.5}, {.5}, {.5}, {.5}};
+
     /** Initialization {@code BernoulliNaiveBayesTrainer}. */
     @Before
     public void createTrainer() {
-        trainer = new BernoulliNaiveBayesTrainer().setBucketThresholds(new double[]{.5});
+        trainer = new BernoulliNaiveBayesTrainer().setBucketThresholds(thresholds);
     }
 
     /** */
@@ -83,7 +86,7 @@ public class BernoulliNaiveBayesTrainerTest extends TrainerTest {
     @Test
     public void testReturnsEquivalentProbalitiesWhenSetEquiprobableClasses_() {
         BernoulliNaiveBayesTrainer trainer = new BernoulliNaiveBayesTrainer()
-            .setBucketThresholds(new double[]{.5})
+            .setBucketThresholds(thresholds)
             .withEquiprobableClasses();
 
         BernoulliNaiveBayesModel model = trainer.fit(
@@ -100,7 +103,7 @@ public class BernoulliNaiveBayesTrainerTest extends TrainerTest {
     public void testReturnsPresetProbalitiesWhenSetPriorProbabilities() {
         double[] priorProbabilities = new double[] {.35, .65};
         BernoulliNaiveBayesTrainer trainer = new BernoulliNaiveBayesTrainer()
-            .setBucketThresholds(new double[]{.5})
+            .setBucketThresholds(thresholds)
             .setPriorProbabilities(priorProbabilities);
 
         BernoulliNaiveBayesModel model = trainer.fit(
