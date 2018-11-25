@@ -36,25 +36,25 @@ public class StandardScalerTrainer<K, V> implements PreprocessingTrainer<K, V, V
     @Override public StandardScalerPreprocessor<K, V> fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> basePreprocessor) {
 
-        SumHelper sumHelper = computeSum(datasetBuilder, basePreprocessor);
+        StandardScalerData standardScalerData = computeSum(datasetBuilder, basePreprocessor);
 
-        int n = sumHelper.sum.length;
-        long count = sumHelper.count;
+        int n = standardScalerData.sum.length;
+        long count = standardScalerData.count;
         double[] mean = new double[n];
         double[] sigma = new double[n];
 
         for (int i = 0; i < n; i++) {
-            mean[i] = sumHelper.sum[i] / count;
-            double variace = (sumHelper.squaredSum[i] - Math.pow(sumHelper.sum[i], 2) / count) / count;
+            mean[i] = standardScalerData.sum[i] / count;
+            double variace = (standardScalerData.squaredSum[i] - Math.pow(standardScalerData.sum[i], 2) / count) / count;
             sigma[i] = Math.sqrt(variace);
         }
         return new StandardScalerPreprocessor<>(mean, sigma, basePreprocessor);
     }
 
     /** Computes sum, squared sum and row count. */
-    private SumHelper computeSum(DatasetBuilder<K, V> datasetBuilder,
+    private StandardScalerData computeSum(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> basePreprocessor) {
-        try (Dataset<EmptyContext, SumHelper> dataset = datasetBuilder.build(
+        try (Dataset<EmptyContext, StandardScalerData> dataset = datasetBuilder.build(
             (upstream, upstreamSize) -> new EmptyContext(),
             (upstream, upstreamSize, ctx) -> {
                 double[] sum = null;
@@ -81,7 +81,7 @@ public class StandardScalerTrainer<K, V> implements PreprocessingTrainer<K, V, V
                         squaredSum[i] += x * x;
                     }
                 }
-                return new SumHelper(sum, squaredSum, count);
+                return new StandardScalerData(sum, squaredSum, count);
             }
         )) {
 
@@ -99,43 +99,4 @@ public class StandardScalerTrainer<K, V> implements PreprocessingTrainer<K, V, V
             throw new RuntimeException(e);
         }
     }
-
-    /** A Service class which used for sums holing. */
-    private static class SumHelper implements AutoCloseable {
-        /** Sum values of every feature. */
-        double[] sum;
-        /** Sum of squared values of every feature. */
-        double[] squaredSum;
-        /** Rows count */
-        long count;
-
-        /**
-         * Creates {@code SumHelper}.
-         *
-         * @param sum Sum values of every feature.
-         * @param squaredSum Sum of squared values of every feature.
-         * @param count Rows count.
-         */
-        public SumHelper(double[] sum, double[] squaredSum, long count) {
-            this.sum = sum;
-            this.squaredSum = squaredSum;
-            this.count = count;
-        }
-
-        /** Merges to current. */
-        SumHelper merge(SumHelper that) {
-            for (int i = 0; i < sum.length; i++) {
-                sum[i] += that.sum[i];
-                squaredSum[i] += that.squaredSum[i];
-            }
-            count += that.count;
-            return this;
-        }
-
-        /** */
-        @Override public void close() {
-            // Do nothing, GC will clean up.
-        }
-    }
-
 }
