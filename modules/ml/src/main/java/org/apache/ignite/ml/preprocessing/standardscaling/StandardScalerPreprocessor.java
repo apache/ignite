@@ -35,7 +35,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  */
 public class StandardScalerPreprocessor<K, V> implements IgniteBiFunction<K, V, Vector> {
     /** */
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = -5977957318991608203L;
 
     /** Means for each column. */
     private final double[] means;
