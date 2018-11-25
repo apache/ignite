@@ -32,15 +32,14 @@ public class ConnectionKey {
     private final int idx;
 
     /** */
-    private final int type;
-
-    /** */
     private final long connCnt;
 
     /** */
     private final boolean dummy;
 
     /**
+     * Creates ConnectionKey with false value of dummy flag.
+     *
      * @param nodeId Node ID. Should be not null.
      * @param idx Connection index.
      * @param connCnt Connection counter (set only for incoming connections).
@@ -52,36 +51,13 @@ public class ConnectionKey {
     /**
      * @param nodeId Node ID. Should be not null.
      * @param idx Connection index.
-     * @param type Connection type.
-     * @param connCnt Connection counter (set only for incoming connections).
-     */
-    public ConnectionKey(@NotNull UUID nodeId, int idx, int type, long connCnt) {
-        this(nodeId, idx, type, connCnt, false);
-    }
-
-    /**
-     * @param nodeId Node ID. Should be not null.
-     * @param idx Connection index.
      * @param connCnt Connection counter (set only for incoming connections).
      * @param dummy Indicates that session with this ConnectionKey is temporary
      *              (for now dummy sessions are used only for Communication Failure Resolving process).
      */
     public ConnectionKey(@NotNull UUID nodeId, int idx, long connCnt, boolean dummy) {
-        this(nodeId, idx, 0, connCnt, dummy);
-    }
-
-    /**
-     * @param nodeId Node ID. Should be not null.
-     * @param idx Connection index.
-     * @param type Connection type.
-     * @param connCnt Connection counter (set only for incoming connections).
-     * @param dummy Indicates that session with this ConnectionKey is temporary
-     *              (for now dummy sessions are used only for Communication Failure Resolving process).
-     */
-    public ConnectionKey(@NotNull UUID nodeId, int idx, int type, long connCnt, boolean dummy) {
         this.nodeId = nodeId;
         this.idx = idx;
-        this.type = type;
         this.connCnt = connCnt;
         this.dummy = dummy;
     }
@@ -105,13 +81,6 @@ public class ConnectionKey {
      */
     public int connectionIndex() {
         return idx;
-    }
-
-    /**
-     * @return Connection type.
-     */
-    public int connectionType() {
-        return type;
     }
 
     /**

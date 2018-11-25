@@ -29,6 +29,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.AlreadyConnectedException;
 import java.nio.channels.SocketChannel;
+import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -68,6 +69,8 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.communication.GridNioConnectionManager;
+import org.apache.ignite.internal.managers.communication.GridNioConnectionManagerImpl;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.managers.eventstorage.HighPriorityListener;
@@ -95,6 +98,7 @@ import org.apache.ignite.internal.util.nio.GridNioServerListener;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
+import org.apache.ignite.internal.util.nio.GridSelectorNioSession;
 import org.apache.ignite.internal.util.nio.GridShmemCommunicationClient;
 import org.apache.ignite.internal.util.nio.GridTcpNioCommunicationClient;
 import org.apache.ignite.internal.util.nio.build.ClientCommunicationBuilder;
@@ -341,6 +345,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** Message tracker meta for session. */
     private static final int TRACKER_META = GridNioSessionMetaKey.nextUniqueKey();
 
+    /** */
+    public static final int CHANNEL_META = GridNioSessionMetaKey.nextUniqueKey();
+
     /**
      * Default local port range (value is <tt>100</tt>).
      * See {@link #setLocalPortRange(int)} for details.
@@ -559,6 +566,21 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 if (log.isDebugEnabled())
                     log.debug("Received handshake message [locNodeId=" + locNode.id() + ", rmtNodeId=" + sndId +
                         ", msg=" + msg0 + ']');
+
+                // Session is not needed for the channel connections.
+                if (msg instanceof HandshakeMessage2 && ((HandshakeMessage2) msg).useChannelTransfer()) {
+                    if (log.isInfoEnabled())
+                        log.info("Handle channel connection creation [" +
+                            "locNodeId=" + locNode.id() + ", rmtNodeId=" + sndId + ']');
+
+                    ses.send(new RecoveryLastReceivedMessage(0)).listen(new CI1<IgniteInternalFuture<?>>() {
+                        @Override public void apply(IgniteInternalFuture<?> fut) {
+                            nioSrvr.createNioChannel((GridSelectorNioSession)ses);
+                        }
+                    });
+
+                    return;
+                }
 
                 if (usePairedConnections(rmtNode)) {
                     final GridNioRecoveryDescriptor recoveryDesc = inRecoveryDescriptor(rmtNode, connKey);
@@ -1199,6 +1221,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
     /** */
     private final GridLocalEventListener discoLsnr = new DiscoveryListener();
+
+    /** */
+    private GridNioConnectionManager connMgr = new GridNioConnectionManagerImpl();
 
     /**
      * @return {@code True} if ssl enabled.
@@ -3536,7 +3561,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         connKey.connectionIndex())));
 
         T2<GridCommunicationClient, IgniteCheckedException> clnt =
-            createTcpClient2(node, clntBuilder, connKey, connKey.connectionIndex());
+            createTcpClient2(node, clntBuilder, connKey);
 
         // The node will be dropped in case connection creation is impossible.
         if (clnt.get1() == null)
@@ -3576,15 +3601,26 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 connKey.connectionIndex(),
                 true));
 
-        return createTcpClient2(node, sockBuilder, connKey, connKey.connectionIndex()).get1();
+        T2<SocketChannel, IgniteCheckedException> sockClnt = createTcpClient2(node, sockBuilder, connKey);
+
+        if (log.isInfoEnabled())
+            log.info("Socket channel created with err: " + sockClnt.get2());
+
+        return sockClnt.get1();
     }
 
-    /** */
+    /**
+     * @param node
+     * @param commBuilder
+     * @param connKey
+     * @param <T>
+     * @return
+     * @throws IgniteCheckedException
+     */
     protected <T> T2<T, IgniteCheckedException> createTcpClient2(
         ClusterNode node,
         CommunicationBuilder<T> commBuilder,
-        ConnectionKey connKey,
-        int connIdx
+        ConnectionKey connKey
     ) throws IgniteCheckedException {
         Collection<InetSocketAddress> addrs = nodeAddresses(node);
 
@@ -3643,7 +3679,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     }, addr);
                 }
                 catch (AlreadyConnectedException e) {
-                    return null;
+                    return new T2<>(null, new IgniteCheckedException(e));
                 }
                 catch (NeedWaitConnectionException e) {
                     if (lastWaitingTimeout < 60_000)
@@ -3994,7 +4030,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         recovery.received(),
                         handshakeConnIdx);
 
-                    msgSize += 4;
+                    msgSize += 5;
                 }
                 else {
                     msg = new HandshakeMessage(locNode.id(),
@@ -4393,6 +4429,46 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      */
     private static WorkersRegistry getWorkersRegistry(Ignite ignite) {
         return ignite instanceof IgniteEx ? ((IgniteEx)ignite).context().workersRegistry() : null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean directConnectionSupported() {
+        // TODO: Check for compatibility version and enabled system property
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public WritableByteChannel getOrCreateChannel(ClusterNode node) throws IgniteSpiException {
+        ConnectionKey connKey = new ConnectionKey(node.id(), 0, -1);
+
+        SocketChannel channel = connMgr.getChannel(connKey);
+
+        if (channel == null) {
+            connectGate.enter();
+
+            try {
+                final long start = System.currentTimeMillis();
+
+                channel = createTcpSocketClient(node, connKey);
+
+                connMgr.addChannel(connKey, channel);
+
+                final long time = System.currentTimeMillis() - start;
+
+                if (log.isDebugEnabled())
+                    log.debug("Tcp channel created [channel=" + channel + ", duration=" + time + " ms]");
+
+                return (WritableByteChannel) channel;
+            }
+            catch (IgniteCheckedException e) {
+                throw new RuntimeException(e);
+            }
+            finally {
+                connectGate.leave();
+            }
+        }
+
+        return channel;
     }
 
     /**

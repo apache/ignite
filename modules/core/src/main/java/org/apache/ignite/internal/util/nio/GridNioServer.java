@@ -58,6 +58,8 @@ import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.nio.channel.GridNioSocketChannel;
+import org.apache.ignite.internal.util.nio.channel.GridNioSocketChannelImpl;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -215,6 +217,9 @@ public class GridNioServer<T> {
 
     /** Sessions. */
     private final GridConcurrentHashSet<GridSelectorNioSessionImpl> sessions = new GridConcurrentHashSet<>();
+
+    /** Java NIO channels. */
+    private final GridConcurrentHashSet<GridNioSocketChannel> channels = new GridConcurrentHashSet<>();
 
     /** */
     private GridNioSslFilter sslFilter;
@@ -904,6 +909,32 @@ public class GridNioServer<T> {
         else
             return new GridNioFinishedFuture<>(
                 new IgniteCheckedException("Failed to cancel connection, server is stopped."));
+    }
+
+    /**
+     * The GridNioSession will be destroyed.
+     *
+     * @param ses Session.
+     */
+    public GridNioFuture<Boolean> createNioChannel(final GridSelectorNioSession ses) {
+        if (!closed) {
+            NioOperationFuture<Boolean> req =
+                new NioOperationFuture<>((SocketChannel)ses.key().channel(),
+                    NioOperation.ADD_CHANNEL,
+                    true,
+                    null);
+
+            Integer idx = (Integer)ses.meta(WORKER_IDX_META_KEY);
+
+            assert idx != null : "Unknown worker index";
+
+            clientWorkers.get(idx).offer(req);
+
+            return req;
+        }
+        else
+            return new GridNioFinishedFuture<>(
+                new IgniteCheckedException("Server is stopped."));
     }
 
     /**
@@ -2102,6 +2133,22 @@ public class GridNioServer<T> {
                                     req.onDone(sb.toString());
                                 }
                             }
+
+                            case ADD_CHANNEL:
+                                NioOperationFuture req = (NioOperationFuture)req0;
+
+                                SocketChannel ch = req.socketChannel();
+
+                                SelectionKey key = ch.keyFor(selector);
+
+                                if (key != null)
+                                    key.cancel();
+
+                                channels.add(new GridNioSocketChannelImpl());
+
+                                req.onDone();
+
+                                break;
                         }
                     }
 
@@ -3052,14 +3099,14 @@ public class GridNioServer<T> {
         /** Pause read. */
         PAUSE_READ,
 
-        /** Change worker state to direct file IO */
-        REQUIRE_RAW,
-
         /** Resume read. */
         RESUME_READ,
 
         /** Dump statistics. */
-        DUMP_STATS
+        DUMP_STATS,
+
+        /** Move session to channel. */
+        ADD_CHANNEL
     }
 
     /**
@@ -3285,6 +3332,26 @@ public class GridNioServer<T> {
 
             op = NioOperation.REGISTER;
 
+            this.sockCh = sockCh;
+            this.accepted = accepted;
+            this.meta = meta;
+        }
+
+        /**
+         * @param sockCh Socket channel.
+         * @param op Operation to execute.
+         * @param accepted If socket accepted.
+         * @param meta Optional meta.
+         */
+        NioOperationFuture(
+            SocketChannel sockCh,
+            NioOperation op,
+            boolean accepted,
+            @Nullable Map<Integer, ?> meta
+        ) {
+            super(null);
+
+            this.op = op;
             this.sockCh = sockCh;
             this.accepted = accepted;
             this.meta = meta;

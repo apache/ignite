@@ -15,16 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.nio.channel;
+package org.apache.ignite.internal.managers.communication;
 
-import java.nio.channels.SocketChannel;
+import java.nio.channels.ReadableByteChannel;
+import java.util.UUID;
 
 /**
- * Communication TCP/IP socket.
+ * Listener for connections established from remote nodes.
  */
-public interface NioSocketChannel {
+public interface GridNioConnectionListener {
     /**
-     * @return
+     *
+     * @param nodeId Remote node.
+     * @param ch Channel.
      */
-    public SocketChannel channel();
+    public void onConnect(UUID nodeId, ReadableByteChannel ch);
 }

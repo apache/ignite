@@ -15,35 +15,44 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.nio;
+package org.apache.ignite.internal.managers.communication;
 
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
+import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.spi.communication.tcp.internal.ConnectionKey;
 
 /**
  *
  */
 public class GridNioConnectionManagerImpl implements GridNioConnectionManager {
     /** */
-    private final Map<UUID, SocketChannel> channels = new ConcurrentHashMap<>();
+    private final Map<ConnectionKey, SocketChannel> channels = new ConcurrentHashMap<>();
+
+    /** */
+    private List<GridNioConnectionListener> connLsnrs;
 
     /** {@inheritDoc} */
-    @Override public void addChannel(UUID nodeId, SocketChannel sock) {
-        channels.putIfAbsent(nodeId, sock);
+    @Override public void addChannel(ConnectionKey key, SocketChannel sock) {
+        assert key != null && sock != null : "An error with connection key: " + key;
+
+        channels.putIfAbsent(key, sock);
+
+        for (GridNioConnectionListener lsnr : connLsnrs)
+            lsnr.onConnect(key.nodeId(), sock);
     }
 
     /** {@inheritDoc} */
-    @Override public SocketChannel getChannel(UUID nodeId) throws IgniteCheckedException {
-        return channels.get(nodeId);
+    @Override public SocketChannel getChannel(ConnectionKey key) {
+        return channels.get(key);
     }
 
     /** {@inheritDoc} */
-    @Override public void closeChannel(UUID nodeId) throws IgniteCheckedException {
-        SocketChannel sock = channels.get(nodeId);
+    @Override public void closeChannel(ConnectionKey key) throws IgniteCheckedException {
+        SocketChannel sock = channels.get(key);
 
         try {
             sock.close();
@@ -55,6 +64,7 @@ public class GridNioConnectionManagerImpl implements GridNioConnectionManager {
 
     /** {@inheritDoc} */
     @Override public void shutdown() throws IgniteCheckedException {
-
+        for (ConnectionKey key : channels.keySet())
+            closeChannel(key);
     }
 }

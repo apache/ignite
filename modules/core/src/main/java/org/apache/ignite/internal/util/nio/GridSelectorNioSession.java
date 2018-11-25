@@ -17,35 +17,21 @@
 
 package org.apache.ignite.internal.util.nio;
 
-import java.nio.channels.SocketChannel;
-import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
+import java.nio.channels.SelectionKey;
 
 /**
  *
  */
-public interface GridNioConnectionManager {
+public interface GridSelectorNioSession extends GridNioSession {
     /**
-     * @param nodeId
-     * @param sock
+     * @return Registered selection key for this session.
      */
-    public void addChannel(UUID nodeId, SocketChannel sock);
+    public SelectionKey key();
 
     /**
-     * @param nodeId
-     * @return
-     * @throws IgniteCheckedException
+     * Sets selection key for this session.
+     *
+     * @param key Selection key.
      */
-    public SocketChannel getChannel(UUID nodeId) throws IgniteCheckedException;
-
-    /**
-     * @param nodeId
-     * @throws IgniteCheckedException
-     */
-    public void closeChannel(UUID nodeId) throws IgniteCheckedException;
-
-    /**
-     * @throws IgniteCheckedException
-     */
-    public void shutdown() throws IgniteCheckedException;
+    public void key(SelectionKey key);
 }

@@ -18,8 +18,6 @@
 package org.apache.ignite.spi.communication;
 
 import java.io.Serializable;
-import java.nio.channels.FileChannel;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.util.Collection;
 import org.apache.ignite.cluster.ClusterNode;
@@ -116,25 +114,15 @@ public interface CommunicationSpi<T extends Serializable> extends IgniteSpi {
     /**
      * @return {@code True} if new type of direct connections supported.
      */
-    public default boolean pipeConnectionSupported() {
+    public default boolean directConnectionSupported() {
         return false;
     }
 
     /**
-     * @param src Source cluster node to initiate connection with.
-     * @return Channel to listen.
+     * @param node Destination cluster node to communicate with.
      * @throws IgniteSpiException If fails.
      */
-    public default ReadableByteChannel getRemotePipe(ClusterNode src) throws IgniteSpiException {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * @param dest Destination cluster node to communicate with.
-     * @param out Channel to write data.
-     * @throws IgniteSpiException If fails.
-     */
-    public default void sendOnPipe(ClusterNode dest, WritableByteChannel out) throws IgniteSpiException {
+    public default WritableByteChannel getOrCreateChannel(ClusterNode node) throws IgniteSpiException {
         throw new UnsupportedOperationException();
     }
 }

@@ -39,7 +39,7 @@ import org.apache.ignite.util.deque.FastSizeDeque;
  * Note that this implementation requires non-null values for local and remote
  * socket addresses.
  */
-class GridSelectorNioSessionImpl extends GridNioSessionImpl implements GridNioKeyAttachment {
+class GridSelectorNioSessionImpl extends GridNioSessionImpl implements GridNioKeyAttachment, GridSelectorNioSession {
     /** Pending write requests. */
     private final FastSizeDeque<SessionWriteRequest> queue = new FastSizeDeque<>(new ConcurrentLinkedDeque<>());
 
@@ -148,12 +148,8 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl implements GridNioKe
         return worker;
     }
 
-    /**
-     * Sets selection key for this session.
-     *
-     * @param key Selection key.
-     */
-    void key(SelectionKey key) {
+    /** {@inheritDoc} */
+    @Override public void key(SelectionKey key) {
         assert key != null;
 
         this.key = key;
@@ -173,10 +169,8 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl implements GridNioKe
         return readBuf;
     }
 
-    /**
-     * @return Registered selection key for this session.
-     */
-    SelectionKey key() {
+    /** {@inheritDoc} */
+    @Override public SelectionKey key() {
         return key;
     }
 

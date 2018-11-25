@@ -30,7 +30,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 @IgniteCodeGeneratingFail
 public class HandshakeMessage2 extends HandshakeMessage {
     /** */
-    private static final byte PIPE_DATA_TRANSFER_MASK = 0x01;
+    private static final byte USE_CHANNEL_TRANSFER_MASK = 0x01;
 
     /** */
     public static final int HANDSHAKE2_MSG_FULL_SIZE = MESSAGE_FULL_SIZE + 5;
@@ -73,7 +73,7 @@ public class HandshakeMessage2 extends HandshakeMessage {
     public HandshakeMessage2(UUID nodeId, long connectCnt, long rcvCnt, int connIdx, boolean isPipe) {
         this(nodeId, connectCnt, rcvCnt, connIdx);
 
-        usePipeTransfer(isPipe);
+        useChannelTransfer(isPipe);
     }
 
     /** {@inheritDoc} */
@@ -94,15 +94,15 @@ public class HandshakeMessage2 extends HandshakeMessage {
     /**
      * @return If socket will be used to transfer raw files.
      */
-    public boolean usePipeTransfer() {
-        return (flags & PIPE_DATA_TRANSFER_MASK) != 0;
+    public boolean useChannelTransfer() {
+        return (flags & USE_CHANNEL_TRANSFER_MASK) != 0;
     }
 
     /**
-     * @param usePipeTransfer {@code True} if socket should be used to transfer raw files.
+     * @param useChannelTransfer {@code True} if socket should be used to transfer raw files.
      */
-    public final void usePipeTransfer(boolean usePipeTransfer) {
-        flags = usePipeTransfer ? (byte)(flags | PIPE_DATA_TRANSFER_MASK) : (byte)(flags & ~PIPE_DATA_TRANSFER_MASK);
+    public final void useChannelTransfer(boolean useChannelTransfer) {
+        flags = useChannelTransfer ? (byte)(flags | USE_CHANNEL_TRANSFER_MASK) : (byte)(flags & ~USE_CHANNEL_TRANSFER_MASK);
     }
 
     /** {@inheritDoc} */
