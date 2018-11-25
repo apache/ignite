@@ -134,6 +134,8 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.Metas
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.CheckpointMetricsTracker;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryWarmingUp;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryWarmingUpImpl;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionRecoverState;
@@ -1087,6 +1089,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         else
             changeTracker = null;
 
+        PageMemoryWarmingUp warmingUp = null;
+
+        if (plcCfg.isWarmingUpEnabled())
+            warmingUp = new PageMemoryWarmingUpImpl(plcCfg, memMetrics, cctx);
+
         PageMemoryImpl pageMem = new PageMemoryImpl(
             wrapMetricsMemoryProvider(memProvider, memMetrics),
             calculateFragmentSizes(
@@ -1114,10 +1121,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             this,
             memMetrics,
             resolveThrottlingPolicy(),
-            this
-        );
+            this,
+            warmingUp);
 
         memMetrics.pageMemory(pageMem);
+
+        if (warmingUp != null)
+            warmingUp.pageMemory(pageMem);
 
         return pageMem;
     }
@@ -1994,6 +2004,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
         finally {
             checkpointReadUnlock();
+        }
+
+        for (DataRegion dataRegion : dataRegionMap.values()) {
+            PageMemory pageMem = dataRegion.pageMemory();
+
+            if (pageMem instanceof PageMemoryEx)
+                ((PageMemoryEx)pageMem).startWarmingUp();
         }
     }
 

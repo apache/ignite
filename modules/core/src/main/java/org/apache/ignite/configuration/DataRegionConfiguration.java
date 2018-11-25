@@ -19,6 +19,7 @@ package org.apache.ignite.configuration;
 import java.io.Serializable;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryWarmingUp;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 
@@ -129,6 +130,15 @@ public final class DataRegionConfiguration implements Serializable {
      * Flag to enable Ignite Native Persistence.
      */
     private boolean persistenceEnabled = false;
+
+    /** Flag to enable warming up. */
+    private boolean warmingUpEnabled = false;
+
+    /** Wait warming up on start flag. */
+    private boolean waitWarmingUpOnStart = false;
+
+    /** Warming up runtime dump delay. */
+    private long warmingUpRuntimeDumpDelay = -1;
 
     /** Temporary buffer size for checkpoints in bytes. */
     private long checkpointPageBufSize;
@@ -341,6 +351,72 @@ public final class DataRegionConfiguration implements Serializable {
      */
     public DataRegionConfiguration setPersistenceEnabled(boolean persistenceEnabled) {
         this.persistenceEnabled = persistenceEnabled;
+
+        return this;
+    }
+
+    /**
+     * If enabled, list of loaded page IDs will be saved on node stop,
+     * and on the next node start pages will be loaded in memory again.
+     *
+     * @return Warming up enabled flag.
+     */
+    public boolean isWarmingUpEnabled() {
+        return warmingUpEnabled;
+    }
+
+    /**
+     * Sets warming up enabled flag.
+     *
+     * @param warmingUpEnabled Warming up enabled flag.
+     * @return {@code this} for chaining.
+     */
+    public DataRegionConfiguration setWarmingUpEnabled(boolean warmingUpEnabled) {
+        this.warmingUpEnabled = warmingUpEnabled;
+
+        return this;
+    }
+
+    /**
+     * If enabled, starting of page memory for this data region will wait for finishing of warming up process.
+     *
+     * @return Wait warming up on start flag.
+     */
+    public boolean isWaitWarmingUpOnStart() {
+        return waitWarmingUpOnStart;
+    }
+
+    /**
+     * Sets wait warming up on start flag.
+     *
+     * @param waitWarmingUpOnStart Wait warming up on start flag.
+     * @return {@code this} for chaining.
+     */
+    public DataRegionConfiguration setWaitWarmingUpOnStart(boolean waitWarmingUpOnStart) {
+        this.waitWarmingUpOnStart = waitWarmingUpOnStart;
+
+        return this;
+    }
+
+    /**
+     * Sets warming up runtime dump delay.
+     * Value {@code -1} (default) means that runtime dumps will be disabled and {@link PageMemoryWarmingUp}
+     * implementation will dump ids of loaded pages only on node stop.
+     *
+     * @return Warming up runtime dump delay.
+     */
+    public long getWarmingUpRuntimeDumpDelay() {
+        return warmingUpRuntimeDumpDelay;
+    }
+
+    /**
+     * Sets warming up runtime dump delay.
+     *
+     * @param warmingUpRuntimeDumpDelay Warming up runtime dump delay.
+     * @return {@code this} for chaining.
+     */
+    public DataRegionConfiguration setWarmingUpRuntimeDumpDelay(long warmingUpRuntimeDumpDelay) {
+        this.warmingUpRuntimeDumpDelay = warmingUpRuntimeDumpDelay;
 
         return this;
     }
