@@ -82,33 +82,28 @@ module.exports = {
         if (_isTrue('server:ssl')) {
             const SSLOptions = {
                 enable301Redirects: true,
-                trustXFPHeader: true,
-                passphrase: nconf.get('server:keyPassphrase')
+                trustXFPHeader: true
             };
 
-            const keyFile = nconf.get('server:key');
+            const setSslOption = (cfg, isFile = false) => {
+                const cfgValue = nconf.get(`server:${cfg}`);
 
-            if (keyFile)
-                SSLOptions.key = fs.readFileSync(keyFile);
+                const hasOption = !!cfgValue;
 
-            const certFile = nconf.get('server:cert');
+                if (hasOption)
+                    SSLOptions[cfg] = isFile ?  fs.readFileSync(cfgValue) : cfgValue;
 
-            if (certFile)
-                SSLOptions.cert = fs.readFileSync(certFile);
+                return hasOption;
+            };
 
-            const caFile = nconf.get('server:ca');
+            setSslOption('key', true);
+            setSslOption('cert', true);
+            setSslOption('ca', true);
+            setSslOption('passphrase');
+            setSslOption('secureProtocol');
 
-            if (certFile)
-                SSLOptions.ca = fs.readFileSync(caFile);
-
-            const ciphers = nconf.get('server:ciphers');
-
-            if (ciphers) {
-                SSLOptions.ciphers = ciphers;
+            if (setSslOption('ciphers'))
                 SSLOptions.honorCipherOrder = true;
-
-                SSLOptions.secureProtocol = 'TLSv1_2_method';
-            }
 
             settings.server.SSLOptions = SSLOptions;
         }

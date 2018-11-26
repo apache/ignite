@@ -116,11 +116,6 @@ public class AgentConfiguration {
     private String nodeTrustStorePass;
 
     /** */
-    @Parameter(names = {"-ncs", "--node-cipher-suites"},
-        description = "Optional comma-separated list of SSL cipher suites to be used to connect to cluster")
-    private String nodeCipherSuites;
-
-    /** */
     @Parameter(names = {"-sks", "--server-key-store"},
         description = "Path to key store that will be used to connect to Web server")
     private String srvKeyStore;
@@ -141,9 +136,9 @@ public class AgentConfiguration {
     private String srvTrustStorePass;
 
     /** */
-    @Parameter(names = {"-scs", "--server-cipher-suites"},
-        description = "Optional comma-separated list of SSL cipher suites to be used to connect to server")
-    private String srvCipherSuites;
+    @Parameter(names = {"-cs", "--cipher-suites"},
+        description = "Optional comma-separated list of SSL cipher suites to be used to connect to server and cluster")
+    private String cipherSuites;
 
     /** */
     @Parameter(names = {"-h", "--help"}, help = true, description = "Print this help message")
@@ -325,20 +320,6 @@ public class AgentConfiguration {
     }
 
     /**
-     * @return SSL cipher suites.
-     */
-    public String nodeCipherSuites() {
-        return nodeCipherSuites;
-    }
-
-    /**
-     * @param nodeCipherSuites SSL cipher suites.
-     */
-    public void nodeCipherSuites(String nodeCipherSuites) {
-        this.nodeCipherSuites = nodeCipherSuites;
-    }
-
-    /**
      * @return Path to server key store.
      */
     public String serverKeyStore() {
@@ -397,15 +378,15 @@ public class AgentConfiguration {
     /**
      * @return SSL cipher suites.
      */
-    public String serverCipherSuites() {
-        return srvCipherSuites;
+    public String cipherSuites() {
+        return cipherSuites;
     }
 
     /**
-     * @param srvCipherSuites SSL cipher suites.
+     * @param cipherSuites SSL cipher suites.
      */
-    public void serverCipherSuites(String srvCipherSuites) {
-        this.srvCipherSuites = srvCipherSuites;
+    public void cipherSuites(String cipherSuites) {
+        this.cipherSuites = cipherSuites;
     }
 
     /**
@@ -499,9 +480,6 @@ public class AgentConfiguration {
         if (nodeTrustStorePass == null)
             nodeTrustStorePassword(cfg.nodeTrustStorePassword());
 
-        if (nodeCipherSuites == null)
-            nodeCipherSuites(cfg.nodeCipherSuites());
-
         if (srvKeyStore == null)
             serverKeyStore(cfg.serverKeyStore());
 
@@ -514,8 +492,8 @@ public class AgentConfiguration {
         if (srvTrustStorePass == null)
             serverTrustStorePassword(cfg.serverTrustStorePassword());
 
-        if (srvCipherSuites == null)
-            serverCipherSuites(cfg.serverCipherSuites());
+        if (cipherSuites == null)
+            cipherSuites(cfg.cipherSuites());
     }
 
     /** {@inheritDoc} */

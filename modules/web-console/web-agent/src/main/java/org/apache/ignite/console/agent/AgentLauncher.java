@@ -328,7 +328,7 @@ public class AgentLauncher {
             AgentUtils.initSsl(builder,
                 cfg.serverKeyStore(), cfg.serverKeyStorePassword(),
                 cfg.serverTrustStore(), cfg.serverTrustStorePassword(),
-                cfg.serverCipherSuites());
+                cfg.cipherSuites());
 
             OkHttpClient sslFactory = builder.build();
 

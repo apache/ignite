@@ -1,27 +1,29 @@
 {
-    "server": {
-        "port": 3000,
-        "sessionSecret": "CHANGE ME",
-        "ssl": false,
-        "key": "serve/keys/test.key",
-        "cert": "serve/keys/test.crt",
-        "ca": "serve/keys/ca.crt",
-        "keyPassphrase": "password",
-        "disable": {
-            "signup": false
-        }
-    },
-    "mongodb": {
-        "url": "mongodb://localhost/console"
-    },
-    "mail": {
-        "service": "",
-        "from": "Some Company Web Console <some_username@some_company.com>",
-        "greeting": "Some Company Web Console",
-        "sign": "Kind regards,<br>Some Company Team",
-        "auth": {
-            "user": "some_username@some_company.com",
-            "pass": ""
-        }
+  "server": {
+    "port": 3000,
+    "sessionSecret": "CHANGE ME",
+    "ssl": false,
+    "key": "serve/keys/server.key",
+    "cert": "serve/keys/server.crt",
+    "ca": "serve/keys/ca.crt",
+    "ciphers": "NULL-SHA256:RSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:!ALL",
+    "secureProtocol": "TLSv1_2_method",
+    "passphrase": "password",
+    "disable": {
+      "signup": false
     }
+  },
+  "mongodb": {
+    "url": "mongodb://localhost/console"
+  },
+  "mail": {
+    "service": "",
+    "from": "Some Company Web Console <some_username@some_company.com>",
+    "greeting": "Some Company Web Console",
+    "sign": "Kind regards,<br>Some Company Team",
+    "auth": {
+      "user": "some_username@some_company.com",
+      "pass": ""
+    }
+  }
 }
