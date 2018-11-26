@@ -24,7 +24,7 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
  */
 public class IgniteCacheTxNearPeekModesTest extends IgniteCacheTxPeekModesTest {
     /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
+    @Override public void setUp() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
 
         super.setUp();

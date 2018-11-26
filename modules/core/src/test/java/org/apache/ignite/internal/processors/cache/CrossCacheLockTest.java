@@ -47,7 +47,7 @@ public class CrossCacheLockTest extends GridCommonAbstractTest {
     private static final String CACHE2 = "cache2";
 
     /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
+    @Override public void setUp() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
         super.setUp();

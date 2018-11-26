@@ -38,6 +38,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -147,6 +148,9 @@ public class CashEventWithTxLabelTest extends GridCommonAbstractTest {
 
                 for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
                     this.concurrency = concurrency;
+
+                    if (MvccFeatureChecker.forcedMvcc() && !MvccFeatureChecker.isSupported(concurrency, isolation))
+                        continue;
 
                     for (int i = 0; i < nodes.length - 1; i++) {
                         Ignite nodeForPut = nodes[i];

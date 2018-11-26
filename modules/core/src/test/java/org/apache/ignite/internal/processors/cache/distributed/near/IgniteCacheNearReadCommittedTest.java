@@ -35,7 +35,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED
 @SuppressWarnings("RedundantMethodOverride")
 public class IgniteCacheNearReadCommittedTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
+    @Override public void setUp() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
 
         super.setUp();

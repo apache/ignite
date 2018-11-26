@@ -21,6 +21,7 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -30,7 +31,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  */
 public class IgniteCacheInvokeReadThroughSingleNodeTest extends IgniteCacheInvokeReadThroughAbstractTest {
     /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
+    @Override public void setUp() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
 
         super.setUp();
@@ -95,5 +96,41 @@ public class IgniteCacheInvokeReadThroughSingleNodeTest extends IgniteCacheInvok
      */
     public void testInvokeReadThroughTxLocal() throws Exception {
         invokeReadThrough(cacheConfiguration(LOCAL, TRANSACTIONAL, 0, false));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeReadThroughMvccTx() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8582");
+
+        invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL_SNAPSHOT, 1, false));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeReadThroughMvccTxNearCache() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8582");
+
+        invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL_SNAPSHOT, 1, true));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeReadThroughMvccTxReplicated() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8582");
+
+        invokeReadThrough(cacheConfiguration(REPLICATED, TRANSACTIONAL_SNAPSHOT, 0, false));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeReadThroughMvccTxLocal() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8582");
+
+        invokeReadThrough(cacheConfiguration(LOCAL, TRANSACTIONAL_SNAPSHOT, 0, false));
     }
 }

@@ -39,7 +39,7 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 @SuppressWarnings("unchecked")
 public class IgniteCacheLockFailoverSelfTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
+    @Override public void setUp() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
         super.setUp();

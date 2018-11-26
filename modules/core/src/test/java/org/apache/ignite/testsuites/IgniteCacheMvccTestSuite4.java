@@ -21,6 +21,7 @@ import java.util.HashSet;
 import junit.framework.TestSuite;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.store.CacheStoreListenerRWThroughDisabledAtomicCacheTest;
+import org.apache.ignite.internal.processors.cache.CacheConnectionLeakStoreTxTest;
 import org.apache.ignite.internal.processors.cache.CacheGetEntryOptimisticReadCommittedSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheGetEntryOptimisticRepeatableReadSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheGetEntryOptimisticSerializableSelfTest;
@@ -52,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheConfigurationDefau
 import org.apache.ignite.internal.processors.cache.IgniteCacheConfigurationTemplateTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheContainsKeyAtomicTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheDynamicStopSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheInvokeReadThroughSingleNodeTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheStartTest;
 import org.apache.ignite.internal.processors.cache.IgniteClientCacheInitializationFailTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheFilterTest;
@@ -72,6 +74,7 @@ import org.apache.ignite.internal.processors.cache.distributed.CacheAffinityEarl
 import org.apache.ignite.internal.processors.cache.distributed.CacheDiscoveryDataConcurrentJoinTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheGetFutureHangsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheGroupsPreloadTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheNoValueClassOnServerNodeTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheResultIsNotNullOnPartitionLossTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheStartOnJoinTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheCreatePutMultiNodeSelfTest;
@@ -79,7 +82,6 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheCreate
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheFailedUpdateResponseTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheReadFromBackupTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheSingleGetMessageTest;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteNoClassOnServerAbstractTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCrossCacheMvccTxSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCrossCacheTxSelfTest;
 import org.apache.ignite.internal.processors.cache.integration.IgniteCacheAtomicLoadAllTest;
@@ -123,6 +125,8 @@ public class IgniteCacheMvccTestSuite4 extends TestSuite {
         ignoredTests.add(CacheTxNotAllowReadFromBackupTest.class);
         ignoredTests.add(CacheOffheapMapEntrySelfTest.class);
         ignoredTests.add(CacheGroupsPreloadTest.class);
+        ignoredTests.add(CacheConnectionLeakStoreTxTest.class);
+        ignoredTests.add(IgniteCacheInvokeReadThroughSingleNodeTest.class);
 
         // Optimistic tx tests.
         ignoredTests.add(CacheGetEntryOptimisticReadCommittedSelfTest.class);
@@ -191,7 +195,7 @@ public class IgniteCacheMvccTestSuite4 extends TestSuite {
         ignoredTests.add(IgniteCacheJdbcBlobStoreNodeRestartTest.class);
         ignoredTests.add(IgniteInternalCacheTypesTest.class);
         ignoredTests.add(IgniteExchangeFutureHistoryTest.class);
-        ignoredTests.add(IgniteNoClassOnServerAbstractTest.class);
+        ignoredTests.add(CacheNoValueClassOnServerNodeTest.class);
         ignoredTests.add(IgniteSystemCacheOnClientTest.class);
         ignoredTests.add(CacheStopAndDestroySelfTest.class);
         ignoredTests.add(GridCacheStoreManagerDeserializationTest.class);
