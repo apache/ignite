@@ -94,6 +94,7 @@
     <Compile Include="ApiParity\QueryEntityConfigurationParityTest.cs" />
     <Compile Include="ApiParity\ServicesParityTest.cs" />
     <Compile Include="ApiParity\StreamerParityTest.cs" />
+    <Compile Include="ApiParity\TcpCommunicationSpiParityTest.cs" />
     <Compile Include="ApiParity\TransactionMetricsParityTest.cs" />
     <Compile Include="ApiParity\TransactionsParityTest.cs" />
     <Compile Include="AssertExtensions.cs" />

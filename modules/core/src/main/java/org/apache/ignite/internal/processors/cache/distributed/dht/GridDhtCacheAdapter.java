@@ -788,6 +788,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param taskName Task name.
      * @param expiry Expiry policy.
      * @param skipVals Skip values flag.
+     * @param txLbl Transaction label.
      * @param mvccSnapshot MVCC snapshot.
      * @return Get future.
      */
@@ -800,6 +801,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable IgniteCacheExpiryPolicy expiry,
         boolean skipVals,
         boolean recovery,
+        @Nullable String txLbl,
         MvccSnapshot mvccSnapshot
     ) {
         return getAllAsync0(keys,
@@ -814,6 +816,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             /*keep cache objects*/true,
             recovery,
             /*need version*/true,
+            txLbl,
             mvccSnapshot);
     }
 
@@ -828,6 +831,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param taskNameHash Task name hash code.
      * @param expiry Expiry policy.
      * @param skipVals Skip values flag.
+     * @param txLbl Transaction label.
      * @param mvccSnapshot MVCC snapshot.
      * @return DHT future.
      */
@@ -842,6 +846,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable IgniteCacheExpiryPolicy expiry,
         boolean skipVals,
         boolean recovery,
+        @Nullable String txLbl,
         MvccSnapshot mvccSnapshot
     ) {
         GridDhtGetFuture<K, V> fut = new GridDhtGetFuture<>(ctx,
@@ -856,6 +861,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             skipVals,
             recovery,
             addReaders,
+            txLbl,
             mvccSnapshot);
 
         fut.init();
@@ -874,6 +880,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param taskNameHash Task name hash.
      * @param expiry Expiry.
      * @param skipVals Skip vals flag.
+     * @param txLbl Transaction label.
      * @param mvccSnapshot Mvcc snapshot.
      * @return Future for the operation.
      */
@@ -889,6 +896,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable IgniteCacheExpiryPolicy expiry,
         boolean skipVals,
         boolean recovery,
+        String txLbl,
         MvccSnapshot mvccSnapshot
     ) {
         GridDhtGetSingleFuture fut = new GridDhtGetSingleFuture<>(
@@ -904,6 +912,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             expiry,
             skipVals,
             recovery,
+            txLbl,
             mvccSnapshot);
 
         fut.init();
@@ -933,6 +942,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 expiryPlc,
                 req.skipValues(),
                 req.recovery(),
+                req.txLabel(),
                 req.mvccSnapshot());
 
         fut.listen(new CI1<IgniteInternalFuture<GridCacheEntryInfo>>() {
@@ -1037,6 +1047,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 expiryPlc,
                 req.skipValues(),
                 req.recovery(),
+                req.txLabel(),
                 req.mvccSnapshot());
 
         fut.listen(new CI1<IgniteInternalFuture<Collection<GridCacheEntryInfo>>>() {
@@ -1259,8 +1270,14 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param curVer Current topology version.
      * @return {@code True} if cache affinity changed and operation should be remapped.
      */
-    protected final boolean needRemap(AffinityTopologyVersion expVer, AffinityTopologyVersion curVer) {
-        if (expVer.equals(curVer))
+    protected final boolean needRemap(AffinityTopologyVersion expVer, AffinityTopologyVersion curVer,
+        Collection<KeyCacheObject> keys) {
+        if (curVer.equals(expVer))
+            return false;
+
+        AffinityTopologyVersion lastAffChangedTopVer = ctx.shared().exchange().lastAffinityChangedTopologyVersion(expVer);
+
+        if (curVer.compareTo(lastAffChangedTopVer) >= 0 && curVer.compareTo(expVer) <= 0)
             return false;
 
         // TODO IGNITE-7164 check mvcc crd for mvcc enabled txs.
