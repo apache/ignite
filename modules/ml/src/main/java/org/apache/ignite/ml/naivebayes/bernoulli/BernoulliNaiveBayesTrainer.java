@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.naivebayes.bernoulli;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import org.apache.ignite.ml.dataset.Dataset;
@@ -95,8 +96,8 @@ public class BernoulliNaiveBayesTrainer extends SingleLabelDatasetTrainer<Bernou
                         onesCount = new long[size][];
                         for (int i = 0; i < size; i++) {
                             onesCount[i] = new long[bucketThresholds[i].length + 1];
+                            Arrays.fill(onesCount[i], 0L);
                         }
-//                        Arrays.fill(onesCount, 0L);
                         res.onesCountPerLbl.put(label, onesCount);
                     }
                     if (!res.featureCountersPerLbl.containsKey(label)) {
@@ -107,7 +108,6 @@ public class BernoulliNaiveBayesTrainer extends SingleLabelDatasetTrainer<Bernou
                     onesCount = res.onesCountPerLbl.get(label);
                     for (int j = 0; j < size; j++) {
                         double x = features.get(j);
-
                         int bucketNumber = toBucketNumber(x, bucketThresholds[j]);
                         ++onesCount[j][bucketNumber];
                     }
@@ -145,14 +145,13 @@ public class BernoulliNaiveBayesTrainer extends SingleLabelDatasetTrainer<Bernou
                 int count = sumsHolder.featureCountersPerLbl.get(label);
                 long[][] sum = sumsHolder.onesCountPerLbl.get(label);
 
-
                 for (int i = 0; i < featureCount; i++) {
 
                     int bucketsCount = sum[i].length;
                     probabilities[lbl][i] = new double[bucketsCount];
-                    for (int j = 0; j < bucketsCount; j++) {
 
-                    probabilities[lbl][i][j] = (double)sum[i][j] / count;
+                    for (int j = 0; j < bucketsCount; j++) {
+                        probabilities[lbl][i][j] = (double)sum[i][j] / count;
                     }
                 }
 
