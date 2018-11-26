@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -128,6 +129,9 @@ import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
  * Managed transaction adapter.
  */
 public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implements IgniteInternalTx, Externalizable {
+    /** Tx prepare commit counters. */
+    public static final Map<GridCacheVersion, Integer> TX_PREPARE_COMMIT_COUNTERS = new ConcurrentHashMap<>();
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -1201,6 +1205,33 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
                     if (!txState().mvccEnabled())
                         ptr = cctx.tm().logTxRecord(this);
+
+                    if (state == PREPARED) {
+                        TX_PREPARE_COMMIT_COUNTERS.compute(nearXidVersion(), (k, v) -> {
+                            if (v == null)
+                                return 1;
+
+                            if (v == 0)
+                                throw new AssertionError("PCPC Problem");
+
+                            if (v == -1)
+                                throw new AssertionError("Prepare after rollback");
+
+                            return v + 1;
+                        });
+                    }
+
+                    if (state == COMMITTED) {
+                        TX_PREPARE_COMMIT_COUNTERS.compute(nearXidVersion(), (k, v) -> {
+                            if (v == 0)
+                                throw new AssertionError("There are more prepares than commits");
+
+                            return v - 1;
+                        });
+                    }
+
+                    if (state == ROLLED_BACK)
+                        TX_PREPARE_COMMIT_COUNTERS.compute(nearXidVersion(), (k, v) -> -1);
                 }
             }
         }
