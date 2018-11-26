@@ -26,7 +26,7 @@ public class BernoulliNaiveBayesSumsHolder implements AutoCloseable, Serializabl
     /** Serial version uid. */
     private static final long serialVersionUID = -2059362365851744206L;
     /** Sum of all values above threshold for all features for each label */
-    Map<Double, long[]> onesCountPerLbl = new HashMap<>();
+    Map<Double, long[][]> onesCountPerLbl = new HashMap<>();
     /** Rows count for each label */
     Map<Double, Integer> featureCountersPerLbl = new HashMap<>();
 
@@ -38,9 +38,11 @@ public class BernoulliNaiveBayesSumsHolder implements AutoCloseable, Serializabl
     }
 
     /** In-place operation. Sums {@code arr2} to {@code arr1} element to element. */
-    private long[] sum(long[] arr1, long[] arr2) {
+    private long[][] sum(long[][] arr1, long[][] arr2) {
         for (int i = 0; i < arr1.length; i++) {
-            arr1[i] += arr2[i];
+            for (int j = 0; j < arr1[i].length; j++) {
+                arr1[i][j] += arr2[i][j];
+            }
         }
         return arr1;
     }

@@ -18,7 +18,6 @@
 package org.apache.ignite.ml.naivebayes.bernoulli;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import org.apache.ignite.ml.dataset.Dataset;
@@ -89,11 +88,15 @@ public class BernoulliNaiveBayesTrainer extends SingleLabelDatasetTrainer<Bernou
                     Vector features = featureExtractor.apply(entity.getKey(), entity.getValue());
                     Double label = lbExtractor.apply(entity.getKey(), entity.getValue());
 
-                    long[] onesCount;
+                    long[][] onesCount;
 
+                    int size = features.size();
                     if (!res.onesCountPerLbl.containsKey(label)) {
-                        onesCount = new long[features.size()];
-                        Arrays.fill(onesCount, 0L);
+                        onesCount = new long[size][];
+                        for (int i = 0; i < size; i++) {
+                            onesCount[i] = new long[bucketThresholds[i].length + 1];
+                        }
+//                        Arrays.fill(onesCount, 0L);
                         res.onesCountPerLbl.put(label, onesCount);
                     }
                     if (!res.featureCountersPerLbl.containsKey(label)) {
@@ -102,10 +105,11 @@ public class BernoulliNaiveBayesTrainer extends SingleLabelDatasetTrainer<Bernou
                     res.featureCountersPerLbl.put(label, res.featureCountersPerLbl.get(label) + 1);
 
                     onesCount = res.onesCountPerLbl.get(label);
-                    for (int j = 0; j < features.size(); j++) {
+                    for (int j = 0; j < size; j++) {
                         double x = features.get(j);
-                        if (x >= bucketThresholds[0][0])
-                            ++onesCount[j];
+
+                        int bucketNumber = toBucketNumber(x, bucketThresholds[j]);
+                        ++onesCount[j][bucketNumber];
                     }
                 }
                 return res;
@@ -130,7 +134,7 @@ public class BernoulliNaiveBayesTrainer extends SingleLabelDatasetTrainer<Bernou
             int labelCount = sortedLabels.size();
             int featureCount = sumsHolder.onesCountPerLbl.get(sortedLabels.get(0)).length;
 
-            double[][] probabilities = new double[labelCount][featureCount];
+            double[][][] probabilities = new double[labelCount][featureCount][];
             double[] classProbabilities = new double[labelCount];
             double[] labels = new double[labelCount];
             long datasetSize = sumsHolder.featureCountersPerLbl.values().stream().mapToInt(i -> i).sum();
@@ -139,10 +143,17 @@ public class BernoulliNaiveBayesTrainer extends SingleLabelDatasetTrainer<Bernou
 
             for (Double label : sortedLabels) {
                 int count = sumsHolder.featureCountersPerLbl.get(label);
-                long[] sum = sumsHolder.onesCountPerLbl.get(label);
+                long[][] sum = sumsHolder.onesCountPerLbl.get(label);
+
 
                 for (int i = 0; i < featureCount; i++) {
-                    probabilities[lbl][i] = (double)sum[i] / count;
+
+                    int bucketsCount = sum[i].length;
+                    probabilities[lbl][i] = new double[bucketsCount];
+                    for (int j = 0; j < bucketsCount; j++) {
+
+                    probabilities[lbl][i][j] = (double)sum[i][j] / count;
+                    }
                 }
 
                 if (equiprobableClasses) {
@@ -173,8 +184,8 @@ public class BernoulliNaiveBayesTrainer extends SingleLabelDatasetTrainer<Bernou
             return false;
         }
 
-        Optional<long[]> optinalFirst = holder1.onesCountPerLbl.values().stream().findFirst();
-        Optional<long[]> optinalSecond = holder2.onesCountPerLbl.values().stream().findFirst();
+        Optional<long[][]> optinalFirst = holder1.onesCountPerLbl.values().stream().findFirst();
+        Optional<long[][]> optinalSecond = holder2.onesCountPerLbl.values().stream().findFirst();
 
         if (optinalFirst.isPresent()) {
             if (optinalSecond.isPresent()) {

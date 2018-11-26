@@ -38,6 +38,8 @@ public class BernoulliNaiveBayesTrainerTest extends TrainerTest {
 
     /** Data. */
     private static final Map<Integer, double[]> data = new HashMap<>();
+    /** */
+    private static final double[][] thresholds = new double[][] {{.5}, {.5}, {.5}, {.5}, {.5}};
 
     static {
         data.put(0, new double[] {0, 0, 1, 1, 1, LABEL_1});
@@ -58,9 +60,6 @@ public class BernoulliNaiveBayesTrainerTest extends TrainerTest {
 
     /** */
     private BernoulliNaiveBayesTrainer trainer;
-
-    /** */
-    private static final double[][] thresholds = new double[][] {{.5}, {.5}, {.5}, {.5}, {.5}};
 
     /** Initialization {@code BernoulliNaiveBayesTrainer}. */
     @Before
@@ -118,9 +117,9 @@ public class BernoulliNaiveBayesTrainerTest extends TrainerTest {
     /** */
     @Test
     public void testReturnsCorrectPriorProbabilities() {
-        double[][] expectedPriorProbabilites = new double[][] {
-            {.5, .5, 1. / 3, .5, .5},
-            {1, 4. / 7, 3. / 7, 5. / 7, 3. / 7}
+        double[][][] expectedPriorProbabilites = new double[][][] {
+            {{.5, .5}, {.5, .5}, {2. / 3., 1. / 3.}, {.5, .5}, {.5, .5}},
+            {{0, 1}, {3. / 7, 4. / 7}, {4. / 7, 3. / 7}, {2. / 7, 5. / 7}, {4. / 7, 3. / 7,}}
         };
 
         BernoulliNaiveBayesModel model = trainer.fit(
@@ -129,8 +128,11 @@ public class BernoulliNaiveBayesTrainerTest extends TrainerTest {
             (k, v) -> v[v.length - 1]
         );
 
-        Assert.assertArrayEquals(expectedPriorProbabilites[0], model.getProbabilities()[0], PRECISION);
-        Assert.assertArrayEquals(expectedPriorProbabilites[1], model.getProbabilities()[1], PRECISION);
+        for (int i = 0; i < expectedPriorProbabilites.length; i++) {
+            for (int j = 0; j < expectedPriorProbabilites[i].length; j++) {
+                Assert.assertArrayEquals(expectedPriorProbabilites[i][j], model.getProbabilities()[i][j], PRECISION);
+            }
+        }
     }
 
 }

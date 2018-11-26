@@ -29,9 +29,9 @@ public class BernoulliNaiveBayesModelTest {
     public void testPredictWithTwoClasses() {
         double first = 1;
         double second = 2;
-        double[][] probabilities = new double[][] {
-            {.5, .5, 1. / 3., .5, .5},
-            {1, 4. / 7, 3. / 7, 5. / 7, 3. / 7}
+        double[][][] probabilities = new double[][][] {
+            {{.5, .5}, {.5, .5}, {2. / 3., 1. / 3.}, {.5, .5}, {.5, .5}},
+            {{0, 1}, {3. / 7, 4. / 7}, {4. / 7, 3. / 7}, {2. / 7, 5. / 7}, {4. / 7, 3. / 7,}}
         };
 
         double[] classProbabilities = new double[] {6. / 13, 7. / 13};

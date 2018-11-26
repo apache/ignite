@@ -33,7 +33,7 @@ public class BernoulliNaiveBayesModel implements Model<Vector, Double>, Exportab
     /** */
     private static final long serialVersionUID = -127386523291350345L;
     /** Means of features for all classes. kth row contains means for labels[k] class. */
-    private final double[][] probabilities;
+    private final double[][][] probabilities;
     /** Prior probabilities of each class */
     private final double[] classProbabilities;
     /** Labels. */
@@ -50,7 +50,7 @@ public class BernoulliNaiveBayesModel implements Model<Vector, Double>, Exportab
      * @param sumsHolder Amount values which are abouve the threshold per label.
      * @param labels Labels.
      */
-    public BernoulliNaiveBayesModel(double[][] probabilities, double[] classProbabilities, double[] labels,
+    public BernoulliNaiveBayesModel(double[][][] probabilities, double[] classProbabilities, double[] labels,
         double[][] bucketThresholds, BernoulliNaiveBayesSumsHolder sumsHolder) {
         this.probabilities = probabilities;
         this.classProbabilities = classProbabilities;
@@ -74,8 +74,9 @@ public class BernoulliNaiveBayesModel implements Model<Vector, Double>, Exportab
 
             for (int j = 0; j < probabilities[0].length; j++) {
                 int x = toBucketNumber(vector.get(j), bucketThresholds[j]);
-                double p = probabilities[i][j];
-                probabilityPower += (x == 1 ? Math.log(p) : Math.log(1 - p));
+                double p = probabilities[i][j][x];
+//                probabilityPower += (x == 1 ? Math.log(p) : Math.log(1 - p));
+                probabilityPower += (p > 0 ? Math.log(p) : .0);
             }
 
             if (probabilityPower > maxProbapilityPower) {
@@ -87,7 +88,7 @@ public class BernoulliNaiveBayesModel implements Model<Vector, Double>, Exportab
     }
 
     /** */
-    public double[][] getProbabilities() {
+    public double[][][] getProbabilities() {
         return probabilities;
     }
 
