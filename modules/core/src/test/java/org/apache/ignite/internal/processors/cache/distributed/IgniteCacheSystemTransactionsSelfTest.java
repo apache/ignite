@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -112,7 +113,9 @@ public class IgniteCacheSystemTransactionsSelfTest extends GridCacheAbstractSelf
 
         IgniteInternalCache<Object, Object> utilityCache = ignite.context().cache().utilityCache();
 
-        try (GridNearTxLocal itx = utilityCache.txStartEx(OPTIMISTIC, SERIALIZABLE)) {
+        try (GridNearTxLocal itx = MvccFeatureChecker.forcedMvcc() ?
+            utilityCache.txStartEx(PESSIMISTIC, REPEATABLE_READ) :
+            utilityCache.txStartEx(OPTIMISTIC, SERIALIZABLE)) {
             utilityCache.put("1", "1");
 
             itx.commitNearTxLocalAsync();

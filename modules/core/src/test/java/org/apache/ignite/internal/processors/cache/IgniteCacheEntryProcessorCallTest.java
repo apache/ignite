@@ -37,6 +37,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -99,7 +100,7 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testEntryProcessorCall() throws Exception {
+    public void testEntryProcessorCallOnAtomicCache() throws Exception {
         {
             CacheConfiguration<Integer, TestValue> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
             ccfg.setBackups(1);
@@ -117,7 +118,12 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
 
             checkEntryProcessorCallCount(ccfg, 1);
         }
+    }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testEntryProcessorCallOnTxCache() throws Exception {
         {
             CacheConfiguration<Integer, TestValue> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
             ccfg.setBackups(1);
@@ -132,6 +138,30 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
             ccfg.setBackups(0);
             ccfg.setWriteSynchronizationMode(FULL_SYNC);
             ccfg.setAtomicityMode(TRANSACTIONAL);
+
+            checkEntryProcessorCallCount(ccfg, 1);
+        }
+    }
+
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testEntryProcessorCallOnMvccCache() throws Exception {
+        {
+            CacheConfiguration<Integer, TestValue> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+            ccfg.setBackups(1);
+            ccfg.setWriteSynchronizationMode(FULL_SYNC);
+            ccfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
+
+            checkEntryProcessorCallCount(ccfg, 2);
+        }
+
+        {
+            CacheConfiguration<Integer, TestValue> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+            ccfg.setBackups(0);
+            ccfg.setWriteSynchronizationMode(FULL_SYNC);
+            ccfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
 
             checkEntryProcessorCallCount(ccfg, 1);
         }
@@ -161,19 +191,25 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
 
         checkEntryProcessCall(key++, clientCache1, null, null, expCallCnt);
 
-        if (ccfg.getAtomicityMode() == TRANSACTIONAL) {
-            checkEntryProcessCall(key++, clientCache1, OPTIMISTIC, REPEATABLE_READ, expCallCnt + 1);
+        if (ccfg.getAtomicityMode() != ATOMIC) {
+            if (ccfg.getAtomicityMode() == TRANSACTIONAL) {
+                checkEntryProcessCall(key++, clientCache1, OPTIMISTIC, REPEATABLE_READ, expCallCnt + 1);
+                checkEntryProcessCall(key++, clientCache1, OPTIMISTIC, SERIALIZABLE, expCallCnt + 1);
+            }
+
             checkEntryProcessCall(key++, clientCache1, PESSIMISTIC, REPEATABLE_READ, expCallCnt + 1);
-            checkEntryProcessCall(key++, clientCache1, OPTIMISTIC, SERIALIZABLE, expCallCnt + 1);
         }
 
         for (int i = 100; i < 110; i++) {
             checkEntryProcessCall(key++, srvCache, null, null, expCallCnt);
 
-            if (ccfg.getAtomicityMode() == TRANSACTIONAL) {
-                checkEntryProcessCall(key++, srvCache, OPTIMISTIC, REPEATABLE_READ, expCallCnt + 1);
-                checkEntryProcessCall(key++, srvCache, PESSIMISTIC, REPEATABLE_READ, expCallCnt + 1);
-                checkEntryProcessCall(key++, srvCache, OPTIMISTIC, SERIALIZABLE, expCallCnt + 1);
+            if (ccfg.getAtomicityMode() != ATOMIC) {
+                if (ccfg.getAtomicityMode() == TRANSACTIONAL) {
+                    checkEntryProcessCall(key++, clientCache1, OPTIMISTIC, REPEATABLE_READ, expCallCnt + 1);
+                    checkEntryProcessCall(key++, clientCache1, OPTIMISTIC, SERIALIZABLE, expCallCnt + 1);
+                }
+
+                checkEntryProcessCall(key++, clientCache1, PESSIMISTIC, REPEATABLE_READ, expCallCnt + 1);
             }
         }
 

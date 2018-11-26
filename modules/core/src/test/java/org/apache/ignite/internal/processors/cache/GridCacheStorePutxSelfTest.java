@@ -41,6 +41,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Tests for reproduce problem with GG-6895:
  * putx calls CacheStore.load() when null GridPredicate passed in to avoid IDE warnings
  */
+// TODO IGNITE-10366: Merge into GridCachePartitionedStorePutSelfTest
 public class GridCacheStorePutxSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);

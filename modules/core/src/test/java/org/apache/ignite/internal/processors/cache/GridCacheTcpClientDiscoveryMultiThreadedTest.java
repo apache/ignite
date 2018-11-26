@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -59,11 +60,18 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        // No-op.
+        client = false;
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+
         super.afterTestsStopped();
     }
 
@@ -108,7 +116,7 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
         srvNodesCnt = 2;
         clientNodesCnt = 3;
 
-        startServerNodes();
+        startGrids(2);
 
         client = true;
 
@@ -119,9 +127,13 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
 
             awaitPartitionMapExchange();
 
-            // Explicitly create near cache for even client nodes
-            for (int i = srvNodesCnt; i < gridCount(); i++)
-                grid(i).createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<>());
+            if (isNearSupported()) {
+                // Explicitly create near cache for even client nodes
+                for (int i = srvNodesCnt; i < gridCount(); i++) {
+                    if (i % 2 == 0)
+                        grid(i).createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<>());
+                }
+            }
 
             final AtomicInteger threadsCnt = new AtomicInteger();
 
@@ -136,7 +148,7 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
 
                             IgniteCache<Integer, Integer> cache = node.cache(DEFAULT_CACHE_NAME);
 
-                            boolean isNearCacheNode = clientIdx % 2 == 0;
+                            boolean isNearCacheNode = isNearSupported() && clientIdx % 2 == 0;
 
                             for (int i = 100 * clientIdx; i < 100 * (clientIdx + 1); i++)
                                 cache.put(i, i);
@@ -161,33 +173,10 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
     }
 
     /**
-     * @throws Exception If failed.
+     * @return {@code True} if near cache is supported, {@code False} otherwise.
      */
-    private void startServerNodes() throws Exception {
-        client = false;
-
-        for (int i = 0; i < srvNodesCnt; i++)
-            startGrid(i);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    private void stopServerNodes() throws Exception {
-        for (int i = 0; i < srvNodesCnt; i++)
-            stopGrid(i);
-    }
-
-    /**
-     * Executes simple operation on the cache.
-     *
-     * @param cache Cache instance to use.
-     */
-    private void performSimpleOperationsOnCache(IgniteCache<Integer, Integer> cache) {
-        for (int i = 100; i < 200; i++)
-            cache.put(i, i);
-
-        for (int i = 100; i < 200; i++)
-            assertEquals(i, (int) cache.get(i));
+    private boolean isNearSupported() {
+        return !MvccFeatureChecker.forcedMvcc() ||
+            MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
     }
 }

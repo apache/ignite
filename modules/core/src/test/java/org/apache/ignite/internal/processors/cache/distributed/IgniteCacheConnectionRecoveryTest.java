@@ -44,6 +44,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -75,7 +76,8 @@ public class IgniteCacheConnectionRecoveryTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(
             cacheConfiguration("cache1", TRANSACTIONAL),
-            cacheConfiguration("cache2", ATOMIC));
+            cacheConfiguration("cache2", TRANSACTIONAL_SNAPSHOT),
+            cacheConfiguration("cache3", ATOMIC));
 
         return cfg;
     }
@@ -94,6 +96,7 @@ public class IgniteCacheConnectionRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("unchecked")
     public void testConnectionRecovery() throws Exception {
         final Map<Integer, Integer> data = new TreeMap<>();
 
@@ -117,6 +120,7 @@ public class IgniteCacheConnectionRecoveryTest extends GridCommonAbstractTest {
 
                 IgniteCache cache1 = node.cache("cache1");
                 IgniteCache cache2 = node.cache("cache2");
+                IgniteCache cache3 = node.cache("cache3");
 
                 int iter = 0;
 
@@ -125,6 +129,8 @@ public class IgniteCacheConnectionRecoveryTest extends GridCommonAbstractTest {
                         cache1.putAllAsync(data).get(15, SECONDS);
 
                         cache2.putAllAsync(data).get(15, SECONDS);
+
+                        cache3.putAllAsync(data).get(15, SECONDS);
 
                         CyclicBarrier b = barrierRef.get();
 

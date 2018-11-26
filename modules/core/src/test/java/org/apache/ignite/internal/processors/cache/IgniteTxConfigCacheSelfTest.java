@@ -50,7 +50,7 @@ import org.apache.ignite.transactions.TransactionTimeoutException;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Test checks that grid transaction configuration doesn't influence system caches.
@@ -214,7 +214,7 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     protected void checkStartTxSuccess(final IgniteInternalCache<Object, Object> cache) throws Exception {
-        try (final GridNearTxLocal tx = CU.txStartInternal(cache.context(), cache, PESSIMISTIC, READ_COMMITTED)) {
+        try (final GridNearTxLocal tx = CU.txStartInternal(cache.context(), cache, PESSIMISTIC, REPEATABLE_READ)) {
             assert tx != null;
 
             sleepForTxFailure();
