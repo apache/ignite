@@ -39,6 +39,10 @@ class IgniteDataFrameSchemaSpec extends AbstractDataFrameSpec {
 
     var personWithAliasesDataFrame: DataFrame = _
 
+    var addedColumnDataFrame: DataFrame = _
+
+    var droppedColumnDataFrame: DataFrame = _
+
     describe("Loading DataFrame schema for Ignite tables") {
         it("should successfully load DataFrame schema for a Ignite SQL Table") {
             personDataFrame.schema.fields.map(f ⇒ (f.name, f.dataType, f.nullable)) should equal (
@@ -52,6 +56,25 @@ class IgniteDataFrameSchemaSpec extends AbstractDataFrameSpec {
                     ("AGE", IntegerType, true),
                     ("ID", LongType, false),
                     ("CITY_ID", LongType, false))
+            )
+        }
+
+        it("should show correct schema for a Ignite SQL Table with added column") {
+            addedColumnDataFrame.schema.fields.map(f ⇒ (f.name, f.dataType, f.nullable)) should equal (
+                Array(
+                    ("A", IntegerType, true),
+                    ("B", StringType, true),
+                    ("C", IntegerType, true),
+                    ("ID", IntegerType, false))
+            )
+        }
+
+        it("should show correct schema for a Ignite SQL Table with dropped column") {
+            droppedColumnDataFrame.schema.fields.map(f ⇒ (f.name, f.dataType, f.nullable)) should equal (
+                Array(
+                    ("B", StringType, true),
+                    ("C", IntegerType, true),
+                    ("ID", IntegerType, false))
             )
         }
 
@@ -87,6 +110,24 @@ class IgniteDataFrameSchemaSpec extends AbstractDataFrameSpec {
             .load()
 
         createPersonTable(client, DEFAULT_CACHE)
+
+        createMetaTestTable(client, DEFAULT_CACHE)
+
+        addColumnForTable(client, DEFAULT_CACHE)
+
+        addedColumnDataFrame = spark.read
+            .format(FORMAT_IGNITE)
+            .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
+            .option(OPTION_TABLE, "test")
+            .load()
+
+        dropColumnFromTable(client, DEFAULT_CACHE)
+
+        droppedColumnDataFrame = spark.read
+            .format(FORMAT_IGNITE)
+            .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
+            .option(OPTION_TABLE, "test")
+            .load()
 
         createEmployeeCache(client, EMPLOYEE_CACHE_NAME)
 

@@ -129,6 +129,27 @@ abstract class AbstractDataFrameSpec extends FunSpec with Matchers with BeforeAn
         cache.put("key3", Employee(3, "Arnold Schwarzenegger", 27, 1000))
     }
 
+    def createMetaTestTable(client: Ignite, cacheName: String): Unit = {
+        val cache = client.cache(cacheName)
+
+        cache.query(new SqlFieldsQuery(
+            "CREATE TABLE test (id INT PRIMARY KEY, a INT, b CHAR)")).getAll
+    }
+
+    def addColumnForTable(client: Ignite, cacheName: String): Unit = {
+        val cache = client.cache(cacheName)
+
+        cache.query(new SqlFieldsQuery(
+            "ALTER TABLE test ADD COLUMN c int")).getAll
+    }
+
+    def dropColumnFromTable(client: Ignite, cacheName: String): Unit = {
+        val cache = client.cache(cacheName)
+
+        cache.query(new SqlFieldsQuery(
+            "ALTER TABLE test DROP COLUMN a")).getAll
+    }
+
     def checkQueryData[T](res: DataFrame, expectedRes: Product)
         (implicit ord: T ⇒ Ordered[T]): Unit =
         checkQueryData(res, expectedRes, _.getAs[T](0))

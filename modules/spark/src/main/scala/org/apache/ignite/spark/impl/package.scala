@@ -180,7 +180,7 @@ package object impl {
             DriverManager.getConnection("jdbc:ignite:thin://" + address)
         }
         catch {
-            case e: IgniteException ⇒
+            case e: Exception ⇒
                 Logging.log.error("Failed to establish JDBC thin connection to cluster.", e)
 
                 throw e
