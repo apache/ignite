@@ -56,7 +56,6 @@ import org.yardstickframework.BenchmarkUtils;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.yardstick.IgniteBenchmarkUtils.checkIfNoLocalhost;
-import static org.apache.ignite.yardstick.IgniteBenchmarkUtils.checkIfOnlyLocalhost;
 import static org.apache.ignite.yardstick.IgniteBenchmarkUtils.getPortList;
 
 /**
@@ -315,7 +314,7 @@ public class IgniteNode implements BenchmarkServer {
         for (InetSocketAddress adr : regAdrList)
             adrList.add(adr.getHostString());
 
-        if (checkIfNoLocalhost(adrSetFromProp) && checkIfOnlyLocalhost(adrList)) {
+        if (checkIfNoLocalhost(adrSetFromProp)) {
             Collection<InetSocketAddress> newAdrList = new ArrayList<>(adrSetFromProp.size());
 
             List<String> toDisplay = new ArrayList<>(adrSetFromProp.size());

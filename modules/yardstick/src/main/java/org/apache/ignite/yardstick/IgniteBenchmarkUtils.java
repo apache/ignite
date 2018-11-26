@@ -161,7 +161,7 @@ public class IgniteBenchmarkUtils {
      * @param arg Argument name.
      * @param val Argument value.
      */
-    private static void addArg(List<String> args, String arg, Object val) {
+    private static void addArg(Collection<String> args, String arg, Object val) {
         args.add(arg);
         args.add(val.toString());
     }
@@ -186,32 +186,12 @@ public class IgniteBenchmarkUtils {
     }
 
     /**
-     * Checks if address list contains only localhost addresses.
-     *
-     * @param adrList address list.
-     * @return {@code true} if address list contains only localhost addresses  or {@code false} otherwise.
-     */
-    static boolean checkIfOnlyLocalhost(Collection<String> adrList) {
-        return countLocalAdr(adrList) == adrList.size();
-    }
-
-    /**
      * Checks if address list contains no localhost addresses.
      *
      * @param adrList address list.
      * @return {@code true} if address list contains no localhost addresses or {@code false} otherwise.
      */
-    static boolean checkIfNoLocalhost(Collection<String> adrList) {
-        return countLocalAdr(adrList) == 0;
-    }
-
-    /**
-     * Counts localhost addresses in list.
-     *
-     * @param adrList address list.
-     * @return {@code int} Number of localhost addresses in list.
-     */
-    private static int countLocalAdr(Collection<String> adrList) {
+    static boolean checkIfNoLocalhost(Iterable<String> adrList) {
         int locAdrNum = 0;
 
         for (String adr : adrList) {
@@ -219,7 +199,7 @@ public class IgniteBenchmarkUtils {
                 locAdrNum++;
         }
 
-        return locAdrNum;
+        return locAdrNum == 0;
     }
 
     /**
