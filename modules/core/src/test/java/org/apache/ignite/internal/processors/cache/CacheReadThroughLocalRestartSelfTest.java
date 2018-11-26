@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 
@@ -28,5 +29,12 @@ public class CacheReadThroughLocalRestartSelfTest extends CacheReadThroughRestar
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return LOCAL;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void setUp() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
+        super.setUp();
     }
 }

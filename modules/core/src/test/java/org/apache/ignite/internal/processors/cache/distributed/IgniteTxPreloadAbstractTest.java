@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -147,7 +148,8 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
      * @throws Exception If failed.
      */
     public void testLocalTxPreloadingOptimistic() throws Exception {
-        testLocalTxPreloading(OPTIMISTIC);
+        if (!MvccFeatureChecker.forcedMvcc()) // Do not check optimistic tx for mvcc.
+            testLocalTxPreloading(OPTIMISTIC);
     }
 
     /**
@@ -186,7 +188,7 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
 
             IgniteTransactions txs = ignite(i).transactions();
 
-            try (Transaction tx = txs.txStart(txConcurrency, TransactionIsolation.READ_COMMITTED)) {
+            try (Transaction tx = txs.txStart(txConcurrency, TransactionIsolation.REPEATABLE_READ)) {
                 cache.invoke(TX_KEY, new EntryProcessor<String, Integer, Void>() {
                     @Override public Void process(MutableEntry<String, Integer> e, Object... args) {
                         Integer val = e.getValue();

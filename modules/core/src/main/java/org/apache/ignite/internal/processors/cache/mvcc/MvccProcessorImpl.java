@@ -270,7 +270,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     @Override public void preProcessCacheConfiguration(CacheConfiguration ccfg) {
         if (FORCE_MVCC && ccfg.getAtomicityMode() == TRANSACTIONAL && !CU.isSystemCache(ccfg.getName())) {
             ccfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
-            //ccfg.setNearConfiguration(null); TODO do we need it here?
+            ccfg.setNearConfiguration(null);
         }
 
         if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT) {

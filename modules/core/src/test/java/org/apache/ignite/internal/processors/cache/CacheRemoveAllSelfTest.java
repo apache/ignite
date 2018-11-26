@@ -24,11 +24,20 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 
 /**
  * Test remove all method.
  */
 public class CacheRemoveAllSelfTest extends GridCacheAbstractSelfTest {
+    /** {@inheritDoc} */
+    @Override protected void setUp() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10082");
+
+        super.setUp();
+    }
+
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 2 * 60 * 1000;
@@ -67,6 +76,9 @@ public class CacheRemoveAllSelfTest extends GridCacheAbstractSelfTest {
 
         for (int i = 0; i < igniteId.get(); ++i) {
             IgniteCache locCache = grid(i).cache(DEFAULT_CACHE_NAME);
+
+            if (i==4)
+            System.out.println("Local size:" + i);
 
             assertEquals("Local size: " + locCache.localSize() + "\n" +
                 "On heap: " + locCache.localSize(CachePeekMode.ONHEAP) + "\n" +

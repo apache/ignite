@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -40,6 +41,13 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 public class CacheReadThroughRestartSelfTest extends GridCacheAbstractSelfTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
+    /** {@inheritDoc} */
+    @Override protected void setUp() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
+        super.setUp();
+    }
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -112,10 +120,13 @@ public class CacheReadThroughRestartSelfTest extends GridCacheAbstractSelfTest {
 
         Ignite ignite = grid(1);
 
-        cache = ignite.cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
+        cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         for (TransactionConcurrency txConcurrency : TransactionConcurrency.values()) {
             for (TransactionIsolation txIsolation : TransactionIsolation.values()) {
+                if (MvccFeatureChecker.forcedMvcc() && !MvccFeatureChecker.isSupported(txConcurrency, txIsolation))
+                    continue;
+
                 try (Transaction tx = ignite.transactions().txStart(txConcurrency, txIsolation, 100000, 1000)) {
                     for (int k = 0; k < 1000; k++) {
                         String key = "key" + k;

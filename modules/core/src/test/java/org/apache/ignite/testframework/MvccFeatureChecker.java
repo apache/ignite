@@ -46,7 +46,8 @@ public class MvccFeatureChecker {
         ENTRY_LOCK,
         CACHE_EVENTS,
         EVICTION,
-        EXPIRATION
+        EXPIRATION,
+        INTERCEPTORS
     }
 
     /**
@@ -128,6 +129,7 @@ public class MvccFeatureChecker {
      * @param feature Mvcc feature.
      * @throws AssertionError If failed.
      */
+    @SuppressWarnings("fallthrough")
     private static void validateFeature(Feature feature) {
         switch (feature) {
             case NEAR_CACHE:
@@ -150,6 +152,9 @@ public class MvccFeatureChecker {
 
             case EXPIRATION:
                 fail("https://issues.apache.org/jira/browse/IGNITE-7311");
+
+            case INTERCEPTORS:
+                fail("https://issues.apache.org/jira/browse/IGNITE-9323");
         }
     }
 }
