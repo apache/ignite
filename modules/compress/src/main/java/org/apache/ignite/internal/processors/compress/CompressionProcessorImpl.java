@@ -41,9 +41,6 @@ import static org.apache.ignite.internal.util.GridUnsafe.NATIVE_BYTE_ORDER;
  * Compression processor.
  */
 public class CompressionProcessorImpl extends CompressionProcessor {
-    /** */
-    static boolean testMode = false;
-
     /** Max page size. */
     private final ThreadLocalByteBuffer compactBuf = new ThreadLocalByteBuffer(MAX_PAGE_SIZE);
 
@@ -68,9 +65,6 @@ public class CompressionProcessorImpl extends CompressionProcessor {
 
     /** {@inheritDoc} */
     @Override public void checkPageCompressionSupported(Path storagePath, int pageSize) throws IgniteCheckedException {
-        if (testMode)
-            return;
-
         if (!U.isLinux())
             throw new IgniteCheckedException("Currently page compression is supported only for Linux.");
 

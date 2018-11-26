@@ -75,17 +75,6 @@ public class DiskPageCompressionIntegrationTest extends GridCommonAbstractTest {
     private FileIOFactory factory;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-        CompressionProcessorImpl.testMode = true;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        CompressionProcessorImpl.testMode = false;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         compression = null;
         compressionLevel = null;
