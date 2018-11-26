@@ -29,9 +29,8 @@ import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuit
 public class IgniteCacheReadThroughEvictionsVariationsSuite extends TestSuite {
     /**
      * @return Cache API test suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         return new ConfigVariationsTestSuiteBuilder(
             "Cache Read Through Variations Test",
             IgniteCacheReadThroughEvictionSelfTest.class)
