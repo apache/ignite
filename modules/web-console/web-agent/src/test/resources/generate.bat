@@ -21,16 +21,17 @@
 
 ::
 :: Preconditions:
-::  1. Download Open SSL for Windows from https://wiki.openssl.org/index.php/Binaries
-::  2. Unpack it to folder of your choice.
-::  3. Create "openssl.cnf" to in folder with Open SSL
-::     For example: https://github.com/openssl/openssl/blob/master/apps/openssl.cnf
-::  4. Add opensll & keytool to PATH variable if needed.
+::  1. If needed, download Open SSL for Windows from "https://wiki.openssl.org/index.php/Binaries".
+::   and unpack it to some folder.
+::  2. If needed, install JDK 8 or newer. We need "keytool" from "JDK/bin."
+::  3. Create "openssl.cnf" in some folder.
+::     You may use "https://github.com/openssl/openssl/blob/master/apps/openssl.cnf" as template.
+::  4. If needed, add "opensll" & "keytool" to PATH variable.
 ::
 ::  NOTE: In case of custom SERVER_DOMAIN_NAME you may need to tweak your "etc/hosts" file.
 ::
 
-:: Set Open SSL variables:
+:: Set Open SSL variables.
 set RANDFILE=_path_where_open_ssl_was_unpacked\.rnd
 set OPENSSL_CONF=_path_where_open_ssl_was_unpacked\openssl.cnf
 
@@ -71,7 +72,7 @@ echo subjectAltName         = @alt_names
 
 echo [ alt_names ]
 echo DNS.1                  = %SERVER_DOMAIN_NAME%
-) > "server.cfg"
+) > "server.cnf"
 
 :: Generate client config.
 (
@@ -94,17 +95,18 @@ echo subjectAltName         = @alt_names
 
 echo [ alt_names ]
 echo DNS.1                  = %CLIENT_DOMAIN_NAME%
-) > "client.cfg"
+) > "client.cnf"
 
+:: Generate certificates.
 openssl genrsa -des3 -passout pass:%PWD% -out server.key 1024
-openssl req -new -passin pass:%PWD% -key server.key -config server.cfg -out server.csr
+openssl req -new -passin pass:%PWD% -key server.key -config server.cnf -out server.csr
 
-openssl req -new -newkey rsa:1024 -nodes -keyout ca.key -x509 -days 365 -config server.cfg -out ca.crt
+openssl req -new -newkey rsa:1024 -nodes -keyout ca.key -x509 -days 365 -config server.cnf -out ca.crt
 
-openssl x509 -req -days 365 -in server.csr -CA ca.crt -CAkey ca.key -set_serial 01 -extensions req_ext -extfile server.cfg -out server.crt
+openssl x509 -req -days 365 -in server.csr -CA ca.crt -CAkey ca.key -set_serial 01 -extensions req_ext -extfile server.cnf -out server.crt
 openssl rsa -passin pass:%PWD% -in server.key -out server.nopass.key
 
-openssl req -new -utf8 -nameopt multiline,utf8 -newkey rsa:1024 -nodes -keyout client.key -config client.cfg -out client.csr
+openssl req -new -utf8 -nameopt multiline,utf8 -newkey rsa:1024 -nodes -keyout client.key -config client.cnf -out client.csr
 openssl x509 -req -days 365 -in client.csr -CA ca.crt -CAkey ca.key -set_serial 02 -out client.crt
 
 openssl pkcs12 -export -in server.crt -inkey server.key -certfile server.crt -out server.p12 -passin pass:%PWD% -passout pass:%PWD%
