@@ -15,9 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.inference.storage;
+package org.apache.ignite.ml.inference.storage.descriptor;
 
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.ml.inference.ModelDescriptor;
 
@@ -34,10 +33,10 @@ public class IgniteModelDescriptorStorage implements ModelDescriptorStorage {
     /**
      * Constructs a new instance of Ignite model descriptor storage.
      *
-     * @param ignite Ignite instance.
+     * @param models Ignite cache with model descriptors.
      */
-    public IgniteModelDescriptorStorage(Ignite ignite) {
-        models = ignite.getOrCreateCache(MODEL_DESCRIPTOR_CACHE_NAME);
+    public IgniteModelDescriptorStorage(IgniteCache<String, ModelDescriptor> models) {
+        this.models = models;
     }
 
     /** {@inheritDoc} */

@@ -15,34 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.inference.storage;
+package org.apache.ignite.ml.inference.storage.descriptor;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.ml.inference.ModelDescriptor;
 
 /**
- * Storage that allows to load, keep and get access to model descriptors (see {@link ModelDescriptor}).
+ * Model descriptor storage based on local hash map.
  */
-public interface ModelDescriptorStorage {
-    /**
-     * Saves the specified model descriptor with the specified model identifier.
-     *
-     * @param mdlId Model identifier.
-     * @param mdl Model descriptor.
-     */
-    public void put(String mdlId, ModelDescriptor mdl);
+public class LocalModelDescriptorStorage implements ModelDescriptorStorage {
+    /** Hash map model storage. */
+    private final Map<String, ModelDescriptor> models = new ConcurrentHashMap<>();
 
-    /**
-     * Returns model descriptor saved for the specified model identifier.
-     *
-     * @param mdlId Model identifier.
-     * @return Model descriptor.
-     */
-    public ModelDescriptor get(String mdlId);
+    /** {@inheritDoc} */
+    @Override public void put(String name, ModelDescriptor mdl) {
+        models.put(name, mdl);
+    }
 
-    /**
-     * Removes model descriptor for the specified model descriptor.
-     *
-     * @param mdlId Model identifier.
-     */
-    public void remove(String mdlId);
+    /** {@inheritDoc} */
+    @Override public ModelDescriptor get(String name) {
+        return models.get(name);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void remove(String name) {
+        models.remove(name);
+    }
 }

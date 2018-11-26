@@ -15,31 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.inference.storage;
+package org.apache.ignite.ml.inference.storage.model;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import org.apache.ignite.ml.inference.ModelDescriptor;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 
-/**
- * Model descriptor storage based on local hash map.
- */
-public class LocalModelDescriptorStorage implements ModelDescriptorStorage {
-    /** Hash map model storage. */
-    private final Map<String, ModelDescriptor> models = new ConcurrentHashMap<>();
+public class ModelStorageFactory {
 
-    /** {@inheritDoc} */
-    @Override public void put(String name, ModelDescriptor mdl) {
-        models.put(name, mdl);
-    }
+    public static final String MODEL_STORAGE_CACHE_NAME = "MODEL_STORAGE";
 
-    /** {@inheritDoc} */
-    @Override public ModelDescriptor get(String name) {
-        return models.get(name);
-    }
+    public static ModelStorage getModelStorage(Ignite ignite) {
+        IgniteCache<String, FileOrDirectory> cache = ignite.cache(MODEL_STORAGE_CACHE_NAME);
+        ModelStorageProvider storageProvider = new IgniteModelStorageProvider(cache);
 
-    /** {@inheritDoc} */
-    @Override public void remove(String name) {
-        models.remove(name);
+        return new DefaultModelStorage(storageProvider);
     }
 }
