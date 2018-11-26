@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
 
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
@@ -29,6 +28,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
@@ -44,16 +44,15 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class IgniteDemanderOnDeactivationTest extends GridCommonAbstractTest {
     /** */
-    private static final String STOPPING_CACHE_NAME = "cache_stopping";
+    private static final String CACHE_NAME = "cache";
 
     /** */
-    private static final String CACHE_NAME = "cache";
+    private static final String CACHE_NAME_1 = "cache_1";
 
     /** */
     private static final String CACHE_GROUP = "group";
@@ -120,23 +119,15 @@ public class IgniteDemanderOnDeactivationTest extends GridCommonAbstractTest {
         ig0.cluster().active(true);
 
         ig0.getOrCreateCaches(Arrays.asList(
-                new CacheConfiguration<>(STOPPING_CACHE_NAME)
-                        .setName(STOPPING_CACHE_NAME)
+                new CacheConfiguration<>(CACHE_NAME)
                         .setCacheMode(CacheMode.REPLICATED)
                         .setGroupName(CACHE_GROUP),
-                new CacheConfiguration<>(CACHE_NAME)
+                new CacheConfiguration<>(CACHE_NAME_1)
                         .setCacheMode(CacheMode.REPLICATED)
                         .setGroupName(CACHE_GROUP)
         ));
 
         stopGrid(1);
-
-        try (IgniteDataStreamer<Object, Object> streamer = ig0.dataStreamer(STOPPING_CACHE_NAME)) {
-            for (int i = 0; i < 3_000; i++)
-                streamer.addData(i, new byte[5 * 1000]);
-
-            streamer.flush();
-        }
 
         try (IgniteDataStreamer<Object, Object> streamer = ig0.dataStreamer(CACHE_NAME)) {
             for (int i = 0; i < 3_000; i++)
@@ -145,8 +136,15 @@ public class IgniteDemanderOnDeactivationTest extends GridCommonAbstractTest {
             streamer.flush();
         }
 
+        try (IgniteDataStreamer<Object, Object> streamer = ig0.dataStreamer(CACHE_NAME_1)) {
+            for (int i = 0; i < 3_000; i++)
+                streamer.addData(i, new byte[5 * 1000]);
 
-        IgniteEx ig1 = startGrid(1);
+            streamer.flush();
+        }
+
+
+        startGrid(1);
 
         ig0.context().state().changeGlobalState(false, ig0.cluster().currentBaselineTopology(), false);
 
@@ -154,7 +152,7 @@ public class IgniteDemanderOnDeactivationTest extends GridCommonAbstractTest {
 
         U.sleep(3000);
 
-        assertNull(ig1.context().failure().failureContext());
+        assertNull(grid(1).context().failure().failureContext());
     }
 
 
@@ -165,23 +163,29 @@ public class IgniteDemanderOnDeactivationTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg) throws IgniteSpiException {
-            if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof GridDhtPartitionSupplyMessage) {
-                int grpId = ((GridCacheGroupIdMessage)((GridIoMessage)msg).message()).groupId();
+            if (msg instanceof GridIoMessage && ((GridIoMessage) msg).message() instanceof GridDhtPartitionSupplyMessage) {
+                int grpId = ((GridCacheGroupIdMessage) ((GridIoMessage) msg).message()).groupId();
 
-                if (grpId == CU.cacheId(STOPPING_CACHE_NAME)) {
+                if (grpId == CU.cacheId(CACHE_GROUP)) {
                     CountDownLatch latch0 = SUPPLY_MESSAGE_LATCH.get();
 
-                    if (latch0 != null)
+                    if (latch0 != null) {
                         try {
                             latch0.await();
-                        }
-                        catch (InterruptedException ex) {
+                        } catch (InterruptedException ex) {
                             throw new IgniteException(ex);
                         }
-                }
-            }
+                    }
 
-            super.sendMessage(node, msg);
+                    try {
+                        U.sleep(100);
+                    } catch (IgniteInterruptedCheckedException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                super.sendMessage(node, msg);
+            }
         }
 
         /** {@inheritDoc} */
@@ -190,18 +194,25 @@ public class IgniteDemanderOnDeactivationTest extends GridCommonAbstractTest {
             if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof GridDhtPartitionSupplyMessage) {
                 int grpId = ((GridCacheGroupIdMessage)((GridIoMessage)msg).message()).groupId();
 
-                if (grpId == CU.cacheId(STOPPING_CACHE_NAME)) {
+                if (grpId == CU.cacheId(CACHE_GROUP)) {
                     CountDownLatch latch0 = SUPPLY_MESSAGE_LATCH.get();
 
-                    if (latch0 != null)
+                    if (latch0 != null) {
                         try {
                             latch0.await();
-                        }
-                        catch (InterruptedException ex) {
+                        } catch (InterruptedException ex) {
                             throw new IgniteException(ex);
                         }
+                    }
+
+                    try {
+                        U.sleep(100);
+                    } catch (IgniteInterruptedCheckedException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
+
 
             super.sendMessage(node, msg, ackC);
         }
