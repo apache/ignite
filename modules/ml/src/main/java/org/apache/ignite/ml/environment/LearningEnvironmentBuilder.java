@@ -42,7 +42,7 @@ public interface LearningEnvironmentBuilder extends Serializable {
      *
      * @return Learning environment for trainer.
      */
-    default public LearningEnvironment buildForTrainer() {
+    public default LearningEnvironment buildForTrainer() {
         return buildForWorker(-1);
     }
 

@@ -24,7 +24,6 @@ import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.trainers.transformers.BaggingUpstreamTransformer;
 
-
 /**
  * A builder constructing instances of a {@link Dataset}. Implementations of this interface encapsulate logic of
  * building specific datasets such as allocation required data structures and initialization of {@code context} part of
