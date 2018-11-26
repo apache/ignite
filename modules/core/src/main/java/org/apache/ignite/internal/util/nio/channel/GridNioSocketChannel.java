@@ -28,7 +28,7 @@ import org.apache.ignite.spi.communication.tcp.internal.ConnectionKey;
  */
 public interface GridNioSocketChannel extends Closeable {
     /** */
-    public ConnectionKey connectionKey();
+    public ConnectionKey id();
 
     /** */
     public SocketChannel channel();
@@ -41,9 +41,6 @@ public interface GridNioSocketChannel extends Closeable {
 
     /** */
     public boolean isActive();
-
-    /** */
-    public boolean isWritable();
 
     /**
      * @see Socket#isInputShutdown().

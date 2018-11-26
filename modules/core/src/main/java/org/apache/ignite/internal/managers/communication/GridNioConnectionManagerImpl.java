@@ -19,6 +19,7 @@ package org.apache.ignite.internal.managers.communication;
 
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,7 +34,7 @@ public class GridNioConnectionManagerImpl implements GridNioConnectionManager {
     private final Map<ConnectionKey, SocketChannel> channels = new ConcurrentHashMap<>();
 
     /** */
-    private List<GridNioConnectionListener> connLsnrs;
+    private List<GridNioConnectionListener> connLsnrs = new ArrayList<>();
 
     /** {@inheritDoc} */
     @Override public void addChannel(ConnectionKey key, SocketChannel sock) {

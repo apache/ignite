@@ -77,6 +77,7 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.spi.communication.tcp.internal.ConnectionKey;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
@@ -84,6 +85,7 @@ import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MSG_WRITER;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.NIO_OPERATION;
+import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.CONN_IDX_META;
 
 /**
  * TCP NIO server. Due to asynchronous nature of connections processing
@@ -912,29 +914,47 @@ public class GridNioServer<T> {
     }
 
     /**
-     * The GridNioSession will be destroyed.
+     * The new {@link GridNioSocketChannel} will be created and {@link GridNioSession} will be destroyed.
      *
      * @param ses Session.
      */
     public GridNioFuture<Boolean> createNioChannel(final GridSelectorNioSession ses) {
+        assert ses instanceof GridSelectorNioSessionImpl : ses;
+
+        GridSelectorNioSessionImpl impl = (GridSelectorNioSessionImpl)ses;
+
+        if (impl.closed())
+            return new GridNioFinishedFuture<>(false);
+
+        NioOperationFuture<Boolean> req =
+            new NioOperationFuture<>((SocketChannel)ses.key().channel(),
+                NioOperation.ADD_CHANNEL,
+                ses,
+                true,
+                null);
+
+        impl.offerStateChange(req);
+
+        return req;
+    }
+
+    /**
+     * Create a new NIO channel on local node.
+     * @param key Channel connection key.
+     * @param channel Socket channel.
+     * @throws IgniteCheckedException If fails.
+     */
+    public void createNioChannel(ConnectionKey key, SocketChannel channel) throws IgniteCheckedException {
         if (!closed) {
-            NioOperationFuture<Boolean> req =
-                new NioOperationFuture<>((SocketChannel)ses.key().channel(),
-                    NioOperation.ADD_CHANNEL,
-                    true,
-                    null);
+            GridNioSocketChannel nioSocketCh;
 
-            Integer idx = (Integer)ses.meta(WORKER_IDX_META_KEY);
+            if (!channels.add(nioSocketCh = new GridNioSocketChannelImpl(key, channel)))
+                throw new IgniteCheckedException("Channel connection already exists.");
 
-            assert idx != null : "Unknown worker index";
-
-            clientWorkers.get(idx).offer(req);
-
-            return req;
+            lsnr.onChannelAdded(nioSocketCh);
         }
         else
-            return new GridNioFinishedFuture<>(
-                new IgniteCheckedException("Server is stopped."));
+            throw new IgniteCheckedException("Server is stopped.");
     }
 
     /**
@@ -2139,12 +2159,24 @@ public class GridNioServer<T> {
 
                                 SocketChannel ch = req.socketChannel();
 
+                                close(req.session(), null, false);
+
+                                assert ch.isOpen() && ch.isConnected() : req;
+
                                 SelectionKey key = ch.keyFor(selector);
 
                                 if (key != null)
                                     key.cancel();
 
-                                channels.add(new GridNioSocketChannelImpl());
+                                ConnectionKey connKey = req.session().meta(CONN_IDX_META);
+
+                                assert connKey != null : req;
+
+                                GridNioSocketChannel nioSocketCh;
+
+                                channels.add(nioSocketCh = new GridNioSocketChannelImpl(connKey, ch));
+
+                                lsnr.onChannelAdded(nioSocketCh);
 
                                 req.onDone();
 
@@ -2710,14 +2742,24 @@ public class GridNioServer<T> {
             }
         }
 
+        /** */
+        protected boolean close(final GridSelectorNioSessionImpl ses, @Nullable final IgniteCheckedException e) {
+            return close(ses, e, true);
+        }
+
         /**
          * Closes the session and all associated resources, then notifies the listener.
          *
          * @param ses Session to be closed.
          * @param e Exception to be passed to the listener, if any.
+         * @param closeKey If {@code True} the channel will be closed.
          * @return {@code True} if this call closed the ses.
          */
-        protected boolean close(final GridSelectorNioSessionImpl ses, @Nullable final IgniteCheckedException e) {
+        protected boolean close(
+            final GridSelectorNioSessionImpl ses,
+            @Nullable final IgniteCheckedException e,
+            boolean closeKey
+        ) {
             if (e != null) {
                 // Print stack trace only if has runtime exception in it's cause.
                 if (e.hasCause(IOException.class))
@@ -2741,7 +2783,8 @@ public class GridNioServer<T> {
                         GridUnsafe.cleanDirectBuffer(ses.readBuffer());
                 }
 
-                closeKey(ses.key());
+                if (closeKey)
+                    closeKey(ses.key());
 
                 if (e != null)
                     filterChain.onExceptionCaught(ses, e);
@@ -3340,18 +3383,21 @@ public class GridNioServer<T> {
         /**
          * @param sockCh Socket channel.
          * @param op Operation to execute.
+         * @param ses Session.
          * @param accepted If socket accepted.
          * @param meta Optional meta.
          */
         NioOperationFuture(
             SocketChannel sockCh,
             NioOperation op,
+            GridSelectorNioSession ses,
             boolean accepted,
             @Nullable Map<Integer, ?> meta
         ) {
             super(null);
 
             this.op = op;
+            this.ses = (GridSelectorNioSessionImpl)ses;
             this.sockCh = sockCh;
             this.accepted = accepted;
             this.meta = meta;

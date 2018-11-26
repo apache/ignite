@@ -82,6 +82,6 @@ public interface GridNioServerListener<T> extends EventListener {
      * Called when new {@link GridNioSocketChannel} added to NIO server.
      */
     public default void onChannelAdded(GridNioSocketChannel channel) {
-        throw new UnsupportedOperationException();
+        // No-op.
     }
 }

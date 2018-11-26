@@ -105,6 +105,7 @@ import org.apache.ignite.internal.util.nio.build.ClientCommunicationBuilder;
 import org.apache.ignite.internal.util.nio.build.CommunicationBuilder;
 import org.apache.ignite.internal.util.nio.build.CommunicationBuilderContext;
 import org.apache.ignite.internal.util.nio.build.SocketCommunicationBuilder;
+import org.apache.ignite.internal.util.nio.channel.GridNioSocketChannel;
 import org.apache.ignite.internal.util.nio.ssl.BlockingSslHandler;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.nio.ssl.GridSslMeta;
@@ -843,6 +844,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             @Override public void onFailure(FailureType failureType, Throwable failure) {
                 if (ignite instanceof IgniteEx)
                     ((IgniteEx)ignite).context().failure().process(new FailureContext(failureType, failure));
+            }
+
+            /** {@inheritDoc} */
+            @Override public void onChannelAdded(GridNioSocketChannel channel) {
+                log.info("New channel connection established: " + channel.id());
             }
 
             /**
@@ -4439,7 +4445,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
     /** {@inheritDoc} */
     @Override public WritableByteChannel getOrCreateChannel(ClusterNode node) throws IgniteSpiException {
-        ConnectionKey connKey = new ConnectionKey(node.id(), 0, -1);
+        ConnectionKey connKey = new ConnectionKey(node.id(), 10, -1);
 
         SocketChannel channel = connMgr.getChannel(connKey);
 

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.util.nio.channel;
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
 import org.apache.ignite.internal.util.nio.GridNioFuture;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionKey;
 
 /**
@@ -27,49 +28,56 @@ import org.apache.ignite.spi.communication.tcp.internal.ConnectionKey;
  */
 public class GridNioSocketChannelImpl implements GridNioSocketChannel {
     /** */
-    private ConnectionKey key;
+    private final ConnectionKey key;
 
     /** */
-    private SocketChannel channel;
+    private final SocketChannel channel;
 
     /** */
-    private GridNioSocketChannelConfig cfg;
+    private final GridNioSocketChannelConfig config;
 
-
+    /**
+     * Create a new NIO socket channel.
+     *
+     * @param key Connection key.
+     * @param channel The {@link SocketChannel} which will be used.
+     */
+    public GridNioSocketChannelImpl(ConnectionKey key, SocketChannel channel) {
+        this.key = key;
+        this.channel = channel;
+        this.config = new GridNioSocketChannelConfig(channel);
+    }
 
     /** {@inheritDoc} */
-    @Override public ConnectionKey connectionKey() {
-        return null;
+    @Override public ConnectionKey id() {
+        return key;
     }
 
     /** {@inheritDoc} */
     @Override public SocketChannel channel() {
-        return null;
+        return channel;
     }
 
     /** {@inheritDoc} */
     @Override public GridNioSocketChannelConfig configuration() {
-        return null;
+        return config;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isOpen() {
-        return false;
+        return channel.isOpen();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isActive() {
-        return false;
-    }
+        SocketChannel ch0 = channel();
 
-    /** {@inheritDoc} */
-    @Override public boolean isWritable() {
-        return false;
+        return ch0.isOpen() && ch0.isConnected();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isInputShutdown() {
-        return false;
+        return channel().socket().isInputShutdown();
     }
 
     /** {@inheritDoc} */
@@ -79,7 +87,7 @@ public class GridNioSocketChannelImpl implements GridNioSocketChannel {
 
     /** {@inheritDoc} */
     @Override public boolean isOutputShutdown() {
-        return false;
+        return channel().socket().isOutputShutdown();
     }
 
     /** {@inheritDoc} */
@@ -94,6 +102,27 @@ public class GridNioSocketChannelImpl implements GridNioSocketChannel {
 
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
+        U.closeQuiet(channel());
+    }
 
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        GridNioSocketChannelImpl channel1 = (GridNioSocketChannelImpl)o;
+
+        if (!key.equals(channel1.key))
+            return false;
+        return channel.equals(channel1.channel);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int result = key.hashCode();
+        result = 31 * result + channel.hashCode();
+        return result;
     }
 }
