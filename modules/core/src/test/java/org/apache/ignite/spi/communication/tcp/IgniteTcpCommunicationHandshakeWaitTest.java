@@ -104,6 +104,11 @@ public class IgniteTcpCommunicationHandshakeWaitTest extends GridCommonAbstractT
         fut.get();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
+    }
+
     /** */
     private class SlowTcpDiscoverySpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */
