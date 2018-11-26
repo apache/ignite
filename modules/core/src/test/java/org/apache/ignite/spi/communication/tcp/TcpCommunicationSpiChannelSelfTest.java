@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
+import java.nio.channels.WritableByteChannel;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -82,7 +83,7 @@ public class TcpCommunicationSpiChannelSelfTest extends GridCommonAbstractTest {
 
         TcpCommunicationSpi commSpi = (TcpCommunicationSpi) grid(0).configuration().getCommunicationSpi();
 
-        commSpi.getOrCreateChannel(grid(1).localNode());
+        WritableByteChannel writableCh = commSpi.getOrCreateChannel(grid(1).localNode());
     }
 
     /**

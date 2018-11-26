@@ -20,7 +20,6 @@ package org.apache.ignite.internal.util.nio;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -108,9 +107,4 @@ public interface GridCommunicationClient {
      * @return Connection index.
      */
     public int connectionIndex();
-
-    /** */
-    public default ReadableByteChannel getRemotePipe() {
-        return null;
-    }
 }

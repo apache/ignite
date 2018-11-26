@@ -921,19 +921,17 @@ public class GridNioServer<T> {
     public GridNioFuture<Boolean> createNioChannel(final GridSelectorNioSession ses) {
         assert ses instanceof GridSelectorNioSessionImpl : ses;
 
-        GridSelectorNioSessionImpl impl = (GridSelectorNioSessionImpl)ses;
-
-        if (impl.closed())
+        if (ses.closed())
             return new GridNioFinishedFuture<>(false);
 
         NioOperationFuture<Boolean> req =
             new NioOperationFuture<>((SocketChannel)ses.key().channel(),
                 NioOperation.ADD_CHANNEL,
-                ses,
+                (GridSelectorNioSessionImpl)ses,
                 true,
                 null);
 
-        impl.offerStateChange(req);
+        ses.offerStateChange(req);
 
         return req;
     }

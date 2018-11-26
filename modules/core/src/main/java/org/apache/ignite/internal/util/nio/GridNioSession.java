@@ -71,6 +71,11 @@ public interface GridNioSession {
     public long closeTime();
 
     /**
+     * @return {@code True} if session was closed.
+     */
+    public boolean closed();
+
+    /**
      * Returns the time when last read activity was performed on this session.
      *
      * @return Lats receive time.

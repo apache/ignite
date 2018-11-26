@@ -324,10 +324,8 @@ public class GridNioSessionImpl implements GridNioSession {
         return closeTime.compareAndSet(0, U.currentTimeMillis());
     }
 
-    /**
-     * @return {@code True} if this session was closed.
-     */
-    public boolean closed() {
+    /** {@inheritDoc} */
+    @Override public boolean closed() {
         return closeTime.get() != 0;
     }
 

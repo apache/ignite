@@ -195,10 +195,8 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl implements GridNioKe
         return true;
     }
 
-    /**
-     * @param fut Future.
-     */
-    void offerStateChange(GridNioServer.SessionChangeRequest fut) {
+    /** {@inheritDoc} */
+    @Override public void offerStateChange(GridNioServer.SessionChangeRequest fut) {
         synchronized (this) {
             if (log.isDebugEnabled())
                 log.debug("Offered move [ses=" + this + ", fut=" + fut + ']');
