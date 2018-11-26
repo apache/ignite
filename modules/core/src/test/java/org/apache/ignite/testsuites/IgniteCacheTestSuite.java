@@ -115,7 +115,6 @@ import org.apache.ignite.internal.processors.cache.context.IgniteCacheAtomicExec
 import org.apache.ignite.internal.processors.cache.context.IgniteCacheContinuousExecutionContextTest;
 import org.apache.ignite.internal.processors.cache.context.IgniteCacheIsolatedExecutionContextTest;
 import org.apache.ignite.internal.processors.cache.context.IgniteCacheP2PDisableExecutionContextTest;
-import org.apache.ignite.internal.processors.cache.context.IgniteCachePartitionedExecutionContextTest;
 import org.apache.ignite.internal.processors.cache.context.IgniteCachePrivateExecutionContextTest;
 import org.apache.ignite.internal.processors.cache.context.IgniteCacheReplicatedExecutionContextTest;
 import org.apache.ignite.internal.processors.cache.context.IgniteCacheSharedExecutionContextTest;
@@ -206,7 +205,6 @@ public class IgniteCacheTestSuite extends TestSuite {
 
         // User's class loader tests.
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheAtomicExecutionContextTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteCachePartitionedExecutionContextTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheReplicatedExecutionContextTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheTxExecutionContextTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheContinuousExecutionContextTest.class, ignoredTests);
