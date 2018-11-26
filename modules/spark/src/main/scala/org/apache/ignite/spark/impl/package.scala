@@ -22,19 +22,19 @@ import java.sql.{Connection, DriverManager}
 import java.util
 
 import org.apache.commons.lang.StringUtils.equalsIgnoreCase
-import org.apache.ignite.{Ignite, IgniteException, Ignition}
 import org.apache.ignite.cache.{CacheMode, QueryEntity}
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.internal.processors.query.QueryUtils.normalizeSchemaName
 import org.apache.ignite.internal.util.IgniteUtils
 import org.apache.ignite.internal.util.lang.GridFunc.contains
+import org.apache.ignite.{Ignite, Ignition}
 import org.apache.spark.Partition
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog
 import org.h2.value.DataType
 
-import scala.collection.mutable.ArrayBuffer
 import scala.collection.JavaConversions._
+import scala.collection.mutable.ArrayBuffer
 
 package object impl {
     /**
