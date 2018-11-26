@@ -94,9 +94,6 @@ public class SegmentCompressStorage {
             this.lastCompressedIdx = Math.min(lastMaxCompressedIdx, compressingSegments.get(0) - 1);
         else
             this.lastCompressedIdx = lastMaxCompressedIdx;
-
-        if (compressedIdx > lastEnqueuedToCompressIdx)
-            lastEnqueuedToCompressIdx = compressedIdx;
     }
 
     /**
@@ -123,11 +120,9 @@ public class SegmentCompressStorage {
 
         Long idx = segmentsToCompress.poll();
 
-        assert idx != null;
-
         compressingSegments.add(idx);
 
-        return idx;
+        return idx == null ? -1L : idx;
     }
 
     /**
