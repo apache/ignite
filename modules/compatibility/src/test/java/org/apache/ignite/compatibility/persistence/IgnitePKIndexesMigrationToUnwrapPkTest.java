@@ -145,10 +145,12 @@ public class IgnitePKIndexesMigrationToUnwrapPkTest extends IgnitePersistenceCom
      */
     @NotNull private static void initializeTable(IgniteEx igniteEx, String tblName) {
         executeSql(igniteEx, "CREATE TABLE " + tblName + " (id int, name varchar, age int, company varchar, city varchar, " +
-            "primary key (id, name, city))");
+            "primary key (id, name, city)) WITH \"affinity_key=name\"");
 
-        executeSql(igniteEx, "INSERT INTO " + tblName + " (id, name, age, company, city) VALUES(1,'name',2,'company', 'city')");
+        executeSql(igniteEx, "CREATE INDEX ON " + tblName + "(city, age)");
 
+        for (int i = 0; i < 1000; i++)
+            executeSql(igniteEx, "INSERT INTO " + tblName + " (id, name, age, company, city) VALUES(?,'name',2,'company', 'city')", i);
     }
 
     /**

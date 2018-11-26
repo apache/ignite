@@ -200,11 +200,9 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
 
                 KeyCacheObject key = cctx.toCacheKeyObject(op.isDeleteOrLock() ? cur : ((IgniteBiTuple)cur).getKey());
 
-                List<ClusterNode> nodes = cctx.affinity().nodesByKey(key, topVer);
+                ClusterNode node = cctx.affinity().primaryByPartition(key.partition(), topVer);
 
-                ClusterNode node;
-
-                if (F.isEmpty(nodes) || ((node = nodes.get(0)) == null))
+                if (node == null)
                     throw new ClusterTopologyCheckedException("Failed to get primary node " +
                         "[topVer=" + topVer + ", key=" + key + ']');
 
@@ -229,8 +227,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
                     break;
                 }
 
-                batch.add(op.isDeleteOrLock() ? key : cur,
-                    op != EnlistOperation.LOCK && cctx.affinityNode() && (cctx.isReplicated() || nodes.indexOf(cctx.localNode()) > 0));
+                batch.add(op.isDeleteOrLock() ? key : cur, !node.isLocal() && isLocalBackup(op, key));
 
                 if (batch.size() == batchSize)
                     res = markReady(res, batch);
@@ -284,6 +281,16 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
             peek = FINISHED;
 
         return peek != FINISHED;
+    }
+
+    /** */
+    private boolean isLocalBackup(EnlistOperation op, KeyCacheObject key) {
+        if (!cctx.affinityNode() || op == EnlistOperation.LOCK)
+            return false;
+        else if (cctx.isReplicated())
+            return true;
+
+        return cctx.topology().nodes(key.partition(), tx.topologyVersion()).contains(cctx.localNode());
     }
 
     /** */
@@ -570,6 +577,8 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
         assert res != null;
 
         RES_UPD.getAndAdd(this, res.result());
+
+        tx.hasRemoteLocks(true);
 
         return true;
     }

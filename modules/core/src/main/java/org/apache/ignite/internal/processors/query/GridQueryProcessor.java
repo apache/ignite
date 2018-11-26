@@ -70,7 +70,6 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
-import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.property.QueryBinaryProperty;
@@ -2175,7 +2174,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             idx.querySqlFields(schemaName, qry, cliCtx, keepBinary, failOnMultipleStmts, null, cancel);
 
                         if (cctx != null)
-                            sendQueryExecutedEvent(qry.getSql(), qry.getArgs(), cctx);
+                            sendQueryExecutedEvent(qry.getSql(), qry.getArgs(), cctx, qryType);
 
                         return res;
                     }
@@ -2454,15 +2453,21 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /**
      * @param sqlQry Sql query.
-     * @param params Params.
+     * @param params Params of the query.
+     * @param cctx cache context.
+     * @param qryType actual query type, usually either SQL or SQL_FIELDS.
      */
-    private void sendQueryExecutedEvent(String sqlQry, Object[] params, GridCacheContext<?, ?> cctx) {
+    private void sendQueryExecutedEvent(
+            String sqlQry,
+            Object[] params,
+            GridCacheContext<?, ?> cctx,
+            GridCacheQueryType qryType) {
         if (cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
             ctx.event().record(new CacheQueryExecutedEvent<>(
                 ctx.discovery().localNode(),
-                "SQL query executed.",
+                qryType.name() + " query executed.",
                 EVT_CACHE_QUERY_EXECUTED,
-                CacheQueryType.SQL.name(),
+                qryType.name(),
                 cctx.name(),
                 null,
                 sqlQry,
