@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.jdbc.thin;
 
 import java.math.BigDecimal;
-import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
+import java.util.Date;
 
 import static java.sql.Types.BIGINT;
 import static java.sql.Types.BINARY;
@@ -82,7 +82,7 @@ public class JdbcThinUtils {
             return TIME;
         else if (Timestamp.class.getName().equals(cls))
             return TIMESTAMP;
-        else if (Date.class.getName().equals(cls))
+        else if (Date.class.getName().equals(cls) || java.sql.Date.class.getName().equals(cls))
             return DATE;
         else if (BigDecimal.class.getName().equals(cls))
             return DECIMAL;
@@ -119,7 +119,7 @@ public class JdbcThinUtils {
             return "TIME";
         else if (Timestamp.class.getName().equals(cls))
             return "TIMESTAMP";
-        else if (Date.class.getName().equals(cls))
+        else if (Date.class.getName().equals(cls) || java.sql.Date.class.getName().equals(cls))
             return "DATE";
         else if (BigDecimal.class.getName().equals(cls))
             return "DECIMAL";
