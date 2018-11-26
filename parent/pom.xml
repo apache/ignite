@@ -96,13 +96,13 @@
         <lucene.version>7.4.0</lucene.version>
         <maven.bundle.plugin.version>3.5.0</maven.bundle.plugin.version>
         <mockito.version>1.10.19</mockito.version>
-        <mysql.connector.version>5.1.39</mysql.connector.version>
+        <mysql.connector.version>8.0.13</mysql.connector.version>
         <netlibjava.version>1.1.2</netlibjava.version>
         <oro.bundle.version>2.0.8_6</oro.bundle.version>
         <osgi.core.version>5.0.0</osgi.core.version>
         <osgi.enterprise.version>5.0.0</osgi.enterprise.version>
         <paho.version>1.0.2</paho.version>
-        <postgres.connector.version>9.4.1208.jre7</postgres.connector.version>
+        <postgres.connector.version>42.2.5.jre7</postgres.connector.version>
         <rocketmq.version>4.3.0</rocketmq.version>
         <scala210.jline.version>2.10.7</scala210.jline.version>
         <scala210.library.version>2.10.7</scala210.library.version>
