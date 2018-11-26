@@ -21,6 +21,7 @@ import junit.framework.TestSuite;
 import org.apache.ignite.cache.IgniteCacheEntryProcessorSequentialCallTest;
 import org.apache.ignite.cache.IgniteWarmupClosureSelfTest;
 import org.apache.ignite.cache.store.CacheStoreReadFromBackupTest;
+import org.apache.ignite.cache.store.CacheStoreWriteErrorTest;
 import org.apache.ignite.cache.store.CacheTransactionalStoreReadFromBackupTest;
 import org.apache.ignite.cache.store.GridCacheBalancingStoreSelfTest;
 import org.apache.ignite.cache.store.GridCacheLoadOnlyStoreAdapterSelfTest;
@@ -336,6 +337,7 @@ public class IgniteCacheTestSuite extends TestSuite {
 
         suite.addTestSuite(GridStoreLoadCacheTest.class);
         suite.addTestSuite(CacheStoreReadFromBackupTest.class);
+        suite.addTestSuite(CacheStoreWriteErrorTest.class);
         suite.addTestSuite(CacheTransactionalStoreReadFromBackupTest.class);
 
         suite.addTestSuite(BinaryMetadataRegistrationInsideEntryProcessorTest.class);
