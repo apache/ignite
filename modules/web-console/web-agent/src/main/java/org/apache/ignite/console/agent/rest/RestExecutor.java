@@ -170,8 +170,20 @@ public class RestExecutor implements AutoCloseable {
         }
     }
 
-    /** */
-    public RestResult sendRequest(List<String> nodeURIs, Map<String, Object> params, Map<String, Object> headers) throws IOException {
+    /**
+     * Send request to cluster.
+     *
+     * @param nodeURIs List of cluster nodes URIs.
+     * @param params Map with reques params.
+     * @param headers Map with reques headers.
+     * @return Response from cluster.
+     * @throws IOException If failed to send request to cluster.
+     */
+    public RestResult sendRequest(
+        List<String> nodeURIs,
+        Map<String, Object> params,
+        Map<String, Object> headers
+    ) throws IOException {
         Integer startIdx = startIdxs.getOrDefault(nodeURIs, 0);
 
         for (int i = 0;  i < nodeURIs.size(); i++) {

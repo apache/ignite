@@ -23,6 +23,8 @@ import io.socket.client.Ack;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.GeneralSecurityException;
@@ -34,11 +36,14 @@ import java.util.Collections;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 import okhttp3.ConnectionSpec;
 import okhttp3.OkHttpClient;
+import okhttp3.TlsVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
@@ -67,7 +72,7 @@ public class AgentUtils {
     private static final Ack NOOP_CB = new Ack() {
         @Override public void call(Object... args) {
             if (args != null && args.length > 0 && args[0] instanceof Throwable)
-                log.error("Failed to execute request on agent.", (Throwable) args[0]);
+                log.error("Failed to execute request on agent.", (Throwable)args[0]);
             else
                 log.info("Request on agent successfully executed " + Arrays.toString(args));
         }
@@ -241,7 +246,8 @@ public class AgentUtils {
      * @throws GeneralSecurityException If failed to load trust store.
      * @throws IOException If failed to load trust store file content.
      */
-    private static X509TrustManager trustManager(String pathToJks, String pwd) throws GeneralSecurityException, IOException {
+    private static X509TrustManager trustManager(String pathToJks, String pwd)
+        throws GeneralSecurityException, IOException {
         char[] trustPwd = pwd != null ? pwd.toCharArray() : EMPTY_PWD;
         KeyStore trustKeyStore = keyStore(pathToJks, trustPwd);
 
@@ -325,15 +331,20 @@ public class AgentUtils {
 
             String[] cs = parseArray(cipherSuites);
 
+            SSLSocketFactory sslSocketFactory = ctx.getSocketFactory();
+
             if (!F.isEmpty(cs)) {
                 ConnectionSpec spec = new ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
+                    .tlsVersions(TlsVersion.TLS_1_2)
                     .cipherSuites(cs)
                     .build();
 
                 builder.connectionSpecs(Collections.singletonList(spec));
+
+                sslSocketFactory = new SSLSocketFactoryWithCiphers(sslSocketFactory, cs);
             }
 
-            builder.sslSocketFactory(ctx.getSocketFactory(), trustMgr);
+            builder.sslSocketFactory(sslSocketFactory, trustMgr);
         }
     }
 
@@ -357,5 +368,70 @@ public class AgentUtils {
                 // No-op.
             }
         };
+    }
+
+    /**
+     * SSL socket factory that configure socket ciphers.
+     */
+    private static class SSLSocketFactoryWithCiphers extends SSLSocketFactory {
+        /** */
+        private final SSLSocketFactory delegate;
+
+        /** */
+        private final String[] cipherSuites;
+
+        /**
+         * @param delegate Wrapped socket factory.
+         */
+        SSLSocketFactoryWithCiphers(SSLSocketFactory delegate, String[] cipherSuites) {
+            this.delegate = delegate;
+            this.cipherSuites = cipherSuites;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String[] getDefaultCipherSuites() {
+            return delegate.getDefaultCipherSuites();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String[] getSupportedCipherSuites() {
+            return delegate.getSupportedCipherSuites();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Socket createSocket(Socket socket, String host, int port, boolean autoClose) throws IOException {
+            return configureSocket(delegate.createSocket(socket, host, port, autoClose));
+        }
+
+        /** {@inheritDoc} */
+        @Override public Socket createSocket(String host, int port) throws IOException {
+            return configureSocket(delegate.createSocket(host, port));
+        }
+
+        /** {@inheritDoc} */
+        @Override public Socket createSocket(String host, int port, InetAddress localHost, int localPort) throws IOException {
+            return configureSocket(delegate.createSocket(host, port, localHost, localPort));
+        }
+
+        /** {@inheritDoc} */
+        @Override public Socket createSocket(InetAddress host, int port) throws IOException {
+            return configureSocket(delegate.createSocket(host, port));
+        }
+
+        /** {@inheritDoc} */
+        @Override public Socket createSocket(InetAddress addr, int port, InetAddress localAddr, int localPort) throws IOException {
+            return configureSocket(delegate.createSocket(addr, port, localAddr, localPort));
+        }
+
+        /**
+         * Configure socket cipher suites.
+         * @param socket Socket to configure.
+         * @return Configured socket.
+         */
+        private Socket configureSocket(Socket socket) {
+            ((SSLSocket)socket).setEnabledCipherSuites(cipherSuites);
+
+            return socket;
+        }
     }
 }

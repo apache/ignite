@@ -386,9 +386,9 @@ public class ClusterListener implements AutoCloseable {
          *
          * @param params Command params.
          * @return Command result.
-         * @throws Exception If failed to execute.
+         * @throws IOException If failed to execute.
          */
-        private RestResult restCommand(Map<String, Object> params) throws Exception {
+        private RestResult restCommand(Map<String, Object> params) throws IOException {
             if (!F.isEmpty(sesTok))
                 params.put("sessionToken", sesTok);
             else if (!F.isEmpty(cfg.nodeLogin()) && !F.isEmpty(cfg.nodePassword())) {
@@ -402,7 +402,7 @@ public class ClusterListener implements AutoCloseable {
                 restExec = restPool.open("web-agent",
                     cfg.nodeKeyStore(), cfg.nodeKeyStorePassword(),
                     cfg.nodeTrustStore(), cfg.nodeTrustStorePassword(),
-                    cfg.cipherSuites());
+                    cfg.nodeCipherSuites());
             }
 
             RestResult res = restExec.sendRequest(cfg.nodeURIs(), params, null);

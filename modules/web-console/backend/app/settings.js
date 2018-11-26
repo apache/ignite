@@ -69,14 +69,6 @@ module.exports = {
             server: {
                 host: nconf.get('server:host') || dfltHost,
                 port: _normalizePort(nconf.get('server:port') || dfltPort),
-                SSLOptions: _isTrue('server:ssl') && {
-                    enable301Redirects: true,
-                    trustXFPHeader: true,
-                    key: fs.readFileSync(nconf.get('server:key')),
-                    cert: fs.readFileSync(nconf.get('server:cert')),
-                    ca: fs.readFileSync(nconf.get('server:ca')),
-                    passphrase: nconf.get('server:keyPassphrase')
-                },
                 disableSignup: _isTrue('server:disable:signup')
             },
             mail,
@@ -85,6 +77,41 @@ module.exports = {
             sessionSecret: nconf.get('server:sessionSecret') || 'keyboard cat',
             tokenLength: 20
         };
+
+        // Configure SSL options.
+        if (_isTrue('server:ssl')) {
+            const SSLOptions = {
+                enable301Redirects: true,
+                trustXFPHeader: true,
+                passphrase: nconf.get('server:keyPassphrase')
+            };
+
+            const keyFile = nconf.get('server:key');
+
+            if (keyFile)
+                SSLOptions.key = fs.readFileSync(keyFile);
+
+            const certFile = nconf.get('server:cert');
+
+            if (certFile)
+                SSLOptions.cert = fs.readFileSync(certFile);
+
+            const caFile = nconf.get('server:ca');
+
+            if (certFile)
+                SSLOptions.ca = fs.readFileSync(caFile);
+
+            const ciphers = nconf.get('server:ciphers');
+
+            if (ciphers) {
+                SSLOptions.ciphers = ciphers;
+                SSLOptions.honorCipherOrder = true;
+
+                SSLOptions.secureProtocol = 'TLSv1_2_method';
+            }
+
+            settings.server.SSLOptions = SSLOptions;
+        }
 
         return settings;
     }

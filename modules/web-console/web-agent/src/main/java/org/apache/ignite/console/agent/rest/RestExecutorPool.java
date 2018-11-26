@@ -56,13 +56,15 @@ public class RestExecutorPool implements AutoCloseable {
         String trustStore,
         String trustStorePwd,
         String cipherSuites
-    ) throws Exception {
-        RestExecutor exec = pool.get(name);
-
-        if (exec == null)
-            exec = pool.putIfAbsent(name, new RestExecutor(clientStore, clientPwd, trustStore, trustStorePwd, cipherSuites));
-
-        return exec;
+    ) {
+        return pool.computeIfAbsent(name, (s) -> {
+            try {
+                return new RestExecutor(clientStore, clientPwd, trustStore, trustStorePwd, cipherSuites);
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     /**
