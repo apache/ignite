@@ -37,6 +37,7 @@ import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
@@ -45,7 +46,6 @@ import org.apache.ignite.spi.failover.jobstealing.JobStealingFailoverSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
-import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -86,7 +86,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
 
         final AtomicInteger stolen = new AtomicInteger(0);
         final AtomicInteger noneStolen = new AtomicInteger(0);
-        final ConcurrentHashSet nodes = new ConcurrentHashSet();
+        final GridConcurrentHashSet nodes = new GridConcurrentHashSet();
 
         int threadsNum = 10;
 
@@ -141,7 +141,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
 
         final AtomicInteger stolen = new AtomicInteger(0);
         final AtomicInteger noneStolen = new AtomicInteger(0);
-        final ConcurrentHashSet nodes = new ConcurrentHashSet();
+        final GridConcurrentHashSet nodes = new GridConcurrentHashSet();
 
         int threadsNum = 10;
 
