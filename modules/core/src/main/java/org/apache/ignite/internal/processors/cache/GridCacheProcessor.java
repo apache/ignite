@@ -1821,7 +1821,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     proxy.onRestarted(cacheCtx, cache);
 
                     if (cacheCtx.dataStructuresCache())
-                        ctx.dataStructures().restart(proxy.internalProxy());
+                        ctx.dataStructures().restart(cache.name(), proxy.internalProxy());
                 }
             }
         }
@@ -2606,9 +2606,42 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 proxy.onRestarted(cacheCtx, cacheCtx.cache());
 
                 if (cacheCtx.dataStructuresCache())
-                    ctx.dataStructures().restart(proxy.internalProxy());
+                    ctx.dataStructures().restart(proxy.getName(), proxy.internalProxy());
             }
         }
+    }
+
+    /**
+     * Complete stopping of caches if they were marked as restarting but it failed.
+     * @return Cache names of proxies which were restarted.
+     */
+    public List<String> resetRestartingProxies() {
+        List<String> res = new ArrayList<>();
+
+        for (Map.Entry<String, IgniteCacheProxyImpl<?, ?>> e : jCacheProxies.entrySet()) {
+            IgniteCacheProxyImpl<?, ?> proxy = e.getValue();
+
+            if (proxy == null)
+                continue;
+
+            if (proxy.isRestarting()) {
+
+                String cacheName = e.getKey();
+
+                res.add(cacheName);
+
+                jCacheProxies.remove(cacheName);
+
+                proxy.onRestarted(null, null);
+
+                cachesInfo.removeRestartingCache(cacheName);
+
+                if (DataStructuresProcessor.isDataStructureCache(cacheName))
+                    ctx.dataStructures().restart(cacheName, null);
+            }
+        }
+
+        return res;
     }
 
     /**
@@ -4314,13 +4347,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             res = validateRestartingCaches(node);
 
         return res;
-    }
-
-    /**
-     * Reset restarting caches.
-     */
-    public void resetRestartingCaches() {
-        cachesInfo.restartingCaches().clear();
     }
 
     /**

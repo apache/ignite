@@ -1870,7 +1870,8 @@ class ClusterCachesInfo {
         Integer cacheId,
         UUID rcvdFrom,
         IgniteUuid deploymentId,
-        @Nullable byte[] encKey) {
+        @Nullable byte[] encKey
+    ) {
         if (startedCacheCfg.getGroupName() != null) {
             CacheGroupDescriptor desc = cacheGroupByName(startedCacheCfg.getGroupName());
 
@@ -2214,6 +2215,13 @@ class ClusterCachesInfo {
      */
     public boolean isRestarting(String cacheName) {
         return restartingCaches.containsKey(cacheName);
+    }
+
+    /**
+     * @param cacheName Cache name which restart were cancelled.
+     */
+    public void removeRestartingCache(String cacheName) {
+        restartingCaches.remove(cacheName);
     }
 
     /**

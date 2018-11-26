@@ -714,12 +714,19 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         }
     }
 
-    public void restart(IgniteInternalCache cache) {
+    public void restart(String cacheName, IgniteInternalCache cache) {
         for (Map.Entry<GridCacheInternalKey, GridCacheRemovable> e : dsMap.entrySet()) {
             String cacheName0 = ATOMICS_CACHE_NAME + "@" + e.getKey().groupName();
 
-            if (cacheName0.equals(cache.name()))
-                e.getValue().restart(cache);
+            if (cacheName0.equals(cacheName)) {
+                if (cache != null)
+                    e.getValue().restart(cache);
+                else {
+                    e.getValue().onRemoved();
+
+                    dsMap.remove(e.getKey(), e.getValue());
+                }
+            }
         }
     }
 
