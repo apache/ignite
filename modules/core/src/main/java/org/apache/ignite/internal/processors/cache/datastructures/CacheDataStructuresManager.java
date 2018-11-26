@@ -653,7 +653,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
             GridCacheAdapter cache = ((IgniteKernal)ignite).context().cache().internalCache(cacheName);
 
-            // On non-affinity node cache can be stopped.
+            // On non-affinity node cache starts on demand, so it may not be running.
             if (cache != null)
                 cache.context().dataStructures().blockSet(setId);
 
