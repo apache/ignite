@@ -66,10 +66,25 @@ public class RestExecutorSelfTest {
     private static final String JETTY_WITH_SSL = "jetty-with-ssl.xml";
 
     /** */
-    private static final String JETTY_WITH_CIPHERS = "jetty-with-ciphers.xml";
+    private static final String JETTY_WITH_CIPHERS_0 = "jetty-with-ciphers-0.xml";
+
+    /** */
+    private static final String JETTY_WITH_CIPHERS_1 = "jetty-with-ciphers-1.xml";
+
+    /** */
+    private static final String JETTY_WITH_CIPHERS_2 = "jetty-with-ciphers-2.xml";
 
     /** This cipher is disabled by default in JDK 8. */
-    private static final String MARKER_CIPHER = "TLS_DH_anon_WITH_AES_256_GCM_SHA384";
+    private static final String CIPHER_0 = "TLS_DH_anon_WITH_AES_256_GCM_SHA384";
+
+    /** */
+    private static final String CIPHER_1 = "TLS_RSA_WITH_AES_128_GCM_SHA256";
+
+    /** */
+    private static final String CIPHER_2 = "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256";
+
+    /** */
+    private static final String COMMON_CIPHERS = "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_128_GCM_SHA256";
 
     /** */
     @Rule
@@ -246,7 +261,7 @@ public class RestExecutorSelfTest {
             HTTPS_URI,
             resolvePath("client.jks"), "123456",
             resolvePath("ca.jks"), "123456",
-            MARKER_CIPHER
+            CIPHER_0
         );
    }
 
@@ -255,7 +270,7 @@ public class RestExecutorSelfTest {
     public void nodeWithCiphersAgentNoCiphers() throws Exception {
         ruleForExpectedException.expect(SSLHandshakeException.class);
         checkRest(
-            sslNodeConfiguration(JETTY_WITH_CIPHERS),
+            sslNodeConfiguration(JETTY_WITH_CIPHERS_0),
             HTTPS_URI,
             resolvePath("client.jks"), "123456",
             resolvePath("ca.jks"), "123456",
@@ -267,11 +282,49 @@ public class RestExecutorSelfTest {
     @Test
     public void nodeWithCiphersAgentWithCiphers() throws Exception {
         checkRest(
-            sslNodeConfiguration(JETTY_WITH_CIPHERS),
+            sslNodeConfiguration(JETTY_WITH_CIPHERS_1),
             HTTPS_URI,
             resolvePath("client.jks"), "123456",
             resolvePath("ca.jks"), "123456",
-            MARKER_CIPHER
+            CIPHER_1
+        );
+   }
+
+    /** */
+    @Test
+    public void differentCiphers1() throws Exception {
+        ruleForExpectedException.expect(SSLHandshakeException.class);
+        checkRest(
+            sslNodeConfiguration(JETTY_WITH_CIPHERS_1),
+            HTTPS_URI,
+            resolvePath("client.jks"), "123456",
+            resolvePath("ca.jks"), "123456",
+            CIPHER_2
+        );
+   }
+
+    /** */
+    @Test
+    public void differentCiphers2() throws Exception {
+        ruleForExpectedException.expect(SSLHandshakeException.class);
+        checkRest(
+            sslNodeConfiguration(JETTY_WITH_CIPHERS_2),
+            HTTPS_URI,
+            resolvePath("client.jks"), "123456",
+            resolvePath("ca.jks"), "123456",
+            CIPHER_1
+        );
+   }
+
+    /** */
+    @Test
+    public void commonCiphers() throws Exception {
+        checkRest(
+            sslNodeConfiguration(JETTY_WITH_CIPHERS_1),
+            HTTPS_URI,
+            resolvePath("client.jks"), "123456",
+            resolvePath("ca.jks"), "123456",
+            COMMON_CIPHERS
         );
    }
 }
