@@ -26,6 +26,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 /**
  * Check DataStreamer with Mvcc enabled.
  */
+//TODO IGNITE-10366: Remove and re-enable DataStreamProcessorSelfTest in IgniteBinaryCacheTestSuite.
 public class DataStreamProcessorMvccSelfTest extends DataStreamProcessorSelfTest {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -64,6 +65,6 @@ public class DataStreamProcessorMvccSelfTest extends DataStreamProcessorSelfTest
 
     /** {@inheritDoc} */
     @Override public void testLocal() {
-        // Do not check local caches with MVCC enabled.
+        fail("https://issues.apache.org/jira/browse/IGNITE-9530");
     }
 }

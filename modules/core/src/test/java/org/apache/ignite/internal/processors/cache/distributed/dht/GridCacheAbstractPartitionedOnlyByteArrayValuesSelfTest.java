@@ -32,10 +32,7 @@ import static org.junit.Assert.assertArrayEquals;
 public abstract class GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest extends
     GridCacheAbstractPartitionedByteArrayValuesSelfTest {
     /** Offheap cache name. */
-    protected static final String CACHE_ATOMIC = "cache_atomic";
-
-    /** Offheap cache name. */
-    protected static final String CACHE_ATOMIC_OFFHEAP = "cache_atomic_offheap";
+    private static final String CACHE_ATOMIC = "cache_atomic";
 
     /** Atomic caches. */
     private static IgniteCache<Integer, Object>[] cachesAtomic;

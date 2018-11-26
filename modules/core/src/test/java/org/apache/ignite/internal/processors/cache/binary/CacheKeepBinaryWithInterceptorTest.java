@@ -27,6 +27,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -67,23 +68,32 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
     public void testKeepBinaryWithInterceptor() throws Exception {
         keepBinaryWithInterceptor(cacheConfiguration(ATOMIC, false));
         keepBinaryWithInterceptor(cacheConfiguration(TRANSACTIONAL, false));
+        keepBinaryWithInterceptor(cacheConfiguration(TRANSACTIONAL_SNAPSHOT, false));
 
         keepBinaryWithInterceptorPrimitives(cacheConfiguration(ATOMIC, true));
         keepBinaryWithInterceptorPrimitives(cacheConfiguration(TRANSACTIONAL, true));
+        keepBinaryWithInterceptorPrimitives(cacheConfiguration(TRANSACTIONAL_SNAPSHOT, true));
 
         startGridsMultiThreaded(1, 3);
 
         keepBinaryWithInterceptor(cacheConfiguration(ATOMIC, false));
         keepBinaryWithInterceptor(cacheConfiguration(TRANSACTIONAL, false));
+        keepBinaryWithInterceptor(cacheConfiguration(TRANSACTIONAL_SNAPSHOT, false));
 
         keepBinaryWithInterceptorPrimitives(cacheConfiguration(ATOMIC, true));
         keepBinaryWithInterceptorPrimitives(cacheConfiguration(TRANSACTIONAL, true));
+        keepBinaryWithInterceptorPrimitives(cacheConfiguration(TRANSACTIONAL_SNAPSHOT, true));
     }
 
     /**
      * @param ccfg Cache configuration.
      */
     private void keepBinaryWithInterceptor(CacheConfiguration ccfg) {
+        if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT &&
+            MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.INTERCEPTOR))
+            return;
+
+
         ignite(0).createCache(ccfg);
 
         try {
@@ -135,6 +145,10 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
      * @param ccfg Cache configuration.
      */
     private void keepBinaryWithInterceptorPrimitives(CacheConfiguration ccfg) {
+        if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT &&
+            MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.INTERCEPTOR))
+            return;
+
         ignite(0).createCache(ccfg);
 
         try {
