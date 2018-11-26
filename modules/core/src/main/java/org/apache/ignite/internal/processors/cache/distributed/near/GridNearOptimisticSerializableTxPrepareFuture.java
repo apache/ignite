@@ -351,8 +351,12 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                 hasNearCache = true;
         }
 
-        for (IgniteTxEntry read : reads)
+        for (IgniteTxEntry read : reads) {
             map(read, topVer, mappings, txMapping, remap, topLocked);
+
+            if (read.context().isNear())
+                hasNearCache = true;
+        }
 
         if (keyLockFut != null)
             keyLockFut.onAllKeysAdded();
