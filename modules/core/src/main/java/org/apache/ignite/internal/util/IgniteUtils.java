@@ -3933,12 +3933,20 @@ public abstract class IgniteUtils {
      * @return Hex string.
      */
     public static String byteArray2HexString(byte[] arr) {
-        SB sb = new SB(arr.length << 1);
+        StringBuilder sb = new StringBuilder(arr.length << 1);
 
         for (byte b : arr)
-            sb.a(Integer.toHexString(MASK & b >>> 4)).a(Integer.toHexString(MASK & b));
+            addByteAsHex(sb, b);
 
         return sb.toString().toUpperCase();
+    }
+
+    /**
+     * @param sb String builder.
+     * @param b Byte to add in hexadecimal format.
+     */
+    private static void addByteAsHex(StringBuilder sb, byte b) {
+        sb.append(Integer.toHexString(MASK & b >>> 4)).append(Integer.toHexString(MASK & b));
     }
 
     /**
@@ -10552,12 +10560,10 @@ public abstract class IgniteUtils {
      * @return hex representation of memory region
      */
     public static String toHexString(long addr, int len) {
-        assert (len & 0b111) == 0 && len > 0;
-
         StringBuilder sb = new StringBuilder(len * 2);
 
-        for (int i = 0; i < len; i += 8)
-            sb.append(U.hexLong(GridUnsafe.getLong(addr + i)));
+        for (int i = 0; i < len; i++) // Can not use getLong because on little-endian it produces bs.
+            addByteAsHex(sb, GridUnsafe.getByte(addr + i));
 
         return sb.toString();
     }
@@ -10568,12 +10574,10 @@ public abstract class IgniteUtils {
      * @return hex representation of memory region
      */
     public static String toHexString(ByteBuffer buf) {
-        assert (buf.capacity() & 0b111) == 0;
-
         StringBuilder sb = new StringBuilder(buf.capacity() * 2);
 
-        for (int i = 0; i < buf.capacity(); i += 8)
-            sb.append(U.hexLong(buf.getLong(i)));
+        for (int i = 0; i < buf.capacity(); i++)
+            addByteAsHex(sb, buf.get(i)); // Can not use getLong because on little-endian it produces bs.
 
         return sb.toString();
     }
