@@ -294,7 +294,11 @@ public class CompressionProcessorImpl extends CompressionProcessor {
 
         assert compactSize <= pageSize && compactSize >= compressedSize;
 
-        if (compressType != COMPACTED_PAGE) {
+        if (compressType == COMPACTED_PAGE) {
+            // Just setup bounds before restoring the page.
+            page.position(0).limit(compactSize);
+        }
+        else {
             ByteBuffer dst = compressBuf.get();
 
             // Position on a part that needs to be decompressed.
@@ -304,30 +308,36 @@ public class CompressionProcessorImpl extends CompressionProcessor {
             // LZ4 needs this limit to be exact.
             dst.limit(compactSize - PageIO.COMMON_HEADER_END);
 
-            if (compressType == ZSTD_COMPRESSED_PAGE) {
-                Zstd.decompress(dst, page);
-                dst.flip();
+            switch (compressType) {
+                case ZSTD_COMPRESSED_PAGE:
+                    Zstd.decompress(dst, page);
+                    dst.flip();
+
+                    break;
+
+                case LZ4_COMPRESSED_PAGE:
+                    Lz4.decompress(page, dst);
+                    dst.flip();
+
+                    break;
+
+                case SNAPPY_COMPRESSED_PAGE:
+                    try {
+                        Snappy.uncompress(page, dst);
+                    }
+                    catch (IOException e) {
+                        throw new IgniteException(e);
+                    }
+                    break;
+
+                default:
+                    throw new IgniteException("Unknown compression: " + compressType);
             }
-            else if (compressType == LZ4_COMPRESSED_PAGE) {
-                Lz4.decompress(page, dst);
-                dst.flip();
-            }
-            else if (compressType == SNAPPY_COMPRESSED_PAGE) {
-                try {
-                    Snappy.uncompress(page, dst);
-                }
-                catch (IOException e) {
-                    throw new IgniteException(e);
-                }
-            } else
-                throw new IllegalStateException("Unknown compression: " + compressType);
 
             page.position(PageIO.COMMON_HEADER_END).limit(compactSize);
             page.put(dst).flip();
             assert page.limit() == compactSize;
         }
-        else
-            page.position(0).limit(compactSize);
 
         CompactablePageIO io = PageIO.getPageIO(page);
 
