@@ -346,23 +346,50 @@ public class TestUtils {
         return LearningEnvironmentBuilder.defaultBuilder().withRNGSeed(seed);
     }
 
+    /**
+     * Simple wrapper class which adds {@link AutoCloseable} to given type.
+     *
+     * @param <T> Type to wrap.
+     */
     public static class DataWrapper<T> implements AutoCloseable {
+        /**
+         * Value to wrap.
+         */
         T val;
 
+        /**
+         * Wrap given value in {@link AutoCloseable}.
+         *
+         * @param val Value to wrap.
+         * @param <T> Type of value to wrap.
+         * @return Value wrapped as {@link AutoCloseable}.
+         */
         public static <T> DataWrapper<T> of(T val) {
             return new DataWrapper<>(val);
         }
 
+        /**
+         * Construct instance of this class from given value.
+         *
+         * @param val Value to wrap.
+         */
         public DataWrapper(T val) {
             this.val = val;
         }
 
+        /**
+         * Get wrapped value.
+         *
+         * @return Wrapped value.
+         */
         public T val() {
             return val;
         }
 
+        /** {@inheritDoc} */
         @Override public void close() throws Exception {
-
+            if (val instanceof AutoCloseable)
+                ((AutoCloseable)val).close();
         }
     }
 }

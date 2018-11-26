@@ -36,7 +36,7 @@ public interface UpstreamTransformer<K, V> extends Serializable {
      * @param upstream Upstream to transform.
      * @return Transformed upstream.
      */
-    Stream<UpstreamEntry<K, V>> transform(Stream<UpstreamEntry<K, V>> upstream);
+    public Stream<UpstreamEntry<K, V>> transform(Stream<UpstreamEntry<K, V>> upstream);
 
     /**
      * Get composition of this transformer and other transformer which is

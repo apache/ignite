@@ -76,6 +76,8 @@ public class BaggingTest extends TrainerTest {
                 .withBatchSize(10)
                 .withSeed(123L);
 
+        trainer.setEnvironmentBuilder(TestUtils.testEnvBuilder());
+
         DatasetTrainer<ModelsComposition, Double> baggedTrainer =
             TrainerTransformers.makeBagged(
                 trainer,

@@ -57,21 +57,21 @@ public class DefaultLearningEnvironmentBuilder implements LearningEnvironmentBui
     }
 
     /** {@inheritDoc} */
-    @Override public LearningEnvironmentBuilder withRNGSeed(IgniteFunction<Integer, Long> seed) {
+    @Override public LearningEnvironmentBuilder withRNGSeedDependency(IgniteFunction<Integer, Long> seed) {
         this.seed = seed;
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public LearningEnvironmentBuilder withRandom(IgniteFunction<Integer, Random> rngSupplier) {
+    @Override public LearningEnvironmentBuilder withRandomDependency(IgniteFunction<Integer, Random> rngSupplier) {
         this.rngSupplier = rngSupplier;
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public DefaultLearningEnvironmentBuilder withParallelismStrategy(
+    @Override public DefaultLearningEnvironmentBuilder withParallelismStrategyDependency(
         IgniteFunction<Integer, ParallelismStrategy> stgy) {
         this.parallelismStgy = stgy;
 
@@ -79,7 +79,7 @@ public class DefaultLearningEnvironmentBuilder implements LearningEnvironmentBui
     }
 
     /** {@inheritDoc} */
-    @Override public DefaultLearningEnvironmentBuilder withParallelismStrategyType(
+    @Override public DefaultLearningEnvironmentBuilder withParallelismStrategyTypeDependency(
         IgniteFunction<Integer, ParallelismStrategy.Type> stgyType) {
         this.parallelismStgy = part -> strategyByType(stgyType.apply(part));
 
@@ -104,7 +104,7 @@ public class DefaultLearningEnvironmentBuilder implements LearningEnvironmentBui
 
 
     /** {@inheritDoc} */
-    @Override public DefaultLearningEnvironmentBuilder withLoggingFactory(
+    @Override public DefaultLearningEnvironmentBuilder withLoggingFactoryDependency(
         IgniteFunction<Integer, MLLogger.Factory> loggingFactory) {
         this.loggingFactory = loggingFactory;
         return this;
@@ -117,9 +117,7 @@ public class DefaultLearningEnvironmentBuilder implements LearningEnvironmentBui
         return new LearningEnvironmentImpl(part, random, parallelismStgy.apply(part), loggingFactory.apply(part));
     }
 
-    /**
-     * Default LearningEnvironment implementation.
-     */
+    /** Default LearningEnvironment implementation. */
     private class LearningEnvironmentImpl implements LearningEnvironment {
         /** Parallelism strategy. */
         private final ParallelismStrategy parallelismStgy;

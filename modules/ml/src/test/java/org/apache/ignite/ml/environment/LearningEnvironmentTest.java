@@ -63,7 +63,7 @@ public class LearningEnvironmentTest {
 
         LearningEnvironmentBuilder envBuilder = LearningEnvironmentBuilder.defaultBuilder()
             .withParallelismStrategyType(ParallelismStrategy.Type.ON_DEFAULT_POOL)
-            .withLoggingFactory(ConsoleLogger.factory(MLLogger.VerboseLevel.LOW));
+            .withLoggingFactoryDependency(part -> ConsoleLogger.factory(MLLogger.VerboseLevel.LOW));
 
         trainer.setEnvironmentBuilder(envBuilder);
 
@@ -80,7 +80,7 @@ public class LearningEnvironmentTest {
     @Test
     public void testRandomNumbersGenerator() {
         // We make such builders that provide as functions returning partition index * iteration as random number generator nextInt
-        LearningEnvironmentBuilder envBuilder = TestUtils.testEnvBuilder().withRandom(MockRandom::new);
+        LearningEnvironmentBuilder envBuilder = TestUtils.testEnvBuilder().withRandomDependency(MockRandom::new);
         int partitions = 10;
         int iterations = 2;
 
@@ -96,7 +96,7 @@ public class LearningEnvironmentTest {
                 Vector v = null;
                 for (int iter = 0; iter < iterations; iter++) {
                     v = ds.compute((dw, env) -> VectorUtils.fill(-1, partitions).set(env.partition(), env.randomNumbersGenerator().nextInt()),
-                        (v1, v2) -> v1 != null ? (v2 != null ? VectorUtils.zipWith(v1, v2, (d1, d2) -> d1 != -1 ? d1 : d2) : v1) : v2);
+                        (v1, v2) -> zipOverridingEmpty(v1, v2, -1));
                 }
                 return Model.constantModel(v);
             }
@@ -123,6 +123,20 @@ public class LearningEnvironmentTest {
 
         Vector res = mdl.apply(null);
         assertEquals(exp, res);
+    }
+
+    /**
+     * For given two vectors {@code v2, v2} produce vector {@code v} where each component of {@code v}
+     * is produced from corresponding components {@code c1, c2} of {@code v1, v2} respectfully in following way
+     * {@code c = c1 != empty ? c1 : c2}. For example, zipping [2, -1, -1], [-1, 3, -1] will result in [2, 3, -1].
+     *
+     * @param v1 First vector.
+     * @param v2 Second vector.
+     * @param empty Value treated as empty.
+     * @return Result of zipping as described above.
+     */
+    private static Vector zipOverridingEmpty(Vector v1, Vector v2, double empty) {
+        return v1 != null ? (v2 != null ? VectorUtils.zipWith(v1, v2, (d1, d2) -> d1 != empty ? d1 : d2) : v1) : v2;
     }
 
     /** Get cache mock */

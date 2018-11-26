@@ -35,9 +35,7 @@ public interface LearningEnvironmentBuilder extends Serializable {
      * @param part Partition.
      * @return {@link LearningEnvironment} for worker on given partition.
      */
-    default public LearningEnvironment buildForWorker(int part) {
-        return buildForTrainer();
-    }
+    public LearningEnvironment buildForWorker(int part);
 
     /**
      * Builds learning environment for trainer.
@@ -54,7 +52,7 @@ public interface LearningEnvironmentBuilder extends Serializable {
      * @param stgyType Function describing dependency (partition -> Parallelism Strategy Type).
      * @return This object.
      */
-    public LearningEnvironmentBuilder withParallelismStrategyType(
+    public LearningEnvironmentBuilder withParallelismStrategyTypeDependency(
         IgniteFunction<Integer, ParallelismStrategy.Type> stgyType);
 
     /**
@@ -64,7 +62,7 @@ public interface LearningEnvironmentBuilder extends Serializable {
      * @return This object.
      */
     public default LearningEnvironmentBuilder withParallelismStrategyType(ParallelismStrategy.Type stgyType) {
-        return withParallelismStrategyType(constant(stgyType));
+        return withParallelismStrategyTypeDependency(constant(stgyType));
     }
 
     /**
@@ -73,16 +71,17 @@ public interface LearningEnvironmentBuilder extends Serializable {
      * @param stgy Function describing dependency (partition -> Parallelism Strategy).
      * @return This object.
      */
-    public LearningEnvironmentBuilder withParallelismStrategy(IgniteFunction<Integer, ParallelismStrategy> stgy);
+    public LearningEnvironmentBuilder withParallelismStrategyDependency(IgniteFunction<Integer, ParallelismStrategy> stgy);
 
     /**
      * Specifies Parallelism Strategy for LearningEnvironment. Same strategy type will be used for all partitions.
      *
      * @param stgy Parallelism Strategy.
+     * @param <T> Parallelism strategy type.
      * @return This object.
      */
-    public default LearningEnvironmentBuilder withParallelismStrategy(ParallelismStrategy stgy) {
-        return withParallelismStrategy(constant(stgy));
+    public default <T extends ParallelismStrategy & Serializable> LearningEnvironmentBuilder withParallelismStrategy(T stgy) {
+        return withParallelismStrategyDependency(constant(stgy));
     }
 
 
@@ -92,7 +91,7 @@ public interface LearningEnvironmentBuilder extends Serializable {
      * @param loggingFactory Function describing (partition -> logging factory).
      * @return This object.
      */
-    public LearningEnvironmentBuilder withLoggingFactory(IgniteFunction<Integer, MLLogger.Factory> loggingFactory);
+    public LearningEnvironmentBuilder withLoggingFactoryDependency(IgniteFunction<Integer, MLLogger.Factory> loggingFactory);
 
     /**
      * Specify logging factory.
@@ -100,8 +99,8 @@ public interface LearningEnvironmentBuilder extends Serializable {
      * @param loggingFactory Logging factory.
      * @return This object.
      */
-    public default LearningEnvironmentBuilder withLoggingFactory(MLLogger.Factory loggingFactory) {
-        return withLoggingFactory(constant(loggingFactory));
+    public default <T extends MLLogger.Factory & Serializable> LearningEnvironmentBuilder withLoggingFactory(T loggingFactory) {
+        return withLoggingFactoryDependency(constant(loggingFactory));
     }
 
     /**
@@ -110,7 +109,7 @@ public interface LearningEnvironmentBuilder extends Serializable {
      * @param seed Function describing dependency (partition -> seed for random number generator).
      * @return This object.
      */
-    public LearningEnvironmentBuilder withRNGSeed(IgniteFunction<Integer, Long> seed);
+    public LearningEnvironmentBuilder withRNGSeedDependency(IgniteFunction<Integer, Long> seed);
 
     /**
      * Specify seed for random number generator.
@@ -119,7 +118,7 @@ public interface LearningEnvironmentBuilder extends Serializable {
      * @return This object.
      */
     public default LearningEnvironmentBuilder withRNGSeed(long seed) {
-        return withRNGSeed(constant(seed));
+        return withRNGSeedDependency(constant(seed));
     }
 
     /**
@@ -128,7 +127,7 @@ public interface LearningEnvironmentBuilder extends Serializable {
      * @param rngSupplier Function describing dependency (partition -> random numbers generator).
      * @return This object.
      */
-    public LearningEnvironmentBuilder withRandom(IgniteFunction<Integer, Random> rngSupplier);
+    public LearningEnvironmentBuilder withRandomDependency(IgniteFunction<Integer, Random> rngSupplier);
 
     /**
      * Specify random numbers generator for learning environment. Same random will be used for all partitions.
@@ -137,7 +136,7 @@ public interface LearningEnvironmentBuilder extends Serializable {
      * @return This object.
      */
     public default LearningEnvironmentBuilder withRandom(Random random) {
-        return withRandom(constant(random));
+        return withRandomDependency(constant(random));
     }
 
     /**

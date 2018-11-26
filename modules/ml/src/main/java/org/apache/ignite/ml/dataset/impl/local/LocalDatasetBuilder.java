@@ -126,23 +126,24 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
             .collect(Collectors.toList());
 
         for (int part = 0; part < partitions; part++) {
-            int cnt = part == partitions - 1 ? entriesList.size() - ptr : Math.min(partSize, entriesList.size() - ptr);
+            int cntBeforeTransform =
+                part == partitions - 1 ? entriesList.size() - ptr : Math.min(partSize, entriesList.size() - ptr);
             LearningEnvironment env = envs.get(part);
             UpstreamTransformer<K, V> transformer1 = upstreamTransformerBuilder.build(env);
             UpstreamTransformer<K, V> transformer2 = Utils.copy(transformer1);
             UpstreamTransformer<K, V> transformer3 = Utils.copy(transformer1);
 
-            cnt = (int)transformer1.transform(Utils.asStream(new IteratorWindow<>(thirdKeysIter, k -> k, cnt))).count();
+            int cnt = (int)transformer1.transform(Utils.asStream(new IteratorWindow<>(thirdKeysIter, k -> k, cntBeforeTransform))).count();
 
             Iterator<UpstreamEntry<K, V>> iter =
-                transformer2.transform(Utils.asStream(new IteratorWindow<>(firstKeysIter, k -> k, cnt))).iterator();
+                transformer2.transform(Utils.asStream(new IteratorWindow<>(firstKeysIter, k -> k, cntBeforeTransform))).iterator();
 
-            C ctx = cnt > 0 ? partCtxBuilder.build(env, iter, cnt) : null;
+            C ctx = cntBeforeTransform > 0 ? partCtxBuilder.build(env, iter, cnt) : null;
 
             Iterator<UpstreamEntry<K, V>> iter1 = transformer3.transform(
-                    Utils.asStream(new IteratorWindow<>(secondKeysIter, k -> k, cnt))).iterator();
+                    Utils.asStream(new IteratorWindow<>(secondKeysIter, k -> k, cntBeforeTransform))).iterator();
 
-            D data = cnt > 0 ? partDataBuilder.build(
+            D data = cntBeforeTransform > 0 ? partDataBuilder.build(
                 env,
                 iter1,
                 cnt,
@@ -152,7 +153,7 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
             ctxList.add(ctx);
             dataList.add(data);
 
-            ptr += cnt;
+            ptr += cntBeforeTransform;
         }
 
         return new LocalDataset<>(envs, ctxList, dataList);

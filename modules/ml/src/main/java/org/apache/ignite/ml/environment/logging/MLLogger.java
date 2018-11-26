@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.environment.logging;
 
-import java.io.Serializable;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 

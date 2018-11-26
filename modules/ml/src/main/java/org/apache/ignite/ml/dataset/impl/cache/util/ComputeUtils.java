@@ -209,7 +209,7 @@ public class ComputeUtils {
             qry.setFilter(filter);
 
             UpstreamTransformer<K, V> transformer = transformerBuilder.build(env);
-            UpstreamTransformer<K, V> transformerCopy = Utils.copy(transformer);
+            UpstreamTransformer<K, V> transformerCp = Utils.copy(transformer);
 
             long cnt = computeCount(upstreamCache, qry, transformer);
 
@@ -218,7 +218,7 @@ public class ComputeUtils {
                     e -> new UpstreamEntry<>(e.getKey(), e.getValue()))) {
 
                     Iterator<UpstreamEntry<K, V>> it = cursor.iterator();
-                    Stream<UpstreamEntry<K, V>> transformedStream = transformerCopy.transform(Utils.asStream(it, cnt));
+                    Stream<UpstreamEntry<K, V>> transformedStream = transformerCp.transform(Utils.asStream(it, cnt));
                     it = transformedStream.iterator();
 
 
@@ -288,7 +288,7 @@ public class ComputeUtils {
 
             C ctx;
             UpstreamTransformer<K, V> transformer = transformerBuilder.build(env);
-            UpstreamTransformer<K, V> transformerCopy = Utils.copy(transformer);
+            UpstreamTransformer<K, V> transformerCp = Utils.copy(transformer);
 
             long cnt = computeCount(locUpstreamCache, qry, transformer);
 
@@ -296,7 +296,7 @@ public class ComputeUtils {
                 e -> new UpstreamEntry<>(e.getKey(), e.getValue()))) {
 
                 Iterator<UpstreamEntry<K, V>> it = cursor.iterator();
-                Stream<UpstreamEntry<K, V>> transformedStream = transformerCopy.transform(Utils.asStream(it, cnt));
+                Stream<UpstreamEntry<K, V>> transformedStream = transformerCp.transform(Utils.asStream(it, cnt));
                 it = transformedStream.iterator();
 
                 Iterator<UpstreamEntry<K, V>> iter = new IteratorWithConcurrentModificationChecker<>(
