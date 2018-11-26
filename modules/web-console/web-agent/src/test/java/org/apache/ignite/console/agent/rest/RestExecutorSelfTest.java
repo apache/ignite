@@ -19,7 +19,6 @@ package org.apache.ignite.console.agent.rest;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.UnknownServiceException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -78,13 +77,13 @@ public class RestExecutorSelfTest {
     private static final String CIPHER_0 = "TLS_DH_anon_WITH_AES_256_GCM_SHA384";
 
     /** */
-    private static final String CIPHER_1 = "TLS_RSA_WITH_AES_128_GCM_SHA256";
+    private static final String CIPHER_1 = "TLS_RSA_WITH_NULL_SHA256";
 
     /** */
-    private static final String CIPHER_2 = "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256";
+    private static final String CIPHER_2 = "TLS_ECDHE_ECDSA_WITH_NULL_SHA";
 
     /** */
-    private static final String COMMON_CIPHERS = "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_128_GCM_SHA256";
+    private static final String COMMON_CIPHERS = "TLS_RSA_WITH_NULL_SHA256,TLS_ECDHE_ECDSA_WITH_NULL_SHA";
 
     /** */
     @Rule
@@ -255,7 +254,7 @@ public class RestExecutorSelfTest {
     /** */
     @Test
     public void nodeNoCiphersAgentWithCiphers() throws Exception {
-        ruleForExpectedException.expect(UnknownServiceException.class);
+        ruleForExpectedException.expect(SSLHandshakeException.class);
         checkRest(
             sslNodeConfiguration(JETTY_WITH_SSL),
             HTTPS_URI,

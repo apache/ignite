@@ -44,7 +44,7 @@
         <Set name="needClientAuth">true</Set>
         <Set name="includeCipherSuites">
             <Array type="java.lang.String">
-                <Item>TLS_RSA_WITH_AES_128_GCM_SHA256</Item>
+                <Item>TLS_RSA_WITH_NULL_SHA256</Item>
             </Array>
         </Set>
     </New>
