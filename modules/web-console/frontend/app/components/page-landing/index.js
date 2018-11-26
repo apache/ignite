@@ -42,7 +42,7 @@ export default angular
     .config(['$stateProvider', function($stateProvider) {
         // set up the states
         $stateProvider
-        .state('landing', {
+        .state('base.landing', {
             url: '/',
             template: '<page-landing></page-landing>',
             redirectTo: (trans) => {

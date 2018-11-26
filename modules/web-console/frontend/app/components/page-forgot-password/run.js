@@ -21,7 +21,7 @@
 export function registerState($uiRouter) {
     /** @type {import("app/types").IIgniteNg1StateDeclaration} */
     const state = {
-        name: 'forgotPassword',
+        name: 'base.forgotPassword',
         url: '/forgot-password',
         component: 'pageForgotPassword',
         unsaved: true,

@@ -17,45 +17,14 @@
 
 web-console-footer {
     display: block;
-    color: #fafafa;
-    background: linear-gradient(to bottom, #5f5e5e, #393939);
-    font-family: Roboto;
     font-size: 12px;
-    font-weight: 300;
-    padding-top: 12px;
-    padding-bottom: 12px;
 
-    p {
-        margin-bottom: 0;
+    width: var(--width-wide);
+    display: flex;
+    flex-direction: column;
+    padding: 27px 18px 27px 27px;
 
-        &:first-of-type {
-            margin-bottom: 5px;
-        }
-    }
-
-    .wcf-content {
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-
-        & > :nth-child(2) {
-            margin-left: auto;
-        }
-    }
-
-    ignite-powered-by-apache {
-        & > a {
-            margin-left: 40px;
-        }
-    }
-
-    a {
-        color: #ee8e89;
-
-        &:hover, &.hover,
-        &:focus, &.focus {
-            color: #ee2b27;
-            text-decoration: none;
-        }
+    .#{&}__legal {
+        color: rgba(0, 0, 0, 0.54);
     }
 }

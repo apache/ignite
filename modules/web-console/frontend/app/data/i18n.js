@@ -59,7 +59,7 @@ export default {
     'app.components.page-signin.m5': 'Input password',
     'app.components.page-signin.m6': 'Forgot password?',
     'app.components.page-signin.m7': 'Sign In',
-    'app.components.page-signin.m8': 'Don\'t have an account? #[a(ui-sref=\'signup\') Get started]',
+    'app.components.page-signin.m8': 'Don\'t have an account? #[a(ui-sref=\'base.signup\') Get started]',
 
     // app/components/page-signin/run.js
     'app.components.page-signin.m9': 'Sign In',

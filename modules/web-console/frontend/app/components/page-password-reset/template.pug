@@ -16,10 +16,6 @@
 
 include /app/helpers/jade/mixins
 
-web-console-header
-    web-console-header-left
-        ignite-header-title
-
 .container.body-container
     .row
         .main-content(ng-if='error')
@@ -76,5 +72,3 @@ web-console-header
                     )
                         svg.icon-left(ignite-icon='checkmark')
                         | Save Changes
-
-web-console-footer

@@ -35,17 +35,17 @@ export default angular
     .config(['$stateProvider', ($stateProvider) => {
         // set up the states
         $stateProvider
-        .state('password', {
+        .state('base.password', {
             url: '/password',
             abstract: true,
             template: '<ui-view></ui-view>'
         })
-        .state('password.reset', {
+        .state('base.password.reset', {
             url: '/reset?{token}',
             component: 'pagePasswordReset',
             redirectTo: (trans) => {
                 if (_.isEmpty(trans.params('to').token))
-                    return 'signin';
+                    return 'base.signin';
 
                 return true;
             },

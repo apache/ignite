@@ -18,26 +18,26 @@
 connected-clusters {
     @import "./../../../public/stylesheets/variables.scss";
 
-    div {
-        position: absolute;
-        top: 0;
-        right: 30px;
+    height: 100%;
+    display: flex;
+
+    .connected-cluster-badge__count {
+        color: $ignite-brand-success;
+        margin-left: 5px;
+    }
+
+    button {
+        height: 100%;
+        width: 100%;
+        background: none !important;
+        border: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        outline: none !important;
 
         display: flex;
         align-items: center;
-        padding: 3px 10px;
 
-        cursor: pointer;
-        color: white;
-        font-size: 12px;
-        line-height: 12px;
-
-        background-color: $text-color;
-
-        border-radius: 0 0 4px 4px;
-
-        [ignite-icon] {
-            margin-right: 6px;
-        }
+        font-size: 14px;
     }
 }

@@ -30,7 +30,7 @@ export default angular
         controller
     })
     .config(['$stateProvider', ($stateProvider) => {
-        $stateProvider.state('password.send', {
+        $stateProvider.state('base.password-send', {
             url: '/changed',
             component: 'pagePasswordChanged',
             tfMetaTags: {

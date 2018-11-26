@@ -16,10 +16,6 @@
 
 include /app/helpers/jade/mixins
 
-web-console-header
-    web-console-header-left
-        ignite-header-title
-
 .container--responsive.body-container
     section
         - const form = '$ctrl.form'
@@ -40,10 +36,8 @@ web-console-header
             )
                 +form-field__error({error: 'server', message: `{{$ctrl.serverError}}`})
             footer.form-footer
-                a(ui-sref='signin') Back to sign in
+                a(ui-sref='base.signin') Back to sign in
                 button.btn-ignite.btn-ignite--primary(
                     tabindex='1'
                     type='submit'
                 ) Send it to me
-
-web-console-footer

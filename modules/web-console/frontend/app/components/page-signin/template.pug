@@ -16,44 +16,38 @@
 
 include /app/helpers/jade/mixins
 
-web-console-header
-    web-console-header-left
-        ignite-header-title
+section
+    -var form = '$ctrl.form'
+    h3 Sign In
+    form(name=form novalidate ng-submit='$ctrl.signin()')
+        +form-field__email({
+            label: 'Email:',
+            model: '$ctrl.data.email',
+            name: '"email"',
+            placeholder: 'Input email',
+            required: true
+        })(
+            ng-model-options='{allowInvalid: true}'
+            autocomplete='email'
+            ignite-auto-focus
+        )
+            +form-field__error({error: 'server', message: `{{$ctrl.serverError}}`})
+        +form-field__password({
+            label: 'Password:',
+            model: '$ctrl.data.password',
+            name: '"password"',
+            placeholder: 'Input password',
+            required: true
+        })(
+            ng-model-options='{allowInvalid: true}'
+            autocomplete='current-password'
+        )
+            +form-field__error({error: 'server', message: `{{$ctrl.serverError}}`})
+        footer.form-footer
+            a(ui-sref='base.forgotPassword({email: $ctrl.data.email})') Forgot password?
+            button.btn-ignite.btn-ignite--primary(
+                type='submit'
+            ) Sign In
+    footer.page-signin__no-account-message
+        | Don't have an account? #[a(ui-sref='base.signup') Get started]
 
-.container--responsive.body-container
-    section
-        -var form = '$ctrl.form'
-        h3 Sign In
-        form(name=form novalidate ng-submit='$ctrl.signin()')
-            +form-field__email({
-                label: 'Email:',
-                model: '$ctrl.data.email',
-                name: '"email"',
-                placeholder: 'Input email',
-                required: true
-            })(
-                ng-model-options='{allowInvalid: true}'
-                autocomplete='email'
-                ignite-auto-focus
-            )
-                +form-field__error({error: 'server', message: `{{$ctrl.serverError}}`})
-            +form-field__password({
-                label: 'Password:',
-                model: '$ctrl.data.password',
-                name: '"password"',
-                placeholder: 'Input password',
-                required: true
-            })(
-                ng-model-options='{allowInvalid: true}'
-                autocomplete='current-password'
-            )
-                +form-field__error({error: 'server', message: `{{$ctrl.serverError}}`})
-            footer.form-footer
-                a(ui-sref='forgotPassword({email: $ctrl.data.email})') Forgot password?
-                button.btn-ignite.btn-ignite--primary(
-                    type='submit'
-                ) Sign In
-        footer.page-signin__no-account-message
-            | Don't have an account? #[a(ui-sref='signup') Get started]
-
-web-console-footer

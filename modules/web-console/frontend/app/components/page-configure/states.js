@@ -90,7 +90,7 @@ function registerStates($stateProvider) {
             })
             .toPromise();
         },
-        failState: 'signin',
+        failState: 'base.signin',
         tfMetaTags: {
             title: 'Configuration'
         }

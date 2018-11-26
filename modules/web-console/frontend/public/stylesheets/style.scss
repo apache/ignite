@@ -255,17 +255,37 @@ body {
     flex-direction: column;
 }
 
-body > .wrapper,
-    // Nested ui-view, like on password reset state
-body > .wrapper > ui-view {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    flex: 1 0 auto;
+.wrapper {
+    --header-height: 62px;
 
-    .body-container {
-        flex: 1 0 auto;
-        padding-bottom: 30px;
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto var(--header-height) 1fr;
+    grid-template-areas: 'notifications notifications' 'header header' 'sidebar content';
+
+    permanent-notifications {
+        grid-area: notifications;
+    }
+
+    web-console-header {
+        grid-area: header;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        transform: translateZ(1px);
+    }
+
+    web-console-sidebar {
+        grid-area: sidebar;
+        transform: translateZ(1px);
+    }
+
+    &>.content {
+        grid-area: content;
+        padding-left: 30px;
+        padding-right: 30px;
+
     }
 }
 
@@ -374,7 +394,6 @@ i.btn {
 h1,
 h2,
 h3 {
-    user-select: none;
     font-weight: normal;
     /* Makes the vertical size of the text the same for all fonts. */
     line-height: 1;
@@ -2005,7 +2024,7 @@ html, body {
 }
 
 .demo-mode {
-    padding-top: 30px;
+    // padding-top: 30px;
 }
 
 // Fix for injecting svg icon into BS btn

@@ -17,9 +17,7 @@
 
 import angular from 'angular';
 import component from './component';
-import componentLinks from './components/web-console-footer-links/component';
 
 export default angular
     .module('ignite-console.web-console-footer', [])
-    .component('webConsoleFooter', component)
-    .component('webConsoleFooterLinks', componentLinks);
+    .component('webConsoleFooter', component);

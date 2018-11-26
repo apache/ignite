@@ -21,13 +21,24 @@ web-console-header {
     $nav-item-margin: 30px;
     $bottom-border-width: 4px;
 
-    display: block;
-    min-height: 85px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    height: 62px;
     font-family: Roboto;
     font-size: 16px;
     border-bottom: $bottom-border-width solid red;
     background: white;
     position: relative;
+    padding-left: 16px;
+
+    &>ng-transclude {
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-end;
+        height: 100%;
+        flex: 1;
+    }
 
     &:after {
         // Shows header shadow over absolutely positioned child content,
@@ -39,6 +50,7 @@ web-console-header {
         position: absolute;
         overflow: hidden;
         bottom: -4px;
+        pointer-events: none;
     }
 
     .wch-slot {
@@ -59,154 +71,23 @@ web-console-header {
         }
     }
 
-    .wch-content {
-        display: flex;
-        flex-direction: row;
-        flex-wrap: wrap;
-        align-items: center;
-        padding: 18px 30px;
-        position: relative;
-        height: 81px;
-    }
-
     .wch-logo {
         height: 40px;
-    }
-
-    .wch-nav-item,
-    .wch-nav-item > a {
-        cursor: pointer;
-        white-space: nowrap;
-
-        &, &.active {
-            font-size: 16px;
-            font-weight: normal;
-            text-decoration: none;
-        }
-
-        $color-default: $text-color;
-        $color-hover: $brand-primary;
-        $color-active: $brand-primary;
-
-        &, a {
-            color: $color-default;
-            text-decoration: none;
-        }
-
-        &, ul {
-            margin: 0;
-            list-style: none;
-            -webkit-padding-start: 0;
-        }
-
-        &:hover {
-            color: $color-hover;
-        }
-
-        &:focus, :focus,
-        &.active, .active {
-            color: $color-active;
-            text-decoration: none;
-        }
-
-        &[disabled] {
-            opacity: 0.5;
-            cursor: default;
-        }
-
-        .caret {
-            margin-left: 4px;
-        }
-
-        &:not(:last-child) {
-            margin-right: $nav-item-margin;
-        }
-
-        .dropdown-menu {
-            a {
-                &:hover, &:focus {
-                    color: inherit;
-                }
-            }
-            li.active a {
-                color: inherit;
-            }
-        }
-
-        .user-name-wrapper {
-            display: flex;
-            align-items: center;
-
-           & > span {
-               max-width: 180px;
-               overflow: hidden;
-               text-overflow: ellipsis;
-           }
-        }
-    }
-
-    .wch-demo-toggle {
-        margin-right: 10px;
-
-        // When in demo mode and clusters are hidden
-        &:nth-last-child(2) {
-            margin-right: $nav-item-margin;
-        }
-    }
-
-    .wch-notification {
-        line-height: 16px;
-        padding: 7px;
-        background: $brand-warning;
-        font-size: 16px;
-        text-align: center;
-
-        a {
-            color: $brand-info;
-        }
-
-        &+.wch-notification {
-            border-top: 1px solid darken($brand-warning, 15%);
-        }
-    }
-
-    .wch-notification.wch-notification--demo {
-        z-index: 10000000;
-        position: fixed;
-        top: 0;
-        width: 100%;
-
-        color: white;
-        background: $ignite-brand-success;
-        border: none;
-
-        box-shadow: 0 0 15px #008eff;
-        animation: pulse 2s infinite;
-
-        a {
-            color: white;
-            text-decoration: underline;
-
-            &:hover {
-                color: #ffab40;
-                text-decoration: none;
-            }
-        }
     }
 
     .wch-additional-nav-items {
         display: flex;
     }
-}
 
-@keyframes pulse {
-    0% {
-        box-shadow: 0 1px 2px #008eff;
-    }
-    50% {
-        box-shadow: 0 1px 15px #008eff;
-    }
-    100% {
-        box-shadow: 0 1px 2px #008eff;
+    .web-console-header__togle-menu-button {
+        width: 40px;
+        height: 40px;
+        background: none !important;
+        border: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        outline: none !important;
+        color: rgba(0, 0, 0, 0.54);
+        margin-right: 5px;
     }
 }

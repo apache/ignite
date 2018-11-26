@@ -39,13 +39,13 @@ export default class {
     resetPassword() {
         this.$http.post('/api/v1/password/reset', {token: this.ui.token, password: this.ui.password})
             .then(() => {
-                this.$state.go('signin');
+                this.$state.go('base.signin');
 
                 this.Messages.showInfo('Password successfully changed');
             })
             .catch(({data, state}) => {
                 if (state === 503)
-                    this.$state.go('signin');
+                    this.$state.go('base.signin');
 
                 this.Messages.showError(data);
             });

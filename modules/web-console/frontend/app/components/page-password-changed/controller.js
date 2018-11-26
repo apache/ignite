@@ -20,7 +20,7 @@ export default class {
 
     constructor($state, $timeout) {
         $timeout(() => {
-            $state.go('signin');
+            $state.go('base.signin');
         }, 10000);
     }
 }

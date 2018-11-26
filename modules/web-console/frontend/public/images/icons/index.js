@@ -43,3 +43,6 @@ export {default as refresh} from './refresh.icon.svg';
 export {default as search} from './search.icon.svg';
 export {default as sort} from './sort.icon.svg';
 export {default as structure} from './structure.icon.svg';
+export {default as cluster} from './cluster.icon.svg';
+export {default as sql} from './sql.icon.svg';
+export {default as menu} from './menu.icon.svg';

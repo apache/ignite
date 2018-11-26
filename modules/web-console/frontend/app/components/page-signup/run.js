@@ -21,7 +21,7 @@
 export function registerState($uiRouter) {
     /** @type {import("app/types").IIgniteNg1StateDeclaration} */
     const state = {
-        name: 'signup',
+        name: 'base.signup',
         url: '/signup',
         component: 'pageSignup',
         unsaved: true,

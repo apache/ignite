@@ -26,6 +26,11 @@
 
 page-landing {
     font-family: Roboto;
+    display: block;
+
+    margin-left: -30px;
+    margin-right: -30px;
+    display: block;
 
     .btn-custom {
         @include custom_btn;

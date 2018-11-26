@@ -16,10 +16,6 @@
 
 include /app/helpers/jade/mixins
 
-web-console-header
-    web-console-header-left
-        ignite-header-title
-
 .container--responsive.body-container
     section
         h3 Don't Have An Account?
@@ -34,6 +30,4 @@ web-console-header
                     type='submit'
                 ) Sign Up
         footer.page-signup__has-account-message
-            | Already have an account? #[a(ui-sref='signin') Sign in here]
-
-web-console-footer
+            | Already have an account? #[a(ui-sref='base.signin') Sign in here]
