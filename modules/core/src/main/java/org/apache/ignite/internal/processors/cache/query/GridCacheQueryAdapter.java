@@ -544,7 +544,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                         + " [forced local query=" + this + "]");
                 }
 
-                if(isSafeLossPolicy()) {
+                if (isSafeLossPolicy()) {
                     throw new IgniteCheckedException("Failed to execute scan query because cache partition has been " +
                         "lost [cacheName=" + cctx.name() + ", part=" + part + "]");
                 }
@@ -600,10 +600,10 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @return true if current PartitionLossPolicy corresponds to *_SAFE values.
      */
     private boolean isSafeLossPolicy() {
-        PartitionLossPolicy lossPolicy = cctx.cache().configuration().getPartitionLossPolicy();
+        PartitionLossPolicy lossPlc = cctx.cache().configuration().getPartitionLossPolicy();
 
-        return lossPolicy == PartitionLossPolicy.READ_ONLY_SAFE ||
-            lossPolicy == PartitionLossPolicy.READ_WRITE_SAFE;
+        return lossPlc == PartitionLossPolicy.READ_ONLY_SAFE ||
+            lossPlc == PartitionLossPolicy.READ_WRITE_SAFE;
     }
 
     /**

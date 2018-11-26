@@ -810,23 +810,28 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
      * @param parts Partitions.
      */
     protected void checkQueryFails(Ignite node, boolean loc, int... parts) {
-        if(parts.length == 0)
+        if (parts.length == 0)
             return;
 
         IgniteCache cache = node.cache(DEFAULT_CACHE_NAME);
 
-        ScanQuery qry = new ScanQuery();
-        qry.setPartition(parts[0]);
-        if (loc)
-            qry.setLocal(true);
+        for (int partition : parts) {
+            ScanQuery qry = new ScanQuery();
+            qry.setPartition(partition);
+            if (loc)
+                qry.setLocal(true);
 
-        try {
-            cache.query(qry).getAll();
-        } catch (Throwable e) {
-            if(!e.getMessage().contains("Failed to execute scan query because cache partition has been lost"))
-                throw e;
-            else
-                return;
+            try {
+                cache.query(qry).getAll();
+            }
+            catch (Throwable e) {
+                if (loc && !e.getMessage().contains("forced local query"))
+                    throw e;
+                else if (!loc && !e.getMessage().contains("partition has been lost"))
+                    throw e;
+                else
+                    return;
+            }
         }
 
         fail("Query should was fallen");
