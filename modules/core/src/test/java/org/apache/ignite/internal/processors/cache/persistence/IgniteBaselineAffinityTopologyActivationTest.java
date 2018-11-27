@@ -1030,65 +1030,6 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
     }
 
     /**
-     * Restore this test when requirements for BaselineTopology deletion are clarified and this feature
-     * is covered with more tests.
-     */
-    public void _testBaselineTopologyHistoryIsDeletedOnBaselineDelete() throws Exception {
-        BaselineTopologyHistoryVerifier verifier = new BaselineTopologyHistoryVerifier() {
-            @Override public void verify(BaselineTopologyHistory bltHist) {
-                assertNotNull(bltHist);
-
-                assertEquals(0, bltHist.history().size());
-            }
-        };
-
-        Ignite nodeA = startGridWithConsistentId("A");
-        startGridWithConsistentId("B");
-        startGridWithConsistentId("C");
-
-        nodeA.cluster().active(true);
-
-        stopAllGrids(false);
-
-        nodeA = startGridWithConsistentId("A");
-        startGridWithConsistentId("B");
-
-        nodeA.cluster().active(true);
-
-        nodeA.cluster().setBaselineTopology(baselineNodes(nodeA.cluster().forServers().nodes()));
-
-        stopAllGrids(false);
-
-        nodeA = startGridWithConsistentId("A");
-
-        nodeA.cluster().active(true);
-
-        nodeA.cluster().setBaselineTopology(baselineNodes(nodeA.cluster().forServers().nodes()));
-
-        stopAllGrids(false);
-
-        final Ignite node = startGridWithConsistentId("A");
-
-        boolean activated = GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return node.cluster().active();
-            }
-        }, 10_000);
-
-        assertTrue(activated);
-
-        node.cluster().setBaselineTopology(null);
-
-        verifyBaselineTopologyHistoryOnNodes(verifier, new Ignite[] {node});
-
-        stopAllGrids(false);
-
-        nodeA = startGridWithConsistentId("A");
-
-        verifyBaselineTopologyHistoryOnNodes(verifier, new Ignite[] {nodeA});
-    }
-
-    /**
      * Retrieves baseline topology from ignite node instance.
      *
      * @param ig Ig.
