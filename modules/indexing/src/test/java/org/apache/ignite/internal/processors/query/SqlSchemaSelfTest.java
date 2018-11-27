@@ -20,14 +20,18 @@ package org.apache.ignite.internal.processors.query;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -293,17 +297,23 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTypeConflictInPublicSchema() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10195");
-
         node.createCache(new CacheConfiguration<PersonKey, Person>()
             .setName(CACHE_PERSON)
             .setIndexedTypes(PersonKey.class, Person.class)
             .setSqlSchema(QueryUtils.DFLT_SCHEMA));
 
-        node.createCache(new CacheConfiguration<PersonKey, Person>()
-            .setName(CACHE_PERSON_2)
-            .setIndexedTypes(PersonKey.class, Person.class)
-            .setSqlSchema(QueryUtils.DFLT_SCHEMA));
+        Throwable th = GridTestUtils.assertThrows(log, (Callable<Void>) () -> {
+            node.createCache(new CacheConfiguration<PersonKey, Person>()
+                .setName(CACHE_PERSON_2)
+                .setIndexedTypes(PersonKey.class, Person.class)
+                .setSqlSchema(QueryUtils.DFLT_SCHEMA));
+
+            return null;
+        }, CacheException.class, null);
+
+        SchemaOperationException e = X.cause(th, SchemaOperationException.class);
+
+        assertEquals(SchemaOperationException.CODE_TABLE_EXISTS, e.code());
     }
 
     /**
