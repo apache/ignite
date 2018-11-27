@@ -35,7 +35,7 @@ import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
  * withEquiprobableClasses}. If {@code equiprobableClasses} is set, the probalilities of all classes will be {@code
  * 1/k}, where {@code k} is classes count.
  */
-public class BernoulliNaiveBayesTrainer extends SingleLabelDatasetTrainer<BernoulliNaiveBayesModel> {
+public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<BernoulliNaiveBayesModel> {
     /** Precision to compare bucketThresholds. */
     private static final double PRECISION = 1e-10;
     /* Preset prior probabilities. */
@@ -200,27 +200,27 @@ public class BernoulliNaiveBayesTrainer extends SingleLabelDatasetTrainer<Bernou
     }
 
     /** Sets equal probability for all classes. */
-    public BernoulliNaiveBayesTrainer withEquiprobableClasses() {
+    public DiscreteNaiveBayesTrainer withEquiprobableClasses() {
         resetProbabilitiesSettings();
         equiprobableClasses = true;
         return this;
     }
 
     /** Sets prior probabilities. */
-    public BernoulliNaiveBayesTrainer setPriorProbabilities(double[] priorProbabilities) {
+    public DiscreteNaiveBayesTrainer setPriorProbabilities(double[] priorProbabilities) {
         resetProbabilitiesSettings();
         this.priorProbabilities = priorProbabilities.clone();
         return this;
     }
 
     /** */
-    public BernoulliNaiveBayesTrainer setBucketThresholds(double[][] bucketThresholds) {
+    public DiscreteNaiveBayesTrainer setBucketThresholds(double[][] bucketThresholds) {
         this.bucketThresholds = bucketThresholds;
         return this;
     }
 
     /** Sets default settings {@code equiprobableClasses} to {@code false} and removes priorProbabilities. */
-    public BernoulliNaiveBayesTrainer resetProbabilitiesSettings() {
+    public DiscreteNaiveBayesTrainer resetProbabilitiesSettings() {
         equiprobableClasses = false;
         priorProbabilities = null;
         return this;

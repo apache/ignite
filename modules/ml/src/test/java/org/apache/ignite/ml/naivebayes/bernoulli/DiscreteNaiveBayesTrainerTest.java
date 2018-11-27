@@ -26,8 +26,8 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-/** Test for {@link BernoulliNaiveBayesTrainer} */
-public class BernoulliNaiveBayesTrainerTest extends TrainerTest {
+/** Test for {@link DiscreteNaiveBayesTrainer} */
+public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
 
     /** Precision in test checks. */
     private static final double PRECISION = 1e-2;
@@ -59,12 +59,12 @@ public class BernoulliNaiveBayesTrainerTest extends TrainerTest {
     }
 
     /** */
-    private BernoulliNaiveBayesTrainer trainer;
+    private DiscreteNaiveBayesTrainer trainer;
 
-    /** Initialization {@code BernoulliNaiveBayesTrainer}. */
+    /** Initialization {@code DiscreteNaiveBayesTrainer}. */
     @Before
     public void createTrainer() {
-        trainer = new BernoulliNaiveBayesTrainer().setBucketThresholds(thresholds);
+        trainer = new DiscreteNaiveBayesTrainer().setBucketThresholds(thresholds);
     }
 
     /** */
@@ -84,7 +84,7 @@ public class BernoulliNaiveBayesTrainerTest extends TrainerTest {
     /** */
     @Test
     public void testReturnsEquivalentProbalitiesWhenSetEquiprobableClasses_() {
-        BernoulliNaiveBayesTrainer trainer = new BernoulliNaiveBayesTrainer()
+        DiscreteNaiveBayesTrainer trainer = new DiscreteNaiveBayesTrainer()
             .setBucketThresholds(thresholds)
             .withEquiprobableClasses();
 
@@ -101,7 +101,7 @@ public class BernoulliNaiveBayesTrainerTest extends TrainerTest {
     @Test
     public void testReturnsPresetProbalitiesWhenSetPriorProbabilities() {
         double[] priorProbabilities = new double[] {.35, .65};
-        BernoulliNaiveBayesTrainer trainer = new BernoulliNaiveBayesTrainer()
+        DiscreteNaiveBayesTrainer trainer = new DiscreteNaiveBayesTrainer()
             .setBucketThresholds(thresholds)
             .setPriorProbabilities(priorProbabilities);
 

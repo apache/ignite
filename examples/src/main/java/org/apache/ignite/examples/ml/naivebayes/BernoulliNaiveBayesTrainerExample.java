@@ -29,11 +29,11 @@ import org.apache.ignite.examples.ml.util.MLSandboxDatasets;
 import org.apache.ignite.examples.ml.util.SandboxMLCache;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.naivebayes.bernoulli.BernoulliNaiveBayesModel;
-import org.apache.ignite.ml.naivebayes.bernoulli.BernoulliNaiveBayesTrainer;
+import org.apache.ignite.ml.naivebayes.bernoulli.DiscreteNaiveBayesTrainer;
 
 /**
  * Run naive Bayes classification model based on <a href=https://en.wikipedia.org/wiki/Naive_Bayes_classifier#Bernoulli_naive_Bayes">
- * naive Bayes classifier</a> algorithm ({@link BernoulliNaiveBayesTrainer}) over distributed cache.
+ * naive Bayes classifier</a> algorithm ({@link DiscreteNaiveBayesTrainer}) over distributed cache.
  * <p>
  * Code in this example launches Ignite grid and fills the cache with test data points.
  * </p>
@@ -59,7 +59,7 @@ public class BernoulliNaiveBayesTrainerExample {
                 .fillCacheWith(MLSandboxDatasets.ENGLISH_VS_SCOTTISH);
 
             System.out.println(">>> Create new Bernoulli naive Bayes classification trainer object.");
-            BernoulliNaiveBayesTrainer trainer = new BernoulliNaiveBayesTrainer();
+            DiscreteNaiveBayesTrainer trainer = new DiscreteNaiveBayesTrainer();
 
             System.out.println(">>> Perform the training to get the model.");
             BernoulliNaiveBayesModel mdl = trainer.fit(
