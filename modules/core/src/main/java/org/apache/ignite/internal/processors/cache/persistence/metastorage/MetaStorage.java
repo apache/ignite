@@ -17,13 +17,24 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -58,6 +69,7 @@ import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -223,6 +235,29 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
 
         return res;
     }
+
+    /**
+     * Read all keys/values.
+     *
+     * @return Matched key-value pairs.
+     */
+    private Collection<IgniteBiTuple<String, byte[]>> readAll() throws IgniteCheckedException {
+        if (empty)
+            return Collections.emptyList();
+
+        ArrayList<IgniteBiTuple<String, byte[]>> res = new ArrayList<>();
+
+        GridCursor<MetastorageDataRow> cur = tree.find(null, null);
+
+        while (cur.next()) {
+            MetastorageDataRow row = cur.get();
+
+            res.add(new IgniteBiTuple<>(row.key(), row.value()));
+        }
+
+        return res;
+    }
+
 
     /** {@inheritDoc} */
     @Override public void write(@NotNull String key, @NotNull Serializable val) throws IgniteCheckedException {
@@ -594,6 +629,200 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
             assert incomplete.isReady();
 
             return new MetastorageDataRow(link, key, incomplete.data());
+        }
+    }
+
+    private interface TmpStorageInternal extends Closeable {
+        boolean add(String key, byte[] value) throws IOException;
+
+        Stream<IgniteBiTuple<String, byte[]>> stream() throws IOException;
+    }
+
+    private static class MemoryTmpStorage implements TmpStorageInternal {
+        final ByteBuffer buf;
+        int size;
+
+        MemoryTmpStorage(int size) {
+            buf = ByteBuffer.allocateDirect(size);
+        }
+
+        @Override public boolean add(String key, byte[] value) {
+            byte[] keyData = key.getBytes(StandardCharsets.UTF_8);
+            int len = value.length + keyData.length + 8;
+
+            if (len > buf.remaining())
+                return false;
+
+            buf.putInt(keyData.length).putInt(value.length).put(keyData).put(value);
+
+            size++;
+
+            return true;
+        }
+
+        @Override public Stream<IgniteBiTuple<String, byte[]>> stream() {
+            buf.flip();
+
+            return Stream.generate(() -> {
+                int keyLen = buf.getInt();
+                int dataLen = buf.getInt();
+
+                byte[] tmpBuf = new byte[Math.max(keyLen, dataLen)];
+
+                buf.get(tmpBuf, 0, keyLen);
+
+                String key = new String(tmpBuf, 0, keyLen, StandardCharsets.UTF_8);
+
+                buf.get(tmpBuf, 0, dataLen);
+
+                return new IgniteBiTuple<>(key, tmpBuf.length > dataLen ? Arrays.copyOf(tmpBuf, dataLen) : tmpBuf);
+            }).limit(size);
+        }
+
+        @Override public void close() throws IOException {
+        }
+    }
+
+    private static class FileTmpStorage implements TmpStorageInternal {
+        final ByteBuffer cache = ByteBuffer.allocateDirect(1024 * 1024);
+        RandomAccessFile file;
+        long size;
+
+        @Override public boolean add(String key, byte[] value) throws IOException {
+            if (file == null)
+                file = new RandomAccessFile(File.createTempFile("m_storage", "bin"), "rw");
+
+            byte[] keyData = key.getBytes(StandardCharsets.UTF_8);
+
+            if (value.length + keyData.length + 8 > cache.remaining()) {
+                cache.flip();
+
+                flushCache(false);
+            }
+
+            cache.putInt(keyData.length).putInt(value.length).put(keyData).put(value);
+
+            size++;
+
+            return true;
+        }
+
+        @Override public Stream<IgniteBiTuple<String, byte[]>> stream() throws IOException {
+            if (file == null)
+                return Stream.empty();
+
+            flushCache(true);
+
+            file.getChannel().position(0);
+
+            readToCache();
+
+            return Stream.generate(() -> {
+                if (cache.remaining() <= 8) {
+                    cache.compact();
+
+                    try {
+                        readToCache();
+                    }
+                    catch (IOException e) {
+                        throw new IgniteException(e);
+                    }
+                }
+
+                int keyLen = cache.getInt();
+                int dataLen = cache.getInt();
+
+                if (cache.remaining() < keyLen + dataLen) {
+                    cache.compact();
+
+                    try {
+                        readToCache();
+                    }
+                    catch (IOException e) {
+                        throw new IgniteException(e);
+                    }
+                }
+
+                byte[] tmpBuf = new byte[Math.max(keyLen, dataLen)];
+
+                cache.get(tmpBuf, 0, keyLen);
+
+                String key = new String(tmpBuf, 0, keyLen, StandardCharsets.UTF_8);
+
+                cache.get(tmpBuf, 0, dataLen);
+
+                return new IgniteBiTuple<>(key, tmpBuf.length > dataLen ? Arrays.copyOf(tmpBuf, dataLen) : tmpBuf);
+            }).limit(size);
+        }
+
+        @Override public void close() throws IOException {
+            file.close();
+        }
+
+        private void readToCache() throws IOException {
+            int len = (int)Math.min(file.length() - file.getChannel().position(), cache.remaining());
+
+            while (len > 0)
+                len -= file.getChannel().read(cache);
+
+            cache.flip();
+        }
+
+        private void flushCache(boolean force) throws IOException {
+            if (cache.position() > 0) {
+                cache.flip();
+
+                while (cache.remaining() > 0)
+                    file.getChannel().write(cache);
+
+                cache.clear();
+            }
+
+            file.getChannel().force(force);
+        }
+    }
+
+    public static class TmpStorage implements Closeable {
+        final List<TmpStorageInternal> chain = new ArrayList<>(2);
+        TmpStorageInternal current;
+        final IgniteLogger log;
+
+        TmpStorage(int memoryBufferSize, IgniteLogger log) {
+            this.log = log;
+
+            chain.add(current = new MemoryTmpStorage(memoryBufferSize));
+        }
+
+        public void add(String key, byte[] value) throws IgniteCheckedException {
+            try {
+                while (!current.add(key, value))
+                    chain.add(current = new FileTmpStorage());
+            }
+            catch (IOException e) {
+                throw new IgniteCheckedException(e);
+            }
+        }
+
+        public Stream<IgniteBiTuple<String, byte[]>> stream() {
+            return chain.stream().flatMap(storage -> {
+                try {
+                    return storage.stream();
+                }
+                catch (IOException e) {
+                    throw new IgniteException(e);
+                }
+            });
+        }
+
+        @Override public void close() throws IOException {
+            for (TmpStorageInternal storage : chain) {
+                try {
+                    storage.close();
+                }
+                catch (IOException ex) {
+                    log.error(ex.getMessage(), ex);
+                }
+            }
         }
     }
 }

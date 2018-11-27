@@ -18,7 +18,14 @@
 package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -28,6 +35,8 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -152,6 +161,54 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
         }
         finally {
             db.checkpointReadUnlock();
+        }
+    }
+
+    /**
+     *
+     */
+    public void testMetaStoreMigration() throws Exception {
+        final AtomicInteger idx = new AtomicInteger();
+
+        List<IgniteBiTuple<String, byte[]>> data = Stream.generate(() -> {
+            byte[] val = new byte[1024];
+
+            ThreadLocalRandom.current().nextBytes(val);
+
+            return new IgniteBiTuple<>("KEY_" + idx.getAndIncrement(), val);
+        }).limit(1_000).collect(Collectors.toList());
+
+        // memory
+        try (MetaStorage.TmpStorage tmpStorage = new MetaStorage.TmpStorage(128 * 1024 * 1024, log)) {
+            for (IgniteBiTuple<String, byte[]> item : data)
+                tmpStorage.add(item.get1(), item.get2());
+
+            compare(tmpStorage.stream().iterator(), data.iterator());
+        }
+
+        // file
+        try (MetaStorage.TmpStorage tmpStorage = new MetaStorage.TmpStorage(4 * 1024, log)) {
+            for (IgniteBiTuple<String, byte[]> item : data)
+                tmpStorage.add(item.get1(), item.get2());
+
+            compare(tmpStorage.stream().iterator(), data.iterator());
+        }
+
+    }
+
+    private static void compare(Iterator<IgniteBiTuple<String, byte[]>> it, Iterator<IgniteBiTuple<String, byte[]>> it1) {
+        while (true) {
+            Assert.assertEquals(it.hasNext(), it1.hasNext());
+
+            if (!it.hasNext())
+                break;
+
+            IgniteBiTuple<String, byte[]> i = it.next();
+            IgniteBiTuple<String, byte[]> i1 = it1.next();
+
+            Assert.assertEquals(i.get1(), i.get1());
+
+            Assert.assertArrayEquals(i.get2(), i1.get2());
         }
     }
 
