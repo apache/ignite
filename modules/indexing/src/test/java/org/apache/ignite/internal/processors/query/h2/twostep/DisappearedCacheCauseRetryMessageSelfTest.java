@@ -63,6 +63,9 @@ public class DisappearedCacheCauseRetryMessageSelfTest extends GridCommonAbstrac
             fail("No CacheException emitted.");
         }
         catch (CacheException e) {
+            if (!e.getMessage().contains("Failed to reserve partitions for query (cache is not found on local node) ["))
+                e.printStackTrace();
+
             assertTrue(e.getMessage(), e.getMessage().contains("Failed to reserve partitions for query (cache is not found on local node) ["));
         }
     }

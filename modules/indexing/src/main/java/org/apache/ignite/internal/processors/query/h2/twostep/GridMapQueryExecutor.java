@@ -970,14 +970,8 @@ public class GridMapQueryExecutor {
                     else {
                         QueryRetryException qryRetryErr = X.cause(e, QueryRetryException.class);
 
-                        if (qryRetryErr != null) {
-                            final String retryCause = String.format(
-                                "Failed to execute non-collocated query (will retry) [localNodeId=%s, rmtNodeId=%s, reqId=%s, " +
-                                    "errMsg=%s]", ctx.localNodeId(), node.id(), reqId, qryRetryErr.getMessage()
-                            );
-
-                            sendRetry(node, reqId, segmentId, retryCause);
-                        }
+                        if (qryRetryErr != null)
+                            sendError(node, reqId, qryRetryErr);
                         else {
                             U.error(log, "Failed to execute local query.", e);
 
