@@ -306,7 +306,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
         validate(cacheNodes, topVer);
 
-        // Future can be alredy done with some exception.
+        // Future can be already done with some exception.
         if (isDone())
             return;
 
@@ -402,29 +402,11 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 }));
             }
             else {
-                MiniFuture fut = new MiniFuture(n, mappedKeys, topVer,
-                    CU.createBackupPostProcessingClosure(topVer, log, cctx, null, expiryPlc, readThrough, skipVals));
+                MiniFuture miniFut = new MiniFuture(n, mappedKeys, topVer);
 
-                GridCacheMessage req = new GridNearGetRequest(
-                    cctx.cacheId(),
-                    futId,
-                    fut.futureId(),
-                    null,
-                    mappedKeys,
-                    readThrough,
-                    topVer,
-                    subjId,
-                    taskName == null ? 0 : taskName.hashCode(),
-                    expiryPlc != null ? expiryPlc.forCreate() : -1L,
-                    expiryPlc != null ? expiryPlc.forAccess() : -1L,
-                    false,
-                    skipVals,
-                    cctx.deploymentEnabled(),
-                    recovery,
-                    txLbl,
-                    mvccSnapshot());
+                GridCacheMessage req = miniFut.createGetRequest(futId);
 
-                add(fut); // Append new future.
+                add(miniFut); // Append new future.
 
                 try {
                     cctx.io().send(n, req, cctx.ioPolicy());
@@ -432,9 +414,9 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 catch (IgniteCheckedException e) {
                     // Fail the whole thing.
                     if (e instanceof ClusterTopologyCheckedException)
-                        fut.onNodeLeft((ClusterTopologyCheckedException)e);
+                        miniFut.onNodeLeft((ClusterTopologyCheckedException)e);
                     else
-                        fut.onResult(e);
+                        miniFut.onResult(e);
                 }
             }
         }
@@ -791,13 +773,9 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
             @SuppressWarnings("unchecked")
             @Override public String apply(IgniteInternalFuture<?> f) {
-                if (isMini(f)) {
-                    return "[node=" + ((MiniFuture)f).node().id() +
-                        ", loc=" + ((MiniFuture)f).node().isLocal() +
-                        ", done=" + f.isDone() + "]";
-                }
-                else
-                    return "[loc=true, done=" + f.isDone() + "]";
+                return isMini(f) ? "[node=" + ((MiniFuture)f).node().id() +
+                    ", loc=" + ((MiniFuture)f).node().isLocal() +
+                    ", done=" + f.isDone() + "]" : "[loc=true, done=" + f.isDone() + "]";
             }
         });
 
@@ -834,18 +812,17 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
          * @param node Node.
          * @param keys Keys.
          * @param topVer Topology version.
-         * @param postProcessingClos Post processing closure.
          */
         MiniFuture(
             ClusterNode node,
             LinkedHashMap<KeyCacheObject, Boolean> keys,
-            AffinityTopologyVersion topVer,
-            @Nullable IgniteInClosure<Collection<GridCacheEntryInfo>> postProcessingClos
+            AffinityTopologyVersion topVer
         ) {
             this.node = node;
             this.keys = keys;
             this.topVer = topVer;
-            this.postProcessingClos = postProcessingClos;
+            this.postProcessingClos = CU.createBackupPostProcessingClosure(
+                topVer, log, cctx, null, expiryPlc, readThrough, skipVals);
         }
 
         /**
@@ -867,6 +844,34 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
          */
         public Collection<KeyCacheObject> keys() {
             return keys.keySet();
+        }
+
+        /**
+         * Create request for mini future.
+         *
+         * @param rootFutId Root compound future id.
+         * @return Ger request.
+         */
+        GridNearGetRequest createGetRequest(IgniteUuid rootFutId) {
+            return new GridNearGetRequest(
+                cctx.cacheId(),
+                rootFutId,
+                futId,
+                null,
+                keys,
+                readThrough,
+                topVer,
+                subjId,
+                taskName == null ? 0 : taskName.hashCode(),
+                expiryPlc != null ? expiryPlc.forCreate() : -1L,
+                expiryPlc != null ? expiryPlc.forAccess() : -1L,
+                false,
+                skipVals,
+                cctx.deploymentEnabled(),
+                recovery,
+                txLbl,
+                mvccSnapshot()
+            );
         }
 
         /**
@@ -924,14 +929,14 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
          * @param res Result callback.
          */
         void onResult(final GridNearGetResponse res) {
-            final Collection<Integer> invalidParts = res.invalidPartitions();
-
             // If error happened on remote node, fail the whole future.
             if (res.error() != null) {
                 onDone(res.error());
 
                 return;
             }
+
+            Collection<Integer> invalidParts = res.invalidPartitions();
 
             // Remap invalid partitions.
             if (!F.isEmpty(invalidParts)) {
@@ -966,12 +971,12 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     return;
                 }
 
-                // Need to wait for next topology version to remap.
-                IgniteInternalFuture<AffinityTopologyVersion> topFut = cctx.shared().exchange().affinityReadyFuture(rmtTopVer);
-
-                topFut.listen(new CIX1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                // Remap after remote version will be finished localy.
+                cctx.shared().exchange().affinityReadyFuture(rmtTopVer)
+                    .listen(new CIX1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                     @Override public void applyx(
-                        IgniteInternalFuture<AffinityTopologyVersion> fut) throws IgniteCheckedException {
+                        IgniteInternalFuture<AffinityTopologyVersion> fut
+                    ) throws IgniteCheckedException {
                         AffinityTopologyVersion topVer = fut.get();
 
                         // This will append new futures to compound list.
