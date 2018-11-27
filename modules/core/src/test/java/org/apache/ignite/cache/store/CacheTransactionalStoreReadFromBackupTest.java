@@ -18,7 +18,6 @@
 package org.apache.ignite.cache.store;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
