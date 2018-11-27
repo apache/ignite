@@ -40,6 +40,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.util.TestTcpCommunicationSpi;
 
@@ -55,6 +56,13 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
 
     /** */
     private int backupCnt;
+
+    /** {@inheritDoc} */
+    @Override public void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+
+        super.beforeTestsStarted();
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -101,10 +109,7 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
     public void testPrimaryAndBackupDead() throws Exception {
         backupCnt = 1;
 
-        startGrid(0);
-        startGrid(1);
-        startGrid(2);
-        startGrid(3);
+        startGridsMultiThreaded(4);
 
         awaitPartitionMapExchange();
 
