@@ -381,7 +381,9 @@ public class GridH2Table extends TableBase {
         try {
             ensureNotDestroyed();
 
-            assert sessions.isEmpty() : sessions;
+            sessions.keySet().forEach(Session::close);
+
+            sessions.clear();
 
             destroyed = true;
 
