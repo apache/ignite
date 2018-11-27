@@ -297,9 +297,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     private void map(
         Collection<KeyCacheObject> keys,
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mapped,
-        final AffinityTopologyVersion topVer
+        AffinityTopologyVersion topVer
     ) {
-        // TODO
         Collection<ClusterNode> cacheNodes = CU.affinityNodes(cctx, topVer);
 
         if (cacheNodes.isEmpty()) {
@@ -311,6 +310,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
         GridDhtTopologyFuture topFut = cctx.shared().exchange().lastFinishedFuture();
 
+        //TODO
         Throwable err = topFut != null ? topFut.validateCache(cctx, recovery, true, null, keys) : null;
 
         if (err != null) {

@@ -615,6 +615,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         if (invalidParts) {
             assert !rmtTopVer.equals(AffinityTopologyVersion.ZERO);
 
+            // TODO
             if (rmtTopVer.compareTo(topVer) <= 0) {
                 // Fail the whole get future.
                 onDone(new IgniteCheckedException("Failed to process invalid partitions response (remote node reported " +
