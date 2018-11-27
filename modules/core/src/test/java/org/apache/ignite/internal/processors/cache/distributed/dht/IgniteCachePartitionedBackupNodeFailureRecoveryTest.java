@@ -44,7 +44,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /**
  */
 public class IgniteCachePartitionedBackupNodeFailureRecoveryTest extends IgniteCacheAbstractTest {
-    /** {@inheritDoc}*/
+  /** {@inheritDoc}*/
     @Override protected int gridCount() {
         return 3;
     }
