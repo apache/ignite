@@ -192,41 +192,45 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
      */
     void init() {
         // TODO get rid of force keys request https://issues.apache.org/jira/browse/IGNITE-10251
-        GridDhtFuture<Object> fut = cctx.group().preloader().request(cctx, keys.keySet(), topVer);
+//        GridDhtFuture<Object> fut = cctx.group().preloader().request(cctx, keys.keySet(), topVer);
+//
+//        if (fut != null) {
+//            if (!F.isEmpty(fut.invalidPartitions())) {
+//                if (retries == null)
+//                    retries = new HashSet<>();
+//
+//                retries.addAll(fut.invalidPartitions());
+//            }
+//
+//            fut.listen(new CI1<IgniteInternalFuture<Object>>() {
+//                @Override public void apply(IgniteInternalFuture<Object> fut) {
+//                    try {
+//                        fut.get();
+//                    }
+//                    catch (IgniteCheckedException e) {
+//                        if (log.isDebugEnabled())
+//                            log.debug("Failed to request keys from preloader [keys=" + keys + ", err=" + e + ']');
+//
+//                        onDone(e);
+//
+//                        return;
+//                    }
+//
+//                    map0(keys, true);
+//
+//                    markInitialized();
+//                }
+//            });
+//        }
+//        else {
+//            map0(keys, false);
+//
+//            markInitialized();
+//        }
 
-        if (fut != null) {
-            if (!F.isEmpty(fut.invalidPartitions())) {
-                if (retries == null)
-                    retries = new HashSet<>();
+        map0(keys, false);
 
-                retries.addAll(fut.invalidPartitions());
-            }
-
-            fut.listen(new CI1<IgniteInternalFuture<Object>>() {
-                @Override public void apply(IgniteInternalFuture<Object> fut) {
-                    try {
-                        fut.get();
-                    }
-                    catch (IgniteCheckedException e) {
-                        if (log.isDebugEnabled())
-                            log.debug("Failed to request keys from preloader [keys=" + keys + ", err=" + e + ']');
-
-                        onDone(e);
-
-                        return;
-                    }
-
-                    map0(keys, true);
-
-                    markInitialized();
-                }
-            });
-        }
-        else {
-            map0(keys, false);
-
-            markInitialized();
-        }
+        markInitialized();
     }
 
     /** {@inheritDoc} */

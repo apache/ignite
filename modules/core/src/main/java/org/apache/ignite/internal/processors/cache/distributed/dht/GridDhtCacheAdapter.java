@@ -982,8 +982,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                     else {
                         AffinityTopologyVersion topVer = ctx.shared().exchange().lastTopologyFuture().initialVersion();
 
-                        assert topVer.compareTo(req.topologyVersion()) > 0 : "Wrong ready topology version for " +
-                            "invalid partitions response [topVer=" + topVer + ", req=" + req + ']';
+//                        assert topVer.compareTo(req.topologyVersion()) > 0 : "Wrong ready topology version for " +
+//                            "invalid partitions response [topVer=" + topVer + ", req=" + req + ']';
 
                         res = new GridNearSingleGetResponse(ctx.cacheId(),
                             req.futureId(),

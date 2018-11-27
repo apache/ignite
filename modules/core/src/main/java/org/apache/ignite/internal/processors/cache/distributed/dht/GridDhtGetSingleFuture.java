@@ -214,47 +214,47 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
      */
     private void map() {
         // TODO get rid of force keys request https://issues.apache.org/jira/browse/IGNITE-10251
-        if (cctx.group().preloader().needForceKeys()) {
-            GridDhtFuture<Object> fut = cctx.group().preloader().request(
-                cctx,
-                Collections.singleton(key),
-                topVer);
-
-            if (fut != null) {
-                if (!F.isEmpty(fut.invalidPartitions())) {
-                    assert fut.invalidPartitions().size() == 1 : fut.invalidPartitions();
-
-                    retry = F.first(fut.invalidPartitions());
-
-                    onDone((GridCacheEntryInfo)null);
-
-                    return;
-                }
-
-                fut.listen(
-                    new IgniteInClosure<IgniteInternalFuture<Object>>() {
-                        @Override public void apply(IgniteInternalFuture<Object> fut) {
-                            Throwable e = fut.error();
-
-                            if (e != null) { // Check error first.
-                                if (log.isDebugEnabled())
-                                    log.debug("Failed to request keys from preloader " +
-                                        "[keys=" + key + ", err=" + e + ']');
-
-                                if (e instanceof NodeStoppingException)
-                                    return;
-
-                                onDone(e);
-                            }
-                            else
-                                map0(true);
-                        }
-                    }
-                );
-
-                return;
-            }
-        }
+//        if (cctx.group().preloader().needForceKeys()) {
+//            GridDhtFuture<Object> fut = cctx.group().preloader().request(
+//                cctx,
+//                Collections.singleton(key),
+//                topVer);
+//
+//            if (fut != null) {
+//                if (!F.isEmpty(fut.invalidPartitions())) {
+//                    assert fut.invalidPartitions().size() == 1 : fut.invalidPartitions();
+//
+//                    retry = F.first(fut.invalidPartitions());
+//
+//                    onDone((GridCacheEntryInfo)null);
+//
+//                    return;
+//                }
+//
+//                fut.listen(
+//                    new IgniteInClosure<IgniteInternalFuture<Object>>() {
+//                        @Override public void apply(IgniteInternalFuture<Object> fut) {
+//                            Throwable e = fut.error();
+//
+//                            if (e != null) { // Check error first.
+//                                if (log.isDebugEnabled())
+//                                    log.debug("Failed to request keys from preloader " +
+//                                        "[keys=" + key + ", err=" + e + ']');
+//
+//                                if (e instanceof NodeStoppingException)
+//                                    return;
+//
+//                                onDone(e);
+//                            }
+//                            else
+//                                map0(true);
+//                        }
+//                    }
+//                );
+//
+//                return;
+//            }
+//        }
 
         map0(false);
     }

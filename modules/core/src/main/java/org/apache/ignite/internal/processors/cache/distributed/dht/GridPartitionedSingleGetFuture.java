@@ -263,6 +263,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                     "version did not change [topVer=" + topVer + ", updTopVer=" + updTopVer +
                     ", invalidParts=" + invalidParts + ']';
 
+                // TODO
                 // Remap recursively.
                 map(updTopVer);
             }

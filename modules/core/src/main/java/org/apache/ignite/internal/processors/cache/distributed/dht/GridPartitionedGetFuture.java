@@ -299,6 +299,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mapped,
         final AffinityTopologyVersion topVer
     ) {
+        // TODO
         Collection<ClusterNode> cacheNodes = CU.affinityNodes(cctx, topVer);
 
         if (cacheNodes.isEmpty()) {
@@ -381,9 +382,9 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
                     AffinityTopologyVersion updTopVer = cctx.shared().exchange().readyAffinityVersion();
 
-                    assert updTopVer.compareTo(topVer) > 0 : "Got invalid partitions for local node but topology version did " +
-                        "not change [topVer=" + topVer + ", updTopVer=" + updTopVer +
-                        ", invalidParts=" + invalidParts + ']';
+//                    assert updTopVer.compareTo(topVer) > 0 : "Got invalid partitions for local node but topology version did " +
+//                        "not change [topVer=" + topVer + ", updTopVer=" + updTopVer +
+//                        ", invalidParts=" + invalidParts + ']';
 
                     // Remap recursively.
                     map(remapKeys, mappings, updTopVer);
