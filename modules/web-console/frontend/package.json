@@ -128,7 +128,7 @@
     "mocha": "3.4.2",
     "mocha-teamcity-reporter": "1.1.1",
     "node-fetch": "1.7.3",
-    "node-sass": "4.9.3",
+    "node-sass": "4.11.0",
     "progress": "2.0.0",
     "progress-bar-webpack-plugin": "1.11.0",
     "pug-html-loader": "1.1.0",
