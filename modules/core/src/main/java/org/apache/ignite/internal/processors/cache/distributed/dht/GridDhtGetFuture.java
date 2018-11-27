@@ -227,10 +227,6 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
 
             markInitialized();
         }
-
-        map0(keys, false);
-
-        markInitialized();
     }
 
     /** {@inheritDoc} */
