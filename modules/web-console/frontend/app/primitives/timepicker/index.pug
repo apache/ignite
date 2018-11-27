@@ -56,8 +56,8 @@ mixin form-field__timepicker({ label, model, name, mindate, maxdate, disabled, r
             ng-messages=`$input.$error`
             ng-show=`($input.$dirty || $input.$touched || $input.$submitted) && $input.$invalid`
         )
-            if block
-                block
-
             if required
                 +form-field__error({ error: 'required', message: `${errLbl} could not be empty!` })
+
+            if block
+                block

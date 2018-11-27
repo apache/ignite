@@ -228,8 +228,6 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
      * @throws Exception If failed.
      */
     public void testAccountsTxDmlSql_ClientServer_Backups2_Persistence() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9292");
-
         persistence = true;
 
         testAccountsTxDmlSql_ClientServer_Backups2();
