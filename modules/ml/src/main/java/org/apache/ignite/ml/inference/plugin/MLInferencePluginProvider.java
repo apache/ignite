@@ -26,6 +26,8 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.ml.inference.storage.descriptor.ModelDescriptorStorageFactory;
+import org.apache.ignite.ml.inference.storage.model.ModelStorageFactory;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
@@ -45,12 +47,6 @@ public class MLInferencePluginProvider implements PluginProvider<MLInferencePlug
 
     /** Plugin version/ */
     private static final String ML_INFERENCE_PLUGIN_VERSION = "1.0.0";
-
-    /** Model storage cache name. */
-    private static final String MODEL_STORAGE_CACHE_NAME = "MODEL_STORAGE";
-
-    /** Model descriptor storage cache name. */
-    private static final String MODEL_DESCRIPTOR_STORAGE_CACHE_NAME = "MODEL_DESCRIPTOR_STORAGE";
 
     /** Default number of model storage backups. */
     private static final int MODEL_STORAGE_DEFAULT_BACKUPS = 1;
@@ -131,10 +127,10 @@ public class MLInferencePluginProvider implements PluginProvider<MLInferencePlug
             throw new RuntimeException("Plugin provider has not been initialized");
 
         if (cfg != null) {
-            if (cfg.isWithModelStorage())
+            if (cfg.isWithMdlStorage())
                 startModelStorage(cfg);
 
-            if (cfg.isWithModelDescriptorStorage())
+            if (cfg.isWithMdlDescStorage())
                 startModelDescriptorStorage(cfg);
         }
     }
@@ -165,14 +161,14 @@ public class MLInferencePluginProvider implements PluginProvider<MLInferencePlug
     private void startModelStorage(MLInferencePluginConfiguration cfg) {
         CacheConfiguration<String, byte[]> storageCfg = new CacheConfiguration<>();
 
-        storageCfg.setName(MODEL_STORAGE_CACHE_NAME);
+        storageCfg.setName(ModelStorageFactory.MODEL_STORAGE_CACHE_NAME);
         storageCfg.setCacheMode(CacheMode.PARTITIONED);
         storageCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
-        if (cfg.getModelStorageBackups() == null)
+        if (cfg.getMdlStorageBackups() == null)
             storageCfg.setBackups(MODEL_STORAGE_DEFAULT_BACKUPS);
         else
-            storageCfg.setBackups(cfg.getModelStorageBackups());
+            storageCfg.setBackups(cfg.getMdlStorageBackups());
 
         ignite.getOrCreateCache(storageCfg);
 
@@ -185,11 +181,11 @@ public class MLInferencePluginProvider implements PluginProvider<MLInferencePlug
     private void startModelDescriptorStorage(MLInferencePluginConfiguration cfg) {
         CacheConfiguration<String, byte[]> storageCfg = new CacheConfiguration<>();
 
-        storageCfg.setName(MODEL_DESCRIPTOR_STORAGE_CACHE_NAME);
+        storageCfg.setName(ModelDescriptorStorageFactory.MODEL_DESCRIPTOR_STORAGE_CACHE_NAME);
         storageCfg.setCacheMode(CacheMode.PARTITIONED);
         storageCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
-        if (cfg.getModelDescriptorStorageBackups() == null)
+        if (cfg.getMdlDescStorageBackups() == null)
             storageCfg.setBackups(MODEL_DESCRIPTOR_STORAGE_DEFAULT_BACKUPS);
 
         ignite.getOrCreateCache(storageCfg);

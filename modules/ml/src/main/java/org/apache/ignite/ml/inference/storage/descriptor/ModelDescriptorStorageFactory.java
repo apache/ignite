@@ -15,28 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.inference.storage.model;
+package org.apache.ignite.ml.inference.storage.descriptor;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.ml.inference.ModelDescriptor;
 
 /**
- * Model storage factory. Provides {@link ModelStorage}.
+ * Model descriptor storage factory. Provides {@link ModelDescriptorStorage}.
  */
-public class ModelStorageFactory {
-    /** Model storage cache name. */
-    public static final String MODEL_STORAGE_CACHE_NAME = "MODEL_STORAGE";
+public class ModelDescriptorStorageFactory {
+    /** Model descriptor storage cache name. */
+    public static final String MODEL_DESCRIPTOR_STORAGE_CACHE_NAME = "MODEL_DESCRIPTOR_STORAGE";
 
     /**
-     * Returns model storage based on Apache Ignite cache.
+     * Returns model descriptor storage based on Apache Ignite cache.
      *
      * @param ignite Ignite instance.
-     * @return Model storage.
+     * @return Model descriptor storage.
      */
-    public static ModelStorage getModelStorage(Ignite ignite) {
-        IgniteCache<String, FileOrDirectory> cache = ignite.cache(MODEL_STORAGE_CACHE_NAME);
-        ModelStorageProvider storageProvider = new IgniteModelStorageProvider(cache);
+    public static ModelDescriptorStorage getModelDescriptorStorage(Ignite ignite) {
+        IgniteCache<String, ModelDescriptor> cache = ignite.cache(MODEL_DESCRIPTOR_STORAGE_CACHE_NAME);
 
-        return new DefaultModelStorage(storageProvider);
+        return new IgniteModelDescriptorStorage(cache);
     }
+
 }

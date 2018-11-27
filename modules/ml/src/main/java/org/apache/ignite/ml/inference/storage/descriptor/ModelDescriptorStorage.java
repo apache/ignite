@@ -17,12 +17,14 @@
 
 package org.apache.ignite.ml.inference.storage.descriptor;
 
+import java.util.Iterator;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.inference.ModelDescriptor;
 
 /**
  * Storage that allows to load, keep and get access to model descriptors (see {@link ModelDescriptor}).
  */
-public interface ModelDescriptorStorage {
+public interface ModelDescriptorStorage extends Iterable<IgniteBiTuple<String, ModelDescriptor>> {
     /**
      * Saves the specified model descriptor with the specified model identifier.
      *
@@ -45,4 +47,7 @@ public interface ModelDescriptorStorage {
      * @param mdlId Model identifier.
      */
     public void remove(String mdlId);
+
+    /** {@inheritDoc} */
+    public Iterator<IgniteBiTuple<String, ModelDescriptor>> iterator();
 }

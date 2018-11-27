@@ -17,8 +17,10 @@
 
 package org.apache.ignite.ml.inference.storage.descriptor;
 
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.inference.ModelDescriptor;
 
 /**
@@ -41,5 +43,10 @@ public class LocalModelDescriptorStorage implements ModelDescriptorStorage {
     /** {@inheritDoc} */
     @Override public void remove(String name) {
         models.remove(name);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Iterator<IgniteBiTuple<String, ModelDescriptor>> iterator() {
+        return models.entrySet().stream().map(e -> new IgniteBiTuple<>(e.getKey(), e.getValue())).iterator();
     }
 }

@@ -31,18 +31,6 @@ public class DefaultModelStorage implements ModelStorage {
     /** Ignite Cache that is used to store model storage files. */
     private final ModelStorageProvider storageProvider;
 
-//    /**
-//     * Returns Ignite model storage that uses Ignite cache to store models.
-//     *
-//     * @param ignite Ignite instance.
-//     * @return Ignite model storage.
-//     */
-//    public static DefaultModelStorage getModelStorage(ModelStorageProvider storageProvider) {
-//        IgniteCache<String, FileOrDirectory> cache = ignite.cache(MODEL_STORAGE_CACHE_NAME);
-//
-//        return new DefaultModelStorage(cache);
-//    }
-
     /**
      * Constructs a new instance of Ignite model storage.
      *
@@ -111,6 +99,7 @@ public class DefaultModelStorage implements ModelStorage {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public void mkdir(String path) {
         String parentPath = getParent(path);
 
@@ -152,6 +141,7 @@ public class DefaultModelStorage implements ModelStorage {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public void mkdirs(String path) {
         Deque<String> pathsToBeCreated = new LinkedList<>();
 
@@ -194,6 +184,7 @@ public class DefaultModelStorage implements ModelStorage {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public Set<String> listFiles(String path) {
         storageProvider.lock(path);
 
@@ -215,6 +206,7 @@ public class DefaultModelStorage implements ModelStorage {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public void remove(String path) {
         storageProvider.lock(path);
 
@@ -232,22 +224,31 @@ public class DefaultModelStorage implements ModelStorage {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public boolean exists(String path) {
         return storageProvider.get(path) != null;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isDirectory(String path) {
         FileOrDirectory file = storageProvider.get(path);
 
         return file != null && file.isDirectory();
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isFile(String path) {
         FileOrDirectory file = storageProvider.get(path);
 
         return file != null && file.isFile();
     }
 
+    /**
+     * Returns parent directory for the specified path.
+     *
+     * @param path Path.
+     * @return Parent directory path.
+     */
     private String getParent(String path) {
         Path parentPath = Paths.get(path).getParent();
         return parentPath == null ? null : parentPath.toString();

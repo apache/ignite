@@ -17,45 +17,34 @@
 
 package org.apache.ignite.ml.inference.reader;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.ml.inference.storage.model.ModelStorage;
+import org.apache.ignite.ml.inference.storage.model.ModelStorageFactory;
 import org.apache.ignite.ml.inference.util.DirectorySerializer;
 
 /**
- * Model reader that reads directory or file and serializes it using {@link DirectorySerializer}.
+ * Model reader that reads directory or file from model storage and serializes it using {@link DirectorySerializer}.
  */
-public class FileSystemInfModelReader implements InfModelReader {
+public class ModelStorageInfModelReader implements InfModelReader {
     /** */
-    private static final long serialVersionUID = 7370932792669930039L;
+    private static final long serialVersionUID = -5878564742783562872L;
 
-    /** Path to the directory. */
+    /** Path to the directory or file. */
     private final String path;
 
     /**
-     * Constructs a new instance of directory model reader.
+     * Constructs a new instance of model storage inference model builder.
      *
-     * @param path Path to the directory.
+     * @param path Path to the directory or file.
      */
-    public FileSystemInfModelReader(String path) {
+    public ModelStorageInfModelReader(String path) {
         this.path = path;
     }
 
     /** {@inheritDoc} */
     @Override public byte[] read() {
-        try {
-            File file = Paths.get(path).toFile();
-            if (!file.exists())
-                throw new IllegalArgumentException("File or directory does not exist [path=" + path + "]");
+        ModelStorage storage = ModelStorageFactory.getModelStorage(Ignition.ignite());
 
-            if (file.isDirectory())
-                return DirectorySerializer.serialize(Paths.get(path));
-            else
-                return Files.readAllBytes(Paths.get(path));
-        }
-        catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return storage.getFile(path);
     }
 }

@@ -19,7 +19,12 @@ package org.apache.ignite.ml.inference.plugin;
 
 import org.apache.ignite.plugin.IgnitePlugin;
 
-public class MLInferencePlugin implements IgnitePlugin {
-
-    public MLInferencePlugin() {}
+/**
+ * ML Inference plugin.
+ */
+class MLInferencePlugin implements IgnitePlugin {
+    /**
+     * Creates a new instance of ML inference plugin.
+     */
+    MLInferencePlugin() {}
 }

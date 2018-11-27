@@ -19,6 +19,9 @@ package org.apache.ignite.ml.inference.storage.model;
 
 import org.apache.ignite.IgniteCache;
 
+/**
+ * Implementation of {@link ModelStorageProvider} based on Apache Ignite cache.
+ */
 public class IgniteModelStorageProvider implements ModelStorageProvider {
     /** Storage of the files and directories. */
     private final IgniteCache<String, FileOrDirectory> cache;
@@ -54,6 +57,7 @@ public class IgniteModelStorageProvider implements ModelStorageProvider {
 
     /** {@inheritDoc} */
     @Override public void unlock(String path) {
-//        cache.lock(path).unlock();
+        // TODO: it doesn't work.
+        //  cache.lock(path).unlock();
     }
 }

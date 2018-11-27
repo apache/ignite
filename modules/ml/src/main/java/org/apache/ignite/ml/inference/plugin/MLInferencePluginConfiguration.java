@@ -19,45 +19,59 @@ package org.apache.ignite.ml.inference.plugin;
 
 import org.apache.ignite.plugin.PluginConfiguration;
 
+/**
+ * Configuration of ML inference plugin that defines which ML inference services should be start up on Ignite startup.
+ */
 public class MLInferencePluginConfiguration implements PluginConfiguration {
+    /** Model storage should be created on startup. */
+    private boolean withMdlStorage;
 
-    private boolean withModelStorage;
+    /** Model descriptor storage should be created on startup. */
+    private boolean withMdlDescStorage;
 
-    private boolean withModelDescriptorStorage;
+    /** Number of backups in model storage cache. */
+    private Integer mdlStorageBackups;
 
-    private Integer modelStorageBackups;
+    /** Number of backups in model descriptor storage cache. */
+    private Integer mdlDescStorageBackups;
 
-    private Integer modelDescriptorStorageBackups;
-
-    public boolean isWithModelStorage() {
-        return withModelStorage;
+    /** */
+    public boolean isWithMdlStorage() {
+        return withMdlStorage;
     }
 
-    public void setWithModelStorage(boolean withModelStorage) {
-        this.withModelStorage = withModelStorage;
+    /** */
+    public void setWithMdlStorage(boolean withMdlStorage) {
+        this.withMdlStorage = withMdlStorage;
     }
 
-    public boolean isWithModelDescriptorStorage() {
-        return withModelDescriptorStorage;
+    /** */
+    public boolean isWithMdlDescStorage() {
+        return withMdlDescStorage;
     }
 
-    public void setWithModelDescriptorStorage(boolean withModelDescriptorStorage) {
-        this.withModelDescriptorStorage = withModelDescriptorStorage;
+    /** */
+    public void setWithMdlDescStorage(boolean withMdlDescStorage) {
+        this.withMdlDescStorage = withMdlDescStorage;
     }
 
-    public Integer getModelStorageBackups() {
-        return modelStorageBackups;
+    /** */
+    public Integer getMdlStorageBackups() {
+        return mdlStorageBackups;
     }
 
-    public void setModelStorageBackups(Integer modelStorageBackups) {
-        this.modelStorageBackups = modelStorageBackups;
+    /** */
+    public void setMdlStorageBackups(Integer mdlStorageBackups) {
+        this.mdlStorageBackups = mdlStorageBackups;
     }
 
-    public Integer getModelDescriptorStorageBackups() {
-        return modelDescriptorStorageBackups;
+    /** */
+    public Integer getMdlDescStorageBackups() {
+        return mdlDescStorageBackups;
     }
 
-    public void setModelDescriptorStorageBackups(Integer modelDescriptorStorageBackups) {
-        this.modelDescriptorStorageBackups = modelDescriptorStorageBackups;
+    /** */
+    public void setMdlDescStorageBackups(Integer mdlDescStorageBackups) {
+        this.mdlDescStorageBackups = mdlDescStorageBackups;
     }
 }
