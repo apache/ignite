@@ -128,6 +128,9 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         if (nearCacheEnabled())
             MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
 
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-7388");
+
         super.beforeTestsStarted();
     }
 

@@ -28,6 +28,7 @@ import org.apache.ignite.events.TransactionStateChangedEvent;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -39,6 +40,14 @@ import static org.apache.ignite.events.EventType.EVT_TX_STARTED;
  * Tests transaction rollback on incorrect tx params.
  */
 public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10415");
+
+        super.beforeTestsStarted();
+    }
+
     /**
      *
      */
