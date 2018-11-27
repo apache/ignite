@@ -306,7 +306,7 @@ public class AgentUtils {
 
         if (trustAll || hasKeyStore || hasTrustStore) {
             if (trustAll && hasTrustStore) {
-                log.warn("Options contains both '--node-trust-store' and '-Dtrust.all=true'. " +
+                log.warn("Options contains both '--XXXX-trust-store' and '-Dtrust.all=true'. " +
                     "Option '-Dtrust.all=true' will be ignored.");
             }
 
