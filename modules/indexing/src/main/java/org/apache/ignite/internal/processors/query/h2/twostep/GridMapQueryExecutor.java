@@ -1181,25 +1181,27 @@ public class GridMapQueryExecutor {
      * @param req Request.
      */
     private void onNextPageRequest(final ClusterNode node, final GridQueryNextPageRequest req) {
+        long reqId = req.queryRequestId();
         final MapNodeResults nodeRess = qryRess.get(node.id());
 
+
         if (nodeRess == null) {
-            sendError(node, req.queryRequestId(), new CacheException("No node result found for request: " + req));
+            sendError(node, reqId, new CacheException("No node result found for request: " + req));
 
             return;
         }
-        else if (nodeRess.cancelled(req.queryRequestId())) {
-            sendError(node, req.queryRequestId(), new QueryCancelledException());
+        else if (nodeRess.cancelled(reqId)) {
+            sendError(node, reqId, new QueryCancelledException());
 
             return;
         }
 
-        final MapQueryResults qryResults = nodeRess.get(req.queryRequestId(), req.segmentId());
+        final MapQueryResults qryResults = nodeRess.get(reqId, req.segmentId());
 
         if (qryResults == null)
-            sendError(node, req.queryRequestId(), new CacheException("No query result found for request: " + req));
+            sendError(node, reqId, new CacheException("No query result found for request: " + req));
         else if (qryResults.cancelled())
-            sendError(node, req.queryRequestId(), new QueryCancelledException());
+            sendError(node, reqId, new QueryCancelledException());
         else {
             try {
                 GridH2QueryContext qctxReduce = GridH2QueryContext.get();
@@ -1222,9 +1224,15 @@ public class GridMapQueryExecutor {
                 QueryRetryException retryEx = X.cause(e, QueryRetryException.class);
 
                 if (retryEx != null)
-                    sendError(node, req.queryRequestId(), retryEx);
-                else
-                    sendError(node, req.queryRequestId(), e);
+                    sendError(node, reqId, retryEx);
+                else {
+                    JdbcSQLException sqlEx = X.cause(e, JdbcSQLException.class);
+
+                    if (sqlEx != null && sqlEx.getErrorCode() == ErrorCode.STATEMENT_WAS_CANCELED)
+                        sendError(node, reqId, new QueryCancelledException());
+                    else
+                        sendError(node, reqId, e);
+                }
 
                 qryResults.cancel();
 
