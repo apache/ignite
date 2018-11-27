@@ -24,23 +24,25 @@ import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
- * Bernoulli naive Bayes model which predicts result value {@code y} belongs to a class {@code C_k, k in [0..K]} as
- * {@code p(C_k,y) =x_1*p_1^x * (x_1-1)*p_1^(x_1-1)*...*x_i*p_i^x_i+(x_i-1)*p_i^(x_i-1)}. Where {@code x_i} is a binary
- * feature, {@code p_i} is a prior probability probability {@code p(x|C_k)}. Returns the number of the most possible
- * class.
+ * Discrete naive Bayes model which predicts result value {@code y} belongs to a class {@code C_k, k in [0..K]} as
+ * {@code p(C_k,y) =x_1*p_k1^x *...*x_i*p_ki^x_i}. Where {@code x_i} is a discrete feature, {@code p_ki} is a prior
+ * probability probability of class {@code p(x|C_k)}. Returns the number of the most possible class.
  */
 public class DiscreteNaiveBayesModel implements Model<Vector, Double>, Exportable<DiscreteNaiveBayesModel>, Serializable {
     /** */
     private static final long serialVersionUID = -127386523291350345L;
-    /** Means of features for all classes. kth row contains means for labels[k] class. */
+    /**
+     * Probabilities of features for all classes for each label. {@code labels[k][f][c]} contains a probability for
+     * class {@code c} for feature {@code f} for label {@code k}.
+     */
     private final double[][][] probabilities;
     /** Prior probabilities of each class */
     private final double[] classProbabilities;
     /** Labels. */
     private final double[] labels;
-    /** The threshold to convert a feature to a binary value.*/
+    /** The bucket thresholds to convert a features to discrete values. */
     private final double[][] bucketThresholds;
-    /** Amount values which are abouve the threshold per label. */
+    /** Amount values in each buckek for each feature per label. */
     private final DiscreteNaiveBayesSumsHolder sumsHolder;
 
     /**
@@ -75,7 +77,6 @@ public class DiscreteNaiveBayesModel implements Model<Vector, Double>, Exportabl
             for (int j = 0; j < probabilities[0].length; j++) {
                 int x = toBucketNumber(vector.get(j), bucketThresholds[j]);
                 double p = probabilities[i][j][x];
-//                probabilityPower += (x == 1 ? Math.log(p) : Math.log(1 - p));
                 probabilityPower += (p > 0 ? Math.log(p) : .0);
             }
 
@@ -107,6 +108,7 @@ public class DiscreteNaiveBayesModel implements Model<Vector, Double>, Exportabl
         return sumsHolder;
     }
 
+    /** Returs a bucket number to which the {@code value} corresponds. */
     private int toBucketNumber(double value, double[] thresholds) {
         for (int i = 0; i < thresholds.length; i++) {
             if (value < thresholds[i]) {
