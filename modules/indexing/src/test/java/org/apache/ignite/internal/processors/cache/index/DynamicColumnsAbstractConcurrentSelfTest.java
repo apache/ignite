@@ -39,6 +39,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -57,6 +58,7 @@ import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDi
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 
@@ -688,17 +690,24 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
         IgniteInternalFuture qryFut = multithreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 while (!stopped.get()) {
-                    Ignite node = grid(ThreadLocalRandom.current().nextInt(1, 5));
+                    try {
+                        Ignite node = grid(ThreadLocalRandom.current().nextInt(1, 5));
 
-                    IgniteCache<BinaryObject, BinaryObject> cache = node.cache(CACHE_NAME).withKeepBinary();
+                        IgniteCache<BinaryObject, BinaryObject> cache = node.cache(CACHE_NAME).withKeepBinary();
 
-                    String valTypeName = ((IgniteEx)node).context().query().types(CACHE_NAME)
-                        .iterator().next().valueTypeName();
+                        String valTypeName = ((IgniteEx)node).context().query().types(CACHE_NAME)
+                            .iterator().next().valueTypeName();
 
-                    List<Cache.Entry<BinaryObject, BinaryObject>> res = cache.query(
-                        new SqlQuery<BinaryObject, BinaryObject>(valTypeName, "from " + TBL_NAME)).getAll();
+                        List<Cache.Entry<BinaryObject, BinaryObject>> res = cache.query(
+                            new SqlQuery<BinaryObject, BinaryObject>(valTypeName, "from " + TBL_NAME)).getAll();
 
-                    assertEquals(KEY_COUNT, res.size());
+                        assertEquals(KEY_COUNT, res.size());
+                    }
+                    catch (Exception e) {
+                        // Swallow retry exceptions.
+                        if (X.cause(e, QueryRetryException.class) == null)
+                            throw e;
+                    }
                 }
 
                 return null;
