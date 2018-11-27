@@ -767,9 +767,26 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testFlush() throws Exception {
-        // Local caches are not allowed with MVCC enabled.
-        mode = getCacheAtomicityMode() != TRANSACTIONAL_SNAPSHOT ? LOCAL : PARTITIONED;
+        mode = PARTITIONED;
 
+        checkFlush();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testFlushLocal() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
+        mode = LOCAL;
+
+        checkFlush();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void checkFlush() throws Exception {
         useCache = true;
 
         try {
@@ -822,9 +839,26 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTryFlush() throws Exception {
-        // Local caches are not allowed with MVCC enabled.
-        mode = getCacheAtomicityMode() != TRANSACTIONAL_SNAPSHOT ? LOCAL : PARTITIONED;
+        mode = PARTITIONED;
 
+        checkTryFlush();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTryFlushLocal() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
+        mode = LOCAL;
+
+        checkTryFlush();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void checkTryFlush() throws Exception {
         useCache = true;
 
         try {
@@ -862,8 +896,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     public void testFlushTimeout() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
 
-        // Local caches are not allowed with MVCC enabled.
-        mode = getCacheAtomicityMode() != TRANSACTIONAL_SNAPSHOT ? LOCAL : PARTITIONED;
+        mode = PARTITIONED;
 
         useCache = true;
 
