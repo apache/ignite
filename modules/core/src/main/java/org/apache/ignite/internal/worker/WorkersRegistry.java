@@ -24,6 +24,7 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -227,6 +228,14 @@ public class WorkersRegistry implements GridWorkerListener {
                             log.error("Blocked system-critical thread has been detected. " +
                                 "This can lead to cluster-wide undefined behaviour " +
                                 "[threadName=" + worker.name() + ", blockedFor=" + heartbeatDelay / 1000 + "s]");
+
+                            Thread blockedRunner = worker.runner();
+                            StackTraceElement[] stackTrace = blockedRunner.getStackTrace();
+
+                            StringBuilder builder = new StringBuilder(blockedRunner.getName() + "\n");
+                            Stream.of(stackTrace).map(StackTraceElement::toString).forEach(str -> builder.append(str).append("\n"));
+
+                            log.error(builder.toString());
 
                             U.dumpThread(worker.runner(), log);
 
