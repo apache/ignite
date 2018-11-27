@@ -41,6 +41,7 @@ import org.apache.ignite.ml.tree.randomforest.RandomForestRegressionTrainer;
 import org.apache.ignite.ml.tree.randomforest.data.FeaturesCountSelectionStrategies;
 import org.junit.Test;
 
+import static org.apache.ignite.ml.TestUtils.constantModel;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -98,7 +99,7 @@ public class LearningEnvironmentTest {
                     v = ds.compute((dw, env) -> VectorUtils.fill(-1, partitions).set(env.partition(), env.randomNumbersGenerator().nextInt()),
                         (v1, v2) -> zipOverridingEmpty(v1, v2, -1));
                 }
-                return Model.constantModel(v);
+                return constantModel(v);
             }
 
             /** {@inheritDoc} */

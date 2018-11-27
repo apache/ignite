@@ -392,4 +392,26 @@ public class TestUtils {
                 ((AutoCloseable)val).close();
         }
     }
+
+    /**
+     * Return model which returns given constant.
+     *
+     * @param v Constant value.
+     * @param <T> Type of input.
+     * @param <V> Type of output.
+     * @return Model which returns given constant.
+     */
+    public static <T, V> Model<T, V> constantModel(V v) {
+        return t -> v;
+    }
+
+    /**
+     * Return model which returns value of it's input.
+     *
+     * @param <T> Type of input and output.
+     * @return Model which returns given constant.
+     */
+    public static <T> Model<T, T> identityModel() {
+        return t -> t;
+    }
 }

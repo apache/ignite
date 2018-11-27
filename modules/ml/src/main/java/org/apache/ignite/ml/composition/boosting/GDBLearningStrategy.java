@@ -105,6 +105,8 @@ public class GDBLearningStrategy {
     public <K,V> List<Model<Vector, Double>> update(GDBTrainer.GDBModel mdlToUpdate,
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
+        if (trainerEnvironment == null)
+            throw new IllegalStateException("Learning environment builder is not set.");
 
         List<Model<Vector, Double>> models = initLearningState(mdlToUpdate);
 

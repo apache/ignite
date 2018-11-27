@@ -37,10 +37,14 @@ public interface UpstreamTransformerBuilder<K, V> extends Serializable {
 
     /**
      * Combunes two builders (this and other respectfully)
+     * <pre>
      * env -> transformer1
      * env -> transformer2
+     * </pre>
      * into
+     * <pre>
      * env -> transformer2 . transformer1
+     * </pre>
      *
      * @param other Builder to combine with.
      * @return Compositional builder.
