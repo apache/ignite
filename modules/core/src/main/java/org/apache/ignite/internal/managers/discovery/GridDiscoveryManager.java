@@ -94,6 +94,7 @@ import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -766,7 +767,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     // Current version.
                     discoCache = discoCache();
 
-                final DiscoCache discoCache0 = discoCache;
+                if (type == EVT_NODE_JOINED || type == EVT_NODE_LEFT || type == EVT_NODE_FAILED)
+                    joiningNodeAddedOrLeft(node.id());
 
                 // If this is a local join event, just save it and do not notify listeners.
                 if (locJoinEvt) {
@@ -855,7 +857,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             try {
                                 fut.get();
 
-                                discoWrk.addEvent(type, nextTopVer, node, discoCache0, topSnapshot, null);
+                                discoWrk.addEvent(EVT_CLIENT_NODE_RECONNECTED, nextTopVer, node, discoCache, topSnapshot, null);
                             }
                             catch (IgniteException ignore) {
                                 // No-op.
@@ -886,6 +888,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 else {
                     for (GridComponent c : ctx.components())
                         c.collectGridNodeData(dataBag);
+
+                    DiscoveryDataClusterState clusterState = ctx.state().clusterState();
+
+                    if (clusterState.transition() && nodes(clusterState.transitionTopologyVersion()).iterator().next().isLocal())
+                        addToJoiningNodesAddedFuture(dataBag.joiningNodeId());
                 }
 
                 return dataBag;
@@ -901,6 +908,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     stateProc.onGridDataReceived(dataBag.gridDiscoveryData(
                         stateProc.discoveryDataType().ordinal()));
+
+//                    try {
+//                        Thread.sleep(10L);
+//                    }
+//                    catch (InterruptedException e) {
+//                        e.printStackTrace();
+//                    }
 
                     for (GridComponent c : ctx.components()) {
                         if (c.discoveryDataType() != null && c != stateProc)
@@ -930,6 +944,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
             }
         });
+
+//        try {
+//            Thread.sleep(10L);
+//        }
+//        catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
 
         new IgniteThread(discoNtfWrk).start();
 
@@ -964,6 +985,31 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
+    }
+
+    private final Set<UUID> set = new GridConcurrentHashSet<>();
+
+    private GridFutureAdapter<Void> joiningNodesAdded;
+
+    private synchronized void addToJoiningNodesAddedFuture(UUID joiningNodeId) {
+        if (joiningNodesAdded != null && joiningNodesAdded.isDone())
+            joiningNodesAdded = new GridFutureAdapter<>();
+
+        set.add(joiningNodeId);
+    }
+
+    public synchronized void joiningNodeAddedOrLeft(UUID joiningNodeId) {
+        set.remove(joiningNodeId);
+
+        if (set.isEmpty() && joiningNodesAdded != null) {
+            joiningNodesAdded.onDone((Void)null);
+
+            joiningNodesAdded = null;
+        }
+    }
+
+    public GridFutureAdapter<?> joiningNodesAddedFuture() {
+        return joiningNodesAdded;
     }
 
     /**

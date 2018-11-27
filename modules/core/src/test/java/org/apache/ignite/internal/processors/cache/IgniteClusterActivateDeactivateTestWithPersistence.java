@@ -185,6 +185,51 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
         checkCachesData(cacheData, dsCfg);
     }
 
+    /** */
+    public void testClientJoinsWhenActivationIsInProgress0() throws Exception {
+        testClientJoinsWhenActivationIsInProgress();
+    }
+
+    /** */
+    public void testClientJoinsWhenActivationIsInProgress1() throws Exception {
+        testClientJoinsWhenActivationIsInProgress();
+    }
+
+    /** */
+    public void testClientJoinsWhenActivationIsInProgress2() throws Exception {
+        testClientJoinsWhenActivationIsInProgress();
+    }
+
+    /** */
+    public void testClientJoinsWhenActivationIsInProgress3() throws Exception {
+        testClientJoinsWhenActivationIsInProgress();
+    }
+
+    /** */
+    public void testClientJoinsWhenActivationIsInProgress4() throws Exception {
+        testClientJoinsWhenActivationIsInProgress();
+    }
+    /** */
+    public void testClientJoinsWhenActivationIsInProgress5() throws Exception {
+        testClientJoinsWhenActivationIsInProgress();
+    }
+    /** */
+    public void testClientJoinsWhenActivationIsInProgress6() throws Exception {
+        testClientJoinsWhenActivationIsInProgress();
+    }
+    /** */
+    public void testClientJoinsWhenActivationIsInProgress7() throws Exception {
+        testClientJoinsWhenActivationIsInProgress();
+    }
+    /** */
+    public void testClientJoinsWhenActivationIsInProgress8() throws Exception {
+        testClientJoinsWhenActivationIsInProgress();
+    }
+    /** */
+    public void testClientJoinsWhenActivationIsInProgress9() throws Exception {
+        testClientJoinsWhenActivationIsInProgress();
+    }
+
     /**
      * @see <a href="https://issues.apache.org/jira/browse/IGNITE-7330">IGNITE-7330</a> for more information about context of the test
      */

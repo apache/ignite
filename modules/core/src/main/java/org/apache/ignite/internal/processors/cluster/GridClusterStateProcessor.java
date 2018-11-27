@@ -716,10 +716,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 historyToSend = bltHist;
         }
 
-        dataBag.addGridCommonData(
-            STATE_PROC.ordinal(),
-            new BaselineStateAndHistoryData(globalState.finish(true), historyToSend)
-        );
+        dataBag.addGridCommonData(STATE_PROC.ordinal(), new BaselineStateAndHistoryData(globalState, historyToSend));
     }
 
     /** {@inheritDoc} */
