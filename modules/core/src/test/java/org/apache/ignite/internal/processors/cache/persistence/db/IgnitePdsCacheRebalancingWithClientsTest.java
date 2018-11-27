@@ -52,16 +52,16 @@ public class IgnitePdsCacheRebalancingWithClientsTest extends GridCommonAbstract
     private IgniteBiPredicate<ClusterNode, Message> blockMessagePredicate;
 
     /** */
-    private final static int CACHE1_PARTS_NUM = 8;
+    private static final int CACHE1_PARTS_NUM = 8;
 
     /** */
-    private final static int CACHE2_PARTS_NUM = 16;
+    private static final int CACHE2_PARTS_NUM = 16;
 
     /** */
-    private final static int CACHE3_PARTS_NUM = 32;
+    private static final int CACHE3_PARTS_NUM = 32;
 
     /** */
-    private final static String CACHE3_NAME = "cache3";
+    private static final String CACHE3_NAME = "cache3";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
