@@ -35,6 +35,7 @@ import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.stat.IoStatisticsManager;
+import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
@@ -704,6 +705,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Default uncaught exception handler used by thread pools.
      */
     public Thread.UncaughtExceptionHandler uncaughtExceptionHandler();
+
+    /**
+     * @return Compression processor.
+     */
+    public CompressionProcessor compress();
 
     /**
      * @return {@code True} if node is in recovery mode (before join to topology).

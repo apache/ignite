@@ -87,7 +87,6 @@ import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -230,7 +229,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     private final GridEncryptionManager encMgr;
 
     /** */
-    private final EncryptionSpi encSpi;
+    private final boolean encryptionDisabled;
 
     /** */
     private final IgniteLogger log;
@@ -326,7 +325,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         storeMgr = ctx.pageStore();
         walMgr = ctx.wal();
         encMgr = ctx.kernalContext().encryption();
-        encSpi = ctx.gridConfig().getEncryptionSpi();
+        encryptionDisabled = ctx.gridConfig().getEncryptionSpi() instanceof  NoopEncryptionSpi;
 
         assert storeMgr != null;
         assert walMgr != null;
@@ -532,7 +531,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             PageHeader.writeTimestamp(absPtr, U.currentTimeMillis());
             rwLock.init(absPtr + PAGE_LOCK_OFFSET, PageIdUtils.tag(pageId));
 
-            assert GridUnsafe.getInt(absPtr + PAGE_OVERHEAD + 4) == 0; //TODO GG-11480
+            assert PageIO.getCrc(absPtr + PAGE_OVERHEAD) == 0; //TODO GG-11480
 
             assert !PageHeader.isAcquired(absPtr) :
                 "Pin counter must be 0 for a new page [relPtr=" + U.hexLong(relPtr) +
@@ -824,9 +823,9 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                     memMetrics.onPageRead();
                 }
-                catch (IgniteDataIntegrityViolationException ignore) {
+                catch (IgniteDataIntegrityViolationException e) {
                     U.warn(log, "Failed to read page (data integrity violation encountered, will try to " +
-                        "restore using existing WAL) [fullPageId=" + fullId + ']');
+                        "restore using existing WAL) [fullPageId=" + fullId + ']', e);
 
                     buf.rewind();
 
@@ -991,7 +990,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public int realPageSize(int grpId) {
-        if ((encSpi instanceof NoopEncryptionSpi) || encMgr.groupKey(grpId) == null)
+        if (encryptionDisabled || encMgr.groupKey(grpId) == null)
             return pageSize();
 
         return encPageSize;
@@ -1270,8 +1269,8 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             GridUnsafe.copyMemory(absPtr + PAGE_OVERHEAD, tmpPtr, pageSize());
 
-            assert GridUnsafe.getInt(absPtr + PAGE_OVERHEAD + 4) == 0; //TODO GG-11480
-            assert GridUnsafe.getInt(tmpPtr + 4) == 0; //TODO GG-11480
+            assert PageIO.getCrc(absPtr + PAGE_OVERHEAD) == 0; //TODO GG-11480
+            assert PageIO.getCrc(tmpPtr) == 0; //TODO GG-11480
         }
         else {
             byte[] arr = buf.array();
@@ -1420,7 +1419,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         if (touch)
             PageHeader.writeTimestamp(absPtr, U.currentTimeMillis());
 
-        assert GridUnsafe.getInt(absPtr + PAGE_OVERHEAD + 4) == 0; //TODO GG-11480
+        assert PageIO.getCrc(absPtr + PAGE_OVERHEAD) == 0; //TODO GG-11480
 
         return absPtr + PAGE_OVERHEAD;
     }
@@ -1508,11 +1507,11 @@ public class PageMemoryImpl implements PageMemoryEx {
             PageHeader.dirty(absPtr, false);
             PageHeader.tempBufferPointer(absPtr, tmpRelPtr);
 
-            assert GridUnsafe.getInt(absPtr + PAGE_OVERHEAD + 4) == 0; //TODO GG-11480
-            assert GridUnsafe.getInt(tmpAbsPtr + PAGE_OVERHEAD + 4) == 0; //TODO GG-11480
+            assert PageIO.getCrc(absPtr + PAGE_OVERHEAD) == 0; //TODO GG-11480
+            assert PageIO.getCrc(tmpAbsPtr + PAGE_OVERHEAD) == 0; //TODO GG-11480
         }
 
-        assert GridUnsafe.getInt(absPtr + PAGE_OVERHEAD + 4) == 0; //TODO GG-11480
+        assert PageIO.getCrc(absPtr + PAGE_OVERHEAD) == 0; //TODO GG-11480
 
         return absPtr + PAGE_OVERHEAD;
     }
@@ -1540,7 +1539,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         boolean pageWalRec = markDirty && walPlc != FALSE && (walPlc == TRUE || !wasDirty);
 
-        assert GridUnsafe.getInt(page + PAGE_OVERHEAD + 4) == 0; //TODO GG-11480
+        assert PageIO.getCrc(page + PAGE_OVERHEAD) == 0; //TODO GG-11480
 
         if (markDirty)
             setDirty(fullId, page, markDirty, false);
