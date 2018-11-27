@@ -63,7 +63,12 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     private static Interceptor interceptor;
 
     /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
+    @Override protected int gridCount() {
+        return 3;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.INTERCEPTOR);
 
         if (nearEnabled())
@@ -72,16 +77,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         if (storeEnabled())
             MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
 
-        super.setUp();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 3;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
         interceptor = new Interceptor();
 
         super.beforeTestsStarted();
