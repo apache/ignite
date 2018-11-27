@@ -20,6 +20,8 @@ package org.apache.ignite.testsuites;
 import java.util.HashSet;
 import junit.framework.TestSuite;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.processors.cache.CacheInterceptorPartitionCounterLocalSanityTest;
+import org.apache.ignite.internal.processors.cache.CacheInterceptorPartitionCounterRandomOperationsTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAtomicEntryProcessorDeploymentSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryVersionSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheInterceptorAtomicNearEnabledSelfTest;
@@ -33,13 +35,16 @@ import org.apache.ignite.internal.processors.cache.GridCacheInterceptorLocalAtom
 import org.apache.ignite.internal.processors.cache.GridCacheValueBytesPreloadingSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionTopologyChangeTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheGroupsTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAsyncOperationsTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMixedModeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheClientOnlySelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteTxReentryColocatedSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheValueConsistencyAtomicNearEnabledSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheValueConsistencyAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearOnlySelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.IgniteTxReentryNearSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedAtomicGetAndTransformStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedMvccTxMultiThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedMvccTxSingleThreadedSelfTest;
@@ -68,7 +73,9 @@ public class IgniteCacheMvccTestSuite3 extends TestSuite {
         ignoredTests.add(GridCacheEntryVersionSelfTest.class);
         ignoredTests.add(GridCacheVersionTopologyChangeTest.class);
         ignoredTests.add(CacheAsyncOperationsTest.class);
-        ignoredTests.add(GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest.class);
+        ignoredTests.add(CacheInterceptorPartitionCounterLocalSanityTest.class);
+        ignoredTests.add(CacheInterceptorPartitionCounterRandomOperationsTest.class);
+        ignoredTests.add(IgniteCacheGroupsTest.class);
 
         // Atomic caches
         ignoredTests.add(GridCacheValueConsistencyAtomicSelfTest.class);
@@ -76,6 +83,7 @@ public class IgniteCacheMvccTestSuite3 extends TestSuite {
         ignoredTests.add(GridCacheReplicatedAtomicGetAndTransformStoreSelfTest.class);
         ignoredTests.add(GridCacheAtomicEntryProcessorDeploymentSelfTest.class);
         ignoredTests.add(GridCacheValueBytesPreloadingSelfTest.class);
+        ignoredTests.add(GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest.class);
 
         ignoredTests.add(GridCacheClientOnlySelfTest.CasePartitionedAtomic.class);
         ignoredTests.add(GridCacheClientOnlySelfTest.CaseReplicatedAtomic.class);
@@ -93,6 +101,10 @@ public class IgniteCacheMvccTestSuite3 extends TestSuite {
         ignoredTests.add(GridCacheInterceptorAtomicReplicatedSelfTest.class);
         ignoredTests.add(GridCacheInterceptorAtomicWithStoreReplicatedSelfTest.class);
         ignoredTests.add(GridCacheInterceptorAtomicRebalanceTest.class);
+
+        // Irrelevant tx tests
+        ignoredTests.add(IgniteTxReentryNearSelfTest.class);
+        ignoredTests.add(IgniteTxReentryColocatedSelfTest.class);
 
         // Other non-tx tests
         ignoredTests.add(GridCacheWriteBehindStoreSelfTest.class);

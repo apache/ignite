@@ -70,6 +70,8 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
         if (nearEnabled())
             MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
 

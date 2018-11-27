@@ -71,7 +71,6 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCa
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedTxSingleThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedTxTimeoutSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheSyncReplicatedPreloadSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.replicated.GridReplicatedTxPreloadTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.preloader.GridCacheReplicatedPreloadLifecycleSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.preloader.GridCacheReplicatedPreloadSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.preloader.GridCacheReplicatedPreloadStartStopEventsSelfTest;
@@ -149,7 +148,6 @@ public class IgniteCacheTestSuite3 extends TestSuite {
         GridTestUtils.addTestIfNeeded(suite,GridCacheReplicatedTxMultiThreadedSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite,GridCacheReplicatedPreloadEventsSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite,GridCacheReplicatedPreloadStartStopEventsSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite,GridReplicatedTxPreloadTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite,IgniteTxReentryNearSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite,IgniteTxReentryColocatedSelfTest.class, ignoredTests);

@@ -94,9 +94,13 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
         initStoreStrategy();
 
-        startGrids(cnt);
+        if (isMultiJvm()) {
+            startGrids(cnt);
 
-        awaitPartitionMapExchange();
+            awaitPartitionMapExchange();
+        }
+        else
+            startGridsMultiThreaded(cnt);
     }
 
     /** {@inheritDoc} */

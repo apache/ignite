@@ -20,14 +20,14 @@ package org.apache.ignite.internal.processors.cache.distributed.replicated;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteTxTimeoutAbstractTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteMvccTxTimeoutAbstractTest;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
  * Simple cache test.
  */
-public class GridCacheReplicatedMvccTxTimeoutSelfTest extends IgniteTxTimeoutAbstractTest {
+public class GridCacheReplicatedMvccTxTimeoutSelfTest extends IgniteMvccTxTimeoutAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
