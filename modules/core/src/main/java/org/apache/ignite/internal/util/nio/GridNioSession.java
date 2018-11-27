@@ -73,7 +73,9 @@ public interface GridNioSession {
     /**
      * @return {@code True} if session was closed.
      */
-    public boolean closed();
+    public default boolean closed() {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Returns the time when last read activity was performed on this session.

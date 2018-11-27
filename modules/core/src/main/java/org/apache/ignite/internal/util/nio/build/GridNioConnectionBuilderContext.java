@@ -17,22 +17,22 @@
 
 package org.apache.ignite.internal.util.nio.build;
 
-import java.net.InetSocketAddress;
+import java.nio.channels.Channel;
+import org.apache.ignite.internal.util.nio.GridNioServer;
+import org.apache.ignite.internal.util.nio.ssl.GridSslMeta;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.IgniteSpiContext;
 
 /**
  *
- * @param <T>
  */
-public interface CommunicationBuilder<T> {
-    /**
-     * @return
-     * @throws Exception
-     */
-    public T build(CommunicationBuilderContext ctx, InetSocketAddress addr, CompletionHandler hndlr) throws Exception;
+public interface GridNioConnectionBuilderContext {
+    /** */
+    public IgniteSpiContext spiContext();
 
-    /**
-     * @return
-     * @throws Exception
-     */
-    public T build(CommunicationBuilderContext ctx, InetSocketAddress addr) throws Exception;
+    /** */
+    public GridSslMeta sslMeta();
+
+    /** */
+    public GridNioServer<Message> nioSrvr();
 }

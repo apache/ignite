@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.nio.channel.GridNioSocketChannel;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionKey;
 
 /**
@@ -31,32 +32,32 @@ import org.apache.ignite.spi.communication.tcp.internal.ConnectionKey;
  */
 public class GridNioConnectionManagerImpl implements GridNioConnectionManager {
     /** */
-    private final Map<ConnectionKey, SocketChannel> channels = new ConcurrentHashMap<>();
+    private final Map<ConnectionKey, GridNioSocketChannel> channels = new ConcurrentHashMap<>();
 
     /** */
-    private List<GridNioConnectionListener> connLsnrs = new ArrayList<>();
+    private List<GridIoChannelListener> connLsnrs = new ArrayList<>();
 
     /** {@inheritDoc} */
-    @Override public void addChannel(ConnectionKey key, SocketChannel sock) {
-        assert key != null && sock != null : "An error with connection key: " + key;
+    @Override public void addChannel(ConnectionKey key, GridNioSocketChannel ch) {
+        assert key != null && ch != null : "An error with connection key: " + key;
 
-        channels.putIfAbsent(key, sock);
+        channels.putIfAbsent(key, ch);
 
-        for (GridNioConnectionListener lsnr : connLsnrs)
-            lsnr.onConnect(key.nodeId(), sock);
+        for (GridIoChannelListener lsnr : connLsnrs)
+            lsnr.onChannelCreated(key.nodeId(), ch);
     }
 
     /** {@inheritDoc} */
-    @Override public SocketChannel getChannel(ConnectionKey key) {
+    @Override public GridNioSocketChannel getChannel(ConnectionKey key) {
         return channels.get(key);
     }
 
     /** {@inheritDoc} */
     @Override public void closeChannel(ConnectionKey key) throws IgniteCheckedException {
-        SocketChannel sock = channels.get(key);
+        GridNioSocketChannel ch = channels.get(key);
 
         try {
-            sock.close();
+            ch.close();
         }
         catch (IOException e) {
             throw new IgniteCheckedException(e);

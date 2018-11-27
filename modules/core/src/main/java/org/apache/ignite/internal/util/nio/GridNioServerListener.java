@@ -79,9 +79,9 @@ public interface GridNioServerListener<T> extends EventListener {
     public void onFailure(FailureType failureType, Throwable failure);
 
     /**
-     * Called when new {@link GridNioSocketChannel} added to NIO server.
+     * Called when new {@link GridNioSocketChannel} is created by NIO server.
      */
-    public default void onChannelAdded(GridNioSocketChannel channel) {
+    public default void onChannelCreated(GridNioSocketChannel ch) {
         // No-op.
     }
 }

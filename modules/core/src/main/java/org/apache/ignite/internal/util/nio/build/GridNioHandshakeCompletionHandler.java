@@ -17,17 +17,10 @@
 
 package org.apache.ignite.internal.util.nio.build;
 
-import java.nio.channels.Channel;
-import org.apache.ignite.internal.util.nio.ssl.GridSslMeta;
-import org.apache.ignite.spi.IgniteSpiContext;
-
 /**
  *
  */
-public interface CommunicationBuilderContext {
+public interface GridNioHandshakeCompletionHandler {
     /** */
-    public IgniteSpiContext spiContext();
-
-    /** */
-    public GridSslMeta sslMeta();
+    public void onHandshake(Long cnt);
 }

@@ -942,17 +942,20 @@ public class GridNioServer<T> {
      * @param channel Socket channel.
      * @throws IgniteCheckedException If fails.
      */
-    public void createNioChannel(ConnectionKey key, SocketChannel channel) throws IgniteCheckedException {
+    public GridNioFuture<GridNioSocketChannel> createNioChannel(ConnectionKey key,
+        SocketChannel channel) throws IgniteCheckedException {
         if (!closed) {
             GridNioSocketChannel nioSocketCh;
 
             if (!channels.add(nioSocketCh = new GridNioSocketChannelImpl(key, channel)))
                 throw new IgniteCheckedException("Channel connection already exists.");
 
-            lsnr.onChannelAdded(nioSocketCh);
+            onChannelCreated(nioSocketCh);
+
+            return new GridNioFinishedFuture<>(nioSocketCh);
         }
         else
-            throw new IgniteCheckedException("Server is stopped.");
+            return new GridNioFinishedFuture<>(new IgniteCheckedException("Server is stopped."));
     }
 
     /**
@@ -1767,6 +1770,16 @@ public class GridNioServer<T> {
     }
 
     /**
+     * Handle {@link GridNioSocketChannel} creation event.
+     *
+     * @param ch Created channel.
+     */
+    private void onChannelCreated(GridNioSocketChannel ch) {
+        if (lsnr != null)
+            lsnr.onChannelCreated(ch);
+    }
+
+    /**
      * Thread performing only read operations from the channel.
      */
     private abstract class AbstractNioClientWorker extends GridWorker implements GridNioWorker {
@@ -2174,7 +2187,7 @@ public class GridNioServer<T> {
 
                                 channels.add(nioSocketCh = new GridNioSocketChannelImpl(connKey, ch));
 
-                                lsnr.onChannelAdded(nioSocketCh);
+                                onChannelCreated(nioSocketCh);
 
                                 req.onDone();
 

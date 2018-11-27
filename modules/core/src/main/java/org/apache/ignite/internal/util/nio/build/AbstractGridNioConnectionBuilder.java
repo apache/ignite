@@ -28,12 +28,13 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.util.nio.GridNioRecoveryDescriptor;
 import org.apache.ignite.internal.util.nio.ssl.BlockingSslHandler;
-import org.apache.ignite.internal.util.nio.ssl.GridSslMeta;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
+import org.apache.ignite.spi.communication.tcp.internal.ConnectionKey;
 import org.apache.ignite.spi.communication.tcp.internal.HandshakeException;
 import org.apache.ignite.spi.communication.tcp.internal.HandshakeTimeoutException;
 import org.apache.ignite.spi.communication.tcp.internal.HandshakeTimeoutObject;
@@ -52,44 +53,48 @@ import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastRecei
  * 2) write header IGNITE_HEADER and HandshakeMessage
  * 3) receive RecoveryLastReceivedMessage
  */
-public class SocketCommunicationBuilder implements CommunicationBuilder<SocketChannel> {
+public abstract class AbstractGridNioConnectionBuilder<T> implements GridNioConnectionBuilder<T> {
     /** */
-    private IgniteLogger log;
+    protected IgniteLogger log;
 
     /** */
-    private boolean directBuf;
+    protected boolean directBuf;
     /** */
-    private boolean tcpNoDelay;
+    protected boolean tcpNoDelay;
     /** */
-    private int sockSndBufSize;
+    protected int sockSndBufSize;
     /** */
-    private int sockRcvBufSize;
+    protected int sockRcvBufSize;
     /** */
-    private long connTimeout;
+    protected long connTimeout;
     /** */
-    private ClusterNode remoteNode;
+    protected ClusterNode remoteNode;
     /** */
-    private IgniteSpiOperationTimeoutHelper timeoutHelper;
+    protected IgniteSpiOperationTimeoutHelper timeoutHelper;
     /** */
-    private HandshakeMessage handshakeMsg;
+    protected HandshakeMessage handshakeMsg;
+    /** */
+    protected ConnectionKey connKey;
+    /** */
+    protected GridNioRecoveryDescriptor recoveryDesc;
 
     /**
      * @param log
      */
-    public SocketCommunicationBuilder(IgniteLogger log) {
+    protected AbstractGridNioConnectionBuilder(IgniteLogger log) {
         this.log = log;
     }
 
     /** */
-    @Override public SocketChannel build(CommunicationBuilderContext ctx, InetSocketAddress addr) throws Exception {
+    @Override public T build(GridNioConnectionBuilderContext ctx, InetSocketAddress addr) throws Exception {
         return build(ctx, addr, null);
     }
 
     /** */
-    @Override public SocketChannel build(
-        CommunicationBuilderContext ctx,
+    protected SocketChannel initSocketChannel(
+        GridNioConnectionBuilderContext ctx,
         InetSocketAddress addr,
-        CompletionHandler hndlr
+        GridNioHandshakeCompletionHandler hndlr
     ) throws Exception {
         final ClusterNode locNode = ctx.spiContext().localNode();
 
@@ -330,57 +335,71 @@ public class SocketCommunicationBuilder implements CommunicationBuilder<SocketCh
     }
 
     /** */
-    public SocketCommunicationBuilder setDirectBuf(boolean directBuf) {
+    @Override public GridNioConnectionBuilder<T> setDirectBuf(boolean directBuf) {
         this.directBuf = directBuf;
 
         return this;
     }
 
     /** */
-    public SocketCommunicationBuilder setTcpNoDelay(boolean tcpNoDelay) {
+    @Override public GridNioConnectionBuilder<T> setTcpNoDelay(boolean tcpNoDelay) {
         this.tcpNoDelay = tcpNoDelay;
 
         return this;
     }
 
     /** */
-    public SocketCommunicationBuilder setSockSndBufSize(int sockSndBufSize) {
+    @Override public GridNioConnectionBuilder<T> setSockSndBufSize(int sockSndBufSize) {
         this.sockSndBufSize = sockSndBufSize;
 
         return this;
     }
 
     /** */
-    public SocketCommunicationBuilder setSockRcvBufSize(int sockRcvBufSize) {
+    @Override public GridNioConnectionBuilder<T> setSockRcvBufSize(int sockRcvBufSize) {
         this.sockRcvBufSize = sockRcvBufSize;
 
         return this;
     }
 
     /** */
-    public SocketCommunicationBuilder setConnTimeout(long connTimeout) {
+    @Override public GridNioConnectionBuilder<T> setConnTimeout(long connTimeout) {
         this.connTimeout = connTimeout;
 
         return this;
     }
 
     /** */
-    public SocketCommunicationBuilder setRemoteNode(ClusterNode remoteNode) {
+    @Override public GridNioConnectionBuilder<T> setRemoteNode(ClusterNode remoteNode) {
         this.remoteNode = remoteNode;
 
         return this;
     }
 
     /** */
-    public SocketCommunicationBuilder setTimeoutHelper(IgniteSpiOperationTimeoutHelper timeoutHelper) {
+    @Override public GridNioConnectionBuilder<T> setTimeoutHelper(IgniteSpiOperationTimeoutHelper timeoutHelper) {
         this.timeoutHelper = timeoutHelper;
 
         return this;
     }
 
     /** */
-    public SocketCommunicationBuilder setHandshakeMsg(HandshakeMessage handshakeMsg) {
+    @Override public GridNioConnectionBuilder<T> setHandshakeMsg(HandshakeMessage handshakeMsg) {
         this.handshakeMsg = handshakeMsg;
+
+        return this;
+    }
+
+    /** */
+    @Override public GridNioConnectionBuilder<T> setConnKey(ConnectionKey connKey) {
+        this.connKey = connKey;
+
+        return this;
+    }
+
+    /** */
+    @Override public AbstractGridNioConnectionBuilder<T> setRecoveryDesc(GridNioRecoveryDescriptor recoveryDesc) {
+        this.recoveryDesc = recoveryDesc;
 
         return this;
     }

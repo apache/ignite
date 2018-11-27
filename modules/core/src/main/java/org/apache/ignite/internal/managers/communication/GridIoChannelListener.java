@@ -15,12 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.nio.build;
+package org.apache.ignite.internal.managers.communication;
+
+import java.nio.channels.ReadableByteChannel;
+import java.util.UUID;
+import org.apache.ignite.internal.util.nio.channel.GridNioSocketChannel;
 
 /**
- *
+ * Listener for connections established from remote nodes.
  */
-public interface CompletionHandler {
-    /** */
-    public void onHandshake(Long cnt);
+public interface GridIoChannelListener {
+    /**
+     * Handle {@link GridNioSocketChannel} creation event from remote connection.
+     *
+     * @param sndId Remote nodeId.
+     * @param ch Local created channel endpoint.
+     */
+    public default void onChannelCreated(UUID sndId, GridNioSocketChannel ch) {
+        // No-op.
+    }
 }

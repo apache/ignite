@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.nio.channels.SocketChannel;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.nio.channel.GridNioSocketChannel;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionKey;
 
 /**
@@ -28,15 +27,15 @@ import org.apache.ignite.spi.communication.tcp.internal.ConnectionKey;
 public interface GridNioConnectionManager {
     /**
      * @param key
-     * @param sock
+     * @param ch
      */
-    public void addChannel(ConnectionKey key, SocketChannel sock);
+    public void addChannel(ConnectionKey key, GridNioSocketChannel ch);
 
     /**
      * @param key
      * @return
      */
-    public SocketChannel getChannel(ConnectionKey key);
+    public GridNioSocketChannel getChannel(ConnectionKey key);
 
     /**
      * @param key
