@@ -317,9 +317,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         return ctx;
     }
 
-    /** Registered caches. */
-    private final Map<String, GridCacheContextInfo> registeredCaches = new ConcurrentHashMap<>();
-
     /**
      * @param c Connection.
      * @param sql SQL.
@@ -2584,13 +2581,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     public void removeDataTable(GridH2Table h2Tbl) {
         dataTables.remove(h2Tbl.identifier(), h2Tbl);
-
-        registeredCaches.remove(h2Tbl.cacheName());
     }
 
     /** {@inheritDoc} */
     public GridCacheContextInfo registeredCacheContext(String cacheName) {
-        return registeredCaches.get(cacheName);
+        for (GridH2Table value : dataTables.values()) {
+            if (value.cacheName().equals(cacheName))
+                return value.cacheInfo();
+        }
+
+        return null;
     }
 
     /**
@@ -3042,7 +3042,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void initCacheContext(GridCacheContext ctx) {
-        GridCacheContextInfo prevCtx = registeredCaches.get(ctx.name());
+        GridCacheContextInfo prevCtx = registeredCacheContext(ctx.name());
 
         if (prevCtx != null) {
             assert !prevCtx.isCacheContextInited() : prevCtx.name();
@@ -3064,8 +3064,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         cacheName2schema.put(cacheName, schemaName);
 
         createSqlFunctions(schemaName, cctx.config().getSqlFunctionClasses());
-
-        registeredCaches.put(cacheName, cctx);
     }
 
     /** {@inheritDoc} */
@@ -3137,8 +3135,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     it.remove();
             }
         }
-
-        registeredCaches.remove(cacheName, cctx);
     }
 
     /**

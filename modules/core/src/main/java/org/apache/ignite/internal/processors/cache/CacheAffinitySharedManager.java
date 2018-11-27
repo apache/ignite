@@ -430,10 +430,12 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 DynamicCacheChangeRequest changeReq = startReqs.get(desc.cacheName());
 
                 return new StartCacheInfo(
+                    desc.cacheConfiguration(),
                     desc,
                     changeReq.nearCacheConfiguration(),
                     topVer,
-                    changeReq.disabledAfterStart()
+                    changeReq.disabledAfterStart(),
+                    true
                 );
             })
             .collect(Collectors.toList());

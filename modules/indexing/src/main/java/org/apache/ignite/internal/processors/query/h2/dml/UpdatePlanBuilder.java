@@ -118,7 +118,7 @@ public final class UpdatePlanBuilder {
             if (prevCctx == null) {
                 prevCctx = h2tbl.cache();
 
-                assert prevCctx != null : h2tbl.cacheName() + " is lazy";
+                assert prevCctx != null : h2tbl.cacheName() + " is not initted";
 
                 mvccEnabled = prevCctx.mvccEnabled();
 
