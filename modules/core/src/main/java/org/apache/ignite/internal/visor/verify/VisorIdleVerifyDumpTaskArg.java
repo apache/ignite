@@ -82,6 +82,8 @@ public class VisorIdleVerifyDumpTaskArg extends VisorIdleVerifyTaskArg {
 
         if (protoVer >= V2)
             cacheFilterEnum = CacheFilterEnum.fromOrdinal(in.readByte());
+        else
+            cacheFilterEnum = CacheFilterEnum.ALL;
     }
 
     /** {@inheritDoc} */

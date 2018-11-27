@@ -72,18 +72,18 @@ public class CacheArguments {
     /** Full config flag. */
     private boolean fullConfig;
 
-    /** Cache kind. */
+    /** Cache filter. */
     private CacheFilterEnum cacheFilterEnum = CacheFilterEnum.ALL;
 
     /**
-     * @return Gets kind of caches, which will by checked.
+     * @return Gets filter of caches, which will by checked.
      */
     public CacheFilterEnum getCacheFilterEnum() {
         return cacheFilterEnum;
     }
 
     /**
-     * @param cacheFilterEnum Cache kind.
+     * @param cacheFilterEnum Cache filter.
      */
     public void setCacheFilterEnum(CacheFilterEnum cacheFilterEnum) {
         this.cacheFilterEnum = cacheFilterEnum;

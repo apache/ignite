@@ -195,7 +195,7 @@ public class CommandHandler {
     private static final String CMD_SKIP_ZEROS = "--skipZeros";
 
     /** Cache kind. */
-    private static final String CACHE_KIND = "--cacheFilter";
+    private static final String CACHE_FILTER = "--cacheFilter";
 
     /** */
     private static final String CMD_USER_ATTRIBUTES = "--user-attributes";
@@ -775,7 +775,7 @@ public class CommandHandler {
             .text()));
         usageCache(CONTENTION, "minQueueSize", op("nodeId"), op("maxPrint"));
         usageCache(IDLE_VERIFY, op(CMD_DUMP), op(CMD_SKIP_ZEROS), "[cache1,...,cacheN]",
-            op(CACHE_KIND, or(CacheFilterEnum.ALL.toString(), CacheFilterEnum.SYSTEM.toString(), CacheFilterEnum.PERSISTENT.toString(),
+            op(CACHE_FILTER, or(CacheFilterEnum.ALL.toString(), CacheFilterEnum.SYSTEM.toString(), CacheFilterEnum.PERSISTENT.toString(),
                 CacheFilterEnum.NOT_PERSISTENT.toString())));
         usageCache(VALIDATE_INDEXES, "[cache1,...,cacheN]", op("nodeId"), op(or(VI_CHECK_FIRST + " N",
             VI_CHECK_THROUGH + " K")));
@@ -1957,10 +1957,11 @@ public class CommandHandler {
                         cacheArgs.dump(true);
                     else if (CMD_SKIP_ZEROS.equals(nextArg))
                         cacheArgs.skipZeros(true);
-                    else if (CACHE_KIND.equals(nextArg)) {
-                        String kind = nextArg("Cache kind should be assigned").toUpperCase();
+                    else if (CACHE_FILTER.equals(nextArg)) {
+                        String filter = nextArg("The cache kind should be specified. The following values can be used: " +
+                            Arrays.toString(CacheFilterEnum.values()) + '.').toUpperCase();
 
-                        cacheArgs.setCacheFilterEnum(CacheFilterEnum.valueOf(kind));
+                        cacheArgs.setCacheFilterEnum(CacheFilterEnum.valueOf(filter));
                     }
                     else
                         parseCacheNames(nextArg, cacheArgs);

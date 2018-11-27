@@ -181,7 +181,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                 for (String cacheName : arg.getCaches()) {
                     DynamicCacheDescriptor desc = ignite.context().cache().cacheDescriptor(cacheName);
 
-                    if (desc == null || !isCacheMatchKind(cacheName)) {
+                    if (desc == null || !isCacheMatchFilter(cacheName)) {
                         missingCaches.add(cacheName);
 
                         continue;
@@ -190,21 +190,11 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                     grpIds.add(desc.groupId());
                 }
 
-                if (!missingCaches.isEmpty()) {
-                    StringBuilder strBuilder = new StringBuilder("The following caches do not exist or does not match to " +
-                        "kind: ");
-
-                    for (String name : missingCaches)
-                        strBuilder.append(name).append(", ");
-
-                    strBuilder.delete(strBuilder.length() - 2, strBuilder.length());
-
-                    throw new IgniteException(strBuilder.toString());
-                }
+                handlingMissedCaches(missingCaches);
             }
-            else if (onlySpecificKindCaches()) {
+            else if (onlySpecificCaches()) {
                 for (DynamicCacheDescriptor desc : ignite.context().cache().cacheDescriptors().values()) {
-                    if (isCacheMatchKind(desc.cacheName()))
+                    if (isCacheMatchFilter(desc.cacheName()))
                         grpIds.add(desc.groupId());
                 }
             }
@@ -272,14 +262,41 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
         }
 
         /**
-         * @return True if validates only specific kind caches, else false.
+         *  Checks and throw exception if caches was missed.
+         * @param missingCaches Missing caches.
          */
-        private boolean onlySpecificKindCaches() {
+        private void handlingMissedCaches(Set<String> missingCaches) {
+            if (missingCaches.isEmpty())
+                return;
+
+            StringBuilder strBuilder = new StringBuilder("The following caches do not exist");
+
+            if (onlySpecificCaches()) {
+                VisorIdleVerifyDumpTaskArg vdta = (VisorIdleVerifyDumpTaskArg)arg;
+
+                strBuilder.append(" or do not match to the given filter [")
+                    .append(vdta.getCacheFilterEnum())
+                    .append("]: ");
+            }
+            else
+                strBuilder.append(": ");
+
+            for (String name : missingCaches)
+                strBuilder.append(name).append(", ");
+
+            strBuilder.delete(strBuilder.length() - 2, strBuilder.length());
+
+            throw new IgniteException(strBuilder.toString());
+        }
+
+        /**
+         * @return True if validates only specific caches, else false.
+         */
+        private boolean onlySpecificCaches() {
             if (arg instanceof VisorIdleVerifyDumpTaskArg) {
                 VisorIdleVerifyDumpTaskArg vdta = (VisorIdleVerifyDumpTaskArg)arg;
 
-                if (vdta.getCacheFilterEnum() != CacheFilterEnum.ALL)
-                    return true;
+                return vdta.getCacheFilterEnum() != CacheFilterEnum.ALL;
             }
 
             return false;
@@ -288,7 +305,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
         /**
          * @param cacheName Cache name.
          */
-        private boolean isCacheMatchKind(String cacheName) {
+        private boolean isCacheMatchFilter(String cacheName) {
             if (arg instanceof VisorIdleVerifyDumpTaskArg) {
                 DataStorageConfiguration dsc = ignite.context().config().getDataStorageConfiguration();
                 DynamicCacheDescriptor desc = ignite.context().cache().cacheDescriptor(cacheName);
@@ -309,7 +326,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                         break;
 
                     default:
-                        assert false: "Illegal cache kind: " + vdta.getCacheFilterEnum();
+                        assert false: "Illegal cache filter: " + vdta.getCacheFilterEnum();
                 }
             }
 

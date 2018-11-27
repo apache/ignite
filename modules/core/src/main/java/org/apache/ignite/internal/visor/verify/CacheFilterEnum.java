@@ -25,10 +25,13 @@ import org.jetbrains.annotations.Nullable;
 public enum CacheFilterEnum {
     /** All. */
     ALL,
+
     /** System. */
     SYSTEM,
+
     /** Persistent. */
     PERSISTENT,
+
     /** Not persistent. */
     NOT_PERSISTENT;
 
