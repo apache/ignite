@@ -769,24 +769,6 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     public void testFlush() throws Exception {
         mode = PARTITIONED;
 
-        checkFlush();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testFlushLocal() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
-
-        mode = LOCAL;
-
-        checkFlush();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void checkFlush() throws Exception {
         useCache = true;
 
         try {
@@ -841,24 +823,6 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     public void testTryFlush() throws Exception {
         mode = PARTITIONED;
 
-        checkTryFlush();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTryFlushLocal() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
-
-        mode = LOCAL;
-
-        checkTryFlush();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void checkTryFlush() throws Exception {
         useCache = true;
 
         try {
