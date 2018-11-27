@@ -121,10 +121,8 @@ public class WalCompactionAfterRestartTest extends GridCommonAbstractTest {
             long evtSegIdx = ((WalSegmentCompactedEvent)e).getAbsWalSegmentIdx();
             long lastCompactedIdx = ig0.context().cache().context().wal().lastCompactedSegment();
 
-            if (lastCompactedIdx < 0) {
-                // TODO IGNITE-10079: || evtSegIdx > lastCompactedIdx.
+            if (lastCompactedIdx < 0 || lastCompactedIdx > evtSegIdx)
                 discrepancies.add(F.t(evtSegIdx, lastCompactedIdx));
-            }
 
             return true;
         }, EVT_WAL_SEGMENT_COMPACTED);
