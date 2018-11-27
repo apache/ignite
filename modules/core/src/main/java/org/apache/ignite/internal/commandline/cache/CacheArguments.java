@@ -19,7 +19,7 @@ package org.apache.ignite.internal.commandline.cache;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.commandline.OutputFormat;
-import org.apache.ignite.internal.visor.verify.CacheKind;
+import org.apache.ignite.internal.visor.verify.CacheFilterEnum;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheCmd;
 import org.jetbrains.annotations.Nullable;
 
@@ -73,20 +73,20 @@ public class CacheArguments {
     private boolean fullConfig;
 
     /** Cache kind. */
-    private CacheKind cacheKind = CacheKind.ALL;
+    private CacheFilterEnum cacheFilterEnum = CacheFilterEnum.ALL;
 
     /**
-     *
+     * @return Gets kind of caches, which will by checked.
      */
-    public CacheKind getCacheKind() {
-        return cacheKind;
+    public CacheFilterEnum getCacheFilterEnum() {
+        return cacheFilterEnum;
     }
 
     /**
-     * @param cacheKind Cache kind.
+     * @param cacheFilterEnum Cache kind.
      */
-    public void setCacheKind(CacheKind cacheKind) {
-        this.cacheKind = cacheKind;
+    public void setCacheFilterEnum(CacheFilterEnum cacheFilterEnum) {
+        this.cacheFilterEnum = cacheFilterEnum;
     }
 
     /**

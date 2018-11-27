@@ -20,15 +20,20 @@ package org.apache.ignite.internal.visor.verify;
 import org.jetbrains.annotations.Nullable;
 
 /**
+ * Use for filtering caches in {@link VisorIdleVerifyDumpTask}.
  */
-public enum CacheKind {
-    /** All. */ALL,
-    /** System. */SYSTEM,
-    /** Persistent. */PERSISTENT,
-    /** Not persistent. */NOT_PERSISTENT;
+public enum CacheFilterEnum {
+    /** All. */
+    ALL,
+    /** System. */
+    SYSTEM,
+    /** Persistent. */
+    PERSISTENT,
+    /** Not persistent. */
+    NOT_PERSISTENT;
 
     /** Enumerated values. */
-    private static final CacheKind[] VALS = values();
+    private static final CacheFilterEnum[] VALS = values();
 
     /**
      * Efficiently gets enumerated value from its ordinal.
@@ -36,7 +41,7 @@ public enum CacheKind {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static CacheKind fromOrdinal(int ord) {
+    public static @Nullable CacheFilterEnum fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

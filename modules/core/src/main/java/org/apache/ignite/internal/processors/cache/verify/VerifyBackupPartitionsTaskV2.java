@@ -53,7 +53,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.verify.CacheKind;
+import org.apache.ignite.internal.visor.verify.CacheFilterEnum;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyDumpTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -278,7 +278,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
             if (arg instanceof VisorIdleVerifyDumpTaskArg) {
                 VisorIdleVerifyDumpTaskArg vdta = (VisorIdleVerifyDumpTaskArg)arg;
 
-                if (vdta.getCacheKind() != CacheKind.ALL)
+                if (vdta.getCacheFilterEnum() != CacheFilterEnum.ALL)
                     return true;
             }
 
@@ -295,7 +295,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                 CacheConfiguration cc = desc.cacheConfiguration();
                 VisorIdleVerifyDumpTaskArg vdta = (VisorIdleVerifyDumpTaskArg)arg;
 
-                switch (vdta.getCacheKind()) {
+                switch (vdta.getCacheFilterEnum()) {
                     case SYSTEM:
                         return !desc.cacheType().userCache();
 
@@ -304,6 +304,12 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
 
                     case PERSISTENT:
                         return desc.cacheType().userCache() && GridCacheUtils.isPersistentCache(cc, dsc);
+
+                    case ALL:
+                        break;
+
+                    default:
+                        assert false: "Illegal cache kind: " + vdta.getCacheFilterEnum();
                 }
             }
 

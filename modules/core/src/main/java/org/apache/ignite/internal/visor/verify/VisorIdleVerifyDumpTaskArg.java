@@ -30,10 +30,12 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 public class VisorIdleVerifyDumpTaskArg extends VisorIdleVerifyTaskArg {
     /** */
     private static final long serialVersionUID = 0L;
+
     /** */
     private boolean skipZeros;
+
     /** Cache kind. */
-    private CacheKind cacheKind;
+    private CacheFilterEnum cacheFilterEnum;
 
     /**
      * Default constructor.
@@ -44,12 +46,12 @@ public class VisorIdleVerifyDumpTaskArg extends VisorIdleVerifyTaskArg {
     /**
      * @param caches Caches.
      * @param skipZeros Skip zeros partitions.
-     * @param cacheKind Cache kind.
+     * @param cacheFilterEnum Cache kind.
      */
-    public VisorIdleVerifyDumpTaskArg(Set<String> caches, boolean skipZeros, CacheKind cacheKind) {
+    public VisorIdleVerifyDumpTaskArg(Set<String> caches, boolean skipZeros, CacheFilterEnum cacheFilterEnum) {
         super(caches);
         this.skipZeros = skipZeros;
-        this.cacheKind = cacheKind;
+        this.cacheFilterEnum = cacheFilterEnum;
     }
 
     /**
@@ -62,15 +64,15 @@ public class VisorIdleVerifyDumpTaskArg extends VisorIdleVerifyTaskArg {
     /**
      * @return Kind fo cache.
      */
-    public CacheKind getCacheKind() {
-        return cacheKind;
+    public CacheFilterEnum getCacheFilterEnum() {
+        return cacheFilterEnum;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         super.writeExternalData(out);
         out.writeBoolean(skipZeros);
-        U.writeEnum(out, cacheKind);
+        U.writeEnum(out, cacheFilterEnum);
     }
 
     /** {@inheritDoc} */
@@ -79,7 +81,7 @@ public class VisorIdleVerifyDumpTaskArg extends VisorIdleVerifyTaskArg {
         skipZeros = in.readBoolean();
 
         if (protoVer >= V2)
-            cacheKind = CacheKind.fromOrdinal(in.readByte());
+            cacheFilterEnum = CacheFilterEnum.fromOrdinal(in.readByte());
     }
 
     /** {@inheritDoc} */

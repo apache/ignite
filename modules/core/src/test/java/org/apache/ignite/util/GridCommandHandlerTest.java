@@ -91,7 +91,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.tx.VisorTxInfo;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
-import org.apache.ignite.internal.visor.verify.CacheKind;
+import org.apache.ignite.internal.visor.verify.CacheFilterEnum;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -1070,14 +1070,14 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         for (int i = 0; i < 100; i++)
             cache.put(i, i);
 
-        corruptingAndCheckDefaultCache(ignite, parts, CacheKind.ALL);
+        corruptingAndCheckDefaultCache(ignite, parts, CacheFilterEnum.ALL);
     }
 
     /**
      * @param ignite Ignite.
      * @param parts Parts.
      */
-    private void corruptingAndCheckDefaultCache(IgniteEx ignite, int parts, CacheKind cacheKind) throws IOException {
+    private void corruptingAndCheckDefaultCache(IgniteEx ignite, int parts, CacheFilterEnum cacheFilterEnum) throws IOException {
         injectTestSystemOut();
 
         GridCacheContext<Object, Object> cacheCtx = ignite.cachex(DEFAULT_CACHE_NAME).context();
@@ -1086,7 +1086,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         corruptDataEntry(cacheCtx, parts / 2, false, true);
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--cacheKind", cacheKind.toString()));
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--cacheFilter", cacheFilterEnum.toString()));
 
         Matcher fileNameMatcher = dumpFileNameMatcher();
 
@@ -1145,7 +1145,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         corruptDataEntry(memorySysCacheCtx.caches().get(0), new GridCacheInternalKeyImpl("s" + parts / 2,
             "default-volatile-ds-group"), false, true);
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--cacheKind", "SYSTEM"));
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--cacheFilter", CacheFilterEnum.SYSTEM.toString()));
 
         Matcher fileNameMatcher = dumpFileNameMatcher();
 
@@ -1169,6 +1169,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         dataRegionConfiguration = new DataRegionConfiguration()
             .setName("persistence-region")
+            .setMaxSize(100L * 1024 * 1024)
             .setPersistenceEnabled(true);
 
         IgniteEx ignite = (IgniteEx)startGrids(3);
@@ -1185,7 +1186,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         for (int i = 0; i < 100; i++)
             cache.put(i, i);
 
-        corruptingAndCheckDefaultCache(ignite, parts, CacheKind.PERSISTENT);
+        corruptingAndCheckDefaultCache(ignite, parts, CacheFilterEnum.PERSISTENT);
     }
 
     /**
@@ -1221,7 +1222,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         corruptDataEntry(cacheCtx, parts / 2, false, true);
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--cacheKind", "NOT_PERSISTENT"));
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--cacheFilter", CacheFilterEnum
+            .NOT_PERSISTENT.toString()));
 
         Matcher fileNameMatcher = dumpFileNameMatcher();
 
