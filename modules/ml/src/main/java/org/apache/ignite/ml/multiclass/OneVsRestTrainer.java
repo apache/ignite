@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.multiclass;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -38,13 +37,16 @@ import org.apache.ignite.ml.structures.partition.LabelPartitionDataOnHeap;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
 /**
- * All common parameters are shared with bunch of binary classification trainers.
+ * This is a common heuristic trainer for multi-class labeled models.
+ *
+ * NOTE: The current implementation suffers from unbalanced training over the
  */
-public class OneVsRestTrainer<P extends Serializable, M extends Model>
+public class OneVsRestTrainer<M extends Model<Vector, Double>>
     extends SingleLabelDatasetTrainer<MultiClassModel<M>> {
-
+    /** The common binary classifier with all hyper-parameters to spread them for all separate trainings . */
     private SingleLabelDatasetTrainer<M> classifier;
 
+    /** */
     public OneVsRestTrainer(SingleLabelDatasetTrainer<M> classifier) {
         this.classifier = classifier;
     }

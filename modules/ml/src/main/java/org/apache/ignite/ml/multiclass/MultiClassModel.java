@@ -27,12 +27,11 @@ import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionModel;
 
 /** Base class for multi-classification model for set of classifiers. */
-public class MultiClassModel<M extends Model> implements Model<Vector, Double>, Exportable<MultiClassModel>, Serializable {
+public class MultiClassModel<M extends Model<Vector, Double>> implements Model<Vector, Double>, Exportable<MultiClassModel>, Serializable {
     /** */
-    private static final long serialVersionUID = -114986533350117L;
+    private static final long serialVersionUID = -114986533359917L;
 
     /** List of models associated with each class. */
     private Map<Double, M> models;
@@ -46,8 +45,9 @@ public class MultiClassModel<M extends Model> implements Model<Vector, Double>, 
     @Override public Double apply(Vector input) {
         TreeMap<Double, Double> maxMargins = new TreeMap<>();
 
-        //models.forEach((k, v) -> maxMargins.put(1.0 / (1.0 + Math.exp(-(input.dot(v.weights()) + v.intercept()))), k));
+        models.forEach((k, v) -> maxMargins.put(v.apply(input), k));
 
+        // returns value the most closest to 1
         return maxMargins.lastEntry().getValue();
     }
 
@@ -96,7 +96,7 @@ public class MultiClassModel<M extends Model> implements Model<Vector, Double>, 
     }
 
     /**
-     * Adds a specific Log Regression binary classifier to the bunch of same classifiers.
+     * Adds a specific binary classifier to the bunch of same classifiers.
      *
      * @param clsLb The class label for the added model.
      * @param mdl The model.
