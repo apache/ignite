@@ -484,12 +484,7 @@ public final class IgniteSystemProperties {
     /** Disable fallback to H2 SQL parser if the internal SQL parser fails to parse the statement. */
     public static final String IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK = "IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK";
 
-    /**
-     *  Force all SQL queries to be processed lazily regardless of what clients request.
-     *
-     * @deprecated Since version 2.7.
-     */
-    @Deprecated
+    /** Force all SQL queries to be processed lazily regardless of what clients request. */
     public static final String IGNITE_SQL_FORCE_LAZY_RESULT_SET = "IGNITE_SQL_FORCE_LAZY_RESULT_SET";
 
     /** Disable SQL system views. */
@@ -988,6 +983,14 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_EVICTION_PERMITS = "IGNITE_EVICTION_PERMITS";
 
     /**
+     * When set to {@code true}, Ignite will allow execute DML operation (MERGE|INSERT|UPDATE|DELETE)
+     * within transaction for non MVCC mode.
+     *
+     * Default is {@code false}.
+     */
+    public static final String IGNITE_ALLOW_DML_INSIDE_TRANSACTION = "IGNITE_ALLOW_DML_INSIDE_TRANSACTION";
+
+    /**
      * Timeout between ZooKeeper client retries, default 2s.
      */
     public static final String IGNITE_ZOOKEEPER_DISCOVERY_RETRY_TIMEOUT = "IGNITE_ZOOKEEPER_DISCOVERY_RETRY_TIMEOUT";
@@ -1030,10 +1033,71 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_REBALANCE_THROTTLE_OVERRIDE = "IGNITE_REBALANCE_THROTTLE_OVERRIDE";
 
     /**
+     * Enables start caches in parallel.
+     *
+     * Default is {@code true}.
+     */
+    public static final String IGNITE_ALLOW_START_CACHES_IN_PARALLEL = "IGNITE_ALLOW_START_CACHES_IN_PARALLEL";
+
+    /** For test purposes only. Force Mvcc mode. */
+    public static final String IGNITE_FORCE_MVCC_MODE_IN_TESTS = "IGNITE_FORCE_MVCC_MODE_IN_TESTS";
+
+    /**
+     * Allows to log additional information about all restored partitions after binary and logical recovery phases.
+     *
+     * Default is {@code true}.
+     */
+    public static final String IGNITE_RECOVERY_VERBOSE_LOGGING = "IGNITE_RECOVERY_VERBOSE_LOGGING";
+
+    /**
+     * Sets default {@link CacheConfiguration#setDiskPageCompression disk page compression}.
+     */
+    public static final String IGNITE_DEFAULT_DISK_PAGE_COMPRESSION = "IGNITE_DEFAULT_DISK_PAGE_COMPRESSION";
+
+    /**
+     * Sets default {@link DataStorageConfiguration#setPageSize storage page size}.
+     */
+    public static final String IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE = "IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
         // No-op.
+    }
+
+    /**
+     * @param enumCls Enum type.
+     * @param name Name of the system property or environment variable.
+     * @return Enum value or {@code null} if the property is not set.
+     */
+    public static <E extends Enum<E>> E getEnum(Class<E> enumCls, String name) {
+        return getEnum(enumCls, name, null);
+    }
+
+    /**
+     * @param name Name of the system property or environment variable.
+     * @return Enum value or the given default.
+     */
+    public static <E extends Enum<E>> E getEnum(String name, E dflt) {
+        return getEnum(dflt.getDeclaringClass(), name, dflt);
+    }
+
+    /**
+     * @param enumCls Enum type.
+     * @param name Name of the system property or environment variable.
+     * @param dflt Default value.
+     * @return Enum value or the given default.
+     */
+    private static <E extends Enum<E>> E getEnum(Class<E> enumCls, String name, E dflt) {
+        assert enumCls != null;
+
+        String val = getString(name);
+
+        if (val == null)
+            return dflt;
+
+        return Enum.valueOf(enumCls, val);
     }
 
     /**

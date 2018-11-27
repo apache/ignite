@@ -93,9 +93,11 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
         AtomicReferenceFieldUpdater.newUpdater(GridDhtTxLocal.class, GridDhtTxPrepareFuture.class, "prepFut");
 
     /** Future. */
-    @SuppressWarnings("UnusedDeclaration")
     @GridToStringExclude
     private volatile GridDhtTxPrepareFuture prepFut;
+
+    /** Transaction label. */
+    private @Nullable String lb;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -119,6 +121,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
      * @param storeEnabled Store enabled flag.
      * @param txSize Expected transaction size.
      * @param txNodes Transaction nodes mapping.
+     * @param lb Transaction label.
      */
     public GridDhtTxLocal(
         GridCacheSharedContext cctx,
@@ -142,7 +145,8 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
         int txSize,
         Map<UUID, Collection<UUID>> txNodes,
         UUID subjId,
-        int taskNameHash
+        int taskNameHash,
+        @Nullable String lb
     ) {
         super(
             cctx,
@@ -161,6 +165,8 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             txSize,
             subjId,
             taskNameHash);
+
+        this.lb = lb;
 
         assert nearNodeId != null;
         assert nearFutId != null;
@@ -534,6 +540,11 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public String label() {
+        return lb;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void clearPrepareFuture(GridDhtTxPrepareFuture fut) {
         assert optimistic();
 
@@ -580,7 +591,6 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CatchGenericClass", "ThrowableInstanceNeverThrown"})
     @Override public boolean localFinish(boolean commit, boolean clearThreadMap) throws IgniteCheckedException {
         assert nearFinFutId != null || isInvalidate() || !commit || isSystemInvalidate()
             || onePhaseCommit() || state() == PREPARED :

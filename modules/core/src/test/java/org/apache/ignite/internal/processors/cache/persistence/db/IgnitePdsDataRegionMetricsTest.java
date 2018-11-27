@@ -60,7 +60,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static final long INIT_REGION_SIZE = 10 << 20;
+    private static final long INIT_REGION_SIZE = 20 << 20;
 
     /** */
     private static final long MAX_REGION_SIZE = INIT_REGION_SIZE * 10;
@@ -312,7 +312,13 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
                 FilePageStore store = (FilePageStore)pageStoreMgr.getStore(CU.cacheId(cacheName), partId(file));
 
-                totalPersistenceSize += path.toFile().length() - store.headerSize();
+                int pageSize = store.getPageSize();
+                long storeSize = path.toFile().length() - store.headerSize();
+
+                if (storeSize % pageSize != 0)
+                    storeSize = (storeSize / pageSize + 1) * pageSize; // Adjust for possible page compression.
+
+                totalPersistenceSize += storeSize;
             }
         }
 
@@ -323,7 +329,8 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
             .memoryMetrics()
             .getTotalAllocatedPages();
 
-        assertEquals(totalPersistenceSize / pageStoreMgr.pageSize(), totalAllocatedPagesFromMetrics);
+        assertEquals("Number of allocated pages is different than in metrics for [node=" + node.name() + ", cache=" + cacheName + "]",
+            totalPersistenceSize / pageStoreMgr.pageSize(), totalAllocatedPagesFromMetrics);
     }
 
     /**

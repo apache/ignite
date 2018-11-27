@@ -80,6 +80,9 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     /** Logger. */
     private static IgniteLogger log;
 
+    /** Transaction label. */
+    private String txLbl;
+
     /** */
     protected final MvccSnapshot mvccSnapshot;
 
@@ -100,6 +103,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
      * @param keepCacheObjects Keep cache objects flag.
+     * @param txLbl Transaction label.
      * @param mvccSnapshot Mvcc snapshot.
      */
     public GridPartitionedGetFuture(
@@ -115,6 +119,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         boolean skipVals,
         boolean needVer,
         boolean keepCacheObjects,
+        @Nullable String txLbl,
         @Nullable MvccSnapshot mvccSnapshot
     ) {
         super(cctx,
@@ -132,6 +137,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         assert mvccSnapshot == null || cctx.mvccEnabled();
 
         this.mvccSnapshot = mvccSnapshot;
+
+        this.txLbl = txLbl;
 
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, GridPartitionedGetFuture.class);
@@ -359,6 +366,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         expiryPlc,
                         skipVals,
                         recovery,
+                        txLbl,
                         mvccSnapshot());
 
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
@@ -417,6 +425,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     skipVals,
                     cctx.deploymentEnabled(),
                     recovery,
+                    txLbl,
                     mvccSnapshot());
 
                 add(fut); // Append new future.
@@ -443,7 +452,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
      * @param mapped Previously mapped.
      * @return {@code True} if has remote nodes.
      */
-    @SuppressWarnings("ConstantConditions")
     private boolean map(
         KeyCacheObject key,
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings,
@@ -456,7 +464,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         List<ClusterNode> affNodes = cctx.affinity().nodesByPartition(part, topVer);
 
         if (affNodes.isEmpty()) {
-            onDone(serverNotFoundError(topVer));
+            onDone(serverNotFoundError(part, topVer));
 
             return false;
         }
@@ -475,10 +483,10 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             }
         }
 
-        ClusterNode node = cctx.selectAffinityNodeBalanced(affNodes, canRemap);
+        ClusterNode node = cctx.selectAffinityNodeBalanced(affNodes, part, canRemap);
 
         if (node == null) {
-            onDone(serverNotFoundError(topVer));
+            onDone(serverNotFoundError(part, topVer));
 
             return false;
         }
@@ -547,6 +555,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                             if (evt) {
                                 cctx.events().readEvent(key,
                                     null,
+                                    txLbl,
                                     row.value(),
                                     subjId,
                                     taskName,
@@ -783,7 +792,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         /**
          * @param e Failure exception.
          */
-        @SuppressWarnings("UnusedParameters")
         synchronized void onNodeLeft(ClusterTopologyCheckedException e) {
             if (remapped)
                 return;
@@ -824,7 +832,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         /**
          * @param res Result callback.
          */
-        @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
         void onResult(final GridNearGetResponse res) {
             final Collection<Integer> invalidParts = res.invalidPartitions();
 
@@ -872,7 +879,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 IgniteInternalFuture<AffinityTopologyVersion> topFut = cctx.shared().exchange().affinityReadyFuture(rmtTopVer);
 
                 topFut.listen(new CIX1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                    @SuppressWarnings("unchecked")
                     @Override public void applyx(
                         IgniteInternalFuture<AffinityTopologyVersion> fut) throws IgniteCheckedException {
                         AffinityTopologyVersion topVer = fut.get();

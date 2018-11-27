@@ -24,7 +24,6 @@ import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
  * Grid checkpoint SPI abstract test.
  * @param <T> Concrete SPI class.
  */
-@SuppressWarnings({"CatchGenericClass"})
 public abstract class GridCheckpointSpiAbstractTest<T extends CheckpointSpi>
     extends GridSpiAbstractTest<T> {
     /** */

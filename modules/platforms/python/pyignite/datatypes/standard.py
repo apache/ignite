@@ -16,9 +16,11 @@
 import ctypes
 from datetime import date, datetime, time, timedelta
 import decimal
+from math import ceil
 import uuid
 
 from pyignite.constants import *
+from .base import IgniteDataType
 from .type_codes import *
 from .null_object import Null
 
@@ -38,7 +40,7 @@ __all__ = [
 ]
 
 
-class StandardObject:
+class StandardObject(IgniteDataType):
     type_code = None
 
     @classmethod
@@ -57,7 +59,7 @@ class StandardObject:
         return c_type, buffer
 
 
-class String:
+class String(IgniteDataType):
     """
     Pascal-style string: `c_int` counter, followed by count*bytes.
     UTF-8-encoded, so that one character may take 1 to 4 bytes.
@@ -124,7 +126,7 @@ class String:
         return bytes(data_object)
 
 
-class DecimalObject:
+class DecimalObject(IgniteDataType):
     type_code = TC_DECIMAL
     pythonic = decimal.Decimal
     default = decimal.Decimal('0.00')
@@ -163,7 +165,7 @@ class DecimalObject:
             {
                 '_pack_': 1,
                 '_fields_': [
-                    ('data', ctypes.c_char * header.length),
+                    ('data', ctypes.c_ubyte * header.length),
                 ],
             }
         )
@@ -179,12 +181,18 @@ class DecimalObject:
             return None
 
         sign = 1 if ctype_object.data[0] & 0x80 else 0
-        data = bytes([ctype_object.data[0] & 0x7f]) + ctype_object.data[1:]
-        result = decimal.Decimal(data.decode(PROTOCOL_STRING_ENCODING))
+        data = ctype_object.data[1:]
+        data.insert(0, ctype_object.data[0] & 0x7f)
+        # decode n-byte integer
+        result = sum([
+            [x for x in reversed(data)][i] * 0x100 ** i for i in
+            range(len(data))
+        ])
         # apply scale
         result = (
             result
-            * decimal.Decimal('10') ** decimal.Decimal(ctype_object.scale)
+            / decimal.Decimal('10')
+            ** decimal.Decimal(ctype_object.scale)
         )
         if sign:
             # apply sign
@@ -197,12 +205,20 @@ class DecimalObject:
             return Null.from_python()
 
         sign, digits, scale = value.normalize().as_tuple()
-        data = bytearray([ord('0') + digit for digit in digits])
+        integer = int(''.join([str(d) for d in digits]))
+        # calculate number of bytes (at least one, and not forget the sign bit)
+        length = ceil((integer.bit_length() + 1)/8)
+        # write byte string
+        data = []
+        for i in range(length):
+            digit = integer % 0x100
+            integer //= 0x100
+            data.insert(0, digit)
+        # apply sign
         if sign:
             data[0] |= 0x80
         else:
             data[0] &= 0x7f
-        length = len(digits)
         header_class = cls.build_c_header()
         data_class = type(
             cls.__name__,
@@ -210,7 +226,7 @@ class DecimalObject:
             {
                 '_pack_': 1,
                 '_fields_': [
-                    ('data', ctypes.c_char * length),
+                    ('data', ctypes.c_ubyte * length),
                 ],
             }
         )
@@ -220,8 +236,9 @@ class DecimalObject:
             byteorder=PROTOCOL_BYTE_ORDER
         )
         data_object.length = length
-        data_object.scale = scale
-        data_object.data = bytes(data)
+        data_object.scale = -scale
+        for i in range(length):
+            data_object.data[i] = data[i]
         return bytes(data_object)
 
 
@@ -495,7 +512,7 @@ class BinaryEnumObject(EnumObject):
     type_code = TC_BINARY_ENUM
 
 
-class StandardArray:
+class StandardArray(IgniteDataType):
     """
     Base class for array of primitives. Payload-only.
     """

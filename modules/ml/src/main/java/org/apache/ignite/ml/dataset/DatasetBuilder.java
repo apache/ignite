@@ -21,6 +21,7 @@ import java.io.Serializable;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
+import org.apache.ignite.ml.trainers.transformers.BaggingUpstreamTransformer;
 
 /**
  * A builder constructing instances of a {@link Dataset}. Implementations of this interface encapsulate logic of
@@ -48,6 +49,16 @@ public interface DatasetBuilder<K, V> {
     public <C extends Serializable, D extends AutoCloseable> Dataset<C, D> build(
         PartitionContextBuilder<K, V, C> partCtxBuilder, PartitionDataBuilder<K, V, C, D> partDataBuilder);
 
+    /**
+     * Get upstream transformers chain. This chain is applied to upstream data before it is passed
+     * to {@link PartitionDataBuilder} and {@link PartitionContextBuilder}. This is needed to allow
+     * transformation to upstream data which are agnostic of any changes that happen after.
+     * Such transformations may be used for deriving meta-algorithms such as bagging
+     * (see {@link BaggingUpstreamTransformer}).
+     *
+     * @return Upstream transformers chain.
+     */
+    public UpstreamTransformerChain<K, V> upstreamTransformersChain();
 
     /**
      * Returns new instance of DatasetBuilder using conjunction of internal filter and {@code filterToAdd}.
