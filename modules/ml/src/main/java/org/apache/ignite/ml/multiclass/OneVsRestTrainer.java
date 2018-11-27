@@ -39,7 +39,8 @@ import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 /**
  * This is a common heuristic trainer for multi-class labeled models.
  *
- * NOTE: The current implementation suffers from unbalanced training over the
+ * NOTE: The current implementation suffers from unbalanced training over the dataset due to unweighted approach
+ * during the process of reassign labels from all range of labels to 0,1.
  */
 public class OneVsRestTrainer<M extends Model<Vector, Double>>
     extends SingleLabelDatasetTrainer<MultiClassModel<M>> {
@@ -73,7 +74,7 @@ public class OneVsRestTrainer<M extends Model<Vector, Double>>
 
         List<Double> classes = extractClassLabels(datasetBuilder, lbExtractor);
 
-        if(classes.isEmpty())
+        if (classes.isEmpty())
             return getLastTrainedModelOrThrowEmptyDatasetException(newMdl);
 
         MultiClassModel<M> multiClsMdl = new MultiClassModel<>();
