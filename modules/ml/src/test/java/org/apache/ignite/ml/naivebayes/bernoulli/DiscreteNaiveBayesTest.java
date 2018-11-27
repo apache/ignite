@@ -29,7 +29,7 @@ import org.junit.Test;
 /**
  * Integration tests for Bernoulli naive Bayes algorithm with different datasets.
  */
-public class BernoulliNaiveBayesTest {
+public class DiscreteNaiveBayesTest {
     /** Precision in test checks. */
     private static final double PRECISION = 1e-2;
 
