@@ -19,53 +19,29 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteMvccTxTimeoutAbstractTest;
 
-import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
- * Test none rebalance mode.
+ * Simple cache test.
  */
-public class NoneRebalanceModeSelfTest extends GridCommonAbstractTest {
+public class GridCachePartitionedMvccTxTimeoutSelfTest extends IgniteMvccTxTimeoutAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
-        cc.setRebalanceMode(NONE);
+        cc.setCacheMode(PARTITIONED);
+        cc.setBackups(1);
+        cc.setAtomicityMode(TRANSACTIONAL);
+
+        //cacheCfg.setPreloadMode(NONE);
 
         c.setCacheConfiguration(cc);
 
         return c;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        startGrid(0);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testRemoveAll() throws Exception {
-        GridNearTransactionalCache cache = (GridNearTransactionalCache)((IgniteKernal)grid(0)).internalCache(DEFAULT_CACHE_NAME);
-
-        for (GridDhtLocalPartition part : cache.dht().topology().localPartitions())
-            assertEquals(OWNING, part.state());
-
-        grid(0).cache(DEFAULT_CACHE_NAME).removeAll();
     }
 }
