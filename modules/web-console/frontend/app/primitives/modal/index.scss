@@ -54,7 +54,6 @@
 
 .modal .modal-dialog {
     width: 650px;
-    transform: translateZ(1px);
 }
 
 .modal .modal-dialog--adjust-height {
@@ -247,4 +246,27 @@
 
 .modal--wide .modal-dialog {
     width: 900px;
+}
+
+.modal-with-ace {
+    .modal-body {
+        padding-left: 5px !important;
+    }
+
+    .modal-dialog {
+        transform: none !important;
+
+        .ace_warning:before, .ace_error:before {
+            position: absolute !important;
+            left: -7px !important;
+        }
+    }
+
+    .ace_gutter, .ace_layer {
+        overflow: visible !important;
+    }
+
+    .ace_gutter {
+        padding-left: 5px !important;
+    }
 }

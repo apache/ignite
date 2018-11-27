@@ -177,6 +177,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Store manager. */
     private CacheStoreManager storeMgr;
 
+    /** Compression manager. */
+    private CacheCompressionManager compressMgr;
+
     /** Replication manager. */
     private GridCacheDrManager drMgr;
 
@@ -321,6 +324,7 @@ public class GridCacheContext<K, V> implements Externalizable {
          * ===========================
          */
 
+        CacheCompressionManager compressMgr,
         GridCacheEventManager evtMgr,
         CacheStoreManager storeMgr,
         CacheEvictionManager evictMgr,
@@ -338,6 +342,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert cacheCfg != null;
         assert locStartTopVer != null : cacheCfg.getName();
 
+        assert compressMgr != null;
         assert grp != null;
         assert evtMgr != null;
         assert storeMgr != null;
@@ -364,6 +369,7 @@ public class GridCacheContext<K, V> implements Externalizable {
          * Managers in starting order!
          * ===========================
          */
+        this.compressMgr = add(compressMgr);
         this.evtMgr = add(evtMgr);
         this.storeMgr = add(storeMgr);
         this.evictMgr = add(evictMgr);
@@ -1230,6 +1236,13 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @return Compression manager.
+     */
+    public CacheCompressionManager compress() {
+        return compressMgr;
+    }
+
+    /**
      * Sets cache object context.
      *
      * @param cacheObjCtx Cache object context.
@@ -1247,21 +1260,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     @SuppressWarnings({"unchecked"})
     public IgnitePredicate<Cache.Entry<K, V>>[] vararg(IgnitePredicate<Cache.Entry<K, V>> p) {
         return p == null ? CU.<K, V>empty() : new IgnitePredicate[] {p};
-    }
-
-    /**
-     * Same as {@link GridFunc#isAll(Object, IgnitePredicate[])}, but safely unwraps exceptions.
-     *
-     * @param e Element.
-     * @param p Predicates.
-     * @return {@code True} if predicates passed.
-     * @throws IgniteCheckedException If failed.
-     */
-    public <K1, V1> boolean isAll(
-        GridCacheEntryEx e,
-        @Nullable IgnitePredicate<Cache.Entry<K1, V1>>[] p
-    ) throws IgniteCheckedException {
-        return F.isEmpty(p) || isAll(e.<K1, V1>wrapLazyValue(keepBinary()), p);
     }
 
     /**
@@ -2241,9 +2239,14 @@ public class GridCacheContext<K, V> implements Externalizable {
      *
      * @param affNodes All affinity nodes.
      * @param canRemap Flag indicating that 'get' should be done on a locked topology version.
+     * @param partitionId Partition ID.
      * @return Affinity node to get key from or {@code null} if there is no suitable alive node.
      */
-    @Nullable public ClusterNode selectAffinityNodeBalanced(List<ClusterNode> affNodes, boolean canRemap) {
+    @Nullable public ClusterNode selectAffinityNodeBalanced(
+        List<ClusterNode> affNodes,
+        int partitionId,
+        boolean canRemap
+    ) {
         if (!readLoadBalancingEnabled) {
             if (!canRemap) {
                 for (ClusterNode node : affNodes) {
@@ -2267,7 +2270,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         ClusterNode n0 = null;
 
         for (ClusterNode node : affNodes) {
-            if (canRemap || discovery().alive(node)) {
+            if ((canRemap || discovery().alive(node) && isOwner(node, partitionId))) {
                 if (locMacs.equals(node.attribute(ATTR_MACS)))
                     return node;
 
@@ -2279,6 +2282,16 @@ public class GridCacheContext<K, V> implements Externalizable {
         }
 
         return n0;
+    }
+
+    /**
+     *  Check that node is owner for partition.
+     * @param node Cluster node.
+     * @param partitionId Partition ID.
+     * @return {@code}
+     */
+    private boolean isOwner(ClusterNode node, int partitionId) {
+        return topology().partitionState(node.id(), partitionId) == OWNING;
     }
 
     /**
