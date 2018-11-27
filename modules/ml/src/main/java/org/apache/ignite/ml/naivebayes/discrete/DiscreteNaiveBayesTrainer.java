@@ -30,10 +30,10 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
 /**
- * Trainer for the Bernoulli naive Bayes classification model. The trainer calculates prior probabilities from the input
- * binary dataset. Prior probabilities can be also set by {@code setPriorProbabilities} or {@code
- * withEquiprobableClasses}. If {@code equiprobableClasses} is set, the probalilities of all classes will be {@code
- * 1/k}, where {@code k} is classes count.
+ * Trainer for the Discrete naive Bayes classification model. The trainer calculates prior probabilities from the input
+ * dataset. Prior probabilities can be also set by {@code setPriorProbabilities} or {@code withEquiprobableClasses}. If
+ * {@code equiprobableClasses} is set, the probalilities of all classes will be {@code 1/k}, where {@code k} is classes
+ * count.
  */
 public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<DiscreteNaiveBayesModel> {
     /** Precision to compare bucketThresholds. */
@@ -92,20 +92,20 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
                     long[][] onesCount;
 
                     int size = features.size();
-                    if (!res.onesCountPerLbl.containsKey(label)) {
+                    if (!res.valuesInBucketPerLbl.containsKey(label)) {
                         onesCount = new long[size][];
                         for (int i = 0; i < size; i++) {
                             onesCount[i] = new long[bucketThresholds[i].length + 1];
                             Arrays.fill(onesCount[i], 0L);
                         }
-                        res.onesCountPerLbl.put(label, onesCount);
+                        res.valuesInBucketPerLbl.put(label, onesCount);
                     }
                     if (!res.featureCountersPerLbl.containsKey(label)) {
                         res.featureCountersPerLbl.put(label, 0);
                     }
                     res.featureCountersPerLbl.put(label, res.featureCountersPerLbl.get(label) + 1);
 
-                    onesCount = res.onesCountPerLbl.get(label);
+                    onesCount = res.valuesInBucketPerLbl.get(label);
                     for (int j = 0; j < size; j++) {
                         double x = features.get(j);
                         int bucketNumber = toBucketNumber(x, bucketThresholds[j]);
@@ -132,7 +132,7 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
             assert !sortedLabels.isEmpty() : "The dataset should contain at least one feature";
 
             int labelCount = sortedLabels.size();
-            int featureCount = sumsHolder.onesCountPerLbl.get(sortedLabels.get(0)).length;
+            int featureCount = sumsHolder.valuesInBucketPerLbl.get(sortedLabels.get(0)).length;
 
             double[][][] probabilities = new double[labelCount][featureCount][];
             double[] classProbabilities = new double[labelCount];
@@ -143,7 +143,7 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
 
             for (Double label : sortedLabels) {
                 int count = sumsHolder.featureCountersPerLbl.get(label);
-                long[][] sum = sumsHolder.onesCountPerLbl.get(label);
+                long[][] sum = sumsHolder.valuesInBucketPerLbl.get(label);
 
                 for (int i = 0; i < featureCount; i++) {
 
@@ -183,8 +183,8 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
             return false;
         }
 
-        Optional<long[][]> optinalFirst = holder1.onesCountPerLbl.values().stream().findFirst();
-        Optional<long[][]> optinalSecond = holder2.onesCountPerLbl.values().stream().findFirst();
+        Optional<long[][]> optinalFirst = holder1.valuesInBucketPerLbl.values().stream().findFirst();
+        Optional<long[][]> optinalSecond = holder2.valuesInBucketPerLbl.values().stream().findFirst();
 
         if (optinalFirst.isPresent()) {
             if (optinalSecond.isPresent()) {

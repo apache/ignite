@@ -25,14 +25,14 @@ import org.apache.ignite.ml.math.util.MapUtil;
 public class DiscreteNaiveBayesSumsHolder implements AutoCloseable, Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = -2059362365851744206L;
-    /** Sum of all values above threshold for all features for each label */
-    Map<Double, long[][]> onesCountPerLbl = new HashMap<>();
+    /** Sums of values correspones to a particular bucket for all features for each label */
+    Map<Double, long[][]> valuesInBucketPerLbl = new HashMap<>();
     /** Rows count for each label */
     Map<Double, Integer> featureCountersPerLbl = new HashMap<>();
 
     /** Merge to current */
     DiscreteNaiveBayesSumsHolder merge(DiscreteNaiveBayesSumsHolder other) {
-        onesCountPerLbl = MapUtil.mergeMaps(onesCountPerLbl, other.onesCountPerLbl, this::sum, HashMap::new);
+        valuesInBucketPerLbl = MapUtil.mergeMaps(valuesInBucketPerLbl, other.valuesInBucketPerLbl, this::sum, HashMap::new);
         featureCountersPerLbl = MapUtil.mergeMaps(featureCountersPerLbl, other.featureCountersPerLbl, (i1, i2) -> i1 + i2, HashMap::new);
         return this;
     }
