@@ -30,6 +30,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -336,6 +337,11 @@ public abstract class CacheGetsDistributionAbstractTest extends GridCommonAbstra
         cfg.setCacheMode(cacheMode());
         cfg.setAtomicityMode(atomicityMode());
         cfg.setWriteSynchronizationMode(FULL_SYNC);
+        cfg.setReadFromBackup(true);
+        cfg.setStatisticsEnabled(true);
+
+        if (cacheMode() == CacheMode.PARTITIONED)
+            cfg.setBackups(backupsCount());
 
         return cfg;
     }
