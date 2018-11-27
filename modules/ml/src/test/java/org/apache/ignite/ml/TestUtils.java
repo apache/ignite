@@ -404,14 +404,4 @@ public class TestUtils {
     public static <T, V> Model<T, V> constantModel(V v) {
         return t -> v;
     }
-
-    /**
-     * Return model which returns value of it's input.
-     *
-     * @param <T> Type of input and output.
-     * @return Model which returns given constant.
-     */
-    public static <T> Model<T, T> identityModel() {
-        return t -> t;
-    }
 }
