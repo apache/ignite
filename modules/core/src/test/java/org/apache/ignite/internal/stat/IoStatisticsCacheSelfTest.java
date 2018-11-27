@@ -39,25 +39,25 @@ import static org.apache.ignite.internal.stat.IoStatisticsHolderIndex.HASH_PK_ID
  */
 public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
     /** */
-    protected final static String ATOMIC_CACHE_NAME = "ATOMIC_CACHE";
+    protected static final String ATOMIC_CACHE_NAME = "ATOMIC_CACHE";
 
     /** */
-    protected final static String MVCC_CACHE_NAME = "MVCC_CACHE";
+    protected static final String MVCC_CACHE_NAME = "MVCC_CACHE";
 
     /** */
-    protected final static String TRANSACTIONAL_CACHE_NAME = "TRANSACTIONAL_CACHE";
+    protected static final String TRANSACTIONAL_CACHE_NAME = "TRANSACTIONAL_CACHE";
 
     /** */
-    protected final static String CACHE1_IN_GROUP_NAME = "CACHE1_GROUP";
+    protected static final String CACHE1_IN_GROUP_NAME = "CACHE1_GROUP";
 
     /** */
-    protected final static String CACHE2_IN_GROUP_NAME = "CACHE2_GROUP";
+    protected static final String CACHE2_IN_GROUP_NAME = "CACHE2_GROUP";
 
     /** */
-    protected final static String CACHE_GROUP_NAME = "CACHE_GROUP_NAME";
+    protected static final String CACHE_GROUP_NAME = "CACHE_GROUP_NAME";
 
     /** */
-    protected final static Set<String> ALL_CACHE_GROUP_NAMES = Sets.newHashSet(
+    protected static final Set<String> ALL_CACHE_GROUP_NAMES = Sets.newHashSet(
         ATOMIC_CACHE_NAME, MVCC_CACHE_NAME, TRANSACTIONAL_CACHE_NAME, CACHE_GROUP_NAME);
 
     /** */

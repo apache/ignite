@@ -24,7 +24,7 @@ package org.apache.ignite.internal.stat;
 public class IoStatisticsCachePersistenceSelfTest extends IoStatisticsCacheSelfTest {
 
     /** {@inheritDoc} */
-    protected boolean persist(){
+    @Override protected boolean persist() {
         return true;
     }
 }
