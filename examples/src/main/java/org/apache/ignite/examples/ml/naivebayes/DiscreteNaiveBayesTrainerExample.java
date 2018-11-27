@@ -32,13 +32,13 @@ import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesModel;
 import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesTrainer;
 
 /**
- * Run naive Bayes classification model based on <a href=https://en.wikipedia.org/wiki/Naive_Bayes_classifier#Bernoulli_naive_Bayes">
+ * Run naive Bayes classification model based on <a href=https://en.wikipedia.org/wiki/Naive_Bayes_classifier#Multinomial_naive_Bayes">
  * naive Bayes classifier</a> algorithm ({@link DiscreteNaiveBayesTrainer}) over distributed cache.
  * <p>
  * Code in this example launches Ignite grid and fills the cache with test data points.
  * </p>
  * <p>
- * After that it trains the Bernoulli naive Bayes classification model based on the specified data.</p>
+ * After that it trains the Discrete naive Bayes classification model based on the specified data.</p>
  * <p>
  * Finally, this example loops over the test set of data points, applies the trained model to predict the target value,
  * compares prediction to expected outcome (ground truth), and builds
@@ -50,7 +50,7 @@ public class DiscreteNaiveBayesTrainerExample {
     /** Run example. */
     public static void main(String[] args) throws FileNotFoundException {
         System.out.println();
-        System.out.println(">>> Bernoulli naive Bayes classification model over partitioned dataset usage example started.");
+        System.out.println(">>> Discrete naive Bayes classification model over partitioned dataset usage example started.");
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
@@ -58,8 +58,10 @@ public class DiscreteNaiveBayesTrainerExample {
             IgniteCache<Integer, Vector> dataCache = new SandboxMLCache(ignite)
                 .fillCacheWith(MLSandboxDatasets.ENGLISH_VS_SCOTTISH);
 
-            System.out.println(">>> Create new Bernoulli naive Bayes classification trainer object.");
-            DiscreteNaiveBayesTrainer trainer = new DiscreteNaiveBayesTrainer();
+            double[][] thresholds = new double[][] {{.5}, {.5}, {.5}, {.5}, {.5}};
+            System.out.println(">>> Create new Discrete naive Bayes classification trainer object.");
+            DiscreteNaiveBayesTrainer trainer = new DiscreteNaiveBayesTrainer()
+                .setBucketThresholds(thresholds);
 
             System.out.println(">>> Perform the training to get the model.");
             DiscreteNaiveBayesModel mdl = trainer.fit(
@@ -69,7 +71,7 @@ public class DiscreteNaiveBayesTrainerExample {
                 (k, v) -> v.get(0)
             );
 
-            System.out.println(">>> Bernoulli Naive Bayes model: " + mdl);
+            System.out.println(">>> Discrete Naive Bayes model: " + mdl);
 
             int amountOfErrors = 0;
             int totalAmount = 0;
@@ -106,7 +108,7 @@ public class DiscreteNaiveBayesTrainerExample {
             System.out.println("\n>>> Confusion matrix is " + Arrays.deepToString(confusionMtx));
             System.out.println(">>> ---------------------------------");
 
-            System.out.println(">>> Bernoulli Naive bayes model over partitioned dataset usage example completed.");
+            System.out.println(">>> Discrete Naive bayes model over partitioned dataset usage example completed.");
         }
     }
 
