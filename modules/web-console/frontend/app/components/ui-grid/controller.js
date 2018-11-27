@@ -132,8 +132,8 @@ export default class IgniteUiGrid {
                     if (this.selectedRowsId) this.applyIncomingSelectionRowsId(this.selectedRowsId);
                 });
 
-                const ro = new ResizeObserver(() => api.core.handleWindowResize());
-                ro.observe(this.$element[0]);
+                this.resizeObserver = new ResizeObserver(() => api.core.handleWindowResize());
+                this.resizeObserver.observe(this.$element[0]);
             }
         };
 
@@ -156,6 +156,11 @@ export default class IgniteUiGrid {
 
         if (hasChanged('gridHeight') && this.grid)
             this.adjustHeight();
+    }
+
+    $onDestroy() {
+        if (this.resizeObserver)
+            this.resizeObserver.disconnect();
     }
 
     applyIncomingSelectionRows = (selected = []) => {
