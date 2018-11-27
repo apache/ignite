@@ -33,7 +33,7 @@ import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
  * Trainer for the Discrete naive Bayes classification model. The trainer calculates prior probabilities from the input
  * dataset. Prior probabilities can be also set by {@code setPriorProbabilities} or {@code withEquiprobableClasses}. If
  * {@code equiprobableClasses} is set, the probalilities of all classes will be {@code 1/k}, where {@code k} is classes
- * count.
+ * count. Also, the trainer converts feature to discrete values by using {@code bucketThresholds}.
  */
 public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<DiscreteNaiveBayesModel> {
     /** Precision to compare bucketThresholds. */
@@ -89,27 +89,27 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
                     Vector features = featureExtractor.apply(entity.getKey(), entity.getValue());
                     Double label = lbExtractor.apply(entity.getKey(), entity.getValue());
 
-                    long[][] onesCount;
+                    long[][] valuesInBucket;
 
                     int size = features.size();
                     if (!res.valuesInBucketPerLbl.containsKey(label)) {
-                        onesCount = new long[size][];
+                        valuesInBucket = new long[size][];
                         for (int i = 0; i < size; i++) {
-                            onesCount[i] = new long[bucketThresholds[i].length + 1];
-                            Arrays.fill(onesCount[i], 0L);
+                            valuesInBucket[i] = new long[bucketThresholds[i].length + 1];
+                            Arrays.fill(valuesInBucket[i], 0L);
                         }
-                        res.valuesInBucketPerLbl.put(label, onesCount);
+                        res.valuesInBucketPerLbl.put(label, valuesInBucket);
                     }
                     if (!res.featureCountersPerLbl.containsKey(label)) {
                         res.featureCountersPerLbl.put(label, 0);
                     }
                     res.featureCountersPerLbl.put(label, res.featureCountersPerLbl.get(label) + 1);
 
-                    onesCount = res.valuesInBucketPerLbl.get(label);
+                    valuesInBucket = res.valuesInBucketPerLbl.get(label);
                     for (int j = 0; j < size; j++) {
                         double x = features.get(j);
                         int bucketNumber = toBucketNumber(x, bucketThresholds[j]);
-                        ++onesCount[j][bucketNumber];
+                        ++valuesInBucket[j][bucketNumber];
                     }
                 }
                 return res;
@@ -213,7 +213,7 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
         return this;
     }
 
-    /** */
+    /** Sets buckest borders. */
     public DiscreteNaiveBayesTrainer setBucketThresholds(double[][] bucketThresholds) {
         this.bucketThresholds = bucketThresholds;
         return this;
@@ -226,8 +226,8 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
         return this;
     }
 
+    /** Returs a bucket number to which the {@code value} corresponds. */
     private int toBucketNumber(double value, double[] thresholds) {
-
         for (int i = 0; i < thresholds.length; i++) {
             if (value < thresholds[i]) {
                 return i;
