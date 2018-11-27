@@ -295,6 +295,64 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    public void testReplace() throws Exception {
+        IgniteCache<Integer, TestObject> c = jcache(0);
+
+        for (int i = 0; i < ENTRY_CNT; i++)
+            c.put(i, new TestObject(i));
+
+        for (int i = 0; i < ENTRY_CNT; i++) {
+            TestObject obj = c.get(i);
+
+            assertEquals(i, obj.val);
+        }
+
+        IgniteCache<Integer, BinaryObject> kpc = keepBinaryCache();
+
+        BinaryObjectBuilder bldr = grid(0).binary().builder(TestObject.class.getName());
+
+        bldr.setField("val", -42);
+
+        BinaryObject testObj = bldr.build();
+
+        for (int i = 0; i < ENTRY_CNT; i++) {
+            BinaryObject po = kpc.get(i);
+
+            assertEquals(i, (int)po.field("val"));
+
+            assertTrue(kpc.replace(i, po, testObj));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRemove() throws Exception {
+        IgniteCache<Integer, TestObject> c = jcache(0);
+
+        for (int i = 0; i < ENTRY_CNT; i++)
+            c.put(i, new TestObject(i));
+
+        for (int i = 0; i < ENTRY_CNT; i++) {
+            TestObject obj = c.get(i);
+
+            assertEquals(i, obj.val);
+        }
+
+        IgniteCache<Integer, BinaryObject> kpc = keepBinaryCache();
+
+        for (int i = 0; i < ENTRY_CNT; i++) {
+            BinaryObject po = kpc.get(i);
+
+            assertEquals(i, (int)po.field("val"));
+
+            assertTrue(kpc.remove(i, po));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testIterator() throws Exception {
         IgniteCache<Integer, TestObject> c = jcache(0);
 
