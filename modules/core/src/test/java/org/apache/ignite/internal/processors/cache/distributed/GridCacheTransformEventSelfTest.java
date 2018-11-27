@@ -36,6 +36,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -45,7 +46,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.eclipse.jetty.util.ConcurrentHashSet;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -96,7 +96,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     private IgniteCache<Integer, Integer>[] caches;
 
     /** Recorded events. */
-    private ConcurrentHashSet<CacheEvent> evts;
+    private GridConcurrentHashSet<CacheEvent> evts;
 
     /** Cache mode. */
     private CacheMode cacheMode;
@@ -174,7 +174,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
         this.txConcurrency = txConcurrency;
         this.txIsolation = txIsolation;
 
-        evts = new ConcurrentHashSet<>();
+        evts = new GridConcurrentHashSet<>();
 
         startGridsMultiThreaded(GRID_CNT, true);
 
