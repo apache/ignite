@@ -34,15 +34,15 @@ public enum MLSandboxDatasets {
     CLEARED_MACHINES("examples/src/main/resources/datasets/cleared_machines.csv", false, ";"),
 
     /**
-     * The health data is related to death rate based on; doctor availability, hospital availability,
-     * annual per capita income, and population density people per square mile.
+     * The health data is related to death rate based on; doctor availability, hospital availability, annual per capita
+     * income, and population density people per square mile.
      */
     MORTALITY_DATA("examples/src/main/resources/datasets/mortalitydata.csv", false, ";"),
 
     /**
      * The preprocessed Glass dataset from the Machine Learning Repository https://archive.ics.uci.edu/ml/datasets/Glass+Identification
-     * There are 3 classes with labels: 1 {building_windows_float_processed}, 3 {vehicle_windows_float_processed}, 7 {headlamps}.
-     * Feature names: 'Na-Sodium', 'Mg-Magnesium', 'Al-Aluminum', 'Ba-Barium', 'Fe-Iron'.
+     * There are 3 classes with labels: 1 {building_windows_float_processed}, 3 {vehicle_windows_float_processed}, 7
+     * {headlamps}. Feature names: 'Na-Sodium', 'Mg-Magnesium', 'Al-Aluminum', 'Ba-Barium', 'Fe-Iron'.
      */
     GLASS_IDENTIFICATION("examples/src/main/resources/datasets/glass_identification.csv", false, ";"),
 
@@ -50,7 +50,10 @@ public enum MLSandboxDatasets {
     WINE_RECOGNITION("examples/src/main/resources/datasets/wine.txt", false, ","),
 
     /** The Boston house-prices dataset. Could be found <a href="https://archive.ics.uci.edu/ml/machine-learning-databases/housing/">here</a>. */
-    BOSTON_HOUSE_PRICES("examples/src/main/resources/datasets/boston_housing_dataset.txt", false, ",");
+    BOSTON_HOUSE_PRICES("examples/src/main/resources/datasets/boston_housing_dataset.txt", false, ","),
+
+    /** Example from book Barber D. Bayesian reasoning and machine learning. Chapter 10. */
+    ENGLISH_VS_SCOTTISH("datasets/binary_dataset.csv", true, ",");
 
     /** Filename. */
     private final String filename;
@@ -73,7 +76,9 @@ public enum MLSandboxDatasets {
     }
 
     /** */
-    public String getFileName() { return filename; }
+    public String getFileName() {
+        return filename;
+    }
 
     /** */
     public boolean hasHeader() {
