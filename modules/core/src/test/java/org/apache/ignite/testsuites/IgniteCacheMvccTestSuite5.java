@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.ClusterStatePartitionedSelfTe
 import org.apache.ignite.internal.processors.cache.ClusterStateReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.ConcurrentCacheStartTest;
 import org.apache.ignite.internal.processors.cache.EntryVersionConsistencyReadThroughTest;
+import org.apache.ignite.internal.processors.cache.IgniteCachePutStackOverflowSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheStoreCollectionTest;
 import org.apache.ignite.internal.processors.cache.PartitionsExchangeOnDiscoveryHistoryOverflowTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentNodeJoinValidationTest;
@@ -64,11 +65,8 @@ public class IgniteCacheMvccTestSuite5 extends TestSuite {
 
         // Irrelevant Tx tests.
         ignoredTests.add(CacheSerializableTransactionsTest.class);
-
+        ignoredTests.add(IgniteCachePutStackOverflowSelfTest.class);
         ignoredTests.add(IgniteCacheAtomicProtocolTest.class);
-//        ignoredTests.add(GridCacheAtomicPreloadSelfTest.class);  Commented in non-mvcc suite.
-//        ignoredTests.add(IgniteCacheContainsKeyColocatedAtomicSelfTest.class);
-//        ignoredTests.add(IgniteCacheContainsKeyNearAtomicSelfTest.class);
 
         // Other non-tx tests.
         ignoredTests.add(CacheLateAffinityAssignmentNodeJoinValidationTest.class);
