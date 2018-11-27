@@ -163,6 +163,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V> extends GridCacheCo
      */
     protected final ClusterTopologyServerNotFoundException serverNotFoundError(int part, AffinityTopologyVersion topVer) {
         return new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
-            "(all partition nodes left the grid) [topVer=" + topVer + ", part" + part + ", cache=" + cctx.name() + ']');
+            "(all partition nodes left the grid) [topVer=" + topVer +
+            ", part" + part + ", cache=" + cctx.name() + ", localNodeId=" + cctx.localNodeId() + ']');
     }
 }

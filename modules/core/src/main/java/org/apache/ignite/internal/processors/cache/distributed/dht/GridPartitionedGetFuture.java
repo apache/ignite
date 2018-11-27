@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
+import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -55,7 +56,6 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
@@ -81,7 +81,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     private static IgniteLogger log;
 
     /** Transaction label. */
-    private String txLbl;
+    protected final String txLbl;
 
     /** */
     protected final MvccSnapshot mvccSnapshot;
@@ -122,7 +122,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         @Nullable String txLbl,
         @Nullable MvccSnapshot mvccSnapshot
     ) {
-        super(cctx,
+        super(
+            cctx,
             keys,
             readThrough,
             forcePrimary,
@@ -133,7 +134,9 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             skipVals,
             needVer,
             keepCacheObjects,
-            recovery);
+            recovery
+        );
+
         assert mvccSnapshot == null || cctx.mvccEnabled();
 
         this.mvccSnapshot = mvccSnapshot;
@@ -169,29 +172,38 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     public void init(AffinityTopologyVersion topVer) {
         AffinityTopologyVersion lockedTopVer = cctx.shared().lockedTopologyVersion(null);
 
+        // Can not remap if we in transaction and locked on some topology.
         if (lockedTopVer != null) {
             topVer = lockedTopVer;
 
             canRemap = false;
         }
-        else {
-            topVer = topVer.topologyVersion() > 0 ? topVer :
-                canRemap ? cctx.affinity().affinityTopologyVersion() : cctx.shared().exchange().readyAffinityVersion();
+        else{
+            // Use affinity topology version if constructor version is not specify.
+            topVer = topVer.topologyVersion() > 0 ? topVer : cctx.affinity().affinityTopologyVersion();
         }
 
-        if (!cctx.mvccEnabled() || mvccSnapshot != null)
-            initialMap(topVer);
-        else {
+        if (cctx.mvccEnabled() || mvccSnapshot == null) {
             mvccTracker = new MvccQueryTrackerImpl(cctx, canRemap);
 
-            trackable = true;
-
-            cctx.mvcc().addFuture(this, futId);
+            registrateFutureInMvccManager(this);
 
             mvccTracker.requestSnapshot(topVer, this);
         }
+        else
+            initialMap(topVer);
     }
 
+    /**
+     * @param topVer Topology version.
+     */
+    private void initialMap(AffinityTopologyVersion topVer) {
+        map(keys, Collections.emptyMap(), topVer);
+
+        markInitialized();
+    }
+
+    /** {@inheritDoc} */
     @Override public void onResponse(MvccSnapshot res) {
         AffinityTopologyVersion topVer = mvccTracker.topologyVersion();
 
@@ -200,17 +212,9 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         initialMap(topVer);
     }
 
+    /** {@inheritDoc} */
     @Override public void onError(IgniteCheckedException e) {
         onDone(e);
-    }
-
-    /**
-     * @param topVer Topology version.
-     */
-    private void initialMap(AffinityTopologyVersion topVer) {
-        map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), topVer);
-
-        markInitialized();
     }
 
     /** {@inheritDoc} */
@@ -246,10 +250,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         return found;
     }
 
-    /**
-     * @param nodeId Sender.
-     * @param res Result.
-     */
+    /** {@inheritDoc} */
     @Override public void onResult(UUID nodeId, GridNearGetResponse res) {
         for (IgniteInternalFuture<Map<K, V>> fut : futures()) {
             if (isMini(fut)) {
@@ -269,6 +270,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         if (super.onDone(res, err)) {
             if (trackable)
                 cctx.mvcc().removeFuture(futId);
+
+            MvccQueryTracker mvccTracker = this.mvccTracker;
 
             if (mvccTracker != null)
                 mvccTracker.onDone();
@@ -297,65 +300,57 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     private void map(
         Collection<KeyCacheObject> keys,
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mapped,
-        final AffinityTopologyVersion topVer
+        AffinityTopologyVersion topVer
     ) {
         Collection<ClusterNode> cacheNodes = CU.affinityNodes(cctx, topVer);
 
-        if (cacheNodes.isEmpty()) {
-            onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
-                "(all partition nodes left the grid) [topVer=" + topVer + ", cache=" + cctx.name() + ']'));
+        validate(cacheNodes, topVer);
 
-            return;
-        }
-
-        GridDhtTopologyFuture topFut = cctx.shared().exchange().lastFinishedFuture();
-
-        Throwable err = topFut != null ? topFut.validateCache(cctx, recovery, true, null, keys) : null;
-
-        if (err != null) {
-            onDone(err);
-
-            return;
-        }
-
-        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings = U.newHashMap(cacheNodes.size());
-
-        final int keysSize = keys.size();
-
-        Map<K, V> locVals = U.newHashMap(keysSize);
-
-        boolean hasRmtNodes = false;
-
-        // Assign keys to primary nodes.
-        for (KeyCacheObject key : keys)
-            hasRmtNodes |= map(key, mappings, locVals, topVer, mapped);
-
+        // Future can be alredy done with some exception.
         if (isDone())
             return;
 
+        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings = U.newHashMap(cacheNodes.size());
+
+        int keysSize = keys.size();
+
+        // Map for local (key,value) pairs.
+        Map<K, V> locVals = U.newHashMap(keysSize);
+
+        // True if we have remote nodes after key mapping complete.
+        boolean hasRmtNodes = false;
+
+        // Assign keys to nodes.
+        for (KeyCacheObject key : keys)
+            hasRmtNodes |= map(key, topVer, mappings, mapped, locVals);
+
+        // Future can be alredy done with some exception.
+        if (isDone())
+            return;
+
+        // Add local read (key,value) in result.
         if (!locVals.isEmpty())
             add(new GridFinishedFuture<>(locVals));
 
-        if (hasRmtNodes) {
-            if (!trackable) {
-                trackable = true;
+        // If we have remote nodes in mapping we should registrate future in mvcc manager.
+        if (hasRmtNodes)
+            registrateFutureInMvccManager(this);
 
-                cctx.mvcc().addFuture(this, futId);
-            }
-        }
-
-        // Create mini futures.
+        // Create mini futures after mapping to remote nodes.
         for (Map.Entry<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> entry : mappings.entrySet()) {
-            final ClusterNode n = entry.getKey();
+            // Node for request.
+            ClusterNode n = entry.getKey();
 
-            final LinkedHashMap<KeyCacheObject, Boolean> mappedKeys = entry.getValue();
+            // Keys for request.
+            LinkedHashMap<KeyCacheObject, Boolean> mappedKeys = entry.getValue();
 
             assert !mappedKeys.isEmpty();
 
             // If this is the primary or backup node for the keys.
             if (n.isLocal()) {
-                final GridDhtFuture<Collection<GridCacheEntryInfo>> fut =
-                    cache().getDhtAsync(n.id(),
+                GridDhtFuture<Collection<GridCacheEntryInfo>> fut = cache()
+                    .getDhtAsync(
+                        n.id(),
                         -1,
                         mappedKeys,
                         false,
@@ -367,9 +362,10 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         skipVals,
                         recovery,
                         txLbl,
-                        mvccSnapshot());
+                        mvccSnapshot()
+                    );
 
-                final Collection<Integer> invalidParts = fut.invalidPartitions();
+                Collection<Integer> invalidParts = fut.invalidPartitions();
 
                 if (!F.isEmpty(invalidParts)) {
                     Collection<KeyCacheObject> remapKeys = new ArrayList<>(keysSize);
@@ -445,74 +441,133 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     }
 
     /**
-     * @param mappings Mappings.
+     * @param nodesToKeysMapping Mappings.
      * @param key Key to map.
      * @param locVals Local values.
      * @param topVer Topology version.
-     * @param mapped Previously mapped.
+     * @param missedNodesToKeysMapping Previously mapped.
      * @return {@code True} if has remote nodes.
      */
     private boolean map(
         KeyCacheObject key,
-        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings,
-        Map<K, V> locVals,
         AffinityTopologyVersion topVer,
-        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mapped
+        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> nodesToKeysMapping,
+        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> missedNodesToKeysMapping,
+        Map<K, V> locVals
     ) {
         int part = cctx.affinity().partition(key);
 
         List<ClusterNode> affNodes = cctx.affinity().nodesByPartition(part, topVer);
 
+        // Failed if none affinity node found.
         if (affNodes.isEmpty()) {
             onDone(serverNotFoundError(part, topVer));
 
             return false;
         }
 
-        // Local get cannot be used with MVCC as local node can contain some visible version which is not latest.
-        boolean fastLocGet = !cctx.mvccEnabled() && (!forcePrimary || affNodes.get(0).isLocal()) &&
-            cctx.reserveForFastLocalGet(part, topVer);
+        // Try to read key localy if we can.
+        if (tryLocalGet(key, part, topVer, affNodes, locVals))
+            return false;
 
-        if (fastLocGet) {
-            try {
-                if (localGet(topVer, key, part, locVals))
-                    return false;
-            }
-            finally {
-                cctx.releaseForFastLocalGet(part, topVer);
-            }
-        }
-
+        // Get remote node for request for this key.
         ClusterNode node = cctx.selectAffinityNodeBalanced(affNodes, part, canRemap);
 
+        // Failed if none remote node found.
         if (node == null) {
             onDone(serverNotFoundError(part, topVer));
 
             return false;
         }
 
+        // The node still can be local, see details implementation of #tryLocalGet().
         boolean remote = !node.isLocal();
 
-        LinkedHashMap<KeyCacheObject, Boolean> keys = mapped.get(node);
+        // Check retry counter, bound for avoid inifinit remap.
+        if (!checkRetryPermits(key, node, missedNodesToKeysMapping))
+            return false;
 
-        if (keys != null && keys.containsKey(key)) {
-            if (REMAP_CNT_UPD.incrementAndGet(this) > MAX_REMAP_CNT) {
-                onDone(new ClusterTopologyCheckedException("Failed to remap key to a new node after " +
-                    MAX_REMAP_CNT + " attempts (key got remapped to the same node) [key=" + key + ", node=" +
-                    U.toShortString(node) + ", mappings=" + mapped + ']'));
+        addNodeMapping(key, node, nodesToKeysMapping);
 
-                return false;
-            }
-        }
+        return remote;
+    }
 
+    /**
+     *
+     * @param key Key.
+     * @param node Mapped node.
+     * @param mappings Full node mapping.
+     */
+    private void addNodeMapping(
+        KeyCacheObject key,
+        ClusterNode node,
+        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings
+    ) {
         LinkedHashMap<KeyCacheObject, Boolean> old = mappings.get(node);
 
         if (old == null)
             mappings.put(node, old = new LinkedHashMap<>(3, 1f));
 
         old.put(key, false);
+    }
 
-        return remote;
+    /**
+     *
+     * @param key Key.
+     * @param node Mapped node.
+     * @param missedNodesToKeysMapping Full node mapping.
+     */
+    private boolean checkRetryPermits(
+        KeyCacheObject key,
+        ClusterNode node,
+        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> missedNodesToKeysMapping
+    ) {
+        LinkedHashMap<KeyCacheObject, Boolean> keys = missedNodesToKeysMapping.get(node);
+
+        if (keys != null && keys.containsKey(key)) {
+            if (REMAP_CNT_UPD.incrementAndGet(this) > MAX_REMAP_CNT) {
+                onDone(new ClusterTopologyCheckedException("Failed to remap key to a new node after " +
+                    MAX_REMAP_CNT + " attempts (key got remapped to the same node) [key=" + key + ", node=" +
+                    U.toShortString(node) + ", mappings=" + missedNodesToKeysMapping + ']'));
+
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     *
+     * @param key Key.
+     * @param part Partition.
+     * @param topVer Topology version.
+     * @param affNodes Affynity nodes.
+     * @param locVals Map for local (key,value) pairs.
+     */
+    private boolean tryLocalGet(
+        KeyCacheObject key,
+        int part,
+        AffinityTopologyVersion topVer,
+        List<ClusterNode> affNodes,
+        Map<K, V> locVals
+    ) {
+        // Local get cannot be used with MVCC as local node can contain some visible version which is not latest.
+        boolean fastLocGet = !cctx.mvccEnabled() &&
+            (!forcePrimary || affNodes.get(0).isLocal()) &&
+            cctx.reserveForFastLocalGet(part, topVer);
+
+        if (fastLocGet) {
+            try {
+                if (localGet(topVer, key, part, locVals))
+                    return true;
+            }
+            finally {
+                cctx.releaseForFastLocalGet(part, topVer);
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -662,6 +717,38 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     }
 
     /**
+     * @param fut Future.
+     */
+    private void registrateFutureInMvccManager(GridCacheFuture<?> fut) {
+        if (!trackable) {
+            trackable = true;
+
+            cctx.mvcc().addFuture(fut, futId);
+        }
+    }
+
+    /**
+     *
+     * @param cacheNodes Cache affynity nodes.
+     * @param topVer Topology version.
+     */
+    private void validate(Collection<ClusterNode> cacheNodes, AffinityTopologyVersion topVer) {
+        if (cacheNodes.isEmpty()) {
+            onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
+                "(all partition nodes left the grid) [topVer=" + topVer + ", cache=" + cctx.name() + ']'));
+
+            return;
+        }
+
+        GridDhtTopologyFuture topFut = cctx.shared().exchange().lastFinishedFuture();
+
+        Throwable err = topFut != null ? topFut.validateCache(cctx, recovery, true, null, keys) : null;
+
+        if (err != null)
+            onDone(err);
+    }
+
+    /**
      * @return Near cache.
      */
     private GridDhtCacheAdapter<K, V> cache() {
@@ -724,13 +811,13 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
      * node as opposed to multiple nodes.
      */
     private class MiniFuture extends GridFutureAdapter<Map<K, V>> {
-        /** */
+        /** Mini-future id. */
         private final IgniteUuid futId = IgniteUuid.randomUuid();
 
-        /** Node ID. */
+        /** Mapped node. */
         private final ClusterNode node;
 
-        /** Keys. */
+        /** Mapped keys. */
         @GridToStringInclude
         private final LinkedHashMap<KeyCacheObject, Boolean> keys;
 
@@ -749,8 +836,12 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
          * @param topVer Topology version.
          * @param postProcessingClos Post processing closure.
          */
-        MiniFuture(ClusterNode node, LinkedHashMap<KeyCacheObject, Boolean> keys, AffinityTopologyVersion topVer,
-            @Nullable IgniteInClosure<Collection<GridCacheEntryInfo>> postProcessingClos) {
+        MiniFuture(
+            ClusterNode node,
+            LinkedHashMap<KeyCacheObject, Boolean> keys,
+            AffinityTopologyVersion topVer,
+            @Nullable IgniteInClosure<Collection<GridCacheEntryInfo>> postProcessingClos
+        ) {
             this.node = node;
             this.keys = keys;
             this.topVer = topVer;
@@ -808,24 +899,24 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 onDone(Collections.<K, V>emptyMap());
             }
             else {
-                AffinityTopologyVersion updTopVer =
-                    new AffinityTopologyVersion(Math.max(topVer.topologyVersion() + 1, cctx.discovery().topologyVersion()));
+                long maxTopVer = Math.max(topVer.topologyVersion() + 1, cctx.discovery().topologyVersion());
 
-                cctx.shared().exchange().affinityReadyFuture(updTopVer).listen(
-                    new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                        @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
+                AffinityTopologyVersion awaitTopVer = new AffinityTopologyVersion(maxTopVer);
+
+                cctx.shared().exchange()
+                    .affinityReadyFuture(awaitTopVer)
+                    .listen((f) -> {
                             try {
                                 // Remap.
-                                map(keys.keySet(), F.t(node, keys), fut.get());
+                                map(keys.keySet(), F.t(node, keys), f.get());
 
                                 onDone(Collections.<K, V>emptyMap());
                             }
-                            catch (IgniteCheckedException e) {
-                                GridPartitionedGetFuture.this.onDone(e);
+                            catch (IgniteCheckedException ex) {
+                                GridPartitionedGetFuture.this.onDone(ex);
                             }
                         }
-                    }
-                );
+                    );
             }
         }
 
