@@ -32,6 +32,7 @@ import javax.cache.CacheException;
 import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -814,27 +815,21 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
         IgniteCache cache = node.cache(DEFAULT_CACHE_NAME);
 
-        for (int partition : parts) {
-            ScanQuery qry = new ScanQuery();
-            qry.setPartition(partition);
+        String msg = loc ? "forced local query" : "partition has been lost";
+        GridTestUtils.assertThrows(null, () -> {
+            List res = null;
+            for (int partition : parts) {
+                ScanQuery qry = new ScanQuery();
+                qry.setPartition(partition);
 
-            if (loc)
-                qry.setLocal(true);
+                if (loc)
+                    qry.setLocal(true);
 
-            try {
-                cache.query(qry).getAll();
-            } catch (Throwable e) {
-                boolean isExpectedException = loc && e.getMessage().contains("forced local query") ||
-                    !loc && e.getMessage().contains("partition has been lost");
-
-                if (isExpectedException)
-                    return;
-                else
-                    throw e;
+                res = cache.query(qry).getAll();
             }
-        }
 
-        fail("Query failure is expected.");
+            return res;
+        }, IgniteCheckedException.class, msg);
     }
 
     /** */
