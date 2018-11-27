@@ -15,27 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.local;
+package org.apache.ignite.internal.processors.cache.distributed;
 
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.internal.processors.cache.GridCacheBasicStoreAbstractTest;
-import org.apache.ignite.testframework.MvccFeatureChecker;
-
-import static org.apache.ignite.cache.CacheMode.LOCAL;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedMvccTxMultiThreadedSelfTest;
 
 /**
- * Test store with local cache.
+ *
  */
-public class GridCacheLocalBasicStoreSelfTest extends GridCacheBasicStoreAbstractTest {
+public class GridCachePartitionedNearDisabledMvccTxMultiThreadedSelfTest
+    extends GridCachePartitionedMvccTxMultiThreadedSelfTest {
     /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
-
-        super.setUp();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return LOCAL;
+    @Override protected boolean nearEnabled() {
+        return false;
     }
 }

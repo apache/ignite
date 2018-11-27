@@ -15,57 +15,46 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.local;
+package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
-import org.apache.ignite.internal.processors.cache.IgniteTxSingleThreadedAbstractTest;
-import org.apache.ignite.testframework.MvccFeatureChecker;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import org.apache.ignite.internal.processors.cache.IgniteMvccTxSingleThreadedAbstractTest;
 
-import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 
 /**
- * Tests for local transactions.
+ * Tests for partitioned cache transactions.
  */
-public class GridCacheLocalTxSingleThreadedSelfTest extends IgniteTxSingleThreadedAbstractTest {
-    /** {@inheritDoc} */
-    @Override public void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
-
-        super.beforeTestsStarted();
-    }
-
-    /** Cache debug flag. */
-    private static final boolean CACHE_DEBUG = false;
-
+public class GridCachePartitionedMvccTxSingleThreadedSelfTest extends IgniteMvccTxSingleThreadedAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        c.getTransactionConfiguration().setTxSerializableEnabled(true);
+        CacheConfiguration<?, ?> ccfg = defaultCacheConfiguration();
 
-        CacheConfiguration cc = defaultCacheConfiguration();
+        ccfg.setCacheMode(PARTITIONED);
+        ccfg.setBackups(1);
+        ccfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
 
-        cc.setCacheMode(LOCAL);
+        ccfg.setNearConfiguration(null);
+        ccfg.setEvictionPolicy(null);
 
-        cc.setEvictionPolicy(null);
+        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC);
 
-        c.setCacheConfiguration(cc);
+        ccfg.setRebalanceMode(NONE);
 
-        // Disable log4j debug by default.
-        Logger log4j = Logger.getLogger(GridCacheProcessor.class.getPackage().getName());
+        cfg.setCacheConfiguration(ccfg);
 
-        log4j.setLevel(CACHE_DEBUG ? Level.DEBUG : Level.INFO);
-
-        return c;
+        return cfg;
     }
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
-        return 1;
+        return 4;
     }
 
     /** {@inheritDoc} */
@@ -80,7 +69,7 @@ public class GridCacheLocalTxSingleThreadedSelfTest extends IgniteTxSingleThread
 
     /** {@inheritDoc} */
     @Override protected int iterations() {
-        return 20;
+        return 3000;
     }
 
     /** {@inheritDoc} */
