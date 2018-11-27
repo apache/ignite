@@ -29,7 +29,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  * feature, {@code p_i} is a prior probability probability {@code p(x|C_k)}. Returns the number of the most possible
  * class.
  */
-public class BernoulliNaiveBayesModel implements Model<Vector, Double>, Exportable<BernoulliNaiveBayesModel>, Serializable {
+public class DiscreteNaiveBayesModel implements Model<Vector, Double>, Exportable<DiscreteNaiveBayesModel>, Serializable {
     /** */
     private static final long serialVersionUID = -127386523291350345L;
     /** Means of features for all classes. kth row contains means for labels[k] class. */
@@ -50,7 +50,7 @@ public class BernoulliNaiveBayesModel implements Model<Vector, Double>, Exportab
      * @param sumsHolder Amount values which are abouve the threshold per label.
      * @param labels Labels.
      */
-    public BernoulliNaiveBayesModel(double[][][] probabilities, double[] classProbabilities, double[] labels,
+    public DiscreteNaiveBayesModel(double[][][] probabilities, double[] classProbabilities, double[] labels,
         double[][] bucketThresholds, BernoulliNaiveBayesSumsHolder sumsHolder) {
         this.probabilities = probabilities;
         this.classProbabilities = classProbabilities;
@@ -60,7 +60,7 @@ public class BernoulliNaiveBayesModel implements Model<Vector, Double>, Exportab
     }
 
     /** {@inheritDoc} */
-    @Override public <P> void saveModel(Exporter<BernoulliNaiveBayesModel, P> exporter, P path) {
+    @Override public <P> void saveModel(Exporter<DiscreteNaiveBayesModel, P> exporter, P path) {
         exporter.save(this, path);
     }
 

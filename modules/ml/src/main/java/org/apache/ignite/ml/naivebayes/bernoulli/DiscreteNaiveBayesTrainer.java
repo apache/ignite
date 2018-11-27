@@ -35,7 +35,7 @@ import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
  * withEquiprobableClasses}. If {@code equiprobableClasses} is set, the probalilities of all classes will be {@code
  * 1/k}, where {@code k} is classes count.
  */
-public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<BernoulliNaiveBayesModel> {
+public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<DiscreteNaiveBayesModel> {
     /** Precision to compare bucketThresholds. */
     private static final double PRECISION = 1e-10;
     /* Preset prior probabilities. */
@@ -53,13 +53,13 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Bernoul
      * @param lbExtractor Label extractor.
      * @return Model.
      */
-    @Override public <K, V> BernoulliNaiveBayesModel fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> DiscreteNaiveBayesModel fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
         return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(BernoulliNaiveBayesModel mdl) {
+    @Override protected boolean checkState(DiscreteNaiveBayesModel mdl) {
 
         if (mdl.getBucketThresholds().length != bucketThresholds.length) {
             return false;
@@ -75,7 +75,7 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Bernoul
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V> BernoulliNaiveBayesModel updateModel(BernoulliNaiveBayesModel mdl,
+    @Override protected <K, V> DiscreteNaiveBayesModel updateModel(DiscreteNaiveBayesModel mdl,
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
@@ -169,7 +169,7 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Bernoul
                 labels[lbl] = label;
                 ++lbl;
             }
-            return new BernoulliNaiveBayesModel(probabilities, classProbabilities, labels, bucketThresholds, sumsHolder);
+            return new DiscreteNaiveBayesModel(probabilities, classProbabilities, labels, bucketThresholds, sumsHolder);
         }
         catch (Exception e) {
             throw new RuntimeException(e);

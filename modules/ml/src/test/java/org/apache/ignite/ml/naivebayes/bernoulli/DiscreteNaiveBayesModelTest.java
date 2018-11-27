@@ -22,8 +22,8 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
-/** Tests for {@code BernoulliNaiveBayesModel} */
-public class BernoulliNaiveBayesModelTest {
+/** Tests for {@code DiscreteNaiveBayesModel} */
+public class DiscreteNaiveBayesModelTest {
     /** */
     @Test
     public void testPredictWithTwoClasses() {
@@ -36,7 +36,7 @@ public class BernoulliNaiveBayesModelTest {
 
         double[] classProbabilities = new double[] {6. / 13, 7. / 13};
         double[][] thresholds = new double[][] {{.5}, {.5}, {.5}, {.5}, {.5}};
-        BernoulliNaiveBayesModel mdl = new BernoulliNaiveBayesModel(probabilities, classProbabilities, new double[] {first, second}, thresholds, new BernoulliNaiveBayesSumsHolder());
+        DiscreteNaiveBayesModel mdl = new DiscreteNaiveBayesModel(probabilities, classProbabilities, new double[] {first, second}, thresholds, new BernoulliNaiveBayesSumsHolder());
         Vector observation = VectorUtils.of(1, 0, 1, 1, 0);
 
         Assert.assertEquals(second, mdl.apply(observation), 0.0001);

@@ -55,7 +55,7 @@ public class BernoulliNaiveBayesTest {
         double[][] thresholds = new double[][] {{.5}, {.5}, {.5}, {.5}, {.5}};
         DiscreteNaiveBayesTrainer trainer = new DiscreteNaiveBayesTrainer().setBucketThresholds(thresholds);
 
-        BernoulliNaiveBayesModel model = trainer.fit(
+        DiscreteNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(data, 2),
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[v.length - 1]

@@ -28,7 +28,7 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.examples.ml.util.MLSandboxDatasets;
 import org.apache.ignite.examples.ml.util.SandboxMLCache;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.naivebayes.bernoulli.BernoulliNaiveBayesModel;
+import org.apache.ignite.ml.naivebayes.bernoulli.DiscreteNaiveBayesModel;
 import org.apache.ignite.ml.naivebayes.bernoulli.DiscreteNaiveBayesTrainer;
 
 /**
@@ -62,7 +62,7 @@ public class BernoulliNaiveBayesTrainerExample {
             DiscreteNaiveBayesTrainer trainer = new DiscreteNaiveBayesTrainer();
 
             System.out.println(">>> Perform the training to get the model.");
-            BernoulliNaiveBayesModel mdl = trainer.fit(
+            DiscreteNaiveBayesModel mdl = trainer.fit(
                 ignite,
                 dataCache,
                 (k, v) -> v.copyOfRange(1, v.size()),

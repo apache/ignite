@@ -71,7 +71,7 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
     @Test
     public void testReturnsCorrectLabelProbalities() {
 
-        BernoulliNaiveBayesModel model = trainer.fit(
+        DiscreteNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[v.length - 1]
@@ -88,7 +88,7 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
             .setBucketThresholds(thresholds)
             .withEquiprobableClasses();
 
-        BernoulliNaiveBayesModel model = trainer.fit(
+        DiscreteNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[v.length - 1]
@@ -105,7 +105,7 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
             .setBucketThresholds(thresholds)
             .setPriorProbabilities(priorProbabilities);
 
-        BernoulliNaiveBayesModel model = trainer.fit(
+        DiscreteNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[v.length - 1]
@@ -122,7 +122,7 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
             {{0, 1}, {3. / 7, 4. / 7}, {4. / 7, 3. / 7}, {2. / 7, 5. / 7}, {4. / 7, 3. / 7,}}
         };
 
-        BernoulliNaiveBayesModel model = trainer.fit(
+        DiscreteNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[v.length - 1]
