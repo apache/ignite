@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.EntryVersionConsistencyReadTh
 import org.apache.ignite.internal.processors.cache.IgniteCacheStoreCollectionTest;
 import org.apache.ignite.internal.processors.cache.PartitionsExchangeOnDiscoveryHistoryOverflowTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentNodeJoinValidationTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheTxIteratorSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.NotMappedPartitionInTxTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.IgniteCacheAtomicProtocolTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.CacheManualRebalancingTest;
@@ -59,6 +60,7 @@ public class IgniteCacheMvccTestSuite5 extends TestSuite {
         ignoredTests.add(EntryVersionConsistencyReadThroughTest.class);
         ignoredTests.add(ClusterReadOnlyModeTest.class);
         ignoredTests.add(NotMappedPartitionInTxTest.class);
+        ignoredTests.add(IgniteCacheTxIteratorSelfTest.class);
 
         // Irrelevant Tx tests.
         ignoredTests.add(CacheSerializableTransactionsTest.class);
