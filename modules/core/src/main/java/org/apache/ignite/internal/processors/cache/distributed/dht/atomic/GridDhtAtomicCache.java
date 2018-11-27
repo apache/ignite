@@ -42,7 +42,6 @@ import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -110,7 +109,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityPermission;
@@ -138,10 +136,6 @@ import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRIMARY;
 public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
-
-    //TODO: write proper version for value
-    /** */
-    private static final IgniteProductVersion VALIDATE_CACHES_SINCE = IgniteProductVersion.fromString("2.7.0");
 
     /** Deferred update response buffer size. */
     private static final int DEFERRED_UPDATE_RESPONSE_BUFFER_SIZE =
@@ -1779,33 +1773,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             if (!req.topologyLocked()) {
                                 // Can not wait for topology future since it will break
                                 // GridNearAtomicCheckUpdateRequest processing.
-                                remap = !top.topologyVersionFuture().isDone() ||
+                                remap = !top.topologyVersionFuture().exchangeDone() ||
                                     needRemap(req.topologyVersion(), top.readyTopologyVersion(), req.keys());
                             }
 
                             if (!remap) {
-                                boolean validateCache = needCacheValidation(node);
-
-                                if (validateCache) {
-                                    GridDhtTopologyFuture topFut = top.topologyVersionFuture();
-
-                                    assert topFut.isDone() : topFut;
-
-                                    Throwable err = topFut.validateCache(ctx, req.recovery(), false, null, null);
-
-                                    if (err != null) {
-                                        IgniteCheckedException e = new IgniteCheckedException(err);
-
-                                        res.error(e);
-
-                                        completionCb.apply(req, res);
-
-                                        return;
-                                    }
-
-                                    break;
-                                }
-
                                 update(node, locked, req, res, updDhtRes);
 
                                 dhtFut = updDhtRes.dhtFuture();
@@ -3662,17 +3634,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             U.error(msgLog, "Failed to send near update response [futId=" + res.futureId() +
                 ", node=" + nodeId + ", res=" + res + ']', e);
         }
-    }
-
-    /**
-     * Returns {@code true} if cache validation needed.
-     *
-     * @return {@code True} if cache should be validated, {@code false} - otherwise.
-     */
-    private boolean needCacheValidation(ClusterNode node) {
-        IgniteProductVersion ver = node.version();
-
-        return ver.compareToIgnoreTimestamp(VALIDATE_CACHES_SINCE) >= 0;
     }
 
     /** {@inheritDoc} */

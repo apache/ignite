@@ -59,9 +59,6 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** */
     private static final int ALLOW_WAIT_TOP_FUT_FLAG_MASK = 0x10;
 
-    /** Recovery value flag. */
-    private static final int RECOVERY_FLAG_MASK = 0x40;
-
     /** Future ID. */
     private IgniteUuid futId;
 
@@ -130,8 +127,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         int taskNameHash,
         boolean firstClientReq,
         boolean allowWaitTopFut,
-        boolean addDepInfo,
-        boolean recovery
+        boolean addDepInfo
     ) {
         super(tx,
             timeout,
@@ -158,7 +154,6 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         setFlag(explicitLock, EXPLICIT_LOCK_FLAG_MASK);
         setFlag(firstClientReq, FIRST_CLIENT_REQ_FLAG_MASK);
         setFlag(allowWaitTopFut, ALLOW_WAIT_TOP_FUT_FLAG_MASK);
-        setFlag(recovery, RECOVERY_FLAG_MASK);
     }
 
     /**
@@ -167,20 +162,6 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
      */
     public boolean allowWaitTopologyFuture() {
         return isFlag(ALLOW_WAIT_TOP_FUT_FLAG_MASK);
-    }
-
-    /**
-     * @return Recovery flag.
-     */
-    public final boolean recovery() {
-        return isFlag(RECOVERY_FLAG_MASK);
-    }
-
-    /**
-     * @param val Recovery flag.
-     */
-    public void recovery(boolean val) {
-        setFlag(val, RECOVERY_FLAG_MASK);
     }
 
     /**

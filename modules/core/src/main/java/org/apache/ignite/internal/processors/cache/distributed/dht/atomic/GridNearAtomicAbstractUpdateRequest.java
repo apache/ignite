@@ -396,14 +396,14 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     }
 
     /**
-     * @return Recovery flag.
+     * @return Keep binary flag.
      */
     public final boolean recovery() {
         return isFlag(RECOVERY_FLAG_MASK);
     }
 
     /**
-     * @param val Recovery flag.
+     * @param val Keep binary flag.
      */
     public void recovery(boolean val) {
         setFlag(val, RECOVERY_FLAG_MASK);

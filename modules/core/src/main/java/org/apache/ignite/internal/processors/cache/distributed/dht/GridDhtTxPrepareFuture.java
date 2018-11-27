@@ -91,7 +91,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
@@ -104,7 +103,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOO
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
-import static org.apache.ignite.internal.util.lang.GridFunc.isEmpty;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 
 /**
@@ -115,10 +113,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     implements GridCacheVersionedFuture<GridNearTxPrepareResponse>, IgniteDiagnosticAware {
     /** */
     private static final long serialVersionUID = 0L;
-
-    //TODO: write proper version for value
-    /** */
-    private static final IgniteProductVersion VALIDATE_CACHES_SINCE = IgniteProductVersion.fromString("2.7.0");
 
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
@@ -1051,24 +1045,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
         this.req = req;
 
-        ClusterNode node = cctx.discovery().node(tx.topologyVersion(), tx.nearNodeId());
-
-        boolean validateCache = needCacheValidation(node);
-
-        if (validateCache) {
-            GridDhtTopologyFuture topFut = cctx.exchange().lastFinishedFuture();
-
-            if (topFut != null && !isEmpty(req.writes())) {
-                // All caches either read only or not. So validation of one cache context is enough.
-                GridCacheContext ctx = F.first(req.writes()).context();
-
-                Throwable err = topFut.validateCache(ctx, req.recovery(), isEmpty(req.writes()), null, null);
-
-                if (err != null)
-                    onDone(null, new IgniteCheckedException(err));
-            }
-        }
-
         boolean ser = tx.serializable() && tx.optimistic();
 
         if (!F.isEmpty(req.writes()) || (ser && !F.isEmpty(req.reads()))) {
@@ -1098,18 +1074,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         }
 
         mapIfLocked();
-    }
-
-    /**
-     * Returns {@code true} if cache validation needed.
-     *
-     * @param node Originatiing node.
-     * @return {@code True} if cache should be validated, {@code false} - otherwise.
-     */
-    private boolean needCacheValidation(ClusterNode node) {
-        IgniteProductVersion ver = node.version();
-
-        return ver.compareToIgnoreTimestamp(VALIDATE_CACHES_SINCE) >= 0;
     }
 
     /**
