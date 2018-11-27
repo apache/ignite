@@ -34,7 +34,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SECURITY_COMPATIBILITY_MODE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE;
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 
@@ -243,42 +242,6 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
         finally {
             stopAllGrids();
         }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testServiceCompatibilityEnabled() throws Exception {
-        String backup = System.getProperty(IGNITE_SERVICES_COMPATIBILITY_MODE);
-
-        try {
-            doTestServiceCompatibilityEnabled(true, null, true);
-            doTestServiceCompatibilityEnabled(false, null, true);
-            doTestServiceCompatibilityEnabled(null, false, true);
-            doTestServiceCompatibilityEnabled(true, false, true);
-            doTestServiceCompatibilityEnabled(null, true, true);
-            doTestServiceCompatibilityEnabled(false, true, true);
-
-            doTestServiceCompatibilityEnabled(true, true, false);
-            doTestServiceCompatibilityEnabled(false, false, false);
-            doTestServiceCompatibilityEnabled(null, null, false);
-        }
-        finally {
-            if (backup != null)
-                System.setProperty(IGNITE_SERVICES_COMPATIBILITY_MODE, backup);
-            else
-                System.clearProperty(IGNITE_SERVICES_COMPATIBILITY_MODE);
-        }
-    }
-
-    /**
-     * @param first Service compatibility enabled flag for first node.
-     * @param second Service compatibility enabled flag for second node.
-     * @param fail Fail flag.
-     * @throws Exception If failed.
-     */
-    private void doTestServiceCompatibilityEnabled(Object first, Object second, boolean fail) throws Exception {
-        doTestCompatibilityEnabled(IGNITE_SERVICES_COMPATIBILITY_MODE, first, second, fail);
     }
 
     /**

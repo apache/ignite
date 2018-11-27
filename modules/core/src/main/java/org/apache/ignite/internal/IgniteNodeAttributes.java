@@ -174,9 +174,6 @@ public final class IgniteNodeAttributes {
     /** Late affinity assignment mode. */
     public static final String ATTR_LATE_AFFINITY_ASSIGNMENT = ATTR_PREFIX + ".cache.lateAffinity";
 
-    /** Ignite services compatibility mode (can be {@code null}). */
-    public static final String ATTR_SERVICES_COMPATIBILITY_MODE = ATTR_PREFIX + ".services.compatibility.enabled";
-
     /** Late affinity assignment mode. */
     public static final String ATTR_ACTIVE_ON_START = ATTR_PREFIX + ".active.on.start";
 
