@@ -79,10 +79,10 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
-        try (Dataset<EmptyContext, BernoulliNaiveBayesSumsHolder> dataset = datasetBuilder.build(
+        try (Dataset<EmptyContext, DiscreteNaiveBayesSumsHolder> dataset = datasetBuilder.build(
             (upstream, upstreamSize) -> new EmptyContext(),
             (upstream, upstreamSize, ctx) -> {
-                BernoulliNaiveBayesSumsHolder res = new BernoulliNaiveBayesSumsHolder();
+                DiscreteNaiveBayesSumsHolder res = new DiscreteNaiveBayesSumsHolder();
                 while (upstream.hasNext()) {
                     UpstreamEntry<K, V> entity = upstream.next();
 
@@ -114,9 +114,9 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
                 }
                 return res;
             })) {
-            BernoulliNaiveBayesSumsHolder sumsHolder = dataset.compute(t -> t, (a, b) -> {
+            DiscreteNaiveBayesSumsHolder sumsHolder = dataset.compute(t -> t, (a, b) -> {
                 if (a == null)
-                    return b == null ? new BernoulliNaiveBayesSumsHolder() : b;
+                    return b == null ? new DiscreteNaiveBayesSumsHolder() : b;
                 if (b == null)
                     return a;
                 return a.merge(b);
@@ -177,8 +177,8 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
 
     }
 
-    /** Checks that two {@code BernoulliNaiveBayesSumsHolder} contain the same lengths of future vectors. */
-    private boolean checkSumsHolder(BernoulliNaiveBayesSumsHolder holder1, BernoulliNaiveBayesSumsHolder holder2) {
+    /** Checks that two {@code DiscreteNaiveBayesSumsHolder} contain the same lengths of future vectors. */
+    private boolean checkSumsHolder(DiscreteNaiveBayesSumsHolder holder1, DiscreteNaiveBayesSumsHolder holder2) {
         if (holder1 == null || holder2 == null) {
             return false;
         }
