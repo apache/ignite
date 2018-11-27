@@ -34,6 +34,8 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -103,6 +105,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_EXPIRED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_LOCKED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
@@ -136,6 +139,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
     /** */
     private static final byte IS_EVICT_DISABLED = 0x04;
+
+    /** */
+    private static final boolean DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT =
+        Boolean.parseBoolean(System.getProperty(IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT, "false"));
 
     /** */
     public static final GridCacheAtomicVersionComparator ATOMIC_VER_COMPARATOR = new GridCacheAtomicVersionComparator();
@@ -1521,16 +1528,17 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             old = oldValPresent ? oldVal : this.val;
 
+            if(intercept)
+                intercept = !skipInterceptor(explicitVer);
+
             if (intercept) {
                 val0 = cctx.unwrapBinaryIfNeeded(val, keepBinary, false);
 
                 CacheLazyEntry e = new CacheLazyEntry(cctx, key, old, keepBinary);
 
-                Object interceptorVal = cctx.config().getInterceptor().onBeforePut(
-                    new CacheLazyEntry(cctx, key, old, keepBinary),
-                    val0);
-
                 key0 = e.key();
+
+                Object interceptorVal = cctx.config().getInterceptor().onBeforePut(e, val0);
 
                 if (interceptorVal == null)
                     return new GridCacheUpdateTxResult(false, logPtr);
@@ -1749,6 +1757,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 unswap();
 
             old = oldValPresent ? oldVal : val;
+
+            if(intercept)
+                intercept = !skipInterceptor(explicitVer);
 
             if (intercept) {
                 entry0 = new CacheLazyEntry(cctx, key, old, keepBinary);
@@ -2073,12 +2084,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             else
                 updated = (CacheObject)writeObj;
 
-            op = updated == null ? GridCacheOperation.DELETE : GridCacheOperation.UPDATE;
+            op = updated == null ? DELETE : UPDATE;
 
             if (intercept) {
                 CacheLazyEntry e;
 
-                if (op == GridCacheOperation.UPDATE) {
+                if (op == UPDATE) {
                     updated0 = value(updated0, updated, keepBinary, false);
 
                     e = new CacheLazyEntry(cctx, key, key0, old, old0, keepBinary);
@@ -2111,7 +2122,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             long ttl = CU.TTL_ETERNAL;
             long expireTime = CU.EXPIRE_TIME_ETERNAL;
 
-            if (op == GridCacheOperation.UPDATE) {
+            if (op == UPDATE) {
                 if (expiryPlc != null) {
                     ttl = CU.toTtl(hadVal ? expiryPlc.getExpiryForUpdate() : expiryPlc.getExpiryForCreation());
 
@@ -2129,14 +2140,14 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             if (ttl == CU.TTL_ZERO) {
-                op = GridCacheOperation.DELETE;
+                op = DELETE;
 
                 //If time expired no transformation needed.
                 transformOp = false;
             }
 
             // Try write-through.
-            if (op == GridCacheOperation.UPDATE) {
+            if (op == UPDATE) {
                 // Detach value before index update.
                 updated = cctx.kernalContext().cacheObjects().prepareForCache(updated, cctx);
 
@@ -2230,7 +2241,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             if (intercept) {
-                if (op == GridCacheOperation.UPDATE)
+                if (op == UPDATE)
                     cctx.config().getInterceptor().onAfterPut(new CacheLazyEntry(cctx, key, key0, updated, updated0, keepBinary, 0L));
                 else
                     cctx.config().getInterceptor().onAfterRemove(new CacheLazyEntry(cctx, key, key0, old, old0, keepBinary, 0L));
@@ -2444,7 +2455,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     keepBinary);
             }
 
-            if (c.op == GridCacheOperation.UPDATE) {
+            if (c.op == UPDATE) {
                 updateVal = val;
 
                 assert updateVal != null : c;
@@ -2475,7 +2486,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 }
             }
             else {
-                assert c.op == GridCacheOperation.DELETE : c.op;
+                assert c.op == DELETE : c.op;
 
                 clearReaders();
 
@@ -2524,29 +2535,23 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     topVer);
             }
 
-            if (intercept) {
-                if (c.op == GridCacheOperation.UPDATE) {
-                    cctx.config().getInterceptor().onAfterPut(new CacheLazyEntry(
-                        cctx,
-                        key,
-                        null,
-                        updateVal,
-                        null,
-                        keepBinary,
-                        c.updateRes.updateCounter()));
-                }
-                else {
-                    assert c.op == GridCacheOperation.DELETE : c.op;
+            if (intercept && c.wasIntercepted) {
+                assert c.op == UPDATE || c.op == DELETE : c.op;
 
-                    cctx.config().getInterceptor().onAfterRemove(new CacheLazyEntry(
-                        cctx,
-                        key,
-                        null,
-                        oldVal,
-                        null,
-                        keepBinary,
-                        c.updateRes.updateCounter()));
-                }
+                Cache.Entry<?,?> entry = new CacheLazyEntry<>(
+                    cctx,
+                    key,
+                    null,
+                    c.op == UPDATE ? updateVal : oldVal,
+                    null,
+                    keepBinary,
+                    c.updateRes.updateCounter()
+                );
+
+                if (c.op == UPDATE)
+                    cctx.config().getInterceptor().onAfterPut(entry);
+                else
+                    cctx.config().getInterceptor().onAfterRemove(entry);
             }
         }
         finally {
@@ -3289,6 +3294,34 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         return val != null;
     }
 
+    /**
+     * Checks, that changes were got by DR.
+     *
+     * @param explicitVer – Explicit version (if any).
+     * @return {@code true} if changes were got by DR and {@code false} otherwise.
+     */
+    private boolean isRemoteDrUpdate(@Nullable GridCacheVersion explicitVer) {
+        return explicitVer != null && explicitVer.dataCenterId() != cctx.dr().dataCenterId();
+    }
+
+    /**
+     * Checks, that cache interceptor should be skipped.
+     * <p>
+     * In current cache interceptor implementation, if changes were got by DR, the following methods will be invoked:
+     * {@link CacheInterceptor#onBeforePut(Cache.Entry, Object)}, {@link CacheInterceptor#onAfterPut(Cache.Entry)},
+     * {@link CacheInterceptor#onBeforeRemove(Cache.Entry)} and {@link CacheInterceptor#onAfterRemove(Cache.Entry)}, but
+     * method {@link CacheInterceptor#onGet(Object, Object)} will not be invoked. This implementation could corrupt
+     * data. For example, cache interceptor wrap data on update/remove and unwrap data back on get from cache. For avoid
+     * this scenario and made changes by CacheInterceptor idempotent the method {@link
+     * IgniteSystemProperties#IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT} should be set {@code true}.
+     *
+     * @param explicitVer - Explicit version (if any).
+     * @return {@code true} if cache interceptor should be skipped and {@code false} otherwise.
+     */
+    private boolean skipInterceptor(@Nullable GridCacheVersion explicitVer) {
+        return isRemoteDrUpdate(explicitVer) && DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT;
+    }
+
     /** {@inheritDoc} */
     @Override public CacheObject rawPut(CacheObject val, long ttl) {
         lockEntry();
@@ -3472,7 +3505,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             cctx.cacheId(),
                             key,
                             val,
-                            val == null ? GridCacheOperation.DELETE : GridCacheOperation.CREATE,
+                            val == null ? DELETE : GridCacheOperation.CREATE,
                             null,
                             ver,
                             expireTime,
@@ -3485,7 +3518,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             cctx.cacheId(),
                             key,
                             val,
-                            val == null ? GridCacheOperation.DELETE : GridCacheOperation.CREATE,
+                            val == null ? DELETE : GridCacheOperation.CREATE,
                             null,
                             ver,
                             expireTime,
@@ -4351,9 +4384,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         if (tx.local()) { // For remote tx we log all updates in batch: GridDistributedTxRemoteAdapter.commitIfLocked()
             GridCacheOperation op;
             if (val == null)
-                op = GridCacheOperation.DELETE;
+                op = DELETE;
             else
-                op = this.val == null ? GridCacheOperation.CREATE : GridCacheOperation.UPDATE;
+                op = this.val == null ? GridCacheOperation.CREATE : UPDATE;
 
             return cctx.shared().wal().log(new DataRecord(new DataEntry(
                 cctx.cacheId(),
@@ -4387,9 +4420,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         if (tx.local()) { // For remote tx we log all updates in batch: GridDistributedTxRemoteAdapter.commitIfLocked()
             GridCacheOperation op;
             if (val == null)
-                op = GridCacheOperation.DELETE;
+                op = DELETE;
             else
-                op = this.val == null ? GridCacheOperation.CREATE : GridCacheOperation.UPDATE;
+                op = this.val == null ? GridCacheOperation.CREATE : UPDATE;
 
             return cctx.shared().wal().log(new MvccDataRecord(new MvccDataEntry(
                 cctx.cacheId(),
@@ -4964,7 +4997,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      */
     private void updateMetrics(GridCacheOperation op, boolean metrics, boolean transformed, boolean hasOldVal) {
         if (metrics && cctx.statisticsEnabled()) {
-            if (op == GridCacheOperation.DELETE) {
+            if (op == DELETE) {
                 cctx.cache().metrics0().onRemove();
 
                 if (transformed)
@@ -5914,7 +5947,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         private CacheDataRow oldRow;
 
         /** OldRow expiration flag. */
-        private boolean oldRowExpiredFlag = false;
+        private boolean oldRowExpiredFlag;
+
+        /** Disable interceptor invocation onAfter* methods flag. */
+        private boolean wasIntercepted;
 
         AtomicCacheUpdateClosure(
             GridCacheMapEntry entry,
@@ -6314,7 +6350,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         newExpireTime = entry.expireTimeExtras();
                     }
                     else if (newSysTtl == CU.TTL_ZERO) {
-                        op = GridCacheOperation.DELETE;
+                        op = DELETE;
 
                         writeObj = null;
 
@@ -6334,17 +6370,15 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 newSysExpireTime = newExpireTime = conflictCtx.expireTime();
             }
 
-            if (intercept) {
+            if (intercept && (conflictVer == null || !DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT)) {
                 Object updated0 = cctx.unwrapBinaryIfNeeded(updated, keepBinary, false);
 
-                CacheLazyEntry<Object, Object> interceptEntry = new CacheLazyEntry<>(cctx,
-                    entry.key,
-                    null,
-                    oldVal,
-                    null,
-                    keepBinary);
+                CacheLazyEntry<Object, Object> interceptEntry =
+                    new CacheLazyEntry<>(cctx, entry.key, null, oldVal, null, keepBinary);
 
                 Object interceptorVal = cctx.config().getInterceptor().onBeforePut(interceptEntry, updated0);
+
+                wasIntercepted = true;
 
                 if (interceptorVal == null) {
                     treeOp = IgniteTree.OperationType.NOOP;
@@ -6444,15 +6478,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             IgniteBiTuple<Boolean, Object> interceptRes = null;
 
-            if (intercept) {
-                CacheLazyEntry<Object, Object> intercepEntry = new CacheLazyEntry<>(cctx,
-                    entry.key,
-                    null,
-                    oldVal,
-                    null,
-                    keepBinary);
+            if (intercept && (conflictVer == null || !DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT)) {
+                CacheLazyEntry<Object, Object> intercepEntry =
+                    new CacheLazyEntry<>(cctx, entry.key, null, oldVal, null, keepBinary);
 
                 interceptRes = cctx.config().getInterceptor().onBeforeRemove(intercepEntry);
+
+                wasIntercepted = true;
 
                 if (cctx.cancelRemove(interceptRes)) {
                     treeOp = IgniteTree.OperationType.NOOP;
@@ -6617,7 +6649,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         assert conflictCtx.isUseNew();
 
                     // Update value is known at this point, so update operation type.
-                    op = writeObj != null ? GridCacheOperation.UPDATE : GridCacheOperation.DELETE;
+                    op = writeObj != null ? UPDATE : DELETE;
                 }
 
                 return conflictCtx;

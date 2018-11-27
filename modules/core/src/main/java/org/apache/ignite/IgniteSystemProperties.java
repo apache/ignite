@@ -1047,6 +1047,13 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_RECOVERY_VERBOSE_LOGGING = "IGNITE_RECOVERY_VERBOSE_LOGGING";
 
     /**
+     * Disables cache interceptor triggering in case of conflicts.
+     *
+     * Default is {@code false}.
+     */
+    public static final String IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT = "IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
