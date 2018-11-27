@@ -32,14 +32,14 @@ import org.jetbrains.annotations.Nullable;
 public class TxRecord extends TimeStampRecord {
     /** Transaction state. */
     @GridToStringInclude
-    private TransactionState state;
+    private final TransactionState state;
 
     /** Global transaction identifier within cluster, assigned by transaction coordinator. */
     @GridToStringInclude
-    private GridCacheVersion nearXidVer;
+    private final GridCacheVersion nearXidVer;
 
     /** Transaction entries write topology version. */
-    private GridCacheVersion writeVer;
+    private final GridCacheVersion writeVer;
 
     /**
      * Transaction participating nodes.
@@ -103,24 +103,10 @@ public class TxRecord extends TimeStampRecord {
     }
 
     /**
-     * @param nearXidVer Near xid version.
-     */
-    public void nearXidVersion(GridCacheVersion nearXidVer) {
-        this.nearXidVer = nearXidVer;
-    }
-
-    /**
      * @return DHT version.
      */
     public GridCacheVersion writeVersion() {
         return writeVer;
-    }
-
-    /**
-     * @param writeVer DHT version.
-     */
-    public void dhtVersion(GridCacheVersion writeVer) {
-        this.writeVer = writeVer;
     }
 
     /**
@@ -131,24 +117,10 @@ public class TxRecord extends TimeStampRecord {
     }
 
     /**
-     * @param state Transaction state.
-     */
-    public void state(TransactionState state) {
-        this.state = state;
-    }
-
-    /**
      * @return Primary -> backup participating nodes compact IDs.
      */
     public Map<Short, Collection<Short>> participatingNodes() {
         return participatingNodes;
-    }
-
-    /**
-     * @param participatingNodeIds Primary -> backup participating nodes compact IDs.
-     */
-    public void participatingNodes(Map<Short, Collection<Short>> participatingNodeIds) {
-        this.participatingNodes = participatingNodeIds;
     }
 
     /** {@inheritDoc} */

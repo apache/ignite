@@ -269,6 +269,9 @@ import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastRecei
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = false)
 public class TcpCommunicationSpi extends IgniteSpiAdapter implements CommunicationSpi<Message> {
+    /** Time threshold to log too long connection establish. */
+    private static final int CONNECTION_ESTABLISH_THRESHOLD_MS = 100;
+
     /** IPC error message. */
     public static final String OUT_OF_RESOURCES_TCP_MSG = "Failed to allocate shared memory segment " +
         "(switching to TCP, may be slower).";
@@ -1843,7 +1846,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * When set to a positive number, communication SPI will monitor clients outbound message queue sizes and will drop
      * those clients whose queue exceeded this limit.
      * <p/>
-     * Usually this value should be set to the same value as {@link #getMessageQueueLimit()} which controls
+     * This value should be set to less or equal value than {@link #getMessageQueueLimit()} which controls
      * message back-pressure for server nodes. The default value for this parameter is {@code 0}
      * which means {@code unlimited}.
      *
@@ -2207,8 +2210,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 "since may produce significant delays with some scenarios.");
 
         if (slowClientQueueLimit > 0 && msgQueueLimit > 0 && slowClientQueueLimit >= msgQueueLimit) {
-            U.quietAndWarn(log, "Slow client queue limit is set to a value greater than message queue limit " +
-                "(slow client queue limit will have no effect) [msgQueueLimit=" + msgQueueLimit +
+            U.quietAndWarn(log, "Slow client queue limit is set to a value greater than or equal to message " +
+                "queue limit (slow client queue limit will have no effect) [msgQueueLimit=" + msgQueueLimit +
                 ", slowClientQueueLimit=" + slowClientQueueLimit + ']');
         }
 
@@ -2983,10 +2986,18 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         connectGate.enter();
 
         try {
+            final long start = System.currentTimeMillis();
+
             GridCommunicationClient client = createTcpClient(node, connIdx);
 
-            if (log.isDebugEnabled())
-                log.debug("TCP client created: " + client);
+            final long time = System.currentTimeMillis() - start;
+
+            if (time > CONNECTION_ESTABLISH_THRESHOLD_MS) {
+                if (log.isInfoEnabled())
+                    log.info("TCP client created [client=" + client + ", duration=" + time + "ms]");
+            }
+            else if (log.isDebugEnabled())
+                log.debug("TCP client created [client=" + client + ", duration=" + time + "ms]");
 
             return client;
         }

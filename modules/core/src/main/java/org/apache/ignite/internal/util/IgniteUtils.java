@@ -17,6 +17,113 @@
 
 package org.apache.ignite.internal.util;
 
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteClientDisconnectedException;
+import org.apache.ignite.IgniteDeploymentException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.cluster.ClusterGroupEmptyException;
+import org.apache.ignite.cluster.ClusterMetrics;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterTopologyException;
+import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.compute.ComputeTaskCancelledException;
+import org.apache.ignite.compute.ComputeTaskName;
+import org.apache.ignite.compute.ComputeTaskTimeoutException;
+import org.apache.ignite.configuration.AddressResolver;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
+import org.apache.ignite.internal.IgniteDeploymentCheckedException;
+import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
+import org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException;
+import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.managers.communication.GridIoManager;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
+import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
+import org.apache.ignite.internal.processors.cache.CacheClassLoaderMarker;
+import org.apache.ignite.internal.processors.cache.GridCacheAttributes;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cluster.BaselineTopology;
+import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
+import org.apache.ignite.internal.util.io.GridFilenameUtils;
+import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryNativeLoader;
+import org.apache.ignite.internal.util.lang.GridClosureException;
+import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
+import org.apache.ignite.internal.util.lang.GridTuple;
+import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
+import org.apache.ignite.internal.util.typedef.C1;
+import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteFutureCancelledException;
+import org.apache.ignite.lang.IgniteFutureTimeoutException;
+import org.apache.ignite.lang.IgniteOutClosure;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.lifecycle.LifecycleAware;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.PluginProvider;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.spi.IgniteSpi;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
+import org.apache.ignite.transactions.TransactionDeadlockException;
+import org.apache.ignite.transactions.TransactionHeuristicException;
+import org.apache.ignite.transactions.TransactionOptimisticException;
+import org.apache.ignite.transactions.TransactionRollbackException;
+import org.apache.ignite.transactions.TransactionTimeoutException;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import sun.misc.Unsafe;
+
+import javax.management.DynamicMBean;
+import javax.management.JMException;
+import javax.management.MBeanRegistrationException;
+import javax.management.MBeanServer;
+import javax.management.MalformedObjectNameException;
+import javax.management.ObjectName;
+import javax.naming.Context;
+import javax.naming.NamingException;
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
@@ -95,7 +202,6 @@ import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -114,7 +220,6 @@ import java.util.Random;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.StringTokenizer;
-import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.BrokenBarrierException;
@@ -142,117 +247,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.util.zip.Deflater;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
-import javax.management.DynamicMBean;
-import javax.management.JMException;
-import javax.management.MBeanRegistrationException;
-import javax.management.MBeanServer;
-import javax.management.MalformedObjectNameException;
-import javax.management.ObjectName;
-import javax.naming.Context;
-import javax.naming.NamingException;
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteClientDisconnectedException;
-import org.apache.ignite.IgniteDeploymentException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteIllegalStateException;
-import org.apache.ignite.IgniteInterruptedException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.cluster.ClusterGroupEmptyException;
-import org.apache.ignite.cluster.ClusterMetrics;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.cluster.ClusterTopologyException;
-import org.apache.ignite.compute.ComputeTask;
-import org.apache.ignite.compute.ComputeTaskCancelledException;
-import org.apache.ignite.compute.ComputeTaskName;
-import org.apache.ignite.compute.ComputeTaskTimeoutException;
-import org.apache.ignite.configuration.AddressResolver;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
-import org.apache.ignite.internal.IgniteDeploymentCheckedException;
-import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
-import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
-import org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException;
-import org.apache.ignite.internal.events.DiscoveryCustomEvent;
-import org.apache.ignite.internal.managers.communication.GridIoManager;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
-import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
-import org.apache.ignite.internal.processors.cache.CacheClassLoaderMarker;
-import org.apache.ignite.internal.processors.cache.GridCacheAttributes;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cluster.BaselineTopology;
-import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
-import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
-import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
-import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.future.IgniteFutureImpl;
-import org.apache.ignite.internal.util.io.GridFilenameUtils;
-import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryNativeLoader;
-import org.apache.ignite.internal.util.lang.GridClosureException;
-import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
-import org.apache.ignite.internal.util.lang.GridTuple;
-import org.apache.ignite.internal.util.typedef.C1;
-import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.P1;
-import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.lang.IgniteFutureCancelledException;
-import org.apache.ignite.lang.IgniteFutureTimeoutException;
-import org.apache.ignite.lang.IgniteOutClosure;
-import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
-import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.lifecycle.LifecycleAware;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.PluginProvider;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.apache.ignite.spi.IgniteSpi;
-import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
-import org.apache.ignite.transactions.TransactionDeadlockException;
-import org.apache.ignite.transactions.TransactionHeuristicException;
-import org.apache.ignite.transactions.TransactionOptimisticException;
-import org.apache.ignite.transactions.TransactionRollbackException;
-import org.apache.ignite.transactions.TransactionTimeoutException;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import sun.misc.Unsafe;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_HOSTNAME_VERIFIER;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_HOME;
@@ -7192,137 +7191,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     *
-     * @param str ISO date.
-     * @return Calendar instance.
-     * @throws IgniteCheckedException Thrown in case of any errors.
-     */
-    public static Calendar parseIsoDate(String str) throws IgniteCheckedException {
-        StringTokenizer t = new StringTokenizer(str, "+-:.TZ", true);
-
-        Calendar cal = Calendar.getInstance();
-        cal.clear();
-
-        try {
-            if (t.hasMoreTokens())
-                cal.set(Calendar.YEAR, Integer.parseInt(t.nextToken()));
-            else
-                return cal;
-
-            if (checkNextToken(t, "-", str) && t.hasMoreTokens())
-                cal.set(Calendar.MONTH, Integer.parseInt(t.nextToken()) - 1);
-            else
-                return cal;
-
-            if (checkNextToken(t, "-", str) && t.hasMoreTokens())
-                cal.set(Calendar.DAY_OF_MONTH, Integer.parseInt(t.nextToken()));
-            else
-                return cal;
-
-            if (checkNextToken(t, "T", str) && t.hasMoreTokens())
-                cal.set(Calendar.HOUR_OF_DAY, Integer.parseInt(t.nextToken()));
-            else {
-                cal.set(Calendar.HOUR_OF_DAY, 0);
-                cal.set(Calendar.MINUTE, 0);
-                cal.set(Calendar.SECOND, 0);
-                cal.set(Calendar.MILLISECOND, 0);
-
-                return cal;
-            }
-
-            if (checkNextToken(t, ":", str) && t.hasMoreTokens())
-                cal.set(Calendar.MINUTE, Integer.parseInt(t.nextToken()));
-            else {
-                cal.set(Calendar.MINUTE, 0);
-                cal.set(Calendar.SECOND, 0);
-                cal.set(Calendar.MILLISECOND, 0);
-
-                return cal;
-            }
-
-            if (!t.hasMoreTokens())
-                return cal;
-
-            String tok = t.nextToken();
-
-            if (":".equals(tok)) { // Seconds.
-                if (t.hasMoreTokens()) {
-                    cal.set(Calendar.SECOND, Integer.parseInt(t.nextToken()));
-
-                    if (!t.hasMoreTokens())
-                        return cal;
-
-                    tok = t.nextToken();
-
-                    if (".".equals(tok)) {
-                        String nt = t.nextToken();
-
-                        while (nt.length() < 3)
-                            nt += "0";
-
-                        nt = nt.substring(0, 3); // Cut trailing chars.
-
-                        cal.set(Calendar.MILLISECOND, Integer.parseInt(nt));
-
-                        if (!t.hasMoreTokens())
-                            return cal;
-
-                        tok = t.nextToken();
-                    }
-                    else
-                        cal.set(Calendar.MILLISECOND, 0);
-                }
-                else
-                    throw new IgniteCheckedException("Invalid date format: " + str);
-            }
-            else {
-                cal.set(Calendar.SECOND, 0);
-                cal.set(Calendar.MILLISECOND, 0);
-            }
-
-            if (!"Z".equals(tok)) {
-                if (!"+".equals(tok) && !"-".equals(tok))
-                    throw new IgniteCheckedException("Invalid date format: " + str);
-
-                boolean plus = "+".equals(tok);
-
-                if (!t.hasMoreTokens())
-                    throw new IgniteCheckedException("Invalid date format: " + str);
-
-                tok = t.nextToken();
-
-                int tzHour;
-                int tzMin;
-
-                if (tok.length() == 4) {
-                    tzHour = Integer.parseInt(tok.substring(0, 2));
-                    tzMin = Integer.parseInt(tok.substring(2, 4));
-                }
-                else {
-                    tzHour = Integer.parseInt(tok);
-
-                    if (checkNextToken(t, ":", str) && t.hasMoreTokens())
-                        tzMin = Integer.parseInt(t.nextToken());
-                    else
-                        throw new IgniteCheckedException("Invalid date format: " + str);
-                }
-
-                if (plus)
-                    cal.set(Calendar.ZONE_OFFSET, (tzHour * 60 + tzMin) * 60 * 1000);
-                else
-                    cal.set(Calendar.ZONE_OFFSET, -(tzHour * 60 + tzMin) * 60 * 1000);
-            }
-            else
-                cal.setTimeZone(TimeZone.getTimeZone("GMT"));
-        }
-        catch (NumberFormatException ex) {
-            throw new IgniteCheckedException("Invalid date format: " + str, ex);
-        }
-
-        return cal;
-    }
-
-    /**
      * Adds values to collection and returns the same collection to allow chaining.
      *
      * @param c Collection to add values to.
@@ -7425,20 +7293,6 @@ public abstract class IgniteUtils {
         return t instanceof IgniteCheckedException
             ? (IgniteCheckedException)t
             : new IgniteCheckedException(t);
-    }
-
-    /**
-     * Parses passed string with specified date.
-     *
-     * @param src String to parse.
-     * @param ptrn Pattern.
-     * @return Parsed date.
-     * @throws java.text.ParseException If exception occurs while parsing.
-     */
-    public static Date parse(String src, String ptrn) throws java.text.ParseException {
-        java.text.DateFormat format = new java.text.SimpleDateFormat(ptrn);
-
-        return format.parse(src);
     }
 
     /**
@@ -10324,11 +10178,23 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Zip binary payload using default compression.
+     *
      * @param bytes Byte array to compress.
      * @return Compressed bytes.
      * @throws IgniteCheckedException If failed.
      */
     public static byte[] zip(@Nullable byte[] bytes) throws IgniteCheckedException {
+        return zip(bytes, Deflater.DEFAULT_COMPRESSION);
+    }
+
+    /**
+     * @param bytes Byte array to compress.
+     * @param compressionLevel Level of compression to encode.
+     * @return Compressed bytes.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static byte[] zip(@Nullable byte[] bytes, int compressionLevel) throws IgniteCheckedException {
         try {
             if (bytes == null)
                 return null;
@@ -10336,6 +10202,8 @@ public abstract class IgniteUtils {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
             try (ZipOutputStream zos = new ZipOutputStream(bos)) {
+                zos.setLevel(compressionLevel);
+
                 ZipEntry entry = new ZipEntry("");
 
                 try {
@@ -10740,9 +10608,12 @@ public abstract class IgniteUtils {
      * @param <T> Type of data.
      * @throws IgniteCheckedException if parallel execution was failed.
      */
-    public static <T> void doInParallel(ExecutorService executorSvc, Collection<T> srcDatas,
-        IgniteThrowableConsumer<T> operation) throws IgniteCheckedException, IgniteInterruptedCheckedException {
-        doInParallel(srcDatas.size(), executorSvc, srcDatas, operation);
+    public static <T, R> Collection<R> doInParallel(
+        ExecutorService executorSvc,
+        Collection<T> srcDatas,
+        IgniteThrowableConsumer<T, R> operation
+    ) throws IgniteCheckedException, IgniteInterruptedCheckedException {
+        return doInParallel(srcDatas.size(), executorSvc, srcDatas, operation);
     }
 
     /**
@@ -10753,38 +10624,100 @@ public abstract class IgniteUtils {
      * @param srcDatas List of data for parallelization.
      * @param operation Logic for execution of on each item of data.
      * @param <T> Type of data.
+     * @param <R> Type of return value.
      * @throws IgniteCheckedException if parallel execution was failed.
      */
-    public static <T> void doInParallel(
+    public static <T, R> Collection<R> doInParallel(
         int parallelismLvl,
         ExecutorService executorSvc,
         Collection<T> srcDatas,
-        IgniteThrowableConsumer<T> operation
+        IgniteThrowableConsumer<T, R> operation
     ) throws IgniteCheckedException, IgniteInterruptedCheckedException {
-        List<List<T>> batches = IntStream.range(0, parallelismLvl)
-            .mapToObj(i -> new ArrayList<T>())
-            .collect(Collectors.toList());
+        if(srcDatas.isEmpty())
+            return Collections.emptyList();
 
-        int i = 0;
+        int[] batchSizes = calculateOptimalBatchSizes(parallelismLvl, srcDatas.size());
 
-        for (T src : srcDatas)
-            batches.get(i++ % parallelismLvl).add(src);
+        List<Batch<T, R>> batches = new ArrayList<>(batchSizes.length);
 
-        List<Future<Object>> consumerFutures = batches.stream()
-            .filter(batch -> !batch.isEmpty())
-            .map(batch -> executorSvc.submit(() -> {
-                for (T item : batch)
-                    operation.accept(item);
+        // Set for sharing batches between executor and current thread.
+        // If executor cannot perform immediately, we will execute task in the current thread.
+        Set<Batch<T, R>> sharedBatchesSet = new GridConcurrentHashSet<>(batchSizes.length);
 
-                return null;
+        Iterator<T> iterator = srcDatas.iterator();
+
+        for (int idx = 0; idx < batchSizes.length; idx++) {
+            int batchSize = batchSizes[idx];
+
+            Batch<T, R> batch = new Batch<>(batchSize);
+
+            for (int i = 0; i < batchSize; i++)
+                batch.addTask(iterator.next());
+
+            batches.add(batch);
+        }
+
+        batches = batches.stream()
+            .filter(batch -> !batch.tasks.isEmpty())
+            // Add to set only after check that batch is not empty.
+            .peek(sharedBatchesSet::add)
+            // Setup future in batch for waiting result.
+            .peek(batch -> batch.future = executorSvc.submit(() -> {
+                // Batch was stolen by the main stream.
+                if (!sharedBatchesSet.remove(batch)) {
+                    return null;
+                }
+
+                Collection<R> results = new ArrayList<>(batch.tasks.size());
+
+                for (T item : batch.tasks)
+                    results.add(operation.accept(item));
+
+                return results;
             }))
             .collect(Collectors.toList());
 
-        Throwable error =null;
+        Throwable error = null;
 
-        for (Future<Object> future : consumerFutures) {
+        // Stealing jobs if executor is busy and cannot process task immediately.
+        // Perform batches in a current thread.
+        for (Batch<T, R> batch : sharedBatchesSet) {
+            // Executor steal task.
+            if (!sharedBatchesSet.remove(batch))
+                continue;
+
+            Collection<R> res = new ArrayList<>(batch.tasks.size());
+
             try {
-                future.get();
+                for (T item : batch.tasks)
+                    res.add(operation.accept(item));
+
+                batch.result(res);
+            }
+            catch (Throwable e) {
+                batch.result(e);
+            }
+        }
+
+        // Final result collection.
+        Collection<R> results = new ArrayList<>(srcDatas.size());
+
+        for (Batch<T, R> batch: batches) {
+            try {
+                Throwable err = batch.error;
+
+                if (err != null) {
+                    error = addSuppressed(error, err);
+
+                    continue;
+                }
+
+                Collection<R> res = batch.result();
+
+                if (res != null)
+                    results.addAll(res);
+                else
+                    assert error != null;
             }
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -10792,16 +10725,10 @@ public abstract class IgniteUtils {
                 throw new IgniteInterruptedCheckedException(e);
             }
             catch (ExecutionException e) {
-                if(error == null)
-                    error = e.getCause();
-                else
-                    error.addSuppressed(e.getCause());
+                error = addSuppressed(error, e.getCause());
             }
             catch (CancellationException e) {
-                if(error == null)
-                    error = e;
-                else
-                    error.addSuppressed(e);
+                error = addSuppressed(error, e);
             }
         }
 
@@ -10817,6 +10744,102 @@ public abstract class IgniteUtils {
 
             throw new IgniteCheckedException(error);
         }
+
+        return results;
+    }
+
+    /**
+     * Utility method to add the given throwable error to the given throwable root error. If the given
+     * suppressed throwable is an {@code Error}, but the root error is not, will change the root to the {@code Error}.
+     *
+     * @param root Root error to add suppressed error to.
+     * @param err Error to add.
+     * @return New root error.
+     */
+    private static Throwable addSuppressed(Throwable root, Throwable err) {
+        assert err != null;
+
+        if (root == null)
+            return err;
+
+        if (err instanceof Error && !(root instanceof Error)) {
+            err.addSuppressed(root);
+
+            root = err;
+        }
+        else
+            root.addSuppressed(err);
+
+        return root;
+    }
+
+    /**
+     * The batch of tasks with a batch index in global array.
+     */
+    private static class Batch<T,R> {
+        /** List tasks. */
+        private final List<T> tasks;
+
+        /** */
+        private Collection<R> result;
+
+        /** */
+        private Throwable error;
+
+        /** */
+        private Future<Collection<R>> future;
+
+        /**
+         * @param batchSize Batch size.
+         */
+        private Batch(int batchSize) {
+            this.tasks = new ArrayList<>(batchSize);
+        }
+
+        /**
+         * @param task Add task.
+         */
+        public void addTask(T task){
+            tasks.add(task);
+        }
+
+        /**
+         * @param res Setup results for tasks.
+         */
+        public void result(Collection<R> res) {
+            this.result = res;
+        }
+
+        /**
+         * @param e Throwable if task was completed with error.
+         */
+        public void result(Throwable e) {
+            this.error = e;
+        }
+
+        /**
+         * Get tasks results.
+         */
+        public Collection<R> result() throws ExecutionException, InterruptedException {
+            assert future != null;
+
+            return result != null ? result : future.get();
+        }
+    }
+
+    /**
+     * Split number of tasks into optimized batches.
+     * @param parallelismLvl Level of parallelism.
+     * @param size number of tasks to split.
+     * @return array of batch sizes.
+     */
+    public static int[] calculateOptimalBatchSizes(int parallelismLvl, int size) {
+        int[] batcheSizes = new int[Math.min(parallelismLvl, size)];
+
+        for (int i = 0; i < size; i++)
+            batcheSizes[i % batcheSizes.length]++;
+
+        return batcheSizes;
     }
 
     /**
