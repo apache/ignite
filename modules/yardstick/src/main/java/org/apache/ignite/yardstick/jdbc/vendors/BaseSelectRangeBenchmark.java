@@ -21,6 +21,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -100,7 +101,9 @@ public abstract class BaseSelectRangeBenchmark extends AbstractJdbcBenchmark {
 
         executeUpdate(conn0, queries.beforeLoad());
 
-        conn0.setAutoCommit(false);
+        boolean oldAutoCommit = conn0.getAutoCommit();
+
+        trySetAutoCommit(conn0, false);
 
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -159,11 +162,27 @@ public abstract class BaseSelectRangeBenchmark extends AbstractJdbcBenchmark {
             }
         }
 
-        conn0.setAutoCommit(true);
+        trySetAutoCommit(conn0, oldAutoCommit);
 
         executeUpdate(conn0, queries.afterLoad());
 
         println(cfg, "Database have been populated.");
+    }
+
+    /**
+     * Set auto commit if it is supported. Log warning otherwize.
+     *
+     * @param conn Set auto commit mode to this connection.
+     * @param autocommit Autocommit mode parameter value.
+     */
+    private void trySetAutoCommit(Connection conn, boolean autocommit) throws SQLException {
+        try {
+            conn.setAutoCommit(autocommit);
+        }
+        catch (SQLFeatureNotSupportedException ignored) {
+            println(cfg, "Failed to set auto commit to " + autocommit + " because it is unsupported operation, " +
+                "will just ignore it." );
+        }
     }
 
     /**
