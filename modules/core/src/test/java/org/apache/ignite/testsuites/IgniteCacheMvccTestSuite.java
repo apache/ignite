@@ -33,8 +33,6 @@ import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSizeWithConcurr
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccTransactionsTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccTxFailoverTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccVacuumTest;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCachePeekTest;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUnsupportedTxModesTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorMvccPersistenceSelfTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorMvccSelfTest;
 
