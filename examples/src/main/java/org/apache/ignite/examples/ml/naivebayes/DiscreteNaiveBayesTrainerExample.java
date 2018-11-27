@@ -46,7 +46,7 @@ import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesTrainer;
  * <p>
  * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
-public class BernoulliNaiveBayesTrainerExample {
+public class DiscreteNaiveBayesTrainerExample {
     /** Run example. */
     public static void main(String[] args) throws FileNotFoundException {
         System.out.println();
