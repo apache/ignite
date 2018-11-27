@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.naivebayes.bernoulli;
+package org.apache.ignite.ml.naivebayes.discrete;
 
 import java.io.Serializable;
 import org.apache.ignite.ml.Exportable;

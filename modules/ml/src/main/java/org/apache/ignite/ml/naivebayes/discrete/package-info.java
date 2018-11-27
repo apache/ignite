@@ -19,4 +19,4 @@
  * <!-- Package description. -->
  * Contains Bernoulli naive Bayes classifier.
  */
-package org.apache.ignite.ml.naivebayes.bernoulli;
+package org.apache.ignite.ml.naivebayes.discrete;

@@ -28,8 +28,8 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.examples.ml.util.MLSandboxDatasets;
 import org.apache.ignite.examples.ml.util.SandboxMLCache;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.naivebayes.bernoulli.DiscreteNaiveBayesModel;
-import org.apache.ignite.ml.naivebayes.bernoulli.DiscreteNaiveBayesTrainer;
+import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesModel;
+import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesTrainer;
 
 /**
  * Run naive Bayes classification model based on <a href=https://en.wikipedia.org/wiki/Naive_Bayes_classifier#Bernoulli_naive_Bayes">
