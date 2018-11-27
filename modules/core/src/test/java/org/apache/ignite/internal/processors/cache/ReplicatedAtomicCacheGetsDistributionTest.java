@@ -67,6 +67,9 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
+        //TODO IGNITE-10416: Store doesn't expected in this test.
+        storeStgy = null;
+
         IgniteConfiguration clientCfg = getConfiguration(CLIENT_NAME);
 
         clientCfg.setClientMode(true);
