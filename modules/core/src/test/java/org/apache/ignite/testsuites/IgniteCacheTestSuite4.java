@@ -105,6 +105,7 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheReadFr
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheSingleGetMessageTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCachePrimarySyncTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCacheWriteSynchronizationModesMultithreadedTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteTxConcurrentRemoveObjectsTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtTxPreloadSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheLockFailoverSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheMultiTxLockSelfTest;
@@ -349,6 +350,8 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(IgniteCacheContainsKeyAtomicTest.class);
 
         suite.addTestSuite(CacheResultIsNotNullOnPartitionLossTest.class);
+
+        suite.addTestSuite(IgniteTxConcurrentRemoveObjectsTest.class);
 
         return suite;
     }

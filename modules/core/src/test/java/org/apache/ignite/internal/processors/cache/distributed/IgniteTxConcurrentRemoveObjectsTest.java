@@ -28,7 +28,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -155,7 +155,7 @@ public class IgniteTxConcurrentRemoveObjectsTest extends GridCommonAbstractTest 
 
         GridTestUtils.waitForCondition(
             () -> igniteEx.context().cache().cacheGroups().stream()
-                .filter(CacheGroupContext::userCache)
+                .filter(cgctx -> !cgctx.systemCache())
                 .flatMap(cgctx -> cgctx.topology().localPartitions().stream())
                 .mapToInt(GridDhtLocalPartition::internalSize)
                 .max().orElse(-1) == 0,
