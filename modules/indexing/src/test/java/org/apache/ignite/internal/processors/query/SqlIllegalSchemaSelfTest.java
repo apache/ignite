@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.util.concurrent.Callable;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -67,13 +68,17 @@ public class SqlIllegalSchemaSelfTest extends GridCommonAbstractTest {
         try {
             node.getOrCreateCache(new CacheConfiguration().setName(QueryUtils.SCHEMA_SYS));
         }
-        catch (Throwable e) {
+        catch (CacheException e) {
             assertTrue(hasCause(e, IgniteCheckedException.class,
                 "SQL schema name derived from cache name is reserved (please set explicit SQL " +
                     "schema name through CacheConfiguration.setSqlSchema() or choose another cache name) [" +
                     "cacheName=IGNITE, schemaName=null]"));
 
             return;
+        }
+        catch (Throwable e) {
+            fail("Exception class is not as expected [expected=" +
+                CacheException.class + ", actual=" + e.getClass() + ']');
         }
 
         fail("Exception has not been thrown.");
