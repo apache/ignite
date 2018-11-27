@@ -71,8 +71,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAdapter<K, V>
     implements MvccSnapshotResponseListener {
-    /** */
-    private static final long serialVersionUID = 0L;
 
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
