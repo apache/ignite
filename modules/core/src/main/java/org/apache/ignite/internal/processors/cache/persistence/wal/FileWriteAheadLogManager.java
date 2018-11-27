@@ -1975,6 +1975,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         f0.force();
                     }
 
+                    segmentAware.onSegmentCompressed(segIdx);
+
                     if (evt.isRecordable(EVT_WAL_SEGMENT_COMPACTED) && !cctx.kernalContext().recoveryMode()) {
                         evt.record(new WalSegmentCompactedEvent(
                                 cctx.localNode(),
@@ -1982,8 +1984,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                                 zip.getAbsoluteFile())
                         );
                     }
-
-                    segmentAware.onSegmentCompressed(segIdx);
                 }
                 catch (IgniteInterruptedCheckedException ignore) {
                     Thread.currentThread().interrupt();
