@@ -209,25 +209,28 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
 
                         log.info("Restart node [node=" + nodeIdx + ", client=" + clientMode + ']');
 
-                        Ignite ignite = startGrid(nodeIdx);
+                        try {
+                            Ignite ignite = startGrid(nodeIdx);
 
-                        IgniteCache<Object, Object> cache;
+                            IgniteCache<Object, Object> cache;
 
-                        if (clientMode && ccfg.getNearConfiguration() != null)
-                            cache = ignite.createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
-                        else
-                            cache = ignite.cache(ccfg.getName());
+                            if (clientMode && ccfg.getNearConfiguration() != null)
+                                cache = ignite.createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
+                            else
+                                cache = ignite.cache(ccfg.getName());
 
-                        checkGet(cache);
-
-                        IgniteInternalFuture<?> syncFut = ((IgniteCacheProxy)cache).context().preloader().syncFuture();
-
-                        while (!syncFut.isDone() && U.currentTimeMillis() < stopTime)
                             checkGet(cache);
 
-                        checkGet(cache);
+                            IgniteInternalFuture<?> syncFut = ((IgniteCacheProxy)cache).context().preloader().syncFuture();
 
-                        stopGrid(nodeIdx);
+                            while (!syncFut.isDone() && U.currentTimeMillis() < stopTime)
+                                checkGet(cache);
+
+                            checkGet(cache);
+                        }
+                        finally {
+                            stopGrid(nodeIdx);
+                        }
                     }
 
                     return null;
