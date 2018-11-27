@@ -1971,18 +1971,16 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                     Files.move(tmpZip.toPath(), zip.toPath());
 
-                    if (mode != WALMode.NONE) {
-                        try (FileIO f0 = ioFactory.create(zip, CREATE, READ, WRITE)) {
-                            f0.force();
-                        }
+                    try (FileIO f0 = ioFactory.create(zip, CREATE, READ, WRITE)) {
+                        f0.force();
+                    }
 
-                        if (evt.isRecordable(EVT_WAL_SEGMENT_COMPACTED) && !cctx.kernalContext().recoveryMode()) {
-                            evt.record(new WalSegmentCompactedEvent(
-                                    cctx.localNode(),
-                                    segIdx,
-                                    zip.getAbsoluteFile())
-                            );
-                        }
+                    if (evt.isRecordable(EVT_WAL_SEGMENT_COMPACTED) && !cctx.kernalContext().recoveryMode()) {
+                        evt.record(new WalSegmentCompactedEvent(
+                                cctx.localNode(),
+                                segIdx,
+                                zip.getAbsoluteFile())
+                        );
                     }
 
                     segmentAware.onSegmentCompressed(segIdx);
