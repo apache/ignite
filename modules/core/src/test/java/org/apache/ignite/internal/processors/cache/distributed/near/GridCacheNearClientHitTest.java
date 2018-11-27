@@ -71,14 +71,11 @@ public class GridCacheNearClientHitTest extends GridCommonAbstractTest {
         CacheConfiguration<Object, Object> cfg = new CacheConfiguration<>();
 
         cfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
-
         cfg.setCacheMode(CacheMode.PARTITIONED);
-
         cfg.setBackups(1);
-
         cfg.setCopyOnRead(false);
-
         cfg.setName(CACHE_NAME);
+        cfg.setNearConfiguration(new NearCacheConfiguration<>());
 
         return cfg;
     }

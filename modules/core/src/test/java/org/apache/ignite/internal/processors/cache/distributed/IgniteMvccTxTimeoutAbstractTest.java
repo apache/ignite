@@ -32,16 +32,13 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 
-import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
-import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  * Simple cache test.
  */
-public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
+public class IgniteMvccTxTimeoutAbstractTest extends GridCommonAbstractTest {
     /** Random number generator. */
     private static final Random RAND = new Random();
 
@@ -58,7 +55,9 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGridsMultiThreaded(GRID_COUNT);
+        fail("https://issues.apache.org/jira/browse/IGNITE-7388");
+
+        startGridsMultiThreaded(GRID_COUNT, true);
     }
 
     /**
@@ -96,43 +95,8 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If test failed.
      */
-    public void testPessimisticReadCommitted() throws Exception {
-        checkTransactionTimeout(PESSIMISTIC, READ_COMMITTED);
-    }
-
-    /**
-     * @throws IgniteCheckedException If test failed.
-     */
     public void testPessimisticRepeatableRead() throws Exception {
         checkTransactionTimeout(PESSIMISTIC, REPEATABLE_READ);
-    }
-
-    /**
-     * @throws IgniteCheckedException If test failed.
-     */
-    public void testPessimisticSerializable() throws Exception {
-        checkTransactionTimeout(PESSIMISTIC, SERIALIZABLE);
-    }
-
-    /**
-     * @throws IgniteCheckedException If test failed.
-     */
-    public void testOptimisticReadCommitted() throws Exception {
-        checkTransactionTimeout(OPTIMISTIC, READ_COMMITTED);
-    }
-
-    /**
-     * @throws IgniteCheckedException If test failed.
-     */
-    public void testOptimisticRepeatableRead() throws Exception {
-        checkTransactionTimeout(OPTIMISTIC, REPEATABLE_READ);
-    }
-
-    /**
-     * @throws IgniteCheckedException If test failed.
-     */
-    public void testOptimisticSerializable() throws Exception {
-        checkTransactionTimeout(OPTIMISTIC, SERIALIZABLE);
     }
 
     /**

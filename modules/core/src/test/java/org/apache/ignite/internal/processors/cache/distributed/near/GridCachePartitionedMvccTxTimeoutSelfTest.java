@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteTxTimeoutAbstractTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteMvccTxTimeoutAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -27,7 +27,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  * Simple cache test.
  */
-public class GridCachePartitionedTxTimeoutSelfTest extends IgniteTxTimeoutAbstractTest {
+public class GridCachePartitionedMvccTxTimeoutSelfTest extends IgniteMvccTxTimeoutAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
