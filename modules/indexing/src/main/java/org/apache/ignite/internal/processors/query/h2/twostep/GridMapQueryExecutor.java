@@ -820,7 +820,6 @@ public class GridMapQueryExecutor {
 
             for (GridCacheSqlQuery qry : qrys) {
                 Connection conn = h2.connections().connectionForThread(schemaName);
-                log.info("+++ ID: " + reqId + ", conn=" + conn);
 
                 H2Utils.setupConnection(conn, distributedJoinMode != OFF, enforceJoinOrder, lazy);
 

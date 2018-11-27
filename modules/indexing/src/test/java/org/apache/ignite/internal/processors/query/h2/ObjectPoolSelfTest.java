@@ -25,7 +25,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public class ObjectPoolSelfTest extends GridCommonAbstractTest {
     /** */
-    private ObjectPool<Obj> pool = new ObjectPool<>(Obj::new, 1, null, null);
+    private ObjectPool<Obj> pool = new ObjectPool<>(Obj::new, 1, null);
 
     /**
      * @throws Exception If failed.

@@ -17,26 +17,28 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -56,6 +58,15 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        for (Ignite ign : Ignition.allGrids()) {
+            ConcurrentMap<Thread, ConcurrentMap<Connection, H2ConnectionWrapper>> connMap =
+                ((IgniteH2Indexing)((IgniteEx)ign).context().query().getIndexing()).connections().connectionsForThread();
+
+            for (ConcurrentMap<Connection, H2ConnectionWrapper> conns : connMap.values())
+                System.out.println("+++ " + conns.size());
+        }
+
+
         stopAllGrids();
     }
 
@@ -266,6 +277,8 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
     private void checkBaseOperations(Ignite node) throws Exception {
         checkQuerySplitToSeveralMapQueries(node);
 
+        checkQuerySplitToSeveralMapQueriesCancel(node);
+
         // Get full data.
         List<List<?>> rows = execute(node, baseQuery()).getAll();
 
@@ -345,7 +358,7 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
                     cursor.getAll();
                 }
             }
-        }, 5, "usr-qry");
+        }, 5, "test-qry");
 
         for (List<?> row : cursor0)
             rows.add(row);
@@ -378,8 +391,8 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
         ArrayList rows = new ArrayList<>();
 
         FieldsQueryCursor<List<?>> cursor0 = execute(node, new SqlFieldsQuery(
-            "SELECT pers.id, pers.name" +
-            "FROM (SELECT DISTINCT p.id " +
+            "SELECT pers.id, pers.name " +
+            "FROM (SELECT DISTINCT p.id, p.name " +
                 "FROM \"pers\".PERSON as p) as pers " +
             "JOIN \"pers\".PERSON p on p.id = pers.id " +
             "JOIN (SELECT t.persId as persId, SUM(t.time) totalTime " +
@@ -393,6 +406,41 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
 
         assertQueryResults(rows, 0);
     }
+
+
+    /**
+     * @param node Ignite node.
+     * @throws Exception If failed.
+     */
+    public void checkQuerySplitToSeveralMapQueriesCancel(Ignite node) throws Exception {
+        final int threads = 5;
+        final CountDownLatch latch = new CountDownLatch(threads);
+
+        GridTestUtils.runMultiThreaded(new Runnable() {
+            @Override public void run() {
+                FieldsQueryCursor<List<?>> cursor0 = execute(node, new SqlFieldsQuery(
+                    "SELECT pers.id, pers.name " +
+                        "FROM (SELECT DISTINCT p.id, p.name " +
+                        "FROM \"pers\".PERSON as p) as pers " +
+                        "JOIN \"pers\".PERSON p on p.id = pers.id " +
+                        "JOIN (SELECT t.persId as persId, SUM(t.time) totalTime " +
+                        "FROM \"persTask\".PersonTask as t GROUP BY t.persId) as task ON task.persId = pers.id")
+                    .setPageSize(PAGE_SIZE_SMALL));
+
+//                Iterator<List<?>> it = cursor0.iterator();
+//
+//                for (int i = 0; i < PAGE_SIZE_SMALL / 2; ++i)
+//                    it.next();
+
+                cursor0.getAll();
+
+                latch.countDown();
+            }
+        }, 5, "test-qry");
+
+        assertTrue(latch.await(10, TimeUnit.SECONDS));
+    }
+
 
     /**
      * Populate base query data.

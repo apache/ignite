@@ -41,20 +41,15 @@ public final class ObjectPool<E extends AutoCloseable> {
     /** The function to close object. */
     private final Consumer<E> closer;
 
-    /** The listener is called when object is returned to the pool. */
-    private final Consumer<E> recycler;
-
     /**
      * @param objectFactory Factory used for new objects creation.
      * @param poolSize Number of objects which pool can contain.
      * @param closer Function to close object.
-     * @param recycler The listener is called when object is returned to the pool.
      */
-    public ObjectPool(Supplier<E> objectFactory, int poolSize, Consumer<E> closer, Consumer<E> recycler) {
+    public ObjectPool(Supplier<E> objectFactory, int poolSize, Consumer<E> closer) {
         this.objectFactory = objectFactory;
         this.poolSize = poolSize;
         this.closer = closer != null ? closer : U::closeQuiet;
-        this.recycler = recycler;
     }
 
     /**
@@ -77,12 +72,8 @@ public final class ObjectPool<E extends AutoCloseable> {
     void recycle(E object) {
         assert object != null  : "Already recycled";
 
-        if (bag.size() < poolSize) {
+        if (bag.size() < poolSize)
             bag.add(object);
-
-            if (recycler != null)
-                recycler.accept(object);
-        }
         else
             closer.accept(object);
     }

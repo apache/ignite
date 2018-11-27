@@ -836,7 +836,7 @@ public class GridReduceQueryExecutor {
                 if (isReplicatedOnly)
                     flags |= GridH2QueryRequest.FLAG_REPLICATED;
 
-                if (lazy && mapQrys.size() == 1)
+                if (lazy)
                     flags |= GridH2QueryRequest.FLAG_LAZY;
 
                 GridH2QueryRequest req = new GridH2QueryRequest()
