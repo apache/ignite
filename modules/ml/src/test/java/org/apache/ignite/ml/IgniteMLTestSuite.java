@@ -26,6 +26,7 @@ import org.apache.ignite.ml.genetic.GAGridTestSuite;
 import org.apache.ignite.ml.inference.InferenceTestSuite;
 import org.apache.ignite.ml.knn.KNNTestSuite;
 import org.apache.ignite.ml.math.MathImplMainTestSuite;
+import org.apache.ignite.ml.multiclass.MultiClassTestSuite;
 import org.apache.ignite.ml.nn.MLPTestSuite;
 import org.apache.ignite.ml.pipeline.PipelineTestSuite;
 import org.apache.ignite.ml.preprocessing.PreprocessingTestSuite;
@@ -61,7 +62,8 @@ import org.junit.runners.Suite;
     StructuresTestSuite.class,
     CommonTestSuite.class,
     InferenceTestSuite.class,
-    BaggingTest.class
+    BaggingTest.class,
+    MultiClassTestSuite.class
 })
 public class IgniteMLTestSuite {
     // No-op.
