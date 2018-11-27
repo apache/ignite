@@ -141,10 +141,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     private static final byte IS_EVICT_DISABLED = 0x04;
 
     /** */
-    private static final boolean DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT =
-        Boolean.parseBoolean(System.getProperty(IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT, "false"));
-
-    /** */
     public static final GridCacheAtomicVersionComparator ATOMIC_VER_COMPARATOR = new GridCacheAtomicVersionComparator();
 
     /**
@@ -236,6 +232,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /** Read Lock for continuous query listener */
     @GridToStringExclude
     private final Lock listenerLock;
+
+    /** */
+    private final boolean disableTriggeringCacheInterceptorOnConflict =
+        Boolean.parseBoolean(System.getProperty(IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT, "false"));
 
     /**
      * Flags:
@@ -2334,7 +2334,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 conflictVer,
                 conflictResolve,
                 intercept,
-                updateCntr);
+                updateCntr,
+                disableTriggeringCacheInterceptorOnConflict
+            );
 
             key.valueBytes(cctx.cacheObjectContext());
 
@@ -3319,7 +3321,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @return {@code true} if cache interceptor should be skipped and {@code false} otherwise.
      */
     private boolean skipInterceptor(@Nullable GridCacheVersion explicitVer) {
-        return isRemoteDrUpdate(explicitVer) && DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT;
+        return isRemoteDrUpdate(explicitVer) && disableTriggeringCacheInterceptorOnConflict;
     }
 
     /** {@inheritDoc} */
@@ -5935,6 +5937,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         private final Long updateCntr;
 
         /** */
+        private final boolean disableTriggeringCacheInterceptorOnConflict;
+
+        /** */
         private GridCacheUpdateAtomicResult updateRes;
 
         /** */
@@ -5952,6 +5957,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         /** Disable interceptor invocation onAfter* methods flag. */
         private boolean wasIntercepted;
 
+        /** */
         AtomicCacheUpdateClosure(
             GridCacheMapEntry entry,
             AffinityTopologyVersion topVer,
@@ -5971,7 +5977,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             @Nullable GridCacheVersion conflictVer,
             boolean conflictResolve,
             boolean intercept,
-            @Nullable Long updateCntr) {
+            @Nullable Long updateCntr,
+            boolean disableTriggeringCacheInterceptorOnConflict) {
             assert op == UPDATE || op == DELETE || op == TRANSFORM : op;
 
             this.entry = entry;
@@ -5993,6 +6000,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             this.conflictResolve = conflictResolve;
             this.intercept = intercept;
             this.updateCntr = updateCntr;
+            this.disableTriggeringCacheInterceptorOnConflict = disableTriggeringCacheInterceptorOnConflict;
 
             switch (op) {
                 case UPDATE:
@@ -6370,7 +6378,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 newSysExpireTime = newExpireTime = conflictCtx.expireTime();
             }
 
-            if (intercept && (conflictVer == null || !DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT)) {
+            if (intercept && (conflictVer == null || !disableTriggeringCacheInterceptorOnConflict)) {
                 Object updated0 = cctx.unwrapBinaryIfNeeded(updated, keepBinary, false);
 
                 CacheLazyEntry<Object, Object> interceptEntry =
@@ -6478,7 +6486,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             IgniteBiTuple<Boolean, Object> interceptRes = null;
 
-            if (intercept && (conflictVer == null || !DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT)) {
+            if (intercept && (conflictVer == null || !disableTriggeringCacheInterceptorOnConflict)) {
                 CacheLazyEntry<Object, Object> intercepEntry =
                     new CacheLazyEntry<>(cctx, entry.key, null, oldVal, null, keepBinary);
 
