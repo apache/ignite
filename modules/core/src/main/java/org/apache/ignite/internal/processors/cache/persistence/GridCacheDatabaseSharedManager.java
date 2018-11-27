@@ -54,6 +54,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Predicate;
+import java.util.function.ToLongFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -396,6 +397,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 : (ctx.workersRegistry() != null
                     ? ctx.workersRegistry().getSystemWorkerBlockedTimeout()
                     : ctx.config().getFailureDetectionTimeout()));
+    }
+
+    /**
+     * @return File store manager.
+     */
+    public FilePageStoreManager getFileStoreManager() {
+        return storeMgr;
     }
 
     /** */
@@ -1935,6 +1943,44 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
+     * @param f Consumer.
+     * @return Accumulated result for all page stores.
+     */
+    public long forAllPageStores(ToLongFunction<PageStore> f) {
+        long res = 0;
+
+        for (CacheGroupContext gctx : cctx.cache().cacheGroups())
+            res += forGroupPageStores(gctx, f);
+
+        return res;
+    }
+
+    /**
+     * @param gctx Group context.
+     * @param f Consumer.
+     * @return Accumulated result for all page stores.
+     */
+    public long forGroupPageStores(CacheGroupContext gctx, ToLongFunction<PageStore> f) {
+        int groupId = gctx.groupId();
+
+        long res = 0;
+
+        try {
+            Collection<PageStore> stores = storeMgr.getStores(groupId);
+
+            if (stores != null) {
+                for (PageStore store : stores)
+                    res += f.applyAsLong(store);
+            }
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+
+        return res;
+    }
+
+    /**
      * Calculates tail pointer for WAL at the end of logical recovery.
      *
      * @param from Start replay WAL from.
@@ -2989,7 +3035,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 while (!isCancelled()) {
                     waitCheckpointEvent();
 
-                    if (skipCheckpointOnNodeStop && (isStopping() || shutdownNow)) {
+                    if (skipCheckpointOnNodeStop && (isCancelled() || shutdownNow)) {
                         if (log.isInfoEnabled())
                             log.warning("Skipping last checkpoint because node is stopping.");
 
@@ -3263,34 +3309,35 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 tracker.totalDuration()));
                         }
                     }
+                }
 
-                    persStoreMetrics.onCheckpoint(
-                        tracker.lockWaitDuration(),
-                        tracker.markDuration(),
-                        tracker.pagesWriteDuration(),
-                        tracker.fsyncDuration(),
-                        tracker.totalDuration(),
-                        chp.pagesSize,
-                        tracker.dataPagesWritten(),
-                        tracker.cowPagesWritten());
-                }
-                else {
-                    persStoreMetrics.onCheckpoint(
-                        tracker.lockWaitDuration(),
-                        tracker.markDuration(),
-                        tracker.pagesWriteDuration(),
-                        tracker.fsyncDuration(),
-                        tracker.totalDuration(),
-                        chp.pagesSize,
-                        tracker.dataPagesWritten(),
-                        tracker.cowPagesWritten());
-                }
+                updateMetrics(chp, tracker);
             }
             catch (IgniteCheckedException e) {
                 if (chp != null)
                     chp.progress.cpFinishFut.onDone(e);
 
                 cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+            }
+        }
+
+        /**
+         * @param chp Checkpoint.
+         * @param tracker Tracker.
+         */
+        private void updateMetrics(Checkpoint chp, CheckpointMetricsTracker tracker) {
+            if (persStoreMetrics.metricsEnabled()) {
+                persStoreMetrics.onCheckpoint(
+                    tracker.lockWaitDuration(),
+                    tracker.markDuration(),
+                    tracker.pagesWriteDuration(),
+                    tracker.fsyncDuration(),
+                    tracker.totalDuration(),
+                    chp.pagesSize,
+                    tracker.dataPagesWritten(),
+                    tracker.cowPagesWritten(),
+                    forAllPageStores(PageStore::size),
+                    forAllPageStores(PageStore::getSparseSize));
             }
         }
 

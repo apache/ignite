@@ -675,6 +675,11 @@ public interface IgniteCacheOffheapManager {
         long fullSize();
 
         /**
+         * @return {@code True} if there are no items in the store.
+         */
+        boolean isEmpty();
+
+        /**
          * Updates size metric for particular cache.
          *
          * @param cacheId Cache ID.

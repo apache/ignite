@@ -1163,6 +1163,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 updRes.filtered(true);
 
+                if(retVal)
+                    updRes.prevValue(res.oldValue());
+
                 return updRes;
             }
             else if(noCreate && !invoke && res.resultType() == ResultType.PREV_NULL)
@@ -3475,7 +3478,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             expireTime,
                             partition(),
                             updateCntr,
-                            mvccVer
+                            mvccVer == null ? MvccUtils.INITIAL_VERSION : mvccVer
                         )));
                     } else {
                         cctx.shared().wal().log(new DataRecord(new DataEntry(
@@ -5537,6 +5540,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     }
 
                     updRes.filtered(true);
+
+                    if(needVal)
+                        updRes.prevValue(res.oldValue());
 
                     resFut.onDone(updRes);
 

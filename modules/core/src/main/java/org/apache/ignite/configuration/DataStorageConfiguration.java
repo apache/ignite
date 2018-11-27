@@ -28,6 +28,8 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE;
+
 /**
  * A durable memory configuration for an Apache Ignite node. The durable memory is a manageable off-heap based memory
  * architecture that divides all expandable data regions into pages of fixed size
@@ -86,6 +88,12 @@ public class DataStorageConfiguration implements Serializable {
 
     /** Default memory page size. */
     public static final int DFLT_PAGE_SIZE = 4 * 1024;
+
+    /** Max memory page size. */
+    public static final int MAX_PAGE_SIZE = 16 * 1024;
+
+    /** Min memory page size. */
+    public static final int MIN_PAGE_SIZE = 1024;
 
     /** This name is assigned to default Dataregion if no user-defined default MemPlc is specified */
     public static final String DFLT_DATA_REG_DEFAULT_NAME = "default";
@@ -166,7 +174,8 @@ public class DataStorageConfiguration implements Serializable {
     private long sysRegionMaxSize = DFLT_SYS_REG_MAX_SIZE;
 
     /** Memory page size. */
-    private int pageSize;
+    private int pageSize = IgniteSystemProperties.getInteger(
+        IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE, 0);
 
     /** Concurrency level. */
     private int concLvl;
@@ -346,10 +355,13 @@ public class DataStorageConfiguration implements Serializable {
      * Changes the page size.
      *
      * @param pageSize Page size in bytes. If value is not set (or zero), {@link #DFLT_PAGE_SIZE} will be used.
+     * @see #MIN_PAGE_SIZE
+     * @see #MAX_PAGE_SIZE
      */
     public DataStorageConfiguration setPageSize(int pageSize) {
         if (pageSize != 0) {
-            A.ensure(pageSize >= 1024 && pageSize <= 16 * 1024, "Page size must be between 1kB and 16kB.");
+            A.ensure(pageSize >= MIN_PAGE_SIZE && pageSize <= MAX_PAGE_SIZE,
+                "Page size must be between 1kB and 16kB.");
             A.ensure(U.isPow2(pageSize), "Page size must be a power of 2.");
         }
 
