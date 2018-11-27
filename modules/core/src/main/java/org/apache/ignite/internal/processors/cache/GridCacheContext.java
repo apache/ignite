@@ -2270,7 +2270,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         ClusterNode n0 = null;
 
         for (ClusterNode node : affNodes) {
-            if ((canRemap || discovery().alive(node) && isOwner(node, partitionId))) {
+            if (canRemap || discovery().alive(node)) {
                 if (locMacs.equals(node.attribute(ATTR_MACS)))
                     return node;
 
@@ -2282,16 +2282,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         }
 
         return n0;
-    }
-
-    /**
-     *  Check that node is owner for partition.
-     * @param node Cluster node.
-     * @param partitionId Partition ID.
-     * @return {@code}
-     */
-    private boolean isOwner(ClusterNode node, int partitionId) {
-        return topology().partitionState(node.id(), partitionId) == OWNING;
     }
 
     /**
