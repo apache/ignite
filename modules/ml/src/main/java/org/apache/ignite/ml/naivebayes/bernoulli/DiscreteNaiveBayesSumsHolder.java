@@ -22,7 +22,7 @@ import java.util.Map;
 import org.apache.ignite.ml.math.util.MapUtil;
 
 /** Service class is used to calculate amount of values which are below the threshold. */
-public class BernoulliNaiveBayesSumsHolder implements AutoCloseable, Serializable {
+public class DiscreteNaiveBayesSumsHolder implements AutoCloseable, Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = -2059362365851744206L;
     /** Sum of all values above threshold for all features for each label */
@@ -31,7 +31,7 @@ public class BernoulliNaiveBayesSumsHolder implements AutoCloseable, Serializabl
     Map<Double, Integer> featureCountersPerLbl = new HashMap<>();
 
     /** Merge to current */
-    BernoulliNaiveBayesSumsHolder merge(BernoulliNaiveBayesSumsHolder other) {
+    DiscreteNaiveBayesSumsHolder merge(DiscreteNaiveBayesSumsHolder other) {
         onesCountPerLbl = MapUtil.mergeMaps(onesCountPerLbl, other.onesCountPerLbl, this::sum, HashMap::new);
         featureCountersPerLbl = MapUtil.mergeMaps(featureCountersPerLbl, other.featureCountersPerLbl, (i1, i2) -> i1 + i2, HashMap::new);
         return this;

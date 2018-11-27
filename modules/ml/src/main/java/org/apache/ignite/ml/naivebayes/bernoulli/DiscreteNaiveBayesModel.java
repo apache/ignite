@@ -41,7 +41,7 @@ public class DiscreteNaiveBayesModel implements Model<Vector, Double>, Exportabl
     /** The threshold to convert a feature to a binary value.*/
     private final double[][] bucketThresholds;
     /** Amount values which are abouve the threshold per label. */
-    private final BernoulliNaiveBayesSumsHolder sumsHolder;
+    private final DiscreteNaiveBayesSumsHolder sumsHolder;
 
     /**
      * @param probabilities Probabilities of features for classes.
@@ -51,7 +51,7 @@ public class DiscreteNaiveBayesModel implements Model<Vector, Double>, Exportabl
      * @param labels Labels.
      */
     public DiscreteNaiveBayesModel(double[][][] probabilities, double[] classProbabilities, double[] labels,
-        double[][] bucketThresholds, BernoulliNaiveBayesSumsHolder sumsHolder) {
+        double[][] bucketThresholds, DiscreteNaiveBayesSumsHolder sumsHolder) {
         this.probabilities = probabilities;
         this.classProbabilities = classProbabilities;
         this.labels = labels;
@@ -103,7 +103,7 @@ public class DiscreteNaiveBayesModel implements Model<Vector, Double>, Exportabl
     }
 
     /** */
-    public BernoulliNaiveBayesSumsHolder getSumsHolder() {
+    public DiscreteNaiveBayesSumsHolder getSumsHolder() {
         return sumsHolder;
     }
 
