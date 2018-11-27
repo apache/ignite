@@ -88,18 +88,19 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends GridCommonAbstractTest {
                 put("uuid", "'1'");
             }
         };
+
         for (Map.Entry<String, String> entry : types.entrySet()) {
 
             String tblName = createTableName();
 
             String type = entry.getKey();
-            String value = entry.getValue();
+            String val = entry.getValue();
 
             executeSql("CREATE TABLE " + tblName +
                 " (id " + type + " , name varchar, age int, company varchar, city varchar," +
                 " primary key (id))");
 
-            checkUsingIndexes(tblName, value);
+            checkUsingIndexes(tblName, val);
         }
     }
 
@@ -128,18 +129,19 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends GridCommonAbstractTest {
                 put("uuid", "'1'");
             }
         };
+
         for (Map.Entry<String, String> entry : types.entrySet()) {
 
             String tblName = createTableName();
 
             String type = entry.getKey();
-            String value = entry.getValue();
+            String val = entry.getValue();
 
             executeSql("CREATE TABLE " + tblName +
                 " (id " + type + " , name varchar, age int, company varchar, city varchar," +
                 " primary key (id)) WITH \"affinity_key=id\"");
 
-            checkUsingIndexes(tblName, value);
+            checkUsingIndexes(tblName, val);
         }
     }
 
@@ -160,18 +162,18 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends GridCommonAbstractTest {
      *
      * @param tblName name of table which should be checked to using PK indexes.
      */
-    private void checkUsingIndexes(String tblName, String idValue) {
+    private void checkUsingIndexes(String tblName, String idVal) {
         String explainSQL = "explain SELECT * FROM " + tblName + " WHERE ";
 
-        List<List<?>> results = executeSql(explainSQL + "id=" + idValue);
+        List<List<?>> results = executeSql(explainSQL + "id=" + idVal);
 
         assertUsingPkIndex(results);
 
-        results = executeSql(explainSQL + "id=" + idValue + " and name=''");
+        results = executeSql(explainSQL + "id=" + idVal + " and name=''");
 
         assertUsingPkIndex(results);
 
-        results = executeSql(explainSQL + "id=" + idValue + " and name='' and city='' and age=0");
+        results = executeSql(explainSQL + "id=" + idVal + " and name='' and city='' and age=0");
 
         assertUsingPkIndex(results);
     }

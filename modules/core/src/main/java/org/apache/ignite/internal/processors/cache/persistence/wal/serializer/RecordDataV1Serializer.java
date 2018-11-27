@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.record.CacheState;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
@@ -106,6 +107,7 @@ import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
+import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD;
@@ -140,6 +142,12 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     /** Encryption SPI instance. */
     private final EncryptionSpi encSpi;
 
+    /** Encryption manager. */
+    private final GridEncryptionManager encMgr;
+
+    /** */
+    private final boolean encryptionDisabled;
+
     /** */
     private static final byte ENCRYPTED = 1;
 
@@ -155,6 +163,9 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         this.co = cctx.kernalContext().cacheObjects();
         this.pageSize = cctx.database().pageSize();
         this.encSpi = cctx.gridConfig().getEncryptionSpi();
+        this.encMgr = cctx.kernalContext().encryption();
+
+        encryptionDisabled = encSpi instanceof NoopEncryptionSpi;
 
         //This happen on offline WAL iteration(we don't have encryption keys available).
         if (encSpi != null)
@@ -221,7 +232,10 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @return {@code True} if this record should be encrypted.
      */
     private boolean needEncryption(WALRecord rec) {
-        if (!(rec instanceof WalRecordCacheGroupAware) || rec instanceof MetastoreDataRecord)
+        if (encryptionDisabled)
+            return false;
+
+        if (!(rec instanceof WalRecordCacheGroupAware))
             return false;
 
         return needEncryption(((WalRecordCacheGroupAware)rec).groupId());
@@ -232,7 +246,12 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @return {@code True} if this record should be encrypted.
      */
     private boolean needEncryption(int grpId) {
-        return cctx.kernalContext().encryption().groupKey(grpId) != null;
+        if (encryptionDisabled)
+            return false;
+
+        GridEncryptionManager encMgr = cctx.kernalContext().encryption();
+
+        return encMgr != null && encMgr.groupKey(grpId) != null;
     }
 
     /**
@@ -258,7 +277,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
         in.readFully(encData);
 
-        Serializable key = cctx.kernalContext().encryption().groupKey(grpId);
+        Serializable key = encMgr.groupKey(grpId);
 
         if (key == null)
             return new T3<>(null, grpId, plainRecType);
@@ -309,7 +328,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         if (plainRecType != null)
             putRecordType(dst, plainRecType);
 
-        Serializable key = cctx.kernalContext().encryption().groupKey(grpId);
+        Serializable key = encMgr.groupKey(grpId);
 
         assert key != null;
 
@@ -1909,6 +1928,9 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @return Real record type.
      */
     RecordType recordType(WALRecord rec) {
+        if (encryptionDisabled)
+            return rec.type();
+
         if (needEncryption(rec))
             return ENCRYPTED_RECORD;
 
@@ -1923,6 +1945,9 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @return {@code True} if this data record should be encrypted.
      */
     boolean isDataRecordEncrypted(DataRecord rec) {
+        if (encryptionDisabled)
+            return false;
+
         for (DataEntry e : rec.writeEntries()) {
             if (cctx.cacheContext(e.cacheId()) != null && needEncryption(cctx.cacheContext(e.cacheId()).groupId()))
                 return true;
@@ -2000,7 +2025,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         for (DataEntry entry : dataRec.writeEntries()) {
             int clSz = entrySize(entry);
 
-            if (needEncryption(cctx.cacheContext(entry.cacheId()).groupId()))
+            if (!encryptionDisabled && needEncryption(cctx.cacheContext(entry.cacheId()).groupId()))
                 sz += encSpi.encryptedSize(clSz) + 1 /* encrypted flag */ + 4 /* groupId */ + 4 /* data size */;
             else {
                 sz += clSz;

@@ -30,6 +30,7 @@ import Worker from './decompress.worker';
 import SimpleWorkerPool from '../../utils/SimpleWorkerPool';
 import maskNull from 'app/core/utils/maskNull';
 
+import {CancellationError} from 'app/errors/CancellationError';
 import {ClusterSecretsManager} from './types/ClusterSecretsManager';
 import ClusterLoginService from './components/cluster-login/service';
 
@@ -379,11 +380,13 @@ export default class AgentManager {
 
                     case State.AGENT_DISCONNECTED:
                         this.agentModal.agentDisconnected(this.backText, this.backState);
+                        this.ClusterLoginSrv.cancel();
 
                         break;
 
                     case State.CLUSTER_DISCONNECTED:
                         this.agentModal.clusterDisconnected(this.backText, this.backState);
+                        this.ClusterLoginSrv.cancel();
 
                         break;
 
@@ -544,7 +547,13 @@ export default class AgentManager {
 
                 return {cluster, credentials: {}};
             })
-            .then(({cluster, credentials}) => this._executeOnActiveCluster(cluster, credentials, event, params));
+            .then(({cluster, credentials}) => this._executeOnActiveCluster(cluster, credentials, event, params))
+            .catch((err) => {
+                if (err instanceof CancellationError)
+                    return;
+
+                return err;
+            });
     }
 
     /**
