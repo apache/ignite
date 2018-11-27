@@ -32,6 +32,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -41,7 +42,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.util.TestTcpCommunicationSpi;
-import org.eclipse.jetty.util.ConcurrentHashSet;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -277,7 +277,7 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
      */
     private static class PartitionNotFullyLoadedListener implements IgnitePredicate<Event> {
         /** */
-        private Collection<Integer> lostParts = new ConcurrentHashSet<>();
+        private Collection<Integer> lostParts = new GridConcurrentHashSet<>();
 
         /** {@inheritDoc} */
         @Override public boolean apply(Event evt) {
