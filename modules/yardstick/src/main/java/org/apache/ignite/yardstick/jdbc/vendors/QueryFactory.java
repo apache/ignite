@@ -69,6 +69,10 @@ public class QueryFactory {
         return "SELECT ID FROM PUBLIC.PERSON WHERE SALARY BETWEEN ? AND ?";
     }
 
+    public String selectPersonsByPK(){
+        return "SELECT id FROM PUBLIC.PERSON WHERE id BETWEEN ? AND ? ";
+    }
+
     /** Query that inserts new Person record. Has 5 jdbc parameters - fields of the Person. */
     public String insertIntoPerson() {
         return "INSERT INTO PUBLIC.PERSON (id, org_id, first_name, last_name, salary) values (?, ?, ?, ?, ?)";
