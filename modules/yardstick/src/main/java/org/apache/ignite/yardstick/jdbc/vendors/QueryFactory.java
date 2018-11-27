@@ -36,6 +36,11 @@ public class QueryFactory {
         return "CREATE TABLE PUBLIC.ORGANIZATION (id BIGINT PRIMARY KEY, name VARCHAR(255));";
     }
 
+    /** Query that creates index on 'salary' field. */
+    public String createSalaryIdx() {
+        return "CREATE INDEX sal_idx ON PUBLIC.PERSON(salary);";
+    }
+
     /** Query that drops Person table. */
     public String dropPersonIfExist() {
         return "DROP TABLE IF EXISTS PUBLIC.PERSON;";
