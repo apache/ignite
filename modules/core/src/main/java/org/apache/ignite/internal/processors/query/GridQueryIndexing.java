@@ -368,6 +368,7 @@ public interface GridQueryIndexing {
      * Initialize cache context for H2 table created for not started cache.
      *
      * @param ctx Cache context.
+     * @throws IgniteCheckedException If failed.
      */
-    public void initCacheContext(GridCacheContext ctx);
+    public void initCacheContext(GridCacheContext ctx) throws IgniteCheckedException;
 }
