@@ -25,14 +25,12 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.inference.InfModel;
 import org.apache.ignite.ml.inference.ModelDescriptor;
 import org.apache.ignite.ml.inference.ModelSignature;
 import org.apache.ignite.ml.inference.builder.SingleInfModelBuilder;
 import org.apache.ignite.ml.inference.parser.IgniteFunctionInfModelParser;
-import org.apache.ignite.ml.inference.plugin.MLInferencePluginConfiguration;
 import org.apache.ignite.ml.inference.reader.ModelStorageInfModelReader;
 import org.apache.ignite.ml.inference.storage.descriptor.ModelDescriptorStorage;
 import org.apache.ignite.ml.inference.storage.descriptor.ModelDescriptorStorageFactory;
@@ -46,13 +44,7 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 public class ModelStorageExample {
     /** Run example. */
     public static void main(String... args) throws IOException, ClassNotFoundException {
-        IgniteConfiguration cfg = new IgniteConfiguration();
-        MLInferencePluginConfiguration pc = new MLInferencePluginConfiguration();
-        pc.setWithMdlDescStorage(true);
-        pc.setWithMdlStorage(true);
-        cfg.setPluginConfigurations(pc);
-
-        try (Ignite ignite = Ignition.start(cfg)) {
+        try (Ignite ignite = Ignition.start("examples/config/example-ignite-ml.xml")) {
             System.out.println(">>> Ignite grid started.");
 
             ModelStorage storage = ModelStorageFactory.getModelStorage(ignite);
