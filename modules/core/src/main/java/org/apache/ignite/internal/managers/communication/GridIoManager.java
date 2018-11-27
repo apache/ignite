@@ -19,16 +19,21 @@ package org.apache.ignite.internal.managers.communication;
 
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -49,11 +54,15 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.GridJobExecuteRequest;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -68,17 +77,24 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
+import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
+import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -99,6 +115,7 @@ import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.jetbrains.annotations.Nullable;
 
+import static java.time.Instant.ofEpochMilli;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -125,6 +142,37 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIM
  * Grid communication manager.
  */
 public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializable>> {
+    /** */
+    private static final long IGNITE_STAT_HOT_KEYS_MAX_SIZE =
+        IgniteSystemProperties.getInteger(
+            IgniteSystemProperties.IGNITE_STRIPE_HOT_KEYS_MAX_SIZE, 10_000);
+
+    /** */
+    private static final long IGNITE_STAT_JOBS_MAX_SIZE =
+        IgniteSystemProperties.getInteger(
+            IgniteSystemProperties.IGNITE_STAT_JOBS_MAX_SIZE, 1_000);
+
+    /** */
+    private static final long IGNITE_STAT_QUERY_MAX_SIZE =
+        IgniteSystemProperties.getInteger(
+            IgniteSystemProperties.IGNITE_STAT_QUERY_MAX_SIZE, 100);
+
+    /** */
+    private static final long IGNITE_STAT_TOO_LONG_PROCESSING =
+        IgniteSystemProperties.getLong(
+            IgniteSystemProperties.IGNITE_STAT_TOO_LONG_PROCESSING, TimeUnit.MILLISECONDS.toNanos(250));
+
+    /** */
+    private static final long IGNITE_STAT_TOO_LONG_WAITING =
+        IgniteSystemProperties.getLong(
+            IgniteSystemProperties.IGNITE_STAT_TOO_LONG_WAITING, TimeUnit.MILLISECONDS.toNanos(250));
+
+    /** */
+    private static final int[] BUCKET_THRESHOLDS = new int[] {1, 10, 30, 50, 100, 250, 500, 750, 1000, 0};
+
+    /** */
+    private static final long BILLION = 1_000_000;
+
     /** Empty array of message factories. */
     public static final MessageFactory[] EMPTY = {};
 
@@ -866,6 +914,40 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 closedTopics.add(e.getKey());
             }
         }
+
+        // Set common stat handlers.
+        addStatHandler(GridNearSingleGetRequest.class, (stat, msg, duration) -> {
+            try {
+                stat.addKey(msg.key(), msg.cacheId());
+            }
+            catch (IgniteCheckedException e) {
+                log.error("Failed to add key", e);
+            }
+        });
+        addStatHandler(GridJobExecuteRequest.class, (stat, msg, duration) -> {
+            String qry = null;
+
+            if (msg.getTaskClassName().contains("GridCacheQueryJdbcTask")) {
+                GridJobExecuteRequest req = msg;
+
+                try {
+                    Object jobData = U.unmarshal(marsh, req.getJobBytes(),
+                        U.resolveClassLoader(ctx.config().getClassLoader(), ctx.config()));
+
+                    Map<String, Object> args = U.field(jobData, "args");
+
+                    Object sql = args.get("sql"); // TODO use constants.
+                    Object args0 = args.get("args");
+
+                    qry = sql + ", args=" + args0;
+                }
+                catch (Throwable t) {
+                    // No-op.
+                }
+            }
+
+            stat.addJob(msg.getTaskClassName(), duration, qry);
+        });
     }
 
     /** {@inheritDoc} */
@@ -1084,12 +1166,50 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         final byte plc,
         final IgniteRunnable msgC
     ) throws IgniteCheckedException {
-        Runnable c = new Runnable() {
+        final long startWait = System.nanoTime();
+
+        final long enqueueTs = U.currentTimeMillis();
+
+        Runnable c = new StripeAwareRunnable() {
+            private @Nullable StripedExecutor.Stripe stripe;
+            private int beforeQueueSize = -1;
+            private @Nullable Message head;
+
+            @Override public Message message() {
+                return msg.message();
+            }
+
+            @Override public void assign(StripedExecutor.Stripe stripe) {
+                this.stripe = stripe;
+
+                beforeQueueSize = stripe.queueSize();
+
+                head = head();
+            }
+
+            public Message head() {
+                StripeAwareRunnable head = (StripeAwareRunnable)stripe.head();
+
+                return head == null ? null : head.message();
+            }
+
             @Override public void run() {
                 try {
                     threadProcessingMessage(true, msgC);
 
+                    long startProc = System.nanoTime();
+
                     processRegularMessage0(msg, nodeId);
+
+                    logMessageProcessingTime(msg,
+                        startWait,
+                        startProc,
+                        System.nanoTime(),
+                        enqueueTs,
+                        beforeQueueSize,
+                        head,
+                        stripe == null ? -1 : stripe.queueSize(),
+                        null); // TODO additional profiling could be implemented for specific message type.
                 }
                 finally {
                     threadProcessingMessage(false, null);
@@ -1175,6 +1295,275 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             }
             else if (log.isDebugEnabled())
                 log.debug("Failed to process regular message due to execution rejection: " + msg);
+        }
+    }
+
+    /** */
+    private ThreadLocal<Map<Class<? extends Message>, MessageStat>> locStatHolder = new ThreadLocal<>();
+
+    /** */
+    private ThreadLocal<List<ProcStat>> locSlowMsgHolder = new ThreadLocal<>();
+
+    /** */
+    private final Map<Thread, Map<Class<? extends Message>, MessageStat>> sharedStats = new ConcurrentHashMap<>();
+
+    /** */
+    private final Map<Thread, List<ProcStat>> sharedSlowMsgs = new ConcurrentHashMap<>();
+
+    /** Average counters. Accessed from single collector thread. */
+    private Map<Class<? extends Message>, Integer> avgCntMap = new HashMap<>();
+
+    /** Merge map. Accessed from single collector thread. */
+    private Map<Class<? extends Message>, MessageStat> mergeMap = new HashMap<>();
+
+    /** Initialized from single thread, accessed from many. */
+    private volatile Map<String, ProcessMessageStatsClosure<Message>> handlers = new HashMap<>();
+
+    /**
+     * @param msgCls Message class.
+     * @param clo Closure.
+     */
+    @SuppressWarnings("unchecked")
+    public <T extends Message> void addStatHandler(Class<T> msgCls, ProcessMessageStatsClosure<T> clo) {
+        handlers.put(msgCls.getSimpleName(), (ProcessMessageStatsClosure<Message>) clo);
+    }
+
+    /** */
+    public interface ProcessMessageStatsClosure<T extends Message> {
+        /** */
+        void apply(MessageStat stat, T msg, long duration);
+    }
+
+    /** Should be called always from same thread. */
+    public Map<Class<? extends Message>, MessageStat> dumpProcessedMessagesStats() {
+        if (ctx.clientNode())
+            return null;
+
+        GridStringBuilder sb = new GridStringBuilder();
+
+        Set<Entry<Thread, Map<Class<? extends Message>, MessageStat>>> entries1 = sharedStats.entrySet();
+
+        for (Entry<Thread, Map<Class<? extends Message>, MessageStat>> entry0 : entries1) {
+            final Map<Class<? extends Message>, MessageStat> statMap0 = entry0.getValue();
+
+            synchronized (statMap0) {
+                for (Map.Entry<Class<? extends Message>, MessageStat> entry : statMap0.entrySet()) {
+                    MessageStat res = mergeMap.get(entry.getKey());
+
+                    if (res == null) {
+                        mergeMap.put(entry.getKey(), (res = new MessageStat(ctx)));
+
+                        avgCntMap.put(entry.getKey(), 1);
+
+                        entry.getValue().merge(res, 1);
+                    }
+                    else {
+                        Integer cnt = avgCntMap.get(entry.getKey());
+
+                        cnt++;
+
+                        avgCntMap.put(entry.getKey(), cnt);
+
+                        entry.getValue().merge(res, cnt);
+                    }
+                }
+
+                statMap0.clear();
+            }
+        }
+
+        sb.a(">>><DBG> Processed messages statistics: ").a(U.nl());
+
+        List<Map.Entry<Class<? extends Message>, MessageStat>> top = mergeMap.entrySet().stream().sorted((o1,
+            o2) -> Long.compare(o2.getValue().total, o1.getValue().total)).collect(Collectors.toList());
+
+        long total = 0;
+
+        Iterator<Map.Entry<Class<? extends Message>, MessageStat>> it = top.iterator();
+
+        while (it.hasNext()) {
+            Map.Entry<Class<? extends Message>, MessageStat> entry = it.next();
+
+            sb.a(">>><DBG> ").a(entry.getKey().getSimpleName())
+                .a(" [total=").a(entry.getValue().total)
+                .a(", average=").a(entry.getValue().rollingAvg / 1000/ 1000.);
+
+            sb.a(", buckets=[");
+
+            for (int i = 0; i < entry.getValue().buckets.length; i++) {
+                long t = entry.getValue().buckets[i];
+
+                sb.a(t);
+
+                if (i < entry.getValue().buckets.length - 1)
+                    sb.a(", ");
+            }
+
+            sb.a("], waitBuckets=[");
+
+            for (int i = 0; i < entry.getValue().waitBuckets.length; i++) {
+                long t = entry.getValue().waitBuckets[i];
+
+                sb.a(t);
+
+                if (i < entry.getValue().waitBuckets.length - 1)
+                    sb.a(", ");
+            }
+
+            sb.a(']');
+
+            if (entry.getKey().getSimpleName().equals("GridNearSingleGetRequest")) {
+                sb.a(", hotKeys=").a(entry.getValue().hotKeys.entrySet().stream().sorted((o1,
+                    o2) -> o2.getValue().compareTo(o1.getValue())).limit(20).collect(Collectors.toList()));
+            }
+            else if (entry.getKey().getSimpleName().equals("GridJobExecuteRequest")) {
+                sb.a(", longestJobs=").a(entry.getValue().jobs.entrySet().stream().sorted((o1,
+                    o2) -> o2.getValue().compareTo(o1.getValue())).limit(20).map(entry1 -> "[cls=" + entry1.getKey() +
+                    ", dur=" + entry1.getValue() / 1000 / 1000. + ']').collect(Collectors.toList()));
+                // TODO remove copypaste.
+                sb.a(", longestJdbcQrys=").a(entry.getValue().jdbcQryExecs.entrySet().stream().sorted((o1,
+                    o2) -> o2.getValue().compareTo(o1.getValue())).limit(20).map(entry1 -> "[qry=" + entry1.getKey().
+                    substring(0, Math.min(100_000, entry1.getKey().length())).replace("\n", " ") +
+                    ", dur=" + entry1.getValue() / 1000 / 1000. + ']').collect(Collectors.toList()));
+            }
+            else if (entry.getKey().getSimpleName().equals("GridH2QueryRequest")) {
+                sb.a(", longestQrys=").a(entry.getValue().qryExecs.entrySet().stream().sorted((o1,
+                    o2) -> o2.getValue().compareTo(o1.getValue())).limit(20).map(entry1 -> "[qry=" + entry1.getKey().
+                    substring(0, Math.min(100_000, entry1.getKey().length())).replace("\n", " ") +
+                    ", dur=" + entry1.getValue() / 1000 / 1000. + ']').collect(Collectors.toList()));
+            }
+
+            sb.a(']');
+
+            total += entry.getValue().total;
+
+            sb.a(U.nl());
+        }
+
+        sb.a(">>><DBG> totalMsgs=").a(total);
+
+        U.warn(log, sb.toString());
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+        ZoneId sysZoneId = ZoneId.systemDefault();
+
+        sb.setLength(0);
+
+        Set<Entry<Thread, List<ProcStat>>> entries = sharedSlowMsgs.entrySet();
+
+        for (Entry<Thread, List<ProcStat>> entry : entries) {
+            final List<ProcStat> stats = entry.getValue();
+
+            List<ProcStat> cp;
+
+            synchronized (stats) {
+                cp = new ArrayList<>(stats);
+
+                stats.clear();
+            }
+
+            for (ProcStat stat : cp) {
+                sb.a(">>><DBG> Slow message: ").
+                    a("enqueueTs=").
+                    a(LocalDateTime.ofInstant(ofEpochMilli(stat.enqueueTimestamp()), sysZoneId).format(formatter)).
+                    a(", waitTime=").
+                    a(stat.waitTime() / 1000 / 1000.).
+                    a(", procTime=").
+                    a(stat.processTime() / 1000 / 1000.).
+                    a(", messageId=").
+                    a(U.hexInt(stat.message().hashCode())).
+                    a(", queueSzBefore=").
+                    a(stat.sizeBefore()).
+                    a(", headMessageId=").
+                    a(stat.headHash()).
+                    a(", queueSzAfter=").
+                    a(stat.sizeAfter()).
+                    a(", message=").
+                    a(stat.message().toString().replace("\n", " ")).
+                    a(U.nl());
+            }
+        }
+
+        U.warn(log, sb.toString());
+
+        return mergeMap;
+    }
+
+    /**
+     * @param msg Message.
+     * @param startWait Start waiting in queue timestamp.
+     * @param startProc Start processing timestamp.
+     * @param finishProc Finish processing timestamp.
+     * @param enqueueTs enqueue UNIX timestamp (10ms resolution)
+     * @param qSizeBefore queue size before adding message to stripe queue.
+     * @param head queue head before adding message to stripe queue.
+     * @param qSizeAfter queue size after finishing message processing.
+     * @param ctx Message processing context. Could be used for tracking additional details for specific message.
+     * TODO: implement back-off.
+     */
+    private void logMessageProcessingTime(GridIoMessage msg,
+        long startWait,
+        long startProc,
+        long finishProc,
+        long enqueueTs,
+        int qSizeBefore,
+        Message head,
+        int qSizeAfter,
+        Object ctx) {
+        if (this.ctx.clientNode())
+            return;
+
+        Map<Class<? extends Message>, MessageStat> statMap = locStatHolder.get();
+
+        if (statMap == null) {
+            locStatHolder.set(statMap = new HashMap<>());
+
+            sharedStats.putIfAbsent(Thread.currentThread(), statMap);
+        }
+
+        List<ProcStat> messages = locSlowMsgHolder.get();
+
+        if (messages == null) {
+            locSlowMsgHolder.set(messages = new ArrayList<>());
+
+            sharedSlowMsgs.putIfAbsent(Thread.currentThread(), messages);
+        }
+
+        Message msg0 = msg.message();
+
+        Class<? extends Message> msgCls = msg0.getClass();
+
+        ProcessMessageStatsClosure<Message> clo = handlers.get(msg0.getClass().getSimpleName());
+
+        long procTime = finishProc - startProc;
+        long waitTime = startProc - startWait;
+
+        synchronized (statMap) {
+            MessageStat stat = statMap.get(msgCls);
+
+            if (stat == null)
+                statMap.put(msgCls, (stat = new MessageStat(this.ctx)));
+
+            stat.increment(procTime, waitTime);
+
+            if (clo != null)
+                try {
+                    clo.apply(stat, msg0, procTime + waitTime);
+                }
+                catch (Throwable e) {
+                    log.error("Failed to apply stat closure: msgCls=" + msgCls.getSimpleName(), e);
+                }
+        }
+
+        synchronized (messages) {
+            if (procTime > IGNITE_STAT_TOO_LONG_PROCESSING || waitTime > IGNITE_STAT_TOO_LONG_WAITING) {
+                try {
+                    messages.add(new ProcStat(enqueueTs, waitTime, procTime, msg0, qSizeBefore, head, qSizeAfter, ctx));
+                }
+                catch (Throwable e) {
+                    log.error("Failed to add slow message: msgCls=" + msgCls.getSimpleName(), e);
+                }
+            }
         }
     }
 
@@ -3160,4 +3549,312 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             return latencyLimit / (1000 * (resLatency.length - 1));
         }
     }
+
+    public static class ProcStat {
+        long enqueueTs;
+        long waitTime;
+        long procTime;
+        Message msg;
+        int sizeBefore;
+        Message head;
+        int sizeAfter;
+        Object ctx;
+
+        public ProcStat(long enqueueTs, long waitTime, long procTime, Message msg, int sizeBefore,
+            Message head, int sizeAfter, Object ctx) {
+            this.waitTime = waitTime;
+            this.enqueueTs = enqueueTs;
+            this.procTime = procTime;
+            this.msg = msg;
+            this.sizeBefore = sizeBefore;
+            this.head = head;
+            this.sizeAfter = sizeAfter;
+            this.ctx = ctx;
+        }
+
+        /**
+         * @return Enqueue timestamp.
+         */
+        public long enqueueTimestamp() {
+            return enqueueTs;
+        }
+
+        /**
+         * @return Wait time in queue.
+         */
+        public long waitTime() {
+            return waitTime;
+        }
+
+        /**
+         * @return Process time.
+         */
+        public long processTime() {
+            return procTime;
+        }
+
+        /**
+         * @return Message.
+         */
+        public Message message() {
+            return msg;
+        }
+
+        /**
+         * @return Size before.
+         */
+        public int sizeBefore() {
+            return sizeBefore;
+        }
+
+        /**
+         * @return Head.
+         */
+        public Message head() {
+            return head;
+        }
+
+        /**
+         * @return Head hash.
+         */
+        public String headHash() {
+            return head == null ? "null" : U.hexInt(head.hashCode());
+        }
+
+        /**
+         * @return Size after.
+         */
+        public int sizeAfter() {
+            return sizeAfter;
+        }
+
+        /**
+         * @return Context.
+         */
+        public Object context() {
+            return ctx;
+        }
+    }
+
+    /** */
+    public static class MessageStat {
+        /** */
+        final long[] buckets = new long[10];
+
+        /** */
+        final long[] waitBuckets = new long[10];
+
+        /** */
+        final Map<T2<KeyCacheObject, Integer>, Long> hotKeys = new HashMap<>();
+
+        /** */
+        final Map<String, Long> jobs = new HashMap<>();
+
+        /** */
+        final public Map<String, Long> qryExecs = new HashMap<>();
+
+        /** */
+        final public Map<String, Long> jdbcQryExecs = new HashMap<>();
+
+        /** */
+        long rollingAvg;
+
+        /** */
+        long total;
+
+        /** */
+        private final GridKernalContext ctx;
+
+        /**
+         * @param ctx Context.
+         */
+        public MessageStat(GridKernalContext ctx) {
+            this.ctx = ctx;
+        }
+
+        /**
+         * @param procTime Duration.
+         */
+        public void increment(long procTime, long waitTime) {
+            updateBucket(buckets, procTime);
+            updateBucket(waitBuckets, waitTime);
+
+            rollingAvg = (rollingAvg * total + procTime)/(total + 1);
+
+            total++;
+        }
+
+        /**
+         * @param buckets Buckets.
+         * @param duration Duration.
+         */
+        private static void updateBucket(long[] buckets, long duration) {
+            if (duration <= BUCKET_THRESHOLDS[0] * BILLION)
+                buckets[0]++;
+            else if (duration <= BUCKET_THRESHOLDS[1] * BILLION)
+                buckets[1]++;
+            else if (duration <= BUCKET_THRESHOLDS[2] * BILLION)
+                buckets[2]++;
+            else if (duration <= BUCKET_THRESHOLDS[3] * BILLION)
+                buckets[3]++;
+            else if (duration <= BUCKET_THRESHOLDS[4] * BILLION)
+                buckets[4]++;
+            else if (duration <= BUCKET_THRESHOLDS[5] * BILLION)
+                buckets[5]++;
+            else if (duration <= BUCKET_THRESHOLDS[6] * BILLION)
+                buckets[6]++;
+            else if (duration <= BUCKET_THRESHOLDS[7] * BILLION)
+                buckets[7]++;
+            else if (duration <= BUCKET_THRESHOLDS[8] * BILLION)
+                buckets[8]++;
+            else
+                buckets[9]++;
+        }
+
+        /** */
+        public void merge(MessageStat dst, int n) {
+            Arrays.setAll(dst.buckets, value -> dst.buckets[value] + buckets[value]);
+            Arrays.setAll(dst.waitBuckets, value -> dst.waitBuckets[value] + waitBuckets[value]);
+
+            dst.rollingAvg = (dst.rollingAvg * (n - 1) + rollingAvg) / n;
+
+            dst.total += total;
+
+            if (!hotKeys.isEmpty()) {
+                hotKeys.entrySet().stream().sorted((o1, o2) -> o2.getValue().compareTo(o1.getValue())).forEach(entry -> {
+                    Long cnt = dst.hotKeys.get(entry.getKey());
+
+                    if (cnt != null || dst.hotKeys.size() < IGNITE_STAT_HOT_KEYS_MAX_SIZE * 5)
+                        dst.hotKeys.put(entry.getKey(), cnt == null ? entry.getValue() : cnt + entry.getValue());
+                });
+            }
+
+            if (!jobs.isEmpty()) {
+                jobs.entrySet().stream().sorted((o1, o2) -> o2.getValue().compareTo(o1.getValue())).forEach(entry -> {
+                    Long cnt = dst.jobs.get(entry.getKey());
+
+                    if (cnt != null || dst.jobs.size() < IGNITE_STAT_JOBS_MAX_SIZE)
+                        dst.jobs.put(entry.getKey(), cnt == null ? entry.getValue() : cnt + entry.getValue());
+                });
+            }
+
+            if (!qryExecs.isEmpty()) {
+                qryExecs.entrySet().stream().sorted((o1, o2) -> o2.getValue().compareTo(o1.getValue())).forEach(entry -> {
+                    Long cnt = dst.qryExecs.get(entry.getKey());
+
+                    if (cnt != null || dst.qryExecs.size() < IGNITE_STAT_QUERY_MAX_SIZE)
+                        dst.qryExecs.put(entry.getKey(), cnt == null ? entry.getValue() : cnt + entry.getValue());
+                });
+            }
+
+            if (!jdbcQryExecs.isEmpty()) {
+                jdbcQryExecs.entrySet().stream().sorted((o1, o2) -> o2.getValue().compareTo(o1.getValue())).forEach(entry -> {
+                    Long cnt = dst.jdbcQryExecs.get(entry.getKey());
+
+                    if (cnt != null || dst.jdbcQryExecs.size() < IGNITE_STAT_QUERY_MAX_SIZE)
+                        dst.jdbcQryExecs.put(entry.getKey(), cnt == null ? entry.getValue() : cnt + entry.getValue());
+                });
+            }
+        }
+
+        /**
+         * @param key Key.
+         */
+        public void addKey(KeyCacheObject key, int cacheId) throws IgniteCheckedException{
+            if (hotKeys.size() >= IGNITE_STAT_HOT_KEYS_MAX_SIZE)
+                return;
+
+            if (ctx != null) {
+                GridCacheContext cctx = ctx.cache().context().cacheContext(cacheId);
+
+                key.finishUnmarshal(cctx.cacheObjectContext(), null);
+            }
+
+            T2<KeyCacheObject, Integer> k0 = new T2<>(key, cacheId);
+
+            Long cnt = hotKeys.get(k0);
+
+            hotKeys.put(k0, cnt == null ? 1 : cnt + 1);
+        }
+
+        /**
+         * @param jobCls Job class.
+         * @param duration Duration.
+         */
+        public void addJob(String jobCls, long duration, @Nullable String qry) {
+            if (jobs.size() >= IGNITE_STAT_JOBS_MAX_SIZE)
+                return;
+
+            Long totalDuration = jobs.get(jobCls);
+
+            jobs.put(jobCls, totalDuration == null ? duration : totalDuration + duration);
+
+            if (qry != null)
+                addQuery(qry, duration, jdbcQryExecs);
+        }
+
+        /**
+         * @param qry Query.
+         * @param duration Duration.
+         */
+        public void addSqlQuery(String qry, long duration) {
+            addQuery(qry, duration, qryExecs);
+        }
+
+        /**
+         * @param qry String query.
+         * @param duration Duration.
+         */
+        public void addQuery(String qry, long duration, Map<String, Long> qryExecs) {
+            if (qryExecs.size() >= IGNITE_STAT_JOBS_MAX_SIZE)
+                return;
+
+            Long totalDuration = qryExecs.get(qry);
+
+            qryExecs.put(qry, totalDuration == null ? duration : totalDuration + duration);
+        }
+
+        public static void main(String[] args) throws IgniteCheckedException {
+            MessageStat stat1 = new MessageStat(null);
+
+            for (int i = 0; i < 10; i++)
+                stat1.addKey(new KeyCacheObjectImpl("k" + i, new byte[0], 0), -100000);
+
+            stat1.increment(50, 0);
+            stat1.increment(100, 0);
+            stat1.increment(200, 0);
+
+            MessageStat stat2 = new MessageStat(null);
+
+            stat2.increment(100, 0);
+            stat2.increment(100, 0);
+            stat2.increment(200, 0);
+
+            System.out.println(stat1.rollingAvg);
+            System.out.println(stat1.total);
+            System.out.println(stat1.hotKeys);
+
+            System.out.println(stat2.rollingAvg);
+            System.out.println(stat2.total);
+
+            MessageStat merge = new MessageStat(null);
+
+            stat1.merge(merge, 1);
+            stat2.merge(merge, 2);
+
+            System.out.println(merge.rollingAvg);
+            System.out.println(merge.total);
+        }
+    }
+
+    public interface StripeAwareRunnable extends Runnable {
+        public Message message();
+
+        /**
+         * Called when message is assigned to stripe before enqueuing.
+         * @param stripe Stripe.
+         */
+        public void assign(StripedExecutor.Stripe stripe);
+    }
+
 }

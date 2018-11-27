@@ -37,6 +37,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -46,6 +47,7 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.IgniteThread;
+import org.apache.ignite.util.deque.FastSizeDeque;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -420,7 +422,7 @@ public class StripedExecutor implements ExecutorService {
     /**
      * Stripe.
      */
-    private abstract static class Stripe extends GridWorker {
+    public static abstract class Stripe extends GridWorker {
         /** */
         private final String igniteInstanceName;
 
@@ -545,9 +547,15 @@ public class StripedExecutor implements ExecutorService {
         abstract Runnable take() throws InterruptedException;
 
         /**
+         * @return Head of stripe queue.
+         *
+         */
+        public abstract Runnable head();
+
+        /**
          * @return Queue size.
          */
-        abstract int queueSize();
+        public abstract int queueSize();
 
         /**
          * @return Stripe's queue to string presentation.
@@ -570,7 +578,7 @@ public class StripedExecutor implements ExecutorService {
                 IgniteSystemProperties.IGNITE_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD, 4);
 
         /** Queue. */
-        private final Queue<Runnable> queue;
+        private final FastSizeDeque<Runnable> queue;
 
         /** */
         @GridToStringExclude
@@ -625,7 +633,7 @@ public class StripedExecutor implements ExecutorService {
 
             this.others = others;
 
-            this.queue = others == null ? new ConcurrentLinkedQueue<Runnable>() : new ConcurrentLinkedDeque<Runnable>();
+            this.queue = new FastSizeDeque<>(new ConcurrentLinkedDeque<>());
         }
 
         /** {@inheritDoc} */
@@ -678,7 +686,18 @@ public class StripedExecutor implements ExecutorService {
         }
 
         /** {@inheritDoc} */
-        @Override void execute(Runnable cmd) {
+        @Override public Runnable head() {
+            return queue.peek();
+        }
+
+        /** {@inheritDoc} */
+        void execute(Runnable cmd) {
+            if (cmd instanceof GridIoManager.StripeAwareRunnable) {
+                GridIoManager.StripeAwareRunnable msgRunnable = (GridIoManager.StripeAwareRunnable)cmd;
+
+                msgRunnable.assign(this);
+            }
+
             queue.add(cmd);
 
             if (parked)
@@ -698,8 +717,8 @@ public class StripedExecutor implements ExecutorService {
         }
 
         /** {@inheritDoc} */
-        @Override int queueSize() {
-            return queue.size();
+        @Override public int queueSize() {
+            return queue.sizex();
         }
 
         /** {@inheritDoc} */
@@ -750,12 +769,17 @@ public class StripedExecutor implements ExecutorService {
         }
 
         /** {@inheritDoc} */
-        @Override void execute(Runnable cmd) {
+        @Override public Runnable head() {
+            return queue.peek();
+        }
+
+        /** {@inheritDoc} */
+        void execute(Runnable cmd) {
             queue.add(cmd);
         }
 
         /** {@inheritDoc} */
-        @Override int queueSize() {
+        @Override public int queueSize() {
             return queue.size();
         }
 
@@ -807,12 +831,17 @@ public class StripedExecutor implements ExecutorService {
         }
 
         /** {@inheritDoc} */
-        @Override void execute(Runnable cmd) {
+        @Override public Runnable head() {
+            return queue.peek();
+        }
+
+        /** {@inheritDoc} */
+        void execute(Runnable cmd) {
             queue.add(cmd);
         }
 
         /** {@inheritDoc} */
-        @Override int queueSize() {
+        @Override public int queueSize() {
             return queue.size();
         }
 

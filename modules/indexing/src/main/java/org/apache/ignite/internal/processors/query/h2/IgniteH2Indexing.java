@@ -1587,7 +1587,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param qry Query.
      * @return Command or {@code null} if cannot parse this query.
      */
-     @Nullable private SqlCommand parseQueryNative(String schemaName, SqlFieldsQuery qry) {
+    @Nullable private SqlCommand parseQueryNative(String schemaName, SqlFieldsQuery qry) {
         // Heuristic check for fast return.
         if (!INTERNAL_CMD_RE.matcher(qry.getSql().trim()).find())
             return null;
@@ -1767,7 +1767,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         try {
             // TODO: Why checking for rollback only?
             //if (!tx.isRollbackOnly())
-                tx.commit();
+            tx.commit();
         }
         finally {
             closeTx(tx);
@@ -2088,7 +2088,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             args = Arrays.copyOfRange(argsOrig, firstArg, firstArg + paramsCnt);
         }
 
-       if (prepared.isQuery()) {
+        if (prepared.isQuery()) {
             try {
                 bindParameters(stmt, F.asList(args));
             }
@@ -2343,10 +2343,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
             catch (SQLException e) {
                 if (!cachesCreated && (
-                        e.getErrorCode() == ErrorCode.SCHEMA_NOT_FOUND_1 ||
-                            e.getErrorCode() == ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1 ||
-                            e.getErrorCode() == ErrorCode.INDEX_NOT_FOUND_1)
-                        ) {
+                    e.getErrorCode() == ErrorCode.SCHEMA_NOT_FOUND_1 ||
+                        e.getErrorCode() == ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1 ||
+                        e.getErrorCode() == ErrorCode.INDEX_NOT_FOUND_1)
+                    ) {
                     try {
                         ctx.cache().createMissingQueryCaches();
                     }
@@ -2751,6 +2751,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (log.isDebugEnabled())
             log.debug("Starting cache query index...");
 
+        if (ctx != null) {
+            ctx.io().addStatHandler(GridH2QueryRequest.class, (stat, msg, duration) ->
+                stat.addSqlQuery(msg.queries().get(0).query() +
+                    ", args=" + (msg.parameters() == null ? "[]" : Arrays.asList(msg.parameters())), duration));
+        }
+        
         this.busyLock = busyLock;
 
         qryIdGen = new AtomicLong();
@@ -3234,7 +3240,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridH2RowDescriptor desc = dataTable(schema(partInfo.cacheName()), partInfo.tableName()).rowDescriptor();
 
         Object param = H2Utils.convert(params[partInfo.paramIdx()],
-                desc, partInfo.dataType());
+            desc, partInfo.dataType());
 
         return kernalContext().affinity().partition(partInfo.cacheName(), param);
     }
@@ -3327,6 +3333,5 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
         }
 
-        return false;
-    }
+        return false;    }
 }
