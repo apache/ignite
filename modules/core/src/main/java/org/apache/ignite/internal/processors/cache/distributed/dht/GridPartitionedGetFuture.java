@@ -90,9 +90,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     /** */
     private MvccQueryTracker mvccTracker;
 
-    /** */
-    private Map<AffinityTopologyVersion, Map<Integer, Set<ClusterNode>>> invalidNodes = Collections.emptyMap();
-
     /**
      * @param cctx Context.
      * @param keys Keys.
@@ -147,8 +144,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
         this.txLbl = txLbl;
 
-        if (log == null)
-            log = U.logger(cctx.kernalContext(), logRef, GridPartitionedGetFuture.class);
+        initLogger(GridPartitionedGetFuture.class);
     }
 
     /**
@@ -202,7 +198,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
      * @param topVer Topology version.
      */
     private void initialMap(AffinityTopologyVersion topVer) {
-        map(keys, Collections.emptyMap(), invalidNodes, topVer);
+        map(keys, Collections.emptyMap(), topVer);
 
         markInitialized();
     }
@@ -304,7 +300,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     private void map(
         Collection<KeyCacheObject> keys,
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mapped,
-        Map<AffinityTopologyVersion, Map<Integer, Set<ClusterNode>>> invalidNodes,
         AffinityTopologyVersion topVer
     ) {
         Collection<ClusterNode> cacheNodes = CU.affinityNodes(cctx, topVer);
@@ -327,7 +322,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
         // Assign keys to nodes.
         for (KeyCacheObject key : keys)
-            hasRmtNodes |= map(key, topVer, mappings, mapped, invalidNodes, locVals);
+            hasRmtNodes |= map(key, topVer, mappings, mapped, locVals);
 
         // Future can be alredy done with some exception.
         if (isDone())
@@ -388,22 +383,20 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     AffinityTopologyVersion updTopVer = cctx.shared().exchange().readyAffinityVersion();
 
                     // Remap recursively.
-                    map(remapKeys, mappings, this.invalidNodes, updTopVer);
+                    map(remapKeys, mappings, updTopVer);
                 }
 
                 // Add new future.
-                add(fut.chain(new C1<IgniteInternalFuture<Collection<GridCacheEntryInfo>>, Map<K, V>>() {
-                    @Override public Map<K, V> apply(IgniteInternalFuture<Collection<GridCacheEntryInfo>> fut) {
-                        try {
-                            return createResultMap(fut.get());
-                        }
-                        catch (Exception e) {
-                            U.error(log, "Failed to get values from dht cache [fut=" + fut + "]", e);
+                add(fut.chain(f -> {
+                    try {
+                        return createResultMap(f.get());
+                    }
+                    catch (Exception e) {
+                        U.error(log, "Failed to get values from dht cache [fut=" + fut + "]", e);
 
-                            onDone(e);
+                        onDone(e);
 
-                            return Collections.emptyMap();
-                        }
+                        return Collections.emptyMap();
                     }
                 }));
             }
@@ -441,7 +434,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         AffinityTopologyVersion topVer,
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> nodesToKeysMapping,
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> missedNodesToKeysMapping,
-        Map<AffinityTopologyVersion, Map<Integer, Set<ClusterNode>>> invalidNodes,
         Map<K, V> locVals
     ) {
         int part = cctx.affinity().partition(key);
@@ -459,16 +451,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         if (tryLocalGet(key, part, topVer, affNodes, locVals))
             return false;
 
-        Set<ClusterNode> invalidNodeSet = Collections.emptySet();
-
-        Map<Integer, Set<ClusterNode>> invalidNodesMap = invalidNodes.get(topVer);
-
-        if (invalidNodesMap != null) {
-            Set<ClusterNode> nodes = invalidNodesMap.get(part);
-
-            if (nodes != null)
-                invalidNodeSet = nodes;
-        }
+        Set<ClusterNode> invalidNodeSet = getInvalidNodes(part, topVer);
 
         // Get remote node for request for this key.
         ClusterNode node = cctx.selectAffinityNodeBalanced(affNodes, invalidNodeSet, part, canRemap);
@@ -509,32 +492,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             mappings.put(node, old = new LinkedHashMap<>(3, 1f));
 
         old.put(key, false);
-    }
-
-    /**
-     *
-     * @param key Key.
-     * @param node Mapped node.
-     * @param missedNodesToKeysMapping Full node mapping.
-     */
-    private boolean checkRetryPermits(
-        KeyCacheObject key,
-        ClusterNode node,
-        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> missedNodesToKeysMapping
-    ) {
-        LinkedHashMap<KeyCacheObject, Boolean> keys = missedNodesToKeysMapping.get(node);
-
-        if (keys != null && keys.containsKey(key)) {
-            if (REMAP_CNT_UPD.incrementAndGet(this) > MAX_REMAP_CNT) {
-                onDone(new ClusterTopologyCheckedException("Failed to remap key to a new node after " +
-                    MAX_REMAP_CNT + " attempts (key got remapped to the same node) [key=" + key + ", node=" +
-                    U.toShortString(node) + ", mappings=" + missedNodesToKeysMapping + ']'));
-
-                return false;
-            }
-        }
-
-        return true;
     }
 
     /**
@@ -717,17 +674,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     }
 
     /**
-     * @param fut Future.
-     */
-    private void registrateFutureInMvccManager(GridCacheFuture<?> fut) {
-        if (!trackable) {
-            trackable = true;
-
-            cctx.mvcc().addFuture(fut, futId);
-        }
-    }
-
-    /**
      *
      * @param cacheNodes Cache affynity nodes.
      * @param topVer Topology version.
@@ -784,29 +730,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         }
 
         return Collections.emptyMap();
-    }
-
-    /**
-     * @param node Cluster node.
-     * @param part Invalid partition.
-     * @param topVer Topology version.
-     */
-    private synchronized void addNodeAsInvalid(ClusterNode node, int part, AffinityTopologyVersion topVer) {
-        if (invalidNodes == Collections.<AffinityTopologyVersion, Map<Integer, Set<ClusterNode>>>emptyMap()) {
-            invalidNodes = new HashMap<>();
-        }
-
-        Map<Integer, Set<ClusterNode>> invalidNodeMap = invalidNodes.get(topVer);
-
-        if (invalidNodeMap == null)
-            invalidNodes.put(topVer, invalidNodeMap = new HashMap<>());
-
-        Set<ClusterNode> invalidNodeSet = invalidNodeMap.get(part);
-
-        if (invalidNodeSet == null)
-            invalidNodeMap.put(part, invalidNodeSet = new HashSet<>());
-
-        invalidNodeSet.add(node);
     }
 
     /** {@inheritDoc} */
@@ -940,7 +863,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
             // Try getting from existing nodes.
             if (!canRemap) {
-                map(keys.keySet(), F.t(node, keys), invalidNodes, topVer);
+                map(keys.keySet(), F.t(node, keys), topVer);
 
                 onDone(Collections.<K, V>emptyMap());
             }
@@ -954,7 +877,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     .listen((f) -> {
                             try {
                                 // Remap.
-                                map(keys.keySet(), F.t(node, keys), invalidNodes, f.get());
+                                map(keys.keySet(), F.t(node, keys), f.get());
 
                                 onDone(Collections.<K, V>emptyMap());
                             }
@@ -994,7 +917,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         @Override public boolean apply(KeyCacheObject key) {
                             return invalidParts.contains(cctx.affinity().partition(key));
                         }
-                    }), F.t(node, keys), invalidNodes, topVer);
+                    }), F.t(node, keys), topVer);
 
                     postProcessResult(res);
 
@@ -1016,7 +939,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                                 @Override public boolean apply(KeyCacheObject key) {
                                     return invalidParts.contains(cctx.affinity().partition(key));
                                 }
-                            }), F.t(node, keys), invalidNodes, topVer);
+                            }), F.t(node, keys), topVer);
 
                             postProcessResult(res);
 

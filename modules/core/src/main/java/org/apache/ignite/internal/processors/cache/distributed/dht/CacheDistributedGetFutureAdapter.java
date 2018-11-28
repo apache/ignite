@@ -18,9 +18,18 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFuture;
@@ -30,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -40,8 +50,14 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 /**
  *
  */
-public abstract class CacheDistributedGetFutureAdapter<K, V> extends GridCacheCompoundIdentityFuture<Map<K, V>>
-    implements GridCacheFuture<Map<K, V>>, CacheGetFuture {
+public abstract class CacheDistributedGetFutureAdapter<K, V>
+    extends GridCacheCompoundIdentityFuture<Map<K, V>> implements CacheGetFuture {
+    /** Logger reference. */
+    protected static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+
+    /** Logger. */
+    protected static IgniteLogger log;
+
     /** Default max remap count value. */
     public static final int DFLT_MAX_REMAP_CNT = 3;
 
@@ -100,6 +116,10 @@ public abstract class CacheDistributedGetFutureAdapter<K, V> extends GridCacheCo
     /** */
     protected final boolean recovery;
 
+    /** */
+    protected Map<AffinityTopologyVersion, Map<Integer, Set<ClusterNode>>> invalidNodes = Collections.emptyMap();
+
+
     /**
      * @param cctx Context.
      * @param keys Keys.
@@ -149,11 +169,99 @@ public abstract class CacheDistributedGetFutureAdapter<K, V> extends GridCacheCo
     }
 
     /**
+     * @param aclass Class.
+     */
+    protected void initLogger(Class<?> aclass){
+        if (log == null)
+            log = U.logger(cctx.kernalContext(), logRef, aclass);
+    }
+
+    /**
      * @param part Partition.
      * @return {@code True} if partition is in owned state.
      */
     protected final boolean partitionOwned(int part) {
         return cctx.topology().partitionState(cctx.localNodeId(), part) == OWNING;
+    }
+
+    /**
+     * @param fut Future.
+     */
+    protected void registrateFutureInMvccManager(GridCacheFuture<?> fut) {
+        if (!trackable) {
+            trackable = true;
+
+            cctx.mvcc().addFuture(fut, futId);
+        }
+    }
+
+    /**
+     * @param node Cluster node.
+     * @param part Invalid partition.
+     * @param topVer Topology version.
+     */
+    protected synchronized void addNodeAsInvalid(ClusterNode node, int part, AffinityTopologyVersion topVer) {
+        if (invalidNodes == Collections.<AffinityTopologyVersion, Map<Integer, Set<ClusterNode>>>emptyMap()) {
+            invalidNodes = new HashMap<>();
+        }
+
+        Map<Integer, Set<ClusterNode>> invalidNodeMap = invalidNodes.get(topVer);
+
+        if (invalidNodeMap == null)
+            invalidNodes.put(topVer, invalidNodeMap = new HashMap<>());
+
+        Set<ClusterNode> invalidNodeSet = invalidNodeMap.get(part);
+
+        if (invalidNodeSet == null)
+            invalidNodeMap.put(part, invalidNodeSet = new HashSet<>());
+
+        invalidNodeSet.add(node);
+    }
+
+    /**
+     * @param part Partition.
+     * @param topVer Topology version.
+     * @return Set of invalid cluster nodes.
+     */
+    protected synchronized Set<ClusterNode> getInvalidNodes(int part, AffinityTopologyVersion topVer) {
+        Set<ClusterNode> invalidNodeSet = Collections.emptySet();
+
+        Map<Integer, Set<ClusterNode>> invalidNodesMap = invalidNodes.get(topVer);
+
+        if (invalidNodesMap != null) {
+            Set<ClusterNode> nodes = invalidNodesMap.get(part);
+
+            if (nodes != null)
+                invalidNodeSet = nodes;
+        }
+
+        return invalidNodeSet;
+    }
+
+    /**
+     *
+     * @param key Key.
+     * @param node Mapped node.
+     * @param missedNodesToKeysMapping Full node mapping.
+     */
+    protected boolean checkRetryPermits(
+        KeyCacheObject key,
+        ClusterNode node,
+        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> missedNodesToKeysMapping
+    ) {
+        LinkedHashMap<KeyCacheObject, Boolean> keys = missedNodesToKeysMapping.get(node);
+
+        if (keys != null && keys.containsKey(key)) {
+            if (REMAP_CNT_UPD.incrementAndGet(this) > MAX_REMAP_CNT) {
+                onDone(new ClusterTopologyCheckedException("Failed to remap key to a new node after " +
+                    MAX_REMAP_CNT + " attempts (key got remapped to the same node) [key=" + key + ", node=" +
+                    U.toShortString(node) + ", mappings=" + missedNodesToKeysMapping + ']'));
+
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
