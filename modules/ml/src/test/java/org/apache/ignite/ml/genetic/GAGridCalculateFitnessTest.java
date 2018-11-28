@@ -42,7 +42,7 @@ public class GAGridCalculateFitnessTest {
     /** GAGrid **/
     private GAGrid gaGrid = null;
 
-    /** GAConfiguraton */
+    /** GAConfiguration */
     private GAConfiguration gaCfg = null;
 
     /**
