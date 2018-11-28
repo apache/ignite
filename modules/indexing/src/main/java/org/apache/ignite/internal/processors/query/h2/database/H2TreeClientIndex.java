@@ -43,7 +43,6 @@ public class H2TreeClientIndex extends H2TreeIndexBase {
         boolean pk,
         List<IndexColumn> colsList
     ) {
-
         IndexColumn[] cols = colsList.toArray(new IndexColumn[colsList.size()]);
 
         IndexColumn.mapColumns(cols, tbl);

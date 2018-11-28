@@ -3041,7 +3041,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void initCacheContext(GridCacheContext ctx) {
+    @Override public boolean initCacheContext(GridCacheContext ctx) {
         GridCacheContextInfo prevCtx = registeredCacheContext(ctx.name());
 
         if (prevCtx != null) {
@@ -3049,7 +3049,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             assert prevCtx.name().equals(ctx.name()) : prevCtx.name() + " != " + ctx.name();
 
             prevCtx.initCacheContext(ctx);
+
+            return true;
         }
+
+        return false;
     }
 
     /** {@inheritDoc} */

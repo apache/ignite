@@ -684,12 +684,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         ctx.cache().context().database().checkpointReadLock();
 
         try {
-            if (cctx.isClientCache() && cctx.isCacheContextInited()) {
-
-                idx.initCacheContext(cctx.gridCacheContext());
-
+            if (cctx.isClientCache() && cctx.isCacheContextInited() && idx.initCacheContext(cctx.gridCacheContext()))
                 return;
-            }
 
             synchronized (stateMux) {
                 boolean escape = cctx.config().isSqlEscapeAll();

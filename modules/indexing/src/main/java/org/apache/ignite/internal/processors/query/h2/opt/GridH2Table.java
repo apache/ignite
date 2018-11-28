@@ -37,7 +37,7 @@ import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
-import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
+import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.ddl.CreateTableData;
@@ -869,7 +869,7 @@ public class GridH2Table extends TableBase {
      * @return Proxy index.
      */
     private Index createDuplicateIndexIfNeeded(Index target) {
-        if (!(target instanceof H2TreeIndex) && !(target instanceof SpatialIndex))
+        if (!(target instanceof H2TreeIndexBase) && !(target instanceof SpatialIndex))
             return null;
 
         IndexColumn[] cols = target.getIndexColumns();

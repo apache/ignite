@@ -369,6 +369,8 @@ public interface GridQueryIndexing {
      *
      * @param ctx Cache context.
      * @throws IgniteCheckedException If failed.
+     *
+     * @return {@code true} If context has been initialized.
      */
-    public void initCacheContext(GridCacheContext ctx) throws IgniteCheckedException;
+    public boolean initCacheContext(GridCacheContext ctx) throws IgniteCheckedException;
 }

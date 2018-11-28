@@ -140,66 +140,59 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
         IndexColumn[] cols;
 
-        if (cctx.affinityNode()) {
-            segments = new H2Tree[segmentsCnt];
+        assert cctx.affinityNode();
 
-            IgniteCacheDatabaseSharedManager db = cctx.shared().database();
+        segments = new H2Tree[segmentsCnt];
 
-            AtomicInteger maxCalculatedInlineSize = new AtomicInteger();
+        IgniteCacheDatabaseSharedManager db = cctx.shared().database();
 
-            for (int i = 0; i < segments.length; i++) {
-                db.checkpointReadLock();
+        AtomicInteger maxCalculatedInlineSize = new AtomicInteger();
 
-                try {
-                    RootPage page = getMetaPage(treeName, i);
+        for (int i = 0; i < segments.length; i++) {
+            db.checkpointReadLock();
 
-                    segments[i] = new H2Tree(
-                        treeName,
-                        idxName,
-                        tblName,
-                        tbl.cacheName(),
-                        cctx.offheap().reuseListForIndex(treeName),
-                        cctx.groupId(),
-                        cctx.dataRegion().pageMemory(),
-                        cctx.shared().wal(),
-                        cctx.offheap().globalRemoveId(),
-                        tbl.rowFactory(),
-                        page.pageId().pageId(),
-                        page.isAllocated(),
-                        unwrappedColsInfo,
-                        wrappedColsInfo,
-                        maxCalculatedInlineSize,
-                        pk,
-                        affinityKey,
-                        cctx.mvccEnabled(),
-                        rowCache,
-                        cctx.kernalContext().failure(),
-                        log) {
-                        @Override public int compareValues(Value v1, Value v2) {
-                            return v1 == v2 ? 0 : table.compareTypeSafe(v1, v2);
-                        }
-                    };
-                }
-                finally {
-                    db.checkpointReadUnlock();
-                }
+            try {
+                RootPage page = getMetaPage(treeName, i);
+
+                segments[i] = new H2Tree(
+                    treeName,
+                    idxName,
+                    tblName,
+                    tbl.cacheName(),
+                    cctx.offheap().reuseListForIndex(treeName),
+                    cctx.groupId(),
+                    cctx.dataRegion().pageMemory(),
+                    cctx.shared().wal(),
+                    cctx.offheap().globalRemoveId(),
+                    tbl.rowFactory(),
+                    page.pageId().pageId(),
+                    page.isAllocated(),
+                    unwrappedColsInfo,
+                    wrappedColsInfo,
+                    maxCalculatedInlineSize,
+                    pk,
+                    affinityKey,
+                    cctx.mvccEnabled(),
+                    rowCache,
+                    cctx.kernalContext().failure(),
+                    log) {
+                    @Override public int compareValues(Value v1, Value v2) {
+                        return v1 == v2 ? 0 : table.compareTypeSafe(v1, v2);
+                    }
+                };
             }
-
-            boolean useUnwrappedCols = segments[0].unwrappedPk();
-
-            IndexColumnsInfo colsInfo = useUnwrappedCols ? unwrappedColsInfo : wrappedColsInfo;
-
-            cols = colsInfo.cols();
-
-            inlineIdxs = colsInfo.inlineIdx();
+            finally {
+                db.checkpointReadUnlock();
+            }
         }
-        else {
-            // We need indexes on the client node, but index will not contain any data.
-            segments = null;
-            inlineIdxs = null;
 
-            cols = unwrappedColsInfo.cols();
-        }
+        boolean useUnwrappedCols = segments[0].unwrappedPk();
+
+        IndexColumnsInfo colsInfo = useUnwrappedCols ? unwrappedColsInfo : wrappedColsInfo;
+
+        cols = colsInfo.cols();
+
+        inlineIdxs = colsInfo.inlineIdx();
 
         IndexColumn.mapColumns(cols, tbl);
 
