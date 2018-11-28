@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteDataStorageMetricsSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheStartStopWithFreqCheckpointTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCorruptedStoreTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsExchangeDuringCheckpointTest;
@@ -94,6 +95,8 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(IgniteOnlineNodeOutOfBaselineFullApiSelfTest.class);
         suite.addTestSuite(ClientAffinityAssignmentWithBaselineTest.class);
         suite.addTestSuite(IgniteAbsentEvictionNodeOutOfBaselineTest.class);
+
+        suite.addTestSuite(IgnitePdsCacheStartStopWithFreqCheckpointTest.class);
 
         return suite;
     }
