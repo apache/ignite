@@ -1725,7 +1725,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      *
      */
-    protected void cleanPersistenceDir() throws Exception {
+    protected static void cleanPersistenceDir() throws Exception {
         assertTrue("Grids are not stopped", F.isEmpty(G.allGrids()));
 
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "cp", false));

@@ -846,7 +846,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /** {@inheritDoc} */
-    @Override public boolean rootPageForIndexExists(int cacheId, String idxName, int segment) {
+    @Override public boolean rootPageForIndexExists(int cacheId, String idxName, int segment)
+        throws IgniteCheckedException {
         return indexStorage.cacheIndexExists(cacheId, idxName, segment);
     }
 

@@ -2717,14 +2717,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         // Closure prepared, do rebuild.
         final GridWorkerFuture<?> fut = new GridWorkerFuture<>();
 
-        markIndexRebuild(cctx.name(), clo, true);
+        markIndexRebuild(cctx.name(), true);
 
         GridWorker worker = new GridWorker(ctx.igniteInstanceName(), "index-rebuild-worker-" + cctx.name(), log) {
             @Override protected void body() {
                 try {
                     rebuildIndexesFromHash0(cctx, clo);
 
-                    markIndexRebuild(cctx.name(), clo, false);
+                    markIndexRebuild(cctx.name(), false);
 
                     fut.onDone();
                 }
@@ -2768,11 +2768,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param cacheName Cache name.
      * @param val Value.
      */
-    private void markIndexRebuild(String cacheName, IndexRebuildClosure clo, boolean val) {
+    private void markIndexRebuild(String cacheName, boolean val) {
         for (H2TableDescriptor tblDesc : tables(cacheName)) {
             assert tblDesc.table() != null;
 
-            // TODO: Mark only some indexes.
             tblDesc.table().markRebuildFromHashInProgress(val);
         }
     }
