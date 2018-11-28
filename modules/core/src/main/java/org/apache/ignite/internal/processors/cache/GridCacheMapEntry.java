@@ -35,6 +35,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.eviction.EvictableEntry;
+import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
@@ -83,6 +84,7 @@ import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisito
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
@@ -5199,6 +5201,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 assert res != null;
 
+                if (checkClientDisconnect(cctx, resFut))
+                    return;
+
                 if (res.resultType() == ResultType.VERSION_MISMATCH) {
                     resFut.onDone(serializationError());
 
@@ -5343,6 +5348,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 }
 
                 assert res != null;
+
+                if (checkClientDisconnect(cctx, resFut))
+                    return;
 
                 if (res.resultType() == ResultType.VERSION_MISMATCH) {
                     resFut.onDone(serializationError());
@@ -5518,6 +5526,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 assert res != null;
 
+                if (checkClientDisconnect(cctx, resFut))
+                    return;
+
                 if (res.resultType() == ResultType.VERSION_MISMATCH) {
                     resFut.onDone(serializationError());
 
@@ -5639,6 +5650,25 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             resFut.onDone(updRes);
         }
+    }
+
+    /**
+     * @param cctx Context.
+     * @param resFut Response future.
+     * @return {@code True} - if local node is disconnected client. Otherwise - {@code false}.
+     */
+    private static boolean checkClientDisconnect(GridCacheContext cctx,
+        GridFutureAdapter<GridCacheUpdateTxResult> resFut) {
+        if (!cctx.kernalContext().clientDisconnected())
+            return false;
+
+        IgniteFutureImpl recFut = (IgniteFutureImpl<?>) cctx.kernalContext().cluster().get()
+            .clientReconnectFuture();
+
+        resFut.onDone(new IgniteClientDisconnectedCheckedException(recFut,
+            "Operation has been cancelled (client node disconnected)."));
+
+        return true;
     }
 
     /**

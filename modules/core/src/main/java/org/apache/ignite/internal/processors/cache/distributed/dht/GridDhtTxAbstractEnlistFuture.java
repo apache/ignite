@@ -33,6 +33,7 @@ import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -65,6 +66,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -495,6 +497,16 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                         catch (GridCacheEntryRemovedException ignored) {
                             entry = cache.entryExx(entry.key(), topVer);
                         }
+                        catch (IgniteSQLException e) {
+                            if (!cctx.kernalContext().clientDisconnected())
+                                throw e;
+
+                            IgniteFutureImpl recFut = (IgniteFutureImpl<?>) cctx.kernalContext().cluster().get()
+                                .clientReconnectFuture();
+
+                            onDone(new IgniteClientDisconnectedCheckedException(recFut,
+                                "Operation has been cancelled (client node disconnected)."));
+                        }
                         finally {
                             cctx.shared().database().checkpointReadUnlock();
                         }
@@ -521,6 +533,16 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                                         continueLoop(true);
                                     }
                                     catch (Throwable e) {
+                                        if (cctx.kernalContext().clientDisconnected()) {
+                                            IgniteFutureImpl recFut = (IgniteFutureImpl<?>) cctx.kernalContext()
+                                                .cluster().get().clientReconnectFuture();
+
+                                            log.error("Enlist future got an error [fut=" + this + ']', e);
+
+                                            e = new IgniteClientDisconnectedCheckedException(recFut,
+                                                "Operation has been cancelled (client node disconnected).");
+                                        }
+
                                         onDone(e);
                                     }
                                 }
