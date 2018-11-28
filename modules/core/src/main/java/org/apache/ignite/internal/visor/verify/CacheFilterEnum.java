@@ -20,7 +20,9 @@ package org.apache.ignite.internal.visor.verify;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Use for filtering caches in {@link VisorIdleVerifyDumpTask}.
+ * Represents a type of cache(s) that can be used for comparing update counters and checksums between primary and backup partitions.
+ * <br>
+ * @see org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2
  */
 public enum CacheFilterEnum {
     /** All. */

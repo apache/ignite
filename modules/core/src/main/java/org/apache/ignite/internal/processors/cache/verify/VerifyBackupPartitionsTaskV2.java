@@ -36,6 +36,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
@@ -194,7 +195,8 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
             }
             else if (onlySpecificCaches()) {
                 for (DynamicCacheDescriptor desc : ignite.context().cache().cacheDescriptors().values()) {
-                    if (isCacheMatchFilter(desc.cacheName()))
+                    if (desc.cacheConfiguration().getCacheMode() != CacheMode.LOCAL
+                        && isCacheMatchFilter(desc.cacheName()))
                         grpIds.add(desc.groupId());
                 }
             }
