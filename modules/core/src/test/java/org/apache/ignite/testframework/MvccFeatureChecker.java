@@ -41,7 +41,8 @@ public class MvccFeatureChecker {
         ENTRY_LOCK,
         CACHE_EVENTS,
         EVICTION,
-        EXPIRATION
+        EXPIRATION,
+        METRICS
     }
 
     /**
@@ -132,6 +133,9 @@ public class MvccFeatureChecker {
 
             case EXPIRATION:
                 fail("https://issues.apache.org/jira/browse/IGNITE-7311");
+
+            case METRICS:
+                fail("https://issues.apache.org/jira/browse/IGNITE-9224");
         }
     }
 }

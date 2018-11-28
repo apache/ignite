@@ -28,12 +28,12 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  */
 public class PartitionedAtomicCacheGetsDistributionTest extends CacheGetsDistributionAbstractTest {
     /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return PARTITIONED;
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return ATOMIC;
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
+    @Override protected CacheMode cacheMode() {
+        return PARTITIONED;
     }
 }

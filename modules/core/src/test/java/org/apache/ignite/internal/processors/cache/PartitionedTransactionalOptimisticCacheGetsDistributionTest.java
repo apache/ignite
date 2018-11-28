@@ -42,12 +42,12 @@ public class PartitionedTransactionalOptimisticCacheGetsDistributionTest extends
     }
 
     /** {@inheritDoc} */
-    @Override protected TransactionIsolation transactionIsolation() {
-        return READ_COMMITTED;
+    @Override protected TransactionConcurrency transactionConcurrency() {
+        return OPTIMISTIC;
     }
 
     /** {@inheritDoc} */
-    @Override protected TransactionConcurrency transactionConcurrency() {
-        return OPTIMISTIC;
+    @Override protected TransactionIsolation transactionIsolation() {
+        return READ_COMMITTED;
     }
 }

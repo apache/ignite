@@ -30,13 +30,13 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -62,6 +62,8 @@ public abstract class CacheGetsDistributionAbstractTest extends GridCommonAbstra
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.METRICS);
+
         super.beforeTestsStarted();
 
         assert gridCount() >= 1 : "At least one grid must be started";
@@ -86,6 +88,11 @@ public abstract class CacheGetsDistributionAbstractTest extends GridCommonAbstra
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
+        IgniteCache cache = ignite(0).cache(DEFAULT_CACHE_NAME);
+
+        if (cache != null)
+            cache.destroy();
+
         // Setting different MAC addresses for all nodes
         Map<UUID, String> macs = getClusterMacs();
 
@@ -98,30 +105,52 @@ public abstract class CacheGetsDistributionAbstractTest extends GridCommonAbstra
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        grid(0).destroyCache(DEFAULT_CACHE_NAME);
-
-        super.afterTest();
-    }
-
-    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setTransactionConfiguration(transactionConfiguration());
+        TransactionConfiguration txCfg = new TransactionConfiguration()
+            .setDefaultTxIsolation(transactionIsolation())
+            .setDefaultTxConcurrency(transactionConcurrency());
+
+        cfg.setTransactionConfiguration(txCfg);
 
         return cfg;
     }
 
     /**
+     * @return Grids count to start.
+     */
+    protected int gridCount() {
+        return 4;
+    }
+
+    /**
+     * @return Cache configuration.
+     */
+    protected <K, V> CacheConfiguration<K, V> cacheConfiguration() {
+        CacheConfiguration<K, V> ccfg = defaultCacheConfiguration();
+
+        ccfg.setCacheMode(cacheMode());
+        ccfg.setAtomicityMode(atomicityMode());
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setReadFromBackup(true);
+        ccfg.setStatisticsEnabled(true);
+
+        if (cacheMode() == CacheMode.PARTITIONED)
+            ccfg.setBackups(backupsCount());
+
+        return ccfg;
+    }
+
+    /**
+     * @return Cache mode.
+     */
+    protected abstract CacheMode cacheMode();
+
+    /**
      * @return Cache atomicity mode.
      */
     protected abstract CacheAtomicityMode atomicityMode();
-
-    /**
-     * @return Caching mode.
-     */
-    protected abstract CacheMode cacheMode();
 
     /**
      * @return Cache transaction isolation.
@@ -142,13 +171,6 @@ public abstract class CacheGetsDistributionAbstractTest extends GridCommonAbstra
      */
     protected int backupsCount() {
         return gridCount() - 1;
-    }
-
-    /**
-     * @return Grids count to start.
-     */
-    protected int gridCount() {
-        return 4;
     }
 
     /**
@@ -313,37 +335,6 @@ public abstract class CacheGetsDistributionAbstractTest extends GridCommonAbstra
             else
                 assertEquals(0L, getsCnt);
         }
-    }
-
-    /**
-     * @return Transaction configuration.
-     */
-    protected TransactionConfiguration transactionConfiguration() {
-        TransactionConfiguration txCfg = new TransactionConfiguration();
-
-        txCfg.setDefaultTxIsolation(transactionIsolation());
-        txCfg.setDefaultTxConcurrency(transactionConcurrency());
-
-        return txCfg;
-    }
-
-    /**
-     * @return Cache configuration.
-     */
-    @SuppressWarnings("unchecked")
-    protected <K, V> CacheConfiguration<K, V> cacheConfiguration() {
-        CacheConfiguration<K, V> cfg = defaultCacheConfiguration();
-
-        cfg.setCacheMode(cacheMode());
-        cfg.setAtomicityMode(atomicityMode());
-        cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setReadFromBackup(true);
-        cfg.setStatisticsEnabled(true);
-
-        if (cacheMode() == CacheMode.PARTITIONED)
-            cfg.setBackups(backupsCount());
-
-        return cfg;
     }
 
     /**

@@ -28,12 +28,12 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  */
 public class ReplicatedAtomicCacheGetsDistributionTest extends CacheGetsDistributionAbstractTest {
     /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return REPLICATED;
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return ATOMIC;
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
+    @Override protected CacheMode cacheMode() {
+        return REPLICATED;
     }
 }

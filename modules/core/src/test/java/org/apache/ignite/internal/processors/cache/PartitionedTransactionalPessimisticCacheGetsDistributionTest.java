@@ -25,7 +25,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
 /**
  * Tests of pessimistic transactional partitioned cache's 'get' requests distribution.
@@ -48,6 +48,6 @@ public class PartitionedTransactionalPessimisticCacheGetsDistributionTest extend
 
     /** {@inheritDoc} */
     @Override protected TransactionIsolation transactionIsolation() {
-        return REPEATABLE_READ;
+        return READ_COMMITTED;
     }
 }
