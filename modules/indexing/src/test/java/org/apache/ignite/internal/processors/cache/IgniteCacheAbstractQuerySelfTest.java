@@ -286,21 +286,12 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      *
      * @throws Exception In case of error.
      */
-    public void _testDifferentKeyTypes() throws Exception {
-        fail("http://atlassian.gridgain.com/jira/browse/GG-11216");
-
+    public void testDifferentKeyTypes() throws Exception {
         final IgniteCache<Object, Object> cache = jcache(Object.class, Object.class);
 
         cache.put(1, "value");
 
-        try {
-            cache.put("key", "value");
-
-            fail();
-        }
-        catch (CacheException ignored) {
-            // No-op.
-        }
+        cache.put("key", "value");
     }
 
     /**
@@ -521,7 +512,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         QueryCursor<Cache.Entry<Key, GridCacheQueryTestValue>> qry = cache
             .query(new SqlQuery<Key, GridCacheQueryTestValue>(GridCacheQueryTestValue.class,
-                    "fieldName='field1' and field2=1 and field3=1 and id=100500 and embeddedField2=11 and x=3"));
+                "fieldName='field1' and field2=1 and field3=1 and id=100500 and embeddedField2=11 and x=3"));
 
         Cache.Entry<Key, GridCacheQueryTestValue> entry = F.first(qry.getAll());
 
@@ -2232,39 +2223,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     }
 
     /**
-     * Empty test object.
-     */
-    private static class EmptyObject {
-        /** */
-        private int val;
-
-        /**
-         * @param val Value.
-         */
-        private EmptyObject(int val) {
-            this.val = val;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return val;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (!(o instanceof EmptyObject))
-                return false;
-
-            EmptyObject that = (EmptyObject)o;
-
-            return val == that.val;
-        }
-    }
-
-    /**
      *
      */
     private static class BadHashKeyObject implements Serializable, Comparable<BadHashKeyObject> {
@@ -2404,9 +2362,9 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
          */
         @Override public String toString() {
             return "EnumObject{" +
-                    "id=" + id +
-                    ", type=" + type +
-                    '}';
+                "id=" + id +
+                ", type=" + type +
+                '}';
         }
     }
 

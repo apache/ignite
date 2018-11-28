@@ -15,19 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
+package org.apache.ignite.ml.multiclass;
 
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.internal.processors.cache.datastructures.IgniteCountDownLatchAbstractSelfTest;
-
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
- *
+ * Test suite for multilayer perceptrons.
  */
-public class IgnitePartitionedCountDownLatchSelfTest extends IgniteCountDownLatchAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMode atomicsCacheMode() {
-        return PARTITIONED;
-    }
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    OneVsRestTrainerTest.class
+})
+public class MultiClassTestSuite {
+    // No-op.
 }
