@@ -55,7 +55,6 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-        ccfg.setName(CACHE_REGULAR);
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setCacheMode(LOCAL);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -69,14 +68,14 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
     @Override protected void beforeTestsStarted() throws Exception {
         ignite = startGrid(1);
 
-        cache = ignite.cache(CACHE_REGULAR);
+        cache = ignite.cache(DEFAULT_CACHE_NAME);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         cache = null;
 
-        ignite = null;
+        stopAllGrids();
     }
 
     /**

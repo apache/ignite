@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import java.util.Arrays;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -31,8 +32,8 @@ import static org.junit.Assert.assertArrayEquals;
  */
 public abstract class GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest extends
     GridCacheAbstractPartitionedByteArrayValuesSelfTest {
-    /** Offheap cache name. */
-    private static final String CACHE_ATOMIC = "cache_atomic";
+    /** */
+    public static final String ATOMIC_CACHE = "atomicCache";
 
     /** Atomic caches. */
     private static IgniteCache<Integer, Object>[] cachesAtomic;
@@ -43,10 +44,16 @@ public abstract class GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest ex
 
         CacheConfiguration atomicCacheCfg = cacheConfiguration0();
 
-        atomicCacheCfg.setName(CACHE_ATOMIC);
+        atomicCacheCfg.setName(ATOMIC_CACHE);
         atomicCacheCfg.setAtomicityMode(ATOMIC);
 
-        c.setCacheConfiguration(cacheConfiguration(), atomicCacheCfg);
+        int size = c.getCacheConfiguration().length;
+
+        CacheConfiguration[] configs = Arrays.copyOf(c.getCacheConfiguration(), size + 1);
+
+        configs[size] = atomicCacheCfg;
+
+        c.setCacheConfiguration(configs);
 
         c.setPeerClassLoadingEnabled(peerClassLoading());
 
@@ -68,7 +75,7 @@ public abstract class GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest ex
         cachesAtomic = new IgniteCache[gridCnt];
 
         for (int i = 0; i < gridCount(); i++)
-            cachesAtomic[i] = ignites[i].cache(CACHE_ATOMIC);
+            cachesAtomic[i] = grid(i).cache(ATOMIC_CACHE);
     }
 
     /** {@inheritDoc} */

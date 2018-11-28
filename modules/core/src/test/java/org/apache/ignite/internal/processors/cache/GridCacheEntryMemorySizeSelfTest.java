@@ -135,7 +135,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
      * @param mode Cache mode.
      * @return Created cache.
      */
-    private IgniteCache<Integer, Value> testCache(boolean nearEnabled, CacheMode mode) {
+    private IgniteCache<Integer, Value> createCache(boolean nearEnabled, CacheMode mode) {
         CacheConfiguration<Integer, Value> cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(mode);
@@ -194,7 +194,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
     public void testLocal() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
-        IgniteCache<Integer, Value> cache = testCache(false, LOCAL);
+        IgniteCache<Integer, Value> cache = createCache(false, LOCAL);
 
         try {
             cache.put(1, new Value(new byte[1024]));
@@ -217,7 +217,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testReplicated() throws Exception {
-        IgniteCache<Integer, Value> cache = testCache(false, REPLICATED);
+        IgniteCache<Integer, Value> cache = createCache(false, REPLICATED);
 
         try {
             cache.put(1, new Value(new byte[1024]));
@@ -240,7 +240,9 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testPartitionedNearEnabled() throws Exception {
-        IgniteCache<Integer, Value> cache = testCache(true, PARTITIONED);
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+
+        IgniteCache<Integer, Value> cache = createCache(true, PARTITIONED);
 
         try {
             int[] keys = new int[3];
@@ -292,7 +294,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testPartitionedNearDisabled() throws Exception {
-        IgniteCache<Integer, Value> cache = testCache(false, PARTITIONED);
+        IgniteCache<Integer, Value> cache = createCache(false, PARTITIONED);
 
         try {
             int[] keys = new int[3];

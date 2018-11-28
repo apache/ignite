@@ -46,7 +46,7 @@ public abstract class GridCacheAbstractPartitionedByteArrayValuesSelfTest extend
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration0() {
-        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+        CacheConfiguration cfg = new CacheConfiguration();
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setAtomicityMode(TRANSACTIONAL);
