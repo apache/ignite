@@ -29,9 +29,14 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *
  */
 public class CacheMvccTxFastFinishTest extends CacheTxFastFinishTest {
-    /**
-     * @param ignite Node.
-     */
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10444");
+
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
     @Override protected void fastFinishTx(Ignite ignite) {
         IgniteTransactions txs = ignite.transactions();
 

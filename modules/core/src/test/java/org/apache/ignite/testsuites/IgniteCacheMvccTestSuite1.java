@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.GridCachePartitionedLocalStor
 import org.apache.ignite.internal.processors.cache.GridCacheReplicatedLocalStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheStopSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheSwapPreloadSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheTcpClientDiscoveryMultiThreadedTest;
 import org.apache.ignite.internal.processors.cache.GridDataStorageConfigurationConsistencySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicInvokeTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicLocalInvokeTest;
@@ -212,6 +213,8 @@ public class IgniteCacheMvccTestSuite1 extends TestSuite {
         ignoredTests.add(IgniteCommunicationBalanceMultipleConnectionsTest.class);
         ignoredTests.add(IgniteCommunicationSslBalanceTest.class);
         ignoredTests.add(IgniteIoTestMessagesTest.class);
+
+        ignoredTests.add(GridCacheTcpClientDiscoveryMultiThreadedTest.class);
 
         // Skip classes which Mvcc implementations are added in this method below.
         ignoredTests.add(GridCacheOffHeapMultiThreadedUpdateSelfTest.class); // See GridCacheMvccMultiThreadedUpdateSelfTest.
