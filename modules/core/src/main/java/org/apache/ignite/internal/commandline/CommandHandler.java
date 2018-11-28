@@ -194,7 +194,7 @@ public class CommandHandler {
     /** */
     private static final String CMD_SKIP_ZEROS = "--skipZeros";
 
-    /** Cache kind. */
+    /** Cache filter. */
     private static final String CACHE_FILTER = "--cacheFilter";
 
     /** */
@@ -1958,8 +1958,8 @@ public class CommandHandler {
                     else if (CMD_SKIP_ZEROS.equals(nextArg))
                         cacheArgs.skipZeros(true);
                     else if (CACHE_FILTER.equals(nextArg)) {
-                        String filter = nextArg("The cache kind should be specified. The following values can be used: " +
-                            Arrays.toString(CacheFilterEnum.values()) + '.').toUpperCase();
+                        String filter = nextArg("The cache filter should be specified. The following values can be " +
+                            "used: " + Arrays.toString(CacheFilterEnum.values()) + '.').toUpperCase();
 
                         cacheArgs.setCacheFilterEnum(CacheFilterEnum.valueOf(filter));
                     }

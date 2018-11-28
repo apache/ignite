@@ -71,13 +71,16 @@ public class VisorIdleVerifyDumpTaskArg extends VisorIdleVerifyTaskArg {
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         super.writeExternalData(out);
+
         out.writeBoolean(skipZeros);
+
         U.writeEnum(out, cacheFilterEnum);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternalData(protoVer, in);
+
         skipZeros = in.readBoolean();
 
         if (protoVer >= V2)
