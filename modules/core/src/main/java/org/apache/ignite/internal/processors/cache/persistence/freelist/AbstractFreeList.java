@@ -373,7 +373,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     }
 
     /** {@inheritDoc} */
-    public long freeSpace() {
+    @Override public long freeSpace() {
         long freeSpace = 0;
 
         for (int b = BUCKETS - 2; b > 0; b--) {
@@ -601,7 +601,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     /**
      * @return Number of empty data pages in free list.
      */
-    public int emptyDataPages() {
+    @Override public int emptyDataPages() {
         return bucketsSize[REUSE_BUCKET].intValue();
     }
 
