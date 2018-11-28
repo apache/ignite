@@ -1762,6 +1762,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (!cctx.isQueryEnabled())
             return null;
 
+        // TODO: Exit if cache is empty. How?
+
         if (!busyLock.enterBusy())
             return new GridFinishedFuture<>(new NodeStoppingException("Failed to rebuild indexes from hash " +
                 "(grid is stopping)."));
