@@ -1121,8 +1121,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         for (int i = 0; i < 100; i++) {
             ignite.semaphore("s" + i, i, false, true);
 
-            IgniteAtomicSequence sq = ignite.atomicSequence("sq" + i, 0, true);
-            sq.incrementAndGet();
+            ignite.atomicSequence("sq" + i, 0, true)
+                .incrementAndGet();
         }
 
         CacheGroupContext storedSysCacheCtx = ignite.context().cache().cacheGroup(CU.cacheId("default-ds-group"));
