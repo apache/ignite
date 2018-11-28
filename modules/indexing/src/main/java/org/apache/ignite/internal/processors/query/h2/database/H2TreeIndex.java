@@ -224,8 +224,9 @@ public class H2TreeIndex extends GridH2IndexBase {
 
         for (int i = 0; i < segments.length; i++) {
             try {
+                H2Tree segment = segments[i];
 
-                if (!metaPageExists(i))
+                if (segment.created())
                     return true;
             }
             catch (Exception e) {
@@ -572,6 +573,7 @@ public class H2TreeIndex extends GridH2IndexBase {
      * @return {@code True} if exists.
      * @throws IgniteCheckedException If failed.
      */
+    // TODO: Remove?
     private boolean metaPageExists(int segIdx) throws IgniteCheckedException {
         return cctx.offheap().rootPageForIndexExists(cctx.cacheId(), treeName, segIdx);
     }
