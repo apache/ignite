@@ -24,9 +24,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
-import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.ObjectPoolReusable;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.h2.engine.Session;
 import org.jetbrains.annotations.Nullable;
@@ -161,18 +159,18 @@ class MapQueryResults {
                 cancel.cancel();
         }
 
-        close();
+        close(true);
     }
 
     /**
      *
      */
-    public synchronized void close() {
+    public synchronized void close(boolean lockTbls) {
         for (int i = 0; i < results.length(); i++) {
             MapQueryResult res = results.get(i);
 
             if (res != null)
-                res.close();
+                res.close(lockTbls);
         }
 
         if (lazy)

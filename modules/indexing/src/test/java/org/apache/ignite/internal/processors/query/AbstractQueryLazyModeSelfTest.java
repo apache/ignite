@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -37,8 +35,6 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -58,15 +54,6 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        for (Ignite ign : Ignition.allGrids()) {
-            ConcurrentMap<Thread, ConcurrentMap<Connection, H2ConnectionWrapper>> connMap =
-                ((IgniteH2Indexing)((IgniteEx)ign).context().query().getIndexing()).connections().connectionsForThread();
-
-            for (ConcurrentMap<Connection, H2ConnectionWrapper> conns : connMap.values())
-                System.out.println("+++ " + conns.size());
-        }
-
-
         stopAllGrids();
     }
 

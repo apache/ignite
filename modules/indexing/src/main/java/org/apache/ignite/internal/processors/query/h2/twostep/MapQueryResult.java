@@ -272,23 +272,29 @@ class MapQueryResult {
 
     /**
      * Close the result.
+     * @param lockTbls If {@code true} lock the tables before close result.
      */
-    public void close() {
+    public void close(boolean lockTbls) {
         synchronized (this) {
             if (closed)
                 return;
 
             closed = true;
 
-            if (ses != null)
-                GridH2Table.readLockTables(ses, false);
+            try {
+                if (ses != null && lockTbls)
+                    GridH2Table.readLockTables(ses, false);
 
-            U.close(rs, log);
+                U.close(rs, log);
 
-            ses = null;
+                ses = null;
 
-            if (detachedConn != null)
-                detachedConn.recycle();
+                if (detachedConn != null)
+                    detachedConn.recycle();
+            } finally {
+                if (ses != null && lockTbls)
+                    GridH2Table.unlockTables(ses);
+            }
         }
     }
 

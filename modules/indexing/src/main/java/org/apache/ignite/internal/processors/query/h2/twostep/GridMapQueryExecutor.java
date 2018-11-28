@@ -78,7 +78,6 @@ import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
@@ -899,7 +898,7 @@ public class GridMapQueryExecutor {
                 qryResults.addResult(qryIdx, qry, node.id(), rs, params, H2Utils.session(conn));
 
                 if (qryResults.cancelled()) {
-                    qryResults.result(qryIdx).close();
+                    qryResults.result(qryIdx).close(false);
 
                     throw new QueryCancelledException();
                 }
@@ -944,7 +943,7 @@ public class GridMapQueryExecutor {
             if (qryResults != null) {
                 nodeRess.remove(reqId, segmentId, qryResults);
 
-                qryResults.close();
+                qryResults.close(false);
             }
             else
                 releaseReservations();
@@ -1206,6 +1205,13 @@ public class GridMapQueryExecutor {
                 GridH2QueryContext.set(qryResults.queryContext());
 
                 try {
+                    MapQueryResult res = qryResults.result(req.query());
+
+                    assert res != null;
+
+                    if (!res.closed() && qryResults.lazy())
+                        res.lockTables();
+
                     sendNextPage(nodeRess, node, qryResults, req.query(), req.segmentId(), req.pageSize(), false);
                 }
                 finally {
@@ -1229,8 +1235,6 @@ public class GridMapQueryExecutor {
                 }
 
                 qryResults.cancel();
-
-                qryResults.close();
             }
         }
     }
@@ -1262,9 +1266,6 @@ public class GridMapQueryExecutor {
             return null;
 
         try {
-            if (qr.lazy())
-                res.lockTables();
-
             int page = res.page();
 
             List<Value[]> rows = new ArrayList<>(Math.min(64, pageSize));
@@ -1272,13 +1273,13 @@ public class GridMapQueryExecutor {
             boolean last = res.fetchNextPage(rows, pageSize);
 
             if (last) {
-                res.close();
+                res.close(false);
 
                 if (qr.isAllClosed()) {
                     nodeRess.remove(qr.queryRequestId(), segmentId, qr);
 
                     // Close, release reservations, recycle connection if the last page fetched in lazy mode.
-                    qr.close();
+                    qr.close(false);
                 }
             }
             else {
@@ -1311,7 +1312,7 @@ public class GridMapQueryExecutor {
             return msg;
         }
         finally {
-            if (qr.lazy())
+            if (!res.closed() && qr.lazy())
                 res.unlockTables();
         }
     }
