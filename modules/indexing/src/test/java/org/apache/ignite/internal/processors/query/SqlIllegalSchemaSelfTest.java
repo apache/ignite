@@ -114,11 +114,15 @@ public class SqlIllegalSchemaSelfTest extends GridCommonAbstractTest {
                 new CacheConfiguration().setName("CACHE").setSqlSchema(QueryUtils.SCHEMA_SYS.toLowerCase())
             );
         }
-        catch (Throwable e) {
+        catch (CacheException e) {
             assertTrue(hasCause(e, IgniteCheckedException.class,
                 "SQL schema name is reserved (please choose another one) [cacheName=CACHE, schemaName=ignite]"));
 
             return;
+        }
+        catch (Throwable e) {
+            fail("Exception class is not as expected [expected=" +
+                CacheException.class + ", actual=" + e.getClass() + ']');
         }
 
         fail("Exception has not been thrown.");
@@ -154,11 +158,15 @@ public class SqlIllegalSchemaSelfTest extends GridCommonAbstractTest {
                 new CacheConfiguration().setName("CACHE").setSqlSchema(QueryUtils.SCHEMA_SYS.toUpperCase())
             );
         }
-        catch (Throwable e) {
+        catch (CacheException e) {
             assertTrue(hasCause(e, IgniteCheckedException.class,
                 "SQL schema name is reserved (please choose another one) [cacheName=CACHE, schemaName=IGNITE]"));
 
             return;
+        }
+        catch (Throwable e) {
+            fail("Exception class is not as expected [expected=" +
+                CacheException.class + ", actual=" + e.getClass() + ']');
         }
 
         fail("Exception has not been thrown.");
@@ -195,11 +203,15 @@ public class SqlIllegalSchemaSelfTest extends GridCommonAbstractTest {
                     .setSqlSchema("\"" + QueryUtils.SCHEMA_SYS.toUpperCase() + "\"")
             );
         }
-        catch (Throwable e) {
+        catch (CacheException e) {
             assertTrue(hasCause(e, IgniteCheckedException.class,
                 "SQL schema name is reserved (please choose another one) [cacheName=CACHE, schemaName=\"IGNITE\"]"));
 
             return;
+        }
+        catch (Throwable e) {
+            fail("Exception class is not as expected [expected=" +
+                CacheException.class + ", actual=" + e.getClass() + ']');
         }
 
         fail("Exception has not been thrown.");
