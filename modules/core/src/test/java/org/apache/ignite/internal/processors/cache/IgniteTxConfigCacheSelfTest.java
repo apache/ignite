@@ -44,6 +44,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionTimeoutException;
@@ -109,6 +110,9 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testUserTxTimeout() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-7952");
+
         final Ignite ignite = grid(0);
 
         final IgniteCache<Object, Object> cache = ignite.getOrCreateCache(CACHE_NAME);

@@ -78,6 +78,10 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheEntryListenerAtomi
 import org.apache.ignite.internal.processors.cache.IgniteCacheEntryListenerAtomicTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheEntryProcessorCallTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheManyAsyncOperationsTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheMvccTxInvokeTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheMvccTxNearEnabledInvokeTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheTxInvokeTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheTxNearEnabledInvokeTest;
 import org.apache.ignite.internal.processors.cache.IgniteClientAffinityAssignmentSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteIncompleteCacheObjectSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.CacheKeepBinaryWithInterceptorTest;
@@ -225,12 +229,16 @@ public class IgniteCacheMvccTestSuite1 extends TestSuite {
         // Skip classes which Mvcc implementations are added in this method below.
         ignoredTests.add(GridCacheOffHeapMultiThreadedUpdateSelfTest.class); // See GridCacheMvccMultiThreadedUpdateSelfTest.
         ignoredTests.add(CacheTxFastFinishTest.class); // See CacheMvccTxFastFinishTest.
+        ignoredTests.add(IgniteCacheTxInvokeTest.class); // See IgniteCacheMvccTxInvokeTest.
+        ignoredTests.add(IgniteCacheTxNearEnabledInvokeTest.class); // See IgniteCacheMvccTxNearEnabledInvokeTest.
 
         suite.addTest(IgniteBinaryCacheTestSuite.suite(ignoredTests));
 
         // Add Mvcc clones.
         suite.addTestSuite(GridCacheMvccMultiThreadedUpdateSelfTest.class);
         suite.addTestSuite(CacheMvccTxFastFinishTest.class);
+        suite.addTestSuite(IgniteCacheMvccTxInvokeTest.class);
+        suite.addTestSuite(IgniteCacheMvccTxNearEnabledInvokeTest.class);
 
         return suite;
     }

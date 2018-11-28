@@ -22,7 +22,14 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 /**
  *
  */
-public class IgniteCacheTxNearEnabledInvokeTest extends IgniteCacheTxInvokeTest {
+public class IgniteCacheMvccTxNearEnabledInvokeTest extends IgniteCacheMvccTxInvokeTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+
+        super.beforeTestsStarted();
+    }
+
     /** {@inheritDoc} */
     @Override protected NearCacheConfiguration nearConfiguration() {
         return new NearCacheConfiguration();
