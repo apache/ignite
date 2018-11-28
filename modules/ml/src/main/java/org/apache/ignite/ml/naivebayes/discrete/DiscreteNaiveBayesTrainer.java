@@ -42,7 +42,7 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
     private double[] priorProbabilities;
     /* Sets equivalent probability for all classes. */
     private boolean equiprobableClasses;
-    /** The threshold to convert a feature to a discret value. */
+    /** The threshold to convert a feature to a discrete value. */
     private double[][] bucketThresholds;
 
     /**
@@ -109,7 +109,7 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
                     for (int j = 0; j < size; j++) {
                         double x = features.get(j);
                         int bucketNumber = toBucketNumber(x, bucketThresholds[j]);
-                        ++valuesInBucket[j][bucketNumber];
+                        valuesInBucket[j][bucketNumber] += 1;
                     }
                 }
                 return res;
