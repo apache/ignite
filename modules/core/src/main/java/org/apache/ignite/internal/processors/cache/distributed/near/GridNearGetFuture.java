@@ -890,8 +890,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         GridNearGetRequest createNearGetRequest(IgniteUuid rootFutId) {
             return new GridNearGetRequest(
                 cctx.cacheId(),
-                futId,
                 rootFutId,
+                futId,
                 ver,
                 keys,
                 readThrough,
