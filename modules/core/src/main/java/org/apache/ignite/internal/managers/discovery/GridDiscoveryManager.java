@@ -1782,7 +1782,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     @Nullable public ClusterNode node(UUID nodeId) {
         assert nodeId != null;
 
-        return discoCache().node(nodeId);
+        DiscoCache discoCache = discoCache();
+
+        return discoCache != null ? discoCache.node(nodeId) : null;
     }
 
     /**
