@@ -314,7 +314,8 @@ public class QueryUtils {
             normalIdx.setIndexType(idx.getIndexType());
             normalIdx.setInlineSize(idx.getInlineSize());
 
-            normalIdx.setName(normalizeObjectName(indexName(normalTblName, idx), false));
+            //normalIdx.setName(normalizeObjectName(indexName(normalTblName, idx), false));
+            normalIdx.setName(indexName(normalTblName, idx));
 
             normalIdxs.add(normalIdx);
         }
