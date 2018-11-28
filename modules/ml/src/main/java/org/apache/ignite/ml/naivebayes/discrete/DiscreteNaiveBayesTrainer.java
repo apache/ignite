@@ -183,19 +183,19 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
             return false;
         }
 
-        Optional<long[][]> optinalFirst = holder1.valuesInBucketPerLbl.values().stream().findFirst();
-        Optional<long[][]> optinalSecond = holder2.valuesInBucketPerLbl.values().stream().findFirst();
+        Optional<long[][]> optionalFirst = holder1.valuesInBucketPerLbl.values().stream().findFirst();
+        Optional<long[][]> optionalSecond = holder2.valuesInBucketPerLbl.values().stream().findFirst();
 
-        if (optinalFirst.isPresent()) {
-            if (optinalSecond.isPresent()) {
-                return optinalFirst.get().length == optinalSecond.get().length;
+        if (optionalFirst.isPresent()) {
+            if (optionalSecond.isPresent()) {
+                return optionalFirst.get().length == optionalSecond.get().length;
             }
             else {
                 return false;
             }
         }
         else {
-            return !optinalSecond.isPresent();
+            return !optionalSecond.isPresent();
         }
     }
 
