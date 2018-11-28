@@ -35,19 +35,16 @@ public class LocalModelStorageProvider implements ModelStorageProvider {
 
     /** {@inheritDoc} */
     @Override public FileOrDirectory get(String key) {
-        System.out.println("Get " + key);
         return storage.get(key);
     }
 
     /** {@inheritDoc} */
     @Override public void put(String key, FileOrDirectory file) {
-        System.out.println("Put " + key + " : " + file);
         storage.put(key, file);
     }
 
     /** {@inheritDoc} */
     @Override public void remove(String key) {
-        System.out.println("Remove " + key);
         storage.remove(key);
     }
 
