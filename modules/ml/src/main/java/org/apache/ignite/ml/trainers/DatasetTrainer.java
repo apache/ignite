@@ -297,6 +297,7 @@ public abstract class DatasetTrainer<M extends Model, L> {
      *
      * @param envBuilder Learning environment builder.
      */
+    // TODO: IGNITE-10441 Think about more elegant ways to perform fluent API.
     public DatasetTrainer<M, L> withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
         this.envBuilder  = envBuilder;
         this.environment = envBuilder.buildForTrainer();
