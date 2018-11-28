@@ -445,6 +445,18 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
         List<Statement> statements = Collections.synchronizedList(new ArrayList<>());
         List<Connection> connections = Collections.synchronizedList(new ArrayList<>());
 
+        for (int i = 0; i < SERVER_THREAD_POOL_SIZE; i++) {
+            Connection yaConn = DriverManager.getConnection(URL);
+
+            yaConn.setSchema('"' + DEFAULT_CACHE_NAME + '"');
+
+            connections.add(yaConn);
+
+            Statement yaStmt = yaConn.createStatement();
+
+            statements.add(yaStmt);
+        }
+
         try {
             GridTestUtils.runAsync(new Runnable() {
                 @Override public void run() {
@@ -464,20 +476,11 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
 
             IgniteInternalFuture<Object> res = null;
             for (int i = 0; i < SERVER_THREAD_POOL_SIZE; i++) {
+                final int statementIndex = i;
                 res = GridTestUtils.runAsync(() -> {
                     GridTestUtils.assertThrows(log, new Callable<Object>() {
                         @Override public Object call() throws Exception {
-                            Connection yaConn = DriverManager.getConnection(URL);
-
-                            yaConn.setSchema('"' + DEFAULT_CACHE_NAME + '"');
-
-                            connections.add(yaConn);
-
-                            Statement yaStmt = yaConn.createStatement();
-
-                            statements.add(yaStmt);
-
-                            yaStmt.executeQuery("select sleep_func(10000)");
+                            statements.get(statementIndex).executeQuery("select sleep_func(10000)");
 
                             return null;
                         }
