@@ -15,19 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
-
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.internal.processors.cache.datastructures.IgniteCountDownLatchAbstractSelfTest;
-
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-
 /**
- *
+ * <!-- Package description. -->
+ * Contains Standard scaler preprocessor.
  */
-public class IgnitePartitionedCountDownLatchSelfTest extends IgniteCountDownLatchAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMode atomicsCacheMode() {
-        return PARTITIONED;
-    }
-}
+package org.apache.ignite.ml.preprocessing.standardscaling;
