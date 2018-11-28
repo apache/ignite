@@ -55,12 +55,9 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     /** Max table rows. */
     private static final int MAX_ROWS = 100;
 
-    /** Subdirectory with CSV files */
-    private static final String CSV_FILE_SUBDIR = "/modules/clients/src/test/resources/";
-
-    /** A CSV file with one record. */
+    /** A CSV file with 20_000 records. */
     private static final String BULKLOAD_20_000_LINE_CSV_FILE =
-        Objects.requireNonNull(resolveIgnitePath(CSV_FILE_SUBDIR + "bulkload20_000.csv")).getAbsolutePath();
+        Objects.requireNonNull(resolveIgnitePath("/modules/clients/src/test/resources/bulkload20_000.csv")).getAbsolutePath();
 
     /** Default table name. */
     private static final String TBL_NAME = "Person";
@@ -140,7 +137,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testCancelingStmtWithoutQuery() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
@@ -153,7 +150,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testResultSetRetrievalInCanceledStatement() throws Exception {
         stmt.execute("SELECT 1; SELECT 2; SELECT 3;");
@@ -172,7 +169,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testCancelClosedStmt() throws Exception {
         stmt.close();
@@ -187,7 +184,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testResultSetNextAfterCanceling() throws Exception {
         stmt.setFetchSize(10);
@@ -243,7 +240,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testCancelAnotherStmt() throws Exception {
         stmt.setFetchSize(10);
@@ -260,7 +257,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testCancelAnotherStmtResultSet() throws Exception {
         try (Statement anotherStmt = conn.createStatement()) {
@@ -283,7 +280,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
     public void testCancelLongRunningQueryBasedOnJoins() throws Exception {
@@ -318,7 +315,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
     public void testCancelLongRunningFileUpload() throws Exception {
@@ -356,7 +353,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
     public void testCancelMultipleStatementsQuery() throws Exception {
@@ -402,7 +399,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testCancelBatchQuery() throws Exception {
         try (Statement stmt2 = conn.createStatement()) {
@@ -440,13 +437,25 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
     public void testCancelAgainstFullServerThreadPool()
         throws Exception {
         List<Statement> statements = Collections.synchronizedList(new ArrayList<>());
         List<Connection> connections = Collections.synchronizedList(new ArrayList<>());
+
+        for (int i = 0; i < SERVER_THREAD_POOL_SIZE; i++) {
+            Connection yaConn = DriverManager.getConnection(URL);
+
+            yaConn.setSchema('"' + DEFAULT_CACHE_NAME + '"');
+
+            connections.add(yaConn);
+
+            Statement yaStmt = yaConn.createStatement();
+
+            statements.add(yaStmt);
+        }
 
         try {
             GridTestUtils.runAsync(new Runnable() {
@@ -467,20 +476,11 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
 
             IgniteInternalFuture<Object> res = null;
             for (int i = 0; i < SERVER_THREAD_POOL_SIZE; i++) {
+                final int statementIndex = i;
                 res = GridTestUtils.runAsync(() -> {
                     GridTestUtils.assertThrows(log, new Callable<Object>() {
                         @Override public Object call() throws Exception {
-                            Connection yaConn = DriverManager.getConnection(URL);
-
-                            yaConn.setSchema('"' + DEFAULT_CACHE_NAME + '"');
-
-                            connections.add(yaConn);
-
-                            Statement yaStmt = yaConn.createStatement();
-
-                            statements.add(yaStmt);
-
-                            yaStmt.executeQuery("select sleep_func(10000)");
+                            statements.get(statementIndex).executeQuery("select sleep_func(10000)");
 
                             return null;
                         }
