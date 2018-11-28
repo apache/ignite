@@ -32,8 +32,8 @@ public class DiscreteNaiveBayesModel implements Model<Vector, Double>, Exportabl
     /** */
     private static final long serialVersionUID = -127386523291350345L;
     /**
-     * Probabilities of features for all classes for each label. {@code labels[k][f][c]} contains a probability for
-     * class {@code c} for feature {@code f} for label {@code k}.
+     * Probabilities of features for all classes for each label. {@code labels[c][f][b]} contains a probability for
+     * class {@code c} for feature {@code f} for bucket {@code b}.
      */
     private final double[][][] probabilities;
     /** Prior probabilities of each class */
