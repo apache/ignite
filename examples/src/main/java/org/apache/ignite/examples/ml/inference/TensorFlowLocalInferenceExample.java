@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.inference.InfModel;
@@ -40,10 +41,10 @@ public class TensorFlowLocalInferenceExample {
     private static final String MODEL_PATH = "examples/src/main/resources/ml/mnist_tf_model";
 
     /** Path to the MNIST images data. */
-    private static final String MNIST_IMG_PATH = "org/apache/ignite/examples/ml/util/datasets/t10k-images-idx3-ubyte";
+    private static final String MNIST_IMG_PATH = "examples/src/main/resources/datasets/t10k-images-idx3-ubyte";
 
     /** Path to the MNIST labels data. */
-    private static final String MNIST_LBL_PATH = "org/apache/ignite/examples/ml/util/datasets/t10k-labels-idx1-ubyte";
+    private static final String MNIST_LBL_PATH = "examples/src/main/resources/datasets/t10k-labels-idx1-ubyte";
 
     /** Run example. */
     public static void main(String[] args) throws IOException {
@@ -60,13 +61,12 @@ public class TensorFlowLocalInferenceExample {
                     reshaped[0][i / 28][i % 28] = (float)doubles[i];
                 return Tensor.create(reshaped);
             })
-            .withOutput(Collections.singletonList("ArgMax"), collectedTensors -> {
-                return collectedTensors.get("ArgMax").copyTo(new long[1])[0];
-            });
+            .withOutput(Collections.singletonList("ArgMax"), collectedTensors -> collectedTensors.get("ArgMax")
+                .copyTo(new long[1])[0]);
 
-        List<MnistUtils.MnistLabeledImage> images = MnistUtils.mnistAsListFromResource(
-            MNIST_IMG_PATH,
-            MNIST_LBL_PATH,
+        List<MnistUtils.MnistLabeledImage> images = MnistUtils.mnistAsList(
+            Objects.requireNonNull(IgniteUtils.resolveIgnitePath(MNIST_IMG_PATH)).getPath(),
+            Objects.requireNonNull(IgniteUtils.resolveIgnitePath(MNIST_LBL_PATH)).getPath(),
             new Random(0),
             10000
         );
