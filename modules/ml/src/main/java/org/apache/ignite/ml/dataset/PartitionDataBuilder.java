@@ -55,6 +55,19 @@ public interface PartitionDataBuilder<K, V, C extends Serializable, D extends Au
      */
     public D build(LearningEnvironment env, Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize, C ctx);
 
+    /**
+     * Builds a new partition {@code data} from a partition {@code upstream} data and partition {@code context}.
+     * Important: there is no guarantee that there will be no more than one UpstreamEntry with given key,
+     * UpstreamEntry should be thought rather as a container saving all data from upstream, but omitting uniqueness
+     * constraint. This constraint is omitted to allow upstream data transformers in {@link DatasetBuilder} replicating
+     * entries. For example it can be useful for bootstrapping.
+     *
+     * @param env Learning environment.
+     * @param upstreamData Partition {@code upstream} data.
+     * @param upstreamDataSize Partition {@code upstream} data size.
+     * @param ctx Partition {@code context}.
+     * @return Partition {@code data}.
+     */
     public default D build(LearningEnvironment env, Stream<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize, C ctx) {
         return build(env, upstreamData.iterator(), upstreamDataSize, ctx);
     }

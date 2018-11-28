@@ -98,6 +98,32 @@ public class DatasetFactory {
             partDataBuilder
         );
     }
+
+    /**
+     * Creates a new instance of distributed dataset using the specified {@code partCtxBuilder} and
+     * {@code partDataBuilder}. This is the generic methods that allows to create any Ignite Cache based datasets with
+     * any desired partition {@code context} and {@code data}.
+     *
+     * @param datasetBuilder Dataset builder.
+     * @param partCtxBuilder Partition {@code context} builder.
+     * @param partDataBuilder Partition {@code data} builder.
+     * @param <K> Type of a key in {@code upstream} data.
+     * @param <V> ype of a value in {@code upstream} data.
+     * @param <C> Type of a partition {@code context}.
+     * @param <D> Type of a partition {@code data}.
+     * @return Dataset.
+     */
+    public static <K, V, C extends Serializable, D extends AutoCloseable> Dataset<C, D> create(
+        DatasetBuilder<K, V> datasetBuilder,
+        PartitionContextBuilder<K, V, C> partCtxBuilder,
+        PartitionDataBuilder<K, V, C, D> partDataBuilder) {
+        return datasetBuilder.build(
+            LearningEnvironmentBuilder.defaultBuilder(),
+            partCtxBuilder,
+            partDataBuilder
+        );
+    }
+
     /**
      * Creates a new instance of distributed dataset using the specified {@code partCtxBuilder} and
      * {@code partDataBuilder}. This is the generic methods that allows to create any Ignite Cache based datasets with
@@ -122,6 +148,32 @@ public class DatasetFactory {
         return create(
             new CacheBasedDatasetBuilder<>(ignite, upstreamCache),
             envBuilder,
+            partCtxBuilder,
+            partDataBuilder
+        );
+    }
+
+    /**
+     * Creates a new instance of distributed dataset using the specified {@code partCtxBuilder} and
+     * {@code partDataBuilder}. This is the generic methods that allows to create any Ignite Cache based datasets with
+     * any desired partition {@code context} and {@code data}.
+     *
+     * @param ignite Ignite instance.
+     * @param upstreamCache Ignite Cache with {@code upstream} data.
+     * @param partCtxBuilder Partition {@code context} builder.
+     * @param partDataBuilder Partition {@code data} builder.
+     * @param <K> Type of a key in {@code upstream} data.
+     * @param <V> Type of a value in {@code upstream} data.
+     * @param <C> Type of a partition {@code context}.
+     * @param <D> Type of a partition {@code data}.
+     * @return Dataset.
+     */
+    public static <K, V, C extends Serializable, D extends AutoCloseable> Dataset<C, D> create(
+        Ignite ignite, IgniteCache<K, V> upstreamCache,
+        PartitionContextBuilder<K, V, C> partCtxBuilder,
+        PartitionDataBuilder<K, V, C, D> partDataBuilder) {
+        return create(
+            new CacheBasedDatasetBuilder<>(ignite, upstreamCache),
             partCtxBuilder,
             partDataBuilder
         );
