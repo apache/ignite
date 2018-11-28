@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersion
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -107,9 +106,9 @@ public class IndexStorageImpl implements IndexStorage {
     /** {@inheritDoc} */
     @Override public RootPage allocateCacheIndex(Integer cacheId, String idxName, int segment)
         throws IgniteCheckedException {
-        String mangledIdxName = mangleCacheIndexName(cacheId, idxName, segment);
+        String maskedIdxName = maskCacheIndexName(cacheId, idxName, segment);
 
-        return allocateIndex(mangledIdxName);
+        return allocateIndex(maskedIdxName);
     }
 
     /** {@inheritDoc} */
@@ -148,9 +147,9 @@ public class IndexStorageImpl implements IndexStorage {
     /** {@inheritDoc} */
     @Override public RootPage dropCacheIndex(Integer cacheId, String idxName, int segment)
         throws IgniteCheckedException {
-        String mangledIdxName = mangleCacheIndexName(cacheId, idxName, segment);
+        String maskedIdxName = maskCacheIndexName(cacheId, idxName, segment);
 
-        return dropIndex(mangledIdxName);
+        return dropIndex(maskedIdxName);
     }
 
     /** {@inheritDoc} */
@@ -168,58 +167,35 @@ public class IndexStorageImpl implements IndexStorage {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean cacheIndexExists(Integer cacheId, String idxName, int segment)
+        throws IgniteCheckedException {
+        String maskedIdxName = maskCacheIndexName(cacheId, idxName, segment);
+
+        byte[] idxNameBytes = maskedIdxName.getBytes(StandardCharsets.UTF_8);
+
+        IndexItem row = metaTree.findOne(new IndexItem(idxNameBytes, 0));
+
+        return row != null;
+    }
+
+    /** {@inheritDoc} */
     @Override public void destroy() throws IgniteCheckedException {
         metaTree.destroy();
     }
 
     /**
-     * Mange cache index name.
+     * Mask cache index name.
      *
      * @param idxName Index name.
-     * @return Mangled name.
+     * @return Masked name.
      */
-    private String mangleCacheIndexName(Integer cacheId, String idxName, int segment) {
+    private String maskCacheIndexName(Integer cacheId, String idxName, int segment) {
         assert !grpShared || grpId == cacheId;
 
         if (grpShared)
             idxName = Integer.toString(cacheId) + "_" + idxName;
 
         return idxName + "%" + segment;
-    }
-
-    /**
-     * Unmangle cache index name if possible.
-     *
-     * @param mangledIdxName Mangled index name.
-     * @param expCacheId Expected cache ID.
-     * @return Unmangled index name, {@code null} if doesn't match expected cache ID.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Nullable private String unmangleCacheIndexNameIfPossible(String mangledIdxName, Integer expCacheId)
-        throws IgniteCheckedException {
-        if (grpShared)
-            return mangledIdxName;
-        else {
-            int pos = mangledIdxName.indexOf('_');
-
-            if (pos != -1) {
-                String cacheIdStr = mangledIdxName.substring(0, pos - 1);
-                String idxName = mangledIdxName.substring(pos);
-
-                try {
-                    Integer cacheId = Integer.parseInt(cacheIdStr);
-
-                    if (F.eq(expCacheId, cacheId))
-                        return idxName;
-                }
-                catch (NumberFormatException e) {
-                    throw new IgniteCheckedException("Failed to parse cache ID of mangled index name: " +
-                        mangledIdxName);
-                }
-            }
-
-            return null;
-        }
     }
 
     /**

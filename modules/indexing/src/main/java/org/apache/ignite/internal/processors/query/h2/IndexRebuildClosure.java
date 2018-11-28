@@ -17,31 +17,20 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 
-/** */
-class RebuildIndexFromHashClosure implements SchemaIndexCacheVisitorClosure {
-    /** */
-    private final GridCacheQueryManager qryMgr;
-
-    /** MVCC status flag. */
-    private final boolean mvccEnabled;
-
+/**
+ * Index rebuild closure. Exposes information about indexes being rebuilt.
+ */
+public interface IndexRebuildClosure extends SchemaIndexCacheVisitorClosure {
     /**
-     * @param qryMgr Query manager.
-     * @param mvccEnabled MVCC status flag.
+     * Check if the given index is being rebuild by this closure.
+     *
+     * @param tbl Table.
+     * @param idx Index.
+     * @return {@code True} if index is being rebuild by this closure, {@code false} otherwise.
      */
-    RebuildIndexFromHashClosure(GridCacheQueryManager qryMgr, boolean mvccEnabled) {
-        this.qryMgr = qryMgr;
-        this.mvccEnabled = mvccEnabled;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void apply(CacheDataRow row) throws IgniteCheckedException {
-        // prevRowAvailable is always true with MVCC on, and always false *on index rebuild* with MVCC off.
-        qryMgr.store(row, null, mvccEnabled);
-    }
+    boolean isRebuilt(GridH2Table tbl, GridH2IndexBase idx);
 }

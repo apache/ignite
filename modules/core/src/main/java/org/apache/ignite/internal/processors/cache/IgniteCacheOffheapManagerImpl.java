@@ -1154,6 +1154,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
+    @Override public boolean rootPageForIndexExists(int cacheId, String idxName, int segment) {
+        assert false : "Should not be called in in-memory mode.";
+
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public ReuseList reuseListForIndex(String idxName) {
         return grp.reuseList();
     }

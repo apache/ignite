@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
+import org.apache.ignite.internal.processors.query.h2.IndexRebuildPartialClosure;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
@@ -174,11 +175,14 @@ public class GridH2Table extends TableBase {
         assert idxs != null;
 
         List<Index> clones = new ArrayList<>(idxs.size());
+
         for (Index index : idxs) {
             Index clone = createDuplicateIndexIfNeeded(index);
+
             if (clone != null)
                 clones.add(clone);
         }
+
         idxs.addAll(clones);
 
         boolean hasHashIndex = idxs.size() >= 2 && index(0).getIndexType().isHash();
@@ -547,6 +551,24 @@ public class GridH2Table extends TableBase {
         // Row was not replaced, need to remove manually.
         if (!replaced && prevRow != null)
             idx.removex(prevRow);
+    }
+
+    /**
+     * Collect indexes for rebuild.
+     *
+     * @param clo Closure.
+     */
+    public void collectIndexesForPartialRebuild(IndexRebuildPartialClosure clo) {
+        for (int i = sysIdxsCnt; i < idxs.size(); i++) {
+            Index idx = idxs.get(i);
+
+            if (idx instanceof H2TreeIndex) {
+                H2TreeIndex idx0 = (H2TreeIndex)idx;
+
+                if (idx0.rebuildRequired())
+                    clo.addIndex(this, idx0);
+            }
+        }
     }
 
     /**
@@ -948,9 +970,10 @@ public class GridH2Table extends TableBase {
     }
 
     /**
+     * Drop columns.
      *
-     * @param cols
-     * @param ifExists
+     * @param cols Columns.
+     * @param ifExists If EXISTS flag.
      */
     public void dropColumns(List<String> cols, boolean ifExists) {
         assert !ifExists || cols.size() == 1;

@@ -65,6 +65,17 @@ public interface IndexStorage {
     public RootPage dropIndex(String idxName) throws IgniteCheckedException;
 
     /**
+     * Check if cache index exists.
+     *
+     * @param cacheId Cache ID.
+     * @param idxName Index name.
+     * @param segment Segment.
+     * @return {@code True} if exists.
+     * @throws IgniteCheckedException If failed.
+     */
+    public boolean cacheIndexExists(Integer cacheId, String idxName, int segment) throws IgniteCheckedException;
+
+    /**
      * Destroy this meta store.
      *
      * @throws IgniteCheckedException  If failed.
