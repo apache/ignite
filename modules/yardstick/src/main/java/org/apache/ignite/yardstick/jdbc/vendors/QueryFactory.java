@@ -41,6 +41,11 @@ public class QueryFactory {
         return "CREATE INDEX sal_idx ON PUBLIC.PERSON(salary);";
     }
 
+    /** Query that creates index on Person.org_id to have fast join query. */
+    public String createOrgIdIdx(){
+        return "CREATE INDEX org_id_idx ON PUBLIC.PERSON(org_id)";
+    }
+
     /** Query that drops Person table. */
     public String dropPersonIfExist() {
         return "DROP TABLE IF EXISTS PUBLIC.PERSON;";
@@ -90,7 +95,7 @@ public class QueryFactory {
         return "SELECT p.id, p.org_id, p.first_name, p.last_name, p.salary, o.name " +
             "FROM PUBLIC.PERSON p " +
             "LEFT JOIN PUBLIC.ORGANIZATION o " +
-            "ON p.id = o.id " +
+            "ON p.org_id = o.id " +
             "WHERE salary BETWEEN ? AND ?;";
     }
 }

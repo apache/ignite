@@ -98,6 +98,7 @@ public abstract class BaseSelectRangeBenchmark extends AbstractJdbcBenchmark {
         executeUpdate(conn0, queries.createOrgTab());
 
         executeUpdate(conn0, queries.createSalaryIdx());
+        executeUpdate(conn0, queries.createOrgIdIdx());
 
         executeUpdate(conn0, queries.beforeLoad());
 
