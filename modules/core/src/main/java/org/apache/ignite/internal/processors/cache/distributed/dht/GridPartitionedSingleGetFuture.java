@@ -781,6 +781,11 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         if (topVer.equals(this.topVer))
             return true;
 
+        // If topology changed reset collection of invalid nodes.
+        synchronized (this) {
+            invalidNodes = null;
+        }
+
         if (REMAP_CNT_UPD.incrementAndGet(this) > MAX_REMAP_CNT) {
             onDone(new ClusterTopologyCheckedException("Failed to remap key to a new node after " +
                 MAX_REMAP_CNT + " attempts (key got remapped to the same node) [key=" + key + ", node=" +
