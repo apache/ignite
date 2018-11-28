@@ -59,9 +59,6 @@ public class IgniteBinaryObjectsCacheTestSuite3 {
 
         TestSuite suite = IgniteCacheTestSuite3.suite(ignoredTests);
 
-        GridTestUtils.addTestIfNeeded(suite,GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite,GridCacheBinaryTransactionalEntryProcessorDeploymentSelfTest.class, ignoredTests);
-
         return suite;
     }
 }

@@ -49,17 +49,8 @@ public class IgniteCacheWriteBehindTestSuite extends TestSuite {
     public static TestSuite suite(Collection<Class> ignoredTests) {
         TestSuite suite = new TestSuite("Write-Behind Store Test Suite");
 
-        // Write-behind tests.
-        GridTestUtils.addTestIfNeeded(suite, GridCacheWriteBehindStoreSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, GridCacheWriteBehindStoreMultithreadedSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, GridCacheWriteBehindStoreLocalTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, GridCacheWriteBehindStoreReplicatedTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, GridCacheWriteBehindStorePartitionedTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, GridCacheWriteBehindStorePartitionedMultiNodeSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, GridCachePartitionedWritesTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgnteCacheClientWriteBehindStoreAtomicTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgnteCacheClientWriteBehindStoreTxTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgnteCacheClientWriteBehindStoreNonCoalescingTest.class, ignoredTests);
+        for (int i = 0; i < 200; i++)
+            suite.addTest(new TestSuite(GridCacheWriteBehindStoreMultithreadedSelfTest.class));
 
         return suite;
     }
