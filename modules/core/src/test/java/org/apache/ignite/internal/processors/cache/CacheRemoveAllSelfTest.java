@@ -77,9 +77,6 @@ public class CacheRemoveAllSelfTest extends GridCacheAbstractSelfTest {
         for (int i = 0; i < igniteId.get(); ++i) {
             IgniteCache locCache = grid(i).cache(DEFAULT_CACHE_NAME);
 
-            if (i==4)
-            System.out.println("Local size:" + i);
-
             assertEquals("Local size: " + locCache.localSize() + "\n" +
                 "On heap: " + locCache.localSize(CachePeekMode.ONHEAP) + "\n" +
                 "Off heap: " + locCache.localSize(CachePeekMode.OFFHEAP) + "\n" +

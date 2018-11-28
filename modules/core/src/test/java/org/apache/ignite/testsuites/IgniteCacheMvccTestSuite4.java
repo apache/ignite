@@ -52,14 +52,11 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicStoreValueTe
 import org.apache.ignite.internal.processors.cache.IgniteCacheConfigurationDefaultTemplateTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheConfigurationTemplateTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheContainsKeyAtomicTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheDynamicStopSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheInvokeReadThroughSingleNodeTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheStartTest;
 import org.apache.ignite.internal.processors.cache.IgniteClientCacheInitializationFailTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheFilterTest;
-import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheMultinodeTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartCoordinatorFailoverTest;
-import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartFailTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartNoExchangeTimeoutTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartStopConcurrentTest;
@@ -178,11 +175,8 @@ public class IgniteCacheMvccTestSuite4 extends TestSuite {
 
         // Other non-tx tests.
         ignoredTests.add(IgniteDynamicCacheStartSelfTest.class);
-        ignoredTests.add(IgniteDynamicCacheMultinodeTest.class);
         ignoredTests.add(IgniteDynamicCacheStartCoordinatorFailoverTest.class);
-        ignoredTests.add(IgniteDynamicCacheStartFailTest.class);
         ignoredTests.add(IgniteDynamicCacheWithConfigStartSelfTest.class);
-        ignoredTests.add(IgniteCacheDynamicStopSelfTest.class);
         ignoredTests.add(IgniteDynamicCacheStartStopConcurrentTest.class);
         ignoredTests.add(IgniteCacheConfigurationTemplateTest.class);
         ignoredTests.add(IgniteDynamicClientCacheStartSelfTest.class);
