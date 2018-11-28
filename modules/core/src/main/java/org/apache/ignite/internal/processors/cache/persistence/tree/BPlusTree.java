@@ -2098,6 +2098,42 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     }
 
     /**
+     * @return {@code True} in case the tree is empty.
+     * @throws IgniteCheckedException If failed.
+     */
+    public final boolean isEmpty() throws IgniteCheckedException {
+        checkDestroyed();
+
+        for (;;) {
+            TreeMetaData treeMeta = treeMeta();
+
+            long rootId, rootPage = acquirePage(rootId = treeMeta.rootId);
+
+            try {
+                long rootAddr = readLock(rootId, rootPage);
+
+                if (rootAddr == 0) {
+                    checkDestroyed();
+
+                    continue;
+                }
+
+                try {
+                    BPlusIO<L> io = io(rootAddr);
+
+                    return io.getCount(rootAddr) == 0;
+                }
+                finally {
+                    readUnlock(rootId, rootPage, rootAddr);
+                }
+            }
+            finally {
+                releasePage(rootId, rootPage);
+            }
+        }
+    }
+
+    /**
      * Returns number of elements in the tree by scanning pages of the bottom (leaf) level.
      * Since a concurrent access is permitted, there is no guarantee about
      * momentary consistency: the method may miss updates made in already scanned pages.

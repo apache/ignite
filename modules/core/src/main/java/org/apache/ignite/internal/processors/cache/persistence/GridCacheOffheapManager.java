@@ -1601,7 +1601,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     pendingTree = pendingTree0;
 
-                    if (!hasPendingEntries && pendingTree0.size() > 0)
+                    if (!hasPendingEntries && !pendingTree0.isEmpty())
                         hasPendingEntries = true;
 
                     int grpId = grp.groupId();
@@ -1791,6 +1791,18 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 CacheDataStore delegate0 = init0(true);
 
                 return delegate0 == null ? 0 : delegate0.fullSize();
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isEmpty() {
+            try {
+                CacheDataStore delegate0 = init0(true);
+
+                return delegate0 == null || delegate0.isEmpty();
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
