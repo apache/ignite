@@ -1336,8 +1336,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     final int cacheId = cacheCtx.cacheId();
                     final GridFutureAdapter<Void> usrFut = idxRebuildFuts.get(cacheId);
 
-                    if (!cctx.pageStore().hasIndexStore(cacheCtx.groupId()) && cacheCtx.affinityNode()
-                        && cacheCtx.group().persistenceEnabled()) {
+                    boolean persistentNode = cacheCtx.affinityNode() && cacheCtx.group().persistenceEnabled();
+
+                    // TODO: Index rebuild check.
+
+                    if (!cctx.pageStore().hasIndexStore(cacheCtx.groupId()) && persistentNode) {
                         IgniteInternalFuture<?> rebuildFut = cctx.kernalContext().query()
                             .rebuildIndexesFromHash(Collections.singleton(cacheCtx.cacheId()));
 

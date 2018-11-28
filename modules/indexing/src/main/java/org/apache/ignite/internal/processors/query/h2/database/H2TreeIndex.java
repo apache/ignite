@@ -532,7 +532,7 @@ public class H2TreeIndex extends GridH2IndexBase {
      * @throws IgniteCheckedException If failed.
      */
     private RootPage getMetaPage(String name, int segIdx) throws IgniteCheckedException {
-        return cctx.offheap().rootPageForIndex(cctx.cacheId(), name + "%" + segIdx);
+        return cctx.offheap().rootPageForIndex(cctx.cacheId(), name, segIdx);
     }
 
     /**
@@ -541,7 +541,7 @@ public class H2TreeIndex extends GridH2IndexBase {
      * @throws IgniteCheckedException If failed.
      */
     private void dropMetaPage(String name, int segIdx) throws IgniteCheckedException {
-        cctx.offheap().dropRootPageForIndex(cctx.cacheId(), name + "%" + segIdx);
+        cctx.offheap().dropRootPageForIndex(cctx.cacheId(), name, segIdx);
     }
 
     /** {@inheritDoc} */
