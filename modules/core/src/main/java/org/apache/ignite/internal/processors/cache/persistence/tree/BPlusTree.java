@@ -2118,21 +2118,26 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             long rootId, rootPage = acquirePage(rootId = treeMeta.rootId);
 
-            long rootAddr = readLock(rootId, rootPage);
-
-            if (rootAddr == 0) {
-                checkDestroyed();
-
-                continue;
-            }
-
             try {
-                BPlusIO<L> io = io(rootAddr);
+                long rootAddr = readLock(rootId, rootPage);
 
-                return io.getCount(rootAddr) == 0;
+                if (rootAddr == 0) {
+                    checkDestroyed();
+
+                    continue;
+                }
+
+                try {
+                    BPlusIO<L> io = io(rootAddr);
+
+                    return io.getCount(rootAddr) == 0;
+                }
+                finally {
+                    readUnlock(rootId, rootPage, rootAddr);
+                }
             }
             finally {
-                readUnlock(rootId, rootPage, rootAddr);
+                releasePage(rootId, rootPage);
             }
         }
     }
