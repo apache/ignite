@@ -81,6 +81,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils.SF;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -125,7 +126,8 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10410");
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10410");
 
         super.beforeTestsStarted();
     }
@@ -172,10 +174,11 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
      * @return {@code True} if persistence must be enabled for test.
      */
-    protected boolean persistenceEnabled() { return false; }
+    protected boolean persistenceEnabled() {
+        return false;
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -346,14 +349,13 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
      * @param holdLockNode Node holding the write lock.
      * @param tryLockNode Node trying to acquire lock.
      * @param useTimeout {@code True} if need to start tx with timeout.
-     *
      * @throws Exception If failed.
      */
-    private void testSynchronousRollback0(Ignite holdLockNode, final Ignite tryLockNode, final boolean useTimeout) throws Exception {
+    private void testSynchronousRollback0(Ignite holdLockNode, final Ignite tryLockNode,
+        final boolean useTimeout) throws Exception {
         final CountDownLatch keyLocked = new CountDownLatch(1);
 
         CountDownLatch waitCommit = new CountDownLatch(1);
@@ -416,7 +418,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                 int proc = 1;
 
-                while(true) {
+                while (true) {
                     try {
                         Transaction tx = txReadyFut.get();
 
@@ -497,11 +499,11 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         testEnlistMany(true, SERIALIZABLE, OPTIMISTIC);
     }
 
-
     /**
      *
      */
-    private void testEnlistMany(boolean write, TransactionIsolation isolation, TransactionConcurrency conc) throws Exception {
+    private void testEnlistMany(boolean write, TransactionIsolation isolation,
+        TransactionConcurrency conc) throws Exception {
         final Ignite client = startClient();
 
         Map<Integer, Integer> entries = new HashMap<>();
@@ -511,7 +513,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> fut = null;
 
-        try(Transaction tx = client.transactions().txStart(conc, isolation, 0, 0)) {
+        try (Transaction tx = client.transactions().txStart(conc, isolation, 0, 0)) {
             fut = rollbackAsync(tx, 200);
 
             if (write)
@@ -556,7 +558,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
             }
         }, "tx-rollback-thread");
 
-        try(final Transaction tx = client.transactions().txStart()) {
+        try (final Transaction tx = client.transactions().txStart()) {
             client.cache(CACHE_NAME).put(0, 0);
 
             fail();
@@ -615,7 +617,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
             }
         }, "tx-rollback-thread");
 
-        try(final Transaction tx = client.transactions().txStart()) {
+        try (final Transaction tx = client.transactions().txStart()) {
             txRef.set(tx);
 
             client.cache(CACHE_NAME).put(0, 0);
@@ -764,7 +766,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                 Transaction tx;
 
                 // Rollback all transaction
-                while((tx = nodeQ.poll()) != null) {
+                while ((tx = nodeQ.poll()) != null) {
                     rolledBack.increment();
 
                     doSleep(r.nextInt(50)); // Add random sleep to increase completed txs count.
@@ -798,7 +800,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         for (BlockingQueue<Transaction> queue : perNodeTxs.values()) {
             Transaction tx;
 
-            while((tx = queue.poll()) != null) {
+            while ((tx = queue.poll()) != null) {
                 rolledBack.increment();
 
                 rollbackClo.apply(tx);
@@ -947,12 +949,12 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
             @Override public boolean apply(Event evt) {
                 runAsync(new Runnable() {
                     @Override public void run() {
-                        try(Transaction tx = crd.transactions().withLabel("testLbl").txStart()) {
+                        try (Transaction tx = crd.transactions().withLabel("testLbl").txStart()) {
                             // Wait for node start.
                             waitForCondition(new GridAbsPredicate() {
                                 @Override public boolean apply() {
                                     return crd.cluster().topologyVersion() != GRID_CNT +
-                                        /** client node */ 1  + /** stop server node */ 1 + /** start server node */ 1;
+                                        /** client node */1 + /** stop server node */1 + /** start server node */1;
                                 }
                             }, 10_000);
 
@@ -1028,7 +1030,6 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      * @param keyLocked Latch for notifying until key is locked.
      * @param waitCommit Latch for waiting until commit is allowed.
      * @param timeout Timeout.
-     *
      * @return tx completion future.
      */
     private IgniteInternalFuture<?> lockInTx(final Ignite node, final CountDownLatch keyLocked,
