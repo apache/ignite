@@ -3407,27 +3407,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     active,
                     !stateChangeErr);
 
-                GridFutureAdapter<?> fut = cctx.kernalContext().discovery().joiningNodesAddedFuture();
+                log.info("<~> sendCustomEvent " + stateFinishMsg);
+                log.info("<~> nodes: " + cctx.discovery().allNodes().stream().map(ClusterNode::consistentId).map(Object::toString).sorted().collect(Collectors.joining(",")));
 
-                if (fut != null) {
-                    fut.listen(f -> {
-                        try {
-                            cctx.discovery().sendCustomEvent(stateFinishMsg);
+                cctx.discovery().sendCustomEvent(stateFinishMsg);
 
-                            if (!centralizedAff)
-                                onDone(exchCtx.events().topologyVersion(), null);
-                        }
-                        catch (IgniteCheckedException e) {
-                            onDone(e);
-                        }
-                    });
-                }
-                else {
-                    cctx.discovery().sendCustomEvent(stateFinishMsg);
-
-                    if (!centralizedAff)
-                        onDone(exchCtx.events().topologyVersion(), null);
-                }
+                if (!centralizedAff)
+                    onDone(exchCtx.events().topologyVersion(), null);
             }
         }
         catch (IgniteCheckedException e) {

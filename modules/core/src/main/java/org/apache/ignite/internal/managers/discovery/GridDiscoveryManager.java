@@ -94,7 +94,6 @@ import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -595,6 +594,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 final Map<Long, Collection<ClusterNode>> snapshots,
                 @Nullable DiscoverySpiCustomMessage spiCustomMsg
             ) {
+                DiscoveryCustomMessage customMsg = spiCustomMsg == null ? null
+                    : ((CustomMessageWrapper)spiCustomMsg).delegate();
+
+                if (customMsg instanceof ChangeGlobalStateFinishMessage)
+                    log.info("<~> DiscoverySpiListener#onDiscovery " + spiCustomMsg);
+
                 GridFutureAdapter<?> notificationFut = new GridFutureAdapter<>();
 
                 discoNtfWrk.submit(notificationFut, () -> {
@@ -767,9 +772,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     // Current version.
                     discoCache = discoCache();
 
-                if (type == EVT_NODE_JOINED || type == EVT_NODE_LEFT || type == EVT_NODE_FAILED)
-                    joiningNodeAddedOrLeft(node.id());
-
                 // If this is a local join event, just save it and do not notify listeners.
                 if (locJoinEvt) {
                     if (gridStartTime == 0)
@@ -882,17 +884,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 assert dataBag.joiningNodeId() != null;
 
                 if (ctx.localNodeId().equals(dataBag.joiningNodeId())) {
+                    log.info("<~> local collectJoiningNodeData : " + dataBag);
+
                     for (GridComponent c : ctx.components())
                         c.collectJoiningNodeData(dataBag);
                 }
                 else {
+                    log.info("<~> remote collectJoiningNodeData : " + dataBag);
+
                     for (GridComponent c : ctx.components())
                         c.collectGridNodeData(dataBag);
-
-                    DiscoveryDataClusterState clusterState = ctx.state().clusterState();
-
-                    if (clusterState.transition() && spi instanceof TcpDiscoverySpi && ((TcpDiscoverySpi)spi).isLocalNodeCoordinator())
-                        addToJoiningNodesAddedFuture(dataBag.joiningNodeId());
                 }
 
                 return dataBag;
@@ -903,18 +904,20 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 assert dataBag.joiningNodeId() != null;
 
                 if (ctx.localNodeId().equals(dataBag.joiningNodeId())) {
+                    log.info("<~> local onExchange " + dataBag);
+
                     // NodeAdded msg reached joining node after round-trip over the ring.
                     IGridClusterStateProcessor stateProc = ctx.state();
 
                     stateProc.onGridDataReceived(dataBag.gridDiscoveryData(
                         stateProc.discoveryDataType().ordinal()));
 
-//                    try {
-//                        Thread.sleep(10L);
-//                    }
-//                    catch (InterruptedException e) {
-//                        e.printStackTrace();
-//                    }
+                    try {
+                        Thread.sleep(10L);
+                    }
+                    catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
 
                     for (GridComponent c : ctx.components()) {
                         if (c.discoveryDataType() != null && c != stateProc)
@@ -945,12 +948,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             }
         });
 
-//        try {
-//            Thread.sleep(10L);
-//        }
-//        catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
+        try {
+            Thread.sleep(10L);
+        }
+        catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
         new IgniteThread(discoNtfWrk).start();
 
@@ -985,31 +988,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
-    }
-
-    private final Set<UUID> set = new GridConcurrentHashSet<>();
-
-    private GridFutureAdapter<Void> joiningNodesAdded;
-
-    private synchronized void addToJoiningNodesAddedFuture(UUID joiningNodeId) {
-        if (joiningNodesAdded != null && joiningNodesAdded.isDone())
-            joiningNodesAdded = new GridFutureAdapter<>();
-
-        set.add(joiningNodeId);
-    }
-
-    public synchronized void joiningNodeAddedOrLeft(UUID joiningNodeId) {
-        set.remove(joiningNodeId);
-
-        if (set.isEmpty() && joiningNodesAdded != null) {
-            joiningNodesAdded.onDone((Void)null);
-
-            joiningNodesAdded = null;
-        }
-    }
-
-    public GridFutureAdapter<?> joiningNodesAddedFuture() {
-        return joiningNodesAdded;
     }
 
     /**

@@ -263,6 +263,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     private final ConcurrentMap<InetSocketAddress, GridPingFutureAdapter<IgniteBiTuple<UUID, Boolean>>> pingMap =
         new ConcurrentHashMap<>();
 
+    /** Last listener future. */
+    private IgniteFuture<?> lastPendingLsnrFut;
+
     /**
      * @param adapter Adapter.
      */
@@ -534,7 +537,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     Map<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer,
                         Collections.unmodifiableList(top));
 
-                    lsnr.onDiscovery(EVT_NODE_FAILED, topVer, n, top, hist, null);
+                    lastPendingLsnrFut = lsnr.onDiscovery(EVT_NODE_FAILED, topVer, n, top, hist, null);
                 }
             }
         }
@@ -1441,7 +1444,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             Map<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer, top);
 
-            lsnr.onDiscovery(type, topVer, node, top, hist, null);
+            lastPendingLsnrFut = lsnr.onDiscovery(type, topVer, node, top, hist, null);
         }
         else {
             if (log.isDebugEnabled())
@@ -4201,6 +4204,19 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void processNodeAddedMessage(TcpDiscoveryNodeAddedMessage msg) {
             assert msg != null;
 
+            if (lastPendingLsnrFut != null) {
+                try {
+                    lastPendingLsnrFut.get();
+                }
+                catch (IgniteException ignore) {
+                    // No-op.
+                }
+
+                lastPendingLsnrFut = null;
+            }
+
+            log.info("<~> processNodeAddedMessage " + msg);
+
             TcpDiscoveryNode node = msg.node();
 
             assert node != null;
@@ -4517,6 +4533,8 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         private void processNodeAddFinishedMessage(TcpDiscoveryNodeAddFinishedMessage msg) {
             assert msg != null;
+
+            log.info("<~> processNodeAddFinishedMessage " + msg);
 
             UUID nodeId = msg.nodeId();
 
@@ -5637,7 +5655,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     throw new IgniteException("Failed to unmarshal discovery custom message: " + msg, t);
                 }
 
-                IgniteFuture<?> fut = lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
+                IgniteFuture<?> fut = lastPendingLsnrFut = lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
                     msg.topologyVersion(),
                     node,
                     snapshot,
