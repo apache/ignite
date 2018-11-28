@@ -3126,19 +3126,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                                                 }
                                             }
 
-                                            if (client0 == null) {
-                                                clientFuts.remove(connKey, connFut);
+                                            clientFuts.remove(connKey, connFut);
 
+                                            if (client0 == null)
                                                 onDone();
-                                            }
-                                            else if (client0.reserve()) {
-                                                clientFuts.remove(connKey, connFut);
-
+                                            else if (client0.reserve())
                                                 onDone(client0);
-                                            }
                                             else {
-                                                clientFuts.remove(connKey, connFut);
-
                                                 removeNodeClient(nodeId, client0);
 
                                                 onDone();
