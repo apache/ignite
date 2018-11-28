@@ -388,7 +388,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     AffinityTopologyVersion updTopVer = cctx.shared().exchange().readyAffinityVersion();
 
                     // Remap recursively.
-                    map(remapKeys, mappings, invalidNodes, updTopVer);
+                    map(remapKeys, mappings, this.invalidNodes, updTopVer);
                 }
 
                 // Add new future.
@@ -803,7 +803,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
         Set<ClusterNode> invalidNodeSet = invalidNodeMap.get(part);
 
-        if (invalidNodeMap == null)
+        if (invalidNodeSet == null)
             invalidNodeMap.put(part, invalidNodeSet = new HashSet<>());
 
         invalidNodeSet.add(node);

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteIllegalStateException;
@@ -26,6 +27,8 @@ import org.apache.ignite.failure.AbstractFailureHandler;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -166,14 +169,22 @@ public class CacheGetReadFromBackupFailoverTest extends GridCommonAbstractTest {
                         }
                     }
                 }
-                if (rnd.nextBoolean()) {
-                    ig.cache(TX_CACHE).get(rnd0.nextLong(KEYS_CNT));
-                    ig.cache(ATOMIC_CACHE).get(rnd0.nextLong(KEYS_CNT));
+
+                try {
+                    if (rnd.nextBoolean()) {
+                        ig.cache(TX_CACHE).get(rnd0.nextLong(KEYS_CNT));
+                        ig.cache(ATOMIC_CACHE).get(rnd0.nextLong(KEYS_CNT));
+                    }
+                    else {
+                        ig.cache(TX_CACHE).getAll(rnd.longs(16, 0, KEYS_CNT).boxed().collect(Collectors.toSet()));
+                        ig.cache(ATOMIC_CACHE).getAll(rnd.longs(16, 0, KEYS_CNT).boxed().collect(Collectors.toSet()));
+                    }
                 }
-                else {
-                    ig.cache(TX_CACHE).getAll(rnd.longs(16, 0, KEYS_CNT).boxed().collect(Collectors.toSet()));
-                    ig.cache(ATOMIC_CACHE).getAll(rnd.longs(16, 0, KEYS_CNT).boxed().collect(Collectors.toSet()));
+                catch (CacheException e) {
+                    if (!X.hasCause(e, NodeStoppingException.class))
+                        throw e;
                 }
+
             }
         }, "load-thread");
 
