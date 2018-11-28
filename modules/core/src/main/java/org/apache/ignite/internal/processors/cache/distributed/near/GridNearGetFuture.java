@@ -64,9 +64,8 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdapter<K, V> {
-
     /** Transaction. */
-    private IgniteTxLocalEx tx;
+    private final IgniteTxLocalEx tx;
 
     /** */
     private GridCacheVersion ver;
