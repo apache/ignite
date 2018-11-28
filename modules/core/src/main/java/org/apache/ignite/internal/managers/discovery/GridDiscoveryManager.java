@@ -891,7 +891,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     DiscoveryDataClusterState clusterState = ctx.state().clusterState();
 
-                    if (clusterState.transition() && nodes(clusterState.transitionTopologyVersion()).iterator().next().isLocal())
+                    if (clusterState.transition() && spi instanceof TcpDiscoverySpi && ((TcpDiscoverySpi)spi).isLocalNodeCoordinator())
                         addToJoiningNodesAddedFuture(dataBag.joiningNodeId());
                 }
 
