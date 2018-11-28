@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.inference.storage.model;
 
+import java.util.concurrent.locks.Lock;
 import org.apache.ignite.IgniteCache;
 
 /**
@@ -51,13 +52,7 @@ public class IgniteModelStorageProvider implements ModelStorageProvider {
     }
 
     /** {@inheritDoc} */
-    @Override public void lock(String path) {
-        cache.lock(path).lock();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void unlock(String path) {
-        // TODO: it doesn't work.
-        //  cache.lock(path).unlock();
+    @Override public Lock lock(String path) {
+        return cache.lock(path);
     }
 }

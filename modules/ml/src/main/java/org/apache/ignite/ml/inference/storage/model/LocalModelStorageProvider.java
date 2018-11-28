@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.inference.storage.model;
 
+import java.lang.ref.WeakReference;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
@@ -30,30 +31,29 @@ public class LocalModelStorageProvider implements ModelStorageProvider {
     private final ConcurrentMap<String, FileOrDirectory> storage = new ConcurrentHashMap<>();
 
     /** Storage of the locks. */
-    private final ConcurrentMap<String, Lock> locks = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, WeakReference<Lock>> locks = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override public FileOrDirectory get(String key) {
+        System.out.println("Get " + key);
         return storage.get(key);
     }
 
     /** {@inheritDoc} */
     @Override public void put(String key, FileOrDirectory file) {
+        System.out.println("Put " + key + " : " + file);
         storage.put(key, file);
     }
 
     /** {@inheritDoc} */
     @Override public void remove(String key) {
+        System.out.println("Remove " + key);
         storage.remove(key);
     }
 
     /** {@inheritDoc} */
-    @Override public void lock(String key) {
-        locks.computeIfAbsent(key, k -> new ReentrantLock()).lock();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void unlock(String key) {
-        locks.computeIfAbsent(key, k -> new ReentrantLock()).unlock();
+    @Override public Lock lock(String key) {
+        Lock lock = new ReentrantLock();
+        return locks.computeIfAbsent(key, k -> new WeakReference<>(lock)).get();
     }
 }

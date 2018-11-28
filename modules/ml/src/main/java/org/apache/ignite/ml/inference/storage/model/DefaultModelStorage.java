@@ -22,6 +22,8 @@ import java.nio.file.Paths;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.Set;
+import java.util.concurrent.locks.Lock;
+import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  * Default implementation of {@link ModelStorage} that can use any {@link ModelStorageProvider} as a backend storage
@@ -45,8 +47,11 @@ public class DefaultModelStorage implements ModelStorage {
         String parentPath = getParent(path);
 
         // Paths are locked in child-first order.
-        storageProvider.lock(path);
-        storageProvider.lock(parentPath);
+        Lock pathLock = storageProvider.lock(path);
+        Lock parentPathLock = storageProvider.lock(parentPath);
+
+        pathLock.lock();
+        parentPathLock.lock();
 
         try {
             FileOrDirectory parent = storageProvider.get(parentPath);
@@ -72,8 +77,8 @@ public class DefaultModelStorage implements ModelStorage {
             storageProvider.put(path, new File(data));
         }
         finally {
-            storageProvider.unlock(parentPath);
-            storageProvider.unlock(path);
+            parentPathLock.unlock();
+            pathLock.unlock();
         }
     }
 
@@ -81,7 +86,9 @@ public class DefaultModelStorage implements ModelStorage {
     @Override public byte[] getFile(String path) {
         FileOrDirectory fileOrDir = storageProvider.get(path);
 
-        storageProvider.lock(path);
+        Lock pathLock = storageProvider.lock(path);
+
+        pathLock.lock();
 
         try {
             // If file doesn't exist throw an exception.
@@ -95,7 +102,7 @@ public class DefaultModelStorage implements ModelStorage {
             return ((File) fileOrDir).getData();
         }
         finally {
-            storageProvider.unlock(path);
+            pathLock.unlock();
         }
     }
 
@@ -104,8 +111,11 @@ public class DefaultModelStorage implements ModelStorage {
         String parentPath = getParent(path);
 
         // Paths are locked in child-first order.
-        storageProvider.lock(path);
-        storageProvider.lock(parentPath);
+        Lock pathLock = storageProvider.lock(path);
+        Lock parentPathLock = storageProvider.lock(parentPath);
+
+        pathLock.lock();
+        parentPathLock.lock();
 
         try {
             // If a directory associated with specified path exists return.
@@ -136,57 +146,67 @@ public class DefaultModelStorage implements ModelStorage {
             storageProvider.put(path, new Directory());
         }
         finally {
-            storageProvider.unlock(path);
-            storageProvider.unlock(parentPath);
+            parentPathLock.unlock();
+            pathLock.unlock();
         }
     }
 
     /** {@inheritDoc} */
     @Override public void mkdirs(String path) {
-        Deque<String> pathsToBeCreated = new LinkedList<>();
+        Deque<IgniteBiTuple<String, Lock>> pathsToBeCreated = new LinkedList<>();
+
+        IgniteBiTuple<String, Lock> parentWithLock = null;
 
         try {
             while (path != null) {
                 // Paths are locked in child-first order.
-                storageProvider.lock(path);
+                Lock lock = storageProvider.lock(path);
+                lock.lock();
+
+                pathsToBeCreated.push(new IgniteBiTuple<>(path, lock));
 
                 if (exists(path)) {
-                    if (isDirectory(path))
+                    if (isDirectory(path)) {
+                        parentWithLock = pathsToBeCreated.pop();
                         break;
+                    }
 
                     throw new IllegalStateException("Cannot create directory because parent is not a directory [path="
                         + path + "]");
                 }
 
-                pathsToBeCreated.push(path);
                 path = getParent(path);
             }
 
-            String parent = path;
             while (!pathsToBeCreated.isEmpty()) {
-                path = pathsToBeCreated.pop();
+                IgniteBiTuple<String, Lock> pathWithLock = pathsToBeCreated.pop();
 
-                storageProvider.put(path, new Directory());
+                storageProvider.put(pathWithLock.get1(), new Directory());
 
-                if (parent != null) {
-                    Directory parentDir = (Directory)storageProvider.get(parent);
-                    parentDir.getFiles().add(path);
-                    storageProvider.put(parent, parentDir);
-                    storageProvider.unlock(parent);
+                if (parentWithLock != null) {
+                    Directory parentDir = (Directory)storageProvider.get(parentWithLock.get1());
+                    parentDir.getFiles().add(pathWithLock.get1());
+                    storageProvider.put(parentWithLock.get1(), parentDir);
+                    parentWithLock.get2().unlock();
                 }
 
-                parent = path;
+                parentWithLock = pathWithLock;
             }
+
+            if (parentWithLock != null)
+                parentWithLock.get2().unlock();
         }
         finally {
-            for (String p : pathsToBeCreated)
-                storageProvider.unlock(p);
+            for (IgniteBiTuple<String, Lock> pathWithLock : pathsToBeCreated)
+                pathWithLock.get2().unlock();
         }
     }
 
     /** {@inheritDoc} */
     @Override public Set<String> listFiles(String path) {
-        storageProvider.lock(path);
+        Lock pathLock = storageProvider.lock(path);
+
+        pathLock.lock();
 
         try {
             FileOrDirectory dir = storageProvider.get(path);
@@ -202,13 +222,15 @@ public class DefaultModelStorage implements ModelStorage {
             return ((Directory) dir).getFiles();
         }
         finally {
-            storageProvider.unlock(path);
+            pathLock.unlock();
         }
     }
 
     /** {@inheritDoc} */
     @Override public void remove(String path) {
-        storageProvider.lock(path);
+        Lock pathLock = storageProvider.lock(path);
+
+        pathLock.lock();
 
         try {
             FileOrDirectory file = storageProvider.get(path);
@@ -220,7 +242,7 @@ public class DefaultModelStorage implements ModelStorage {
             }
         }
         finally {
-            storageProvider.unlock(path);
+            pathLock.unlock();
         }
     }
 

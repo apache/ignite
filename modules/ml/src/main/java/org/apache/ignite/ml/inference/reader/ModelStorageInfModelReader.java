@@ -21,6 +21,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.ml.inference.storage.model.ModelStorage;
 import org.apache.ignite.ml.inference.storage.model.ModelStorageFactory;
 import org.apache.ignite.ml.inference.util.DirectorySerializer;
+import org.apache.ignite.ml.math.functions.IgniteSupplier;
 
 /**
  * Model reader that reads directory or file from model storage and serializes it using {@link DirectorySerializer}.
@@ -32,18 +33,31 @@ public class ModelStorageInfModelReader implements InfModelReader {
     /** Path to the directory or file. */
     private final String path;
 
+    /** Model storage supplier. */
+    private final IgniteSupplier<ModelStorage> mdlStorageSupplier;
+
+    /**
+     * Constructs a new instance of model storage inference model builder.
+     *
+     * @param path Path to the directory or file.
+     */
+    public ModelStorageInfModelReader(String path, IgniteSupplier<ModelStorage> mdlStorageSupplier) {
+        this.path = path;
+        this.mdlStorageSupplier = mdlStorageSupplier;
+    }
+
     /**
      * Constructs a new instance of model storage inference model builder.
      *
      * @param path Path to the directory or file.
      */
     public ModelStorageInfModelReader(String path) {
-        this.path = path;
+        this(path, () -> ModelStorageFactory.getModelStorage(Ignition.ignite()));
     }
 
     /** {@inheritDoc} */
     @Override public byte[] read() {
-        ModelStorage storage = ModelStorageFactory.getModelStorage(Ignition.ignite());
+        ModelStorage storage = mdlStorageSupplier.get();
 
         return storage.getFile(path);
     }

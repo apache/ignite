@@ -1,5 +1,7 @@
 package org.apache.ignite.ml.inference.storage.model;
 
+import java.util.concurrent.locks.Lock;
+
 /**
  * Model storage provider that keeps files and directories presented as {@link FileOrDirectory} files and correspondent
  * locks.
@@ -33,12 +35,5 @@ public interface ModelStorageProvider {
      *
      * @param path Path to be locked.
      */
-    public void lock(String path);
-
-    /**
-     * Unlocks the row associated with the specified path.
-     *
-     * @param path Path to be unlocked.
-     */
-    public void unlock(String path);
+    public Lock lock(String path);
 }
