@@ -16,6 +16,6 @@
  */
 
 /**
- * Contains security tests for Thin Client.
+ * Contains security tests for Data Streamer.
  */
-package org.apache.ignite.internal.processor.security.client.thin;
+package org.apache.ignite.internal.processor.security.datastreamer;

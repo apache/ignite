@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processor.security.client.thin;
+package org.apache.ignite.internal.processor.security.client;
 
 import java.util.function.Consumer;
 import org.apache.ignite.Ignition;
@@ -92,6 +92,7 @@ public class ThinClientSecurityTest extends AbstractSecurityTest {
             .setAuthenticationEnabled(true)
             .setPluginConfigurations(
                 new TestSecurityPluginConfiguration()
+                    .setSecurityProcessorClass(TEST_SECURITY_PROCESSOR)
                     .setLogin("srv_" + instanceName)
                     .setPermissions(allowAll())
                     .clientSecData(clientData)
@@ -140,6 +141,12 @@ public class ThinClientSecurityTest extends AbstractSecurityTest {
         executeOperation(c -> c.cache(CACHE).remove("key"));
         executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).remove("key"));
 
+    }
+
+    /**
+     * @throws Exception If error occurs.
+     */
+    /*public void testSysOperation() throws Exception {
         try (IgniteClient sysPrmClnt = startClient(CLIENT_SYS_PERM)) {
             assertThat(sysPrmClnt.createCache(SYS_OPER_CACHE), notNullValue());
 
@@ -157,7 +164,7 @@ public class ThinClientSecurityTest extends AbstractSecurityTest {
 
         executeForbiddenOperation(c -> c.createCache(SYS_OPER_CACHE));
         executeForbiddenOperation(c -> c.destroyCache(CACHE));
-    }
+    }*/
 
     /**
      * @param cons Consumer.

@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processor.security;
+package org.apache.ignite.testsuites;
 
 import java.util.Set;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processor.security.cache.EntryProcessorSecurityTest;
-import org.apache.ignite.internal.processor.security.cache.IgniteDataStreamerSecurityTest;
+import org.apache.ignite.internal.processor.security.datastreamer.IgniteDataStreamerSecurityTest;
 import org.apache.ignite.internal.processor.security.cache.LoadCacheSecurityTest;
 import org.apache.ignite.internal.processor.security.cache.ScanQuerySecurityTest;
-import org.apache.ignite.internal.processor.security.client.thin.ThinClientSecurityTest;
+import org.apache.ignite.internal.processor.security.client.ThinClientSecurityTest;
 import org.apache.ignite.internal.processor.security.compute.ComputeTaskSecurityTest;
 import org.apache.ignite.internal.processor.security.compute.DistributedClosureSecurityTest;
 import org.apache.ignite.internal.processor.security.compute.ExecuteServiceTaskSecurityTest;
@@ -32,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Security test suite.
  */
-public class SecurityContextResolverSecurityProcessorTestSuite extends TestSuite {
+public class ResolveSecurityContextTestSuite extends TestSuite {
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.

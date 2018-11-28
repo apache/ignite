@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processor.security;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -27,6 +28,8 @@ import org.apache.ignite.plugin.security.SecurityException;
 
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -80,11 +83,36 @@ public class AbstractResolveSecurityContextTest extends AbstractSecurityTest {
     }
 
     /**
+     * @param s Supplier.
+     */
+    protected void assertAllowed(Supplier<Integer> s) {
+        Integer val = s.get();
+
+        assertThat(srvAllPerms.cache(CACHE_NAME).get("key"), is(val));
+    }
+
+    /**
+     * @param s Supplier.
+     */
+    protected void assertForbidden(Supplier<Integer> s) {
+        try {
+            s.get();
+
+            fail("Should not happen");
+        }
+        catch (Throwable e) {
+            assertThat(X.cause(e, SecurityException.class), notNullValue());
+        }
+
+        assertThat(srvAllPerms.cache(CACHE_NAME).get("fail_key"), nullValue());
+    }
+
+    /**
      * Assert that the passed throwable contains a cause exception with given type.
      *
      * @param throwable Throwable.
      */
-    protected void assertCause(Throwable throwable) {
+    protected void assertCauseSecurityException(Throwable throwable) {
         assertThat(X.cause(throwable, SecurityException.class), notNullValue());
     }
 }

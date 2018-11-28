@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processor.security;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -41,6 +40,10 @@ import org.jetbrains.annotations.Nullable;
  * Security processor provider for tests.
  */
 public class TestSecurityProcessorProvider implements PluginProvider {
+    /** Default test security processor class name. */
+    public static final String DFLT_TEST_SECURITY_PROCESSOR_CLS_NAME =
+        "org.apache.ignite.internal.processors.security.os.GridOsSecurityProcessor";
+
     /** {@inheritDoc} */
     @Override public String name() {
         return "TestSecurityProcessorProvider";
@@ -63,7 +66,7 @@ public class TestSecurityProcessorProvider implements PluginProvider {
     }
 
     /** {@inheritDoc} */
-    @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) throws IgniteCheckedException {
+    @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
         // No-op.
     }
 
@@ -113,7 +116,7 @@ public class TestSecurityProcessorProvider implements PluginProvider {
      *
      * @param ctx Context.
      */
-    private String securityProcessorClass(PluginContext ctx){
+    private String securityProcessorClass(PluginContext ctx) {
         IgniteConfiguration igniteCfg = ctx.igniteConfiguration();
 
         if (igniteCfg.getPluginConfigurations() != null) {
@@ -123,7 +126,7 @@ public class TestSecurityProcessorProvider implements PluginProvider {
             }
         }
 
-        throw new IllegalStateException("Security processor class isn't defined.");
+        return DFLT_TEST_SECURITY_PROCESSOR_CLS_NAME;
     }
 
     /** {@inheritDoc} */
@@ -132,17 +135,17 @@ public class TestSecurityProcessorProvider implements PluginProvider {
     }
 
     /** {@inheritDoc} */
-    @Override public void start(PluginContext ctx) throws IgniteCheckedException {
+    @Override public void start(PluginContext ctx) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws IgniteCheckedException {
+    @Override public void stop(boolean cancel) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void onIgniteStart() throws IgniteCheckedException {
+    @Override public void onIgniteStart() {
         // No-op.
     }
 

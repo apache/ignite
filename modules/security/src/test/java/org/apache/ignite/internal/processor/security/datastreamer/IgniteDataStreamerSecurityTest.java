@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processor.security.cache;
+package org.apache.ignite.internal.processor.security.datastreamer;
 
 import java.util.Map;
 import java.util.UUID;
@@ -24,76 +24,47 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processor.security.AbstractCacheSecurityTest;
 import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.stream.StreamVisitor;
-import org.apache.ignite.testframework.GridTestUtils;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertThat;
 
 /**
  * Security tests for IgniteDataStream receiver.
  */
 public class IgniteDataStreamerSecurityTest extends AbstractCacheSecurityTest {
-    /** */
+    /**
+     *
+     */
     public void testDataStreamer() {
-        successReceiver(clntAllPerms, srvAllPerms);
-        successReceiver(clntAllPerms, srvReadOnlyPerm);
-        successReceiver(srvAllPerms, srvAllPerms);
-        successReceiver(srvAllPerms, srvReadOnlyPerm);
+        assertAllowed(() -> load(clntAllPerms, srvAllPerms, "key"));
+        assertAllowed(() -> load(clntAllPerms, srvReadOnlyPerm, "key"));
+        assertAllowed(() -> load(srvAllPerms, srvAllPerms, "key"));
+        assertAllowed(() -> load(srvAllPerms, srvReadOnlyPerm, "key"));
 
-        failReceiver(clntReadOnlyPerm, srvAllPerms);
-        failReceiver(srvReadOnlyPerm, srvAllPerms);
-        failReceiver(srvReadOnlyPerm, srvReadOnlyPerm);
+        assertForbidden(() -> load(clntReadOnlyPerm, srvAllPerms, "fail_key"));
+        assertForbidden(() -> load(srvReadOnlyPerm, srvAllPerms, "fail_key"));
+        assertForbidden(() -> load(srvReadOnlyPerm, srvReadOnlyPerm, "fail_key"));
     }
 
     /**
      * @param initiator Initiator node.
-     * @param remote Remote node.
+     * @param remote Remoute node.
+     * @param key Key.
+     * @return Value that will be to put into cache with passed key.
      */
-    private void failReceiver(IgniteEx initiator, IgniteEx remote) {
-        assert !remote.localNode().isClient();
-
-        assertCause(
-            GridTestUtils.assertThrowsWithCause(
-                () -> {
-                    try (IgniteDataStreamer<Integer, Integer> strm = initiator.dataStreamer(CACHE_WITHOUT_PERMS)) {
-                        strm.receiver(
-                            StreamVisitor.from(
-                                new TestClosure(remote.localNode().id(), "fail_key", -1)
-                            ));
-
-                        strm.addData(primaryKey(remote), 100);
-                    }
-                }
-                , SecurityException.class
-            )
-        );
-
-        assertThat(remote.cache(CACHE_NAME).get("fail_key"), nullValue());
-    }
-
-    /**
-     * @param initiator Initiator node.
-     * @param remote Remote node.
-     */
-    private void successReceiver(IgniteEx initiator, IgniteEx remote) {
-        assert !remote.localNode().isClient();
-
+    private Integer load(IgniteEx initiator, IgniteEx remote, String key) {
         Integer val = values.getAndIncrement();
 
         try (IgniteDataStreamer<Integer, Integer> strm = initiator.dataStreamer(CACHE_WITHOUT_PERMS)) {
             strm.receiver(
                 StreamVisitor.from(
-                    new TestClosure(remote.localNode().id(), "key", val)
+                    new TestClosure(remote.localNode().id(), key, val)
                 ));
 
             strm.addData(primaryKey(remote), 100);
         }
 
-        assertThat(remote.cache(CACHE_NAME).get("key"), is(val));
+        return val;
     }
 
     /**

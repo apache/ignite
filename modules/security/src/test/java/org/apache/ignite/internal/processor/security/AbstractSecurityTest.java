@@ -13,6 +13,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * Common class for security tests.
  */
 public class AbstractSecurityTest extends GridCommonAbstractTest {
+    /** Test security processor. */
+    public static final String TEST_SECURITY_PROCESSOR = "org.apache.ignite.internal.processor.security.TestSecurityProcessor";
+
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
@@ -41,6 +44,7 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
             .setAuthenticationEnabled(true)
             .setPluginConfigurations(
                 new TestSecurityPluginConfiguration()
+                    .setSecurityProcessorClass(TEST_SECURITY_PROCESSOR)
                     .setLogin(login)
                     .setPwd(pwd)
                     .setPermissions(prmSet)

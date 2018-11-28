@@ -15,14 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processor.security.cache;
+package org.apache.ignite.internal.processor.security;
 
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processor.security.AbstractResolveSecurityContextTest;
 
 /**
  *

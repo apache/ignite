@@ -61,7 +61,6 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
 
     /** {@inheritDoc} */
     @Override public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) {
-
         return new TestSecurityContext(
             new TestSecuritySubject()
                 .setType(REMOTE_NODE)
@@ -78,7 +77,7 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     }
 
     /** {@inheritDoc} */
-    @Override public SecurityContext authenticate(AuthenticationContext ctx) throws IgniteCheckedException {
+    @Override public SecurityContext authenticate(AuthenticationContext ctx) {
         return new TestSecurityContext(
             new TestSecuritySubject()
                 .setType(ctx.subjectType())
@@ -90,12 +89,12 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<SecuritySubject> authenticatedSubjects() throws IgniteCheckedException {
+    @Override public Collection<SecuritySubject> authenticatedSubjects() {
         return Collections.emptyList();
     }
 
     /** {@inheritDoc} */
-    @Override public SecuritySubject authenticatedSubject(UUID subjId) throws IgniteCheckedException {
+    @Override public SecuritySubject authenticatedSubject(UUID subjId) {
         return null;
     }
 

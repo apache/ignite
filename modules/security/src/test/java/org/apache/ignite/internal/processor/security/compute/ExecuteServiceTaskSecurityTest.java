@@ -17,85 +17,58 @@
 
 package org.apache.ignite.internal.processor.security.compute;
 
-import java.util.concurrent.ExecutionException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processor.security.AbstractResolveSecurityContextTest;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.plugin.security.SecurityException;
-import org.apache.ignite.testframework.GridTestUtils;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertThat;
 
 /**
  * Security tests for an execute server task.
  */
 public class ExecuteServiceTaskSecurityTest extends AbstractResolveSecurityContextTest {
-    /** */
-    public void testExecute() throws Exception {
-        successExecute(clntAllPerms, clntReadOnlyPerm);
-        successExecute(clntAllPerms, srvReadOnlyPerm);
-        successExecute(srvAllPerms, clntReadOnlyPerm);
-        successExecute(srvAllPerms, srvReadOnlyPerm);
-        successExecute(srvAllPerms, srvAllPerms);
-        successExecute(clntAllPerms, clntAllPerms);
+    /**
+     *
+     */
+    public void testExecute() {
+        assertAllowed(() -> execute(clntAllPerms, clntReadOnlyPerm, "key"));
+        assertAllowed(() -> execute(clntAllPerms, srvReadOnlyPerm, "key"));
+        assertAllowed(() -> execute(srvAllPerms, clntReadOnlyPerm, "key"));
+        assertAllowed(() -> execute(srvAllPerms, srvReadOnlyPerm, "key"));
+        assertAllowed(() -> execute(srvAllPerms, srvAllPerms, "key"));
+        assertAllowed(() -> execute(clntAllPerms, clntAllPerms, "key"));
 
-        failExecute(clntReadOnlyPerm, srvAllPerms);
-        failExecute(clntReadOnlyPerm, clntAllPerms);
-        failExecute(srvReadOnlyPerm, srvAllPerms);
-        failExecute(srvReadOnlyPerm, clntAllPerms);
-        failExecute(srvReadOnlyPerm, srvReadOnlyPerm);
-        failExecute(clntReadOnlyPerm, clntReadOnlyPerm);
+        assertForbidden(() -> execute(clntReadOnlyPerm, srvAllPerms, "fail_key"));
+        assertForbidden(() -> execute(clntReadOnlyPerm, clntAllPerms, "fail_key"));
+        assertForbidden(() -> execute(srvReadOnlyPerm, srvAllPerms, "fail_key"));
+        assertForbidden(() -> execute(srvReadOnlyPerm, clntAllPerms, "fail_key"));
+        assertForbidden(() -> execute(srvReadOnlyPerm, srvReadOnlyPerm, "fail_key"));
+        assertForbidden(() -> execute(clntReadOnlyPerm, clntReadOnlyPerm, "fail_key"));
     }
 
     /**
      * @param initiator Initiator node.
-     * @param remote Remote node.
+     * @param remote Remoute node.
+     * @param key Key.
+     * @return Value that will be to put into cache with passed key.
      */
-    private void successExecute(IgniteEx initiator, IgniteEx remote) throws Exception {
-        int val = values.getAndIncrement();
+    private Integer execute(IgniteEx initiator, IgniteEx remote, String key) {
+        Integer val = values.getAndIncrement();
 
-        initiator.executorService(initiator.cluster().forNode(remote.localNode()))
-            .submit(
-                new IgniteRunnable() {
-                    @Override public void run() {
-                        Ignition.localIgnite().cache(CACHE_NAME)
-                            .put("key", val);
+        try {
+            initiator.executorService(initiator.cluster().forNode(remote.localNode()))
+                .submit(
+                    new IgniteRunnable() {
+                        @Override public void run() {
+                            Ignition.localIgnite().cache(CACHE_NAME)
+                                .put(key, val);
+                        }
                     }
-                }
-            ).get();
+                ).get();
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
 
-        assertThat(remote.cache(CACHE_NAME).get("key"), is(val));
-    }
-
-    /**
-     * @param initiator Initiator node.
-     * @param remote Remote node.
-     */
-    private void failExecute(IgniteEx initiator, IgniteEx remote) {
-        assertCause(
-            GridTestUtils.assertThrowsWithCause(
-                () -> {
-                    try {
-                        initiator.executorService(initiator.cluster().forNode(remote.localNode()))
-                            .submit(
-                                new IgniteRunnable() {
-                                    @Override public void run() {
-                                        Ignition.localIgnite().cache(CACHE_NAME).put("fail_key", -1);
-                                    }
-                                }
-                            ).get();
-                    }
-                    catch (InterruptedException | ExecutionException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-                , SecurityException.class
-            )
-        );
-
-        assertThat(remote.cache(CACHE_NAME).get("fail_key"), nullValue());
+        return val;
     }
 }

@@ -23,140 +23,92 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processor.security.AbstractCacheSecurityTest;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.testframework.GridTestUtils;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertThat;
 
 /**
  * Security test for scan query.
  */
 public class ScanQuerySecurityTest extends AbstractCacheSecurityTest {
-    /** */
+    /**
+     *
+     */
     public void testScanQuery() throws Exception {
         putTestData(srvAllPerms, CACHE_NAME);
         putTestData(srvAllPerms, CACHE_WITHOUT_PERMS);
 
         awaitPartitionMapExchange();
 
-        successQuery(clntAllPerms, srvAllPerms, CACHE_NAME);
-        successQuery(srvAllPerms, srvAllPerms, CACHE_NAME);
-        successQuery(clntAllPerms, srvAllPerms, CACHE_WITHOUT_PERMS);
-        successQuery(srvAllPerms, srvAllPerms, CACHE_WITHOUT_PERMS);
+        assertAllowed(() -> query(clntAllPerms, srvAllPerms, CACHE_NAME, "key"));
+        assertAllowed(() -> query(srvAllPerms, srvAllPerms, CACHE_NAME, "key"));
+        assertAllowed(() -> query(clntAllPerms, srvAllPerms, CACHE_WITHOUT_PERMS, "key"));
+        assertAllowed(() -> query(srvAllPerms, srvAllPerms, CACHE_WITHOUT_PERMS, "key"));
 
-        successTransform(clntAllPerms, srvAllPerms, CACHE_NAME);
-        successTransform(srvAllPerms, srvAllPerms, CACHE_NAME);
-        successTransform(clntAllPerms, srvAllPerms, CACHE_WITHOUT_PERMS);
-        successTransform(srvAllPerms, srvAllPerms, CACHE_WITHOUT_PERMS);
+        assertAllowed(() -> transform(clntAllPerms, srvAllPerms, CACHE_NAME, "key"));
+        assertAllowed(() -> transform(srvAllPerms, srvAllPerms, CACHE_NAME, "key"));
+        assertAllowed(() -> transform(clntAllPerms, srvAllPerms, CACHE_WITHOUT_PERMS, "key"));
+        assertAllowed(() -> transform(srvAllPerms, srvAllPerms, CACHE_WITHOUT_PERMS, "key"));
 
-        successQuery(clntAllPerms, srvReadOnlyPerm, CACHE_NAME);
-        successQuery(srvAllPerms, srvReadOnlyPerm, CACHE_NAME);
-        successQuery(clntAllPerms, srvReadOnlyPerm, CACHE_WITHOUT_PERMS);
-        successQuery(srvAllPerms, srvReadOnlyPerm, CACHE_WITHOUT_PERMS);
+        assertAllowed(() -> query(clntAllPerms, srvReadOnlyPerm, CACHE_NAME, "key"));
+        assertAllowed(() -> query(srvAllPerms, srvReadOnlyPerm, CACHE_NAME, "key"));
+        assertAllowed(() -> query(clntAllPerms, srvReadOnlyPerm, CACHE_WITHOUT_PERMS, "key"));
+        assertAllowed(() -> query(srvAllPerms, srvReadOnlyPerm, CACHE_WITHOUT_PERMS, "key"));
 
-        successTransform(clntAllPerms, srvReadOnlyPerm, CACHE_NAME);
-        successTransform(srvAllPerms, srvReadOnlyPerm, CACHE_NAME);
-        successTransform(clntAllPerms, srvReadOnlyPerm, CACHE_WITHOUT_PERMS);
-        successTransform(srvAllPerms, srvReadOnlyPerm, CACHE_WITHOUT_PERMS);
+        assertAllowed(() -> transform(clntAllPerms, srvReadOnlyPerm, CACHE_NAME, "key"));
+        assertAllowed(() -> transform(srvAllPerms, srvReadOnlyPerm, CACHE_NAME, "key"));
+        assertAllowed(() -> transform(clntAllPerms, srvReadOnlyPerm, CACHE_WITHOUT_PERMS, "key"));
+        assertAllowed(() -> transform(srvAllPerms, srvReadOnlyPerm, CACHE_WITHOUT_PERMS, "key"));
 
-        failQuery(clntReadOnlyPerm, srvAllPerms, CACHE_NAME);
-        failQuery(srvReadOnlyPerm, srvAllPerms, CACHE_NAME);
-        failQuery(clntReadOnlyPerm, srvAllPerms, CACHE_WITHOUT_PERMS);
-        failQuery(srvReadOnlyPerm, srvAllPerms, CACHE_WITHOUT_PERMS);
+        assertForbidden(() -> query(clntReadOnlyPerm, srvAllPerms, CACHE_NAME, "fail_key"));
+        assertForbidden(() -> query(srvReadOnlyPerm, srvAllPerms, CACHE_NAME, "fail_key"));
+        assertForbidden(() -> query(clntReadOnlyPerm, srvAllPerms, CACHE_WITHOUT_PERMS, "fail_key"));
+        assertForbidden(() -> query(srvReadOnlyPerm, srvAllPerms, CACHE_WITHOUT_PERMS, "fail_key"));
 
-        failTransform(clntReadOnlyPerm, srvAllPerms, CACHE_NAME);
-        failTransform(srvReadOnlyPerm, srvAllPerms, CACHE_NAME);
-        failTransform(clntReadOnlyPerm, srvAllPerms, CACHE_WITHOUT_PERMS);
-        failTransform(srvReadOnlyPerm, srvAllPerms, CACHE_WITHOUT_PERMS);
+        assertForbidden(() -> transform(clntReadOnlyPerm, srvAllPerms, CACHE_NAME, "fail_key"));
+        assertForbidden(() -> transform(srvReadOnlyPerm, srvAllPerms, CACHE_NAME, "fail_key"));
+        assertForbidden(() -> transform(clntReadOnlyPerm, srvAllPerms, CACHE_WITHOUT_PERMS, "fail_key"));
+        assertForbidden(() -> transform(srvReadOnlyPerm, srvAllPerms, CACHE_WITHOUT_PERMS, "fail_key"));
     }
 
     /**
-     * @param initiator Initiator.
-     * @param remote Remote.
-     * @param cacheName Cache name.
+     * @param initiator Initiator node.
+     * @param remote Remoute node.
+     * @param key Key.
+     * @return Value that will be to put into cache with passed key.
      */
-    private void failQuery(IgniteEx initiator, IgniteEx remote, String cacheName) {
-        assert !remote.localNode().isClient();
-
-        assertCause(
-            GridTestUtils.assertThrowsWithCause(
-                () -> {
-                    initiator.cache(cacheName).query(
-                        new ScanQuery<>(
-                            new QueryFilter(remote.localNode().id(), "fail_key", -1)
-                        )
-                    ).getAll();
-                }
-                , SecurityException.class
-            )
-        );
-
-        assertThat(remote.cache(CACHE_NAME).get("fail_key"), nullValue());
-    }
-
-    /**
-     * @param initiator Initiator.
-     * @param remote Remote.
-     * @param cacheName Cache name.
-     */
-    private void successQuery(IgniteEx initiator, IgniteEx remote, String cacheName) {
+    private Integer query(IgniteEx initiator, IgniteEx remote, String cacheName, String key) {
         assert !remote.localNode().isClient();
 
         Integer val = values.getAndIncrement();
 
         initiator.cache(cacheName).query(
             new ScanQuery<>(
-                new QueryFilter(remote.localNode().id(), "key", val)
+                new QueryFilter(remote.localNode().id(), key, val)
             )
         ).getAll();
 
-        assertThat(remote.cache(CACHE_NAME).get("key"), is(val));
+        return val;
     }
 
     /**
-     * @param initiator Initiator.
-     * @param remote Remote.
-     * @param cacheName Cache name.
+     * @param initiator Initiator node.
+     * @param remote Remoute node.
+     * @param key Key.
+     * @return Value that will be to put into cache with passed key.
      */
-    private void failTransform(IgniteEx initiator, IgniteEx remote, String cacheName) {
-        assert !remote.localNode().isClient();
-
-        assertCause(
-            GridTestUtils.assertThrowsWithCause(
-                () -> {
-                    initiator.cache(cacheName).query(
-                        new ScanQuery<>((k, v) -> true),
-                        new Transformer(remote.localNode().id(), "fail_key", -1)
-                    ).getAll();
-                }
-                , SecurityException.class
-            )
-        );
-
-        assertThat(remote.cache(CACHE_NAME).get("fail_key"), nullValue());
-    }
-
-    /**
-     * @param initiator Initiator.
-     * @param remote Remote.
-     * @param cacheName Cache name.
-     */
-    private void successTransform(IgniteEx initiator, IgniteEx remote, String cacheName) {
+    private Integer transform(IgniteEx initiator, IgniteEx remote, String cacheName, String key) {
         assert !remote.localNode().isClient();
 
         Integer val = values.getAndIncrement();
 
         initiator.cache(cacheName).query(
             new ScanQuery<>((k, v) -> true),
-            new Transformer(remote.localNode().id(), "key", val)
+            new Transformer(remote.localNode().id(), key, val)
         ).getAll();
 
-        assertThat(remote.cache(CACHE_NAME).get("key"), is(val));
+        return val;
     }
 
     /**
@@ -209,7 +161,7 @@ public class ScanQuerySecurityTest extends AbstractCacheSecurityTest {
 
     /**
      * Test query filter.
-     * */
+     */
     static class QueryFilter extends CommonClosure implements IgniteBiPredicate<String, Integer> {
         /**
          * @param remoteId Remote id.

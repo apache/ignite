@@ -26,15 +26,10 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processor.security.AbstractCacheSecurityTest;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.testframework.GridTestUtils;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.core.IsNull.nullValue;
-import static org.junit.Assert.assertThat;
 
 /**
  * Security tests for cache data load.
@@ -55,52 +50,36 @@ public class LoadCacheSecurityTest extends AbstractCacheSecurityTest {
         };
     }
 
-    /** */
+    /**
+     *
+     */
     public void testLoadCache() {
-        successLoad(clntAllPerms, srvAllPerms);
-        successLoad(clntAllPerms, srvReadOnlyPerm);
-        successLoad(srvAllPerms, srvAllPerms);
-        successLoad(srvAllPerms, srvReadOnlyPerm);
+        assertAllowed(() -> load(clntAllPerms, srvAllPerms, "key"));
+        assertAllowed(() -> load(clntAllPerms, srvReadOnlyPerm, "key"));
+        assertAllowed(() -> load(srvAllPerms, srvAllPerms, "key"));
+        assertAllowed(() -> load(srvAllPerms, srvReadOnlyPerm, "key"));
 
-        failLoad(clntReadOnlyPerm, srvAllPerms);
-        failLoad(srvReadOnlyPerm, srvAllPerms);
-        failLoad(srvReadOnlyPerm, srvReadOnlyPerm);
+        assertForbidden(() -> load(clntReadOnlyPerm, srvAllPerms, "fail_key"));
+        assertForbidden(() -> load(srvReadOnlyPerm, srvAllPerms, "fail_key"));
+        assertForbidden(() -> load(srvReadOnlyPerm, srvReadOnlyPerm, "fail_key"));
     }
 
     /**
      * @param initiator Initiator node.
-     * @param remote Remote node.
+     * @param remote Remoute node.
+     * @param key Key.
+     * @return Value that will be to put into cache with passed key.
      */
-    private void successLoad(IgniteEx initiator, IgniteEx remote) {
+    private Integer load(IgniteEx initiator, IgniteEx remote, String key) {
         assert !remote.localNode().isClient();
 
         Integer val = values.getAndIncrement();
 
         initiator.<Integer, Integer>cache(CACHE_WITHOUT_PERMS).loadCache(
-            new TestClosure(remote.localNode().id(), "key", val)
+            new TestClosure(remote.localNode().id(), key, val)
         );
 
-        assertThat(srvAllPerms.cache(CACHE_NAME).get("key"), is(val));
-    }
-
-    /**
-     * @param initiator Initiator node.
-     * @param remote Remote node.
-     */
-    private void failLoad(IgniteEx initiator, IgniteEx remote) {
-        assert !remote.localNode().isClient();
-
-        assertCause(
-            GridTestUtils.assertThrowsWithCause(
-                () -> initiator.<Integer, Integer>cache(CACHE_WITHOUT_PERMS)
-                    .loadCache(
-                        new TestClosure(remote.localNode().id(), "fail_key", -1)
-                    )
-                , SecurityException.class
-            )
-        );
-
-        assertThat(remote.cache(CACHE_NAME).get("fail_key"), nullValue());
+        return val;
     }
 
     /**

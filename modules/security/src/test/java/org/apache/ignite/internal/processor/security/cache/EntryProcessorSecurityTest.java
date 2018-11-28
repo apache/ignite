@@ -25,6 +25,7 @@ import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processor.security.AbstractCacheSecurityTest;
 import org.apache.ignite.plugin.security.SecurityPermission;
 
 /**
@@ -33,19 +34,19 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 public class EntryProcessorSecurityTest extends AbstractCacheSecurityTest {
     /** */
     public void testEntryProcessor() {
-        successEntryProcessor(clntAllPerms, srvAllPerms);
-        successEntryProcessor(clntAllPerms, srvReadOnlyPerm);
-        successEntryProcessor(srvAllPerms, srvReadOnlyPerm);
+        assertAllowed(clntAllPerms, srvAllPerms);
+        assertAllowed(clntAllPerms, srvReadOnlyPerm);
+        assertAllowed(srvAllPerms, srvReadOnlyPerm);
 
-        failEntryProcessor(clntReadOnlyPerm, srvAllPerms);
-        failEntryProcessor(srvReadOnlyPerm, srvAllPerms);
+        assertForbidden(clntReadOnlyPerm, srvAllPerms);
+        assertForbidden(srvReadOnlyPerm, srvAllPerms);
     }
 
     /**
      * @param initiator Initiator node.
      * @param remote Remote node.
      */
-    private void successEntryProcessor(IgniteEx initiator, IgniteEx remote) {
+    private void assertAllowed(IgniteEx initiator, IgniteEx remote) {
         assert !remote.localNode().isClient();
 
         invoke(initiator, remote);
@@ -58,24 +59,24 @@ public class EntryProcessorSecurityTest extends AbstractCacheSecurityTest {
      * @param initiator Initiator node.
      * @param remote Remote node.
      */
-    private void failEntryProcessor(IgniteEx initiator, IgniteEx remote) {
+    private void assertForbidden(IgniteEx initiator, IgniteEx remote) {
         assert !remote.localNode().isClient();
 
-        failCall(() -> invoke(initiator, remote));
-        failCall(() -> invokeAll(initiator, remote));
-        failCall(() -> invokeAsync(initiator, remote));
-        failCall(() -> invokeAllAsync(initiator, remote));
+        forbiddenCall(() -> invoke(initiator, remote));
+        forbiddenCall(() -> invokeAll(initiator, remote));
+        forbiddenCall(() -> invokeAsync(initiator, remote));
+        forbiddenCall(() -> invokeAllAsync(initiator, remote));
     }
 
     /**
      * @param r Runnable.
      */
-    private void failCall(Runnable r) {
+    private void forbiddenCall(Runnable r) {
         try {
             r.run();
         }
         catch (Throwable e) {
-            assertCause(e);
+            assertCauseSecurityException(e);
         }
     }
 
