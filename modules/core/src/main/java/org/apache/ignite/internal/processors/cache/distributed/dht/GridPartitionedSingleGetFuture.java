@@ -150,7 +150,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     private final String txLbl;
 
     /** Invalid mappened nodes. */
-    private Set<ClusterNode> invalidNodes;
+    private Set<ClusterNode> invalidNodes = Collections.emptySet();
 
     /** Remap count. */
     protected volatile int remapCnt;
@@ -768,7 +768,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * @param node Invalid node.
      */
     private synchronized void addNodeAsInvalid(ClusterNode node) {
-        if (invalidNodes == null)
+        if (invalidNodes == Collections.<ClusterNode>emptySet())
             invalidNodes = new HashSet<>();
 
         invalidNodes.add(node);

@@ -20,9 +20,12 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
@@ -86,6 +89,9 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
     /** */
     private MvccQueryTracker mvccTracker;
+
+    /** */
+    private Map<AffinityTopologyVersion, Map<Integer, Set<ClusterNode>>> invalidNodes = Collections.emptyMap();
 
     /**
      * @param cctx Context.
@@ -196,7 +202,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
      * @param topVer Topology version.
      */
     private void initialMap(AffinityTopologyVersion topVer) {
-        map(keys, Collections.emptyMap(), topVer);
+        map(keys, Collections.emptyMap(), invalidNodes, topVer);
 
         markInitialized();
     }
@@ -298,6 +304,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     private void map(
         Collection<KeyCacheObject> keys,
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mapped,
+        Map<AffinityTopologyVersion, Map<Integer, Set<ClusterNode>>> invalidNodes,
         AffinityTopologyVersion topVer
     ) {
         Collection<ClusterNode> cacheNodes = CU.affinityNodes(cctx, topVer);
@@ -320,7 +327,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
         // Assign keys to nodes.
         for (KeyCacheObject key : keys)
-            hasRmtNodes |= map(key, topVer, mappings, mapped, locVals);
+            hasRmtNodes |= map(key, topVer, mappings, mapped, invalidNodes, locVals);
 
         // Future can be alredy done with some exception.
         if (isDone())
@@ -369,18 +376,19 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     Collection<KeyCacheObject> remapKeys = new ArrayList<>(keysSize);
 
                     for (KeyCacheObject key : keys) {
-                        if (key != null && invalidParts.contains(cctx.affinity().partition(key)))
+                        int part = cctx.affinity().partition(key);
+
+                        if (key != null && invalidParts.contains(part)) {
+                            addNodeAsInvalid(n, part, topVer);
+
                             remapKeys.add(key);
+                        }
                     }
 
                     AffinityTopologyVersion updTopVer = cctx.shared().exchange().readyAffinityVersion();
 
-                    assert updTopVer.compareTo(topVer) > 0 : "Got invalid partitions for local node but topology version did " +
-                        "not change [topVer=" + topVer + ", updTopVer=" + updTopVer +
-                        ", invalidParts=" + invalidParts + ']';
-
                     // Remap recursively.
-                    map(remapKeys, mappings, updTopVer);
+                    map(remapKeys, mappings, invalidNodes, updTopVer);
                 }
 
                 // Add new future.
@@ -433,6 +441,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         AffinityTopologyVersion topVer,
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> nodesToKeysMapping,
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> missedNodesToKeysMapping,
+        Map<AffinityTopologyVersion, Map<Integer, Set<ClusterNode>>> invalidNodes,
         Map<K, V> locVals
     ) {
         int part = cctx.affinity().partition(key);
@@ -450,8 +459,19 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         if (tryLocalGet(key, part, topVer, affNodes, locVals))
             return false;
 
+        Set<ClusterNode> invalidNodeSet = Collections.emptySet();
+
+        Map<Integer, Set<ClusterNode>> invalidNodesMap = invalidNodes.get(topVer);
+
+        if (invalidNodesMap != null) {
+            Set<ClusterNode> nodes = invalidNodesMap.get(part);
+
+            if (nodes != null)
+                invalidNodeSet = nodes;
+        }
+
         // Get remote node for request for this key.
-        ClusterNode node = cctx.selectAffinityNodeBalanced(affNodes, Collections.emptySet(), part, canRemap);
+        ClusterNode node = cctx.selectAffinityNodeBalanced(affNodes, invalidNodeSet, part, canRemap);
 
         // Failed if none remote node found.
         if (node == null) {
@@ -766,6 +786,29 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         return Collections.emptyMap();
     }
 
+    /**
+     * @param node Cluster node.
+     * @param part Invalid partition.
+     * @param topVer Topology version.
+     */
+    private synchronized void addNodeAsInvalid(ClusterNode node, int part, AffinityTopologyVersion topVer) {
+        if (invalidNodes == Collections.<AffinityTopologyVersion, Map<Integer, Set<ClusterNode>>>emptyMap()) {
+            invalidNodes = new HashMap<>();
+        }
+
+        Map<Integer, Set<ClusterNode>> invalidNodeMap = invalidNodes.get(topVer);
+
+        if (invalidNodeMap == null)
+            invalidNodes.put(topVer, invalidNodeMap = new HashMap<>());
+
+        Set<ClusterNode> invalidNodeSet = invalidNodeMap.get(part);
+
+        if (invalidNodeMap == null)
+            invalidNodeMap.put(part, invalidNodeSet = new HashSet<>());
+
+        invalidNodeSet.add(node);
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
@@ -897,7 +940,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
             // Try getting from existing nodes.
             if (!canRemap) {
-                map(keys.keySet(), F.t(node, keys), topVer);
+                map(keys.keySet(), F.t(node, keys), invalidNodes, topVer);
 
                 onDone(Collections.<K, V>emptyMap());
             }
@@ -911,7 +954,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     .listen((f) -> {
                             try {
                                 // Remap.
-                                map(keys.keySet(), F.t(node, keys), f.get());
+                                map(keys.keySet(), F.t(node, keys), invalidNodes, f.get());
 
                                 onDone(Collections.<K, V>emptyMap());
                             }
@@ -940,17 +983,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             if (!F.isEmpty(invalidParts)) {
                 AffinityTopologyVersion rmtTopVer = res.topologyVersion();
 
-                assert !rmtTopVer.equals(AffinityTopologyVersion.ZERO);
-
-                if (rmtTopVer.compareTo(topVer) <= 0) {
-                    // Fail the whole get future.
-                    onDone(new IgniteCheckedException("Failed to process invalid partitions response (remote node reported " +
-                        "invalid partitions but remote topology version does not differ from local) " +
-                        "[topVer=" + topVer + ", rmtTopVer=" + rmtTopVer + ", invalidParts=" + invalidParts +
-                        ", nodeId=" + node.id() + ']'));
-
-                    return;
-                }
+                for (Integer part : invalidParts)
+                    addNodeAsInvalid(node, part, topVer);
 
                 if (log.isDebugEnabled())
                     log.debug("Remapping mini get future [invalidParts=" + invalidParts + ", fut=" + this + ']');
@@ -960,7 +994,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         @Override public boolean apply(KeyCacheObject key) {
                             return invalidParts.contains(cctx.affinity().partition(key));
                         }
-                    }), F.t(node, keys), topVer);
+                    }), F.t(node, keys), invalidNodes, topVer);
 
                     postProcessResult(res);
 
@@ -972,23 +1006,23 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 // Remap after remote version will be finished localy.
                 cctx.shared().exchange().affinityReadyFuture(rmtTopVer)
                     .listen(new CIX1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                    @Override public void applyx(
-                        IgniteInternalFuture<AffinityTopologyVersion> fut
-                    ) throws IgniteCheckedException {
-                        AffinityTopologyVersion topVer = fut.get();
+                        @Override public void applyx(
+                            IgniteInternalFuture<AffinityTopologyVersion> fut
+                        ) throws IgniteCheckedException {
+                            AffinityTopologyVersion topVer = fut.get();
 
-                        // This will append new futures to compound list.
-                        map(F.view(keys.keySet(), new P1<KeyCacheObject>() {
-                            @Override public boolean apply(KeyCacheObject key) {
-                                return invalidParts.contains(cctx.affinity().partition(key));
-                            }
-                        }), F.t(node, keys), topVer);
+                            // This will append new futures to compound list.
+                            map(F.view(keys.keySet(), new P1<KeyCacheObject>() {
+                                @Override public boolean apply(KeyCacheObject key) {
+                                    return invalidParts.contains(cctx.affinity().partition(key));
+                                }
+                            }), F.t(node, keys), invalidNodes, topVer);
 
-                        postProcessResult(res);
+                            postProcessResult(res);
 
-                        onDone(createResultMap(res.entries()));
-                    }
-                });
+                            onDone(createResultMap(res.entries()));
+                        }
+                    });
             }
             else {
                 try {
