@@ -1764,9 +1764,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             GridCompoundFuture<Object, ?> fut = new GridCompoundFuture<Object, Object>();
 
             for (Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl> e : types.entrySet()) {
-                if (cacheIds.contains(CU.cacheId(e.getKey().cacheName())) &&
-                    processedCacheNames.add(e.getKey().cacheName()))
-                    fut.add(rebuildIndexesFromHash(e.getKey().cacheName(), e.getValue()));
+                String cacheName = e.getKey().cacheName();
+
+                if (cacheIds.contains(CU.cacheId(cacheName)) && processedCacheNames.add(cacheName))
+                    fut.add(rebuildIndexesFromHash(cacheName, e.getValue()));
             }
 
             fut.markInitialized();
