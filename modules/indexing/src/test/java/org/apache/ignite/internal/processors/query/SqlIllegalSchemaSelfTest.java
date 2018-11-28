@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.util.concurrent.Callable;
+import java.util.function.Consumer;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -63,25 +64,27 @@ public class SqlIllegalSchemaSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBadCacheNameDynamic() throws Exception {
-        Ignite node = startGrid();
+        doubleConsumerAccept(
+            (node)->{
+                try {
+                    node.getOrCreateCache(new CacheConfiguration().setName(QueryUtils.SCHEMA_SYS));
+                }
+                catch (CacheException e) {
+                    assertTrue(hasCause(e, IgniteCheckedException.class,
+                        "SQL schema name derived from cache name is reserved (please set explicit SQL " +
+                            "schema name through CacheConfiguration.setSqlSchema() or choose another cache name) [" +
+                            "cacheName=IGNITE, schemaName=null]"));
 
-        try {
-            node.getOrCreateCache(new CacheConfiguration().setName(QueryUtils.SCHEMA_SYS));
-        }
-        catch (CacheException e) {
-            assertTrue(hasCause(e, IgniteCheckedException.class,
-                "SQL schema name derived from cache name is reserved (please set explicit SQL " +
-                    "schema name through CacheConfiguration.setSqlSchema() or choose another cache name) [" +
-                    "cacheName=IGNITE, schemaName=null]"));
+                    return;
+                }
+                catch (Throwable e) {
+                    fail("Exception class is not as expected [expected=" +
+                        CacheException.class + ", actual=" + e.getClass() + ']');
+                }
 
-            return;
-        }
-        catch (Throwable e) {
-            fail("Exception class is not as expected [expected=" +
-                CacheException.class + ", actual=" + e.getClass() + ']');
-        }
-
-        fail("Exception has not been thrown.");
+                fail("Exception has not been thrown.");
+            }
+        );
     }
 
     /**
@@ -107,25 +110,27 @@ public class SqlIllegalSchemaSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBadSchemaLowerDynamic() throws Exception {
-        Ignite node = startGrid();
+        doubleConsumerAccept(
+            (node) -> {
+                try {
+                    node.getOrCreateCache(
+                        new CacheConfiguration().setName("CACHE").setSqlSchema(QueryUtils.SCHEMA_SYS.toLowerCase())
+                    );
+                }
+                catch (CacheException e) {
+                    assertTrue(hasCause(e, IgniteCheckedException.class,
+                        "SQL schema name is reserved (please choose another one) [cacheName=CACHE, schemaName=ignite]"));
 
-        try {
-            node.getOrCreateCache(
-                new CacheConfiguration().setName("CACHE").setSqlSchema(QueryUtils.SCHEMA_SYS.toLowerCase())
-            );
-        }
-        catch (CacheException e) {
-            assertTrue(hasCause(e, IgniteCheckedException.class,
-                "SQL schema name is reserved (please choose another one) [cacheName=CACHE, schemaName=ignite]"));
+                    return;
+                }
+                catch (Throwable e) {
+                    fail("Exception class is not as expected [expected=" +
+                        CacheException.class + ", actual=" + e.getClass() + ']');
+                }
 
-            return;
-        }
-        catch (Throwable e) {
-            fail("Exception class is not as expected [expected=" +
-                CacheException.class + ", actual=" + e.getClass() + ']');
-        }
-
-        fail("Exception has not been thrown.");
+                fail("Exception has not been thrown.");
+            }
+        );
     }
 
     /**
@@ -151,25 +156,27 @@ public class SqlIllegalSchemaSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBadSchemaUpperDynamic() throws Exception {
-        Ignite node = startGrid();
+        doubleConsumerAccept(
+            (node) -> {
+                try {
+                    node.getOrCreateCache(
+                        new CacheConfiguration().setName("CACHE").setSqlSchema(QueryUtils.SCHEMA_SYS.toUpperCase())
+                    );
+                }
+                catch (CacheException e) {
+                    assertTrue(hasCause(e, IgniteCheckedException.class,
+                        "SQL schema name is reserved (please choose another one) [cacheName=CACHE, schemaName=IGNITE]"));
 
-        try {
-            node.getOrCreateCache(
-                new CacheConfiguration().setName("CACHE").setSqlSchema(QueryUtils.SCHEMA_SYS.toUpperCase())
-            );
-        }
-        catch (CacheException e) {
-            assertTrue(hasCause(e, IgniteCheckedException.class,
-                "SQL schema name is reserved (please choose another one) [cacheName=CACHE, schemaName=IGNITE]"));
+                    return;
+                }
+                catch (Throwable e) {
+                    fail("Exception class is not as expected [expected=" +
+                        CacheException.class + ", actual=" + e.getClass() + ']');
+                }
 
-            return;
-        }
-        catch (Throwable e) {
-            fail("Exception class is not as expected [expected=" +
-                CacheException.class + ", actual=" + e.getClass() + ']');
-        }
-
-        fail("Exception has not been thrown.");
+                fail("Exception has not been thrown.");
+            }
+        );
     }
 
     /**
@@ -195,26 +202,42 @@ public class SqlIllegalSchemaSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBadSchemaQuotedDynamic() throws Exception {
+        doubleConsumerAccept(
+            (node) -> {
+                try {
+                    node.getOrCreateCache(
+                        new CacheConfiguration().setName("CACHE")
+                            .setSqlSchema("\"" + QueryUtils.SCHEMA_SYS.toUpperCase() + "\"")
+                    );
+                }
+                catch (CacheException e) {
+                    assertTrue(hasCause(e, IgniteCheckedException.class,
+                        "SQL schema name is reserved (please choose another one) [cacheName=CACHE, schemaName=\"IGNITE\"]"));
+
+                    return;
+                }
+                catch (Throwable e) {
+                    fail("Exception class is not as expected [expected=" +
+                        CacheException.class + ", actual=" + e.getClass() + ']');
+                }
+
+                fail("Exception has not been thrown.");
+            }
+        );
+    }
+
+    /**
+     * Executes double call of consumer's accept method with passed Ignite instance.
+     *
+     * @param cons Consumer.
+     * @throws Exception If failed.
+     */
+    private void doubleConsumerAccept(Consumer<Ignite> cons) throws Exception {
         Ignite node = startGrid();
 
-        try {
-            node.getOrCreateCache(
-                new CacheConfiguration().setName("CACHE")
-                    .setSqlSchema("\"" + QueryUtils.SCHEMA_SYS.toUpperCase() + "\"")
-            );
-        }
-        catch (CacheException e) {
-            assertTrue(hasCause(e, IgniteCheckedException.class,
-                "SQL schema name is reserved (please choose another one) [cacheName=CACHE, schemaName=\"IGNITE\"]"));
+        cons.accept(node);
 
-            return;
-        }
-        catch (Throwable e) {
-            fail("Exception class is not as expected [expected=" +
-                CacheException.class + ", actual=" + e.getClass() + ']');
-        }
-
-        fail("Exception has not been thrown.");
+        cons.accept(node);
     }
 
     /**
