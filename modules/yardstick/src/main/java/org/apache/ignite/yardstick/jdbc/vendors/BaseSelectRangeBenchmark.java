@@ -35,8 +35,8 @@ import org.yardstickframework.BenchmarkConfiguration;
 import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
- * Abstract benchmark for sql select operation, that has range in WHERE clause. Designed to compare Ignite and
- * other DBMSes. Children specify what exactly query gets executed.
+ * Abstract benchmark for sql select operation, that has range in WHERE clause. Designed to compare Ignite and other
+ * DBMSes. Children specify what exactly query gets executed.
  */
 public abstract class BaseSelectRangeBenchmark extends AbstractJdbcBenchmark {
     /** Factory that hides all sql queries. */
@@ -70,9 +70,8 @@ public abstract class BaseSelectRangeBenchmark extends AbstractJdbcBenchmark {
     };
 
     /**
-     * Children implement this method to specify what statement to prepare.
-     * During benchmark run, this prepared statement gets executed with random parameters:
-     * minimum and maximum values for salary field (in WHERE clause).
+     * Children implement this method to specify what statement to prepare. During benchmark run, this prepared
+     * statement gets executed with random parameters: minimum and maximum values for salary field (in WHERE clause).
      *
      * @return sql query with 2 parameters.
      */
@@ -122,9 +121,8 @@ public abstract class BaseSelectRangeBenchmark extends AbstractJdbcBenchmark {
 
                 insOrg.addBatch();
 
-                if ((orgId +1) % BATCH_SIZE == 0) {
+                if ((orgId + 1) % BATCH_SIZE == 0) {
                     insOrg.executeBatch();
-
 
                     long newPercent = (orgId + 1) * 100 / orgRng;
 
@@ -156,7 +154,7 @@ public abstract class BaseSelectRangeBenchmark extends AbstractJdbcBenchmark {
                     if (percent != newPercent) {
                         percent = newPercent;
 
-                        println(cfg, (persId+1) + " out of " + args.range() + " rows have been uploaded " +
+                        println(cfg, (persId + 1) + " out of " + args.range() + " rows have been uploaded " +
                             "(" + percent + "%).");
                     }
                 }
@@ -182,7 +180,7 @@ public abstract class BaseSelectRangeBenchmark extends AbstractJdbcBenchmark {
         }
         catch (SQLFeatureNotSupportedException ignored) {
             println(cfg, "Failed to set auto commit to " + autocommit + " because it is unsupported operation, " +
-                "will just ignore it." );
+                "will just ignore it.");
         }
     }
 

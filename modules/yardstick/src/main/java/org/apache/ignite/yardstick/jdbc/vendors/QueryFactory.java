@@ -18,7 +18,7 @@
 package org.apache.ignite.yardstick.jdbc.vendors;
 
 /**
- * Creates queries.
+ * Creates queries. Currently queries are written in SQL dialect that is common to Ignite SQL, MySql and PostgreSQL.
  */
 public class QueryFactory {
     /** Query that creates Person table. */
@@ -42,7 +42,7 @@ public class QueryFactory {
     }
 
     /** Query that creates index on Person.org_id to have fast join query. */
-    public String createOrgIdIdx(){
+    public String createOrgIdIdx() {
         return "CREATE INDEX org_id_idx ON PUBLIC.PERSON(org_id)";
     }
 
@@ -74,7 +74,8 @@ public class QueryFactory {
         return "SELECT ID FROM PUBLIC.PERSON WHERE SALARY BETWEEN ? AND ?";
     }
 
-    public String selectPersonsByPK(){
+    /** Simple select query which WHERE clause uses only primary key. */
+    public String selectPersonsByPK() {
         return "SELECT id FROM PUBLIC.PERSON WHERE id BETWEEN ? AND ? ";
     }
 
@@ -88,9 +89,7 @@ public class QueryFactory {
         return "INSERT INTO PUBLIC.ORGANIZATION (id, name) VALUES (?, ?);";
     }
 
-    /**
-     * Query that fetches info about persons and theirs organizations for that persons who has salary in range.
-     */
+    /** Query that fetches info about persons and theirs organizations for that persons who has salary in range. */
     public String selectPersonsJoinOrgWithSalaries() {
         return "SELECT p.id, p.org_id, p.first_name, p.last_name, p.salary, o.name " +
             "FROM PUBLIC.PERSON p " +
