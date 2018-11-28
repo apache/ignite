@@ -181,15 +181,15 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             topVer = topVer.topologyVersion() > 0 ? topVer : cctx.affinity().affinityTopologyVersion();
         }
 
-        if (cctx.mvccEnabled() || mvccSnapshot == null) {
+        if (!cctx.mvccEnabled() || mvccSnapshot != null)
+            initialMap(topVer);
+        else {
             mvccTracker = new MvccQueryTrackerImpl(cctx, canRemap);
 
             registrateFutureInMvccManager(this);
 
             mvccTracker.requestSnapshot(topVer, this);
         }
-        else
-            initialMap(topVer);
     }
 
     /**
