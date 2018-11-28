@@ -39,8 +39,6 @@ public class ClientCacheGetAndPutRequest extends ClientCacheKeyValueRequest {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        authorize(ctx, SecurityPermission.CACHE_READ, SecurityPermission.CACHE_PUT);
-
         Object res = cache(ctx).getAndPut(key(), val());
 
         return new ClientObjectResponse(requestId(), res);

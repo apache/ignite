@@ -39,8 +39,6 @@ public class ClientCacheContainsKeysRequest extends ClientCacheKeysRequest {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        authorize(ctx, SecurityPermission.CACHE_READ);
-
         boolean val = cache(ctx).containsKeys(keys());
 
         return new ClientBooleanResponse(requestId(), val);

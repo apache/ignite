@@ -38,8 +38,6 @@ public class ClientCacheClearKeysRequest extends ClientCacheKeysRequest {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        authorize(ctx, SecurityPermission.CACHE_REMOVE);
-
         cache(ctx).clearAll(keys());
 
         return super.process(ctx);

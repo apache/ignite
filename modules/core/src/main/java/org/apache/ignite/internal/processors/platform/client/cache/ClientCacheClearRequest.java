@@ -37,8 +37,6 @@ public class ClientCacheClearRequest extends ClientCacheRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        authorize(ctx, SecurityPermission.CACHE_REMOVE);
-
         cache(ctx).clear();
 
         return super.process(ctx);

@@ -41,8 +41,6 @@ public class ClientCacheLocalPeekRequest extends ClientCacheKeyRequest {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        authorize(ctx, SecurityPermission.CACHE_READ);
-
         Object val = cache(ctx).localPeek(key(), CachePeekMode.ALL);
 
         return new ClientObjectResponse(requestId(), val);

@@ -39,8 +39,6 @@ public class ClientCacheGetAndPutIfAbsentRequest extends ClientCacheKeyValueRequ
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        authorize(ctx, SecurityPermission.CACHE_READ, SecurityPermission.CACHE_PUT);
-
         Object res = cache(ctx).getAndPutIfAbsent(key(), val());
 
         return new ClientObjectResponse(requestId(), res);

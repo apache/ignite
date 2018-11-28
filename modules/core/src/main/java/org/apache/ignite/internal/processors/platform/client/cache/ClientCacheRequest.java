@@ -121,34 +121,4 @@ class ClientCacheRequest extends ClientRequest {
     protected int cacheId() {
         return cacheId;
     }
-
-    /** {@inheritDoc} */
-    @Override protected void authorize(ClientConnectionContext ctx, SecurityPermission perm) {
-        SecurityContext secCtx = ctx.securityContext();
-
-        if (secCtx != null) {
-            DynamicCacheDescriptor cacheDesc = cacheDescriptor(ctx, cacheId);
-
-            runWithSecurityExceptionHandler(() -> {
-                ctx.kernalContext().security().authorize(cacheDesc.cacheName(), perm, secCtx);
-            });
-        }
-    }
-
-    /**
-     * Authorize for multiple permissions.
-     */
-    protected void authorize(ClientConnectionContext ctx, SecurityPermission... perm)
-        throws IgniteClientException {
-        SecurityContext secCtx = ctx.securityContext();
-
-        if (secCtx != null) {
-            DynamicCacheDescriptor cacheDesc = cacheDescriptor(ctx, cacheId);
-
-            runWithSecurityExceptionHandler(() -> {
-                for (SecurityPermission p : perm)
-                    ctx.kernalContext().security().authorize(cacheDesc.cacheName(), p, secCtx);
-            });
-        }
-    }
 }

@@ -39,8 +39,6 @@ public class ClientCacheReplaceRequest extends ClientCacheKeyValueRequest {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        authorize(ctx, SecurityPermission.CACHE_READ, SecurityPermission.CACHE_PUT);
-
         boolean res = cache(ctx).replace(key(), val());
 
         return new ClientBooleanResponse(requestId(), res);

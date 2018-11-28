@@ -50,8 +50,6 @@ public class ClientCacheGetSizeRequest extends ClientCacheRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        authorize(ctx, SecurityPermission.CACHE_READ);
-
         long res = cache(ctx).sizeLong(modes);
 
         return new ClientLongResponse(requestId(), res);

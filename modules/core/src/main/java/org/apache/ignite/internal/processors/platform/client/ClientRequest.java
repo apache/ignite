@@ -64,6 +64,7 @@ public class ClientRequest implements ClientListenerRequest {
     /**
      * Run the code with converting {@link SecurityException} to {@link IgniteClientException}.
      */
+    // TODO
     protected static void runWithSecurityExceptionHandler(Runnable runnable) {
         try {
             runnable.run();
@@ -75,15 +76,5 @@ public class ClientRequest implements ClientListenerRequest {
                 ex
             );
         }
-    }
-
-    /**
-     * Authorize for specified permission.
-     */
-    protected void authorize(ClientConnectionContext ctx, SecurityPermission perm) {
-//        SecurityContext secCtx = ctx.securityContext();
-//
-//        if (secCtx != null)
-//            runWithSecurityExceptionHandler(() -> ctx.kernalContext().security().authorize(null, perm, secCtx));
     }
 }

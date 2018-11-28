@@ -40,9 +40,7 @@ public class ClientCacheGetAllRequest extends ClientCacheKeysRequest {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        authorize(ctx, SecurityPermission.CACHE_READ);
-
-        Map val = cache(ctx).getAll(keys());
+                Map val = cache(ctx).getAll(keys());
 
         return new ClientCacheGetAllResponse(requestId(), val);
     }

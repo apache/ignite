@@ -50,12 +50,11 @@ public class ClientCacheGetOrCreateWithConfigurationRequest extends ClientReques
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        authorize(ctx, SecurityPermission.CACHE_CREATE);
-
         try {
             // Use security exception handler since the code authorizes "enable on-heap cache" permission
             runWithSecurityExceptionHandler(() -> ctx.kernalContext().grid().getOrCreateCache(cacheCfg));
-        } catch (CacheExistsException e) {
+        }
+        catch (CacheExistsException e) {
             throw new IgniteClientException(ClientStatus.CACHE_EXISTS, e.getMessage());
         }
 
