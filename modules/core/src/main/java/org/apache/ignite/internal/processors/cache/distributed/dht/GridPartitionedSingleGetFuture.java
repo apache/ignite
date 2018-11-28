@@ -70,8 +70,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 /**
  *
  */
-public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Object> implements
-    CacheGetFuture, IgniteDiagnosticAware {
+public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Object>
+    implements CacheGetFuture, IgniteDiagnosticAware {
     /** Default max remap count value. */
     public static final int DFLT_MAX_REMAP_CNT = 3;
 
