@@ -382,11 +382,6 @@ public class H2TreeIndex extends H2TreeIndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean canGetFirstOrLast() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override public Cursor findFirstOrLast(Session session, boolean b) {
         try {
             H2Tree tree = treeForRead(threadLocalSegment());

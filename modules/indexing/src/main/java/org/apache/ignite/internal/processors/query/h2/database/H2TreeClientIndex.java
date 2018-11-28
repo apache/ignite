@@ -95,11 +95,6 @@ public class H2TreeClientIndex extends H2TreeIndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean canGetFirstOrLast() {
-        throw new IgniteSQLException("Shouldn't be invoked, due to it's not affinity node");
-    }
-
-    /** {@inheritDoc} */
     @Override public Cursor findFirstOrLast(Session session, boolean b) {
         throw new IgniteSQLException("Shouldn't be invoked, due to it's not affinity node");
     }
