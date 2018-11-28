@@ -53,7 +53,7 @@ public enum MLSandboxDatasets {
     BOSTON_HOUSE_PRICES("datasets/boston_housing_dataset.txt", false, ","),
 
     /** Example from book Barber D. Bayesian reasoning and machine learning. Chapter 10. */
-    ENGLISH_VS_SCOTTISH("datasets/binary_dataset.csv", true, ",");
+    ENGLISH_VS_SCOTTISH("datasets/english_vs_scottish_binary_dataset.csv", true, ",");
 
     /** Filename. */
     private final String filename;
