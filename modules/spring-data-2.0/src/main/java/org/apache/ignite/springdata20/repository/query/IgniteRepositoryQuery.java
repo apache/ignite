@@ -20,6 +20,7 @@ package org.apache.ignite.springdata20.repository.query;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -195,79 +196,79 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
      * @return Query cursor or slice
      */
     @Nullable private Object transformQueryCursor(Object[] prmtrs, QueryCursor qryCursor) {
-        if (this.qry.isFieldQuery()) {
-            Iterable<ArrayList> qryIter = (Iterable<ArrayList>)qryCursor;
+		if (this.qry.isFieldQuery()) {
+			Iterable<List> qryIter = (Iterable<List>)qryCursor;
 
-            switch (returnStgy) {
-                case LIST_OF_VALUES:
-                    ArrayList list = new ArrayList();
+			switch (returnStgy) {
+				case LIST_OF_VALUES:
+					List list = new ArrayList<>();
 
-                    for (ArrayList entry : qryIter)
-                        list.add(entry.get(0));
+					for (List entry : qryIter)
+						list.add(entry.get(0));
 
-                    return list;
-                case ONE_VALUE:
-                    Iterator<ArrayList> iter = qryIter.iterator();
+					return list;
+				case ONE_VALUE:
+					Iterator<List> iter = qryIter.iterator();
 
-                    if (iter.hasNext())
-                        return iter.next().get(0);
+					if (iter.hasNext())
+						return iter.next().get(0);
 
-                    return null;
-                case SLICE_OF_VALUES:
-                    ArrayList content = new ArrayList();
+					return null;
+				case SLICE_OF_VALUES:
+					List content = new ArrayList<>();
 
-                    for (ArrayList entry : qryIter)
-                        content.add(entry.get(0));
+					for (List entry : qryIter)
+						content.add(entry.get(0));
 
-                    return new SliceImpl(content, (Pageable)prmtrs[prmtrs.length - 1], true);
-                case SLICE_OF_LISTS:
-                    return new SliceImpl(qryCursor.getAll(), (Pageable)prmtrs[prmtrs.length - 1], true);
-                case LIST_OF_LISTS:
-                    return qryCursor.getAll();
-                default:
-                    throw new IllegalStateException();
-            }
-        }
-        else {
-            Iterable<CacheEntryImpl> qryIter = (Iterable<CacheEntryImpl>)qryCursor;
+					return new SliceImpl(content, (Pageable)prmtrs[prmtrs.length - 1], true);
+				case SLICE_OF_LISTS:
+					return new SliceImpl(qryCursor.getAll(), (Pageable)prmtrs[prmtrs.length - 1], true);
+				case LIST_OF_LISTS:
+					return qryCursor.getAll();
+				default:
+					throw new IllegalStateException();
+			}
+		}
+		else {
+			Iterable<CacheEntryImpl> qryIter = (Iterable<CacheEntryImpl>)qryCursor;
 
-            switch (returnStgy) {
-                case LIST_OF_VALUES:
-                    ArrayList list = new ArrayList();
+			switch (returnStgy) {
+				case LIST_OF_VALUES:
+					List list = new ArrayList<>();
 
-                    for (CacheEntryImpl entry : qryIter)
-                        list.add(entry.getValue());
+					for (CacheEntryImpl entry : qryIter)
+						list.add(entry.getValue());
 
-                    return list;
-                case ONE_VALUE:
-                    Iterator<CacheEntryImpl> iter1 = qryIter.iterator();
+					return list;
+				case ONE_VALUE:
+					Iterator<CacheEntryImpl> iter1 = qryIter.iterator();
 
-                    if (iter1.hasNext())
-                        return iter1.next().getValue();
+					if (iter1.hasNext())
+						return iter1.next().getValue();
 
-                    return null;
-                case CACHE_ENTRY:
-                    Iterator<CacheEntryImpl> iter2 = qryIter.iterator();
+					return null;
+				case CACHE_ENTRY:
+					Iterator<CacheEntryImpl> iter2 = qryIter.iterator();
 
-                    if (iter2.hasNext())
-                        return iter2.next();
+					if (iter2.hasNext())
+						return iter2.next();
 
-                    return null;
-                case SLICE_OF_VALUES:
-                    ArrayList content = new ArrayList();
+					return null;
+				case SLICE_OF_VALUES:
+					List content = new ArrayList<>();
 
-                    for (CacheEntryImpl entry : qryIter)
-                        content.add(entry.getValue());
+					for (CacheEntryImpl entry : qryIter)
+						content.add(entry.getValue());
 
-                    return new SliceImpl(content, (Pageable)prmtrs[prmtrs.length - 1], true);
-                case SLICE_OF_CACHE_ENTRIES:
-                    return new SliceImpl(qryCursor.getAll(), (Pageable)prmtrs[prmtrs.length - 1], true);
-                case LIST_OF_CACHE_ENTRIES:
-                    return qryCursor.getAll();
-                default:
-                    throw new IllegalStateException();
-            }
-        }
+					return new SliceImpl(content, (Pageable)prmtrs[prmtrs.length - 1], true);
+				case SLICE_OF_CACHE_ENTRIES:
+					return new SliceImpl(qryCursor.getAll(), (Pageable)prmtrs[prmtrs.length - 1], true);
+				case LIST_OF_CACHE_ENTRIES:
+					return qryCursor.getAll();
+				default:
+					throw new IllegalStateException();
+			}
+		}
     }
 
     /**

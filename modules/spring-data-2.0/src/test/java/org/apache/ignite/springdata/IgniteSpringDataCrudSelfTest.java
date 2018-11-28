@@ -20,8 +20,10 @@ package org.apache.ignite.springdata;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Optional;
 import java.util.TreeSet;
+
 import org.apache.ignite.springdata.misc.ApplicationConfiguration;
 import org.apache.ignite.springdata.misc.Person;
 import org.apache.ignite.springdata.misc.PersonRepository;
@@ -70,6 +72,21 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         assertEquals(0, repo.count());
 
         super.afterTest();
+    }
+
+    /**
+     *
+     */
+    private void fillInRepository() {
+        for (int i = 0; i < CACHE_SIZE - 5; i++) {
+            repo.save(i, new Person("person" + Integer.toHexString(i),
+                    "lastName" + Integer.toHexString((i + 16) % 256)));
+        }
+        repo.save((int) repo.count(), new Person("uniquePerson", "uniqueLastName")); 
+        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName")); 
+        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName")); 
+        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName")); 
+        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName")); 
     }
 
     /** {@inheritDoc} */
@@ -220,13 +237,84 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         assertEquals(0, repo.count());
     }
 
-    /**
-     *
-     */
-    private void fillInRepository() {
-        for (int i = 0; i < CACHE_SIZE; i++) {
-            repo.save(i, new Person("person" + Integer.toHexString(i),
-                    "lastName" + Integer.toHexString((i + 16) % 256)));
-        }
+    /** Delete existing record */
+    public void testDeleteByFirstName() {
+    	assertEquals(repo.countByFirstNameLike("uniquePerson"), 1);
+
+    	long cnt = repo.deleteByFirstName("uniquePerson");
+
+    	assertEquals(1, cnt);
+    }
+
+    /** Delete NON existing record */
+    public void testDeleteExpression() {
+        long cnt = repo.deleteByFirstName("880");
+
+        assertEquals(0, cnt);
+    }
+
+    /** Delete Multiple records due to where */
+    public void testDeleteExpressionMultiple() {
+    	long count = repo.countByFirstName("nonUniquePerson");
+    	long cnt = repo.deleteByFirstName("nonUniquePerson");
+
+    	assertEquals(cnt, count);
+    }
+
+    /** Remove should do the same than Delete */
+    public void testRemoveExpression() {
+    	repo.removeByFirstName("person3f");
+
+    	long count = repo.count();
+    	assertEquals(CACHE_SIZE - 1, count);
+    }
+
+    /** Delete unique record */
+    public void testDeleteQuery() {
+    	repo.deleteBySecondNameQuery("uniqueLastName");
+
+    	long countAfter = repo.count();
+    	assertEquals(CACHE_SIZE - 1, countAfter);
+    }
+
+    /** Try to delete with a wrong @Query */
+    public void testWrongDeleteQuery() {
+    	long countBefore = repo.countByFirstNameLike("person3f");
+
+    	try {
+	    	repo.deleteWrongByFirstNameQuery("person3f");
+    	} catch(Exception e) {
+    		//expected
+    	}
+
+    	long countAfter = repo.countByFirstNameLike("person3f");
+    	assertEquals(countBefore, countAfter);
+    }
+
+    /** Update with a @Query a record */
+    public void testUpdateQuery() {
+    	final String newSecondName = "updatedUniqueSecondName";
+    	int cnt = repo.setFixedSecondNameFor(newSecondName, "uniquePerson");
+
+    	assertEquals(1, cnt);
+
+    	List<Person> person = repo.findByFirstName("uniquePerson");
+    	assertEquals(person.get(0).getSecondName(), "updatedUniqueSecondName");
+    }
+
+    /** Update with a wrong @Query */
+    public void testWrongUpdateQuery() {
+    	final String newSecondName = "updatedUniqueSecondName";
+    	int rowsUpdated = 0;
+    	try {
+	    	rowsUpdated = repo.setWrongFixedSecondName(newSecondName, "uniquePerson");
+    	} catch(Exception e) {
+    		//expected
+    	}
+
+    	assertEquals(0, rowsUpdated);
+
+    	List<Person> person = repo.findByFirstName("uniquePerson");
+    	assertEquals(person.get(0).getSecondName(), "uniqueLastName");
     }
 }

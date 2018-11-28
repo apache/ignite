@@ -147,10 +147,22 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
     }
 
     /**
+     * isFieldQuery if runs a DML operation different from <code>SELECT *</code><br>
+     * * not isFieldQuery if starts with other than a complete SQL Statement
      * @param qry Query string.
      * @return {@code true} if query is SQLFieldsQuery.
      */
     private boolean isFieldQuery(String qry) {
-        return qry.matches("^SELECT.*") && !qry.matches("^SELECT\\s+(?:\\w+\\.)?+\\*.*");
+    	return isDML(qry) && !qry.matches("^SELECT\\s+(?:\\w+\\.)?+\\*.*");
+    }
+
+    /**
+     * Evaluates if the query starts with a DML word.<br>
+     * <code>SELECT, INSERT, UPDATE, MERGE, DELETE</code>
+     * @param qry
+     * @return
+     */
+    private boolean isDML(String qry) {
+    	return qry.matches("^SELECT.*") || qry.matches("^UPDATE.*") || qry.matches("^DELETE.*") || qry.matches("^MERGE.*") || qry.matches("^INSERT.*");
     }
 }
