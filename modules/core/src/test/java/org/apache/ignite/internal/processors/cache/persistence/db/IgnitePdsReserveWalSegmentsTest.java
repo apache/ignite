@@ -61,8 +61,6 @@ public class IgnitePdsReserveWalSegmentsTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration dbCfg = new DataStorageConfiguration();
 
-        dbCfg.setPageSize(4 * 1024);
-
         cfg.setDataStorageConfiguration(dbCfg);
 
         dbCfg.setWalSegmentSize(1024 * 1024)

@@ -57,14 +57,15 @@ public class IgnitePdsCacheRestoreTest extends GridCommonAbstractTest {
             ccfgs = null;
         }
 
+        long regionMaxSize = 20L * 1024 * 1024;
+
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration().setMaxSize(10L * 1024 * 1024).setPersistenceEnabled(true))
-            .setPageSize(4 * 1024)
+                new DataRegionConfiguration().setMaxSize(regionMaxSize).setPersistenceEnabled(true))
             .setWalMode(WALMode.LOG_ONLY);
 
         memCfg.setDataRegionConfigurations(new DataRegionConfiguration()
-            .setMaxSize(10L * 1024 * 1024)
+            .setMaxSize(regionMaxSize)
             .setName(NO_PERSISTENCE_REGION)
             .setPersistenceEnabled(false));
 
@@ -210,6 +211,7 @@ public class IgnitePdsCacheRestoreTest extends GridCommonAbstractTest {
         ccfgs[2] = cacheConfiguration("c3");
 
         ccfgs[2].setDataRegionName(NO_PERSISTENCE_REGION);
+        ccfgs[2].setDiskPageCompression(null);
 
         return ccfgs;
     }
