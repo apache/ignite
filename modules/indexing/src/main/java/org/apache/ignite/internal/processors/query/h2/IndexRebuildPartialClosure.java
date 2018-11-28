@@ -22,6 +22,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -31,7 +32,7 @@ import java.util.Map;
 /**
  * Closure to rebuild some cache indexes.
  */
-public class IndexRebuildPartialClosure implements IndexRebuildClosure {
+public class IndexRebuildPartialClosure implements SchemaIndexCacheVisitorClosure {
     /** Indexes. */
     private final Map<GridH2Table, Collection<GridH2IndexBase>> tblIdxs = new IdentityHashMap<>();
 
@@ -47,13 +48,6 @@ public class IndexRebuildPartialClosure implements IndexRebuildClosure {
             for (GridH2IndexBase idx : tblIdxEntry.getValue())
                 idx.putx(row0);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isRebuilt(GridH2Table tbl, GridH2IndexBase idx) {
-        Collection<GridH2IndexBase> idxs = tblIdxs.get(tbl);
-
-        return idxs != null && idxs.contains(idx);
     }
 
     /**

@@ -2697,7 +2697,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         assert pageStore != null;
 
-        IndexRebuildClosure clo;
+        SchemaIndexCacheVisitorClosure clo;
 
         if (!pageStore.hasIndexStore(cctx.groupId())) {
             // If there are no index store, rebuild all indexes.

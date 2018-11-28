@@ -20,13 +20,12 @@ package org.apache.ignite.internal.processors.query.h2;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 
 /**
  * Closure to rebuild all indexes.
  */
-public class IndexRebuildFullClosure implements IndexRebuildClosure {
+public class IndexRebuildFullClosure implements SchemaIndexCacheVisitorClosure {
     /** */
     private final GridCacheQueryManager qryMgr;
 
@@ -46,10 +45,5 @@ public class IndexRebuildFullClosure implements IndexRebuildClosure {
     @Override public void apply(CacheDataRow row) throws IgniteCheckedException {
         // prevRowAvailable is always true with MVCC on, and always false *on index rebuild* with MVCC off.
         qryMgr.store(row, null, mvccEnabled);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isRebuilt(GridH2Table tbl, GridH2IndexBase idx) {
-        return true;
     }
 }

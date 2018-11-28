@@ -47,8 +47,8 @@ public class IndexBuildClosure implements SchemaIndexCacheVisitorClosure {
 
     /** {@inheritDoc} */
     @Override public void apply(CacheDataRow row) throws IgniteCheckedException {
-        GridH2Row h2Row = rowDesc.createRow(row);
+        GridH2Row row0 = rowDesc.createRow(row);
 
-        idx.putx(h2Row);
+        idx.putx(row0);
     }
 }
