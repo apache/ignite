@@ -16,6 +16,7 @@
 import ctypes
 
 from pyignite.constants import *
+from .base import IgniteDataType
 from .type_codes import *
 
 
@@ -25,7 +26,7 @@ __all__ = [
 ]
 
 
-class DataObject:
+class DataObject(IgniteDataType):
     """
     Base class for primitive data objects.
 
@@ -97,7 +98,7 @@ class IntObject(DataObject):
 
 
 class LongObject(DataObject):
-    c_type = ctypes.c_long
+    c_type = ctypes.c_longlong
     type_code = TC_LONG
     pythonic = int
     default = 0

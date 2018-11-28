@@ -237,25 +237,10 @@ public class H2Utils {
      * @param enforceJoinOrder Enforce join order of tables.
      */
     public static void setupConnection(Connection conn, boolean distributedJoins, boolean enforceJoinOrder) {
-        setupConnection(conn,distributedJoins, enforceJoinOrder, false);
-    }
-
-    /**
-     * @param conn Connection to use.
-     * @param distributedJoins If distributed joins are enabled.
-     * @param enforceJoinOrder Enforce join order of tables.
-     * @param lazy Lazy query execution mode.
-     */
-    public static void setupConnection(
-        Connection conn,
-        boolean distributedJoins,
-        boolean enforceJoinOrder,
-        boolean lazy) {
         Session s = session(conn);
 
         s.setForceJoinOrder(enforceJoinOrder);
         s.setJoinBatchEnabled(distributedJoins);
-        s.setLazyQueryExecution(lazy);
     }
 
     /**
@@ -299,5 +284,18 @@ public class H2Utils {
         resCur.fieldsMeta(UPDATE_RESULT_META);
 
         return resCur;
+    }
+
+    /**
+     * Add only new columns to destination list.
+     *
+     * @param dest List of index columns to add new elements from src list.
+     * @param src List of IndexColumns to add to dest list.
+     */
+    public static void addUniqueColumns(List<IndexColumn> dest, List<IndexColumn> src) {
+        for (IndexColumn col : src) {
+            if (!containsColumn(dest, col))
+                dest.add(col);
+        }
     }
 }

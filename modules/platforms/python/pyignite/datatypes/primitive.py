@@ -16,6 +16,7 @@
 import ctypes
 
 from pyignite.constants import *
+from .base import IgniteDataType
 
 
 __all__ = [
@@ -24,7 +25,7 @@ __all__ = [
 ]
 
 
-class Primitive:
+class Primitive(IgniteDataType):
     """
     Ignite primitive type. Base type for the following types:
 
@@ -66,7 +67,7 @@ class Int(Primitive):
 
 
 class Long(Primitive):
-    c_type = ctypes.c_long
+    c_type = ctypes.c_longlong
 
 
 class Float(Primitive):

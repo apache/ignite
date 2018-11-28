@@ -33,6 +33,7 @@ import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
@@ -52,6 +53,13 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
     /** Cache store. */
     private static final GridCacheTestStore store = new GridCacheTestStore();
+
+    /** {@inheritDoc} */
+    @Override public void setUp() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
+        super.setUp();
+    }
 
     /**
      *
@@ -501,7 +509,6 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
     }
 
     /** @throws Exception If test failed. */
-    @SuppressWarnings("StringEquality")
     public void testReload() throws Exception {
         IgniteCache<Integer, String> cache = jcache();
 

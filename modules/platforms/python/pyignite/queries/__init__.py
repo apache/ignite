@@ -54,7 +54,7 @@ class Response:
                     '_pack_': 1,
                     '_fields_': [
                         ('length', ctypes.c_int),
-                        ('query_id', ctypes.c_long),
+                        ('query_id', ctypes.c_longlong),
                         ('status_code', ctypes.c_int),
                     ],
                 },
@@ -239,7 +239,7 @@ class Query:
                     '_fields_': [
                         ('length', ctypes.c_int),
                         ('op_code', ctypes.c_short),
-                        ('query_id', ctypes.c_long),
+                        ('query_id', ctypes.c_longlong),
                     ],
                 },
             )
@@ -309,7 +309,7 @@ class ConfigQuery(Query):
                     '_fields_': [
                         ('length', ctypes.c_int),
                         ('op_code', ctypes.c_short),
-                        ('query_id', ctypes.c_long),
+                        ('query_id', ctypes.c_longlong),
                         ('config_length', ctypes.c_int),
                     ],
                 },

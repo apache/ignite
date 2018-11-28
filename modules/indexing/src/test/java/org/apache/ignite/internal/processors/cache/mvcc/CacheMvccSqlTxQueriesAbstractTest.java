@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
@@ -227,11 +228,56 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
      * @throws Exception If failed.
      */
     public void testAccountsTxDmlSql_ClientServer_Backups2_Persistence() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9292");
-
         persistence = true;
 
         testAccountsTxDmlSql_ClientServer_Backups2();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testParsingErrorHasNoSideEffect() throws Exception {
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 0, 4)
+            .setIndexedTypes(Integer.class, Integer.class);
+
+        IgniteEx node = startGrid(0);
+
+        IgniteCache<Object, Object> cache = node.cache(DEFAULT_CACHE_NAME);
+
+        try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            tx.timeout(TX_TIMEOUT);
+
+            SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (1),(2,2),(3,3)");
+
+            try {
+                try (FieldsQueryCursor<List<?>> cur = cache.query(qry)) {
+                    fail("We should not get there.");
+                }
+            }
+            catch (CacheException ex){
+                IgniteSQLException cause = X.cause(ex, IgniteSQLException.class);
+
+                assertNotNull(cause);
+                assertEquals(IgniteQueryErrorCode.PARSING, cause.statusCode());
+
+                assertFalse(tx.isRollbackOnly());
+            }
+
+            qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (4,4),(5,5),(6,6)");
+
+            try (FieldsQueryCursor<List<?>> cur = cache.query(qry)) {
+                assertEquals(3L, cur.iterator().next().get(0));
+            }
+
+            tx.commit();
+        }
+
+        assertNull(cache.get(1));
+        assertNull(cache.get(2));
+        assertNull(cache.get(3));
+        assertEquals(4, cache.get(4));
+        assertEquals(5, cache.get(5));
+        assertEquals(6, cache.get(6));
     }
 
     /**

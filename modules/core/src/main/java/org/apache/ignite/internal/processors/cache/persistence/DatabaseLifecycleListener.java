@@ -22,33 +22,70 @@ import org.apache.ignite.IgniteCheckedException;
 /**
  *
  */
+@SuppressWarnings("RedundantThrows")
 public interface DatabaseLifecycleListener {
-
     /**
-     * @param mgr Database shared manager.
+     * Callback executed when data regions become to start-up.
      *
+     * @param mgr Database shared manager.
+     * @throws IgniteCheckedException If failed.
      */
-    void onInitDataRegions(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException;
+    public default void onInitDataRegions(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {}
 
     /**
-     * @param mgr Page store manager.
+     * Callback executed when node detected that baseline topology is changed and node is not in that baseline.
+     * It's useful to cleanup and invalidate all available data restored at that moment.
      *
+     * @throws IgniteCheckedException If failed.
      */
-    void beforeMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException;
+    public default void onBaselineChange() throws IgniteCheckedException {}
 
     /**
-     * @param mgr Database shared manager.
+     * Callback executed right before node become perform binary recovery.
      *
+     * @param mgr Database shared manager.
+     * @throws IgniteCheckedException If failed.
      */
-    void afterMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException;
+    public default void beforeBinaryMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {}
 
     /**
-     * @param mgr Database shared manager.
+     * Callback executed when binary memory has fully restored and WAL logging is resumed.
+     *
+     * @param binaryState Result of binary recovery.
+     * @throws IgniteCheckedException If failed.
      */
-    void afterInitialise(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException;
+    public default void afterBinaryMemoryRestore(GridCacheDatabaseSharedManager.RestoreBinaryState binaryState)
+        throws IgniteCheckedException {}
 
     /**
+     * Callback executed when all logical updates were applied and page memory become to fully consistent state.
+     *
+     * @param logicalState Result of logical recovery.
+     * @throws IgniteCheckedException If failed.
+     */
+    public default void afterLogicalUpdatesApplied(GridCacheDatabaseSharedManager.RestoreLogicalState logicalState)
+        throws IgniteCheckedException {}
+
+    /**
+     * Callback executed when all physical updates are applied and we are ready to write new physical records
+     * during logical recovery.
+     *
+     * @param mgr Database shared manager.
+     * @throws IgniteCheckedException If failed.
+     */
+    public default void beforeResumeWalLogging(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {}
+
+    /**
+     * Callback executed after all data regions are initialized.
+     *
      * @param mgr Database shared manager.
      */
-    void beforeStop(IgniteCacheDatabaseSharedManager mgr);
+    public default void afterInitialise(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {}
+
+    /**
+     * Callback executed before shared manager will be stopped.
+     *
+     * @param mgr Database shared manager.
+     */
+    public default void beforeStop(IgniteCacheDatabaseSharedManager mgr) {}
 }

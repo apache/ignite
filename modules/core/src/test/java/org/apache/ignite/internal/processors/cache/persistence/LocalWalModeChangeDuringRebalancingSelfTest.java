@@ -546,11 +546,6 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         }
 
         /** {@inheritDoc} */
-        @Override public FileIO create(File file) throws IOException {
-            return new TestFileIO(delegate.create(file));
-        }
-
-        /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
             return new TestFileIO(delegate.create(file, modes));
         }
@@ -568,6 +563,21 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
          */
         TestFileIO(FileIO delegate) {
             this.delegate = delegate;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getFileSystemBlockSize() {
+            return delegate.getFileSystemBlockSize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getSparseSize() {
+            return delegate.getSparseSize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int punchHole(long position, int len) {
+            return delegate.punchHole(position, len);
         }
 
         /** {@inheritDoc} */
