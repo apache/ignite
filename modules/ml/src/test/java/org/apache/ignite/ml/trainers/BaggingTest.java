@@ -29,6 +29,7 @@ import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredicti
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -76,7 +77,7 @@ public class BaggingTest extends TrainerTest {
                 .withBatchSize(10)
                 .withSeed(123L);
 
-        trainer.setEnvironmentBuilder(TestUtils.testEnvBuilder());
+        trainer.withEnvironmentBuilder(TestUtils.testEnvBuilder());
 
         DatasetTrainer<ModelsComposition, Double> baggedTrainer =
             TrainerTransformers.makeBagged(
@@ -204,6 +205,11 @@ public class BaggingTest extends TrainerTest {
             DatasetBuilder<K, V> datasetBuilder,
             IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
             return fit(datasetBuilder, featureExtractor, lbExtractor);
+        }
+
+        /** {@inheritDoc} */
+        @Override public CountTrainer withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
+            return (CountTrainer)super.withEnvironmentBuilder(envBuilder);
         }
     }
 

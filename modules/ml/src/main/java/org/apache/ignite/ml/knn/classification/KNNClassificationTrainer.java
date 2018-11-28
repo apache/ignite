@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.knn.classification;
 
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.knn.KNNUtils;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -51,6 +52,11 @@ public class KNNClassificationTrainer extends SingleLabelDatasetTrainer<KNNClass
         if (mdl != null)
             res.copyStateFrom(mdl);
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public KNNClassificationTrainer withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
+        return (KNNClassificationTrainer)super.withEnvironmentBuilder(envBuilder);
     }
 
     /** {@inheritDoc} */

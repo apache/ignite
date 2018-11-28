@@ -145,6 +145,11 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
         return mdl instanceof GDBModel;
     }
 
+    /** {@inheritDoc} */
+    @Override public GDBTrainer withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
+        return (GDBTrainer)super.withEnvironmentBuilder(envBuilder);
+    }
+
     /**
      * Defines unique labels in dataset if need (useful in case of classification).
      *

@@ -51,6 +51,36 @@ public interface PreprocessingTrainer<K, V, T, R> {
     /**
      * Fits preprocessor.
      *
+     * @param datasetBuilder Dataset builder.
+     * @param basePreprocessor Base preprocessor.
+     * @return Preprocessor.
+     */
+    public default IgniteBiFunction<K, V, R> fit(
+        DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, T> basePreprocessor) {
+        return fit(LearningEnvironmentBuilder.defaultBuilder(), datasetBuilder, basePreprocessor);
+    }
+
+    /**
+     * Fits preprocessor.
+     *
+     * @param ignite Ignite instance.
+     * @param cache Ignite cache.
+     * @param basePreprocessor Base preprocessor.
+     * @return Preprocessor.
+     */
+    public default IgniteBiFunction<K, V, R> fit(
+        Ignite ignite, IgniteCache<K, V> cache,
+        IgniteBiFunction<K, V, T> basePreprocessor) {
+        return fit(
+            new CacheBasedDatasetBuilder<>(ignite, cache),
+            basePreprocessor
+        );
+    }
+
+    /**
+     * Fits preprocessor.
+     *
      * @param envBuilder Learning environment builder.
      * @param ignite Ignite instance.
      * @param cache Ignite cache.
@@ -83,6 +113,24 @@ public interface PreprocessingTrainer<K, V, T, R> {
         IgniteBiFunction<K, V, T> basePreprocessor) {
         return fit(
             envBuilder,
+            new LocalDatasetBuilder<>(data, parts),
+            basePreprocessor
+        );
+    }
+
+    /**
+     * Fits preprocessor.
+     *
+     * @param data Data.
+     * @param parts Number of partitions.
+     * @param basePreprocessor Base preprocessor.
+     * @return Preprocessor.
+     */
+    public default IgniteBiFunction<K, V, R> fit(
+        Map<K, V> data,
+        int parts,
+        IgniteBiFunction<K, V, T> basePreprocessor) {
+        return fit(
             new LocalDatasetBuilder<>(data, parts),
             basePreprocessor
         );

@@ -24,6 +24,7 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
@@ -107,6 +108,11 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
     /** {@inheritDoc} */
     @Override protected boolean checkState(DecisionTreeNode mdl) {
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public DecisionTree<T> withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
+        return (DecisionTree<T>)super.withEnvironmentBuilder(envBuilder);
     }
 
     /** */

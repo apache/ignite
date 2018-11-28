@@ -66,7 +66,7 @@ public class LearningEnvironmentTest {
             .withParallelismStrategyType(ParallelismStrategy.Type.ON_DEFAULT_POOL)
             .withLoggingFactoryDependency(part -> ConsoleLogger.factory(MLLogger.VerboseLevel.LOW));
 
-        trainer.setEnvironmentBuilder(envBuilder);
+        trainer.withEnvironmentBuilder(envBuilder);
 
         assertEquals(DefaultParallelismStrategy.class, trainer.learningEnvironment().parallelismStrategy().getClass());
         assertEquals(ConsoleLogger.class, trainer.learningEnvironment().logger().getClass());
@@ -114,7 +114,7 @@ public class LearningEnvironmentTest {
                 return null;
             }
         };
-        trainer.setEnvironmentBuilder(envBuilder);
+        trainer.withEnvironmentBuilder(envBuilder);
         Model<Object, Vector> mdl = trainer.fit(getCacheMock(partitions), partitions, null, null);
 
         Vector exp = VectorUtils.zeroes(partitions);

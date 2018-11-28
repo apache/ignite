@@ -293,21 +293,15 @@ public abstract class DatasetTrainer<M extends Model, L> {
     }
 
     /**
-     * Sets learning Environment
+     * Changes learning Environment.
+     *
      * @param envBuilder Learning environment builder.
      */
-    public void setEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
+    public DatasetTrainer<M, L> withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
         this.envBuilder  = envBuilder;
         this.environment = envBuilder.buildForTrainer();
-    }
 
-    /**
-     * Get learning environment builder.
-     *
-     * @return Learning environment builder.
-     */
-    public LearningEnvironmentBuilder learningEnvironmentBuilder() {
-        return envBuilder;
+        return this;
     }
 
     /**

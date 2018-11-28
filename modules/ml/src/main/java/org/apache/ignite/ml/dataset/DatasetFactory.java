@@ -293,6 +293,29 @@ public class DatasetFactory {
     }
 
     /**
+     * Creates a new instance of distributed {@link SimpleDataset} using the specified {@code featureExtractor}. This
+     * methods determines partition {@code context} to be {@link EmptyContext} and partition {@code data} to be
+     * {@link SimpleDatasetData}.
+     *
+     * @param ignite Ignite instance.
+     * @param upstreamCache Ignite Cache with {@code upstream} data.
+     * @param featureExtractor Feature extractor used to extract features and build {@link SimpleDatasetData}.
+     * @param <K> Type of a key in {@code upstream} data.
+     * @param <V> Type of a value in {@code upstream} data.
+     * @return Dataset.
+     */
+    public static <K, V> SimpleDataset<EmptyContext> createSimpleDataset(
+        Ignite ignite,
+        IgniteCache<K, V> upstreamCache,
+        IgniteBiFunction<K, V, Vector> featureExtractor) {
+        return createSimpleDataset(
+            new CacheBasedDatasetBuilder<>(ignite, upstreamCache),
+            LearningEnvironmentBuilder.defaultBuilder(),
+            featureExtractor
+        );
+    }
+
+    /**
      * Creates a new instance of distributed {@link SimpleLabeledDataset} using the specified {@code featureExtractor}
      * and {@code lbExtractor}. This methods determines partition {@code context} to be {@link EmptyContext} and
      * partition {@code data} to be {@link SimpleLabeledDatasetData}.
