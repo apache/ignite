@@ -184,9 +184,6 @@ public class GridCacheWriteBehindStoreMultithreadedSelfTest extends GridCacheWri
      * @throws Exception If failed.
      */
     private void testFlushFromTheSameThread(boolean writeCoalescing) throws Exception {
-        // 50 milliseconds should be enough.
-        delegate.setOperationDelay(25);
-
         initStore(2, writeCoalescing);
 
         Set<Integer> exp;
@@ -202,9 +199,6 @@ public class GridCacheWriteBehindStoreMultithreadedSelfTest extends GridCacheWri
 
             shutdownStore();
         }
-
-        // Restore delay.
-        delegate.setOperationDelay(0);
 
         Map<Integer, String> map = delegate.getMap();
 
