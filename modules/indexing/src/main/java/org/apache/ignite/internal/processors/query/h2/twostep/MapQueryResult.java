@@ -280,6 +280,9 @@ class MapQueryResult {
 
             closed = true;
 
+            if (ses != null)
+                GridH2Table.readLockTables(ses, false);
+
             U.close(rs, log);
 
             ses = null;
@@ -296,22 +299,33 @@ class MapQueryResult {
 
     /**
      */
-    void checkTablesVersionNotChanged() {
-        if (ses != null)
-            GridH2Table.checkTablesVersionNotChanged(ses);
+    void unlockTables() {
+        synchronized (this) {
+            if (ses != null && !closed)
+                GridH2Table.unlockTables(ses);
+        }
+    }
+
+    /**
+     */
+    void lockTables() {
+        synchronized (this) {
+            if (ses != null)
+                GridH2Table.readLockTables(ses, true);
+        }
     }
 
     /**
      * @param conn Detached connection.
      */
-    public void detachedConnection(ObjectPoolReusable<H2ConnectionWrapper> conn) {
+    void detachedConnection(ObjectPoolReusable<H2ConnectionWrapper> conn) {
         detachedConn = conn;
     }
 
     /**
      * @return {@code true} if the connection is pulled from connection pool and not use for next incoming requests.
      */
-    public boolean isConnectionDetached() {
+    boolean isConnectionDetached() {
         return detachedConn != null;
     }
 }

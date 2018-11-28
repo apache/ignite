@@ -1261,52 +1261,59 @@ public class GridMapQueryExecutor {
         if (res.closed())
             return null;
 
-        int page = res.page();
+        try {
+            if (qr.lazy())
+                res.lockTables();
 
-        List<Value[]> rows = new ArrayList<>(Math.min(64, pageSize));
+            int page = res.page();
 
-        boolean last = res.fetchNextPage(rows, pageSize);
+            List<Value[]> rows = new ArrayList<>(Math.min(64, pageSize));
 
-        res.checkTablesVersionNotChanged();
+            boolean last = res.fetchNextPage(rows, pageSize);
 
-        if (last) {
-            res.close();
+            if (last) {
+                res.close();
 
-            if (qr.isAllClosed()) {
-                nodeRess.remove(qr.queryRequestId(), segmentId, qr);
+                if (qr.isAllClosed()) {
+                    nodeRess.remove(qr.queryRequestId(), segmentId, qr);
 
-                // Close, release reservations, recycle connection if the last page fetched in lazy mode.
-                qr.close();
+                    // Close, release reservations, recycle connection if the last page fetched in lazy mode.
+                    qr.close();
+                }
             }
-        }
-        else {
-            // Detach connection if the result set greater than one page.
-            if (qr.lazy()) {
-                if (!res.isConnectionDetached())
-                    res.detachedConnection(h2.connections().detachConnection());
+            else {
+                // Detach connection if the result set greater than one page.
+                if (qr.lazy()) {
+                    if (!res.isConnectionDetached())
+                        res.detachedConnection(h2.connections().detachConnection());
+                }
+                else
+                    // Release session because all result set is already copied to RAM.
+                    // We don't need in check table version on fetch next page.
+                    res.releaseSession();
             }
-            else
-                // Release session because all result set is already copied to RAM.
-                // We don't need in check table version on fetch next page.
-                res.releaseSession();
+
+            boolean loc = node.isLocal();
+
+            // In case of SELECT FOR UPDATE the last columns is _KEY,
+            // we can't retrieve them for an arbitrary row otherwise.
+            int colsCnt = !qr.isForUpdate() ? res.columnCount() : res.columnCount() - 1;
+
+            GridQueryNextPageResponse msg = new GridQueryNextPageResponse(qr.queryRequestId(), segmentId, qry, page,
+                page == 0 ? res.rowCount() : -1,
+                colsCnt,
+                loc ? null : toMessages(rows, new ArrayList<>(res.columnCount()), colsCnt),
+                loc ? rows : null,
+                last);
+
+            msg.removeMapping(removeMapping);
+
+            return msg;
         }
-
-        boolean loc = node.isLocal();
-
-        // In case of SELECT FOR UPDATE the last columns is _KEY,
-        // we can't retrieve them for an arbitrary row otherwise.
-        int colsCnt = !qr.isForUpdate() ? res.columnCount() : res.columnCount() - 1;
-
-        GridQueryNextPageResponse msg = new GridQueryNextPageResponse(qr.queryRequestId(), segmentId, qry, page,
-            page == 0 ? res.rowCount() : -1,
-            colsCnt,
-            loc ? null : toMessages(rows, new ArrayList<>(res.columnCount()), colsCnt),
-            loc ? rows : null,
-            last);
-
-        msg.removeMapping(removeMapping);
-
-        return msg;
+        finally {
+            if (qr.lazy())
+                res.unlockTables();
+        }
     }
 
     /**
