@@ -30,6 +30,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -2244,13 +2245,15 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     @Nullable public ClusterNode selectAffinityNodeBalanced(
         List<ClusterNode> affNodes,
+        Set<ClusterNode> invalidNodes,
         int partitionId,
         boolean canRemap
     ) {
         if (!readLoadBalancingEnabled) {
             if (!canRemap) {
+                // Find next available node if we can not wait next topology version.
                 for (ClusterNode node : affNodes) {
-                    if (ctx.discovery().alive(node))
+                    if (ctx.discovery().alive(node) && !invalidNodes.contains(node))
                         return node;
                 }
 
@@ -2270,7 +2273,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         ClusterNode n0 = null;
 
         for (ClusterNode node : affNodes) {
-            if ((canRemap || discovery().alive(node) && isOwner(node, partitionId))) {
+            if (((canRemap || discovery().alive(node)) && !invalidNodes.contains(node))) {
                 if (locMacs.equals(node.attribute(ATTR_MACS)))
                     return node;
 
@@ -2282,16 +2285,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         }
 
         return n0;
-    }
-
-    /**
-     *  Check that node is owner for partition.
-     * @param node Cluster node.
-     * @param partitionId Partition ID.
-     * @return {@code}
-     */
-    private boolean isOwner(ClusterNode node, int partitionId) {
-        return topology().partitionState(node.id(), partitionId) == OWNING;
     }
 
     /**

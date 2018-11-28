@@ -451,7 +451,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             return false;
 
         // Get remote node for request for this key.
-        ClusterNode node = cctx.selectAffinityNodeBalanced(affNodes, part, canRemap);
+        ClusterNode node = cctx.selectAffinityNodeBalanced(affNodes, Collections.emptySet(), part, canRemap);
 
         // Failed if none remote node found.
         if (node == null) {

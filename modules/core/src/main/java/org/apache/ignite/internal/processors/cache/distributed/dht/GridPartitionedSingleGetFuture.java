@@ -18,8 +18,12 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -59,6 +63,8 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_NEAR_GET_MAX_REMAPS;
+import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 
 /**
@@ -66,6 +72,16 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
  */
 public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Object> implements
     CacheGetFuture, IgniteDiagnosticAware {
+    /** Default max remap count value. */
+    public static final int DFLT_MAX_REMAP_CNT = 3;
+
+    /** Maximum number of attempts to remap key to the same primary node. */
+    protected static final int MAX_REMAP_CNT = getInteger(IGNITE_NEAR_GET_MAX_REMAPS, DFLT_MAX_REMAP_CNT);
+
+    /** Remap count updater. */
+    protected static final AtomicIntegerFieldUpdater<GridPartitionedSingleGetFuture> REMAP_CNT_UPD =
+        AtomicIntegerFieldUpdater.newUpdater(GridPartitionedSingleGetFuture.class, "remapCnt");
+
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -132,6 +148,12 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
 
     /** Transaction label. */
     private final String txLbl;
+
+    /** Invalid mappened nodes. */
+    private Set<ClusterNode> invalidNodes;
+
+    /** Remap count. */
+    protected volatile int remapCnt;
 
     /**
      * @param cctx Context.
@@ -215,18 +237,18 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 cctx.shared().exchange().readyAffinityVersion();
         }
 
-        map(mappingtopVermappingtopVer);
+        map(mappingtopVermappingtopVer, Collections.emptySet());
     }
 
     /**
      * @param topVer Topology version.
      */
     @SuppressWarnings("unchecked")
-    private void map(AffinityTopologyVersion topVer) {
+    private void map(AffinityTopologyVersion topVer, Set<ClusterNode> invalidNodes) {
         if (!validate(topVer))
             return;
 
-        ClusterNode node = mapKeyToNode(topVer);
+        ClusterNode node = mapKeyToNode(topVer, invalidNodes);
 
         if (node == null) {
             assert isDone() : this;
@@ -239,7 +261,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
 
         // Read value if node is localNode.
         if (node.isLocal()) {
-            final GridDhtFuture<GridCacheEntryInfo> fut = cctx.dht()
+            GridDhtFuture<GridCacheEntryInfo> fut = cctx.dht()
                 .getDhtSingleAsync(
                     node.id(),
                     -1,
@@ -259,14 +281,12 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
             Collection<Integer> invalidParts = fut.invalidPartitions();
 
             if (!F.isEmpty(invalidParts)) {
+                addNodeAsInvalid(node);
+
                 AffinityTopologyVersion updTopVer = cctx.shared().exchange().readyAffinityVersion();
 
-                assert updTopVer.compareTo(topVer) > 0 : "Got invalid partitions for local node but topology " +
-                    "version did not change [topVer=" + topVer + ", updTopVer=" + updTopVer +
-                    ", invalidParts=" + invalidParts + ']';
-
                 // Remap recursively.
-                map(updTopVer);
+                map(updTopVer, invalidNodes);
             }
             else {
                 fut.listen(f -> {
@@ -340,7 +360,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * @param topVer Topology version.
      * @return Primary node or {@code null} if future was completed.
      */
-    @Nullable private ClusterNode mapKeyToNode(AffinityTopologyVersion topVer) {
+    @Nullable private ClusterNode mapKeyToNode(AffinityTopologyVersion topVer, Set<ClusterNode> invalidNodes) {
         int part = cctx.affinity().partition(key);
 
         List<ClusterNode> affNodes = cctx.affinity().nodesByPartition(part, topVer);
@@ -356,7 +376,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         if (tryLocalGet(key, part, topVer, affNodes))
             return null;
 
-        ClusterNode affNode = cctx.selectAffinityNodeBalanced(affNodes, part, canRemap);
+        ClusterNode affNode = cctx.selectAffinityNodeBalanced(affNodes, invalidNodes, part, canRemap);
 
         // Failed if none balanced node found.
         if (affNode == null) {
@@ -558,13 +578,13 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * @param res Result.
      */
     public void onResult(UUID nodeId, GridNearSingleGetResponse res) {
-        boolean processedResponse = !processResponse(nodeId);
-        boolean checkError = !checkError(res.error(), res.invalidPartitions(), res.topologyVersion(), nodeId);
+        // Brake here if response from unexpected node.
+        if (!processResponse(nodeId))
+            return;
 
-        // Brake here if response from unexpected node or
-        // some exception was throws on remote node or
-        // parition on remote nod is invalid.
-        if (processedResponse || checkError)
+        // Brake here if exception was throws on remote node or
+        // parition on remote node is invalid.
+        if (!checkError(res.error(), res.invalidPartitions(), res.topologyVersion(), nodeId))
             return;
 
         Message res0 = res.result();
@@ -601,13 +621,13 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
 
     /** {@inheritDoc} */
     @Override public void onResult(UUID nodeId, GridNearGetResponse res) {
-        boolean processedResponse = !processResponse(nodeId);
-        boolean checkError = !checkError(res.error(), !F.isEmpty(res.invalidPartitions()), res.topologyVersion(), nodeId);
+        // Brake here if response from unexpected node.
+        if (!processResponse(nodeId))
+            return;
 
-        // Brake here if response from unexpected node or
-        // some exception was throws on remote node or
-        // parition on remote nod is invalid.
-        if (processedResponse || checkError)
+        // Brake here if exception was throws on remote node or
+        // parition on remote node is invalid.
+        if (!checkError(res.error(), !F.isEmpty(res.invalidPartitions()), res.topologyVersion(), nodeId))
             return;
 
         Collection<GridCacheEntryInfo> infos = res.entries();
@@ -653,6 +673,8 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         }
 
         if (invalidParts) {
+            addNodeAsInvalid(cctx.node(nodeId));
+
             assert !rmtTopVer.equals(AffinityTopologyVersion.ZERO);
 
             if (rmtTopVer.compareTo(topVer) <= 0) {
@@ -669,7 +691,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 awaitVersionAndRemap(rmtTopVer);
             }
             else
-                map(topVer);
+                map(topVer, invalidNodes);
 
             return false;
         }
@@ -755,6 +777,34 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     }
 
     /**
+     * @param node Invalid node.
+     */
+    private synchronized void addNodeAsInvalid(ClusterNode node) {
+        if (invalidNodes == null)
+            invalidNodes = new HashSet<>();
+
+        invalidNodes.add(node);
+    }
+
+    /**
+     * @param topVer Topology version.
+     */
+    private boolean checkRetryPermits(AffinityTopologyVersion topVer) {
+        if (topVer.equals(this.topVer))
+            return true;
+
+        if (REMAP_CNT_UPD.incrementAndGet(this) > MAX_REMAP_CNT) {
+            onDone(new ClusterTopologyCheckedException("Failed to remap key to a new node after " +
+                MAX_REMAP_CNT + " attempts (key got remapped to the same node) [key=" + key + ", node=" +
+                U.toShortString(node) + ", invalidNodes=" + invalidNodes + ']'));
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * @param part Partition.
      * @param topVer Topology version.
      * @return Exception.
@@ -769,6 +819,9 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * @return True if validate success, False is not.
      */
     private boolean validate(AffinityTopologyVersion topVer) {
+        if (!checkRetryPermits(topVer))
+            return false;
+
         GridDhtTopologyFuture lastFut = cctx.shared().exchange().lastFinishedFuture();
 
         Throwable error = lastFut.validateCache(cctx, recovery, true, key, null);
@@ -791,6 +844,8 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     @Override public boolean onNodeLeft(UUID nodeId) {
         if (!processResponse(nodeId))
             return false;
+
+        addNodeAsInvalid(cctx.node(nodeId));
 
         if (canRemap) {
             long maxTopVer = Math.max(topVer.topologyVersion() + 1, cctx.discovery().topologyVersion());
@@ -826,7 +881,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     private void remap(final AffinityTopologyVersion topVer) {
         cctx.closures().runLocalSafe(new Runnable() {
             @Override public void run() {
-                map(topVer);
+                map(topVer, invalidNodes);
             }
         });
     }
