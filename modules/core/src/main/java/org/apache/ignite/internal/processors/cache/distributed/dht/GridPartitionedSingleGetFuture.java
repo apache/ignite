@@ -584,7 +584,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
 
         // Brake here if exception was throws on remote node or
         // parition on remote node is invalid.
-        if (!checkError(res.error(), res.invalidPartitions(), res.topologyVersion(), nodeId))
+        if (!checkError(nodeId, res.invalidPartitions(), res.topologyVersion(), res.error()))
             return;
 
         Message res0 = res.result();
@@ -627,7 +627,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
 
         // Brake here if exception was throws on remote node or
         // parition on remote node is invalid.
-        if (!checkError(res.error(), !F.isEmpty(res.invalidPartitions()), res.topologyVersion(), nodeId))
+        if (!checkError(nodeId, !F.isEmpty(res.invalidPartitions()), res.topologyVersion(), res.error()))
             return;
 
         Collection<GridCacheEntryInfo> infos = res.entries();
@@ -661,10 +661,10 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * @return {@code True} if should process received response.
      */
     private boolean checkError(
-        @Nullable IgniteCheckedException err,
+        UUID nodeId,
         boolean invalidParts,
         AffinityTopologyVersion rmtTopVer,
-        UUID nodeId
+        @Nullable IgniteCheckedException err
     ) {
         if (err != null) {
             onDone(err);
@@ -674,18 +674,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
 
         if (invalidParts) {
             addNodeAsInvalid(cctx.node(nodeId));
-
-            assert !rmtTopVer.equals(AffinityTopologyVersion.ZERO);
-
-            if (rmtTopVer.compareTo(topVer) <= 0) {
-                // Fail the whole get future.
-                onDone(new IgniteCheckedException("Failed to process invalid partitions response (remote node reported " +
-                    "invalid partitions but remote topology version does not differ from local) " +
-                    "[topVer=" + topVer + ", rmtTopVer=" + rmtTopVer + ", part=" + cctx.affinity().partition(key) +
-                    ", nodeId=" + nodeId + ']'));
-
-                return false;
-            }
 
             if (canRemap) {
                 awaitVersionAndRemap(rmtTopVer);
