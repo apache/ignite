@@ -81,7 +81,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils.SF;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -97,6 +96,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
@@ -125,11 +125,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        if (nearCacheEnabled())
-            MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-7388");
+        fail("https://issues.apache.org/jira/browse/IGNITE-10410");
 
         super.beforeTestsStarted();
     }
@@ -236,7 +232,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      */
     private void testRollbackSimple0(Ignite near) throws Exception {
         // Normal rollback after put.
-        Transaction tx = near.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
+        Transaction tx = near.transactions().txStart(PESSIMISTIC, READ_COMMITTED);
 
         near.cache(CACHE_NAME).put(0, 0);
 
@@ -491,9 +487,6 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      *
      */
     public void testEnlistManyReadOptimistic() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            return;
-
         testEnlistMany(false, SERIALIZABLE, OPTIMISTIC);
     }
 
@@ -501,9 +494,6 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      *
      */
     public void testEnlistManyWriteOptimistic() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            return;
-
         testEnlistMany(true, SERIALIZABLE, OPTIMISTIC);
     }
 
@@ -664,10 +654,8 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         log.info("Using seed: " + seed);
 
-        final TransactionConcurrency[] TC_VALS =
-            MvccFeatureChecker.forcedMvcc() ? new TransactionConcurrency[] {PESSIMISTIC} : TransactionConcurrency.values();
-        final TransactionIsolation[] TI_VALS =
-            MvccFeatureChecker.forcedMvcc() ? new TransactionIsolation[] {REPEATABLE_READ} : TransactionIsolation.values();
+        final TransactionConcurrency[] TC_VALS = TransactionConcurrency.values();
+        final TransactionIsolation[] TI_VALS = TransactionIsolation.values();
 
         final LongAdder total = new LongAdder();
         final LongAdder completed = new LongAdder();
