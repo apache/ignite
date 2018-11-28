@@ -257,6 +257,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Checkpoint thread. Needs to be volatile because it is created in exchange worker. */
     private volatile Checkpointer checkpointer;
 
+    /** Checkpointer thread instance. */
+    private volatile IgniteThread checkpointerThread;
+
     /** For testing only. */
     private volatile boolean checkpointsEnabled = true;
 
@@ -407,6 +410,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     public Checkpointer getCheckpointer() {
         return checkpointer;
+    }
+
+    /**
+     * For test use only.
+     *
+     * @return Checkpointer thread instance.
+     */
+    public IgniteThread checkpointerThread() {
+        return checkpointerThread;
     }
 
     /**
@@ -2049,7 +2061,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     @Override public void onStateRestored(AffinityTopologyVersion topVer) throws IgniteCheckedException {
         long time = System.currentTimeMillis();
 
-        new IgniteThread(cctx.igniteInstanceName(), "db-checkpoint-thread", checkpointer).start();
+        IgniteThread cpThread = new IgniteThread(cctx.igniteInstanceName(), "db-checkpoint-thread", checkpointer);
+
+        cpThread.start();
+
+        checkpointerThread = cpThread;
 
         CheckpointProgressSnapshot chp = checkpointer.wakeupForCheckpoint(0, "node started");
 
