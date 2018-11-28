@@ -61,6 +61,8 @@ import org.apache.ignite.internal.processors.query.h2.twostep.RetryCauseMessageS
 import org.apache.ignite.internal.processors.query.h2.twostep.TableViewSubquerySelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.IgniteTestSuite;
+import org.apache.ignite.testsuites.IgniteBinaryCacheQueryTestSuite;
+import org.apache.ignite.testsuites.IgniteBinaryCacheQueryTestSuite2;
 
 /**
  * Test suite for cache queries.
@@ -73,64 +75,9 @@ public class IgniteBinaryCacheQueryNotLazyTestSuite2 extends TestSuite {
     public static TestSuite suite() throws Exception {
         GridTestUtils.setFieldValue(SqlFieldsQuery.class, "DFLT_LAZY", false);
 
-        TestSuite suite = new IgniteTestSuite("Ignite Cache Queries Test Suite 2");
+        TestSuite suite = IgniteBinaryCacheQueryTestSuite2.suite();
 
-        // Dynamic index create/drop tests.
-        suite.addTestSuite(DynamicIndexPartitionedAtomicConcurrentSelfTest.class);
-        suite.addTestSuite(DynamicIndexPartitionedTransactionalConcurrentSelfTest.class);
-        suite.addTestSuite(DynamicIndexReplicatedAtomicConcurrentSelfTest.class);
-        suite.addTestSuite(DynamicIndexReplicatedTransactionalConcurrentSelfTest.class);
-
-        suite.addTestSuite(DynamicColumnsConcurrentAtomicPartitionedSelfTest.class);
-        suite.addTestSuite(DynamicColumnsConcurrentTransactionalPartitionedSelfTest.class);
-        suite.addTestSuite(DynamicColumnsConcurrentAtomicReplicatedSelfTest.class);
-        suite.addTestSuite(DynamicColumnsConcurrentTransactionalReplicatedSelfTest.class);
-
-        // Distributed joins.
-        suite.addTestSuite(IgniteCacheQueryNodeRestartDistributedJoinSelfTest.class);
-        suite.addTestSuite(IgniteCacheQueryStopOnCancelOrTimeoutDistributedJoinSelfTest.class);
-
-        // Other tests.
-        suite.addTestSuite(IgniteCacheQueryMultiThreadedSelfTest.class);
-
-        suite.addTestSuite(IgniteCacheQueryEvictsMultiThreadedSelfTest.class);
-
-        suite.addTestSuite(ScanQueryOffheapExpiryPolicySelfTest.class);
-
-        suite.addTestSuite(IgniteCacheCrossCacheJoinRandomTest.class);
-        suite.addTestSuite(IgniteCacheClientQueryReplicatedNodeRestartSelfTest.class);
-        suite.addTestSuite(IgniteCacheQueryNodeFailTest.class);
-        suite.addTestSuite(IgniteCacheQueryNodeRestartSelfTest.class);
-        suite.addTestSuite(IgniteSqlQueryWithBaselineTest.class);
-        suite.addTestSuite(IgniteChangingBaselineCacheQueryNodeRestartSelfTest.class);
-        suite.addTestSuite(IgniteStableBaselineCacheQueryNodeRestartsSelfTest.class);
-        suite.addTestSuite(IgniteCacheQueryNodeRestartSelfTest2.class);
-        suite.addTestSuite(IgniteCacheQueryNodeRestartTxSelfTest.class);
-        suite.addTestSuite(IgniteCacheSqlQueryMultiThreadedSelfTest.class);
-        suite.addTestSuite(IgniteCachePartitionedQueryMultiThreadedSelfTest.class);
-        suite.addTestSuite(CacheScanPartitionQueryFallbackSelfTest.class);
-        suite.addTestSuite(IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest.class);
-        suite.addTestSuite(IgniteCacheObjectKeyIndexingSelfTest.class);
-
-        suite.addTestSuite(IgniteCacheGroupsCompareQueryTest.class);
-        suite.addTestSuite(IgniteCacheGroupsSqlSegmentedIndexSelfTest.class);
-        suite.addTestSuite(IgniteCacheGroupsSqlSegmentedIndexMultiNodeSelfTest.class);
-        suite.addTestSuite(IgniteCacheGroupsSqlDistributedJoinSelfTest.class);
-
-        suite.addTestSuite(QueryJoinWithDifferentNodeFiltersTest.class);
-
-        suite.addTestSuite(CacheQueryMemoryLeakTest.class);
-
-        suite.addTestSuite(CreateTableWithDateKeySelfTest.class);
-
-        suite.addTestSuite(NonCollocatedRetryMessageSelfTest.class);
-        suite.addTestSuite(RetryCauseMessageSelfTest.class);
-        suite.addTestSuite(DisappearedCacheCauseRetryMessageSelfTest.class);
-        suite.addTestSuite(DisappearedCacheWasNotFoundMessageSelfTest.class);
-
-        suite.addTestSuite(TableViewSubquerySelfTest.class);
-
-        suite.addTestSuite(IgniteCacheQueriesLoadTest1.class);
+        suite.setName("Ignite Cache Queries Test Suite 2 (lazy = false)");
 
         return suite;
     }

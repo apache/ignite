@@ -34,6 +34,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterNode;
@@ -45,6 +46,7 @@ import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -408,28 +410,35 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
      * @param expSize Expected size.
      */
     protected static void assertSqlSimpleData(Ignite node, String sql, int expSize) {
-        SqlQuery qry = new SqlQuery(typeName(ValueClass.class), sql).setArgs(SQL_ARG_1);
+        try {
+            SqlQuery qry = new SqlQuery(typeName(ValueClass.class), sql).setArgs(SQL_ARG_1);
 
-        List<Cache.Entry<BinaryObject, BinaryObject>> res = node.cache(CACHE_NAME).withKeepBinary().query(qry).getAll();
+            List<Cache.Entry<BinaryObject, BinaryObject>> res = node.cache(CACHE_NAME).withKeepBinary().query(qry).getAll();
 
-        Set<Long> ids = new HashSet<>();
+            Set<Long> ids = new HashSet<>();
 
-        for (Cache.Entry<BinaryObject, BinaryObject> entry : res) {
-            long id = entry.getKey().field(FIELD_KEY);
+            for (Cache.Entry<BinaryObject, BinaryObject> entry : res) {
+                long id = entry.getKey().field(FIELD_KEY);
 
-            long field1 = entry.getValue().field(FIELD_NAME_1_ESCAPED);
-            long field2 = entry.getValue().field(FIELD_NAME_2_ESCAPED);
+                long field1 = entry.getValue().field(FIELD_NAME_1_ESCAPED);
+                long field2 = entry.getValue().field(FIELD_NAME_2_ESCAPED);
 
-            assertTrue(field1 >= SQL_ARG_1);
+                assertTrue(field1 >= SQL_ARG_1);
 
-            assertEquals(id, field1);
-            assertEquals(id, field2);
+                assertEquals(id, field1);
+                assertEquals(id, field2);
 
-            assertTrue(ids.add(id));
+                assertTrue(ids.add(id));
+            }
+
+            assertEquals("Size mismatch [node=" + node.name() + ", exp=" + expSize + ", actual=" + res.size() +
+                ", ids=" + ids + ']', expSize, res.size());
         }
-
-        assertEquals("Size mismatch [node=" + node.name() + ", exp=" + expSize + ", actual=" + res.size() +
-            ", ids=" + ids + ']', expSize, res.size());
+        catch (Exception e) {
+            // Swallow QueryRetryException.
+            if (X.cause(e, QueryRetryException.class) == null)
+                throw e;
+        }
     }
 
     /**
