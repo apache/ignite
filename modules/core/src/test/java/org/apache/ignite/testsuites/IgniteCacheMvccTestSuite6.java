@@ -35,7 +35,6 @@ import org.apache.ignite.internal.processors.cache.datastructures.IgniteExchange
 import org.apache.ignite.internal.processors.cache.distributed.CacheExchangeMergeTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheParallelStartTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCache150ClientsTest;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticTxSuspendResumeMultiServerTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticTxSuspendResumeTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticOnPartitionExchangeTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticPrepareOnUnstableTopologyTest;
@@ -66,7 +65,6 @@ public class IgniteCacheMvccTestSuite6 {
 
         // Irrelevant Tx tests.
         ignoredTests.add(IgniteOptimisticTxSuspendResumeTest.class);
-        ignoredTests.add(IgniteOptimisticTxSuspendResumeMultiServerTest.class);
         ignoredTests.add(TxOptimisticPrepareOnUnstableTopologyTest.class);
         ignoredTests.add(ReplicatedTransactionalOptimisticCacheGetsDistributionTest.class);
         ignoredTests.add(PartitionedTransactionalOptimisticCacheGetsDistributionTest.class);

@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.cache.distributed.CacheTryLockMulti
 import org.apache.ignite.internal.processors.cache.distributed.GridCachePartitionEvictionDuringReadThroughSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCache150ClientsTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheThreadLocalTxTest;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticTxSuspendResumeMultiServerTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticTxSuspendResumeTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgnitePessimisticTxSuspendResumeTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxLabelTest;
@@ -76,7 +75,6 @@ public class IgniteCacheTestSuite6 {
 
         GridTestUtils.addTestIfNeeded(suite, GridCachePartitionEvictionDuringReadThroughSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteOptimisticTxSuspendResumeTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteOptimisticTxSuspendResumeMultiServerTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgnitePessimisticTxSuspendResumeTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, CacheExchangeMergeTest.class, ignoredTests);
