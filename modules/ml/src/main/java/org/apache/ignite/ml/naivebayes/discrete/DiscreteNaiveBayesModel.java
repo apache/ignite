@@ -40,7 +40,11 @@ public class DiscreteNaiveBayesModel implements Model<Vector, Double>, Exportabl
     private final double[] classProbabilities;
     /** Labels. */
     private final double[] labels;
-    /** The bucket thresholds to convert a features to discrete values. */
+    /**
+     * The bucket thresholds to convert a features to discrete values. {@code bucketThresholds[f][b]} contains the right
+     * border for feature {@code f} for bucket {@code b}. Everything which is above the last thresdold goes to the next
+     * bucket.
+     */
     private final double[][] bucketThresholds;
     /** Amount values in each buckek for each feature per label. */
     private final DiscreteNaiveBayesSumsHolder sumsHolder;
