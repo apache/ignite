@@ -566,18 +566,6 @@ public class H2TreeIndex extends GridH2IndexBase {
         cctx.offheap().dropRootPageForIndex(cctx.cacheId(), treeName, segIdx);
     }
 
-    /**
-     * Check if index meta page exists.
-     *
-     * @param segIdx Segment index.
-     * @return {@code True} if exists.
-     * @throws IgniteCheckedException If failed.
-     */
-    // TODO: Remove?
-    private boolean metaPageExists(int segIdx) throws IgniteCheckedException {
-        return cctx.offheap().rootPageForIndexExists(cctx.cacheId(), treeName, segIdx);
-    }
-
     /** {@inheritDoc} */
     @Override public void refreshColumnIds() {
         super.refreshColumnIds();

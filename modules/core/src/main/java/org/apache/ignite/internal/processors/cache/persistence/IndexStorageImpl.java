@@ -167,18 +167,6 @@ public class IndexStorageImpl implements IndexStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean cacheIndexExists(Integer cacheId, String idxName, int segment)
-        throws IgniteCheckedException {
-        String maskedIdxName = maskCacheIndexName(cacheId, idxName, segment);
-
-        byte[] idxNameBytes = maskedIdxName.getBytes(StandardCharsets.UTF_8);
-
-        IndexItem row = metaTree.findOne(new IndexItem(idxNameBytes, 0));
-
-        return row != null;
-    }
-
-    /** {@inheritDoc} */
     @Override public void destroy() throws IgniteCheckedException {
         metaTree.destroy();
     }

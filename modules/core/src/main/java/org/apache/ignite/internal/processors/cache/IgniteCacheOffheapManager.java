@@ -602,17 +602,6 @@ public interface IgniteCacheOffheapManager {
     public void dropRootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException;
 
     /**
-     * Check if index root page exists.
-     *
-     * @param cacheId Cache ID.
-     * @param idxName Index name.
-     * @param segment Segment.
-     * @return {@code True} if exists.
-     * @throws IgniteCheckedException If failed.
-     */
-    public boolean rootPageForIndexExists(int cacheId, String idxName, int segment) throws IgniteCheckedException;
-
-    /**
      * @param idxName Index name.
      * @return Reuse list for index tree.
      * @throws IgniteCheckedException If failed.
