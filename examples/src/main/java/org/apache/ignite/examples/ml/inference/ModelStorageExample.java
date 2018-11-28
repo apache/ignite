@@ -74,12 +74,13 @@ public class ModelStorageExample {
 
             System.out.println("Build inference model...");
             SingleInfModelBuilder mdlBuilder = new SingleInfModelBuilder();
-            InfModel<byte[], byte[]> infMdl = mdlBuilder.build(desc.getReader(), desc.getParser());
+            try (InfModel<byte[], byte[]> infMdl = mdlBuilder.build(desc.getReader(), desc.getParser())) {
 
-            System.out.println("Make inference...");
-            for (int i = 0; i < 10; i++) {
-                Integer res = deserialize(infMdl.predict(serialize(i)));
-                System.out.println(i + " -> " + res);
+                System.out.println("Make inference...");
+                for (int i = 0; i < 10; i++) {
+                    Integer res = deserialize(infMdl.predict(serialize(i)));
+                    System.out.println(i + " -> " + res);
+                }
             }
         }
     }
