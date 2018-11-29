@@ -154,6 +154,15 @@ public class PartitionCompositeNode implements PartitionNode {
      * @return Optimized node.
      */
     private PartitionNode optimizeGroupAnd(PartitionGroupNode left, PartitionNode right) {
+        // Optimistic check whether both sides are equal.
+        if (right instanceof PartitionGroupNode) {
+            PartitionGroupNode right0 = (PartitionGroupNode)right;
+
+            if (left.containsExact(right0.siblings()))
+                // (X, :Y) and (X, :Y) -> (X, :Y)
+                return left;
+        }
+
         // Check if both sides are constants. If yes, then extract common partitions.
         if (left.constantsOnly()) {
             Set<PartitionSingleNode> consts = new HashSet<>(left.siblings());
@@ -182,15 +191,6 @@ public class PartitionCompositeNode implements PartitionNode {
                     // {A, B, C) and (B, C, D) -> (B, C).
                     return new PartitionGroupNode(consts);
             }
-        }
-
-        // Optimistic check whether both sides are equal.
-        if (right instanceof PartitionGroupNode) {
-            PartitionGroupNode right0 = (PartitionGroupNode)right;
-
-            if (left.containsExact(right0.siblings()))
-                // (X, :Y) and (X, :Y) -> (X, :Y)
-                return left;
         }
 
         // Otherwise it is a mixed set of concrete partitions and arguments. Cancel optimization.
@@ -246,25 +246,20 @@ public class PartitionCompositeNode implements PartitionNode {
      * @return Optimized node.
      */
     private PartitionNode optimizeSimpleAnd(PartitionSingleNode left, PartitionSingleNode right) {
-        if (left.constant() && right.constant()) {
-            if (left.value() == right.value())
-                // X and X -> X
-                return left;
-            else
-                // X and Y -> NONE
-                return PartitionNoneNode.INSTANCE;
-        }
-        else if (!left.constant() && !right.constant()) {
-            if (left.value() == right.value())
-                // :X and :X -> :X
-                return left;
-            else
-                // :X and :Y -> (:X) AND (:Y)
-                return this;
-        }
-        else
-            // X and :Y -> (X) AND (:Y)
-            return this;
+        // Check if both sides are equal.
+        if (left.equals(right))
+            // (X) and (X) -> X
+            // (:X) and (:X) -> "X
+            return left;
+
+        // If both sides are constants, and they are not equal, this is empty set.
+        if (left.constant() && right.constant())
+            // X and Y -> NONE
+            return PartitionNoneNode.INSTANCE;
+
+        // Otherwise it is a mixed set, cannot reduce.
+        // X and :Y -> (X) AND (:Y)
+        return this;
     }
 
     /**
