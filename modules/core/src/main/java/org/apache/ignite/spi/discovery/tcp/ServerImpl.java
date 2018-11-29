@@ -261,9 +261,6 @@ class ServerImpl extends TcpDiscoveryImpl {
     private final ConcurrentMap<InetSocketAddress, GridPingFutureAdapter<IgniteBiTuple<UUID, Boolean>>> pingMap =
         new ConcurrentHashMap<>();
 
-    /** Last listener future. */
-    private IgniteFuture<?> lastLsnrFut;
-
     /**
      * @param adapter Adapter.
      */
@@ -535,7 +532,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     Map<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer,
                         Collections.unmodifiableList(top));
 
-                    lastLsnrFut = lsnr.onDiscovery(EVT_NODE_FAILED, topVer, n, top, hist, null);
+                    lsnr.onDiscovery(EVT_NODE_FAILED, topVer, n, top, hist, null);
                 }
             }
         }
@@ -1442,7 +1439,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             Map<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer, top);
 
-            lastLsnrFut = lsnr.onDiscovery(type, topVer, node, top, hist, null);
+            lsnr.onDiscovery(type, topVer, node, top, hist, null);
         }
         else {
             if (log.isDebugEnabled())
@@ -2160,22 +2157,6 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
-     * Wait for all the listeners from previous discovery message to be completed.
-     */
-    private void waitForLastListenerFuture() {
-        if (lastLsnrFut != null) {
-            try {
-                lastLsnrFut.get();
-            }
-            catch (IgniteException ignore) {
-                // No-op.
-            }
-
-            lastLsnrFut = null;
-        }
-    }
-
-    /**
      * Discovery messages history used for client reconnect.
      */
     private class EnsuredMessageHistory {
@@ -2850,7 +2831,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 processDiscardMessage((TcpDiscoveryDiscardMessage)msg);
 
             else if (msg instanceof TcpDiscoveryCustomEventMessage)
-                processCustomMessage((TcpDiscoveryCustomEventMessage)msg, false);
+                processCustomMessage((TcpDiscoveryCustomEventMessage)msg, true);
 
             else if (msg instanceof TcpDiscoveryClientPingRequest)
                 processClientPingRequest((TcpDiscoveryClientPingRequest)msg);
@@ -4178,15 +4159,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         @Deprecated
         private void processNodeAddedMessage(TcpDiscoveryNodeAddedMessage msg) {
             assert msg != null;
-
-            blockingSectionBegin();
-
-            try {
-                waitForLastListenerFuture();
-            }
-            finally {
-                blockingSectionEnd();
-            }
 
             TcpDiscoveryNode node = msg.node();
 
@@ -5624,15 +5596,23 @@ class ServerImpl extends TcpDiscoveryImpl {
                     throw new IgniteException("Failed to unmarshal discovery custom message: " + msg, t);
                 }
 
-                IgniteFuture<?> fut = lastLsnrFut = lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
+                IgniteFuture<?> fut = lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
                     msg.topologyVersion(),
                     node,
                     snapshot,
                     hist,
                     msgObj);
 
-                if (waitForNotification || msgObj.isMutable())
-                    fut.get();
+                if (waitForNotification || msgObj.isMutable()) {
+                    blockingSectionBegin();
+
+                    try {
+                        fut.get();
+                    }
+                    finally {
+                        blockingSectionEnd();
+                    }
+                }
 
                 if (msgObj.isMutable()) {
                     try {
