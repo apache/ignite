@@ -74,7 +74,7 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
     public static final int ITERATION_CNT = 1;
 
     /** */
-    public static final int KEYS = 10;
+    public static final int KEY = 10;
 
     /** */
     private boolean client;
@@ -583,6 +583,7 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
      * @param ccfg Cache configuration.
      * @throws Exception If failed.
      */
+    @SuppressWarnings("unchecked")
     private void doTestInvokeTest(CacheConfiguration ccfg, TransactionConcurrency txConcurrency,
         TransactionIsolation txIsolation) throws Exception {
         IgniteEx cln = grid(getServerNodeCount());
@@ -596,28 +597,19 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
         else
             clnCache = cln.cache(ccfg.getName());
 
-        putKeys(clnCache, EXPECTED_VALUE);
+        clnCache.put(KEY, WRONG_VALUE);
 
         try {
             // Explicit tx.
             for (int i = 0; i < ITERATION_CNT; i++) {
-                try (final Transaction tx = cln.transactions().txStart(txConcurrency, txIsolation)) {
-                    putKeys(clnCache, WRONG_VALUE);
-
-                    clnCache.invoke(KEYS, createEntryProcessor());
-
-                    GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
-                        @Override public Object call() throws Exception {
-                            tx.commit();
-
-                            return null;
-                        }
-                    }, UnsupportedOperationException.class);
-                }
+                if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
+                    checkExplicitMvccInvoke(cln, clnCache, txConcurrency, txIsolation);
+                else
+                    checkExplicitTxInvoke(cln, clnCache, txConcurrency, txIsolation);
 
                 assertNull(cln.transactions().tx());
 
-                checkKeys(clnCache, EXPECTED_VALUE);
+                assertEquals(EXPECTED_VALUE, clnCache.get(KEY));
             }
 
             // From affinity node.
@@ -627,32 +619,24 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
 
             // Explicit tx.
             for (int i = 0; i < ITERATION_CNT; i++) {
-                try (final Transaction tx = grid.transactions().txStart(txConcurrency, txIsolation)) {
-                    putKeys(cache, WRONG_VALUE);
-
-                    cache.invoke(KEYS, createEntryProcessor());
-
-                    GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
-                        @Override public Object call() throws Exception {
-                            tx.commit();
-
-                            return null;
-                        }
-                    }, UnsupportedOperationException.class);
-                }
+                if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
+                    checkExplicitMvccInvoke(cln, clnCache, txConcurrency, txIsolation);
+                else
+                    checkExplicitTxInvoke(cln, clnCache, txConcurrency, txIsolation);
 
                 assertNull(cln.transactions().tx());
 
-                checkKeys(cache, EXPECTED_VALUE);
+                assertEquals(EXPECTED_VALUE, cache.get(KEY));
             }
 
             final IgniteCache clnCache0 = clnCache;
 
             // Implicit tx.
             for (int i = 0; i < ITERATION_CNT; i++) {
+                //noinspection ThrowableNotThrown
                 GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
                     @Override public Object call() throws Exception {
-                        clnCache0.invoke(KEYS, createEntryProcessor());
+                        clnCache0.invoke(KEY, createEntryProcessor());
 
                         return null;
                     }
@@ -661,7 +645,7 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
                 assertNull(cln.transactions().tx());
             }
 
-            checkKeys(clnCache, EXPECTED_VALUE);
+            assertEquals(EXPECTED_VALUE, clnCache.get(KEY));
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -672,27 +656,53 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
     }
 
     /**
+     * @param node Ignite node.
+     * @param cache Node cache.
+     * @param txConcurrency Transaction concurrency.
+     * @param txIsolation TransactionIsolation.
+     */
+    @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
+    private void checkExplicitTxInvoke(Ignite node, IgniteCache cache, TransactionConcurrency txConcurrency,
+        TransactionIsolation txIsolation) {
+        try (final Transaction tx = node.transactions().txStart(txConcurrency, txIsolation)) {
+            cache.put(KEY, WRONG_VALUE);
+
+            cache.invoke(KEY, createEntryProcessor());
+
+            GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    tx.commit();
+
+                    return null;
+                }
+            }, UnsupportedOperationException.class);
+        }
+    }
+
+    @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
+    private void checkExplicitMvccInvoke(Ignite node, IgniteCache cache, TransactionConcurrency txConcurrency,
+        TransactionIsolation txIsolation) {
+        try (final Transaction tx = node.transactions().txStart(txConcurrency, txIsolation)) {
+            cache.put(KEY, WRONG_VALUE);
+
+            GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    cache.invoke(KEY, createEntryProcessor());
+
+                    tx.commit();
+
+                    return null;
+                }
+            }, UnsupportedOperationException.class);
+        }
+    }
+
+    /**
      * @return Entry processor.
      */
-    @NotNull private EntryProcessor<Integer, Integer, Integer> createEntryProcessor() {
+    private @NotNull EntryProcessor<Integer, Integer, Integer> createEntryProcessor() {
         return failOnWrite ? new ExternalizableFailedWriteEntryProcessor() :
             new ExternalizableFailedReadEntryProcessor();
-    }
-
-    /**
-     * @param cache Cache.
-     * @param val Value.
-     */
-    private void putKeys(IgniteCache cache, int val) {
-        cache.put(KEYS, val);
-    }
-
-    /**
-     * @param cache Cache.
-     * @param expVal Expected value.
-     */
-    private void checkKeys(IgniteCache cache, int expVal) {
-        assertEquals(expVal, cache.get(KEYS));
     }
 
     /**
@@ -709,7 +719,7 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
      *
      */
     private static class ExternalizableFailedWriteEntryProcessor implements EntryProcessor<Integer, Integer, Integer>,
-        Externalizable{
+        Externalizable {
         /** */
         public ExternalizableFailedWriteEntryProcessor() {
             // No-op.
