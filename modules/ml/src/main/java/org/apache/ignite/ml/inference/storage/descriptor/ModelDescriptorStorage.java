@@ -48,6 +48,11 @@ public interface ModelDescriptorStorage extends Iterable<IgniteBiTuple<String, M
      */
     public void remove(String mdlId);
 
-    /** {@inheritDoc} */
+    /**
+     * Returns iterator of model descriptors stored in this model descriptor storage. The objects produces by the
+     * iterator are pairs of model identifier and model descriptor.
+     *
+     * @return Iterator of pairs of model identifier and model descriptor.
+     */
     public Iterator<IgniteBiTuple<String, ModelDescriptor>> iterator();
 }
