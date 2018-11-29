@@ -141,8 +141,6 @@ public class IgniteCacheMvccTestSuite1 extends TestSuite {
         ignoredTests.add(CacheDeferredDeleteSanitySelfTest.class);
         ignoredTests.add(CacheDeferredDeleteQueueTest.class);
         ignoredTests.add(GridCacheStopSelfTest.class);
-        ignoredTests.add(IgniteDiagnosticMessagesTest.class);
-        ignoredTests.add(IgniteDiagnosticMessagesMultipleConnectionsTest.class);
         ignoredTests.add(GridCacheBinariesNearPartitionedByteArrayValuesSelfTest.class);
         ignoredTests.add(GridCacheBinariesPartitionedOnlyByteArrayValuesSelfTest.class);
 

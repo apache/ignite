@@ -240,8 +240,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSeveralLongRunningMvccTxs() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-9322"); // Fix diagnostic message or disable test.
+        fail("https://issues.apache.org/jira/browse/IGNITE-9322"); // Fix diagnostic message or disable test.
 
         checkSeveralLongRunningTxs(TRANSACTIONAL_SNAPSHOT);
     }
@@ -362,8 +361,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLongRunningMvccTx() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-9322"); // Fix diagnostic message or disable test.
+        fail("https://issues.apache.org/jira/browse/IGNITE-9322"); // Fix diagnostic message or disable test.
 
         checkLongRunningTx(TRANSACTIONAL_SNAPSHOT);
     }
@@ -507,9 +505,11 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
 
             awaitPartitionMapExchange();
 
-            CacheConfiguration ccfg = cacheConfiguration(atomicityMode)
-                .setBackups(1)
-                .setNearConfiguration(new NearCacheConfiguration<>());
+            CacheConfiguration ccfg = cacheConfiguration(atomicityMode).setBackups(1);
+
+            if (atomicityMode != TRANSACTIONAL_SNAPSHOT ||
+                MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.NEAR_CACHE))
+                ccfg.setNearConfiguration(new NearCacheConfiguration<>());
 
             final Ignite node0 = ignite(0);
             final Ignite node1 = ignite(1);
