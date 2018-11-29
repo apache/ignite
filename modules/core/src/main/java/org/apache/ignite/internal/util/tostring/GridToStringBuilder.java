@@ -116,11 +116,19 @@ public class GridToStringBuilder {
      * have to keep a map of this objects pointed to the position of previous occurrence
      * and remove/add them in each {@code toString()} apply.
      */
-    private static ThreadLocal<IdentityHashMap<Object, Integer>> savedObjects = new ThreadLocal<IdentityHashMap<Object, Integer>>() {
-        @Override protected IdentityHashMap<Object, Integer> initialValue() {
+    private static ThreadLocal<IdentityHashMap<Object, EntryReference>> savedObjects = new ThreadLocal<IdentityHashMap<Object, EntryReference>>() {
+        @Override protected IdentityHashMap<Object, EntryReference> initialValue() {
             return new IdentityHashMap<>();
         }
     };
+
+    /**
+     * @param obj Object.
+     * @return Hexed identity hashcode.
+     */
+    public static String identity(Object obj) {
+        return '@' + Integer.toHexString(System.identityHashCode(obj));
+    }
 
     /**
      * Produces auto-generated output of string presentation for given object and its declaration class.
@@ -823,12 +831,12 @@ public class GridToStringBuilder {
             return;
         }
 
-        IdentityHashMap<Object, Integer> svdObjs = savedObjects.get();
+        IdentityHashMap<Object, EntryReference> svdObjs = savedObjects.get();
 
-        if (handleRecursion(buf, val, svdObjs))
+        if (handleRecursion(buf, val, cls, svdObjs))
             return;
 
-        svdObjs.put(val, buf.length());
+        svdObjs.put(val, new EntryReference(buf.length()));
 
         try {
             if (cls.isArray())
@@ -975,19 +983,22 @@ public class GridToStringBuilder {
 
         boolean newStr = buf.length() == 0;
 
-        IdentityHashMap<Object, Integer> svdObjs = savedObjects.get();
+        IdentityHashMap<Object, EntryReference> svdObjs = savedObjects.get();
 
         if (newStr)
-            svdObjs.put(obj, buf.length());
+            svdObjs.put(obj, new EntryReference(buf.length()));
 
         try {
+            int len = buf.length();
+
             String s = toStringImpl0(cls, buf, obj, addNames, addVals, addSens, addLen);
 
             if (newStr)
                 return s;
 
-            // Called from another GTSB.toString(), so this string is already in the buffer and shouldn't be returned.
-            return "";
+            buf.setLength(len);
+
+            return s.substring(len);
         }
         finally {
             if (newStr)
@@ -1023,7 +1034,17 @@ public class GridToStringBuilder {
 
             assert cd != null;
 
-            buf.a(cd.getSimpleClassName()).a(" [");
+            buf.a(cd.getSimpleClassName());
+
+            EntryReference ref = savedObjects.get().get(obj);
+
+            if (ref != null && ref.hashNeeded) {
+                buf.a(identity(obj));
+
+                ref.hashNeeded = false;
+            }
+
+            buf.a(" [");
 
             boolean first = true;
 
@@ -1778,24 +1799,37 @@ public class GridToStringBuilder {
      *
      * @param buf String builder buffer.
      * @param obj Object.
+     * @param cls Class.
      * @param svdObjs Map with saved objects to handle recursion.
      * @return {@code True} if object is already saved and name@hash was added to buffer.
      * {@code False} if it wasn't saved previously and it should be saved.
      */
-    private static boolean handleRecursion(SBLimitedLength buf, Object obj, IdentityHashMap<Object, Integer> svdObjs) {
-        Integer pos = svdObjs.get(obj);
+    private static boolean handleRecursion(
+        SBLimitedLength buf,
+        Object obj,
+        @NotNull Class cls,
+        IdentityHashMap<Object, EntryReference> svdObjs
+    ) {
+        EntryReference ref = svdObjs.get(obj);
 
-        if (pos == null)
+        if (ref == null)
             return false;
 
-        String name = obj.getClass().getSimpleName();
-        String hash = '@' + Integer.toHexString(System.identityHashCode(obj));
+        int pos = ref.pos;
+
+        String name = cls.getSimpleName();
+        String hash = identity(obj);
         String savedName = name + hash;
+        String charsAtPos = buf.impl().substring(pos, pos + savedName.length());
 
-        if (!buf.isOverflowed() && buf.impl().indexOf(savedName, pos) != pos) {
-            buf.i(pos + name.length(), hash);
+        if (!buf.isOverflowed() && !savedName.equals(charsAtPos)) {
+            if (charsAtPos.startsWith(cls.getSimpleName())) {
+                buf.i(pos + name.length(), hash);
 
-            incValues(svdObjs, obj, hash.length());
+                incValues(svdObjs, obj, hash.length());
+            }
+            else
+                ref.hashNeeded = true;
         }
 
         buf.a(savedName);
@@ -1810,14 +1844,35 @@ public class GridToStringBuilder {
      * @param obj Object.
      * @param hashLen Length of the object's hash.
      */
-    private static void incValues(IdentityHashMap<Object, Integer> svdObjs, Object obj, int hashLen) {
-        Integer baseline = svdObjs.get(obj);
+    private static void incValues(IdentityHashMap<Object, EntryReference> svdObjs, Object obj, int hashLen) {
+        int baseline = svdObjs.get(obj).pos;
 
-        for (IdentityHashMap.Entry<Object, Integer> entry : svdObjs.entrySet()) {
-            Integer pos = entry.getValue();
+        for (IdentityHashMap.Entry<Object, EntryReference> entry : svdObjs.entrySet()) {
+            EntryReference ref = entry.getValue();
+
+            int pos = ref.pos;
 
             if (pos > baseline)
-                entry.setValue(pos + hashLen);
+                ref.pos = pos + hashLen;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class EntryReference {
+        /** Position. */
+        int pos;
+
+        /** First object entry needs hash to be written. */
+        boolean hashNeeded;
+
+        /**
+         * @param pos Position.
+         */
+        private EntryReference(int pos) {
+            this.pos = pos;
+            hashNeeded = false;
         }
     }
 }
