@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -36,13 +35,13 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 public class LocalJoinCachesContext {
     /** */
     @GridToStringInclude
-    private List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> locJoinStartCaches = Collections.emptyList();
+    private List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> locJoinStartCaches;
 
     /**
      *
      */
     @GridToStringInclude
-    private List<DynamicCacheDescriptor> locJoinInitCaches = Collections.emptyList();
+    private List<DynamicCacheDescriptor> locJoinInitCaches;
 
     /** */
     @GridToStringInclude
@@ -54,7 +53,7 @@ public class LocalJoinCachesContext {
 
     /**
      * @param locJoinStartCaches Local caches to start on join.
-     * @param locJoinInitCaches Local caches to initialize H2 structures without start of caches.
+     * @param locJoinInitCaches Local caches to initialize query infrastructure without start of caches.
      * @param cacheGrpDescs Cache group descriptors captured during join.
      * @param cacheDescs Cache descriptors captured during join.
      */
@@ -78,7 +77,7 @@ public class LocalJoinCachesContext {
     }
 
     /**
-     * @return Cache descriptors to initialize H2 without start of caches.
+     * @return Cache descriptors to initialize query infrastructure without start of caches.
      */
     public List<DynamicCacheDescriptor> initCaches() {
         return locJoinInitCaches;
@@ -113,12 +112,13 @@ public class LocalJoinCachesContext {
                 it.remove();
         }
 
-        Iterator<DynamicCacheDescriptor> itr = locJoinInitCaches.iterator();
+        Iterator<DynamicCacheDescriptor> iter = locJoinInitCaches.iterator();
 
-        for (; itr.hasNext(); ) {
-            DynamicCacheDescriptor desc = itr.next();
+        for (; iter.hasNext(); ) {
+            DynamicCacheDescriptor desc = iter.next();
+
             if (cacheNames.contains(desc.cacheName()))
-                itr.remove();
+                iter.remove();
         }
     }
 

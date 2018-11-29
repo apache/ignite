@@ -300,13 +300,14 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public void registerCache(String cacheName, String schemaName,
-            GridCacheContextInfo<?, ?> cctx) throws IgniteCheckedException {
-            if (FAILED_CACHES.contains(cctx.name()) && cctx.gridCacheContext().kernalContext().clientNode())
-                throw new IgniteCheckedException("Test query exception " + cctx.name() + " " + new Random().nextInt());
+            GridCacheContextInfo<?, ?> cacheInfo) throws IgniteCheckedException {
+            if (FAILED_CACHES.contains(cacheInfo.name()) && cacheInfo.gridCacheContext().kernalContext().clientNode())
+                throw new IgniteCheckedException("Test query exception " + cacheInfo.name() + " " + new Random().nextInt());
         }
 
         /** {@inheritDoc} */
-        @Override public void unregisterCache(GridCacheContextInfo cctx, boolean rmvIdx) throws IgniteCheckedException {
+        @Override public void unregisterCache(GridCacheContextInfo cacheInfo,
+            boolean rmvIdx) throws IgniteCheckedException {
             // No-op
         }
 
@@ -318,7 +319,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
             return null;
         }
 
-        @Override public boolean registerType(GridCacheContextInfo cctx,
+        @Override public boolean registerType(GridCacheContextInfo cacheInfo,
             GridQueryTypeDescriptor desc, boolean isSql) throws IgniteCheckedException {
             return false;
         }
@@ -390,7 +391,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public GridCacheContextInfo registeredCacheContext(String cacheName) {
+        @Override public GridCacheContextInfo registeredCacheInfo(String cacheName) {
             return null;
         }
 

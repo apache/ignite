@@ -25,7 +25,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Cache context information.  Required to support H2 structures for not started caches on non affinity nodes.
+ * Cache context information. Required to support query infrastructure for not started caches on non affinity nodes.
  */
 @GridToStringExclude
 public class GridCacheContextInfo<K, V> {

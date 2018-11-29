@@ -423,7 +423,7 @@ public class DdlStatementsProcessor {
                         assert tbl.rowDescriptor() != null;
 
                         if (!allFieldsNullable)
-                            QueryUtils.checkNotNullAllowed(tbl.cache().config());
+                            QueryUtils.checkNotNullAllowed(tbl.cacheContext().config());
 
                         fut = ctx.query().dynamicColumnAdd(tbl.cacheName(), cmd.schemaName(),
                             tbl.rowDescriptor().type().tableName(), cols, cmd.ifTableExists(), cmd.ifNotExists());
@@ -445,7 +445,7 @@ public class DdlStatementsProcessor {
                 else {
                     assert tbl.rowDescriptor() != null;
 
-                    if (tbl.cache().mvccEnabled())
+                    if (tbl.cacheContext().mvccEnabled())
                         throw new IgniteSQLException("Cannot drop column(s) with enabled MVCC. " +
                             "Operation is unsupported at the moment.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
@@ -527,7 +527,7 @@ public class DdlStatementsProcessor {
      * @param tbl Table.
      */
     private static void isDdlSupported(GridH2Table tbl) {
-        GridCacheContext cctx = tbl.cache();
+        GridCacheContext cctx = tbl.cacheContext();
 
         assert cctx != null;
 

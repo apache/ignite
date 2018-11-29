@@ -175,11 +175,11 @@ public class GridH2RowDescriptor {
 
 
     /**
-     * Gets cache info context for this row descriptor.
+     * Gets cache context info for this row descriptor.
      *
-     * @return Cache context.
+     * @return Cache context info.
      */
-    public GridCacheContextInfo<?, ?> contextInfo() {
+    public GridCacheContextInfo<?, ?> cacheInfo() {
         return tbl.cacheInfo();
     }
 

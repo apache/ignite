@@ -47,14 +47,14 @@ public class H2RowCacheRegistry {
     /**
      * Callback invoked on cache registration within indexing.
      *
-     * @param cctx Cache context.
+     * @param cacheInfo Cache info context.
      */
-    public void onCacheRegistered(GridCacheContextInfo cctx) {
-        if (!cctx.config().isSqlOnheapCacheEnabled())
+    public void onCacheRegistered(GridCacheContextInfo cacheInfo) {
+        if (!cacheInfo.config().isSqlOnheapCacheEnabled())
             return;
 
         synchronized (mux) {
-            int grpId = cctx.groupId();
+            int grpId = cacheInfo.groupId();
 
             if (caches != null) {
                 H2RowCache cache = caches.get(grpId);
@@ -68,12 +68,12 @@ public class H2RowCacheRegistry {
 
             HashMap<Integer, H2RowCache> caches0 = copy();
 
-            if (cctx.affinityNode()) {
-                GridCacheContext gcctx = cctx.gridCacheContext();
+            if (cacheInfo.affinityNode()) {
+                GridCacheContext cacheCtx = cacheInfo.gridCacheContext();
 
-                assert gcctx != null;
+                assert cacheCtx != null;
 
-                H2RowCache rowCache = new H2RowCache(gcctx.group(), cctx.config().getSqlOnheapCacheMaxSize());
+                H2RowCache rowCache = new H2RowCache(cacheCtx.group(), cacheInfo.config().getSqlOnheapCacheMaxSize());
 
                 caches0.put(grpId, rowCache);
 
@@ -82,7 +82,7 @@ public class H2RowCacheRegistry {
                 // Inject row cache cleaner into store on cache creation.
                 // Used in case the cache with enabled SqlOnheapCache is created in exists cache group
                 // and SqlOnheapCache is disbaled for the caches have been created before.
-                for (IgniteCacheOffheapManager.CacheDataStore ds : gcctx.offheap().cacheDataStores())
+                for (IgniteCacheOffheapManager.CacheDataStore ds : cacheCtx.offheap().cacheDataStores())
                     ds.setRowCacheCleaner(rowCache);
             }
         }
@@ -91,14 +91,14 @@ public class H2RowCacheRegistry {
     /**
      * Callback invoked when cache gets unregistered.
      *
-     * @param cctx Cache context.
+     * @param cacheInfo Cache context info.
      */
-    public void onCacheUnregistered(GridCacheContextInfo cctx) {
-        if (!cctx.config().isSqlOnheapCacheEnabled())
+    public void onCacheUnregistered(GridCacheContextInfo cacheInfo) {
+        if (!cacheInfo.config().isSqlOnheapCacheEnabled())
             return;
 
         synchronized (mux) {
-            int grpId = cctx.groupId();
+            int grpId = cacheInfo.groupId();
 
             assert caches != null;
 
@@ -106,7 +106,7 @@ public class H2RowCacheRegistry {
 
             assert cache != null;
 
-            if (cache.onCacheUnregistered(cctx)) {
+            if (cache.onCacheUnregistered(cacheInfo)) {
                 HashMap<Integer, H2RowCache> caches0 = copy();
 
                 caches0.remove(grpId);

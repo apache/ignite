@@ -116,7 +116,7 @@ public final class UpdatePlanBuilder {
             H2Utils.checkAndInitLazyCache(h2tbl);
 
             if (prevCctx == null) {
-                prevCctx = h2tbl.cache();
+                prevCctx = h2tbl.cacheContext();
 
                 assert prevCctx != null : h2tbl.cacheName() + " is not initted";
 
@@ -129,8 +129,8 @@ public final class UpdatePlanBuilder {
                         "\"IGNITE_ALLOW_DML_INSIDE_TRANSACTION\" [cacheName=" + prevCctx.name() + ']');
                 }
             }
-            else if (h2tbl.cache().mvccEnabled() != mvccEnabled)
-                MvccUtils.throwAtomicityModesMismatchException(prevCctx, h2tbl.cache());
+            else if (h2tbl.cacheContext().mvccEnabled() != mvccEnabled)
+                MvccUtils.throwAtomicityModesMismatchException(prevCctx, h2tbl.cacheContext());
         }
 
         if (stmt instanceof GridSqlMerge || stmt instanceof GridSqlInsert)

@@ -49,18 +49,21 @@ public class H2TreeClientIndex extends H2TreeIndexBase {
 
         initBaseIndex(tbl, 0, name, cols,
             pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
+    }
 
-        initDistributedJoinMessaging(tbl);
+    /** {@inheritDoc} */
+    @Override public void refreshColumnIds() {
+        //do nothing.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void destroy(boolean rmvIndex) {
+        //do nothing.
     }
 
     /** {@inheritDoc} */
     @Override protected int segmentsCount() {
         throw new IgniteSQLException("Shouldn't be invoked, due to it's not affinity node");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void refreshColumnIds() {
-        super.refreshColumnIds();
     }
 
     /** {@inheritDoc} */
@@ -96,11 +99,6 @@ public class H2TreeClientIndex extends H2TreeIndexBase {
     /** {@inheritDoc} */
     @Override public Cursor findFirstOrLast(Session session, boolean b) {
         throw new IgniteSQLException("Shouldn't be invoked, due to it's not affinity node");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void destroy(boolean rmvIndex) {
-        super.destroy(rmvIndex);
     }
 
     /** {@inheritDoc} */

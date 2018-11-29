@@ -198,20 +198,20 @@ public interface GridQueryIndexing {
      *
      * @param cacheName Cache name.
      * @param schemaName Schema name.
-     * @param cctx Cache context.
+     * @param cacheInfo Cache context info.
      * @throws IgniteCheckedException If failed.
      */
-    public void registerCache(String cacheName, String schemaName, GridCacheContextInfo<?,?> cctx)
+    public void registerCache(String cacheName, String schemaName, GridCacheContextInfo<?, ?> cacheInfo)
         throws IgniteCheckedException;
 
     /**
      * Unregisters cache.
      *
-     * @param cctx Cache context.
+     * @param cacheInfo Cache context info.
      * @param rmvIdx If {@code true}, will remove index.
      * @throws IgniteCheckedException If failed to drop cache schema.
      */
-    public void unregisterCache(GridCacheContextInfo cctx, boolean rmvIdx) throws IgniteCheckedException;
+    public void unregisterCache(GridCacheContextInfo cacheInfo, boolean rmvIdx) throws IgniteCheckedException;
 
     /**
      *
@@ -238,12 +238,14 @@ public interface GridQueryIndexing {
     /**
      * Registers type if it was not known before or updates it otherwise.
      *
-     * @param cctx Cache context.
+     * @param cacheInfo Cache context info.
      * @param desc Type descriptor.
+     * @param isSql {@code true} in case table has been created from SQL.
      * @throws IgniteCheckedException If failed.
      * @return {@code True} if type was registered, {@code false} if for some reason it was rejected.
      */
-    public boolean registerType(GridCacheContextInfo cctx, GridQueryTypeDescriptor desc, boolean isSql) throws IgniteCheckedException;
+    public boolean registerType(GridCacheContextInfo cacheInfo, GridQueryTypeDescriptor desc,
+        boolean isSql) throws IgniteCheckedException;
 
     /**
      * Updates index. Note that key is unique for cache, so if cache contains multiple indexes
@@ -357,15 +359,15 @@ public interface GridQueryIndexing {
     public GridQueryRowCacheCleaner rowCacheCleaner(int cacheGroupId);
 
     /**
-     * Return context for registered cache.
+     * Return context for registered cache info.
      *
      * @param cacheName Cache name.
      * @return Cache context for registered cache or {@code null} in case the cache has not been registered.
      */
-    @Nullable public GridCacheContextInfo registeredCacheContext(String cacheName);
+    @Nullable public GridCacheContextInfo registeredCacheInfo(String cacheName);
 
     /**
-     * Initialize cache context for H2 table created for not started cache.
+     * Initialize table's cache context created for not started cache.
      *
      * @param ctx Cache context.
      * @throws IgniteCheckedException If failed.

@@ -1250,16 +1250,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 if (cache.context().userCache()) {
                     // Re-create cache structures inside indexing in order to apply recent schema changes.
-                    GridCacheContextInfo cctx = new GridCacheContextInfo(cache.context(), false);
+                    GridCacheContextInfo cacheInfo = new GridCacheContextInfo(cache.context(), false);
 
-                    DynamicCacheDescriptor desc = cacheDescriptor(cctx.name());
+                    DynamicCacheDescriptor desc = cacheDescriptor(cacheInfo.name());
 
-                    assert desc != null : cctx.name();
+                    assert desc != null : cacheInfo.name();
 
                     boolean rmvIdx = !cache.context().group().persistenceEnabled();
 
-                    ctx.query().onCacheStop0(cctx, rmvIdx);
-                    ctx.query().onCacheStart0(cctx, desc.schema(), desc.sql());
+                    ctx.query().onCacheStop0(cacheInfo, rmvIdx);
+                    ctx.query().onCacheStart0(cacheInfo, desc.schema(), desc.sql());
                 }
             }
         }
@@ -1285,17 +1285,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Initialize H2 structures for not started cache.
+     * Initialize query infrastructure for not started cache.
      *
      * @param cacheDesc Cache descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    public void initializeH2ForNotStartedCache(DynamicCacheDescriptor cacheDesc) throws IgniteCheckedException {
+    public void initQueryStructuresForNotStartedCache(DynamicCacheDescriptor cacheDesc) throws IgniteCheckedException {
         QuerySchema schema = cacheDesc.schema() != null ? cacheDesc.schema() : new QuerySchema();
 
-        GridCacheContextInfo cacheCtx = new GridCacheContextInfo(cacheDesc, ctx);
+        GridCacheContextInfo cacheInfo = new GridCacheContextInfo(cacheDesc, ctx);
 
-        ctx.query().onCacheStart(cacheCtx, schema, cacheDesc.sql());
+        ctx.query().onCacheStart(cacheInfo, schema, cacheDesc.sql());
     }
 
     /**
@@ -1322,9 +1322,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             cache.stop();
 
-            GridCacheContextInfo cctx = new GridCacheContextInfo(ctx, false);
+            GridCacheContextInfo cacheInfo = new GridCacheContextInfo(ctx, false);
 
-            ctx.kernalContext().query().onCacheStop(cctx, !cache.context().group().persistenceEnabled() || destroy);
+            ctx.kernalContext().query().onCacheStop(cacheInfo, !cache.context().group().persistenceEnabled() || destroy);
 
             if (isNearEnabled(ctx)) {
                 GridDhtCacheAdapter dht = ctx.near().dht();
@@ -1985,10 +1985,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         locJoinCtx.initCaches()
             .forEach(cacheDesc -> {
                 try {
-                    initializeH2ForNotStartedCache(cacheDesc);
+                    initQueryStructuresForNotStartedCache(cacheDesc);
                 }
                 catch (Exception e) {
-                    log.error("Can't initialize H2 structures for not started cache [cacheName=" + cacheDesc.cacheName() + "]");
+                    log.error("Can't initialize query structures for not started cache [cacheName=" + cacheDesc.cacheName() + "]");
                 }
             });
 
@@ -2796,7 +2796,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return ctx;
         }
         else
-            //Try to unregister H2 structures for not started caches.
+            //Try to unregister query structures for not started caches.
             ctx.query().onCacheStop(cacheName);
 
         return null;
