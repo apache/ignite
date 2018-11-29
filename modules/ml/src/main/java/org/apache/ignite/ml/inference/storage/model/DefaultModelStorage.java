@@ -289,7 +289,7 @@ public class DefaultModelStorage implements ModelStorage {
         }
         finally {
             try {
-                i -= 1;
+                i = Math.min(i, locks.length - 1);
                 for (; i >= 0; i--)
                     locks[i].unlock();
             }
