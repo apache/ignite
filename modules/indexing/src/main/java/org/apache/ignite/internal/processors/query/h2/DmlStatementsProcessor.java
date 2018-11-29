@@ -1223,6 +1223,8 @@ public class DmlStatementsProcessor {
                 IgniteQueryErrorCode.TABLE_NOT_FOUND);
         }
 
+        H2Utils.checkAndStartNotStartedCache(tbl);
+
         UpdatePlan plan = UpdatePlanBuilder.planForBulkLoad(cmd, tbl);
 
         IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> dataConverter = new BulkLoadDataConverter(plan);

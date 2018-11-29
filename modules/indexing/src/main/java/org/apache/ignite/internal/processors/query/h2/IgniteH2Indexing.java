@@ -3311,7 +3311,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 GridH2Table tbl = dataTable(tblKey);
 
                 if (tbl != null) {
-                    H2Utils.checkAndInitLazyCache(tbl);
+                    H2Utils.checkAndStartNotStartedCache(tbl);
 
                     int cacheId = tbl.cacheId();
 

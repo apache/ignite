@@ -302,12 +302,12 @@ public class H2Utils {
     }
 
     /**
-     * Check that given table has lazy cache and init it for such case.
+     * Check that given table has not started cache and start it for such case.
      *
-     * @param tbl Table to check on lazy cache
-     * @return {@code true} in case cache has been fully inited and started.
+     * @param tbl Table to check on not started cache.
+     * @return {@code true} in case not started and has been started.
      */
-    public static boolean checkAndInitLazyCache(GridH2Table tbl) {
+    public static boolean checkAndStartNotStartedCache(GridH2Table tbl) {
         if (tbl != null && tbl.isCacheLazy()) {
             String cacheName = tbl.cacheInfo().config().getName();
 

@@ -113,7 +113,7 @@ public final class UpdatePlanBuilder {
         boolean mvccEnabled = false;
 
         for (GridH2Table h2tbl : tbls) {
-            H2Utils.checkAndInitLazyCache(h2tbl);
+            H2Utils.checkAndStartNotStartedCache(h2tbl);
 
             if (prevCctx == null) {
                 prevCctx = h2tbl.cacheContext();
