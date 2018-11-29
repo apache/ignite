@@ -237,18 +237,18 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 cctx.shared().exchange().readyAffinityVersion();
         }
 
-        map(mappingtopVermappingtopVer, Collections.emptySet());
+        map(mappingtopVermappingtopVer);
     }
 
     /**
      * @param topVer Topology version.
      */
     @SuppressWarnings("unchecked")
-    private void map(AffinityTopologyVersion topVer, Set<ClusterNode> invalidNodes) {
+    private void map(AffinityTopologyVersion topVer) {
         if (!validate(topVer))
             return;
 
-        ClusterNode node = mapKeyToNode(topVer, invalidNodes);
+        ClusterNode node = mapKeyToNode(topVer);
 
         if (node == null) {
             assert isDone() : this;
@@ -286,7 +286,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 AffinityTopologyVersion updTopVer = cctx.shared().exchange().readyAffinityVersion();
 
                 // Remap recursively.
-                map(updTopVer, invalidNodes);
+                map(updTopVer);
             }
             else {
                 fut.listen(f -> {
@@ -360,7 +360,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * @param topVer Topology version.
      * @return Primary node or {@code null} if future was completed.
      */
-    @Nullable private ClusterNode mapKeyToNode(AffinityTopologyVersion topVer, Set<ClusterNode> invalidNodes) {
+    @Nullable private ClusterNode mapKeyToNode(AffinityTopologyVersion topVer) {
         int part = cctx.affinity().partition(key);
 
         List<ClusterNode> affNodes = cctx.affinity().nodesByPartition(part, topVer);
@@ -376,7 +376,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         if (tryLocalGet(key, part, topVer, affNodes))
             return null;
 
-        ClusterNode affNode = cctx.selectAffinityNodeBalanced(affNodes, invalidNodes, part, canRemap);
+        ClusterNode affNode = cctx.selectAffinityNodeBalanced(affNodes, getInvalidNodes(), part, canRemap);
 
         // Failed if none balanced node found.
         if (affNode == null) {
@@ -679,7 +679,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 awaitVersionAndRemap(rmtTopVer);
             }
             else
-                map(topVer, invalidNodes);
+                map(topVer);
 
             return false;
         }
@@ -775,6 +775,13 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     }
 
     /**
+     * @return Set of invalid cluster nodes.
+     */
+    protected synchronized Set<ClusterNode> getInvalidNodes() {
+        return invalidNodes;
+    }
+
+    /**
      * @param topVer Topology version.
      */
     private boolean checkRetryPermits(AffinityTopologyVersion topVer) {
@@ -783,7 +790,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
 
         // If topology changed reset collection of invalid nodes.
         synchronized (this) {
-            invalidNodes = null;
+            invalidNodes = Collections.emptySet();
         }
 
         if (REMAP_CNT_UPD.incrementAndGet(this) > MAX_REMAP_CNT) {
@@ -874,7 +881,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     private void remap(final AffinityTopologyVersion topVer) {
         cctx.closures().runLocalSafe(new Runnable() {
             @Override public void run() {
-                map(topVer, invalidNodes);
+                map(topVer);
             }
         });
     }
