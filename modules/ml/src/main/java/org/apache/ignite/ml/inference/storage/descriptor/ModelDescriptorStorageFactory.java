@@ -34,7 +34,7 @@ public class ModelDescriptorStorageFactory {
      * @param ignite Ignite instance.
      * @return Model descriptor storage.
      */
-    public static ModelDescriptorStorage getModelDescriptorStorage(Ignite ignite) {
+    public ModelDescriptorStorage getModelDescriptorStorage(Ignite ignite) {
         IgniteCache<String, ModelDescriptor> cache = ignite.cache(MODEL_DESCRIPTOR_STORAGE_CACHE_NAME);
 
         return new IgniteModelDescriptorStorage(cache);

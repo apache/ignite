@@ -52,7 +52,7 @@ public class ModelStorageInfModelReader implements InfModelReader {
      * @param path Path to the directory or file.
      */
     public ModelStorageInfModelReader(String path) {
-        this(path, () -> ModelStorageFactory.getModelStorage(Ignition.ignite()));
+        this(path, () -> new ModelStorageFactory().getModelStorage(Ignition.ignite()));
     }
 
     /** {@inheritDoc} */

@@ -33,7 +33,7 @@ public class ModelStorageFactory {
      * @param ignite Ignite instance.
      * @return Model storage.
      */
-    public static ModelStorage getModelStorage(Ignite ignite) {
+    public ModelStorage getModelStorage(Ignite ignite) {
         IgniteCache<String, FileOrDirectory> cache = ignite.cache(MODEL_STORAGE_CACHE_NAME);
         ModelStorageProvider storageProvider = new IgniteModelStorageProvider(cache);
 

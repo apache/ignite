@@ -47,8 +47,8 @@ public class ModelStorageExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite-ml.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            ModelStorage storage = ModelStorageFactory.getModelStorage(ignite);
-            ModelDescriptorStorage descStorage = ModelDescriptorStorageFactory.getModelDescriptorStorage(ignite);
+            ModelStorage storage = new ModelStorageFactory().getModelStorage(ignite);
+            ModelDescriptorStorage descStorage = new ModelDescriptorStorageFactory().getModelDescriptorStorage(ignite);
 
             System.out.println("Saving model into model storage...");
             byte[] mdl = serialize((IgniteFunction<byte[], byte[]>)i -> i);

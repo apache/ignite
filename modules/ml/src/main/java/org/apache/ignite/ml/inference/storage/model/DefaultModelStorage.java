@@ -277,27 +277,36 @@ public class DefaultModelStorage implements ModelStorage {
      * @param locks List of locks.
      */
     private <T> T synchronize(Supplier<T> task, Lock... locks) {
-        RuntimeException ex = null;
+        Throwable ex = null;
         T res;
 
+        int i = 0;
         try {
-            for (Lock lock : locks)
-                lock.lock();
+            for (; i < locks.length; i++)
+                locks[i].lock();
 
             res = task.get();
         }
         finally {
             try {
-                for (int i = locks.length - 1; i >= 0; i--)
+                i -= 1;
+                for (; i >= 0; i--)
                     locks[i].unlock();
             }
-            catch (RuntimeException e) {
+            catch (RuntimeException | Error e) {
                 ex = e;
             }
         }
 
-        if (ex != null)
-            throw ex;
+        if (ex != null) {
+            if (ex instanceof RuntimeException)
+                throw (RuntimeException) ex;
+
+            if (ex instanceof Error)
+                throw (Error) ex;
+
+            throw new IllegalStateException("Unexpected type of throwable");
+        }
 
         return res;
     }
