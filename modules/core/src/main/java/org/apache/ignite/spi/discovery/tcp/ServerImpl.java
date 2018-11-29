@@ -4179,7 +4179,14 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void processNodeAddedMessage(TcpDiscoveryNodeAddedMessage msg) {
             assert msg != null;
 
-            waitForLastListenerFuture();
+            blockingSectionBegin();
+
+            try {
+                waitForLastListenerFuture();
+            }
+            finally {
+                blockingSectionEnd();
+            }
 
             TcpDiscoveryNode node = msg.node();
 
