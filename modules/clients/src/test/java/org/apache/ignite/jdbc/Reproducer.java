@@ -19,6 +19,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -69,6 +70,8 @@ public class Reproducer extends GridCommonAbstractTest {
         server2 = Ignition.start(getCfg(NODE_2));
 
         findRows(client);
+
+        G.stopAll(true);
     }
 
     static IgniteConfiguration getCfg(String id) {
