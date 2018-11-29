@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.cache.distributed.CacheTryLockMulti
 import org.apache.ignite.internal.processors.cache.distributed.GridCachePartitionEvictionDuringReadThroughSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCache150ClientsTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheThreadLocalTxTest;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticTxSuspendResumeMultiServerTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticTxSuspendResumeTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgnitePessimisticTxSuspendResumeTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxLabelTest;
@@ -64,7 +63,6 @@ public class IgniteCacheTestSuite6 extends TestSuite {
 
         suite.addTestSuite(GridCachePartitionEvictionDuringReadThroughSelfTest.class);
         suite.addTestSuite(IgniteOptimisticTxSuspendResumeTest.class);
-        suite.addTestSuite(IgniteOptimisticTxSuspendResumeMultiServerTest.class);
         suite.addTestSuite(IgnitePessimisticTxSuspendResumeTest.class);
 
         suite.addTestSuite(CacheExchangeMergeTest.class);
