@@ -31,7 +31,7 @@ public interface ModelStorageProvider {
     public void remove(String path);
 
     /**
-     * Locks the row associated with the specified path.
+     * Locks the specified path.
      *
      * @param path Path to be locked.
      */
