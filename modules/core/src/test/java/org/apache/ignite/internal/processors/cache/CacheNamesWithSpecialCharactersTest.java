@@ -28,7 +28,6 @@ import java.util.Collection;
 /**
  * Test that validates {@link Ignite#cacheNames()} implementation.
  */
-//TODO IGNITE-10366: move to config validation test GridCacheConfigurationValidationSelfTest.
 public class CacheNamesWithSpecialCharactersTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME_1 = "--№=+:(replicated)";

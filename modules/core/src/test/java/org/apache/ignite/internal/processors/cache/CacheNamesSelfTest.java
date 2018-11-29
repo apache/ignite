@@ -27,7 +27,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Test that validates {@link Ignite#cacheNames()} implementation.
  */
-//TODO IGNITE-10366: move to config validation test GridCacheConfigurationValidationSelfTest.
 public class CacheNamesSelfTest extends GridCommonAbstractTest {
     /** */
     private boolean client;
