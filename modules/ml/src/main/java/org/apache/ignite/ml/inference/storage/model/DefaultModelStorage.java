@@ -58,12 +58,12 @@ public class DefaultModelStorage implements ModelStorage {
 
             // If parent doesn't exist throw an exception.
             if (parent == null)
-                throw new IllegalStateException("Cannot create file because directory doesn't exist [path="
+                throw new IllegalArgumentException("Cannot create file because directory doesn't exist [path="
                     + path + "]");
 
             // If parent is not a directory throw an exception.
             if (!parent.isDirectory())
-                throw new IllegalStateException("Cannot create file because parent is not a directory [path="
+                throw new IllegalArgumentException("Cannot create file because parent is not a directory [path="
                     + path + "]");
 
             Directory dir = (Directory) parent;
@@ -93,11 +93,11 @@ public class DefaultModelStorage implements ModelStorage {
         try {
             // If file doesn't exist throw an exception.
             if (fileOrDir == null)
-                throw new IllegalStateException("File doesn't exist [path=" + path + "]");
+                throw new IllegalArgumentException("File doesn't exist [path=" + path + "]");
 
             // If file is not a regular file throw an exception.
             if (!fileOrDir.isFile())
-                throw new IllegalStateException("File is not a regular file [path=" + path + "]");
+                throw new IllegalArgumentException("File is not a regular file [path=" + path + "]");
 
             return ((File) fileOrDir).getData();
         }
@@ -124,18 +124,18 @@ public class DefaultModelStorage implements ModelStorage {
 
             // If a regular file associated with specified path exists throw an exception.
             if (isFile(path))
-                throw new IllegalStateException("File with specified path already exists [path=" + path + "]");
+                throw new IllegalArgumentException("File with specified path already exists [path=" + path + "]");
 
             FileOrDirectory parent = storageProvider.get(parentPath);
 
             // If parent doesn't exist throw an exception.
             if (parent == null)
-                throw new IllegalStateException("Cannot create directory because parent directory doesn't exist [path="
-                    + path + "]");
+                throw new IllegalArgumentException("Cannot create directory because parent directory does not exist"
+                    + " [path=" + path + "]");
 
             // If parent is not a directory throw an exception.
             if (!parent.isDirectory())
-                throw new IllegalStateException("Cannot create directory because parent is not a directory [path="
+                throw new IllegalArgumentException("Cannot create directory because parent is not a directory [path="
                     + path + "]");
 
             Directory dir = (Directory) parent;
@@ -171,8 +171,8 @@ public class DefaultModelStorage implements ModelStorage {
                         break;
                     }
 
-                    throw new IllegalStateException("Cannot create directory because parent is not a directory [path="
-                        + path + "]");
+                    throw new IllegalArgumentException("Cannot create directory because parent is not a directory "
+                        + "[path=" + path + "]");
                 }
 
                 path = getParent(path);
@@ -213,11 +213,12 @@ public class DefaultModelStorage implements ModelStorage {
 
             // If directory doesn't exist throw an exception.
             if (dir == null)
-                throw new IllegalStateException("Directory doesn't exist [path=" + path + "]");
+                throw new IllegalArgumentException("Directory doesn't exist [path=" + path + "]");
 
             // If directory isn't a directory throw an exception.
             if (!dir.isDirectory())
-                throw new IllegalStateException("Specified path is not associated with directory [path=" + path + "]");
+                throw new IllegalArgumentException("Specified path is not associated with directory [path=" + path
+                    + "]");
 
             return ((Directory) dir).getFiles();
         }
