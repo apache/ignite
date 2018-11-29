@@ -18,22 +18,23 @@
 package org.apache.ignite.internal.processors.query.h2.affinity.tree;
 
 import java.util.Collection;
-import java.util.Collections;
 
 /**
- * Node with a single partition.
+ * Node denoting all available partitions
  */
-public abstract class PartitionSingleNode implements PartitionNode {
-    /** {@inheritDoc} */
-    @Override public Collection<Integer> apply(PartitionResolver resolver, Object... args) {
-        return Collections.singletonList(applySingle(resolver, args));
-    }
+public class PartitionAllNode implements PartitionNode {
+    /** Singleton. */
+    public static PartitionAllNode INSTANCE = new PartitionAllNode();
 
     /**
-     * Apply arguments and get single partition.
-     *
-     * @param args Arguments.
-     * @return Partition.
+     * Constructor.
      */
-    public abstract int applySingle(PartitionResolver resolver, Object... args);
+    private PartitionAllNode() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<Integer> apply(PartitionResolver resolver, Object... args) {
+        return null;
+    }
 }

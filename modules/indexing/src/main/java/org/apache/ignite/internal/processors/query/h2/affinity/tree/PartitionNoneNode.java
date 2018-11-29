@@ -21,19 +21,21 @@ import java.util.Collection;
 import java.util.Collections;
 
 /**
- * Node with a single partition.
+ * Node denoting empty partition set.
  */
-public abstract class PartitionSingleNode implements PartitionNode {
-    /** {@inheritDoc} */
-    @Override public Collection<Integer> apply(PartitionResolver resolver, Object... args) {
-        return Collections.singletonList(applySingle(resolver, args));
-    }
+public class PartitionNoneNode implements PartitionNode {
+    /** Singleton. */
+    public static PartitionNoneNode INSTANCE = new PartitionNoneNode();
 
     /**
-     * Apply arguments and get single partition.
-     *
-     * @param args Arguments.
-     * @return Partition.
+     * Constructor.
      */
-    public abstract int applySingle(PartitionResolver resolver, Object... args);
+    private PartitionNoneNode() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<Integer> apply(PartitionResolver resolver, Object... args) {
+        return Collections.emptySet();
+    }
 }

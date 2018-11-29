@@ -17,23 +17,31 @@
 
 package org.apache.ignite.internal.processors.query.h2.affinity.tree;
 
-import java.util.Collection;
-import java.util.Collections;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
 
 /**
- * Node with a single partition.
+ * Partition tree extractor.
  */
-public abstract class PartitionSingleNode implements PartitionNode {
-    /** {@inheritDoc} */
-    @Override public Collection<Integer> apply(PartitionResolver resolver, Object... args) {
-        return Collections.singletonList(applySingle(resolver, args));
+public class PartitionTreeExtractor {
+    /** Kernal context. */
+    private final GridKernalContext ctx;
+
+    /**
+     * Constructor.
+     */
+    public PartitionTreeExtractor(GridKernalContext ctx) {
+        this.ctx = ctx;
     }
 
     /**
-     * Apply arguments and get single partition.
+     * Extract partitions.
      *
-     * @param args Arguments.
-     * @return Partition.
+     * @param qry Query.
+     * @return Partitons.
      */
-    public abstract int applySingle(PartitionResolver resolver, Object... args);
+    public PartitionNode extract(GridSqlQuery qry) {
+        // TODO
+        return null;
+    }
 }
