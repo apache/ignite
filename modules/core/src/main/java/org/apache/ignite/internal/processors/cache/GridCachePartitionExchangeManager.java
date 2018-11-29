@@ -854,7 +854,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             aff.partitions());
 
         GridClientPartitionTopology old = clientTops.putIfAbsent(grpId,
-            top = new GridClientPartitionTopology(cctx, discoCache, grpId, aff.partitions(), affKey));
+            top = new GridClientPartitionTopology(cctx, discoCache, grpId, aff.partitions(), ccfg.getPartitionLossPolicy(), affKey));
 
         return old != null ? old : top;
     }

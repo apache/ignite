@@ -1807,7 +1807,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 if (cur == null || !cur.equals(parts))
                     changed = true;
 
-                if (lostParts != null) {
+                if (lostParts != null && grp.config().getPartitionLossPolicy() != PartitionLossPolicy.IGNORE) {
                     for (Integer lostPart : lostParts) {
                         GridDhtPartitionState state0 = parts.get(lostPart);
 

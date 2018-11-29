@@ -32,6 +32,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -127,6 +128,9 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     private volatile Map<Integer, Long> globalPartSizes;
 
     /** */
+    private final PartitionLossPolicy partLossPlc;
+
+    /** */
     private TreeSet<Integer> lostParts;
 
     /**
@@ -134,6 +138,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
      * @param discoCache Discovery data cache.
      * @param grpId Group ID.
      * @param parts Number of partitions in the group.
+     * @param partLossPlc Partition loss policy.
      * @param similarAffKey Key to find caches with similar affinity.
      */
     public GridClientPartitionTopology(
@@ -141,6 +146,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         DiscoCache discoCache,
         int grpId,
         int parts,
+        PartitionLossPolicy partLossPlc,
         Object similarAffKey
     ) {
         this.cctx = cctx;
@@ -148,6 +154,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         this.grpId = grpId;
         this.similarAffKey = similarAffKey;
         this.parts = parts;
+        this.partLossPlc = partLossPlc;
 
         topVer = AffinityTopologyVersion.NONE;
 
@@ -944,7 +951,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
             if (cur == null || !cur.equals(parts))
                 changed = true;
 
-            if (lostParts != null) {
+            if (lostParts != null && partLossPlc != PartitionLossPolicy.IGNORE) {
                 for (Integer lostPart : lostParts) {
                     GridDhtPartitionState state0 = parts.get(lostPart);
 
@@ -1005,6 +1012,9 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @Override public boolean detectLostPartitions(AffinityTopologyVersion affVer, DiscoveryEvent discoEvt) {
+        if (partLossPlc == PartitionLossPolicy.IGNORE)
+            return false;
+
         lock.writeLock().lock();
 
 
