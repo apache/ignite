@@ -692,7 +692,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             return new GridNearGetRequest(
                 cctx.cacheId(),
                 rootFutId,
-                futId,
+                futureId(),
                 null,
                 keys,
                 readThrough,
