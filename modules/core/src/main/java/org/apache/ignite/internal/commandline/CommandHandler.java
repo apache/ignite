@@ -166,18 +166,6 @@ public class CommandHandler {
     static final String DFLT_PORT = "11211";
 
     /** */
-    static final String DFLT_SSL_PROTOCOL = "TLS";
-
-    /** */
-    static final String DFLT_SSL_KEY_ALGORITHM = "SunX509";
-
-    /** */
-    static final String DFLT_KEYSTORE_TYPE = "jks";
-
-    /** */
-    static final String DFLT_TRUSTSTORE_TYPE = "jks";
-
-    /** */
     private static final String CMD_HELP = "--help";
 
     /** */
@@ -1808,8 +1796,6 @@ public class CommandHandler {
 
         String pwd = null;
 
-        boolean ssl = false;
-
         String baselineAct = "";
 
         String baselineArgs = "";
@@ -2549,10 +2535,10 @@ public class CommandHandler {
                 log(i("PORT=" + DFLT_PORT, 2));
                 log(i("PING_INTERVAL=" + DFLT_PING_INTERVAL, 2));
                 log(i("PING_TIMEOUT=" + DFLT_PING_TIMEOUT, 2));
-                log("    SSL_PROTOCOL=" + DFLT_SSL_PROTOCOL);
-                log("    SSL_KEY_ALGORITHM=" + DFLT_SSL_KEY_ALGORITHM);
-                log("    KEYSTORE_TYPE=" + DFLT_KEYSTORE_TYPE);
-                log("    TRUSTSTORE_TYPE=" + DFLT_TRUSTSTORE_TYPE);
+                log(i("SSL_PROTOCOL=" + SslContextFactory.DFLT_SSL_PROTOCOL, 2));
+                log(i("SSL_KEY_ALGORITHM=" + SslContextFactory.DFLT_KEY_ALGORITHM, 2));
+                log(i("KEYSTORE_TYPE=" + SslContextFactory.DFLT_STORE_TYPE, 2));
+                log(i("TRUSTSTORE_TYPE=" + SslContextFactory.DFLT_STORE_TYPE, 2));
                 nl();
 
                 log("Exit codes:");
@@ -2599,8 +2585,7 @@ public class CommandHandler {
 
                     if (securityCredential == null) {
                         securityCredential = new SecurityCredentialsBasicProvider(
-                            new SecurityCredentials(args.getUserName(), args.getPassword())
-                        );
+                            new SecurityCredentials(args.getUserName(), args.getPassword()));
 
                         clientCfg.setSecurityCredentialsProvider(securityCredential);
                     }
@@ -2609,10 +2594,11 @@ public class CommandHandler {
                     credential.setPassword(args.getPassword());
                 }
 
-                if (!F.isEmpty(args.sslKeyStorePath())){
+                if (!F.isEmpty(args.sslKeyStorePath())) {
                     GridSslBasicContextFactory factory = new GridSslBasicContextFactory();
 
                     factory.setProtocol(args.sslProtocol());
+
                     factory.setKeyAlgorithm(args.sslKeyAlgorithm());
 
                     factory.setKeyStoreFilePath(args.sslKeyStorePath());
