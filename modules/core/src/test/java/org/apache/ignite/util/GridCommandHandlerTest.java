@@ -1657,7 +1657,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             db.checkpointReadLock();
 
             try {
-                U.invoke(GridCacheDatabaseSharedManager.class, db, "applyUpdate", ctx, dataEntry);
+                U.invoke(GridCacheDatabaseSharedManager.class, db, "applyUpdate", ctx, dataEntry, false);
             }
             finally {
                 db.checkpointReadUnlock();
