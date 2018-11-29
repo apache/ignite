@@ -15,16 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed;
+package org.apache.ignite.ml.multiclass;
+
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
- *
+ * Test suite for multilayer perceptrons.
  */
-public class IgniteOptimisticTxSuspendResumeMultiServerTest extends IgniteOptimisticTxSuspendResumeTest {
-    /**
-     * @return Number of server nodes.
-     */
-    @Override protected int serversNumber() {
-        return 4;
-    }
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    OneVsRestTrainerTest.class
+})
+public class MultiClassTestSuite {
+    // No-op.
 }
