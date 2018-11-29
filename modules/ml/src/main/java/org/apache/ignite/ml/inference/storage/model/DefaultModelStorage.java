@@ -264,7 +264,7 @@ public class DefaultModelStorage implements ModelStorage {
      * @param task Runnable task.
      * @param locks List of locks.
      */
-    private void synchronize(Runnable task, Lock... locks) {
+    static void synchronize(Runnable task, Lock... locks) {
         synchronize(() -> {
             task.run();
             return null;
@@ -276,7 +276,7 @@ public class DefaultModelStorage implements ModelStorage {
      * @param task Task to executed.
      * @param locks List of locks.
      */
-    private <T> T synchronize(Supplier<T> task, Lock... locks) {
+    static <T> T synchronize(Supplier<T> task, Lock... locks) {
         Throwable ex = null;
         T res;
 
@@ -288,13 +288,13 @@ public class DefaultModelStorage implements ModelStorage {
             res = task.get();
         }
         finally {
-            try {
-                i = Math.min(i, locks.length - 1);
-                for (; i >= 0; i--)
+            for (i = i - 1; i >= 0; i--) {
+                try {
                     locks[i].unlock();
-            }
-            catch (RuntimeException | Error e) {
-                ex = e;
+                }
+                catch (RuntimeException | Error e) {
+                    ex = e;
+                }
             }
         }
 
