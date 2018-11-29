@@ -286,8 +286,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                         GridDhtPartitionState state = top.partitionState(waitNode, part);
 
-                        if (state != GridDhtPartitionState.OWNING &&
-                            !lostPartitionMoving(top, grpHolder.affinity(), waitNode, part, state)) {
+                        if (state != GridDhtPartitionState.OWNING && state != GridDhtPartitionState.LOST) {
                             rebalanced = false;
 
                             break;
@@ -316,35 +315,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 U.error(log, "Failed to send affinity change message.", e);
             }
         }
-    }
-
-    /**
-     * @param top Topology version.
-     * @param aff Affinity assignment cache.
-     * @param waitNode Node rebalancing data.
-     * @param p Parition id.
-     * @param state Partition state.
-     * @return {@code True} if this partition is moving in LOST state.
-     */
-    private boolean lostPartitionMoving(
-        GridDhtPartitionTopology top,
-        GridAffinityAssignmentCache aff,
-        UUID waitNode,
-        Integer p,
-        GridDhtPartitionState state
-    ) {
-        if (state != GridDhtPartitionState.LOST)
-            return false;
-
-        List<ClusterNode> assignment = aff.assignments(aff.lastVersion()).get(p);
-
-        assert !assignment.isEmpty();
-
-        UUID oldPrimary = assignment.get(0).id();
-
-        assert !waitNode.equals(oldPrimary) : oldPrimary;
-
-        return top.partitionState(oldPrimary, p) == GridDhtPartitionState.LOST;
     }
 
     /**
