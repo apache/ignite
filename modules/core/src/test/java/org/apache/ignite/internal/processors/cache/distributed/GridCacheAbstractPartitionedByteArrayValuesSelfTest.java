@@ -31,18 +31,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public abstract class GridCacheAbstractPartitionedByteArrayValuesSelfTest extends
     GridCacheAbstractDistributedByteArrayValuesSelfTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TransactionConfiguration tCfg = new TransactionConfiguration();
-
-        tCfg.setTxSerializableEnabled(true);
-
-        cfg.setTransactionConfiguration(tCfg);
-
-        return cfg;
-    }
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration0() {

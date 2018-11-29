@@ -53,8 +53,14 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        c.setCacheConfiguration(cacheConfiguration(CACHE),
-            cacheConfiguration(MVCC_CACHE).setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT));
+        CacheConfiguration mvccCfg = cacheConfiguration(MVCC_CACHE)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
+            .setNearConfiguration(null); // TODO IGNITE-7187: remove near cache disabling.
+
+
+        CacheConfiguration ccfg = cacheConfiguration(CACHE);
+
+        c.setCacheConfiguration(ccfg, mvccCfg);
 
         c.setPeerClassLoadingEnabled(peerClassLoading());
 
