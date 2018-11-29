@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
@@ -62,6 +63,7 @@ import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
+import org.apache.ignite.internal.util.GridStripedReadWriteLock;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -146,6 +148,10 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** */
     private final Set<Integer> grpsWithoutIdx = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
+
+    /** */
+    private final GridStripedReadWriteLock initDirLock =
+        new GridStripedReadWriteLock(Math.max(Runtime.getRuntime().availableProcessors(), 8));
 
     /**
      * @param ctx Kernal context.
@@ -664,69 +670,78 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     private boolean checkAndInitCacheWorkDir(File cacheWorkDir) throws IgniteCheckedException {
         boolean dirExisted = false;
 
-        if (!Files.exists(cacheWorkDir.toPath())) {
-            try {
-                Files.createDirectory(cacheWorkDir.toPath());
-            }
-            catch (IOException e) {
-                throw new IgniteCheckedException("Failed to initialize cache working directory " +
-                    "(failed to create, make sure the work folder has correct permissions): " +
-                    cacheWorkDir.getAbsolutePath(), e);
-            }
-        }
-        else {
-            if (cacheWorkDir.isFile())
-                throw new IgniteCheckedException("Failed to initialize cache working directory " +
-                    "(a file with the same name already exists): " + cacheWorkDir.getAbsolutePath());
+        ReadWriteLock lock = initDirLock.getLock(cacheWorkDir.getName().hashCode());
 
-            File lockF = new File(cacheWorkDir, IgniteCacheSnapshotManager.SNAPSHOT_RESTORE_STARTED_LOCK_FILENAME);
+        lock.writeLock().lock();
 
-            Path cacheWorkDirPath = cacheWorkDir.toPath();
-
-            Path tmp = cacheWorkDirPath.getParent().resolve(cacheWorkDir.getName() + TMP_SUFFIX);
-
-            if (Files.exists(tmp) && Files.isDirectory(tmp) &&
-                    Files.exists(tmp.resolve(IgniteCacheSnapshotManager.TEMP_FILES_COMPLETENESS_MARKER))) {
-
-                U.warn(log, "Ignite node crashed during the snapshot restore process " +
-                    "(there is a snapshot restore lock file left for cache). But old version of cache was saved. " +
-                    "Trying to restore it. Cache - [" + cacheWorkDir.getAbsolutePath() + ']');
-
-                U.delete(cacheWorkDir);
-
+        try {
+            if (!Files.exists(cacheWorkDir.toPath())) {
                 try {
-                    Files.move(tmp, cacheWorkDirPath, StandardCopyOption.ATOMIC_MOVE);
-
-                    cacheWorkDirPath.resolve(IgniteCacheSnapshotManager.TEMP_FILES_COMPLETENESS_MARKER).toFile().delete();
+                    Files.createDirectory(cacheWorkDir.toPath());
                 }
                 catch (IOException e) {
-                    throw new IgniteCheckedException(e);
+                    throw new IgniteCheckedException("Failed to initialize cache working directory " +
+                        "(failed to create, make sure the work folder has correct permissions): " +
+                        cacheWorkDir.getAbsolutePath(), e);
                 }
             }
-            else if (lockF.exists()) {
-                U.warn(log, "Ignite node crashed during the snapshot restore process " +
-                    "(there is a snapshot restore lock file left for cache). Will remove both the lock file and " +
-                    "incomplete cache directory [cacheDir=" + cacheWorkDir.getAbsolutePath() + ']');
+            else {
+                if (cacheWorkDir.isFile())
+                    throw new IgniteCheckedException("Failed to initialize cache working directory " +
+                        "(a file with the same name already exists): " + cacheWorkDir.getAbsolutePath());
 
-                boolean deleted = U.delete(cacheWorkDir);
+                File lockF = new File(cacheWorkDir, IgniteCacheSnapshotManager.SNAPSHOT_RESTORE_STARTED_LOCK_FILENAME);
 
-                if (!deleted)
-                    throw new IgniteCheckedException("Failed to remove obsolete cache working directory " +
-                        "(remove the directory manually and make sure the work folder has correct permissions): " +
+                Path cacheWorkDirPath = cacheWorkDir.toPath();
+
+                Path tmp = cacheWorkDirPath.getParent().resolve(cacheWorkDir.getName() + TMP_SUFFIX);
+
+                if (Files.exists(tmp) && Files.isDirectory(tmp) &&
+                    Files.exists(tmp.resolve(IgniteCacheSnapshotManager.TEMP_FILES_COMPLETENESS_MARKER))) {
+
+                    U.warn(log, "Ignite node crashed during the snapshot restore process " +
+                        "(there is a snapshot restore lock file left for cache). But old version of cache was saved. " +
+                        "Trying to restore it. Cache - [" + cacheWorkDir.getAbsolutePath() + ']');
+
+                    U.delete(cacheWorkDir);
+
+                    try {
+                        Files.move(tmp, cacheWorkDirPath, StandardCopyOption.ATOMIC_MOVE);
+
+                        cacheWorkDirPath.resolve(IgniteCacheSnapshotManager.TEMP_FILES_COMPLETENESS_MARKER).toFile().delete();
+                    }
+                    catch (IOException e) {
+                        throw new IgniteCheckedException(e);
+                    }
+                }
+                else if (lockF.exists()) {
+                    U.warn(log, "Ignite node crashed during the snapshot restore process " +
+                        "(there is a snapshot restore lock file left for cache). Will remove both the lock file and " +
+                        "incomplete cache directory [cacheDir=" + cacheWorkDir.getAbsolutePath() + ']');
+
+                    boolean deleted = U.delete(cacheWorkDir);
+
+                    if (!deleted)
+                        throw new IgniteCheckedException("Failed to remove obsolete cache working directory " +
+                            "(remove the directory manually and make sure the work folder has correct permissions): " +
+                            cacheWorkDir.getAbsolutePath());
+
+                    cacheWorkDir.mkdirs();
+                }
+                else
+                    dirExisted = true;
+
+                if (!cacheWorkDir.exists())
+                    throw new IgniteCheckedException("Failed to initialize cache working directory " +
+                        "(failed to create, make sure the work folder has correct permissions): " +
                         cacheWorkDir.getAbsolutePath());
 
-                cacheWorkDir.mkdirs();
+                if (Files.exists(tmp))
+                    U.delete(tmp);
             }
-            else
-                dirExisted = true;
-
-            if (!cacheWorkDir.exists())
-                throw new IgniteCheckedException("Failed to initialize cache working directory " +
-                    "(failed to create, make sure the work folder has correct permissions): " +
-                    cacheWorkDir.getAbsolutePath());
-
-            if (Files.exists(tmp))
-                U.delete(tmp);
+        }
+        finally {
+            lock.writeLock().unlock();
         }
 
         return dirExisted;

@@ -2225,6 +2225,13 @@ class ClusterCachesInfo {
     }
 
     /**
+     * Clear up information about restarting caches.
+     */
+    public void removeRestartingCaches() {
+        restartingCaches.clear();
+    }
+
+    /**
      * Holds direct comparator (first system caches) and reverse comparator (first user caches).
      * Use DIRECT comparator for ordering cache start operations.
      * Use REVERSE comparator for ordering cache stop operations.

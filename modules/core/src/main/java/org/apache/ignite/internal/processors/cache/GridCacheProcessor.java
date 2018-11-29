@@ -2634,12 +2634,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 proxy.onRestarted(null, null);
 
-                cachesInfo.removeRestartingCache(cacheName);
-
                 if (DataStructuresProcessor.isDataStructureCache(cacheName))
                     ctx.dataStructures().restart(cacheName, null);
             }
         }
+
+        cachesInfo.removeRestartingCaches();
 
         return res;
     }
