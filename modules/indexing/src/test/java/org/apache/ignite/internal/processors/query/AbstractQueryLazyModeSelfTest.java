@@ -36,6 +36,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -51,6 +52,9 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
 
     /** Size for small pages. */
     private static final int PAGE_SIZE_SMALL = 12;
+
+    /** Test duration. */
+    private static final long TEST_DUR = 5_000L;
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -98,8 +102,11 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
-    public void testTableWriteLockStarvation() throws Exception {
-        final Ignite srv = startGrid(1);
+    public void testTablesLockQueryMultithreaded() throws Exception {
+        final Ignite srv = startGrid(0);
+
+        startGrid(1);
+        startGrid(2);
 
         populateBaseQueryData(srv, 4);
 
@@ -140,8 +147,69 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
 
         assertTrue(GridTestUtils.waitForCondition(queryProcessed::get, 1000));
 
-        execute(srv, new SqlFieldsQuery("CREATE INDEX \"pers\".PERSON_NAME ON \"pers\".Person (name asc)")).getAll();
-        execute(srv, new SqlFieldsQuery("DROP INDEX \"pers\".PERSON_NAME")).getAll();
+        U.sleep(TEST_DUR);
+
+        // Test is OK in case DDL operations is passed on hi load queries pressure.
+        end.set(true);
+        fut.get();
+    }
+
+    /**
+     * Test DDL operation on table with high load queries.
+     *
+     * @throws Exception If failed.
+     */
+    public void testTablesLockQueryAndDDLMultithreaded() throws Exception {
+        final Ignite srv = startGrid(0);
+
+        startGrid(1);
+        startGrid(2);
+
+        populateBaseQueryData(srv, 4);
+
+        final AtomicBoolean end = new AtomicBoolean(false);
+
+        final int qryThreads = 10;
+
+        final CountDownLatch latch = new CountDownLatch(qryThreads);
+
+        final AtomicBoolean queryProcessed = new AtomicBoolean();
+
+        // Do many concurrent queries.
+        IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+            @Override public void run() {
+                latch.countDown();
+
+                while(!end.get()) {
+                    try {
+                        FieldsQueryCursor<List<?>> cursor = execute(srv, query(0)
+                            .setPageSize(PAGE_SIZE_SMALL));
+
+                        cursor.getAll();
+
+                        queryProcessed.set(true);
+                    }
+                    catch (Exception e) {
+                        if(X.cause(e, QueryRetryException.class) == null) {
+                            log.error("Unexpected exception", e);
+
+                            fail("Unexpected exception");
+                        }
+                    }
+                }
+            }
+        }, qryThreads, "usr-qry");
+
+        latch.await();
+
+        assertTrue(GridTestUtils.waitForCondition(queryProcessed::get, 1000));
+
+        long tEnd = U.currentTimeMillis() + TEST_DUR;
+
+        while (U.currentTimeMillis() < tEnd) {
+            execute(srv, new SqlFieldsQuery("CREATE INDEX \"pers\".PERSON_NAME ON \"pers\".Person (name asc)")).getAll();
+            execute(srv, new SqlFieldsQuery("DROP INDEX \"pers\".PERSON_NAME")).getAll();
+        }
 
         // Test is OK in case DDL operations is passed on hi load queries pressure.
         end.set(true);
@@ -263,8 +331,6 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
      */
     private void checkBaseOperations(Ignite node) throws Exception {
         checkQuerySplitToSeveralMapQueries(node);
-
-        checkQuerySplitToSeveralMapQueriesCancel(node);
 
         // Get full data.
         List<List<?>> rows = execute(node, baseQuery()).getAll();
@@ -393,41 +459,6 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
 
         assertQueryResults(rows, 0);
     }
-
-
-    /**
-     * @param node Ignite node.
-     * @throws Exception If failed.
-     */
-    public void checkQuerySplitToSeveralMapQueriesCancel(Ignite node) throws Exception {
-        final int threads = 5;
-        final CountDownLatch latch = new CountDownLatch(threads);
-
-        GridTestUtils.runMultiThreaded(new Runnable() {
-            @Override public void run() {
-                FieldsQueryCursor<List<?>> cursor0 = execute(node, new SqlFieldsQuery(
-                    "SELECT pers.id, pers.name " +
-                        "FROM (SELECT DISTINCT p.id, p.name " +
-                        "FROM \"pers\".PERSON as p) as pers " +
-                        "JOIN \"pers\".PERSON p on p.id = pers.id " +
-                        "JOIN (SELECT t.persId as persId, SUM(t.time) totalTime " +
-                        "FROM \"persTask\".PersonTask as t GROUP BY t.persId) as task ON task.persId = pers.id")
-                    .setPageSize(PAGE_SIZE_SMALL));
-
-//                Iterator<List<?>> it = cursor0.iterator();
-//
-//                for (int i = 0; i < PAGE_SIZE_SMALL / 2; ++i)
-//                    it.next();
-
-                cursor0.getAll();
-
-                latch.countDown();
-            }
-        }, 5, "test-qry");
-
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
-    }
-
 
     /**
      * Populate base query data.

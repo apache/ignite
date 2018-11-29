@@ -73,6 +73,7 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Session;
 import org.apache.ignite.internal.processors.query.h2.ResultSetEnlistFuture;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
@@ -252,8 +253,6 @@ public class GridMapQueryExecutor {
         MapNodeResults nodeRess = resultsForNode(node.id());
 
         boolean clear = GridH2QueryContext.clear(ctx.localNodeId(), node.id(), qryReqId, MAP);
-
-        log.info("+++ CANCEL " + qryReqId);
 
         if (!clear) {
             nodeRess.onCancel(qryReqId);
@@ -824,128 +823,128 @@ public class GridMapQueryExecutor {
 
                 H2Utils.setupConnection(conn, distributedJoinMode != OFF, enforceJoinOrder, lazy);
 
-                boolean removeMapping = false;
-                ResultSet rs = null;
-
-                // If we are not the target node for this replicated query, just ignore it.
-                if (qry.node() == null || (segmentId == 0 && qry.node().equals(ctx.localNodeId()))) {
-                    String sql = qry.query(); Collection<Object> params0 = F.asList(qry.parameters(params));
-
-                    PreparedStatement stmt;
-
-                    try {
-                        stmt = h2.prepareStatement(conn, sql, true);
-                    }
-                    catch (SQLException e) {
-                        throw new IgniteCheckedException("Failed to parse SQL query: " + sql, e);
-                    }
-
-                    Prepared p = GridSqlQueryParser.prepared(stmt);
-
-                    if (GridSqlQueryParser.isForUpdateQuery(p)) {
-                        sql = GridSqlQueryParser.rewriteQueryForUpdateIfNeeded(p, inTx);
-                        stmt = h2.prepareStatement(conn, sql, true);
-                    }
-
-                    h2.bindParameters(stmt, params0);
-
-                    int opTimeout = IgniteH2Indexing.operationTimeout(timeout, tx);
-
-                    rs = h2.executeSqlQueryWithTimer(stmt, conn, sql, params0, opTimeout, qryResults.queryCancel(qryIdx));
-
-                    if (inTx) {
-                        ResultSetEnlistFuture enlistFut = ResultSetEnlistFuture.future(
-                            ctx.localNodeId(),
-                            txDetails.version(),
-                            mvccSnapshot,
-                            txDetails.threadId(),
-                            IgniteUuid.randomUuid(),
-                            txDetails.miniId(),
-                            parts,
-                            tx,
-                            opTimeout,
-                            mainCctx,
-                            rs
-                        );
-
-                        if (lockFut != null)
-                            lockFut.register(enlistFut);
-
-                        enlistFut.init();
-
-                        enlistFut.get();
-
-                        rs.beforeFirst();
-                    }
-
-                    if (evt) {
-                        ctx.event().record(new CacheQueryExecutedEvent<>(
-                            node,
-                            "SQL query executed.",
-                            EVT_CACHE_QUERY_EXECUTED,
-                            CacheQueryType.SQL.name(),
-                            mainCctx.name(),
-                            null,
-                            qry.query(),
-                            null,
-                            null,
-                            params,
-                            node.id(),
-                            null));
-                    }
-
-                    assert rs instanceof JdbcResultSet : rs.getClass();
-                }
-
-                MapQueryResult mqrs = qryResults.addResult(qryIdx, qry, node.id(), rs, params, H2Utils.session(conn));
-
-                if (qryResults.cancelled())
-                    throw new QueryCancelledException();
-
-                if (inTx) {
-                    if (tx.dht() && (runCntr == null || runCntr.decrementAndGet() == 0)) {
-                        if (removeMapping = tx.empty() && !tx.queryEnlisted())
-                            tx.rollbackAsync().get();
-                    }
-                }
-
-                GridQueryNextPageResponse msg = null;
+                IgniteH2Session sesWrp = new IgniteH2Session(H2Utils.session(conn));
 
                 try {
+                    boolean removeMapping = false;
+                    ResultSet rs = null;
+
+                    // If we are not the target node for this replicated query, just ignore it.
+                    if (qry.node() == null || (segmentId == 0 && qry.node().equals(ctx.localNodeId()))) {
+                        String sql = qry.query();
+                        Collection<Object> params0 = F.asList(qry.parameters(params));
+
+                        PreparedStatement stmt;
+
+                        try {
+                            stmt = h2.prepareStatement(conn, sql, true);
+                        }
+                        catch (SQLException e) {
+                            throw new IgniteCheckedException("Failed to parse SQL query: " + sql, e);
+                        }
+
+                        Prepared p = GridSqlQueryParser.prepared(stmt);
+
+                        if (GridSqlQueryParser.isForUpdateQuery(p)) {
+                            sql = GridSqlQueryParser.rewriteQueryForUpdateIfNeeded(p, inTx);
+                            stmt = h2.prepareStatement(conn, sql, true);
+                        }
+
+                        h2.bindParameters(stmt, params0);
+
+                        int opTimeout = IgniteH2Indexing.operationTimeout(timeout, tx);
+
+                        rs = h2.executeSqlQueryWithTimer(stmt, conn, sql, params0, opTimeout, qryResults.queryCancel(qryIdx));
+
+                        if (inTx) {
+                            ResultSetEnlistFuture enlistFut = ResultSetEnlistFuture.future(
+                                ctx.localNodeId(),
+                                txDetails.version(),
+                                mvccSnapshot,
+                                txDetails.threadId(),
+                                IgniteUuid.randomUuid(),
+                                txDetails.miniId(),
+                                parts,
+                                tx,
+                                opTimeout,
+                                mainCctx,
+                                rs
+                            );
+
+                            if (lockFut != null)
+                                lockFut.register(enlistFut);
+
+                            enlistFut.init();
+
+                            enlistFut.get();
+
+                            rs.beforeFirst();
+                        }
+
+                        if (evt) {
+                            ctx.event().record(new CacheQueryExecutedEvent<>(
+                                node,
+                                "SQL query executed.",
+                                EVT_CACHE_QUERY_EXECUTED,
+                                CacheQueryType.SQL.name(),
+                                mainCctx.name(),
+                                null,
+                                qry.query(),
+                                null,
+                                null,
+                                params,
+                                node.id(),
+                                null));
+                        }
+
+                        assert rs instanceof JdbcResultSet : rs.getClass();
+                    }
+
+                    qryResults.addResult(qryIdx, qry, node.id(), rs, params, sesWrp);
+
+                    if (qryResults.cancelled())
+                        throw new QueryCancelledException();
+
+                    if (inTx) {
+                        if (tx.dht() && (runCntr == null || runCntr.decrementAndGet() == 0)) {
+                            if (removeMapping = tx.empty() && !tx.queryEnlisted())
+                                tx.rollbackAsync().get();
+                        }
+                    }
+
+                    GridQueryNextPageResponse msg = null;
+
                     msg = prepareNextPage(nodeRess, node, qryResults, qryIdx, segmentId, pageSize, removeMapping);
+
+                    final GridQueryNextPageResponse msg0 = msg;
+
+                    // Send the first page.
+                    if (lockFut == null)
+                        sendNextPage(node, msg);
+                    else {
+                        if (msg != null) {
+                            lockFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
+                                @Override public void apply(IgniteInternalFuture<Void> future) {
+                                    try {
+                                        if (node.isLocal())
+                                            h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg0);
+                                        else
+                                            ctx.io().sendToGridTopic(node, GridTopic.TOPIC_QUERY, msg0, QUERY_POOL);
+                                    }
+                                    catch (Exception e) {
+                                        U.error(log, e);
+                                    }
+                                }
+                            });
+                        }
+                    }
+
+                    qryIdx++;
                 }
                 finally {
-                    if (qryResults.lazy())
-                        mqrs.unlockTables();
-
-                    mqrs.unlock();
+                    sesWrp.unlockTables();
                 }
-
-                final GridQueryNextPageResponse msg0 = msg;
-
-                // Send the first page.
-                if (lockFut == null)
-                    sendNextPage(node, msg);
-                else {
-                    if (msg != null) {
-                        lockFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
-                            @Override public void apply(IgniteInternalFuture<Void> future) {
-                                try {
-                                    if (node.isLocal())
-                                        h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg0);
-                                    else
-                                        ctx.io().sendToGridTopic(node, GridTopic.TOPIC_QUERY, msg0, QUERY_POOL);
-                                }
-                                catch (Exception e) {
-                                    U.error(log, e);
-                                }
-                            }
-                        });
-                    }
-                }
-
-                qryIdx++;
-            }
+            } // for map queries
 
             if (!lazy)
                 qryResults.release();
@@ -1219,20 +1218,14 @@ public class GridMapQueryExecutor {
                 assert res != null;
 
                 try {
-                    res.lock();
+                    res.session().lockTables();
 
-                    if (!res.closed() && qryResults.lazy())
-                        res.lockTables();
+                    res.session().checkTablesVersions();
 
                     GridQueryNextPageResponse msg = prepareNextPage(
                         nodeRess, node, qryResults, req.query(), req.segmentId(), req.pageSize(), false);
 
                     sendNextPage(node, msg);
-                }
-                catch (Exception e) {
-                    qryResults.cancel();
-
-                    throw e;
                 }
                 finally {
                     GridH2QueryContext.clearThreadLocal();
@@ -1240,12 +1233,11 @@ public class GridMapQueryExecutor {
                     if (qctxReduce != null)
                         GridH2QueryContext.set(qctxReduce);
 
-                    if (qryResults.lazy())
-                        res.unlockTables();
-
-                    res.unlock();
+                    res.session().unlockTables();
                 }
             } catch (Exception e) {
+                qryResults.cancel();
+
                 QueryRetryException retryEx = X.cause(e, QueryRetryException.class);
 
                 if (retryEx != null)

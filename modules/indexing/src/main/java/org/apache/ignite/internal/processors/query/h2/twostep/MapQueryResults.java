@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Session;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.h2.engine.Session;
 import org.jetbrains.annotations.Nullable;
@@ -119,16 +120,14 @@ class MapQueryResults {
      * @param qrySrcNodeId Query source node.
      * @param rs Result set.
      * @param params Query arguments.
-     * @param session H2 Session.
+     * @param ses H2 Session.
      */
-    MapQueryResult addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs, Object[] params,
-        Session session) {
-        MapQueryResult res = new MapQueryResult(h2, rs, cctx, qrySrcNodeId, q, params, session, log);
+    void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs, Object[] params,
+        IgniteH2Session ses) {
+        MapQueryResult res = new MapQueryResult(h2, rs, cctx, qrySrcNodeId, q, params, ses, log);
 
         if (!results.compareAndSet(qry, null, res))
             throw new IllegalStateException();
-
-        return res;
     }
 
     /**

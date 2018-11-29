@@ -1119,36 +1119,21 @@ public class GridH2Table extends TableBase {
 
     /**
      * @param s H2 session.
-     * @param checkVer if {@code true} table version is checked
-     * and QueryRetryException is thrown when versions mismatch.
      */
-    public static void readLockTables(Session s, boolean checkVer) {
-        int locked = 0;
-
-        try {
-            for (int i = 0; i < s.getLocks().length; ++i) {
-                Table t = s.getLocks()[i];
-
-                if (t instanceof GridH2Table) {
-                    ((GridH2Table)t).readLockInternal(s);
-
-                    locked = i + 1;
-
-                    if (checkVer)
-                        ((GridH2Table)t).checkVersion(s);
-                }
-            }
+    public static void readLockTables(Session s) {
+        for (Table t : s.getLocks()) {
+            if (t instanceof GridH2Table)
+                ((GridH2Table)t).readLockInternal(s);
         }
-        catch (Exception e) {
-            // Unlock partially locked tables on exception.
-            for (int i = 0; i < locked; ++i) {
-                Table t = s.getLocks()[i];
+    }
 
-                if (t instanceof GridH2Table)
-                    ((GridH2Table)t).unlock(false);
-            }
-
-            throw e;
+    /**
+     * @param s H2 session.
+     */
+    public static void checkTablesVersions(Session s) {
+        for (Table t : s.getLocks()) {
+            if (t instanceof GridH2Table)
+                ((GridH2Table)t).checkVersion(s);
         }
     }
 }

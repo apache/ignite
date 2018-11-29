@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Session;
 import org.apache.ignite.internal.processors.query.h2.ObjectPoolReusable;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
@@ -49,9 +50,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
  * Mapper result for a single part of the query.
  */
 class MapQueryResult {
-    /**
-     *
-     */
+    /** */
     private static final Field RESULT_FIELD;
 
     /*
@@ -71,69 +70,49 @@ class MapQueryResult {
     /** Indexing. */
     private final IgniteH2Indexing h2;
 
-    /**
-     *
-     */
+    /** */
     private final ResultInterface res;
 
-    /**
-     *
-     */
+    /** */
     private final ResultSet rs;
 
-    /**
-     *
-     */
+    /** */
     private final GridCacheContext<?, ?> cctx;
 
-    /**
-     *
-     */
+    /** */
     private final GridCacheSqlQuery qry;
 
-    /**
-     *
-     */
+    /** */
     private final UUID qrySrcNodeId;
 
-    /**
-     *
-     */
+    /** */
     private final int cols;
 
-    /**
-     *
-     */
+    /** */
     private final IgniteLogger log;
-    /**
-     *
-     */
+
+    /** */
     private final int rowCnt;
-    /**
-     *
-     */
+
+    /** */
     private final Object[] params;
-    /** H2 session. */
-    private Session ses;
-    /**
-     *
-     */
+
+    /** */
     private int page;
-    /**
-     *
-     */
+
+    /** */
     private boolean cpNeeded;
-    /**
-     *
-     */
+
+    /** */
     private volatile boolean closed;
+
     /**
      * Detached connection. Used for lazy execution to prevent share connection between thread from QUERY thread pool.
      */
     private ObjectPoolReusable<H2ConnectionWrapper> detachedConn;
 
-    /** Lock is used to synchronise . */
-    private ReentrantLock lock = new ReentrantLock();
+    /** H2 session. */
+    private IgniteH2Session ses;
 
     /**
      * @param h2 H2 indexing.
@@ -146,7 +125,7 @@ class MapQueryResult {
      * @param log Logger.
      */
     MapQueryResult(IgniteH2Indexing h2, ResultSet rs, @Nullable GridCacheContext cctx,
-        UUID qrySrcNodeId, GridCacheSqlQuery qry, Object[] params, Session ses, IgniteLogger log) {
+        UUID qrySrcNodeId, GridCacheSqlQuery qry, Object[] params, IgniteH2Session ses, IgniteLogger log) {
         this.h2 = h2;
         this.cctx = cctx;
         this.qry = qry;
@@ -177,8 +156,6 @@ class MapQueryResult {
 
             closed = true;
         }
-
-        lock();
     }
 
     /**
@@ -303,26 +280,20 @@ class MapQueryResult {
         if (closed)
             return;
 
-        lock();
+        ses.lockTables();
 
         try {
             closed = true;
 
-            if (ses != null && lockTbls)
-                GridH2Table.readLockTables(ses, false);
-
             U.close(rs, log);
 
-            ses = null;
+            ses.release();
 
             if (detachedConn != null)
                 detachedConn.recycle();
         }
         finally {
-            if (ses != null && lockTbls)
-                GridH2Table.unlockTables(ses);
-
-            unlock();
+            ses.unlockTables();
         }
     }
 
@@ -330,27 +301,7 @@ class MapQueryResult {
      *
      */
     void releaseSession() {
-        ses = null;
-    }
-
-    /**
-     *
-     */
-    void unlockTables() {
-        synchronized (this) {
-            if (ses != null && !closed)
-                GridH2Table.unlockTables(ses);
-        }
-    }
-
-    /**
-     *
-     */
-    void lockTables() {
-        synchronized (this) {
-            if (ses != null)
-                GridH2Table.readLockTables(ses, true);
-        }
+        ses.release();
     }
 
     /**
@@ -368,16 +319,9 @@ class MapQueryResult {
     }
 
     /**
-     *
+     * @return Session wrapper.
      */
-    void lock() {
-        lock.lock();
-    }
-
-    /**
-     *
-     */
-    void unlock() {
-        lock.unlock();
+    IgniteH2Session session() {
+        return ses;
     }
 }
