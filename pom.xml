@@ -94,6 +94,7 @@
         <module>modules/rocketmq</module>
         <module>modules/sqlline</module>
         <module>modules/ml</module>
+        <module>modules/ml/xgboost-model-parser</module>
         <module>modules/tensorflow</module>
     </modules>
 
