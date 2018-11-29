@@ -125,7 +125,7 @@ public abstract class AbstractModelStorageTest {
     }
 
     /** */
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testPutFileIntoNonExistingDirectory() {
         ModelStorage mdlStorage = getModelStorage();
 
@@ -133,7 +133,7 @@ public abstract class AbstractModelStorageTest {
     }
 
     /** */
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testMakeDirInNonExistingDirectory() {
         ModelStorage mdlStorage = getModelStorage();
 

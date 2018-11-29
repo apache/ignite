@@ -23,6 +23,7 @@ import java.util.Deque;
 import java.util.LinkedList;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
+import java.util.function.Supplier;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
@@ -50,10 +51,7 @@ public class DefaultModelStorage implements ModelStorage {
         Lock pathLock = storageProvider.lock(path);
         Lock parentPathLock = storageProvider.lock(parentPath);
 
-        pathLock.lock();
-        parentPathLock.lock();
-
-        try {
+        synchronize(() -> {
             FileOrDirectory parent = storageProvider.get(parentPath);
 
             // If parent doesn't exist throw an exception.
@@ -75,11 +73,7 @@ public class DefaultModelStorage implements ModelStorage {
 
             // Save file into cache.
             storageProvider.put(path, new File(data));
-        }
-        finally {
-            parentPathLock.unlock();
-            pathLock.unlock();
-        }
+        }, pathLock, parentPathLock);
     }
 
     /**  {@inheritDoc}*/
@@ -88,9 +82,7 @@ public class DefaultModelStorage implements ModelStorage {
 
         Lock pathLock = storageProvider.lock(path);
 
-        pathLock.lock();
-
-        try {
+        return synchronize(() -> {
             // If file doesn't exist throw an exception.
             if (fileOrDir == null)
                 throw new IllegalArgumentException("File doesn't exist [path=" + path + "]");
@@ -100,10 +92,7 @@ public class DefaultModelStorage implements ModelStorage {
                 throw new IllegalArgumentException("File is not a regular file [path=" + path + "]");
 
             return ((File) fileOrDir).getData();
-        }
-        finally {
-            pathLock.unlock();
-        }
+        }, pathLock);
     }
 
     /** {@inheritDoc} */
@@ -114,10 +103,7 @@ public class DefaultModelStorage implements ModelStorage {
         Lock pathLock = storageProvider.lock(path);
         Lock parentPathLock = storageProvider.lock(parentPath);
 
-        pathLock.lock();
-        parentPathLock.lock();
-
-        try {
+        synchronize(() -> {
             // If a directory associated with specified path exists return.
             if (isDirectory(path))
                 return;
@@ -144,11 +130,7 @@ public class DefaultModelStorage implements ModelStorage {
             // Update parent and save directory into cache.
             storageProvider.put(parentPath, parent);
             storageProvider.put(path, new Directory());
-        }
-        finally {
-            parentPathLock.unlock();
-            pathLock.unlock();
-        }
+        }, pathLock, parentPathLock);
     }
 
     /** {@inheritDoc} */
@@ -208,7 +190,7 @@ public class DefaultModelStorage implements ModelStorage {
 
         pathLock.lock();
 
-        try {
+        return synchronize(() -> {
             FileOrDirectory dir = storageProvider.get(path);
 
             // If directory doesn't exist throw an exception.
@@ -221,19 +203,14 @@ public class DefaultModelStorage implements ModelStorage {
                     + "]");
 
             return ((Directory) dir).getFiles();
-        }
-        finally {
-            pathLock.unlock();
-        }
+        }, pathLock);
     }
 
     /** {@inheritDoc} */
     @Override public void remove(String path) {
         Lock pathLock = storageProvider.lock(path);
 
-        pathLock.lock();
-
-        try {
+        synchronize(() -> {
             FileOrDirectory file = storageProvider.get(path);
             storageProvider.remove(path);
 
@@ -241,10 +218,7 @@ public class DefaultModelStorage implements ModelStorage {
                 for (String s : ((Directory) file).getFiles())
                     remove(s);
             }
-        }
-        finally {
-            pathLock.unlock();
-        }
+        }, pathLock);
     }
 
     /** {@inheritDoc} */
@@ -275,5 +249,50 @@ public class DefaultModelStorage implements ModelStorage {
     private String getParent(String path) {
         Path parentPath = Paths.get(path).getParent();
         return parentPath == null ? null : parentPath.toString();
+    }
+
+    /**
+     * Wraps task execution into locks.
+     *
+     * @param task Runnable task.
+     * @param locks List of locks.
+     */
+    private void synchronize(Runnable task, Lock... locks) {
+        synchronize(() -> {
+            task.run();
+            return null;
+        }, 0, locks);
+    }
+
+    /**
+     * Wraps task execution into locks.
+     *
+     * @param task Callable task.
+     * @param locks List of locks.
+     * @param <T> Type of return value.
+     * @return Result of execution.
+     */
+    private <T> T synchronize(Supplier<T> task, Lock... locks) {
+        return synchronize(task, 0, locks);
+    }
+
+    /**
+     * Wraps task execution into locks. Util method.
+     * @param task Task to executed.
+     * @param lockIdx Current lock index.
+     * @param locks List of locks.
+     */
+    private <T> T synchronize(Supplier<T> task, int lockIdx, Lock... locks) {
+        if (lockIdx == locks.length)
+            return task.get();
+
+        Lock lock = locks[lockIdx];
+        lock.lock();
+        try {
+            return synchronize(task, lockIdx + 1, locks);
+        }
+        finally {
+            lock.unlock();
+        }
     }
 }
