@@ -40,7 +40,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
     /** Data size. */
-    protected static final int AMOUNT = 300;
+    protected static final int AMOUNT = 50;
 
     /** Data size. */
     protected static final String CACHE_NAME = "T";
