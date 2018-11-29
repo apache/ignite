@@ -356,9 +356,15 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
         Collection<String> futuresStrings = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
             @SuppressWarnings("unchecked")
             @Override public String apply(IgniteInternalFuture<?> f) {
-                return isMini(f) ? "[node=" + ((AbstractMiniFuture)f).node().id() +
-                    ", loc=" + ((AbstractMiniFuture)f).node().isLocal() +
-                    ", done=" + f.isDone() + "]" : "[loc=true, done=" + f.isDone() + "]";
+                if (isMini(f)) {
+                    AbstractMiniFuture mini = (AbstractMiniFuture)f;
+
+                    return "miniFuture([futId=" + mini.futureId() + ", node=" + mini.node().id() +
+                        ", loc=" + mini.node().isLocal() +
+                        ", done=" + f.isDone() + "])";
+                }
+                else
+                    return f.getClass().getSimpleName() + " [loc=true, done=" + f.isDone() + "]";
             }
         });
 
