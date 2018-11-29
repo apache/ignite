@@ -1940,7 +1940,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         IgniteInternalFuture<?> restartFut = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 try {
-                    while (!stop.get() && !err) {
+                    while (!stop.get() && !err && !Thread.currentThread().isInterrupted()) {
                         final int idx = rnd.nextInt(SRV_NODES);
 
                         log.info("Stop node: " + idx);
@@ -2044,7 +2044,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
                     log.error("Thread id: " + threadId);
 
-                    while (System.currentTimeMillis() < stopTime && !stop.get() && !err) {
+                    while (System.currentTimeMillis() < stopTime && !stop.get() && !err && !Thread.currentThread().isInterrupted()) {
                         Integer key = rnd.nextInt(PARTS);
 
                         Integer val = valCntr.incrementAndGet();
