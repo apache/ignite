@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.file.OpenOption;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -43,7 +44,6 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.processors.cache.persistence.file.AbstractFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -51,6 +51,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 
@@ -62,6 +63,9 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstractTest {
     /** */
     private static boolean disableWalDuringRebalancing = true;
+
+    /** */
+    private static int dfltCacheBackupCnt = 0;
 
     /** */
     private static final AtomicReference<CountDownLatch> supplyMessageLatch = new AtomicReference<>();
@@ -92,7 +96,8 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         cfg.setCacheConfiguration(
             new CacheConfiguration(DEFAULT_CACHE_NAME)
                 // Test checks internal state before and after rebalance, so it is configured to be triggered manually
-                .setRebalanceDelay(-1),
+                .setRebalanceDelay(-1)
+                .setBackups(dfltCacheBackupCnt),
 
             new CacheConfiguration(REPL_CACHE)
                 .setRebalanceDelay(-1)
@@ -184,6 +189,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         cleanPersistenceDir();
 
         disableWalDuringRebalancing = true;
+        dfltCacheBackupCnt = 0;
     }
 
     /**
@@ -197,7 +203,53 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testWalDisabledDuringRebalancing() throws Exception {
-        doTestSimple();
+        dfltCacheBackupCnt = 2;
+
+        Ignite ignite = startGrids(3);
+
+        ignite.cluster().active(true);
+
+        ignite.cluster().setBaselineTopology(3);
+
+        IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+        stopGrid(2);
+
+        awaitExchange((IgniteEx)ignite);
+
+        doLoad(cache, 4, 10_000);
+
+        IgniteEx newIgnite = startGrid(2);
+
+        awaitExchange(newIgnite);
+
+        CacheGroupContext grpCtx = newIgnite.cachex(DEFAULT_CACHE_NAME).context().group();
+
+        assertFalse(grpCtx.walEnabled());
+
+        long rebalanceStartedTs = System.currentTimeMillis();
+
+        for (Ignite g : G.allGrids())
+            g.cache(DEFAULT_CACHE_NAME).rebalance();
+
+        awaitPartitionMapExchange();
+
+        assertTrue(grpCtx.walEnabled());
+
+        long rebalanceFinishedTs = System.currentTimeMillis();
+
+        CheckpointHistory cpHist =
+            ((GridCacheDatabaseSharedManager)newIgnite.context().cache().context().database()).checkpointHistory();
+
+        assertNotNull(cpHist);
+
+        // Ensure there was a checkpoint on WAL re-activation.
+        assertEquals(
+            1,
+            cpHist.checkpoints()
+                .stream()
+                .filter(ts -> rebalanceStartedTs <= ts && ts <= rebalanceFinishedTs)
+                .count());
     }
 
     /**
@@ -206,13 +258,6 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
     public void testWalNotDisabledIfParameterSetToFalse() throws Exception {
         disableWalDuringRebalancing = false;
 
-        doTestSimple();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    private void doTestSimple() throws Exception {
         Ignite ignite = startGrids(3);
 
         ignite.cluster().active(true);
@@ -229,15 +274,13 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         final CheckpointHistory cpHist =
             ((GridCacheDatabaseSharedManager)newIgnite.context().cache().context().database()).checkpointHistory();
 
-        waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return !cpHist.checkpoints().isEmpty();
-            }
-        }, 10_000);
+        assertNotNull(cpHist);
+
+        waitForCondition(() -> !cpHist.checkpoints().isEmpty(), 10_000);
 
         U.sleep(10); // To ensure timestamp granularity.
 
-        long newIgniteStartedTimestamp = System.currentTimeMillis();
+        long newIgniteStartedTs = System.currentTimeMillis();
 
         newIgnite.cluster().setBaselineTopology(4);
 
@@ -245,11 +288,11 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         CacheGroupContext grpCtx = newIgnite.cachex(DEFAULT_CACHE_NAME).context().group();
 
-        assertEquals(!disableWalDuringRebalancing, grpCtx.walEnabled());
+        assertTrue(grpCtx.walEnabled()); // Regardless of disableWalDuringRebalancing: BLT has been changed.
 
         U.sleep(10); // To ensure timestamp granularity.
 
-        long rebalanceStartedTimestamp = System.currentTimeMillis();
+        long rebalanceStartedTs = System.currentTimeMillis();
 
         for (Ignite g : G.allGrids())
             g.cache(DEFAULT_CACHE_NAME).rebalance();
@@ -260,27 +303,21 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         U.sleep(10); // To ensure timestamp granularity.
 
-        long rebalanceFinishedTimestamp = System.currentTimeMillis();
-
         for (Integer k = 0; k < keysCnt; k++)
             assertEquals("k=" + k, k, cache.get(k));
 
         int checkpointsBeforeNodeStarted = 0;
         int checkpointsBeforeRebalance = 0;
-        int checkpointsAfterRebalance = 0;
 
         for (Long timestamp : cpHist.checkpoints()) {
-            if (timestamp < newIgniteStartedTimestamp)
+            if (timestamp < newIgniteStartedTs)
                 checkpointsBeforeNodeStarted++;
-            else if (timestamp >= newIgniteStartedTimestamp && timestamp < rebalanceStartedTimestamp)
+            else if (timestamp < rebalanceStartedTs)
                 checkpointsBeforeRebalance++;
-            else if (timestamp >= rebalanceStartedTimestamp && timestamp <= rebalanceFinishedTimestamp)
-                checkpointsAfterRebalance++;
         }
 
         assertEquals(1, checkpointsBeforeNodeStarted); // checkpoint on start
         assertEquals(0, checkpointsBeforeRebalance);
-        assertEquals(disableWalDuringRebalancing ? 1 : 0, checkpointsAfterRebalance); // checkpoint if WAL was re-activated
     }
 
     /**
@@ -529,6 +566,29 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      */
     private void awaitExchange(IgniteEx ig) throws IgniteCheckedException {
         ig.context().cache().context().exchange().lastTopologyFuture().get();
+    }
+
+    /**
+     * Put random values to cache in multiple threads until time interval given expires.
+     *
+     * @param cache Cache to modify.
+     * @param threadCnt Number ot threads to be used.
+     * @param duration Time interval in milliseconds.
+     * @throws Exception When something goes wrong.
+     */
+    private void doLoad(IgniteCache<Integer, Integer> cache, int threadCnt, long duration) throws Exception {
+        GridTestUtils.runMultiThreaded(() -> {
+            long stopTs = U.currentTimeMillis() + duration;
+
+            int keysCnt = getKeysCount();
+
+            ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+            do {
+                cache.put(rnd.nextInt(keysCnt), rnd.nextInt());
+            }
+            while (U.currentTimeMillis() < stopTs);
+        }, threadCnt, "load-cache");
     }
 
     /**
