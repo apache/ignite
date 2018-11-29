@@ -533,15 +533,15 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
      */
     public void testRestartWithTxTenNodesTwoBackups() throws Throwable {
         backups = 2;
-        nodeCnt = 16;
-        keyCnt = 16;
-        partitions = 29;
+        nodeCnt = 24;
+        keyCnt = 24;
+        partitions = 39;
         rebalancMode = ASYNC;
         evict = false;
 
         long duration = 90000;
 
-        checkRestartWithTx(duration, 8, 8, 3);
+        checkRestartWithTx(duration, 12, 12, 3);
     }
 
     /**
@@ -549,15 +549,15 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
      */
     public void testRestartWithTxPutAllTenNodesTwoBackups() throws Throwable {
         backups = 2;
-        nodeCnt = 16;
-        keyCnt = 16;
-        partitions = 29;
+        nodeCnt = 24;
+        keyCnt = 24;
+        partitions = 39;
         rebalancMode = ASYNC;
         evict = false;
 
         long duration = 90000;
 
-        checkRestartWithTxPutAll(duration, 8, 8);
+        checkRestartWithTxPutAll(duration, 12, 12);
     }
 
     /**
