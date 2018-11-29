@@ -27,7 +27,6 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -37,7 +36,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
-import org.apache.ignite.internal.processors.cache.GridCacheUtils.BackupPostProcessingClosure;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.CacheDistributedGetFutureAdapter;
@@ -48,12 +46,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.C1;
-import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -151,56 +144,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
     }
 
     /** {@inheritDoc} */
-    @Override public boolean trackable() {
-        return trackable;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void markNotTrackable() {
-        // Should not flip trackable flag from true to false since get future can be remapped.
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteUuid futureId() {
-        return futId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean onNodeLeft(UUID nodeId) {
-        boolean found = false;
-
-        for (IgniteInternalFuture<Map<K, V>> fut : futures())
-            if (isMini(fut)) {
-                MiniFuture f = (MiniFuture)fut;
-
-                if (f.node().id().equals(nodeId)) {
-                    found = true;
-
-                    f.onNodeLeft();
-                }
-            }
-
-        return found;
-    }
-
-    /**
-     * @param nodeId Sender.
-     * @param res Result.
-     */
-    @Override public void onResult(UUID nodeId, GridNearGetResponse res) {
-        for (IgniteInternalFuture<Map<K, V>> fut : futures())
-            if (isMini(fut)) {
-                MiniFuture f = (MiniFuture)fut;
-
-                if (f.futureId().equals(res.miniId())) {
-                    assert f.node().id().equals(nodeId);
-
-                    f.onResult(res);
-                }
-            }
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean onDone(Map<K, V> res, Throwable err) {
         if (super.onDone(res, err)) {
             // Don't forget to clean up.
@@ -216,19 +159,11 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
     }
 
     /**
-     * @param f Future.
-     * @return {@code True} if mini-future.
-     */
-    private boolean isMini(IgniteInternalFuture<?> f) {
-        return f.getClass().equals(MiniFuture.class);
-    }
-
-    /**
      * @param keys Keys.
      * @param mapped Mappings to check for duplicates.
      * @param topVer Topology version to map on.
      */
-    private void map(
+    @Override protected void map(
         Collection<KeyCacheObject> keys,
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mapped,
         AffinityTopologyVersion topVer
@@ -350,7 +285,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
 
                 MiniFuture miniFuture = new MiniFuture(n, mappedKeys, saved, topVer);
 
-                GridNearGetRequest req = miniFuture.createNearGetRequest(futId);
+                GridNearGetRequest req = miniFuture.createGetRequest(futId);
 
                 add(miniFuture); // Append new future.
 
@@ -360,7 +295,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 catch (IgniteCheckedException e) {
                     // Fail the whole thing.
                     if (e instanceof ClusterTopologyCheckedException)
-                        miniFuture.onNodeLeft();
+                        miniFuture.onNodeLeft((ClusterTopologyCheckedException)e);
                     else
                         miniFuture.onResult(e);
                 }
@@ -772,50 +707,16 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
-            @SuppressWarnings("unchecked")
-            @Override public String apply(IgniteInternalFuture<?> f) {
-                if (isMini(f)) {
-                    return "[node=" + ((MiniFuture)f).node().id() +
-                        ", loc=" + ((MiniFuture)f).node().isLocal() +
-                        ", done=" + f.isDone() + "]";
-                }
-                else
-                    return "[loc=true, done=" + f.isDone() + "]";
-            }
-        });
-
         return S.toString(GridNearGetFuture.class, this,
-            "innerFuts", futs,
             "super", super.toString());
     }
 
     /**
-     * Mini-future for get operations. Mini-futures are only waiting on a single
-     * node as opposed to multiple nodes.
+     * Mini-future for get operations. Mini-futures are only waiting on a single node as opposed to multiple nodes.
      */
-    private class MiniFuture extends GridFutureAdapter<Map<K, V>> {
-        /** */
-        private final IgniteUuid futId = IgniteUuid.randomUuid();
-
-        /** Node ID. */
-        private final ClusterNode node;
-
-        /** Keys. */
-        @GridToStringInclude
-        private final LinkedHashMap<KeyCacheObject, Boolean> keys;
-
+    private class MiniFuture extends AbstractMiniFuture {
         /** Saved entry versions. */
-        private Map<KeyCacheObject, GridNearCacheEntry> savedEntries;
-
-        /** Topology version on which this future was mapped. */
-        private final AffinityTopologyVersion topVer;
-
-        /** Post processing closure. */
-        private final BackupPostProcessingClosure postProcessingClos;
-
-        /** {@code True} if remapped after node left. */
-        private boolean remapped;
+        private final Map<KeyCacheObject, GridNearCacheEntry> savedEntries;
 
         /**
          * @param node Node.
@@ -829,64 +730,12 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             Map<KeyCacheObject, GridNearCacheEntry> savedEntries,
             AffinityTopologyVersion topVer
         ) {
-            this.node = node;
-            this.keys = keys;
+            super(node, keys, topVer);
             this.savedEntries = savedEntries;
-            this.topVer = topVer;
-            this.postProcessingClos = CU.createBackupPostProcessingClosure(
-                topVer, log, cctx, null, expiryPlc, readThrough, skipVals);
-        }
-
-        /**
-         * @return Future ID.
-         */
-        IgniteUuid futureId() {
-            return futId;
-        }
-
-        /**
-         * @return Node ID.
-         */
-        public ClusterNode node() {
-            return node;
-        }
-
-        /**
-         * @return Keys.
-         */
-        public Collection<KeyCacheObject> keys() {
-            return keys.keySet();
-        }
-
-        /**
-         * @param e Error.
-         */
-        void onResult(Throwable e) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to get future result [fut=" + this + ", err=" + e + ']');
-
-            // Fail.
-            onDone(e);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable Map<K, V> res, @Nullable Throwable err) {
-            if (super.onDone(res, err)) {
-                releaseEvictions(keys.keySet(), savedEntries, topVer);
-
-                return true;
-            }
-            else
-                return false;
-        }
-
-        /**
-         * Factory methond for generate request associated with this miniFuture.
-         *
-         * @param rootFutId Root future id.
-         * @return Near get request.
-         */
-        GridNearGetRequest createNearGetRequest(IgniteUuid rootFutId) {
+        @Override protected GridNearGetRequest createGetRequest(IgniteUuid rootFutId){
             return new GridNearGetRequest(
                 cctx.cacheId(),
                 rootFutId,
@@ -908,130 +757,20 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             ); // TODO IGNITE-7371
         }
 
-        /**
-         * Callback on node left event.
-         */
-        synchronized void onNodeLeft() {
-            if (remapped)
-                return;
-
-            remapped = true;
-
-            if (log.isDebugEnabled())
-                log.debug("Remote node left grid while sending or waiting for reply (will retry): " + this);
-
-            // Try getting value from alive nodes.
-            if (!canRemap) {
-                // Remap
-                map(keys.keySet(), F.t(node, keys), topVer);
-
-                onDone(Collections.<K, V>emptyMap());
-            }
-            else {
-                AffinityTopologyVersion updTopVer =
-                    new AffinityTopologyVersion(Math.max(topVer.topologyVersion() + 1, cctx.discovery().topologyVersion()));
-
-                cctx.shared().exchange().affinityReadyFuture(updTopVer).listen(f -> {
-                    try {
-                        // Remap.
-                        map(keys.keySet(), F.t(node, keys), f.get());
-
-                        onDone(Collections.<K, V>emptyMap());
-
-                    }
-                    catch (IgniteCheckedException e) {
-                        GridNearGetFuture.this.onDone(e);
-                    }
-                });
-            }
+        /** {@inheritDoc} */
+        @Override protected Map<K, V> createResultMap(Collection<GridCacheEntryInfo> entries) {
+            return loadEntries(node.id(), keys.keySet(), entries, savedEntries, topVer);
         }
 
-        /**
-         * @param res Result callback.
-         */
-        void onResult(final GridNearGetResponse res) {
-            final Collection<Integer> invalidParts = res.invalidPartitions();
+        /** {@inheritDoc} */
+        @Override public boolean onDone(@Nullable Map<K, V> res, @Nullable Throwable err) {
+            if (super.onDone(res, err)) {
+                releaseEvictions(keys.keySet(), savedEntries, topVer);
 
-            // If error happened on remote node, fail the whole future.
-            if (res.error() != null) {
-                onDone(res.error());
-
-                return;
-            }
-
-            // Remap invalid partitions.
-            if (!F.isEmpty(invalidParts)) {
-                AffinityTopologyVersion rmtTopVer = res.topologyVersion();
-
-                // Add node as invalid for some partitions from response.
-                for (Integer part : invalidParts)
-                    addNodeAsInvalid(node, part, topVer);
-
-                assert rmtTopVer.topologyVersion() != 0;
-
-                if (log.isDebugEnabled())
-                    log.debug("Remapping mini get future [invalidParts=" + invalidParts + ", fut=" + this + ']');
-
-                if (!canRemap) {
-                    map(F.view(keys.keySet(), new P1<KeyCacheObject>() {
-                        @Override public boolean apply(KeyCacheObject key) {
-                            return invalidParts.contains(cctx.affinity().partition(key));
-                        }
-                    }), F.t(node, keys), topVer);
-
-                    postProcessResultAndDone(res);
-
-                    return;
-                }
-
-                // Need to wait for next topology version to remap.
-                IgniteInternalFuture<AffinityTopologyVersion> topFut = cctx.shared().exchange().affinityReadyFuture(rmtTopVer);
-
-                topFut.listen(new CIX1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                    @Override public void applyx(
-                        IgniteInternalFuture<AffinityTopologyVersion> fut
-                    ) throws IgniteCheckedException {
-                        AffinityTopologyVersion readyTopVer = fut.get();
-
-                        // This will append new futures to compound list.
-                        map(F.view(keys.keySet(), new P1<KeyCacheObject>() {
-                            @Override public boolean apply(KeyCacheObject key) {
-                                return invalidParts.contains(cctx.affinity().partition(key));
-                            }
-                        }), F.t(node, keys), readyTopVer);
-
-                        postProcessResultAndDone(res);
-                    }
-                });
+                return true;
             }
             else
-                postProcessResultAndDone(res);
-
-        }
-
-        /**
-         * Post processes result and done future.
-         *
-         * @param res Response.
-         */
-        private void postProcessResultAndDone(final GridNearGetResponse res){
-            try {
-                postProcessResult(res);
-
-                // It is critical to call onDone after adding futures to compound list.
-                onDone(loadEntries(node.id(), keys.keySet(), res.entries(), savedEntries, topVer));
-            }
-            catch (Exception ex) {
-                onDone(ex);
-            }
-        }
-
-        /**
-         * @param res Response.
-         */
-        private void postProcessResult(final GridNearGetResponse res) {
-            if (postProcessingClos != null)
-                postProcessingClos.apply(res.entries());
+                return false;
         }
 
         /** {@inheritDoc} */
