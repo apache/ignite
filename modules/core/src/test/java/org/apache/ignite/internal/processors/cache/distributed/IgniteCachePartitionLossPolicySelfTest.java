@@ -816,7 +816,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
         IgniteCache cache = node.cache(DEFAULT_CACHE_NAME);
 
         String msg = loc ? "forced local query" : "partition has been lost";
-        GridTestUtils.assertThrows(null, () -> {
+        GridTestUtils.assertThrows(log, () -> {
             List res = null;
             for (int partition : parts) {
                 ScanQuery qry = new ScanQuery();
