@@ -944,6 +944,15 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
             if (cur == null || !cur.equals(parts))
                 changed = true;
 
+            if (lostParts != null) {
+                for (Integer lostPart : lostParts) {
+                    GridDhtPartitionState state0 = parts.get(lostPart);
+
+                    if (state0 != null && state0.active())
+                        parts.put(lostPart, LOST);
+                }
+            }
+
             node2part.put(parts.nodeId(), parts);
 
             // Add new mappings.
@@ -1242,17 +1251,6 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
                         + ", nodeId=" + nodeId
                         + ", partsFull=" + S.compact(partsToRebalance)
                         + ", partsHistorical=" + S.compact(historical) + "]");
-                }
-            }
-
-            if (lostParts != null) {
-                for (Map.Entry<UUID, GridDhtPartitionMap> e : node2part.entrySet()) {
-                    for (Integer part : lostParts) {
-                        GridDhtPartitionState state = e.getValue().get(part);
-
-                        if (state != null && state.active())
-                            e.getValue().put(part, LOST);
-                    }
                 }
             }
 

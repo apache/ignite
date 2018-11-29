@@ -1807,6 +1807,15 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 if (cur == null || !cur.equals(parts))
                     changed = true;
 
+                if (lostParts != null) {
+                    for (Integer lostPart : lostParts) {
+                        GridDhtPartitionState state0 = parts.get(lostPart);
+
+                        if (state0 != null && state0.active())
+                            parts.put(lostPart, LOST);
+                    }
+                }
+
                 node2part.put(parts.nodeId(), parts);
 
                 // During exchange diff is calculated after all messages are received and affinity initialized.
@@ -2257,20 +2266,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             + ", nodeId=" + nodeId
                             + ", partsFull=" + S.compact(rebalancedParts)
                             + ", partsHistorical=" + S.compact(historical) + "]");
-                    }
-                }
-
-                if (lostParts != null) {
-                    for (Map.Entry<UUID, GridDhtPartitionMap> e : node2part.entrySet()) {
-                        if (e.getKey().equals(ctx.localNodeId()))
-                            continue;
-
-                        for (Integer part : lostParts) {
-                            GridDhtPartitionState state = e.getValue().get(part);
-
-                            if (state != null && state.active())
-                                e.getValue().put(part, LOST);
-                        }
                     }
                 }
 

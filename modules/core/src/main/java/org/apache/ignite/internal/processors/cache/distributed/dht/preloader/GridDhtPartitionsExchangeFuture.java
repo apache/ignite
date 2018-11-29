@@ -3255,6 +3255,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             if (firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
                 assert firstDiscoEvt instanceof DiscoveryCustomEvent;
+                assert !events().hasServerJoin() && !events().hasServerLeft();
 
                 if (activateCluster() || changedBaseline())
                     assignPartitionsStates();
@@ -3276,11 +3277,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     assignPartitionsStates();
             }
             else {
-                if (exchCtx.events().hasServerJoin())
-                    assignPartitionsStates();
-
                 if (exchCtx.events().hasServerLeft())
                     detectLostPartitions(resTopVer, true);
+
+                if (exchCtx.events().hasServerJoin())
+                    assignPartitionsStates();
             }
 
             // Recalculate new affinity based on partitions availability.

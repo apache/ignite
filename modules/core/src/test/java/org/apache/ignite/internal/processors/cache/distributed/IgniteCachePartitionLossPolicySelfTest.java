@@ -626,7 +626,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
         }
 
         // Make sure cache did not really start on coordinator,
-        if (!clientCacheOnCrd)
+        if (!clientCacheOnCrd && topChanger.aliveNodes.contains(0))
             assertNull(((IgniteEx)ignite(0)).context().cache().cacheGroup(CU.cacheId(CACHE_EXCLUDE_ON_CRD)));
 
         // Start new nodes after lost partitions reset.

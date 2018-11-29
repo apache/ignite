@@ -647,6 +647,9 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                         long start = 0;
 
                         for (int i = 0; ; i++) {
+                            if (c.lostPartitions().contains(p))
+                                break;
+
                             boolean match = false;
 
                             GridCachePartitionExchangeManager<?, ?> exchMgr = dht.context().shared().exchange();
@@ -701,6 +704,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                             ", affNodes=" + F.nodeIds(affNodes) +
                                             ", owners=" + F.nodeIds(owners) +
                                             ", topFut=" + topFut +
+                                            ", lostParts=" + c.lostPartitions() +
+                                            ", locState=" + (loc != null ? loc.state() : null) +
                                             ", locNode=" + g.cluster().localNode() + ']');
                                 }
                                 else
