@@ -502,7 +502,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     /**
      * @return Client alive check time.
      */
-    public long getAliveCheckTime() {
+    public long clientAliveTime() {
         return aliveCheckTime;
     }
 
