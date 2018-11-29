@@ -87,6 +87,9 @@
     <!--
         Uncomment to enable Exchange, Rebalance and Partitions workflow debugging.
     -->
+    <category name="org.apache.ignite.spi.discovery.tcp">
+        <level value="DEBUG"/>
+    </category>
     <!--
          <category name="org.apache.ignite.internal.processors.cache.distributed.dht.preloader">
              <level value="DEBUG"/>
