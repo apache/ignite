@@ -325,8 +325,6 @@ public class IgniteCacheTestSuite extends TestSuite {
         GridTestUtils.addTestIfNeeded(suite, IgniteCommunicationBalanceMultipleConnectionsTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCommunicationSslBalanceTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteIoTestMessagesTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteDiagnosticMessagesTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteDiagnosticMessagesMultipleConnectionsTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, IgniteIncompleteCacheObjectSelfTest.class, ignoredTests);
 
