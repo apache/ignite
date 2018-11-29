@@ -2755,16 +2755,7 @@ public class ZookeeperDiscoveryImpl {
     private boolean processBulkJoin(ZkDiscoveryEventsData evtsData, ZkDiscoveryNodeJoinEventData evtData)
         throws Exception
     {
-        if (lastLsnrFut != null) {
-            try {
-                lastLsnrFut.get();
-            }
-            catch (IgniteException ignore) {
-                // No-op.
-            }
-
-            lastLsnrFut = null;
-        }
+        waitForLastListenerFuture();
 
         boolean evtProcessed = false;
 
@@ -4000,6 +3991,22 @@ public class ZookeeperDiscoveryImpl {
         }
 
         return out.toByteArray();
+    }
+
+    /**
+     * Wait for all the listeners from previous discovery message to be completed.
+     */
+    private void waitForLastListenerFuture() {
+        if (lastLsnrFut != null) {
+            try {
+                lastLsnrFut.get();
+            }
+            catch (IgniteException ignore) {
+                // No-op.
+            }
+
+            lastLsnrFut = null;
+        }
     }
 
     /**

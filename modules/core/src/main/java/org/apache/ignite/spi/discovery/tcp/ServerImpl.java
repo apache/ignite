@@ -2160,6 +2160,22 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
+     * Wait for all the listeners from previous discovery message to be completed.
+     */
+    private void waitForLastListenerFuture() {
+        if (lastLsnrFut != null) {
+            try {
+                lastLsnrFut.get();
+            }
+            catch (IgniteException ignore) {
+                // No-op.
+            }
+
+            lastLsnrFut = null;
+        }
+    }
+
+    /**
      * Discovery messages history used for client reconnect.
      */
     private class EnsuredMessageHistory {
@@ -4163,16 +4179,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void processNodeAddedMessage(TcpDiscoveryNodeAddedMessage msg) {
             assert msg != null;
 
-            if (lastLsnrFut != null) {
-                try {
-                    lastLsnrFut.get();
-                }
-                catch (IgniteException ignore) {
-                    // No-op.
-                }
-
-                lastLsnrFut = null;
-            }
+            waitForLastListenerFuture();
 
             TcpDiscoveryNode node = msg.node();
 
