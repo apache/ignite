@@ -40,6 +40,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_COLLECTION_LIMIT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_MAX_LENGTH;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.identity;
 
 /**
  * Tests for {@link GridToStringBuilder}.
@@ -517,6 +518,39 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     *
+     */
+    public void testHierarchy() {
+        Wrapper w = new Wrapper();
+        Parent p = w.p;
+        String hash = identity(p);
+
+        checkHierarchy("Wrapper [p=Child [b=0, pb=Parent[] [null], super=Parent [a=0, pa=Parent[] [null]]]]", w);
+
+        p.pa[0] = p;
+
+        checkHierarchy("Wrapper [p=Child" + hash +
+            " [b=0, pb=Parent[] [null], super=Parent [a=0, pa=Parent[] [Child" + hash + "]]]]", w);
+
+        ((Child)p).pb[0] = p;
+
+        checkHierarchy("Wrapper [p=Child" + hash + " [b=0, pb=Parent[] [Child" + hash
+            + "], super=Parent [a=0, pa=Parent[] [Child" + hash + "]]]]", w);
+    }
+
+    /**
+     * @param exp Expected.
+     * @param w Wrapper.
+     */
+    private void checkHierarchy(String exp, Wrapper w) {
+        String wS = w.toString();
+
+        info(wS);
+
+        assertEquals(exp, wS);
+    }
+
+    /**
      * Test class.
      */
     private static class TestClass1 {
@@ -649,6 +683,54 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
          */
         TestClass2(String str) {
             this.str = str;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class Parent {
+        /** */
+        private int a;
+
+        /** */
+        @GridToStringInclude
+        private Parent pa[] = new Parent[1];
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(Parent.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class Child extends Parent {
+        /** */
+        private int b;
+
+        /** */
+        @GridToStringInclude
+        private Parent pb[] = new Parent[1];
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(Child.class, this, super.toString());
+        }
+    }
+
+    /**
+     *
+     */
+    private static class Wrapper {
+        /** */
+        @GridToStringInclude
+        Parent p = new Child();
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(Wrapper.class, this);
         }
     }
 }
