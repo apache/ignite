@@ -35,6 +35,7 @@ import static org.junit.Assert.assertArrayEquals;
 /**
  * Tests for byte array values in distributed caches.
  */
+//TODO IGNITE-10366: Remove these tests from other Mvcc cache suites.
 public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extends
     GridCacheAbstractByteArrayValuesSelfTest {
     /** */

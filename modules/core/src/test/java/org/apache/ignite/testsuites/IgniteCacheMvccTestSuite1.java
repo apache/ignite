@@ -90,6 +90,7 @@ import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCa
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheAtomicPartitionedOnlyBinaryDataStreamerMultithreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheAtomicPartitionedOnlyBinaryMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheAtomicPartitionedOnlyBinaryMultithreadedSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinariesNearPartitionedByteArrayValuesSelfTest;
 import org.apache.ignite.internal.processors.cache.context.IgniteCacheAtomicExecutionContextTest;
 import org.apache.ignite.internal.processors.cache.context.IgniteCacheContinuousExecutionContextTest;
 import org.apache.ignite.internal.processors.cache.context.IgniteCacheIsolatedExecutionContextTest;
@@ -139,6 +140,7 @@ public class IgniteCacheMvccTestSuite1 extends TestSuite {
         ignoredTests.add(GridCacheStopSelfTest.class);
         ignoredTests.add(IgniteDiagnosticMessagesTest.class);
         ignoredTests.add(IgniteDiagnosticMessagesMultipleConnectionsTest.class);
+        ignoredTests.add(GridCacheBinariesNearPartitionedByteArrayValuesSelfTest.class);
 
         // Atomic caches.
         ignoredTests.add(IgniteCacheEntryListenerAtomicTest.class);
