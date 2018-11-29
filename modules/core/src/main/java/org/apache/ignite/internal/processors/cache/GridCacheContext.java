@@ -2259,12 +2259,18 @@ public class GridCacheContext<K, V> implements Externalizable {
 
                 return null;
             }
-            else
-                return affNodes.get(0);
+            else {
+                ClusterNode first = affNodes.get(0);
+
+                return !invalidNodes.contains(first) ? first : null;
+            }
         }
 
-        if (!readFromBackup)
-            return affNodes.get(0);
+        if (!readFromBackup){
+            ClusterNode first = affNodes.get(0);
+
+            return !invalidNodes.contains(first) ? first : null;
+        }
 
         assert locMacs != null;
 

@@ -788,15 +788,12 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         if (topVer.equals(this.topVer))
             return true;
 
-        // If topology changed reset collection of invalid nodes.
-        synchronized (this) {
-            invalidNodes = Collections.emptySet();
-        }
-
         if (REMAP_CNT_UPD.incrementAndGet(this) > MAX_REMAP_CNT) {
+            ClusterNode node0 = node;
+
             onDone(new ClusterTopologyCheckedException("Failed to remap key to a new node after " +
                 MAX_REMAP_CNT + " attempts (key got remapped to the same node) [key=" + key + ", node=" +
-                U.toShortString(node) + ", invalidNodes=" + invalidNodes + ']'));
+                (node0 != null ? U.toShortString(node0) : node0) + ", invalidNodes=" + invalidNodes + ']'));
 
             return false;
         }
@@ -845,8 +842,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         if (!processResponse(nodeId))
             return false;
 
-        addNodeAsInvalid(cctx.node(nodeId));
-
         if (canRemap) {
             long maxTopVer = Math.max(topVer.topologyVersion() + 1, cctx.discovery().topologyVersion());
 
@@ -865,7 +860,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         IgniteInternalFuture<AffinityTopologyVersion> awaitTopologyVersionFuture =
             cctx.shared().exchange().affinityReadyFuture(topVer);
 
-        awaitTopologyVersionFuture.listen(f->{
+        awaitTopologyVersionFuture.listen(f -> {
             try {
                 remap(f.get());
             }
@@ -881,6 +876,11 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     private void remap(final AffinityTopologyVersion topVer) {
         cctx.closures().runLocalSafe(new Runnable() {
             @Override public void run() {
+                // If topology changed reset collection of invalid nodes.
+                synchronized (this) {
+                    invalidNodes = Collections.emptySet();
+                }
+
                 map(topVer);
             }
         });
@@ -933,6 +933,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridPartitionedSingleGetFuture.class, this);
+        return S.toString(GridPartitionedSingleGetFuture.class, this, "super", super.toString());
     }
 }
