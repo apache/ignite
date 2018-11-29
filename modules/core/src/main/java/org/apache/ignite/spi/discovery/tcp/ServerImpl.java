@@ -2857,6 +2857,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override protected void noMessageLoop() {
+            log.info("noMessageLoop : " + (locNode == null));
             if (locNode == null)
                 return;
 
@@ -5664,6 +5665,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void sendMetricsUpdateMessage() {
             long elapsed = (lastTimeMetricsUpdateMsgSent + spi.metricsUpdateFreq) - U.currentTimeMillis();
 
+            log.info("sendMetricsUpdateMessage : " + elapsed + " : " + isLocalNodeCoordinator());
+
             if (elapsed > 0 || !isLocalNodeCoordinator())
                 return;
 
@@ -5687,6 +5690,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             long updateTime = Math.max(lastTimeStatusMsgSent, lastRingMsgTime);
 
             long elapsed = (updateTime + metricsCheckFreq) - U.currentTimeMillis();
+
+            log.info("checkMetricsReceiving : " + elapsed);
 
             if (elapsed > 0)
                 return;
@@ -5719,6 +5724,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             long elapsed = (lastTimeConnCheckMsgSent + CON_CHECK_INTERVAL) - U.currentTimeMillis();
+
+            log.info("checkConnection : " + elapsed);
 
             if (elapsed > 0)
                 return;
@@ -6826,7 +6833,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param log Logger.
          */
         private ClientMessageWorker(Socket sock, UUID clientNodeId, IgniteLogger log) {
-            super("tcp-disco-client-message-worker", log, Math.max(spi.metricsUpdateFreq, 10), null);
+            super("tcp-disco-client-message-worker", log, Math.max(spi.metricsUpdateFreq, 100), null);
 
             this.sock = sock;
             this.clientNodeId = clientNodeId;
