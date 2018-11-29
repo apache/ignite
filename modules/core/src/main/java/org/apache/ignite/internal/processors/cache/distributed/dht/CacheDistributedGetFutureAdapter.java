@@ -338,9 +338,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
      * @param f Future.
      * @return {@code True} if mini-future.
      */
-    protected boolean isMini(IgniteInternalFuture<?> f) {
-        return f.getClass().equals(AbstractMiniFuture.class);
-    }
+    protected abstract boolean isMini(IgniteInternalFuture<?> f);
 
     /**
      * @param keys Collection of mapping keys.
