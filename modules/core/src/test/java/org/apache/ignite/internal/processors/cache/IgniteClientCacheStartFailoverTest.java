@@ -56,6 +56,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
@@ -82,6 +83,13 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        client = false;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
@@ -100,6 +108,13 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
      */
     public void testClientStartCoordinatorFailsTx() throws Exception {
         clientStartCoordinatorFails(TRANSACTIONAL);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientStartCoordinatorFailsMvccTx() throws Exception {
+        clientStartCoordinatorFails(TRANSACTIONAL_SNAPSHOT);
     }
 
     /**
@@ -162,6 +177,16 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
     public void testClientStartLastServerFailsTx() throws Exception {
         clientStartLastServerFails(TRANSACTIONAL);
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientStartLastServerFailsMvccTx() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10262");
+
+        clientStartLastServerFails(TRANSACTIONAL_SNAPSHOT);
+    }
+
 
     /**
      * @param atomicityMode Cache atomicity mode.
@@ -546,6 +571,18 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
 
             cache.putAll(map);
         }
+
+        //TODO: uncomment TRANSACTIONAL_SNAPSHOT cache creation when IGNITE-9470 will be fixed.
+       /* for (int i = 0; i < 3; i++) {
+            CacheConfiguration<Object, Object> ccfg = cacheConfiguration("mvcc-" + i, TRANSACTIONAL_SNAPSHOT, i);
+
+            IgniteCache<Object, Object> cache = node.createCache(ccfg);
+
+            cacheNames.add(ccfg.getName());
+
+            cache.putAll(map);
+        }*/
+
 
         return cacheNames;
     }
