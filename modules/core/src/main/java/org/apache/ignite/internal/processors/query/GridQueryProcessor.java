@@ -65,6 +65,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
@@ -1762,7 +1763,19 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (!cctx.isQueryEnabled())
             return null;
 
-        // TODO: Exit if cache is empty. How?
+        // No need to rebuild is cache has no data.
+        boolean empty = true;
+
+        for (IgniteCacheOffheapManager.CacheDataStore store : cctx.offheap().cacheDataStores()) {
+            if (!store.isEmpty()) {
+                empty = false;
+
+                break;
+            }
+        }
+
+        if (empty)
+            return null;
 
         if (!busyLock.enterBusy())
             return new GridFinishedFuture<>(new NodeStoppingException("Failed to rebuild indexes from hash " +
