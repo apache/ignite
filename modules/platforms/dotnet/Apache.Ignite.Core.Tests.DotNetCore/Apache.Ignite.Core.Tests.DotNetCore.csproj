@@ -42,6 +42,7 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\ApiParity\QueryEntityConfigurationParityTest.cs" Link="ApiParity\QueryEntityConfigurationParityTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\ApiParity\ServicesParityTest.cs" Link="ApiParity\ServicesParityTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\ApiParity\StreamerParityTest.cs" Link="ApiParity\StreamerParityTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\ApiParity\TcpCommunicationSpiParityTest.cs" Link="ApiParity\TcpCommunicationSpiParityTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\ApiParity\TransactionMetricsParityTest.cs" Link="ApiParity\TransactionMetricsParityTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\ApiParity\TransactionsParityTest.cs" Link="ApiParity\TransactionsParityTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\AssertExtensions.cs" Link="Common\AssertExtensions.cs" />
