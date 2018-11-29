@@ -173,6 +173,20 @@ mixin query-settings
                 tipOpts: { placement: 'top' }
             })
 
+mixin query-actions
+    button.btn-ignite.btn-ignite--primary(ng-disabled='!queryAvailable(paragraph)' ng-click='execute(paragraph)')
+        span.icon-left.fa.fa-fw.fa-play(ng-hide='paragraph.executionInProgress(false)')
+        span.icon-left.fa.fa-fw.fa-refresh.fa-spin(ng-show='paragraph.executionInProgress(false)')
+        | Execute
+
+    button.btn-ignite.btn-ignite--primary(ng-disabled='!queryAvailable(paragraph)' ng-click='execute(paragraph, true)')
+        span.icon-left.fa.fa-fw.fa-play(ng-hide='paragraph.executionInProgress(true)')
+        span.icon-left.fa.fa-fw.fa-refresh.fa-spin(ng-show='paragraph.executionInProgress(true)')
+        | Execute on selected node
+
+    button.btn-ignite.btn-ignite--secondary(ng-disabled='!queryAvailable(paragraph)' ng-click='explain(paragraph)' data-placement='bottom' bs-tooltip='' data-title='{{queryTooltip(paragraph, "explain query")}}')
+        | Explain
+
 mixin table-result-heading-query
     .total.row
         .col-xs-7
@@ -316,6 +330,16 @@ mixin paragraph-scan
 
         .col-sm-12.sql-controls
             div
+                button.btn-ignite.btn-ignite--primary(ng-disabled='!scanAvailable(paragraph)' ng-click='scan(paragraph)')
+                    span.icon-left.fa.fa-fw.fa-play(ng-hide='paragraph.checkScanInProgress(false)')
+                    span.icon-left.fa.fa-fw.fa-refresh.fa-spin(ng-show='paragraph.checkScanInProgress(false)')
+                    | Scan
+
+                button.btn-ignite.btn-ignite--primary(ng-disabled='!scanAvailable(paragraph)' ng-click='scan(paragraph, true)')
+                    span.icon-left.fa.fa-fw.fa-play(ng-hide='paragraph.checkScanInProgress(true)')
+                    span.icon-left.fa.fa-fw.fa-refresh.fa-spin(ng-show='paragraph.checkScanInProgress(true)')
+                    | Scan on selected node
+            div
 
         .col-sm-12.sql-result(ng-if='paragraph.queryExecuted() && !paragraph.scanningInProgress' ng-switch='paragraph.resultType()')
             .error(ng-switch-when='error') Error: {{paragraph.error.message}}
@@ -377,6 +401,9 @@ mixin paragraph-query
                 .empty-caches(ng-show='caches.length == 0')
                     label No caches
         .col-sm-12.sql-controls
+            div
+                +query-actions
+
             +query-settings
         .col-sm-12.sql-result(ng-if='paragraph.queryExecuted()' ng-switch='paragraph.resultType()')
             .error(ng-switch-when='error')
