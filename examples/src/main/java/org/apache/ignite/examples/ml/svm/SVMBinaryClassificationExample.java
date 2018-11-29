@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ml.svm.binary;
+package org.apache.ignite.examples.ml.svm;
 
 import java.io.FileNotFoundException;
 import java.util.Arrays;
