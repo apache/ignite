@@ -741,11 +741,11 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         }
 
         /** {@inheritDoc} */
-        @Override protected GridNearGetRequest createGetRequest(IgniteUuid rootFutId){
+        @Override protected GridNearGetRequest createGetRequest0(IgniteUuid rootFutId, IgniteUuid futId) {
             return new GridNearGetRequest(
                 cctx.cacheId(),
                 rootFutId,
-                futureId(),
+                futId,
                 ver,
                 keys,
                 readThrough,

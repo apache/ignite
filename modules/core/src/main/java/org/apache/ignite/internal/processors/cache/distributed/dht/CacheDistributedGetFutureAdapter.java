@@ -441,10 +441,22 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
          * @param rootFutId Root future id.
          * @return Near get request.
          */
-        protected abstract GridNearGetRequest createGetRequest(IgniteUuid rootFutId);
+        public GridNearGetRequest createGetRequest(IgniteUuid rootFutId) {
+            return createGetRequest0(rootFutId, futureId());
+        }
 
+        /**
+         * @param rootFutId Root future id.
+         * @param futId Mini future id.
+         * @return Near get request.
+         */
+        protected abstract GridNearGetRequest createGetRequest0(IgniteUuid rootFutId, IgniteUuid futId);
 
-        protected abstract Map<K, V> createResultMap(Collection<GridCacheEntryInfo> iennfos);
+        /**
+         * @param entries Collection of entries.
+         * @return Map with key value results.
+         */
+        protected abstract Map<K, V> createResultMap(Collection<GridCacheEntryInfo> entries);
 
         /**
          * @param e Error.
