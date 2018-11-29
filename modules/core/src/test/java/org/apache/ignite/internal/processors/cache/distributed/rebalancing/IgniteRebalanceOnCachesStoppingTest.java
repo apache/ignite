@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
 
+import java.util.Arrays;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
@@ -29,9 +31,11 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
+import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -43,21 +47,31 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.util.Arrays;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicReference;
 
-public class IgniteDemanderOnDeactivationTest extends GridCommonAbstractTest {
+/**
+ *
+ */
+public class IgniteRebalanceOnCachesStoppingTest extends GridCommonAbstractTest {
     /** */
-    private static final String CACHE_NAME = "cache";
-
-    /** */
-    private static final String CACHE_NAME_1 = "cache_1";
+    private static final String CACHE_1 = "cache_1";
 
     /** */
-    private static final String CACHE_GROUP = "group";
+    private static final String CACHE_2 = "cache_2";
 
-    private static final AtomicReference<CountDownLatch> SUPPLY_MESSAGE_LATCH = new AtomicReference<>();
+    /** */
+    private static final String CACHE_3 = "cache_3";
+
+    /** */
+    private static final String CACHE_4 = "cache_4";
+
+    /** */
+    private static final String GROUP_1 = "group_1";
+
+    /** */
+    private static final String GROUP_2 = "group_2";
+
+    /** */
+    private static final int REBALANCE_BATCH_SIZE = 1024;
 
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -67,17 +81,11 @@ public class IgniteDemanderOnDeactivationTest extends GridCommonAbstractTest {
         super.beforeTest();
 
         cleanPersistenceDir();
-
-        SUPPLY_MESSAGE_LATCH.set(new CountDownLatch(1));
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
-
-        SUPPLY_MESSAGE_LATCH.get().countDown();
-
-        SUPPLY_MESSAGE_LATCH.set(null);
 
         stopAllGrids();
 
@@ -104,8 +112,7 @@ public class IgniteDemanderOnDeactivationTest extends GridCommonAbstractTest {
                         .setDefaultDataRegionConfiguration(
                                 new DataRegionConfiguration()
                                         .setPersistenceEnabled(true)
-                                        .setMaxSize(100L * 1024 * 1024))
-        );
+                                        .setMaxSize(100L * 1024 * 1024)));
 
         return cfg;
     }
@@ -113,50 +120,102 @@ public class IgniteDemanderOnDeactivationTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void test() throws Exception {
+    public void testStopCachesOnDeactivation() throws Exception {
+        performTest(ig -> {
+            ((IgniteEx) ig).context().state().changeGlobalState(false, ig.cluster().currentBaselineTopology(), false);
+
+            return null;
+        });
+    }
+
+    /**
+     *
+     */
+    public void testDestroySpecificCachesInDifferentCacheGroups() throws Exception {
+        performTest(ig -> {
+            ((IgniteKernal)ig).destroyCachesAsync(Arrays.asList(CACHE_1, CACHE_3), true);
+
+            return null;
+        });
+    }
+
+    /**
+     *
+     */
+    public void testDestroySpecificCacheAndCacheGroup() throws Exception {
+        performTest(ig -> {
+            ((IgniteKernal)ig).destroyCachesAsync(Arrays.asList(CACHE_1, CACHE_3, CACHE_4), true);
+
+            return null;
+        });
+    }
+
+    /**
+     * @param consumer Action that trigger stop or destroy of caches.
+     */
+    private void performTest(IgniteThrowableConsumer<Ignite, Void> consumer) throws Exception {
         IgniteEx ig0 = (IgniteEx)startGrids(2);
 
         ig0.cluster().active(true);
 
-        ig0.getOrCreateCaches(Arrays.asList(
-                new CacheConfiguration<>(CACHE_NAME)
-                        .setCacheMode(CacheMode.REPLICATED)
-                        .setGroupName(CACHE_GROUP),
-                new CacheConfiguration<>(CACHE_NAME_1)
-                        .setCacheMode(CacheMode.REPLICATED)
-                        .setGroupName(CACHE_GROUP)
-        ));
-
         stopGrid(1);
 
-        try (IgniteDataStreamer<Object, Object> streamer = ig0.dataStreamer(CACHE_NAME)) {
-            for (int i = 0; i < 3_000; i++)
-                streamer.addData(i, new byte[5 * 1000]);
-
-            streamer.flush();
-        }
-
-        try (IgniteDataStreamer<Object, Object> streamer = ig0.dataStreamer(CACHE_NAME_1)) {
-            for (int i = 0; i < 3_000; i++)
-                streamer.addData(i, new byte[5 * 1000]);
-
-            streamer.flush();
-        }
-
+        loadData(ig0);
 
         startGrid(1);
 
-        ig0.context().state().changeGlobalState(false, ig0.cluster().currentBaselineTopology(), false);
+        consumer.accept(ig0);
 
-        SUPPLY_MESSAGE_LATCH.get().countDown();
-
-        U.sleep(3000);
+        U.sleep(5000);
 
         assertNull(grid(1).context().failure().failureContext());
     }
 
+    /**
+     * @param ig Ig.
+     */
+    private void loadData(Ignite ig) {
+        ig.getOrCreateCaches(Arrays.asList(
+                new CacheConfiguration<>(CACHE_1)
+                        .setCacheMode(CacheMode.REPLICATED)
+                        .setRebalanceBatchSize(REBALANCE_BATCH_SIZE)
+                        .setGroupName(GROUP_1),
+                new CacheConfiguration<>(CACHE_2)
+                        .setCacheMode(CacheMode.REPLICATED)
+                        .setRebalanceBatchSize(REBALANCE_BATCH_SIZE)
+                        .setGroupName(GROUP_1),
+                new CacheConfiguration<>(CACHE_3)
+                        .setCacheMode(CacheMode.REPLICATED)
+                        .setRebalanceBatchSize(REBALANCE_BATCH_SIZE)
+                        .setGroupName(GROUP_2),
+                new CacheConfiguration<>(CACHE_4)
+                        .setCacheMode(CacheMode.REPLICATED)
+                        .setRebalanceBatchSize(REBALANCE_BATCH_SIZE)
+                        .setGroupName(GROUP_2)
+        ));
 
+        try (IgniteDataStreamer<Object, Object> streamer1 = ig.dataStreamer(CACHE_1);
+             IgniteDataStreamer<Object, Object> streamer2 = ig.dataStreamer(CACHE_2);
+             IgniteDataStreamer<Object, Object> streamer3 = ig.dataStreamer(CACHE_3);
+             IgniteDataStreamer<Object, Object> streamer4 = ig.dataStreamer(CACHE_4)
+        ) {
+            for (int i = 0; i < 3_000; i++) {
+                streamer1.addData(i, new byte[1024]);
+                streamer2.addData(i, new byte[1024]);
+                streamer3.addData(i, new byte[1024]);
+                streamer4.addData(i, new byte[1024]);
+            }
 
+            streamer1.flush();
+            streamer2.flush();
+            streamer3.flush();
+            streamer4.flush();
+        }
+    }
+
+    /**
+     *
+     */
     private static class RebalanceBlockingSPI extends TcpCommunicationSpi {
         /** */
         public static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -166,19 +225,9 @@ public class IgniteDemanderOnDeactivationTest extends GridCommonAbstractTest {
             if (msg instanceof GridIoMessage && ((GridIoMessage) msg).message() instanceof GridDhtPartitionSupplyMessage) {
                 int grpId = ((GridCacheGroupIdMessage) ((GridIoMessage) msg).message()).groupId();
 
-                if (grpId == CU.cacheId(CACHE_GROUP)) {
-                    CountDownLatch latch0 = SUPPLY_MESSAGE_LATCH.get();
-
-                    if (latch0 != null) {
-                        try {
-                            latch0.await();
-                        } catch (InterruptedException ex) {
-                            throw new IgniteException(ex);
-                        }
-                    }
-
+                if (grpId == CU.cacheId(GROUP_1) || grpId == CU.cacheId(GROUP_2)) {
                     try {
-                        U.sleep(100);
+                        U.sleep(50);
                     } catch (IgniteInterruptedCheckedException e) {
                         e.printStackTrace();
                     }
@@ -194,26 +243,14 @@ public class IgniteDemanderOnDeactivationTest extends GridCommonAbstractTest {
             if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof GridDhtPartitionSupplyMessage) {
                 int grpId = ((GridCacheGroupIdMessage)((GridIoMessage)msg).message()).groupId();
 
-                if (grpId == CU.cacheId(CACHE_GROUP)) {
-                    CountDownLatch latch0 = SUPPLY_MESSAGE_LATCH.get();
-
-                    if (latch0 != null) {
-                        try {
-                            latch0.await();
-                        } catch (InterruptedException ex) {
-                            throw new IgniteException(ex);
-                        }
-                    }
-
+                if (grpId == CU.cacheId(GROUP_1) || grpId == CU.cacheId(GROUP_2)) {
                     try {
-                        U.sleep(100);
+                        U.sleep(50);
                     } catch (IgniteInterruptedCheckedException e) {
                         e.printStackTrace();
                     }
                 }
             }
-
-
             super.sendMessage(node, msg, ackC);
         }
     }

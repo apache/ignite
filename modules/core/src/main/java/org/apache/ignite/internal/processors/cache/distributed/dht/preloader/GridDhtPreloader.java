@@ -591,6 +591,16 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public void pause() {
+        busyLock.writeLock().lock();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resume() {
+        busyLock.writeLock().unlock();
+    }
+
+    /** {@inheritDoc} */
     @Override public void dumpDebugInfo() {
         // No-op
     }
