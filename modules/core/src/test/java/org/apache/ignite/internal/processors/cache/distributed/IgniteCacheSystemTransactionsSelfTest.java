@@ -19,9 +19,8 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.Map;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -31,6 +30,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -42,19 +42,22 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  * Tests that system transactions do not interact with user transactions.
  */
-public class IgniteCacheSystemTransactionsSelfTest extends GridCacheAbstractSelfTest {
+public class IgniteCacheSystemTransactionsSelfTest extends GridCommonAbstractTest {
+    /** */
+    private static final int NODES_CNT = 4;
+
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 4;
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        startGridsMultiThreaded(NODES_CNT);
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
 
-        ccfg.setAtomicityMode(TRANSACTIONAL);
-
-        return ccfg;
+        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */
@@ -66,6 +69,12 @@ public class IgniteCacheSystemTransactionsSelfTest extends GridCacheAbstractSelf
 
             cache.removeAll(F.asList("1", "2", "3"));
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName)
+            .setCacheConfiguration(defaultCacheConfiguration().setAtomicityMode(TRANSACTIONAL));
     }
 
     /**
@@ -101,8 +110,8 @@ public class IgniteCacheSystemTransactionsSelfTest extends GridCacheAbstractSelf
 
         checkTransactionsCommitted();
 
-        checkEntries(DEFAULT_CACHE_NAME,                  "1", "11", "2", "22", "3", null);
-        checkEntries(CU.UTILITY_CACHE_NAME, "1", null, "2", "2",  "3", "3");
+        checkEntries(DEFAULT_CACHE_NAME, "1", "11", "2", "22", "3", null);
+        checkEntries(CU.UTILITY_CACHE_NAME, "1", null, "2", "2", "3", "3");
     }
 
     /**
@@ -127,7 +136,7 @@ public class IgniteCacheSystemTransactionsSelfTest extends GridCacheAbstractSelf
      * @throws Exception If failed.
      */
     private void checkTransactionsCommitted() throws Exception {
-        for (int i = 0; i < gridCount(); i++) {
+        for (int i = 0; i < NODES_CNT; i++) {
             IgniteKernal kernal = (IgniteKernal)grid(i);
 
             IgniteTxManager tm = kernal.context().cache().context().tm();
@@ -152,7 +161,7 @@ public class IgniteCacheSystemTransactionsSelfTest extends GridCacheAbstractSelf
      * @throws Exception If failed.
      */
     private void checkEntries(String cacheName, Object... vals) throws Exception {
-        for (int g = 0; g < gridCount(); g++) {
+        for (int g = 0; g < NODES_CNT; g++) {
             IgniteKernal kernal = (IgniteKernal)grid(g);
 
             GridCacheAdapter<Object, Object> cache = kernal.context().cache().internalCache(cacheName);
