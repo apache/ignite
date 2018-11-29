@@ -594,12 +594,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 final Map<Long, Collection<ClusterNode>> snapshots,
                 @Nullable DiscoverySpiCustomMessage spiCustomMsg
             ) {
-                DiscoveryCustomMessage customMsg = spiCustomMsg == null ? null
-                    : ((CustomMessageWrapper)spiCustomMsg).delegate();
-
-                if (customMsg instanceof ChangeGlobalStateFinishMessage)
-                    log.info("<~> DiscoverySpiListener#onDiscovery " + spiCustomMsg);
-
                 GridFutureAdapter<?> notificationFut = new GridFutureAdapter<>();
 
                 discoNtfWrk.submit(notificationFut, () -> {
@@ -884,14 +878,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 assert dataBag.joiningNodeId() != null;
 
                 if (ctx.localNodeId().equals(dataBag.joiningNodeId())) {
-                    log.info("<~> local collectJoiningNodeData : " + dataBag);
-
                     for (GridComponent c : ctx.components())
                         c.collectJoiningNodeData(dataBag);
                 }
                 else {
-                    log.info("<~> remote collectJoiningNodeData : " + dataBag);
-
                     for (GridComponent c : ctx.components())
                         c.collectGridNodeData(dataBag);
                 }
@@ -904,20 +894,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 assert dataBag.joiningNodeId() != null;
 
                 if (ctx.localNodeId().equals(dataBag.joiningNodeId())) {
-                    log.info("<~> local onExchange " + dataBag);
-
                     // NodeAdded msg reached joining node after round-trip over the ring.
                     IGridClusterStateProcessor stateProc = ctx.state();
 
                     stateProc.onGridDataReceived(dataBag.gridDiscoveryData(
                         stateProc.discoveryDataType().ordinal()));
-
-                    try {
-                        Thread.sleep(10L);
-                    }
-                    catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
 
                     for (GridComponent c : ctx.components()) {
                         if (c.discoveryDataType() != null && c != stateProc)
@@ -947,13 +928,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
             }
         });
-
-        try {
-            Thread.sleep(10L);
-        }
-        catch (InterruptedException e) {
-            e.printStackTrace();
-        }
 
         new IgniteThread(discoNtfWrk).start();
 

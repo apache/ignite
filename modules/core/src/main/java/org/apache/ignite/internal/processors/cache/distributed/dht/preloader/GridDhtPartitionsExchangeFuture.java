@@ -3407,9 +3407,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     active,
                     !stateChangeErr);
 
-                log.info("<~> sendCustomEvent " + stateFinishMsg);
-                log.info("<~> nodes: " + cctx.discovery().allNodes().stream().map(ClusterNode::consistentId).map(Object::toString).sorted().collect(Collectors.joining(",")));
-
                 cctx.discovery().sendCustomEvent(stateFinishMsg);
 
                 if (!centralizedAff)

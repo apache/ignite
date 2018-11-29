@@ -193,7 +193,7 @@ public class ZookeeperDiscoveryImpl {
     private final ZookeeperDiscoveryStatistics stats;
 
     /** Last listener future. */
-    private IgniteFuture<?> lastPendingLsnrFut;
+    private IgniteFuture<?> lastLsnrFut;
 
     /**
      * @param spi Discovery SPI.
@@ -2755,15 +2755,15 @@ public class ZookeeperDiscoveryImpl {
     private boolean processBulkJoin(ZkDiscoveryEventsData evtsData, ZkDiscoveryNodeJoinEventData evtData)
         throws Exception
     {
-        if (lastPendingLsnrFut != null) {
+        if (lastLsnrFut != null) {
             try {
-                lastPendingLsnrFut.get();
+                lastLsnrFut.get();
             }
             catch (IgniteException ignore) {
                 // No-op.
             }
 
-            lastPendingLsnrFut = null;
+            lastLsnrFut = null;
         }
 
         boolean evtProcessed = false;
@@ -3445,7 +3445,7 @@ public class ZookeeperDiscoveryImpl {
         if (msg != null && msg.isMutable())
             fut.get();
         else
-            lastPendingLsnrFut = fut;
+            lastLsnrFut = fut;
     }
 
     /**
