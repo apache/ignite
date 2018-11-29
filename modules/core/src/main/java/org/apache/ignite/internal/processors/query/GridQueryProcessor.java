@@ -683,16 +683,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         ctx.cache().context().database().checkpointReadLock();
 
-        DynamicCacheDescriptor cacheDesc = ctx.cache().cacheDescriptor(cctx.name());
-
-        if (cacheDesc.h2Created() && cctx.isCacheContextInited()) {
-
-            idx.initCacheContext(cctx.gridCacheContext());
-
-            return;
-        }
-
         try {
+            if (cctx.isClientCache() && cctx.isCacheContextInited() && idx.initCacheContext(cctx.gridCacheContext()))
+                return;
+
             synchronized (stateMux) {
                 boolean escape = cctx.config().isSqlEscapeAll();
 
@@ -820,8 +814,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         "serializer using BinaryTypeConfiguration.setSerializer() method: " + mustDeserializeClss);
                 }
             }
-
-            cacheDesc.h2Created(true);
         }
         finally {
             ctx.cache().context().database().checkpointReadUnlock();
@@ -886,6 +878,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cacheName Cache name.
      */
     public void onCacheStop(String cacheName) {
+        if (idx == null)
+            return;
+
         GridCacheContextInfo cctx = idx.registeredCacheContext(cacheName);
 
         if (cctx != null)
@@ -906,11 +901,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         try {
             onCacheStop0(cctx, removeIdx);
-
-            DynamicCacheDescriptor desc = ctx.cache().cacheDescriptor(cctx.name());
-
-            if (desc != null)
-                desc.h2Created(false);
         }
         finally {
             busyLock.leaveBusy();

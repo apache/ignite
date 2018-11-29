@@ -85,7 +85,6 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
     protected void checkRollbackMultithreaded(final TransactionConcurrency concurrency,
         final TransactionIsolation isolation) throws Exception {
         final ConcurrentMap<Integer, String> map = new ConcurrentHashMap<>();
-
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Nullable @Override public Object call() throws Exception {
                 Thread t = Thread.currentThread();

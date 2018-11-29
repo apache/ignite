@@ -394,7 +394,12 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
             return null;
         }
 
-        @Override public void initCacheContext(GridCacheContext ctx) {
+        /** {@inheritDoc} */
+        @Override public boolean initCacheContext(GridCacheContext ctx) throws IgniteCheckedException {
+            if (FAILED_CACHES.contains(ctx.name()) && ctx.kernalContext().clientNode())
+                throw new IgniteCheckedException("Test query exception " + ctx.name() + " " + new Random().nextInt());
+
+            return true;
         }
     }
 }

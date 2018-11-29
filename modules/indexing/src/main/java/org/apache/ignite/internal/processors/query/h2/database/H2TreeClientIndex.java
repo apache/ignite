@@ -43,7 +43,6 @@ public class H2TreeClientIndex extends H2TreeIndexBase {
         boolean pk,
         List<IndexColumn> colsList
     ) {
-
         IndexColumn[] cols = colsList.toArray(new IndexColumn[colsList.size()]);
 
         IndexColumn.mapColumns(cols, tbl);
@@ -91,11 +90,6 @@ public class H2TreeClientIndex extends H2TreeIndexBase {
 
     /** {@inheritDoc} */
     @Override public long getRowCount(Session ses) {
-        throw new IgniteSQLException("Shouldn't be invoked, due to it's not affinity node");
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean canGetFirstOrLast() {
         throw new IgniteSQLException("Shouldn't be invoked, due to it's not affinity node");
     }
 

@@ -32,6 +32,9 @@ public class GridCacheContextInfo<K, V> {
     /** Full cache context. Can be {@code null} in case a cache is not started. */
     @Nullable private volatile GridCacheContext gridCacheContext;
 
+    /** Cache is client or not. */
+    private final boolean clientCache;
+
     /** Kernal context. */
     private final GridKernalContext ctx;
 
@@ -51,14 +54,16 @@ public class GridCacheContextInfo<K, V> {
      * Constructor of full cache context.
      *
      * @param gridCacheContext Cache context.
+     * @param clientCache Client cache or not.
      */
-    public GridCacheContextInfo(GridCacheContext<K, V> gridCacheContext) {
+    public GridCacheContextInfo(GridCacheContext<K, V> gridCacheContext, boolean clientCache) {
         this.gridCacheContext = gridCacheContext;
         this.ctx = gridCacheContext.kernalContext();
         this.config = gridCacheContext.config();
         this.dynamicDeploymentId = gridCacheContext.dynamicDeploymentId();
         this.groupId = gridCacheContext.groupId();
         this.cacheId = gridCacheContext.cacheId();
+        this.clientCache = clientCache;
     }
 
     /**
@@ -72,8 +77,10 @@ public class GridCacheContextInfo<K, V> {
         this.dynamicDeploymentId = cacheDesc.deploymentId();
         this.groupId = cacheDesc.groupId();
         this.ctx = ctx;
+        this.clientCache = true;
 
         this.cacheId = CU.cacheId(config.getName());
+
     }
 
     /**
@@ -142,6 +149,13 @@ public class GridCacheContextInfo<K, V> {
         assert gridCacheCtx != null;
 
         this.gridCacheContext = gridCacheCtx;
+    }
+
+    /**
+     * @return {@code true} For client cache.
+     */
+    public boolean isClientCache() {
+        return clientCache;
     }
 
     /**

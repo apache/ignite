@@ -95,9 +95,6 @@ public class DynamicCacheDescriptor {
     /** */
     private final CacheGroupDescriptor grpDesc;
 
-    /** Flag to indicate h2 structures has been created for the cache. */
-    private boolean h2Created = false;
-
     /**
      * @param ctx Context.
      * @param cacheCfg Cache configuration.
@@ -145,20 +142,6 @@ public class DynamicCacheDescriptor {
         synchronized (schemaMux) {
             this.schema = schema.copy();
         }
-    }
-
-    /**
-     * @return {@code true} in case H2 structures has been created for the cache.
-     */
-    public boolean h2Created() {
-        return h2Created;
-    }
-
-    /**
-     * @param h2Created {@code true} in case H2 structures has been created for the cache, {@code false} otherwise.
-     */
-    public void h2Created(boolean h2Created) {
-        this.h2Created = h2Created;
     }
 
     /**

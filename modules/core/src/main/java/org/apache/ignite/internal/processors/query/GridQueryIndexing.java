@@ -362,12 +362,15 @@ public interface GridQueryIndexing {
      * @param cacheName Cache name.
      * @return Cache context for registered cache or {@code null} in case the cache has not been registered.
      */
-    public GridCacheContextInfo registeredCacheContext(String cacheName);
+    @Nullable public GridCacheContextInfo registeredCacheContext(String cacheName);
 
     /**
      * Initialize cache context for H2 table created for not started cache.
      *
      * @param ctx Cache context.
+     * @throws IgniteCheckedException If failed.
+     *
+     * @return {@code true} If context has been initialized.
      */
-    public void initCacheContext(GridCacheContext ctx);
+    public boolean initCacheContext(GridCacheContext ctx) throws IgniteCheckedException;
 }

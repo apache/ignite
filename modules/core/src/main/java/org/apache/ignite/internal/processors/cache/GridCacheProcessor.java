@@ -1250,7 +1250,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 if (cache.context().userCache()) {
                     // Re-create cache structures inside indexing in order to apply recent schema changes.
-                    GridCacheContextInfo cctx = new GridCacheContextInfo(cache.context());
+                    GridCacheContextInfo cctx = new GridCacheContextInfo(cache.context(), false);
 
                     DynamicCacheDescriptor desc = cacheDescriptor(cctx.name());
 
@@ -1322,7 +1322,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             cache.stop();
 
-            GridCacheContextInfo cctx = new GridCacheContextInfo(ctx);
+            GridCacheContextInfo cctx = new GridCacheContextInfo(ctx, false);
 
             ctx.kernalContext().query().onCacheStop(cctx, !cache.context().group().persistenceEnabled() || destroy);
 
@@ -1540,6 +1540,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         boolean nearEnabled = GridCacheUtils.isNearEnabled(cfg);
 
+        CacheCompressionManager compressMgr = new CacheCompressionManager();
         GridCacheAffinityManager affMgr = new GridCacheAffinityManager();
         GridCacheEventManager evtMgr = new GridCacheEventManager();
         CacheEvictionManager evictMgr = (nearEnabled || cfg.isOnheapCacheEnabled()) ? new GridCacheEvictionManager() : new CacheOffheapEvictionManager();
@@ -1574,6 +1575,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
              * Managers in starting order!
              * ===========================
              */
+            compressMgr,
             evtMgr,
             storeMgr,
             evictMgr,
@@ -1710,6 +1712,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                  * Managers in starting order!
                  * ===========================
                  */
+                compressMgr,
                 evtMgr,
                 storeMgr,
                 evictMgr,
@@ -1979,6 +1982,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             .map(cacheInfo -> new StartCacheInfo(cacheInfo.get1(), cacheInfo.get2(), exchTopVer, false))
             .collect(Collectors.toList());
 
+        locJoinCtx.initCaches()
+            .forEach(cacheDesc -> {
+                try {
+                    initializeH2ForNotStartedCache(cacheDesc);
+                }
+                catch (Exception e) {
+                    log.error("Can't initialize H2 structures for not started cache [cacheName=" + cacheDesc.cacheName() + "]");
+                }
+            });
+
         prepareStartCaches(startCacheInfos);
 
         context().exchange().exchangerUpdateHeartbeat();
@@ -2086,7 +2099,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             cacheInfo.getCacheDescriptor(),
                             cacheInfo.getReqNearCfg(),
                             cacheInfo.getExchangeTopVer(),
-                            cacheInfo.isDisabledAfterStart()
+                            cacheInfo.isDisabledAfterStart(),
+                            cacheInfo.isClientCache()
                         );
 
                         return null;
@@ -2152,7 +2166,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                         if (!cctx.isRecoveryMode()) {
                             ctx.query().onCacheStart(
-                                new GridCacheContextInfo(cctx),
+                                new GridCacheContextInfo(cctx, cacheInfo.isClientCache()),
                                 cacheInfo.getCacheDescriptor().schema() != null
                                     ? cacheInfo.getCacheDescriptor().schema()
                                     : new QuerySchema(),
@@ -2208,14 +2222,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         DynamicCacheDescriptor desc,
         @Nullable NearCacheConfiguration reqNearCfg,
         AffinityTopologyVersion exchTopVer,
-        boolean disabledAfterStart
+        boolean disabledAfterStart,
+        boolean clientCache
     ) throws IgniteCheckedException {
         GridCacheContext cacheCtx = prepareCacheContext(startCfg, desc, reqNearCfg, exchTopVer, disabledAfterStart);
 
         if (cacheCtx.isRecoveryMode())
             finishRecovery(exchTopVer, cacheCtx);
         else {
-            ctx.query().onCacheStart(new GridCacheContextInfo(cacheCtx), desc.schema() != null ? desc.schema() : new QuerySchema(), desc.sql());
+            ctx.query().onCacheStart(new GridCacheContextInfo(cacheCtx, clientCache), desc.schema() != null ? desc.schema() : new QuerySchema(), desc.sql());
 
             onCacheStarted(cacheCtx);
         }
@@ -2577,7 +2592,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         grp.onCacheStarted(cacheCtx);
 
-        ctx.query().onCacheStart(new GridCacheContextInfo(cacheCtx),
+        ctx.query().onCacheStart(new GridCacheContextInfo(cacheCtx, false),
             desc.schema() != null ? desc.schema() : new QuerySchema(), desc.sql());
 
         if (log.isInfoEnabled()) {

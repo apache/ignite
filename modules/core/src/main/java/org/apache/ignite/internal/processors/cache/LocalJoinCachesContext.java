@@ -38,6 +38,12 @@ public class LocalJoinCachesContext {
     @GridToStringInclude
     private List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> locJoinStartCaches = Collections.emptyList();
 
+    /**
+     *
+     */
+    @GridToStringInclude
+    private List<DynamicCacheDescriptor> locJoinInitCaches = Collections.emptyList();
+
     /** */
     @GridToStringInclude
     private Map<Integer, CacheGroupDescriptor> cacheGrpDescs;
@@ -48,15 +54,18 @@ public class LocalJoinCachesContext {
 
     /**
      * @param locJoinStartCaches Local caches to start on join.
+     * @param locJoinInitCaches Local caches to initialize H2 structures without start of caches.
      * @param cacheGrpDescs Cache group descriptors captured during join.
      * @param cacheDescs Cache descriptors captured during join.
      */
     public LocalJoinCachesContext(
         List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> locJoinStartCaches,
+        List<DynamicCacheDescriptor> locJoinInitCaches,
         Map<Integer, CacheGroupDescriptor> cacheGrpDescs,
         Map<String, DynamicCacheDescriptor> cacheDescs
     ) {
         this.locJoinStartCaches = locJoinStartCaches;
+        this.locJoinInitCaches = locJoinInitCaches;
         this.cacheGrpDescs = cacheGrpDescs;
         this.cacheDescs = cacheDescs;
     }
@@ -66,6 +75,13 @@ public class LocalJoinCachesContext {
      */
     public List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> caches() {
         return locJoinStartCaches;
+    }
+
+    /**
+     * @return Cache descriptors to initialize H2 without start of caches.
+     */
+    public List<DynamicCacheDescriptor> initCaches() {
+        return locJoinInitCaches;
     }
 
     /**
@@ -96,13 +112,21 @@ public class LocalJoinCachesContext {
             if (cacheNames.contains(desc.cacheName()))
                 it.remove();
         }
+
+        Iterator<DynamicCacheDescriptor> itr = locJoinInitCaches.iterator();
+
+        for (; itr.hasNext(); ) {
+            DynamicCacheDescriptor desc = itr.next();
+            if (cacheNames.contains(desc.cacheName()))
+                itr.remove();
+        }
     }
 
     /**
      * @return {@code True} if the context is empty.
      */
     public boolean isEmpty() {
-        return F.isEmpty(locJoinStartCaches) && F.isEmpty(cacheGrpDescs) && F.isEmpty(cacheDescs);
+        return F.isEmpty(locJoinStartCaches) && F.isEmpty(locJoinInitCaches) && F.isEmpty(cacheGrpDescs) && F.isEmpty(cacheDescs);
     }
 
     /** {@inheritDoc} */
