@@ -253,6 +253,8 @@ public class GridMapQueryExecutor {
 
         boolean clear = GridH2QueryContext.clear(ctx.localNodeId(), node.id(), qryReqId, MAP);
 
+        log.info("+++ CANCEL " + qryReqId);
+
         if (!clear) {
             nodeRess.onCancel(qryReqId);
 
@@ -895,13 +897,10 @@ public class GridMapQueryExecutor {
                     assert rs instanceof JdbcResultSet : rs.getClass();
                 }
 
-                qryResults.addResult(qryIdx, qry, node.id(), rs, params, H2Utils.session(conn));
+                MapQueryResult mqrs = qryResults.addResult(qryIdx, qry, node.id(), rs, params, H2Utils.session(conn));
 
-                if (qryResults.cancelled()) {
-                    qryResults.result(qryIdx).close(false);
-
+                if (qryResults.cancelled())
                     throw new QueryCancelledException();
-                }
 
                 if (inTx) {
                     if (tx.dht() && (runCntr == null || runCntr.decrementAndGet() == 0)) {
@@ -910,20 +909,32 @@ public class GridMapQueryExecutor {
                     }
                 }
 
+                GridQueryNextPageResponse msg = null;
+
+                try {
+                    msg = prepareNextPage(nodeRess, node, qryResults, qryIdx, segmentId, pageSize, removeMapping);
+                }
+                finally {
+                    if (qryResults.lazy())
+                        mqrs.unlockTables();
+
+                    mqrs.unlock();
+                }
+
+                final GridQueryNextPageResponse msg0 = msg;
+
                 // Send the first page.
                 if (lockFut == null)
-                    sendNextPage(nodeRess, node, qryResults, qryIdx, segmentId, pageSize, removeMapping);
+                    sendNextPage(node, msg);
                 else {
-                    GridQueryNextPageResponse msg = prepareNextPage(nodeRess, node, qryResults, qryIdx, segmentId, pageSize, removeMapping);
-
                     if (msg != null) {
                         lockFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
                             @Override public void apply(IgniteInternalFuture<Void> future) {
                                 try {
                                     if (node.isLocal())
-                                        h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
+                                        h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg0);
                                     else
-                                        ctx.io().sendToGridTopic(node, GridTopic.TOPIC_QUERY, msg, QUERY_POOL);
+                                        ctx.io().sendToGridTopic(node, GridTopic.TOPIC_QUERY, msg0, QUERY_POOL);
                                 }
                                 catch (Exception e) {
                                     U.error(log, e);
@@ -1125,7 +1136,8 @@ public class GridMapQueryExecutor {
             GridQueryFailResponse msg = new GridQueryFailResponse(qryReqId, err);
 
             if (node.isLocal()) {
-                U.error(log, "Failed to run map query on local node.", err);
+                if (!(err instanceof QueryRetryException))
+                    U.error(log, "Failed to run map query on local node.", err);
 
                 h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
             }
@@ -1177,7 +1189,6 @@ public class GridMapQueryExecutor {
         long reqId = req.queryRequestId();
         final MapNodeResults nodeRess = qryRess.get(node.id());
 
-
         if (nodeRess == null) {
             sendError(node, reqId, new CacheException("No node result found for request: " + req));
 
@@ -1204,21 +1215,35 @@ public class GridMapQueryExecutor {
 
                 GridH2QueryContext.set(qryResults.queryContext());
 
-                try {
-                    MapQueryResult res = qryResults.result(req.query());
+                MapQueryResult res = qryResults.result(req.query());
+                assert res != null;
 
-                    assert res != null;
+                try {
+                    res.lock();
 
                     if (!res.closed() && qryResults.lazy())
                         res.lockTables();
 
-                    sendNextPage(nodeRess, node, qryResults, req.query(), req.segmentId(), req.pageSize(), false);
+                    GridQueryNextPageResponse msg = prepareNextPage(
+                        nodeRess, node, qryResults, req.query(), req.segmentId(), req.pageSize(), false);
+
+                    sendNextPage(node, msg);
+                }
+                catch (Exception e) {
+                    qryResults.cancel();
+
+                    throw e;
                 }
                 finally {
                     GridH2QueryContext.clearThreadLocal();
 
                     if (qctxReduce != null)
                         GridH2QueryContext.set(qctxReduce);
+
+                    if (qryResults.lazy())
+                        res.unlockTables();
+
+                    res.unlock();
                 }
             } catch (Exception e) {
                 QueryRetryException retryEx = X.cause(e, QueryRetryException.class);
@@ -1233,8 +1258,6 @@ public class GridMapQueryExecutor {
                     else
                         sendError(node, reqId, e);
                 }
-
-                qryResults.cancel();
             }
         }
     }
@@ -1265,78 +1288,60 @@ public class GridMapQueryExecutor {
         if (res.closed())
             return null;
 
-        try {
-            int page = res.page();
+        int page = res.page();
 
-            List<Value[]> rows = new ArrayList<>(Math.min(64, pageSize));
+        List<Value[]> rows = new ArrayList<>(Math.min(64, pageSize));
 
-            boolean last = res.fetchNextPage(rows, pageSize);
+        boolean last = res.fetchNextPage(rows, pageSize);
 
-            if (last) {
-                res.close(false);
+        if (last) {
+            res.close(false);
 
-                if (qr.isAllClosed()) {
-                    nodeRess.remove(qr.queryRequestId(), segmentId, qr);
+            if (qr.isAllClosed()) {
+                nodeRess.remove(qr.queryRequestId(), segmentId, qr);
 
-                    // Close, release reservations, recycle connection if the last page fetched in lazy mode.
-                    qr.close(false);
-                }
+                // Close, release reservations, recycle connection if the last page fetched in lazy mode.
+                qr.close(false);
             }
-            else {
-                // Detach connection if the result set greater than one page.
-                if (qr.lazy()) {
-                    if (!res.isConnectionDetached())
-                        res.detachedConnection(h2.connections().detachConnection());
-                }
-                else
-                    // Release session because all result set is already copied to RAM.
-                    // We don't need in check table version on fetch next page.
-                    res.releaseSession();
+        }
+        else {
+            // Detach connection if the result set greater than one page.
+            if (qr.lazy()) {
+                if (!res.isConnectionDetached())
+                    res.detachedConnection(h2.connections().detachConnection());
             }
-
-            boolean loc = node.isLocal();
-
-            // In case of SELECT FOR UPDATE the last columns is _KEY,
-            // we can't retrieve them for an arbitrary row otherwise.
-            int colsCnt = !qr.isForUpdate() ? res.columnCount() : res.columnCount() - 1;
-
-            GridQueryNextPageResponse msg = new GridQueryNextPageResponse(qr.queryRequestId(), segmentId, qry, page,
-                page == 0 ? res.rowCount() : -1,
-                colsCnt,
-                loc ? null : toMessages(rows, new ArrayList<>(res.columnCount()), colsCnt),
-                loc ? rows : null,
-                last);
-
-            msg.removeMapping(removeMapping);
-
-            return msg;
+            else
+                // Release session because all result set is already copied to RAM.
+                // We don't need in check table version on fetch next page.
+                res.releaseSession();
         }
-        finally {
-            if (!res.closed() && qr.lazy())
-                res.unlockTables();
-        }
+
+        boolean loc = node.isLocal();
+
+        // In case of SELECT FOR UPDATE the last columns is _KEY,
+        // we can't retrieve them for an arbitrary row otherwise.
+        int colsCnt = !qr.isForUpdate() ? res.columnCount() : res.columnCount() - 1;
+
+        GridQueryNextPageResponse msg = new GridQueryNextPageResponse(qr.queryRequestId(), segmentId, qry, page,
+            page == 0 ? res.rowCount() : -1,
+            colsCnt,
+            loc ? null : toMessages(rows, new ArrayList<>(res.columnCount()), colsCnt),
+            loc ? rows : null,
+            last);
+
+        msg.removeMapping(removeMapping);
+
+        return msg;
     }
 
     /**
-     * @param nodeRess Results.
      * @param node Node.
-     * @param qr Query results.
-     * @param qry Query.
-     * @param segmentId Index segment ID.
-     * @param pageSize Page size.
-     * @param removeMapping Remove mapping flag.
+     * @param msg Message to send.
      */
     private void sendNextPage(
-        MapNodeResults nodeRess,
         ClusterNode node,
-        MapQueryResults qr,
-        int qry,
-        int segmentId,
-        int pageSize,
-        boolean removeMapping) {
+        GridQueryNextPageResponse msg) {
         try {
-            GridQueryNextPageResponse msg = prepareNextPage(nodeRess, node, qr, qry, segmentId, pageSize, removeMapping);
-
             if (msg != null) {
                 if (node.isLocal())
                     h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);

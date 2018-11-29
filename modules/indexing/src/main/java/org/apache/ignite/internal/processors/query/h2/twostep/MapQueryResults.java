@@ -121,12 +121,14 @@ class MapQueryResults {
      * @param params Query arguments.
      * @param session H2 Session.
      */
-    void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs, Object[] params,
+    MapQueryResult addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs, Object[] params,
         Session session) {
         MapQueryResult res = new MapQueryResult(h2, rs, cctx, qrySrcNodeId, q, params, session, log);
 
         if (!results.compareAndSet(qry, null, res))
             throw new IllegalStateException();
+
+        return res;
     }
 
     /**

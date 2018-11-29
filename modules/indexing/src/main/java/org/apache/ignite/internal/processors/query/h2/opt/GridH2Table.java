@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.StampedLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.cache.query.QueryRetryException;
@@ -293,16 +294,25 @@ public class GridH2Table extends TableBase {
     /**
      * @param ses H2 session.
      */
-    private void readLockInternal(Session ses, boolean checkVersion) {
+    private void readLockInternal(Session ses) {
         Object res = sessions.get(ses);
 
         assert res != null && Boolean.TRUE != res : "Invalid table lock [lock=" + res + ']';
 
-        if(checkVersion && ver.longValue() != (long)res)
-            throw new QueryRetryException(getName());
-
         // Acquire the lock.
         lock(false);
+    }
+
+    /**
+     * @param ses H2 session.
+     */
+    private void checkVersion(Session ses) {
+        Object res = sessions.get(ses);
+
+        assert res != null && Boolean.TRUE != res : "Invalid table lock [lock=" + res + ']';
+
+        if(ver.longValue() != (long)res)
+            throw new QueryRetryException(getName());
     }
 
     /**
@@ -1113,9 +1123,32 @@ public class GridH2Table extends TableBase {
      * and QueryRetryException is thrown when versions mismatch.
      */
     public static void readLockTables(Session s, boolean checkVer) {
-        for (Table t : s.getLocks()) {
-            if (t instanceof GridH2Table)
-                ((GridH2Table)t).readLockInternal(s, checkVer);
+        int locked = 0;
+
+        try {
+            for (int i = 0; i < s.getLocks().length; ++i) {
+                Table t = s.getLocks()[i];
+
+                if (t instanceof GridH2Table) {
+                    ((GridH2Table)t).readLockInternal(s);
+
+                    locked = i + 1;
+
+                    if (checkVer)
+                        ((GridH2Table)t).checkVersion(s);
+                }
+            }
+        }
+        catch (Exception e) {
+            // Unlock partially locked tables on exception.
+            for (int i = 0; i < locked; ++i) {
+                Table t = s.getLocks()[i];
+
+                if (t instanceof GridH2Table)
+                    ((GridH2Table)t).unlock(false);
+            }
+
+            throw e;
         }
     }
 }

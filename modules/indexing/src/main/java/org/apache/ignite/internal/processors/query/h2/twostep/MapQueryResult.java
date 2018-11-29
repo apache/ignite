@@ -22,6 +22,7 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.internal.GridKernalContext;
@@ -48,7 +49,9 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
  * Mapper result for a single part of the query.
  */
 class MapQueryResult {
-    /** */
+    /**
+     *
+     */
     private static final Field RESULT_FIELD;
 
     /*
@@ -68,50 +71,69 @@ class MapQueryResult {
     /** Indexing. */
     private final IgniteH2Indexing h2;
 
-    /** */
+    /**
+     *
+     */
     private final ResultInterface res;
 
-    /** */
+    /**
+     *
+     */
     private final ResultSet rs;
 
-    /** */
+    /**
+     *
+     */
     private final GridCacheContext<?, ?> cctx;
 
-    /** */
+    /**
+     *
+     */
     private final GridCacheSqlQuery qry;
 
-    /** */
+    /**
+     *
+     */
     private final UUID qrySrcNodeId;
 
-    /** */
+    /**
+     *
+     */
     private final int cols;
 
-    /** */
+    /**
+     *
+     */
     private final IgniteLogger log;
-
+    /**
+     *
+     */
+    private final int rowCnt;
+    /**
+     *
+     */
+    private final Object[] params;
     /** H2 session. */
     private Session ses;
-
-    /** */
-    private int page;
-
-    /** */
-    private final int rowCnt;
-
-    /** */
-    private boolean cpNeeded;
-
-    /** */
-    private volatile boolean closed;
-
-    /** */
-    private final Object[] params;
-
     /**
-     * Detached connection.
-     * Used for lazy execution to prevent share connection between thread from QUERY thread pool.
+     *
+     */
+    private int page;
+    /**
+     *
+     */
+    private boolean cpNeeded;
+    /**
+     *
+     */
+    private volatile boolean closed;
+    /**
+     * Detached connection. Used for lazy execution to prevent share connection between thread from QUERY thread pool.
      */
     private ObjectPoolReusable<H2ConnectionWrapper> detachedConn;
+
+    /** Lock is used to synchronise . */
+    private ReentrantLock lock = new ReentrantLock();
 
     /**
      * @param h2 H2 indexing.
@@ -155,6 +177,8 @@ class MapQueryResult {
 
             closed = true;
         }
+
+        lock();
     }
 
     /**
@@ -198,7 +222,7 @@ class MapQueryResult {
 
         page++;
 
-        for (int i = 0 ; i < pageSize; i++) {
+        for (int i = 0; i < pageSize; i++) {
             if (!res.next())
                 return true;
 
@@ -272,38 +296,45 @@ class MapQueryResult {
 
     /**
      * Close the result.
+     *
      * @param lockTbls If {@code true} lock the tables before close result.
      */
     public void close(boolean lockTbls) {
-        synchronized (this) {
-            if (closed)
-                return;
+        if (closed)
+            return;
 
+        lock();
+
+        try {
             closed = true;
 
-            try {
-                if (ses != null && lockTbls)
-                    GridH2Table.readLockTables(ses, false);
+            if (ses != null && lockTbls)
+                GridH2Table.readLockTables(ses, false);
 
-                U.close(rs, log);
+            U.close(rs, log);
 
-                ses = null;
+            ses = null;
 
-                if (detachedConn != null)
-                    detachedConn.recycle();
-            } finally {
-                if (ses != null && lockTbls)
-                    GridH2Table.unlockTables(ses);
-            }
+            if (detachedConn != null)
+                detachedConn.recycle();
+        }
+        finally {
+            if (ses != null && lockTbls)
+                GridH2Table.unlockTables(ses);
+
+            unlock();
         }
     }
 
-    /** */
+    /**
+     *
+     */
     void releaseSession() {
         ses = null;
     }
 
     /**
+     *
      */
     void unlockTables() {
         synchronized (this) {
@@ -313,6 +344,7 @@ class MapQueryResult {
     }
 
     /**
+     *
      */
     void lockTables() {
         synchronized (this) {
@@ -333,5 +365,19 @@ class MapQueryResult {
      */
     boolean isConnectionDetached() {
         return detachedConn != null;
+    }
+
+    /**
+     *
+     */
+    void lock() {
+        lock.lock();
+    }
+
+    /**
+     *
+     */
+    void unlock() {
+        lock.unlock();
     }
 }
