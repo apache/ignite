@@ -11,8 +11,19 @@ public interface ModelStorage {
      *
      * @param path Path to file.
      * @param data File content.
+     * @param onlyIfNotExist If file already exists throw an exception.
      */
-    public void putFile(String path, byte[] data);
+    public void putFile(String path, byte[] data, boolean onlyIfNotExist);
+
+    /**
+     * Creates a new or replaces existing file.
+     *
+     * @param path Path to file.
+     * @param data File content.
+     */
+    public default void putFile(String path, byte[] data) {
+        putFile(path, data, false);
+    }
 
     /**
      * Returns file content.
@@ -26,8 +37,18 @@ public interface ModelStorage {
      * Creates directory.
      *
      * @param path Path to directory.
+     * @param onlyIfNotExist If directory already exists throw an exception.
      */
-    public void mkdir(String path);
+    public void mkdir(String path, boolean onlyIfNotExist);
+
+    /**
+     * Creates directory.
+     *
+     * @param path Path to directory.
+     */
+    public default void mkdir(String path) {
+        mkdir(path, false);
+    }
 
     /**
      * Creates directory and all required parent directories in the path.

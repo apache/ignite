@@ -44,7 +44,7 @@ public class DefaultModelStorage implements ModelStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public void putFile(String path, byte[] data) {
+    @Override public void putFile(String path, byte[] data, boolean onlyIfNotExist) {
         String parentPath = getParent(path);
 
         // Paths are locked in child-first order.
@@ -52,6 +52,9 @@ public class DefaultModelStorage implements ModelStorage {
         Lock parentPathLock = storageProvider.lock(parentPath);
 
         synchronize(() -> {
+            if (exists(path) && onlyIfNotExist)
+                throw new IllegalArgumentException("File already exists [path=" + path + "]");
+
             FileOrDirectory parent = storageProvider.get(parentPath);
 
             // If parent doesn't exist throw an exception.
@@ -96,7 +99,7 @@ public class DefaultModelStorage implements ModelStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public void mkdir(String path) {
+    @Override public void mkdir(String path, boolean onlyIfNotExist) {
         String parentPath = getParent(path);
 
         // Paths are locked in child-first order.
@@ -105,8 +108,12 @@ public class DefaultModelStorage implements ModelStorage {
 
         synchronize(() -> {
             // If a directory associated with specified path exists return.
-            if (isDirectory(path))
+            if (isDirectory(path)) {
+                if (onlyIfNotExist)
+                    throw new IllegalArgumentException("Directory already exists [path=" + path + "]");
+
                 return;
+            }
 
             // If a regular file associated with specified path exists throw an exception.
             if (isFile(path))
