@@ -17,6 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import java.util.Collections;
+import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
@@ -25,9 +32,14 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.AbstractFailureHandler;
 import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.processors.cache.GridCacheFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheMvccManager;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -35,13 +47,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import java.util.Collections;
-import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
+import org.junit.Assert;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -151,6 +157,8 @@ public class CacheGetReadFromBackupFailoverTest extends GridCommonAbstractTest {
 
         AtomicInteger idx = new AtomicInteger(-1);
 
+        AtomicInteger successGet = new AtomicInteger();
+
         IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
             ThreadLocalRandom rnd0 = ThreadLocalRandom.current();
 
@@ -179,6 +187,8 @@ public class CacheGetReadFromBackupFailoverTest extends GridCommonAbstractTest {
                         ig.cache(TX_CACHE).getAll(rnd.longs(16, 0, KEYS_CNT).boxed().collect(Collectors.toSet()));
                         ig.cache(ATOMIC_CACHE).getAll(rnd.longs(16, 0, KEYS_CNT).boxed().collect(Collectors.toSet()));
                     }
+
+                    successGet.incrementAndGet();
                 }
                 catch (CacheException e) {
                     if (!X.hasCause(e, NodeStoppingException.class))
@@ -209,7 +219,32 @@ public class CacheGetReadFromBackupFailoverTest extends GridCommonAbstractTest {
 
         stop.set(true);
 
-        fut.get();
+        while (true){
+            try {
+                fut.get(10_000);
+
+                break;
+            }
+            catch (IgniteFutureTimeoutCheckedException e) {
+                for (Ignite i : G.allGrids()) {
+                    IgniteEx ex = (IgniteEx)i;
+
+                    log.info(">>>> " + ex.context().localNodeId());
+
+                    GridCacheMvccManager mvcc = ex.context().cache().context().mvcc();
+
+                    for (GridCacheFuture<?> fut0 : mvcc.activeFutures()) {
+                        log.info("activeFut - " + fut0);
+                    }
+
+                    for (GridCacheFuture<?> fut0 : mvcc.atomicFutures()) {
+                        log.info("atomicFut - " + fut0);
+                    }
+                }
+            }
+        }
+
+        Assert.assertTrue(String.valueOf(successGet.get()), successGet.get() > 50);
 
         Throwable e = err.get();
 
