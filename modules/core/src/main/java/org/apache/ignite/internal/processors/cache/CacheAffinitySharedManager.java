@@ -930,14 +930,18 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         Map<StartCacheInfo, IgniteCheckedException> failedCaches = cctx.cache().prepareStartCachesIfPossible(startCacheInfos.keySet());
 
-        failedCaches.forEach((cacheInfo, exception) -> {
-            U.error(log, "Failed to initialize cache. Will try to rollback cache start routine. " +
-                "[cacheName=" + cacheInfo.getStartedConfiguration().getName() + ']', exception);
+        for (Map.Entry<StartCacheInfo, IgniteCheckedException> entry : failedCaches.entrySet()) {
+            if (cctx.localNode().isClient()) {
+                U.error(log, "Failed to initialize cache. Will try to rollback cache start routine. " +
+                    "[cacheName=" + entry.getKey().getStartedConfiguration().getName() + ']', entry.getValue());
 
-            cctx.cache().closeCaches(Collections.singleton(cacheInfo.getStartedConfiguration().getName()), false);
+                cctx.cache().closeCaches(Collections.singleton(entry.getKey().getStartedConfiguration().getName()), false);
 
-            cctx.cache().completeCacheStartFuture(startCacheInfos.get(cacheInfo), false, exception);
-        });
+                cctx.cache().completeCacheStartFuture(startCacheInfos.get(entry.getKey()), false, entry.getValue());
+            }
+            else
+                throw entry.getValue();
+        }
 
         Set<StartCacheInfo> failedCacheInfos = failedCaches.keySet();
 
