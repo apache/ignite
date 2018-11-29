@@ -125,7 +125,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
 
     /** Alive check time (used by clients). */
     @GridToStringExclude
-    private transient long aliveCheckTime;
+    private transient volatile long aliveCheckTime;
 
     /** Client router node ID. */
     @GridToStringExclude
@@ -506,6 +506,13 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         assert isClient() : this;
 
         this.aliveCheckTime = U.currentTimeMillis() + aliveTime;
+    }
+
+    /**
+     * @return Client alive check time.
+     */
+    public long clientAliveTime() {
+        return aliveCheckTime;
     }
 
     /**
