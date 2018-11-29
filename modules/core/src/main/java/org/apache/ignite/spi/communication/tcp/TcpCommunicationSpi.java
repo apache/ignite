@@ -20,6 +20,7 @@ package org.apache.ignite.spi.communication.tcp;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Field;
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -49,6 +50,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.Ignite;
@@ -2872,6 +2874,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             client0 = createNioClient(node, connIdx);
 
                             if (client0 != null) {
+                                counter.set(0);
                                 addNodeClient(node, connIdx, client0);
 
                                 if (client0 instanceof GridTcpNioCommunicationClient) {
@@ -2888,6 +2891,17 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             }
                             else {
                                 U.sleep(200);
+
+                                if (counter.getAndIncrement() == 10) {
+                                    Field debug = U.findField(log.getClass(), "debug");
+                                    if (debug != null) {
+                                        log.info("TURN ON DEBUG");
+                                        debug.setBoolean(log, true);
+                                    }
+                                }
+
+                                log.info("NODE SPI : " + getSpiContext().node(node.id()));
+                                log.info("DISCOVERY SPI : " + ((TcpDiscoverySpi)ignite().configuration().getDiscoverySpi()).getNode0(node.id()));
 
                                 if (getSpiContext().node(node.id()) == null)
                                     throw new ClusterTopologyCheckedException("Failed to send message " +
@@ -2936,6 +2950,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 removeNodeClient(nodeId, client);
         }
     }
+
+    AtomicInteger counter = new AtomicInteger(0);
 
     /**
      * @param node Node to create client for.

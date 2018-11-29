@@ -102,6 +102,8 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
     /** Quiet flag. */
     private final boolean quiet;
 
+    private volatile boolean debug = false;
+
     /** Node ID. */
     @GridToStringExclude
     private UUID nodeId;
@@ -505,7 +507,11 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
 
     /** {@inheritDoc} */
     @Override public boolean isDebugEnabled() {
-        return impl.isDebugEnabled();
+        return debug || impl.isDebugEnabled();
+    }
+
+    public void turnOnDebug() {
+        debug = true;
     }
 
     /** {@inheritDoc} */
