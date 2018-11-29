@@ -1802,8 +1802,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                                         return;
                                     }
-
-                                    break;
                                 }
 
                                 update(node, locked, req, res, updDhtRes);
