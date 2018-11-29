@@ -268,38 +268,37 @@ public class DefaultModelStorage implements ModelStorage {
         synchronize(() -> {
             task.run();
             return null;
-        }, 0, locks);
-    }
-
-    /**
-     * Wraps task execution into locks.
-     *
-     * @param task Callable task.
-     * @param locks List of locks.
-     * @param <T> Type of return value.
-     * @return Result of execution.
-     */
-    private <T> T synchronize(Supplier<T> task, Lock... locks) {
-        return synchronize(task, 0, locks);
+        }, locks);
     }
 
     /**
      * Wraps task execution into locks. Util method.
      * @param task Task to executed.
-     * @param lockIdx Current lock index.
      * @param locks List of locks.
      */
-    private <T> T synchronize(Supplier<T> task, int lockIdx, Lock... locks) {
-        if (lockIdx == locks.length)
-            return task.get();
+    private <T> T synchronize(Supplier<T> task, Lock... locks) {
+        RuntimeException ex = null;
+        T res;
 
-        Lock lock = locks[lockIdx];
-        lock.lock();
         try {
-            return synchronize(task, lockIdx + 1, locks);
+            for (Lock lock : locks)
+                lock.lock();
+
+            res = task.get();
         }
         finally {
-            lock.unlock();
+            try {
+                for (int i = locks.length - 1; i >= 0; i--)
+                    locks[i].unlock();
+            }
+            catch (RuntimeException e) {
+                ex = e;
+            }
         }
+
+        if (ex != null)
+            throw ex;
+
+        return res;
     }
 }
