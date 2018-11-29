@@ -324,18 +324,23 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testLocalAndGlobalWalStateInterdependence() throws Exception {
-        Ignite ignite = startGrids(3);
+        dfltCacheBackupCnt = 2;
+
+        Ignite ignite = startGrids(4);
 
         ignite.cluster().active(true);
 
+        ignite.cluster().setBaselineTopology(4);
+
         IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
-        for (int k = 0; k < getKeysCount(); k++)
-            cache.put(k, k);
+        stopGrid(3);
+
+        awaitExchange((IgniteEx)ignite);
+
+        doLoad(cache, 4, 10_000);
 
         IgniteEx newIgnite = startGrid(3);
-
-        newIgnite.cluster().setBaselineTopology(ignite.cluster().nodes());
 
         awaitExchange(newIgnite);
 
