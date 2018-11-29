@@ -40,4 +40,14 @@ public class PartitionArgumentSingleNode extends PartitionSingleNode {
 
         return resolver.resolve(args[idx]);
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean constant() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int value() {
+        return idx;
+    }
 }

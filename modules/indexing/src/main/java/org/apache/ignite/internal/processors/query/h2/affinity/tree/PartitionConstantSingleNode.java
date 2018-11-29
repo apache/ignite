@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.query.h2.affinity.tree;
 
 /**
- * Statis partitio node.
+ * Node with constant partition.
  */
-public class PartitionStaticSingleNode extends PartitionSingleNode {
+public class PartitionConstantSingleNode extends PartitionSingleNode {
     /** Partition. */
     private final int part;
 
@@ -29,12 +29,22 @@ public class PartitionStaticSingleNode extends PartitionSingleNode {
      *
      * @param part Partition.
      */
-    public PartitionStaticSingleNode(int part) {
+    public PartitionConstantSingleNode(int part) {
         this.part = part;
     }
 
     /** {@inheritDoc} */
     @Override public int applySingle(PartitionResolver resolver, Object... args) {
+        return part;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean constant() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int value() {
         return part;
     }
 }

@@ -36,4 +36,32 @@ public abstract class PartitionSingleNode implements PartitionNode {
      * @return Partition.
      */
     public abstract int applySingle(PartitionResolver resolver, Object... args);
+
+    /**
+     * @return {@code True} if constant, {@code false} if argument.
+     */
+    public abstract boolean constant();
+
+    /**
+     * @return Partition for constant node, index for argument node.
+     */
+    public abstract int value();
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return (constant() ? 1 : 0) + value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object obj) {
+        if (obj == null)
+            return false;
+
+        if (obj.getClass() != getClass())
+            return false;
+
+        PartitionSingleNode other = (PartitionSingleNode)obj;
+
+        return value() == other.value();
+    }
 }
