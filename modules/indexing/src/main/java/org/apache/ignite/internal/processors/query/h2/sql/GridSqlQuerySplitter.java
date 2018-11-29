@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.affinity.PartitionExtractor;
+import org.apache.ignite.internal.processors.query.h2.affinity.tree.PartitionCompositeNode;
 import org.apache.ignite.internal.processors.query.h2.affinity.tree.PartitionNode;
 import org.apache.ignite.internal.processors.query.h2.affinity.tree.PartitionTreeExtractor;
 import org.apache.ignite.internal.util.lang.GridTreePrinter;
@@ -1555,6 +1556,9 @@ public class GridSqlQuerySplitter {
             PartitionTreeExtractor e = new PartitionTreeExtractor(ctx);
 
             PartitionNode node = e.extract(mapQry);
+
+            if (node instanceof PartitionCompositeNode)
+                node = ((PartitionCompositeNode)node).optimize();
 
             map.derivedPartitions(PartitionExtractor.derivePartitionsFromQuery(mapQry, ctx));
         }
