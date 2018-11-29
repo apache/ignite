@@ -3006,6 +3006,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         CacheConfiguration<K, V> cacheCfg, boolean sql) {
         A.notNull(cacheCfg, "cacheCfg");
         String cacheName = cacheCfg.getName();
+
         CU.validateNewCacheName(cacheName);
 
         guard();

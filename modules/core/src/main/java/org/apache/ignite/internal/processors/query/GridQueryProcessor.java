@@ -1448,16 +1448,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 QueryIndexDescriptorImpl idxDesc = QueryUtils.createIndexDescriptor(type, op0.index());
 
                 SchemaIndexCacheVisitor visitor;
+
                 if (cacheCtx.isCacheContextInited()) {
                     GridCacheContext cctx = cacheCtx.gridCacheContext();
+
                     SchemaIndexCacheFilter filter = new TableCacheFilter(cctx, op0.tableName());
 
                     visitor = new SchemaIndexCacheVisitorImpl(cctx, filter, cancelTok, op0.parallel());
                 }
                 else
                     //For not started caches we shouldn't add any data to index.
-                    visitor = clo -> {
-                    };
+                    visitor = clo -> {};
 
                 idx.dynamicIndexCreate(op0.schemaName(), op0.tableName(), idxDesc, op0.ifNotExists(), visitor);
             }
