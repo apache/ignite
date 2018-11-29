@@ -31,6 +31,12 @@ import org.h2.table.IndexColumn;
  * We need indexes on an not affinity nodes. The index shouldn't contains any data.
  */
 public class H2TreeClientIndex extends H2TreeIndexBase {
+
+    /**
+     *
+     */
+    public static final IgniteSQLException SHOULDNT_BE_INVOKED_EXCEPTION = new IgniteSQLException("Shouldn't be invoked, due to it's not affinity node");
+
     /**
      * @param tbl Table.
      * @param name Index name.
@@ -63,46 +69,46 @@ public class H2TreeClientIndex extends H2TreeIndexBase {
 
     /** {@inheritDoc} */
     @Override protected int segmentsCount() {
-        throw new IgniteSQLException("Shouldn't be invoked, due to it's not affinity node");
+        throw SHOULDNT_BE_INVOKED_EXCEPTION;
     }
 
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, SearchRow lower, SearchRow upper) {
-        throw new IgniteSQLException("Shouldn't be invoked, due to it's not affinity node");
+        throw SHOULDNT_BE_INVOKED_EXCEPTION;
     }
 
     /** {@inheritDoc} */
     @Override public GridH2Row put(GridH2Row row) {
-        throw new IgniteSQLException("Shouldn't be invoked, due to it's not affinity node");
+        throw SHOULDNT_BE_INVOKED_EXCEPTION;
     }
 
     /** {@inheritDoc} */
     @Override public boolean putx(GridH2Row row) {
-        throw new IgniteSQLException("Shouldn't be invoked, due to it's not affinity node");
+        throw SHOULDNT_BE_INVOKED_EXCEPTION;
     }
 
     /** {@inheritDoc} */
     @Override public GridH2Row remove(SearchRow row) {
-        throw new IgniteSQLException("Shouldn't be invoked, due to it's not affinity node");
+        throw SHOULDNT_BE_INVOKED_EXCEPTION;
     }
 
     /** {@inheritDoc} */
     @Override public boolean removex(SearchRow row) {
-        throw new IgniteSQLException("Shouldn't be invoked, due to it's not affinity node");
+        throw SHOULDNT_BE_INVOKED_EXCEPTION;
     }
 
     /** {@inheritDoc} */
     @Override public long getRowCount(Session ses) {
-        throw new IgniteSQLException("Shouldn't be invoked, due to it's not affinity node");
+        throw SHOULDNT_BE_INVOKED_EXCEPTION;
     }
 
     /** {@inheritDoc} */
     @Override public Cursor findFirstOrLast(Session session, boolean b) {
-        throw new IgniteSQLException("Shouldn't be invoked, due to it's not affinity node");
+        throw SHOULDNT_BE_INVOKED_EXCEPTION;
     }
 
     /** {@inheritDoc} */
     @Override protected H2Tree treeForRead(int segment) {
-        throw new IgniteSQLException("Shouldn't be invoked, due to it's not affinity node");
+        throw SHOULDNT_BE_INVOKED_EXCEPTION;
     }
 }
