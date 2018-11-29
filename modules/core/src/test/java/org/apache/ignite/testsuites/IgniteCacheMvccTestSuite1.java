@@ -91,6 +91,7 @@ import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCa
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheAtomicPartitionedOnlyBinaryMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheAtomicPartitionedOnlyBinaryMultithreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinariesNearPartitionedByteArrayValuesSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinariesPartitionedOnlyByteArrayValuesSelfTest;
 import org.apache.ignite.internal.processors.cache.context.IgniteCacheAtomicExecutionContextTest;
 import org.apache.ignite.internal.processors.cache.context.IgniteCacheContinuousExecutionContextTest;
 import org.apache.ignite.internal.processors.cache.context.IgniteCacheIsolatedExecutionContextTest;
@@ -103,6 +104,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridCacheClientMo
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheAtomicMessageRecovery10ConnectionsTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheAtomicMessageRecoveryPairedConnectionsTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheAtomicMessageRecoveryTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheConnectionRecovery10ConnectionsTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheConnectionRecoveryTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheMessageRecoveryIdleConnectionTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheMessageWriteTimeoutTest;
@@ -135,12 +137,14 @@ public class IgniteCacheMvccTestSuite1 extends TestSuite {
         ignoredTests.add(GridCacheConfigurationConsistencySelfTest.class);
         ignoredTests.add(IgniteCacheMessageRecoveryIdleConnectionTest.class);
         ignoredTests.add(IgniteCacheConnectionRecoveryTest.class);
+        ignoredTests.add(IgniteCacheConnectionRecovery10ConnectionsTest.class);
         ignoredTests.add(CacheDeferredDeleteSanitySelfTest.class);
         ignoredTests.add(CacheDeferredDeleteQueueTest.class);
         ignoredTests.add(GridCacheStopSelfTest.class);
         ignoredTests.add(IgniteDiagnosticMessagesTest.class);
         ignoredTests.add(IgniteDiagnosticMessagesMultipleConnectionsTest.class);
         ignoredTests.add(GridCacheBinariesNearPartitionedByteArrayValuesSelfTest.class);
+        ignoredTests.add(GridCacheBinariesPartitionedOnlyByteArrayValuesSelfTest.class);
 
         // Atomic caches.
         ignoredTests.add(IgniteCacheEntryListenerAtomicTest.class);

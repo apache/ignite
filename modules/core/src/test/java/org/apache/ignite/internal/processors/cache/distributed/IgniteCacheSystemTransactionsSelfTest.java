@@ -81,6 +81,9 @@ public class IgniteCacheSystemTransactionsSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testSystemTxInsideUserTx() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10473");
+
         IgniteKernal ignite = (IgniteKernal)grid(0);
 
         IgniteCache<Object, Object> jcache = ignite.cache(DEFAULT_CACHE_NAME);
