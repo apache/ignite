@@ -19,6 +19,10 @@ package org.apache.ignite.internal.processors.cache.persistence.db;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
@@ -44,10 +48,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
- * A test class for any tests that check rebalancing process in presence of client nodes and
- * IGNITE_DISABLE_WAL_DURING_REBALANCING optimization enabled.
+ * Test scenarios with rebalancing, IGNITE_DISABLE_WAL_DURING_REBALANCING optimization and topology changes
+ * such as client nodes join/leave, server nodes from BLT leave/join, server nodes out of BLT join/leave.
  */
-public class IgnitePdsCacheRebalancingWithClientsTest extends GridCommonAbstractTest {
+public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstractTest {
     /** Block message predicate to set to Communication SPI in node configuration. */
     private IgniteBiPredicate<ClusterNode, Message> blockMessagePredicate;
 
@@ -61,7 +65,28 @@ public class IgnitePdsCacheRebalancingWithClientsTest extends GridCommonAbstract
     private static final int CACHE3_PARTS_NUM = 32;
 
     /** */
+    private static final int CACHE_SIZE = 2_000;
+
+    /** */
     private static final String CACHE3_NAME = "cache3";
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        cleanPersistenceDir();
+
+        System.setProperty(IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING, "true");
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        cleanPersistenceDir();
+
+        System.clearProperty(IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING);
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -79,7 +104,7 @@ public class IgnitePdsCacheRebalancingWithClientsTest extends GridCommonAbstract
             .setAffinity(new RendezvousAffinityFunction(false, CACHE2_PARTS_NUM));
 
         CacheConfiguration ccfg3 = new CacheConfiguration(CACHE3_NAME)
-            .setBackups(1)
+            .setBackups(2)
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)
             .setCacheMode(CacheMode.PARTITIONED)
             .setAffinity(new RendezvousAffinityFunction(false, CACHE3_PARTS_NUM));
@@ -110,16 +135,16 @@ public class IgnitePdsCacheRebalancingWithClientsTest extends GridCommonAbstract
     }
 
     /**
-     * Verifies that if client joins topology during rebalancing process, rebalancing finishes successfully,
-     * all partitions are owned as expected upon completion rebalancing.
+     * If client joins topology during rebalancing process, rebalancing finishes successfully,
+     * all partitions are owned as expected when rebalancing finishes.
      */
-    public void testClientJoinsDuringRebalancing() throws Exception {
+    public void testClientJoinsLeavesDuringRebalancing() throws Exception {
         Ignite ig0 = startGrids(2);
 
         ig0.active(true);
 
         for (int i = 0; i < 3; i++)
-            fillCache(ig0.getOrCreateCache("cache" + i));
+            fillCache(ig0.getOrCreateCache("cache" + i), CACHE_SIZE);
 
         String ig1Name = "node01-" + grid(1).localNode().consistentId();
 
@@ -160,6 +185,60 @@ public class IgnitePdsCacheRebalancingWithClientsTest extends GridCommonAbstract
             + mxBean.getLocalNodeMovingPartitionsCount(), waitResult);
     }
 
+    /**
+     * If server nodes from BLT leave topology and then join again after additional keys were put to caches,
+     * rebalance starts.
+     * 
+     * Test verifies that all moving partitions get owned after rebalance finishes.
+     *
+     * @throws Exception If failed.
+     */
+    public void testServerNodesFromBltLeavesAndJoinsDuringRebalancing() throws Exception {
+        Ignite ig0 = startGridsMultiThreaded(4);
+
+        fillCache(ig0.cache(CACHE3_NAME), CACHE_SIZE);
+
+        List<Integer> nonAffinityKeys1 = nearKeys(grid(1).cache(CACHE3_NAME), 100, CACHE_SIZE / 2);
+        List<Integer> nonAffinityKeys2 = nearKeys(grid(2).cache(CACHE3_NAME), 100, CACHE_SIZE / 2);
+
+        stopGrid(1);
+        stopGrid(2);
+
+        Set<Integer> nonAffinityKeysSet = new HashSet<>();
+
+        nonAffinityKeysSet.addAll(nonAffinityKeys1);
+        nonAffinityKeysSet.addAll(nonAffinityKeys2);
+
+        fillCache(ig0.cache(CACHE3_NAME), nonAffinityKeysSet);
+
+        int groupId = ((IgniteEx) ig0).cachex(CACHE3_NAME).context().groupId();
+
+        blockMessagePredicate = (node, msg) -> {
+            if (msg instanceof GridDhtPartitionDemandMessage)
+                return ((GridDhtPartitionDemandMessage) msg).groupId() == groupId;
+
+            return false;
+        };
+
+        IgniteEx ig1 = startGrid(1);
+
+        CacheGroupMetricsMXBean mxBean = ig1.cachex(CACHE3_NAME).context().group().mxBean();
+
+        TestRecordingCommunicationSpi commSpi = (TestRecordingCommunicationSpi) ig1
+            .configuration().getCommunicationSpi();
+
+        startGrid(2);
+
+        commSpi.stopBlock();
+
+        boolean allOwned = GridTestUtils.waitForCondition(
+            () -> mxBean.getLocalNodeMovingPartitionsCount() == 0, 30_000);
+
+        assertTrue("Partitions were not owned, there are " + mxBean.getLocalNodeMovingPartitionsCount() +
+            " partitions in MOVING state", allOwned);
+    }
+
+    /** */
     private void cleanPersistenceFiles(String igName) throws Exception {
         String ig1DbPath = Paths.get(DFLT_STORE_DIR, igName).toString();
 
@@ -173,26 +252,15 @@ public class IgnitePdsCacheRebalancingWithClientsTest extends GridCommonAbstract
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), ig1DbWalPath, false));
     }
 
-    private void fillCache(IgniteCache cache) {
-        for (int i = 0; i < 2_000; i++)
+    /** */
+    private void fillCache(IgniteCache cache, int cacheSize) {
+        for (int i = 0; i < cacheSize; i++)
             cache.put(i, "value_" + i);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        cleanPersistenceDir();
-
-        System.setProperty(IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING, "true");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        stopAllGrids();
-
-        cleanPersistenceDir();
-
-        System.clearProperty(IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING);
+    /** */
+    private void fillCache(IgniteCache cache, Collection<Integer> keys) {
+        for (Integer key : keys)
+            cache.put(key, "value_" + key);
     }
 }
