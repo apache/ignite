@@ -518,9 +518,14 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
      */
     @Override public GridDhtFuture<Object> request(GridCacheContext cctx,
         Collection<KeyCacheObject> keys,
-        AffinityTopologyVersion topVer) {
+        AffinityTopologyVersion topVer
+    ) {
         if (!needForceKeys())
             return null;
+
+        Thread.dumpStack();
+
+        assert false;
 
         return request0(cctx, keys, topVer);
     }

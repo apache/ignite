@@ -241,7 +241,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
-    public void testTwoNodesTwoKeysOneBackup() throws Exception {
+    public void _testTwoNodesTwoKeysOneBackup() throws Exception {
         aff.backups(1);
         grids = 2;
         aff.partitions(grids);
