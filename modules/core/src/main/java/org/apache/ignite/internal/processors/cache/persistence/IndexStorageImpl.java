@@ -178,8 +178,6 @@ public class IndexStorageImpl implements IndexStorage {
      * @return Masked name.
      */
     private String maskCacheIndexName(Integer cacheId, String idxName, int segment) {
-        assert !grpShared || grpId == cacheId;
-
         if (grpShared)
             idxName = Integer.toString(cacheId) + "_" + idxName;
 

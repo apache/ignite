@@ -1763,7 +1763,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (!cctx.isQueryEnabled())
             return null;
 
-        // No need to rebuild is cache has no data.
+        // No need to rebuild if cache has no data.
         boolean empty = true;
 
         for (IgniteCacheOffheapManager.CacheDataStore store : cctx.offheap().cacheDataStores()) {
