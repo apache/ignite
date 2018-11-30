@@ -66,7 +66,6 @@ import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStruc
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTransactionalCacheAdapter;
@@ -119,7 +118,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STOPPED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 
 /**
@@ -2250,10 +2248,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     @Nullable public ClusterNode selectAffinityNodeBalanced(
         List<ClusterNode> affNodes,
         int partitionId,
-        boolean canRemap,
-        boolean remap
+        boolean canRemap
     ) {
-        if (!readLoadBalancingEnabled || remap) {
+        if (!readLoadBalancingEnabled) {
             if (!canRemap) {
                 for (ClusterNode node : affNodes) {
                     if (ctx.discovery().alive(node))
@@ -2273,39 +2270,21 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         int r = ThreadLocalRandom.current().nextInt(affNodes.size());
 
-        ClusterNode owning = null;
-        ClusterNode moving = null;
+        ClusterNode n0 = null;
 
         for (ClusterNode node : affNodes) {
-            if (canRemap || discovery().alive(node)) {
-                GridDhtPartitionState partitionState = localPartitionState(node, partitionId);
+            if ((canRemap || discovery().alive(node) && isOwner(node, partitionId))) {
+                if (locMacs.equals(node.attribute(ATTR_MACS)))
+                    return node;
 
-                if (partitionState == OWNING) {
-                    if (locMacs.equals(node.attribute(ATTR_MACS)))
-                        return node;
-
-                    if (r >= 0 || owning == null)
-                        owning = node;
-                }
-
-                if (partitionState == MOVING) {
-                    if (r >= 0 || moving == null)
-                        moving = node;
-                }
-
-                if (grp.needsRecovery() && partitionState != OWNING) {
-                    if (locMacs.equals(node.attribute(ATTR_MACS)))
-                        return node;
-
-                    if (r >= 0 || owning == null)
-                        owning = node;
-                }
-
-                r--;
+                if (r >= 0 || n0 == null)
+                    n0 = node;
             }
+
+            r--;
         }
 
-        return owning != null ? owning : moving;
+        return n0;
     }
 
     /**
@@ -2314,8 +2293,8 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param partitionId Partition ID.
      * @return {@code}
      */
-    private GridDhtPartitionState localPartitionState(ClusterNode node, int partitionId) {
-        return topology().partitionState(node.id(), partitionId);
+    private boolean isOwner(ClusterNode node, int partitionId) {
+        return topology().partitionState(node.id(), partitionId) == OWNING;
     }
 
     /**

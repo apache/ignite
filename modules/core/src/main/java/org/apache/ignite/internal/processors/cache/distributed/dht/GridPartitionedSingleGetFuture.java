@@ -213,15 +213,15 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
             return;
         }
 
-        map(topVer, false);
+        map(topVer);
     }
 
     /**
      * @param topVer Topology version.
      */
     @SuppressWarnings("unchecked")
-    private void map(final AffinityTopologyVersion topVer, boolean remap) {
-        ClusterNode node = mapKeyToNode(topVer, remap);
+    private void map(final AffinityTopologyVersion topVer) {
+        ClusterNode node = mapKeyToNode(topVer);
 
         if (node == null) {
             assert isDone() : this;
@@ -256,7 +256,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                     ", invalidParts=" + invalidParts + ']';
 
                 // Remap recursively.
-                map(updTopVer, remap);
+                map(updTopVer);
             }
             else {
                 fut.listen(new CI1<IgniteInternalFuture<GridCacheEntryInfo>>() {
@@ -333,13 +333,13 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * @param topVer Topology version.
      * @return Primary node or {@code null} if future was completed.
      */
-    @Nullable private ClusterNode mapKeyToNode(AffinityTopologyVersion topVer, boolean remap) {
+    @Nullable private ClusterNode mapKeyToNode(AffinityTopologyVersion topVer) {
         int part = cctx.affinity().partition(key);
 
         List<ClusterNode> affNodes = cctx.affinity().nodesByPartition(part, topVer);
 
         if (affNodes.isEmpty()) {
-            onDone(serverNotFoundError(part, topVer));
+            onDone(serverNotFoundError(topVer));
 
             return null;
         }
@@ -358,10 +358,10 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
             }
         }
 
-        ClusterNode affNode = cctx.selectAffinityNodeBalanced(affNodes, part, canRemap, remap);
+        ClusterNode affNode = cctx.selectAffinityNodeBalanced(affNodes, part, canRemap);
 
         if (affNode == null) {
-            onDone(serverNotFoundError(part, topVer));
+            onDone(serverNotFoundError(topVer));
 
             return null;
         }
@@ -632,7 +632,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
 
             }
             else
-                map(topVer,false);
+                map(topVer);
 
             return false;
         }
@@ -721,10 +721,9 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * @param topVer Topology version.
      * @return Exception.
      */
-    private ClusterTopologyServerNotFoundException serverNotFoundError(int part, AffinityTopologyVersion topVer) {
+    private ClusterTopologyServerNotFoundException serverNotFoundError(AffinityTopologyVersion topVer) {
         return new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
-            "(all partition nodes left the grid) [topVer=" + topVer + ", nodeId=" + cctx.localNodeId() +
-            ", part=" + part + ", cache=" + cctx.name() + ']');
+            "(all partition nodes left the grid) [topVer=" + topVer + ", cache=" + cctx.name() + ']');
     }
 
     /** {@inheritDoc} */
@@ -772,7 +771,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 if (error != null)
                     onDone(error);
 
-                map(topVer, true);
+                map(topVer);
             }
         });
     }
