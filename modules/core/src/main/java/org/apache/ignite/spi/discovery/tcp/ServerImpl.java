@@ -261,6 +261,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     private final ConcurrentMap<InetSocketAddress, GridPingFutureAdapter<IgniteBiTuple<UUID, Boolean>>> pingMap =
         new ConcurrentHashMap<>();
 
+    /** Last listener future. */
+    private IgniteFuture<?> lastCustomEvtLsnrFut;
+
     /**
      * @param adapter Adapter.
      */
@@ -1439,7 +1442,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             Map<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer, top);
 
-            lsnr.onDiscovery(type, topVer, node, top, hist, null);
+            IgniteFuture<?> fut = lsnr.onDiscovery(type, topVer, node, top, hist, null);
+
+            if (type == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT)
+                lastCustomEvtLsnrFut = fut;
         }
         else {
             if (log.isDebugEnabled())
@@ -2157,6 +2163,22 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
+     * Wait for all the listeners from previous discovery message to be completed.
+     */
+    private void waitForLastCustomEventListenerFuture() {
+        if (lastCustomEvtLsnrFut != null) {
+            try {
+                lastCustomEvtLsnrFut.get();
+            }
+            catch (IgniteException ignore) {
+                // No-op.
+            }
+
+            lastCustomEvtLsnrFut = null;
+        }
+    }
+
+    /**
      * Discovery messages history used for client reconnect.
      */
     private class EnsuredMessageHistory {
@@ -2831,7 +2853,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 processDiscardMessage((TcpDiscoveryDiscardMessage)msg);
 
             else if (msg instanceof TcpDiscoveryCustomEventMessage)
-                processCustomMessage((TcpDiscoveryCustomEventMessage)msg, true);
+                processCustomMessage((TcpDiscoveryCustomEventMessage)msg, false);
 
             else if (msg instanceof TcpDiscoveryClientPingRequest)
                 processClientPingRequest((TcpDiscoveryClientPingRequest)msg);
@@ -4159,6 +4181,15 @@ class ServerImpl extends TcpDiscoveryImpl {
         @Deprecated
         private void processNodeAddedMessage(TcpDiscoveryNodeAddedMessage msg) {
             assert msg != null;
+
+            blockingSectionBegin();
+
+            try {
+                waitForLastCustomEventListenerFuture();
+            }
+            finally {
+                blockingSectionEnd();
+            }
 
             TcpDiscoveryNode node = msg.node();
 
@@ -5615,6 +5646,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                     finally {
                         blockingSectionEnd();
                     }
+                }
+                else {
+                    lastCustomEvtLsnrFut = fut;
                 }
 
                 if (msgObj.isMutable()) {
