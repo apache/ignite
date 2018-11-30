@@ -19,12 +19,16 @@ package org.apache.ignite.testframework;
 
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
+<<<<<<< HEAD
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.X;
+=======
+>>>>>>> origin/master
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS;
+<<<<<<< HEAD
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -47,7 +51,7 @@ public class MvccFeatureChecker {
         CACHE_EVENTS,
         EVICTION,
         EXPIRATION,
-        INTERCEPTORS
+        INTERCEPTOR
     }
 
     /**
@@ -111,6 +115,7 @@ public class MvccFeatureChecker {
     }
 
     /**
+<<<<<<< HEAD
      * Checks if given exception was caused by MVCC write conflict.
      *
      * @param e Exception.
@@ -124,12 +129,17 @@ public class MvccFeatureChecker {
     }
 
     /**
+=======
+>>>>>>> origin/master
      * Fails if feature is not supported in Mvcc mode.
      *
      * @param feature Mvcc feature.
      * @throws AssertionError If failed.
      */
+<<<<<<< HEAD
     @SuppressWarnings("fallthrough")
+=======
+>>>>>>> origin/master
     private static void validateFeature(Feature feature) {
         switch (feature) {
             case NEAR_CACHE:
@@ -153,7 +163,11 @@ public class MvccFeatureChecker {
             case EXPIRATION:
                 fail("https://issues.apache.org/jira/browse/IGNITE-7311");
 
+<<<<<<< HEAD
             case INTERCEPTORS:
+=======
+            case INTERCEPTOR:
+>>>>>>> origin/master
                 fail("https://issues.apache.org/jira/browse/IGNITE-9323");
         }
     }
