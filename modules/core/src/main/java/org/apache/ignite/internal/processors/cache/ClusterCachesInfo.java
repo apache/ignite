@@ -611,14 +611,6 @@ class ClusterCachesInfo {
                     return;
                 }
 
-                if (!req.sql() && desc.sql()) {
-                    ctx.cache().completeCacheStartFuture(req, false,
-                        new IgniteCheckedException("Only cache created with cache API may be removed with " +
-                            "direct call to destroyCache [cacheName=" + cacheName + ']'));
-
-                    return;
-                }
-
                 processStopCacheRequest(exchangeActions, req, cacheName, desc);
 
                 needExchange = true;
