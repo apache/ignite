@@ -26,7 +26,6 @@ import java.util.Set;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_CREATED;
@@ -170,7 +169,8 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
                     ctx.events().addEvent(doomed.partition(),
                         doomed.key(),
                         ctx.localNodeId(),
-                        (IgniteUuid)null,
+                        null,
+                        null,
                         null,
                         EVT_CACHE_ENTRY_DESTROYED,
                         null,
@@ -190,7 +190,8 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
                     ctx.events().addEvent(created.partition(),
                         created.key(),
                         ctx.localNodeId(),
-                        (IgniteUuid)null,
+                        null,
+                        null,
                         null,
                         EVT_CACHE_ENTRY_CREATED,
                         null,
@@ -276,7 +277,8 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
                 ctx.events().addEvent(entry.partition(),
                     entry.key(),
                     ctx.localNodeId(),
-                    (IgniteUuid)null,
+                    null,
+                    null,
                     null,
                     EVT_CACHE_ENTRY_DESTROYED,
                     null,

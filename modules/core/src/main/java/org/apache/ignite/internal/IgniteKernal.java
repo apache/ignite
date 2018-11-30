@@ -236,6 +236,7 @@ import static org.apache.ignite.internal.GridKernalState.STARTED;
 import static org.apache.ignite.internal.GridKernalState.STARTING;
 import static org.apache.ignite.internal.GridKernalState.STOPPED;
 import static org.apache.ignite.internal.GridKernalState.STOPPING;
+import static org.apache.ignite.internal.IgniteComponentType.COMPRESSION;
 import static org.apache.ignite.internal.IgniteComponentType.HADOOP_HELPER;
 import static org.apache.ignite.internal.IgniteComponentType.IGFS;
 import static org.apache.ignite.internal.IgniteComponentType.IGFS_HELPER;
@@ -323,7 +324,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private IgniteConfiguration cfg;
 
     /** */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     @GridToStringExclude
     private GridLoggerProxy log;
 
@@ -716,7 +716,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param evt Grid event.
      * @throws IgniteCheckedException If user threw exception during start.
      */
-    @SuppressWarnings({"CatchGenericClass"})
     private void notifyLifecycleBeans(LifecycleEventType evt) throws IgniteCheckedException {
         if (!cfg.isDaemon() && cfg.getLifecycleBeans() != null) {
             for (LifecycleBean bean : cfg.getLifecycleBeans())
@@ -736,7 +735,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      *
      * @param evt Grid event.
      */
-    @SuppressWarnings({"CatchGenericClass"})
     private void notifyLifecycleBeansEx(LifecycleEventType evt) {
         try {
             notifyLifecycleBeans(evt);
@@ -773,7 +771,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param hnd Default uncaught exception handler used by thread pools.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    @SuppressWarnings({"CatchGenericClass", "unchecked"})
+    @SuppressWarnings({"unchecked"})
     public void start(
         final IgniteConfiguration cfg,
         ExecutorService utilityCachePool,
@@ -1005,6 +1003,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             // Start processors before discovery manager, so they will
             // be able to start receiving messages once discovery completes.
             try {
+                startProcessor(COMPRESSION.createOptional(ctx));
                 startProcessor(new PdsConsistentIdProcessor(ctx));
                 startProcessor(new MvccProcessorImpl(ctx));
                 startProcessor(createComponent(DiscoveryNodeValidationProcessor.class, ctx));
@@ -1046,6 +1045,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 fillNodeAttributes(clusterProc.updateNotifierEnabled());
 
                 ctx.cache().context().database().notifyMetaStorageSubscribersOnReadyForRead();
+
+                ctx.cache().context().database().startMemoryRestore(ctx);
+
+                ctx.recoveryMode(false);
             }
             catch (Throwable e) {
                 U.error(
@@ -1452,7 +1455,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param notifyEnabled Update notifier flag.
      * @throws IgniteCheckedException thrown if was unable to set up attribute.
      */
-    @SuppressWarnings({"SuspiciousMethodCalls", "unchecked", "TypeMayBeWeakened"})
+    @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
     private void fillNodeAttributes(boolean notifyEnabled) throws IgniteCheckedException {
         ctx.addNodeAttribute(ATTR_REBALANCE_POOL_SIZE, configuration().getRebalanceThreadPoolSize());
         ctx.addNodeAttribute(ATTR_DATA_STREAMER_POOL_SIZE, configuration().getDataStreamerThreadPoolSize());
@@ -2171,7 +2174,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /**
      * @return Language runtime.
      */
-    @SuppressWarnings("ThrowableInstanceNeverThrown")
     private String getLanguage() {
         boolean scala = false;
         boolean groovy = false;

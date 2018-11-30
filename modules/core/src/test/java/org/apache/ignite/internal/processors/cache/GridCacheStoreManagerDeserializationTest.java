@@ -81,7 +81,6 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(final String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
@@ -203,13 +202,11 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
     }
 
     /**
-     * TODO GG-11148.
-     *
      * Check whether binary objects are stored without unmarshalling via stream API.
      *
      * @throws Exception If failed.
      */
-    public void _testBinaryStream() throws Exception {
+    public void testBinaryStream() throws Exception {
         final Ignite grid = startGrid("binaryGrid");
 
         final IgniteCache<BinaryObject, BinaryObject> cache = grid.createCache(CACHE_NAME).withKeepBinary();

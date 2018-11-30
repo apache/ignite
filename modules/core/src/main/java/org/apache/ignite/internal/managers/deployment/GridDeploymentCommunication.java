@@ -351,7 +351,6 @@ class GridDeploymentCommunication {
      * @return Either response value or {@code null} if timeout occurred.
      * @throws IgniteCheckedException Thrown if there is no connection with remote node.
      */
-    @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
     GridDeploymentResponse sendResourceRequest(final String rsrcName, IgniteUuid clsLdrId,
         final ClusterNode dstNode, long threshold) throws IgniteCheckedException {
         assert rsrcName != null;

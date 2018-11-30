@@ -480,7 +480,6 @@ public class GridBinaryTestClasses {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
             companyByStreet = reader.readMap("companyByStreet", new BinaryMapFactory<String, Companies>() {
                 @Override public Map<String, Companies> create(int size) {

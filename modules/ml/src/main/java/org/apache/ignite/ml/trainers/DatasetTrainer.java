@@ -310,4 +310,5 @@ public abstract class DatasetTrainer<M extends Model, L> {
             super("Cannot train model on empty dataset");
         }
     }
+
 }

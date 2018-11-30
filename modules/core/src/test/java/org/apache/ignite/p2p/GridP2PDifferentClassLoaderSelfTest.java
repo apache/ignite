@@ -81,7 +81,7 @@ public class GridP2PDifferentClassLoaderSelfTest extends GridCommonAbstractTest 
      * @param expectEquals whether expected
      * @throws Exception if error occur
      */
-    @SuppressWarnings({"ObjectEquality", "unchecked"})
+    @SuppressWarnings({"unchecked"})
     private void processTest(boolean isSameTask, boolean expectEquals) throws Exception {
         try {
             Ignite ignite1 = startGrid(1);

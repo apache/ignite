@@ -332,7 +332,6 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @return Affinity key.
      * @throws IgniteCheckedException In case of error.
      */
-    @SuppressWarnings("unchecked")
     @Nullable public Object affinityKey(String cacheName, @Nullable Object key) throws IgniteCheckedException {
         assert cacheName != null;
 
@@ -423,7 +422,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             try {
                 GridAffinityAssignment assign = assign0 instanceof GridAffinityAssignment ?
                     (GridAffinityAssignment)assign0 :
-                    new GridAffinityAssignment(topVer, assign0.assignment(), assign0.idealAssignment(), assign0.mvccCoordinator());
+                    new GridAffinityAssignment(topVer, assign0.assignment(), assign0.idealAssignment());
 
                 AffinityInfo info = new AffinityInfo(
                     cctx.config().getAffinity(),
