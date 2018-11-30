@@ -636,7 +636,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     JdbcResultInfo jdbcRes;
 
                     if (cur.isQuery()) {
-                        jdbcRes = new JdbcResultInfo(true, -1, cursorId);
+                        jdbcRes = new JdbcResultInfo(true, -1, cur.cursorId());
 
                         cur.openIterator();
 
