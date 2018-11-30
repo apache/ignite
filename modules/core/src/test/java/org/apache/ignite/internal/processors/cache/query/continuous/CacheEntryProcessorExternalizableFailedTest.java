@@ -467,6 +467,8 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testMvccPessimisticOnePhaseCommit() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10483");
+
         CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 1).setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
 
         doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
@@ -496,6 +498,8 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testMvccPessimisticOnePhaseCommitFullSync() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10483");
+
         CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 1).setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
 
         doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
@@ -525,6 +529,8 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testMvccPessimistic() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10483");
+
         CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 2).setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
 
         doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
@@ -554,6 +560,8 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testMvccPessimisticFullSync() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10483");
+
         CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 2).setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
 
         doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
@@ -597,7 +605,7 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
         else
             clnCache = cln.cache(ccfg.getName());
 
-        clnCache.put(KEY, WRONG_VALUE);
+        clnCache.put(KEY, EXPECTED_VALUE);
 
         try {
             // Explicit tx.
