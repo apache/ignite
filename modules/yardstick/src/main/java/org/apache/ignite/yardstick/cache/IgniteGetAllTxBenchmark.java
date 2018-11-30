@@ -15,30 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.client.cache;
+package org.apache.ignite.yardstick.cache;
 
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
-import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import java.util.Map;
+import java.util.Set;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Remove keys request.
+ * Ignite benchmark that performs getAll operations.
  */
-public class ClientCacheRemoveKeysRequest extends ClientCacheKeysRequest {
-    /**
-     * Constructor.
-     *
-     * @param reader Reader.
-     */
-    public ClientCacheRemoveKeysRequest(BinaryRawReaderEx reader) {
-        super(reader);
+public class IgniteGetAllTxBenchmark extends IgniteGetBenchmark {
+    /** {@inheritDoc} */
+    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+        Set<Integer> keys = U.newHashSet(args.batch());
+
+        while (keys.size() < args.batch()) {
+            int key = nextRandom(args.range());
+
+            keys.add(key);
+        }
+
+        IgniteCache<Integer, Object> cache = cacheForOperation();
+
+        cache.getAll(keys);
+
+        return true;
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public ClientResponse process(ClientConnectionContext ctx) {
-        cache(ctx).removeAll(keys());
-
-        return super.process(ctx);
+    @Override protected IgniteCache<Integer, Object> cache() {
+        return ignite().cache("tx");
     }
 }
