@@ -451,7 +451,6 @@ public class JdbcThinTcpIo {
      * @throws SQLException On error.
      */
     void sendBatchRequestNoWaitResponse(JdbcOrderedBatchExecuteRequest req) throws IOException, SQLException {
-        // TODO: 13.11.18 coniser user cancel flag here;
         synchronized (mux) {
             if (ownThread != null) {
                 throw new SQLException("Concurrent access to JDBC connection is not allowed"
