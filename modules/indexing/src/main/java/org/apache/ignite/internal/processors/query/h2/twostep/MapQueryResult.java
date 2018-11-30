@@ -191,7 +191,7 @@ class MapQueryResult {
      * @param pageSize Page size.
      * @return {@code true} If there are no more rows available.
      */
-    synchronized boolean fetchNextPage(List<Value[]> rows, int pageSize) {
+    boolean fetchNextPage(List<Value[]> rows, int pageSize) {
         if (closed)
             return true;
 
@@ -273,16 +273,14 @@ class MapQueryResult {
 
     /**
      * Close the result.
-     *
-     * @param lockTbls If {@code true} lock the tables before close result.
      */
-    public void close(boolean lockTbls) {
-        if (closed)
-            return;
-
-        ses.lockTables();
-
+    public void close() {
         try {
+            ses.lockTables();
+
+            if (closed)
+                return;
+
             closed = true;
 
             U.close(rs, log);

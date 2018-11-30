@@ -27,7 +27,6 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Session;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
-import org.h2.engine.Session;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
@@ -147,31 +146,35 @@ class MapQueryResults {
     /**
      * Cancels the query.
      */
-    synchronized void cancel() {
-        if (cancelled)
-            return;
+    void cancel() {
+        synchronized (this) {
+            if (cancelled)
+                return;
 
-        cancelled = true;
+            cancelled = true;
 
-        for (int i = 0; i < results.length(); i++) {
-            GridQueryCancel cancel = cancels[i];
+            for (int i = 0; i < results.length(); i++) {
+                GridQueryCancel cancel = cancels[i];
 
-            if (cancel != null)
-                cancel.cancel();
+                if (cancel != null)
+                    cancel.cancel();
+            }
         }
 
-        close(true);
+        // The closing result set is synchronized by the session.
+        // Include to synchronize block may be cause deadlock on <this> and IgniteH2Session lock.
+        close();
     }
 
     /**
      *
      */
-    public synchronized void close(boolean lockTbls) {
+    public void close() {
         for (int i = 0; i < results.length(); i++) {
             MapQueryResult res = results.get(i);
 
             if (res != null)
-                res.close(lockTbls);
+                res.close();
         }
 
         if (lazy)

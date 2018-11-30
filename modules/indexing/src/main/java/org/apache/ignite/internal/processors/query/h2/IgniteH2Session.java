@@ -39,6 +39,9 @@ public class IgniteH2Session {
     public IgniteH2Session(Session ses) {
         this.ses = ses;
 
+        // The first lock of the tables is happened inside H2 SQL executor.
+        // We have lock the session before obtain table lock to prevent
+        // concurrent close the ResultSet.
         lock.lock();
     }
 
@@ -46,6 +49,7 @@ public class IgniteH2Session {
      *
      */
     public void lockTables() {
+        // Prevent reentrant tables read-lock because H2 lock semantic: one table unlock must release all locks.
         if (!lock.isHeldByCurrentThread()) {
             lock.lock();
 
@@ -58,11 +62,12 @@ public class IgniteH2Session {
      *
      */
     public void unlockTables() {
-        if (ses != null)
-            GridH2Table.unlockTables(ses);
+        if (lock.isHeldByCurrentThread()) {
+            if (ses != null)
+                GridH2Table.unlockTables(ses);
 
-        if (lock.isHeldByCurrentThread())
             lock.unlock();
+        }
     }
 
     /**

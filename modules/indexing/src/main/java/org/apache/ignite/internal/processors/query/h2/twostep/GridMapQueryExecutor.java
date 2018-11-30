@@ -953,7 +953,7 @@ public class GridMapQueryExecutor {
             if (qryResults != null) {
                 nodeRess.remove(reqId, segmentId, qryResults);
 
-                qryResults.close(false);
+                qryResults.close();
             }
             else
                 releaseReservations();
@@ -1287,13 +1287,13 @@ public class GridMapQueryExecutor {
         boolean last = res.fetchNextPage(rows, pageSize);
 
         if (last) {
-            res.close(false);
+            res.close();
 
             if (qr.isAllClosed()) {
                 nodeRess.remove(qr.queryRequestId(), segmentId, qr);
 
                 // Close, release reservations, recycle connection if the last page fetched in lazy mode.
-                qr.close(false);
+                qr.close();
             }
         }
         else {
