@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.lang.IgniteFuture;
@@ -417,7 +418,10 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testCancelAllTopologyChange() throws Exception {
-        Ignite client = grid(CLIENT_NODE_NAME);
+        IgniteEx client = grid(CLIENT_NODE_NAME);
+
+        if (!client.context().service().eventDrivenServiceProcessorEnabled())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10021");
 
         int numServices = 500;
 
