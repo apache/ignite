@@ -38,7 +38,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
     /** Data size. */
-    protected static final int AMOUNT = 300;
+    protected static final int AMOUNT = 50;
 
     /** Data size. */
     protected static final String CACHE_NAME = "T";
@@ -113,7 +113,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
         IgniteEx srv = startServer();
 
         execute(srv, "CREATE TABLE T(k int primary key, v int) WITH \"cache_name=T,wrap_value=false," +
-            "atomicity=transactional_snapshot\"");
+            "atomicity=transactional\"");
 
         execute(srv, "CREATE INDEX IDX ON T(v)");
 
