@@ -17,6 +17,8 @@
 
 package org.apache.ignite.ml.preprocessing.encoding;
 
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -47,6 +49,9 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Object[]
 
     /** Encoder preprocessor type. */
     private EncoderType encoderType = EncoderType.ONE_HOT_ENCODER;
+
+    /** Encoder sorting strategy. */
+    private EncoderSortingStrategy encoderSortingStgy = EncoderSortingStrategy.FREQUENCY_DESC;
 
     /** {@inheritDoc} */
     @Override public EncoderPreprocessor<K, V> fit(
@@ -133,9 +138,16 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Object[]
      * @return Encoding values.
      */
     private Map<String, Integer> transformFrequenciesToEncodingValues(Map<String, Integer> frequencies) {
+        Comparator<Map.Entry<String, Integer>> comp;
+
+        if (encoderSortingStgy.equals(EncoderSortingStrategy.FREQUENCY_DESC))
+            comp = Map.Entry.comparingByValue();
+        else
+            comp = Collections.reverseOrder(Map.Entry.comparingByValue());
+
         final HashMap<String, Integer> resMap = frequencies.entrySet()
             .stream()
-            .sorted(Map.Entry.comparingByValue())
+            .sorted(comp)
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue,
                 (oldValue, newValue) -> oldValue, LinkedHashMap::new));
 
@@ -211,6 +223,17 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Object[]
      */
     public EncoderTrainer<K, V> withEncodedFeature(int idx) {
         handledIndices.add(idx);
+        return this;
+    }
+
+    /**
+     * Sets the encoder indexing strategy.
+     *
+     * @param encoderSortingStgy The encoder indexing strategy.
+     * @return The changed trainer.
+     */
+    public EncoderTrainer<K, V> withEncoderIndexingStrategy(EncoderSortingStrategy encoderSortingStgy) {
+        this.encoderSortingStgy = encoderSortingStgy;
         return this;
     }
 

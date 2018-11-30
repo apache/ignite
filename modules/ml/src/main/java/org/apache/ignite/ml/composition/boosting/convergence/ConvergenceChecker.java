@@ -68,7 +68,7 @@ public abstract class ConvergenceChecker<K, V> implements Serializable {
      * @param datasetBuilder Dataset builder.
      * @param featureExtractor Feature extractor.
      * @param lbExtractor Label extractor.
-     * @param precision
+     * @param precision Precision.
      */
     public ConvergenceChecker(long sampleSize,
         IgniteFunction<Double, Double> externalLbToInternalMapping, Loss loss,

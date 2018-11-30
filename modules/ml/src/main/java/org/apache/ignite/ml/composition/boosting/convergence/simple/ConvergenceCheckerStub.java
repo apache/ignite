@@ -41,7 +41,7 @@ public class ConvergenceCheckerStub<K,V> extends ConvergenceChecker<K,V> {
     private static final long serialVersionUID = 8534776439755210864L;
 
     /**
-     * Creates an intance of ConvergenceCheckerStub.
+     * Creates an instance of ConvergenceCheckerStub.
      *
      * @param sampleSize Sample size.
      * @param externalLbToInternalMapping External label to internal mapping.

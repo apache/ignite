@@ -48,7 +48,7 @@ public class Pipeline<K, V, R> {
     /** Label extractor. */
     private IgniteBiFunction<K, V, Double> lbExtractor;
 
-    /** Prerpocessor stages. */
+    /** Preprocessor stages. */
     private List<PreprocessingTrainer> preprocessors = new ArrayList<>();
 
     /** Final trainer stage. */

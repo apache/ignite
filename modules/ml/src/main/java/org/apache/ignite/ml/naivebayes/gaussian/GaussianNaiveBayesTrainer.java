@@ -32,13 +32,13 @@ import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 /**
  * Trainer for the naive Bayes classification model. The trainer calculates prior probabilities from the input dataset.
  * Prior probabilities can be also set by {@code setPriorProbabilities} or {@code withEquiprobableClasses}. If {@code
- * equiprobableClasses} is set, the probalilities of all classes will be {@code 1/k}, where {@code k} is classes count.
+ * equiprobableClasses} is set, the probabilities of all classes will be {@code 1/k}, where {@code k} is classes count.
  */
 public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<GaussianNaiveBayesModel> {
-
-    /* Preset prior probabilities. */
+    /** Preset prior probabilities. */
     private double[] priorProbabilities;
-    /* Sets equivalent probability for all classes. */
+
+    /** Sets equivalent probability for all classes. */
     private boolean equiprobableClasses;
 
     /**
@@ -94,9 +94,9 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
                         sqSum = new double[features.size()];
                         res.featureSquaredSumsPerLbl.put(label, sqSum);
                     }
-                    if (!res.featureCountersPerLbl.containsKey(label)) {
+                    if (!res.featureCountersPerLbl.containsKey(label))
                         res.featureCountersPerLbl.put(label, 0);
-                    }
+
                     res.featureCountersPerLbl.put(label, res.featureCountersPerLbl.get(label) + 1);
 
                     toMeans = res.featureSumsPerLbl.get(label);
@@ -117,9 +117,8 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
                     return a;
                 return a.merge(b);
             });
-            if (mdl != null && mdl.getSumsHolder() != null) {
+            if (mdl != null && mdl.getSumsHolder() != null)
                 sumsHolder = sumsHolder.merge(mdl.getSumsHolder());
-            }
 
             List<Double> sortedLabels = new ArrayList<>(sumsHolder.featureCountersPerLbl.keySet());
             sortedLabels.sort(Double::compareTo);
@@ -146,16 +145,15 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
                     variances[lbl][i] = (sqSum[i] - sum[i] * sum[i] / count) / count;
                 }
 
-                if (equiprobableClasses) {
+                if (equiprobableClasses)
                     classProbabilities[lbl] = 1. / labelCount;
-                }
+
                 else if (priorProbabilities != null) {
                     assert classProbabilities.length == priorProbabilities.length;
                     classProbabilities[lbl] = priorProbabilities[lbl];
                 }
-                else {
+                else
                     classProbabilities[lbl] = (double)count / datasetSize;
-                }
 
                 labels[lbl] = label;
                 ++lbl;
