@@ -468,14 +468,7 @@ public class JdbcThinTcpIo {
                     + CURRENT_VER + ", remoteNodeVer=" + igniteVer + ']', SqlStateCode.INTERNAL_ERROR);
             }
 
-            int cap = guessCapacity(req);
-
-            BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap),
-                null, null);
-
-            req.writeBinary(writer, srvProtocolVer);
-
-            send(writer.array());
+            sendRequestRaw(req);
         }
         finally {
             synchronized (mux) {
@@ -502,13 +495,7 @@ public class JdbcThinTcpIo {
         }
 
         try {
-            int cap = guessCapacity(req);
-
-            BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap), null, null);
-
-            req.writeBinary(writer, srvProtocolVer);
-
-            send(writer.array());
+            sendRequestRaw(req);
 
             JdbcResponse response = readResponse();
 

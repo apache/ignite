@@ -31,7 +31,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
@@ -110,7 +109,7 @@ public class JdbcThinStatement implements Statement {
     private final Object cancellationProcessingMutex = new Object();
 
     /** Cancelled flag. */
-    private AtomicBoolean canceled = new AtomicBoolean(false);
+    private volatile boolean canceled;
 
     /**
      * Creates new statement.
@@ -185,7 +184,7 @@ public class JdbcThinStatement implements Statement {
         JdbcQueryExecuteRequest request = null;
 
         synchronized (cancellationProcessingMutex) {
-            canceled.set(false);
+            canceled = false;
 
             ensureAlive();
 
@@ -401,7 +400,7 @@ public class JdbcThinStatement implements Statement {
      * @return Returns true if statement was cancelled, false otherwise.
      */
     boolean cancelled() {
-        return canceled.get();
+        return canceled;
     }
 
     /**
@@ -489,7 +488,7 @@ public class JdbcThinStatement implements Statement {
             }
 
             if (currReqId != 0) {
-                canceled.set(true);
+                canceled = true;
 
                 conn.sendQueryCancelRequest(new JdbcQueryCancelRequest(currReqId));
             }
@@ -683,7 +682,7 @@ public class JdbcThinStatement implements Statement {
         JdbcBatchExecuteRequest request = null;
 
         synchronized (cancellationProcessingMutex) {
-            canceled.set(false);
+            canceled = false;
 
             ensureAlive();
 
