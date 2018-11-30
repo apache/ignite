@@ -33,8 +33,10 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 
@@ -117,7 +119,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
             //and: change data
             try (IgniteDataStreamer<Object, Object> s = ig.dataStreamer(TEST_CACHE_NAME)) {
                 s.allowOverwrite(true);
-                for (int i = 0; i < 5_000; i++)
+                for (int i = 0; i < 50; i++)
                     s.addData(i, null);
             }
 
@@ -134,7 +136,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
             //then: everything is ok
             try (IgniteDataStreamer<Object, Object> s = ig1.dataStreamer(TEST_CACHE_NAME)) {
                 s.allowOverwrite(true);
-                for (int i = 0; i < 50_000; i++) {
+                for (int i = 0; i < 50; i++) {
                     BinaryObject bo = ig1.binary().builder(TEST_INDEX_OBJECT)
                         .setField("a", i, Object.class)
                         .setField("b", String.valueOf(i), Object.class)
@@ -147,7 +149,19 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
 
             IgniteCache<Object, Object> cache = ig1.cache(TEST_CACHE_NAME);
 
-            assertThat(doExplainPlan(cache, "explain select * from TestIndexObject where a > 5"), containsString("myindexa"));
+            assert GridTestUtils.waitForCondition(new PA() {
+                @Override public boolean apply() {
+                    String plan = doExplainPlan(cache, "explain select * from TestIndexObject where a > 5");
+
+                    if (plan.contains("myindexa"))
+                        return true;
+
+                    log.info("Plan does not use index: " + plan);
+
+                    return false;
+                }
+            }, 5_000);
+
             assertFalse(cache.query(new SqlFieldsQuery("SELECT a,b,c FROM TestIndexObject limit 1")).getAll().isEmpty());
         }
     }
@@ -186,7 +200,19 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
             //then: config for cache was applying successful
             IgniteCache<Object, Object> cache = ig.cache(TEST_CACHE_NAME);
 
-            assertThat(doExplainPlan(cache, "explain select * from TestIndexObject where a > 5"), containsString("myindexa"));
+            assert GridTestUtils.waitForCondition(new PA() {
+                @Override public boolean apply() {
+                    String plan = doExplainPlan(cache, "explain select * from TestIndexObject where a > 5");
+
+                    if (plan.contains("myindexa"))
+                        return true;
+
+                    log.info("Plan does not use index: " + plan);
+
+                    return false;
+                }
+            }, 5_000);
+
             assertFalse(cache.query(new SqlFieldsQuery("SELECT a,b,c FROM TestIndexObject limit 1")).getAll().isEmpty());
         }
     }
@@ -288,7 +314,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
             //then: config should be merged
             try (IgniteDataStreamer<Object, Object> s = ig1.dataStreamer(TEST_CACHE_NAME)) {
                 s.allowOverwrite(true);
-                for (int i = 0; i < 5_000; i++) {
+                for (int i = 0; i < 50; i++) {
                     BinaryObject bo = ig1.binary().builder("TestIndexObject")
                         .setField("a", i, Object.class)
                         .setField("b", String.valueOf(i), Object.class)
@@ -341,7 +367,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
             //then: config should be merged
             try (IgniteDataStreamer<Object, Object> s = ig.dataStreamer(TEST_CACHE_NAME)) {
                 s.allowOverwrite(true);
-                for (int i = 0; i < 5_000; i++) {
+                for (int i = 0; i < 50; i++) {
                     BinaryObject bo = ig.binary().builder("TestIndexObject")
                         .setField("a", i, Object.class)
                         .setField("b", String.valueOf(i), Object.class)
@@ -417,13 +443,13 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
 
             IgniteCache cache = ig.getOrCreateCache(getTestTableConfiguration());
 
-            cache.query(new SqlFieldsQuery("create index myindexa on TestIndexObject(a) INLINE_SIZE 1000")).getAll();
+            cache.query(new SqlFieldsQuery("create index myindexa on TestIndexObject(a) INLINE_SIZE 100")).getAll();
 
             //stop one node and create index on other node
             stopGrid(1);
 
             cache.query(new SqlFieldsQuery("drop index myindexa")).getAll();
-            cache.query(new SqlFieldsQuery("create index myindexa on TestIndexObject(a) INLINE_SIZE 2000")).getAll();
+            cache.query(new SqlFieldsQuery("create index myindexa on TestIndexObject(a) INLINE_SIZE 200")).getAll();
 
             //and: stopped all grid
             stopAllGrids();
@@ -497,7 +523,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
      */
     private void fillTestData(Ignite ig) {
         try (IgniteDataStreamer<Object, Object> s = ig.dataStreamer(TEST_CACHE_NAME)) {
-            for (int i = 0; i < 50_000; i++) {
+            for (int i = 0; i < 500; i++) {
                 BinaryObject bo = ig.binary().builder("TestIndexObject")
                     .setField("a", i, Object.class)
                     .setField("b", String.valueOf(i), Object.class)
