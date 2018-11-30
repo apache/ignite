@@ -24,9 +24,9 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 public class StackedModel<IS, IA, O, M extends Model<IA, O>> implements Model<IS, O> {
     private Model<IS, IA> subModelsLayer;
+    private final M aggregatingModel;
     private List<Model<IS, ?>> submodels;
     private final IgniteBinaryOperator<IA> aggregatingInputMerger;
-    private final M aggregatingModel;
 
     public StackedModel(M aggregatingMdl,
         IgniteBinaryOperator<IA> aggregatingInputMerger,
@@ -53,7 +53,8 @@ public class StackedModel<IS, IA, O, M extends Model<IA, O>> implements Model<IS
         return aggregatingModel;
     }
 
-    public StackedModel<IS, IA, O, M> withAddedSubmodel(Model<IS, IA> subModel) {
+    StackedModel<IS, IA, O, M> withAddedSubmodel(Model<IS, IA> subModel) {
+        submodels.add(subModel);
         subModelsLayer = subModelsLayer.combine(subModelsLayer, aggregatingInputMerger);
 
         return this;
