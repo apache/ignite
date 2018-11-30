@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.binary;
 
+import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -27,14 +28,13 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
-import javax.cache.Cache;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  *
@@ -56,32 +56,47 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
 
-        startGrid(0);
+        super.afterTest();
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testKeepBinaryWithInterceptor() throws Exception {
+        startGrid(0);
+
         keepBinaryWithInterceptor(cacheConfiguration(ATOMIC, false));
         keepBinaryWithInterceptor(cacheConfiguration(TRANSACTIONAL, false));
-        keepBinaryWithInterceptor(cacheConfiguration(TRANSACTIONAL_SNAPSHOT, false));
 
         keepBinaryWithInterceptorPrimitives(cacheConfiguration(ATOMIC, true));
         keepBinaryWithInterceptorPrimitives(cacheConfiguration(TRANSACTIONAL, true));
-        keepBinaryWithInterceptorPrimitives(cacheConfiguration(TRANSACTIONAL_SNAPSHOT, true));
 
         startGridsMultiThreaded(1, 3);
 
         keepBinaryWithInterceptor(cacheConfiguration(ATOMIC, false));
         keepBinaryWithInterceptor(cacheConfiguration(TRANSACTIONAL, false));
-        keepBinaryWithInterceptor(cacheConfiguration(TRANSACTIONAL_SNAPSHOT, false));
 
         keepBinaryWithInterceptorPrimitives(cacheConfiguration(ATOMIC, true));
         keepBinaryWithInterceptorPrimitives(cacheConfiguration(TRANSACTIONAL, true));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testKeepBinaryWithInterceptorOnMvccCache() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9323");
+
+        startGrid(0);
+
+        keepBinaryWithInterceptor(cacheConfiguration(TRANSACTIONAL_SNAPSHOT, false));
+        keepBinaryWithInterceptorPrimitives(cacheConfiguration(TRANSACTIONAL_SNAPSHOT, true));
+
+        startGridsMultiThreaded(1, 3);
+
+        keepBinaryWithInterceptor(cacheConfiguration(TRANSACTIONAL_SNAPSHOT, false));
         keepBinaryWithInterceptorPrimitives(cacheConfiguration(TRANSACTIONAL_SNAPSHOT, true));
     }
 
@@ -89,11 +104,6 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
      * @param ccfg Cache configuration.
      */
     private void keepBinaryWithInterceptor(CacheConfiguration ccfg) {
-        if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT &&
-            MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.INTERCEPTOR))
-            return;
-
-
         ignite(0).createCache(ccfg);
 
         try {
@@ -145,10 +155,6 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
      * @param ccfg Cache configuration.
      */
     private void keepBinaryWithInterceptorPrimitives(CacheConfiguration ccfg) {
-        if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT &&
-            MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.INTERCEPTOR))
-            return;
-
         ignite(0).createCache(ccfg);
 
         try {
@@ -244,7 +250,8 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public BinaryObject onBeforePut(Cache.Entry<BinaryObject, BinaryObject> entry, BinaryObject newVal) {
+        @Nullable @Override public BinaryObject onBeforePut(Cache.Entry<BinaryObject, BinaryObject> entry,
+            BinaryObject newVal) {
             System.out.println("Before put [e=" + entry + ", newVal=" + newVal + ']');
 
             onBeforePut++;
@@ -269,7 +276,8 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public IgniteBiTuple<Boolean, BinaryObject> onBeforeRemove(Cache.Entry<BinaryObject, BinaryObject> entry) {
+        @Nullable @Override public IgniteBiTuple<Boolean, BinaryObject> onBeforeRemove(
+            Cache.Entry<BinaryObject, BinaryObject> entry) {
             assertEquals(1, (int)entry.getKey().field("key"));
             assertEquals(10, (int)entry.getValue().field("val"));
 
