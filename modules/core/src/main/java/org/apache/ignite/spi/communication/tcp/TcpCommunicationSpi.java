@@ -2916,6 +2916,24 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     catch (Throwable e) {
                         fut.onDone(e);
 
+                        if (counter.getAndIncrement() == 5) {
+                            Field debug = U.findField(log.getClass(), "debug");
+                            if (debug != null) {
+                                log.info("TURN ON DEBUG");
+                                try {
+                                    debug.setBoolean(log, true);
+                                }
+                                catch (IllegalAccessException e1) {
+                                    log.error("TURN ", e1);
+                                }
+                            }
+                        }
+
+                        UUID id = node.id();
+                        log.info("NODE SPI : " + getSpiContext().node(id));
+                        TcpDiscoverySpi spi = (TcpDiscoverySpi)ignite().configuration().getDiscoverySpi();
+                        log.info("DISCOVERY SPI : " + spi.getNode0(node.id()));
+
                         if (e instanceof Error)
                             throw (Error)e;
 
