@@ -42,6 +42,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -57,7 +58,7 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private CacheAtomicityMode atomicityMode;
+    private CacheAtomicityMode atomicityMode = TRANSACTIONAL;
 
     /** */
     private boolean replicated;
@@ -72,14 +73,13 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disc);
 
-        CacheConfiguration ccfg  = new CacheConfiguration(DEFAULT_CACHE_NAME);
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME)
+            .setAtomicityMode(atomicityMode);
 
-        ccfg.setCacheMode(replicated ? REPLICATED : PARTITIONED);
-
-        if (!replicated)
+        if (replicated)
+            ccfg.setCacheMode(REPLICATED);
+        else
             ccfg.setBackups(1);
-
-        ccfg.setAtomicityMode(atomicityMode);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -95,6 +95,8 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStopExplicitTransactions() throws Exception {
+        atomicityMode = TRANSACTIONAL;
+
         testStop(true);
     }
 
@@ -102,6 +104,8 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStopImplicitTransactions() throws Exception {
+        atomicityMode = TRANSACTIONAL;
+
         testStop(false);
     }
 
@@ -109,6 +113,7 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStopExplicitTransactionsReplicated() throws Exception {
+        atomicityMode = TRANSACTIONAL;
         replicated = true;
 
         testStop(true);
@@ -118,11 +123,11 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStopImplicitTransactionsReplicated() throws Exception {
+        atomicityMode = TRANSACTIONAL;
         replicated = true;
 
         testStop(false);
     }
-
 
     /**
      * @throws Exception If failed.
@@ -147,7 +152,6 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
      */
     public void testStopExplicitMvccTransactionsReplicated() throws Exception {
         atomicityMode = TRANSACTIONAL_SNAPSHOT;
-
         replicated = true;
 
         testStop(true);
@@ -158,12 +162,10 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
      */
     public void testStopImplicitMvccTransactionsReplicated() throws Exception {
         atomicityMode = TRANSACTIONAL_SNAPSHOT;
-
         replicated = true;
 
         testStop(false);
     }
-
 
     /**
      * @throws Exception If failed.

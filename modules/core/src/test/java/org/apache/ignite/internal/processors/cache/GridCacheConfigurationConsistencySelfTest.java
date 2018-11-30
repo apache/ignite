@@ -515,6 +515,13 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 }
             }
         );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDifferentTxAtomicity() throws Exception {
+        cacheMode = PARTITIONED;
 
         checkSecondGridStartFails(
             new C1<CacheConfiguration, Void>() {
