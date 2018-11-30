@@ -72,6 +72,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -113,7 +114,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
     private static final int VALS = 10;
 
     /** */
-    public static final int ITERATION_CNT = 100;
+    public static final int ITERATION_CNT = SF.applyLB(100, 5);
 
     /** */
     private boolean client;
