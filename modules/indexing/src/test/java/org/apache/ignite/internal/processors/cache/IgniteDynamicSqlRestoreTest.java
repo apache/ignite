@@ -158,17 +158,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
 
             IgniteCache<Object, Object> cache = ig1.cache(TEST_CACHE_NAME);
 
-            assert GridTestUtils.waitForCondition(new PA() {
-                @Override public boolean apply() {
-                    String plan = doExplainPlan(cache, "explain select * from TestIndexObject where a > 5");
-
-                    if (plan.contains("myindexa"))
-                        return true;
-
-                    return false;
-                }
-            }, 5_000);
-
+            assertIndexUsed(cache, "explain select * from TestIndexObject where a > 5", "myindexa");
             assertFalse(cache.query(new SqlFieldsQuery("SELECT a,b,c FROM TestIndexObject limit 1")).getAll().isEmpty());
         }
     }
@@ -327,17 +317,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
             //then: config for cache was applying successful
             IgniteCache<Object, Object> cache = ig.cache(TEST_CACHE_NAME);
 
-            assert GridTestUtils.waitForCondition(new PA() {
-                @Override public boolean apply() {
-                    String plan = doExplainPlan(cache, "explain select * from TestIndexObject where a > 5");
-
-                    if (plan.contains("myindexa"))
-                        return true;
-
-                    return false;
-                }
-            }, 5_000);
-
+            assertIndexUsed(cache, "explain select * from TestIndexObject where a > 5", "myindexa");
             assertFalse(cache.query(new SqlFieldsQuery("SELECT a,b,c FROM TestIndexObject limit 1")).getAll().isEmpty());
         }
     }
@@ -384,7 +364,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
 
             IgniteCache<Object, Object> cache = ig.cache(TEST_CACHE_NAME);
 
-            assertThat(doExplainPlan(cache, "explain select * from TestIndexObject where a > 5"), containsString("myindexa"));
+            assertIndexUsed(cache, "explain select * from TestIndexObject where a > 5", "myindexa");
             assertFalse(cache.query(new SqlFieldsQuery("SELECT a,b,c FROM TestIndexObject limit 1")).getAll().isEmpty());
         }
     }
@@ -454,9 +434,6 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
             //then: index "myindexa" and column "b" restored from node "1"
             assertIndexUsed(cache, "explain select * from TestIndexObject where a > 5", "myindexa");
             assertIndexUsed(cache, "explain select * from TestIndexObject where b > 5", "myindexb");
-
-            assertThat(doExplainPlan(cache, "explain select * from TestIndexObject where a > 5"), containsString("myindexa"));
-            assertThat(doExplainPlan(cache, "explain select * from TestIndexObject where b > 5"), containsString("myindexb"));
             assertFalse(cache.query(new SqlFieldsQuery("SELECT a,b FROM TestIndexObject limit 1")).getAll().isEmpty());
         }
     }
@@ -532,7 +509,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
 
             cache.indexReadyFuture().get();
 
-            assertThat(doExplainPlan(cache, "explain select * from TestIndexObject where a > 5"), containsString("myindexa"));
+            assertIndexUsed(cache, "explain select * from TestIndexObject where a > 5", "myindexa");
             assertFalse(cache.query(new SqlFieldsQuery("SELECT a,b,c FROM TestIndexObject limit 1")).getAll().isEmpty());
         }
     }
