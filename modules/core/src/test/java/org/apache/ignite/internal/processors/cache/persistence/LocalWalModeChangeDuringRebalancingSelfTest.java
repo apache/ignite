@@ -483,6 +483,8 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testDataClearedAfterRestartWithDisabledWal() throws Exception {
+        dfltCacheBackupCnt = 2;
+
         Ignite ignite = startGrid(0);
 
         ignite.cluster().active(true);
@@ -498,7 +500,14 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         newIgnite.cluster().setBaselineTopology(2);
 
-        // Await fully exchange complete.
+        stopGrid(1);
+
+        awaitExchange((IgniteEx)ignite);
+
+        doLoad(cache, 4, 10_000);
+
+        newIgnite = startGrid(1);
+
         awaitExchange(newIgnite);
 
         CacheGroupContext grpCtx = newIgnite.cachex(DEFAULT_CACHE_NAME).context().group();
