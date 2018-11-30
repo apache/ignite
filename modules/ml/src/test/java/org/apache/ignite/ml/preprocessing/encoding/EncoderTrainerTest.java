@@ -140,6 +140,7 @@ public class EncoderTrainerTest extends TrainerTest {
             .withEncodedFeature(1);
 
         EncoderPreprocessor<Integer, String[]> preprocessor = strEncoderTrainer.fit(
+            TestUtils.testEnvBuilder(),
             datasetBuilder,
             (k, v) -> v
         );
