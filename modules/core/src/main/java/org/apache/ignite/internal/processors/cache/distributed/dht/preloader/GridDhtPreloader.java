@@ -80,6 +80,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** Demand lock. */
     private final ReadWriteLock demandLock = new ReentrantReadWriteLock();
 
+    /** Pause lock. */
+    private final ReadWriteLock pauseLock = new ReentrantReadWriteLock();
+
     /** */
     private boolean stopped;
 
@@ -592,12 +595,12 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /** {@inheritDoc} */
     @Override public void pause() {
-        busyLock.writeLock().lock();
+        demandLock.writeLock().lock();
     }
 
     /** {@inheritDoc} */
     @Override public void resume() {
-        busyLock.writeLock().unlock();
+        demandLock.writeLock().unlock();
     }
 
     /** {@inheritDoc} */

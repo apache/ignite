@@ -19,8 +19,10 @@ package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
 
 import java.util.Arrays;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -34,8 +36,10 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -71,7 +75,7 @@ public class IgniteRebalanceOnCachesStoppingTest extends GridCommonAbstractTest 
     private static final String GROUP_2 = "group_2";
 
     /** */
-    private static final int REBALANCE_BATCH_SIZE = 1024;
+    private static final int REBALANCE_BATCH_SIZE = 50 * 1024;
 
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -106,6 +110,8 @@ public class IgniteRebalanceOnCachesStoppingTest extends GridCommonAbstractTest 
 
         cfg.setFailureHandler(new StopNodeFailureHandler());
 
+        cfg.setSystemThreadPoolSize(2);
+
         cfg.setDataStorageConfiguration(
                 new DataStorageConfiguration()
                         .setWalMode(WALMode.LOG_ONLY)
@@ -122,7 +128,7 @@ public class IgniteRebalanceOnCachesStoppingTest extends GridCommonAbstractTest 
      */
     public void testStopCachesOnDeactivation() throws Exception {
         performTest(ig -> {
-            ((IgniteEx) ig).context().state().changeGlobalState(false, ig.cluster().currentBaselineTopology(), false);
+            ig.cluster().active(false);
 
             return null;
         });
@@ -133,7 +139,7 @@ public class IgniteRebalanceOnCachesStoppingTest extends GridCommonAbstractTest 
      */
     public void testDestroySpecificCachesInDifferentCacheGroups() throws Exception {
         performTest(ig -> {
-            ((IgniteKernal)ig).destroyCachesAsync(Arrays.asList(CACHE_1, CACHE_3), true);
+            ig.destroyCaches(Arrays.asList(CACHE_1, CACHE_3));
 
             return null;
         });
@@ -144,7 +150,7 @@ public class IgniteRebalanceOnCachesStoppingTest extends GridCommonAbstractTest 
      */
     public void testDestroySpecificCacheAndCacheGroup() throws Exception {
         performTest(ig -> {
-            ((IgniteKernal)ig).destroyCachesAsync(Arrays.asList(CACHE_1, CACHE_3, CACHE_4), true);
+            ig.destroyCaches(Arrays.asList(CACHE_1, CACHE_3, CACHE_4));
 
             return null;
         });
@@ -166,7 +172,7 @@ public class IgniteRebalanceOnCachesStoppingTest extends GridCommonAbstractTest 
 
         consumer.accept(ig0);
 
-        U.sleep(5000);
+        awaitPartitionMapExchange(true, true, null, true);
 
         assertNull(grid(1).context().failure().failureContext());
     }
@@ -214,6 +220,22 @@ public class IgniteRebalanceOnCachesStoppingTest extends GridCommonAbstractTest 
     }
 
     /**
+     * @param caches Caches.
+     */
+    private void validateData(String... caches) {
+        if (caches != null) {
+            for (String name: caches) {
+               for (Ignite ig: G.allGrids()) {
+                   IgniteCache<Object, Object> cache = ig.cache(name);
+
+                   for (int i = 0; i < 3_000; i++)
+                       assertNotNull("Key k=" + i + " in cache=" + cache + " is absent", cache.get(i));
+               }
+            }
+        }
+    }
+
+    /**
      *
      */
     private static class RebalanceBlockingSPI extends TcpCommunicationSpi {
@@ -227,14 +249,25 @@ public class IgniteRebalanceOnCachesStoppingTest extends GridCommonAbstractTest 
 
                 if (grpId == CU.cacheId(GROUP_1) || grpId == CU.cacheId(GROUP_2)) {
                     try {
+                        IgniteLogger log = U.field(this, "log");
+
+                        log.info("send msg " + msg);
+
                         U.sleep(50);
                     } catch (IgniteInterruptedCheckedException e) {
                         e.printStackTrace();
                     }
                 }
-
-                super.sendMessage(node, msg);
             }
+
+            if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof GridDhtPartitionDemandMessage) {
+                IgniteLogger log = U.field(this, "log");
+
+                log.info("send demand msg " + msg);
+            }
+
+            super.sendMessage(node, msg);
+
         }
 
         /** {@inheritDoc} */
@@ -245,12 +278,23 @@ public class IgniteRebalanceOnCachesStoppingTest extends GridCommonAbstractTest 
 
                 if (grpId == CU.cacheId(GROUP_1) || grpId == CU.cacheId(GROUP_2)) {
                     try {
-                        U.sleep(50);
+                        IgniteLogger log = U.field(this, "log");
+
+                        log.info("send supply msg " + msg);
+
+                        U.sleep(100);
                     } catch (IgniteInterruptedCheckedException e) {
                         e.printStackTrace();
                     }
                 }
             }
+
+            if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof GridDhtPartitionDemandMessage) {
+                IgniteLogger log = U.field(this, "log");
+
+                log.info("send demand msg " + msg);
+            }
+
             super.sendMessage(node, msg, ackC);
         }
     }

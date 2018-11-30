@@ -2895,6 +2895,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         Map<Integer, List<ExchangeActions.CacheActionData>> cachesToStop = exchActions.cacheStopRequests().stream()
                 .collect(Collectors.groupingBy(action -> action.descriptor().groupId()));
 
+        grpToStop.forEach(g -> g.getKey().preloader().onKernalStop());
+
         try {
             doInParallel(
                     parallelismLvl,
@@ -2935,7 +2937,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             );
         }
         catch (IgniteCheckedException e) {
-            String msg =  "Failed to stop caches";
+            String msg = "Failed to stop caches";
 
             log.error(msg, e);
 
