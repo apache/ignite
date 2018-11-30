@@ -1525,6 +1525,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     freeList = new LazyCacheFreeList() {
                         @Override protected CacheFreeList<CacheDataRow> createDelegate() throws IgniteCheckedException {
+                            assert grp.shared().database().checkpointLockIsHeldByThread();
+
                             return new PartitionCacheFreeList(grp, partId, reuseRoot);
                         }
                     };
