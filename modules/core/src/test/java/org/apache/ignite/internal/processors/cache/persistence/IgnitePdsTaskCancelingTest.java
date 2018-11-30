@@ -64,7 +64,7 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
     private static final AtomicBoolean failure = new AtomicBoolean(false);
 
     /** Number of executing tasks. */
-    private static final int NUM_TASKS = 16;
+    private static final int NUM_TASKS = 8;
 
     /** Page size. */
     private static final int PAGE_SIZE = 2048;
