@@ -43,6 +43,7 @@ public class MvccFeatureChecker {
         EVICTION,
         EXPIRATION,
         METRICS
+        INTERCEPTOR
     }
 
     /**
@@ -136,6 +137,9 @@ public class MvccFeatureChecker {
 
             case METRICS:
                 fail("https://issues.apache.org/jira/browse/IGNITE-9224");
+
+            case INTERCEPTOR:
+                fail("https://issues.apache.org/jira/browse/IGNITE-9323");
         }
     }
 }

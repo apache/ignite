@@ -15,16 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed;
+package org.apache.ignite.ml.inference.storage.model;
 
 /**
- *
+ * Implementation of file {@link ModelStorageProvider} works with.
  */
-public class IgniteOptimisticTxSuspendResumeMultiServerTest extends IgniteOptimisticTxSuspendResumeTest {
+class File implements FileOrDirectory {
+    /** */
+    private static final long serialVersionUID = -7739751667495712802L;
+
+    /** File content. */
+    private final byte[] data;
+
     /**
-     * @return Number of server nodes.
+     * Constructs a new instance of file.
+     *
+     * @param data File content.
      */
-    @Override protected int serversNumber() {
-        return 4;
+    protected File(byte[] data) {
+        this.data = data;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isFile() {
+        return true;
+    }
+
+    /** */
+    protected byte[] getData() {
+        return data;
     }
 }

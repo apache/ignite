@@ -31,6 +31,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager.TOP_VER_BASE_TIME;
@@ -81,6 +82,15 @@ public class GridCacheEntryVersionSelfTest extends GridCommonAbstractTest {
      */
     public void testVersionTransactional() throws Exception {
         atomicityMode = TRANSACTIONAL;
+
+        checkVersion();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testVersionMvccTx() throws Exception {
+        atomicityMode = TRANSACTIONAL_SNAPSHOT;
 
         checkVersion();
     }

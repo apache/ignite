@@ -173,7 +173,7 @@ public class DatasetFactory {
      * @param datasetBuilder Dataset builder.
      * @param partCtxBuilder Partition {@code context} builder.
      * @param featureExtractor Feature extractor used to extract features and build {@link SimpleLabeledDatasetData}.
-     * @param lbExtractor Label extractor used to extract labels and buikd {@link SimpleLabeledDatasetData}.
+     * @param lbExtractor Label extractor used to extract labels and build {@link SimpleLabeledDatasetData}.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @param <C> Type of a partition {@code context}.
@@ -198,7 +198,7 @@ public class DatasetFactory {
      * @param upstreamCache Ignite Cache with {@code upstream} data.
      * @param partCtxBuilder Partition {@code context} builder.
      * @param featureExtractor Feature extractor used to extract features and build {@link SimpleLabeledDatasetData}.
-     * @param lbExtractor Label extractor used to extract labels and buikd {@link SimpleLabeledDatasetData}.
+     * @param lbExtractor Label extractor used to extract labels and build {@link SimpleLabeledDatasetData}.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @param <C> Type of a partition {@code context}.
@@ -262,7 +262,7 @@ public class DatasetFactory {
      *
      * @param datasetBuilder Dataset builder.
      * @param featureExtractor Feature extractor used to extract features and build {@link SimpleLabeledDatasetData}.
-     * @param lbExtractor Label extractor used to extract labels and buikd {@link SimpleLabeledDatasetData}.
+     * @param lbExtractor Label extractor used to extract labels and build {@link SimpleLabeledDatasetData}.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @return Dataset.
@@ -286,7 +286,7 @@ public class DatasetFactory {
      * @param ignite Ignite instance.
      * @param upstreamCache Ignite Cache with {@code upstream} data.
      * @param featureExtractor Feature extractor used to extract features and build {@link SimpleLabeledDatasetData}.
-     * @param lbExtractor Label extractor used to extract labels and buikd {@link SimpleLabeledDatasetData}.
+     * @param lbExtractor Label extractor used to extract labels and build {@link SimpleLabeledDatasetData}.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @return Dataset.
@@ -359,7 +359,7 @@ public class DatasetFactory {
      * @param partitions Number of partitions {@code upstream} {@code Map} will be divided on.
      * @param partCtxBuilder Partition {@code context} builder.
      * @param featureExtractor Feature extractor used to extract features and build {@link SimpleLabeledDatasetData}.
-     * @param lbExtractor Label extractor used to extract labels and buikd {@link SimpleLabeledDatasetData}.
+     * @param lbExtractor Label extractor used to extract labels and build {@link SimpleLabeledDatasetData}.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @param <C> Type of a partition {@code context}.
