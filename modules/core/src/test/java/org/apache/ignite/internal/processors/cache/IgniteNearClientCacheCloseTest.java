@@ -37,10 +37,12 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
@@ -105,6 +107,26 @@ public class IgniteNearClientCacheCloseTest extends GridCommonAbstractTest {
         nearCacheClose(4, false, TRANSACTIONAL);
 
         nearCacheClose(4, true, TRANSACTIONAL);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNearCacheCloseMvccTx1() throws Exception {
+        nearCacheClose(1, false, TRANSACTIONAL_SNAPSHOT);
+
+        if (MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.NEAR_CACHE))
+            nearCacheClose(1, true, TRANSACTIONAL_SNAPSHOT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNearCacheCloseMvccTx2() throws Exception {
+        nearCacheClose(4, false, TRANSACTIONAL_SNAPSHOT);
+
+        if (MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.NEAR_CACHE))
+            nearCacheClose(4, true, TRANSACTIONAL_SNAPSHOT);
     }
 
     /**
