@@ -17,5 +17,49 @@
 
 package org.apache.ignite.ml.trainers.transformers;
 
-public class StackedModel<I, O> extends Model<I, O> {
+import java.util.List;
+import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
+
+public class StackedModel<IS, IA, O, M extends Model<IA, O>> implements Model<IS, O> {
+    private Model<IS, IA> subModelsLayer;
+    private List<Model<IS, ?>> submodels;
+    private final IgniteBinaryOperator<IA> aggregatingInputMerger;
+    private final M aggregatingModel;
+
+    public StackedModel(M aggregatingMdl,
+        IgniteBinaryOperator<IA> aggregatingInputMerger,
+        Model<IS, IA> subMdl,
+        IgniteFunction<IS, IA> subModelInput2AggregatingInput) {
+        this.aggregatingModel = aggregatingMdl;
+        this.aggregatingInputMerger = aggregatingInputMerger;
+        this.subModelsLayer = subMdl;
+    }
+
+//    public StackedModel(IgniteFunction<IS, IA> subModelInput2AggregatingInput) {
+//
+//    }
+//
+//    public StackedModel(Model<IS, IA> subMdl) {
+//        subModelsLayer = subMdl;
+//    }
+
+    List<Model<IS, ?>> submodels() {
+        return submodels;
+    }
+
+    M aggregatingModel() {
+        return aggregatingModel;
+    }
+
+    public StackedModel<IS, IA, O, M> withAddedSubmodel(Model<IS, IA> subModel) {
+        subModelsLayer = subModelsLayer.combine(subModelsLayer, aggregatingInputMerger);
+
+        return this;
+    }
+
+    @Override public O apply(IS is) {
+        return subModelsLayer.andThen(aggregatingModel).apply(is);
+    }
 }

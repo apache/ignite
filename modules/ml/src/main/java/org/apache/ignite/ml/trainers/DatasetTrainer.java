@@ -88,7 +88,8 @@ public abstract class DatasetTrainer<M extends Model, L> {
      * @param mdl Model.
      * @return true if current critical for training parameters correspond to parameters from last training.
      */
-    protected abstract boolean checkState(M mdl);
+    //TODO: check if we can revert to protected.
+    public abstract boolean checkState(M mdl);
 
     /**
      * Used on update phase when given dataset is empty.
