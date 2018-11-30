@@ -18,12 +18,20 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -46,6 +54,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 /**
  *
  */
+@SuppressWarnings("Duplicates")
 public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implements Serializable {
 
     public static final String TEST_CACHE_NAME = "test";
@@ -156,13 +165,131 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
                     if (plan.contains("myindexa"))
                         return true;
 
-                    log.info("Plan does not use index: " + plan);
-
                     return false;
                 }
             }, 5_000);
 
             assertFalse(cache.query(new SqlFieldsQuery("SELECT a,b,c FROM TestIndexObject limit 1")).getAll().isEmpty());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("AssertWithSideEffects")
+    public void testIndexCreationWhenNodeStopped() throws Exception {
+        // Start topology.
+        startGrid(0);
+        Ignite srv2 = startGrid(1);
+        Ignite cli;
+
+        Ignition.setClientMode(true);
+
+        try {
+            cli = startGrid(2);
+        }
+        finally {
+            Ignition.setClientMode(false);
+        }
+
+        cli.cluster().active(true);
+
+        // Create table, add some data.
+        int entryCnt = 50;
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:10802")) {
+            executeJdbc(conn,
+                " CREATE TABLE PERSON (\n" +
+                " FIRST_NAME VARCHAR,\n" +
+                " LAST_NAME VARCHAR,\n" +
+                " ADDRESS VARCHAR,\n" +
+                " LANG VARCHAR,\n" +
+                " BIRTH_DATE TIMESTAMP,\n" +
+                " CONSTRAINT PK_PESON PRIMARY KEY (FIRST_NAME,LAST_NAME,ADDRESS,LANG)\n" +
+                " ) WITH \"key_type=PersonKeyType, CACHE_NAME=PersonCache, value_type=PersonValueType, AFFINITY_KEY=FIRST_NAME,template=PARTITIONED,backups=1\"");
+
+            try (PreparedStatement stmt = conn.prepareStatement(
+                "insert into Person(LANG, FIRST_NAME, ADDRESS, LAST_NAME, BIRTH_DATE) values(?,?,?,?,?)")) {
+                for (int i = 0; i < entryCnt; i++) {
+                    String s = String.valueOf(i);
+
+                    stmt.setString(1, s);
+                    stmt.setString(2, s);
+                    stmt.setString(3, s);
+                    stmt.setString(4, s);
+                    stmt.setTimestamp(5, new Timestamp(System.currentTimeMillis()));
+
+                    stmt.executeUpdate();
+                }
+            }
+        }
+
+        // Stop second node.
+        srv2.close();
+
+        // Create an index on remaining node.
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:10802")) {
+            executeJdbc(conn, "create index PERSON_FIRST_NAME_IDX on PERSON(FIRST_NAME)");
+        }
+
+        // Restart second node.
+        startGrid(1);
+
+        // Await for index rebuild on started node.
+        assert GridTestUtils.waitForCondition(new PA() {
+            @Override public boolean apply() {
+                try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:10801")) {
+                    try (PreparedStatement stmt = conn.prepareStatement(
+                        "EXPLAIN SELECT * FROM Person USE INDEX(PERSON_FIRST_NAME_IDX) WHERE FIRST_NAME=?")) {
+                        stmt.setString(1, String.valueOf(1));
+
+                        StringBuilder fullPlan = new StringBuilder();
+
+                        try (ResultSet rs = stmt.executeQuery()) {
+                            while (rs.next())
+                                fullPlan.append(rs.getString(1)).append("; ");
+                        }
+
+                        System.out.println("PLAN: " + fullPlan);
+
+                        return fullPlan.toString().contains("PUBLIC.PERSON_FIRST_NAME_IDX");
+                    }
+                }
+                catch (Exception e) {
+                    throw new RuntimeException("Query failed.", e);
+                }
+            }
+        }, 5_000);
+
+        // Make sure that data could be queried.
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:10802")) {
+            try (PreparedStatement stmt = conn.prepareStatement(
+                "SELECT COUNT(*) FROM Person USE INDEX(PERSON_FIRST_NAME_IDX) WHERE FIRST_NAME=?")) {
+                for (int i = 0; i < entryCnt; i ++) {
+                    stmt.setString(1, String.valueOf(i));
+
+                    try (ResultSet rs = stmt.executeQuery()) {
+                        rs.next();
+
+                        long cnt = rs.getLong(1);
+
+                        assertEquals(1L, cnt);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Execute a statement through JDBC connection.
+     *
+     * @param conn Connection.
+     * @param sql Statement.
+     * @throws Exception If failed.
+     */
+    private static void executeJdbc(Connection conn, String sql) throws Exception {
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(sql);
         }
     }
 
@@ -206,8 +333,6 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
 
                     if (plan.contains("myindexa"))
                         return true;
-
-                    log.info("Plan does not use index: " + plan);
 
                     return false;
                 }
@@ -267,6 +392,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
     /**
      * @throws Exception if failed.
      */
+    @SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
     public void testMergeChangedConfigOnInactiveGrid() throws Exception {
         {
             //given: two started nodes with test table
@@ -326,10 +452,35 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
             IgniteCache<Object, Object> cache = ig1.cache(TEST_CACHE_NAME);
 
             //then: index "myindexa" and column "b" restored from node "1"
+            assertIndexUsed(cache, "explain select * from TestIndexObject where a > 5", "myindexa");
+            assertIndexUsed(cache, "explain select * from TestIndexObject where b > 5", "myindexb");
+
             assertThat(doExplainPlan(cache, "explain select * from TestIndexObject where a > 5"), containsString("myindexa"));
             assertThat(doExplainPlan(cache, "explain select * from TestIndexObject where b > 5"), containsString("myindexb"));
             assertFalse(cache.query(new SqlFieldsQuery("SELECT a,b FROM TestIndexObject limit 1")).getAll().isEmpty());
         }
+    }
+
+    /**
+     * Make sure that index is used for the given statement.
+     *
+     * @param cache Cache.
+     * @param sql Statement.
+     * @param idx Index.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void assertIndexUsed(IgniteCache<Object, Object> cache, String sql, String idx)
+        throws IgniteCheckedException {
+        assert GridTestUtils.waitForCondition(new PA() {
+            @Override public boolean apply() {
+                String plan = doExplainPlan(cache, sql);
+
+                if (plan.contains(idx))
+                    return true;
+
+                return false;
+            }
+        }, 5_000);
     }
 
     /**
@@ -389,6 +540,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
     /**
      * @throws Exception if failed.
      */
+    @SuppressWarnings("ConstantConditions")
     public void testFailJoiningNodeBecauseDifferentSql() throws Exception {
         {
             //given: two started nodes with test table
@@ -433,6 +585,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
     /**
      * @throws Exception if failed.
      */
+    @SuppressWarnings("ConstantConditions")
     public void testFailJoiningNodeBecauseFieldInlineSizeIsDifferent() throws Exception {
         {
             //given: two started nodes with test table
@@ -473,6 +626,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
     /**
      * @throws Exception if failed.
      */
+    @SuppressWarnings("ConstantConditions")
     public void testFailJoiningNodeBecauseNeedConfigUpdateOnActiveGrid() throws Exception {
         {
             startGrid(0);
