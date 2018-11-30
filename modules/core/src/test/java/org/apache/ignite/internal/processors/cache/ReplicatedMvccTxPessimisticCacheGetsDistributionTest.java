@@ -15,16 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed;
+package org.apache.ignite.internal.processors.cache;
+
+import org.apache.ignite.transactions.TransactionIsolation;
+
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
- *
+ * Tests of pessimistic transactional replicated cache's 'get' requests distribution.
  */
-public class IgniteOptimisticTxSuspendResumeMultiServerTest extends IgniteOptimisticTxSuspendResumeTest {
-    /**
-     * @return Number of server nodes.
-     */
-    @Override protected int serversNumber() {
-        return 4;
+public class ReplicatedMvccTxPessimisticCacheGetsDistributionTest extends ReplicatedTransactionalPessimisticCacheGetsDistributionTest {
+    /** {@inheritDoc} */
+    @Override protected TransactionIsolation transactionIsolation() {
+        return REPEATABLE_READ;
     }
 }

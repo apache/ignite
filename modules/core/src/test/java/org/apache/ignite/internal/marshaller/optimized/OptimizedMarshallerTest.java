@@ -149,7 +149,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
         assertFalse(ipFinder.isShared());
     }
 
-     /**
+    /**
      * Tests ability to marshal non-serializable objects.
      *
      * @throws IgniteCheckedException If marshalling failed.
@@ -168,7 +168,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
         assertTrue(bean.isFlag());
     }
 
-     /**
+    /**
      * Tests ability to marshal non-serializable objects.
      *
      * @throws IgniteCheckedException If marshalling failed.

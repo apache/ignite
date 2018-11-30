@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -29,7 +31,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public abstract class GridCacheAbstractPartitionedByteArrayValuesSelfTest extends
     GridCacheAbstractDistributedByteArrayValuesSelfTest {
-
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration0() {
         CacheConfiguration cfg = new CacheConfiguration();
