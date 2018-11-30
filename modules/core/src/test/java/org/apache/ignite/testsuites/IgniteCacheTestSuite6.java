@@ -64,15 +64,14 @@ public class IgniteCacheTestSuite6 extends TestSuite {
     }
 
     /**
-     * @return IgniteCache test suite.
      * @param ignoredTests Ignored tests.
+     * @return IgniteCache test suite.
      */
     public static TestSuite suite(Collection<Class> ignoredTests) {
         TestSuite suite = new TestSuite("IgniteCache Test Suite part 6");
 
         GridTestUtils.addTestIfNeeded(suite, GridCachePartitionEvictionDuringReadThroughSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteOptimisticTxSuspendResumeTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteOptimisticTxSuspendResumeMultiServerTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgnitePessimisticTxSuspendResumeTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, CacheExchangeMergeTest.class, ignoredTests);
