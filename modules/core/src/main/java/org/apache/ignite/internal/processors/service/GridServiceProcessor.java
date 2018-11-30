@@ -121,7 +121,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * Obsolete implementation of service processor, based on replicated system cache.
  * <p/>
  * NOTE: if you fix a bug in this class, please take a look in {@link IgniteServiceProcessor}, perhaps the class
- * contains a similar block of code which also should be fixed.
+ * contains a similar block of code which also should be updated.
  *
  * @see IgniteServiceProcessor
  * @deprecated Here is improved, but uncompatible implementation {@link IgniteServiceProcessor}, see IEP-17 for details.

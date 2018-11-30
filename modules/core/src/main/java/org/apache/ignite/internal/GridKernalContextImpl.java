@@ -207,7 +207,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringInclude
-    private ServiceProcessorAdapter svcProc;
+    private ServiceProcessorAdapter srvcProc;
 
     /** */
     @GridToStringInclude
@@ -601,7 +601,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         else if (comp instanceof GridClosureProcessor)
             closProc = (GridClosureProcessor)comp;
         else if (comp instanceof ServiceProcessorAdapter)
-            svcProc = (ServiceProcessorAdapter)comp;
+            srvcProc = (ServiceProcessorAdapter)comp;
         else if (comp instanceof IgniteScheduleProcessorAdapter)
             scheduleProc = (IgniteScheduleProcessorAdapter)comp;
         else if (comp instanceof GridSegmentationProcessor)
@@ -755,7 +755,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public ServiceProcessorAdapter service() {
-        return svcProc;
+        return srvcProc;
     }
 
     /** {@inheritDoc} */
