@@ -15,29 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.inference.storage;
+package org.apache.ignite.ml.inference.storage.descriptor;
 
-import org.apache.ignite.Ignite;
+import java.util.Iterator;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.stream.StreamSupport;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.inference.ModelDescriptor;
 
 /**
  * Model descriptor storage based on Apache Ignite cache.
  */
 public class IgniteModelDescriptorStorage implements ModelDescriptorStorage {
-    /** Apache Ignite cache name to keep model descriptors. */
-    private static final String MODEL_DESCRIPTOR_CACHE_NAME = "MODEL_DESCRIPTOR_CACHE";
-
     /** Apache Ignite cache to keep model descriptors. */
     private final IgniteCache<String, ModelDescriptor> models;
 
     /**
      * Constructs a new instance of Ignite model descriptor storage.
      *
-     * @param ignite Ignite instance.
+     * @param models Ignite cache with model descriptors.
      */
-    public IgniteModelDescriptorStorage(Ignite ignite) {
-        models = ignite.getOrCreateCache(MODEL_DESCRIPTOR_CACHE_NAME);
+    public IgniteModelDescriptorStorage(IgniteCache<String, ModelDescriptor> models) {
+        this.models = models;
     }
 
     /** {@inheritDoc} */
@@ -53,5 +54,13 @@ public class IgniteModelDescriptorStorage implements ModelDescriptorStorage {
     /** {@inheritDoc} */
     @Override public void remove(String mdlId) {
         models.remove(mdlId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Iterator<IgniteBiTuple<String, ModelDescriptor>> iterator() {
+        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(models.iterator(), Spliterator.ORDERED), false)
+            .map(e -> new IgniteBiTuple<>(e.getKey(), e.getValue()))
+            .iterator();
+
     }
 }

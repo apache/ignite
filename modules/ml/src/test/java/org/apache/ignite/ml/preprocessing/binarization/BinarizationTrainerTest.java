@@ -19,9 +19,11 @@ package org.apache.ignite.ml.preprocessing.binarization;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
+import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
@@ -51,6 +53,7 @@ public class BinarizationTrainerTest extends TrainerTest {
         assertEquals(10., binarizationTrainer.getThreshold(), 0);
 
         BinarizationPreprocessor<Integer, double[]> preprocessor = binarizationTrainer.fit(
+            TestUtils.testEnvBuilder(),
             datasetBuilder,
             (k, v) -> VectorUtils.of(v)
         );
@@ -75,6 +78,7 @@ public class BinarizationTrainerTest extends TrainerTest {
         assertEquals(10., binarizationTrainer.getThreshold(), 0);
 
         IgniteBiFunction<Integer, double[], Vector> preprocessor = binarizationTrainer.fit(
+            TestUtils.testEnvBuilder(),
             data,
             parts,
             (k, v) -> VectorUtils.of(v)

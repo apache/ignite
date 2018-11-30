@@ -21,8 +21,10 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.dataset.PartitionContextBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
+import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -47,7 +49,7 @@ public class LocalDatasetBuilderTest {
 
         AtomicLong cnt = new AtomicLong();
 
-        dataset.compute((partData, partIdx) -> {
+        dataset.compute((partData, env) -> {
            cnt.incrementAndGet();
 
            int[] arr = partData.data;
@@ -55,7 +57,7 @@ public class LocalDatasetBuilderTest {
            assertEquals(10, arr.length);
 
            for (int i = 0; i < 10; i++)
-               assertEquals(partIdx * 10 + i, arr[i]);
+               assertEquals(env.partition() * 10 + i, arr[i]);
         });
 
         assertEquals(10, cnt.intValue());
@@ -74,7 +76,7 @@ public class LocalDatasetBuilderTest {
 
         AtomicLong cnt = new AtomicLong();
 
-        dataset.compute((partData, partIdx) -> {
+        dataset.compute((partData, env) -> {
             cnt.incrementAndGet();
 
             int[] arr = partData.data;
@@ -82,7 +84,7 @@ public class LocalDatasetBuilderTest {
             assertEquals(5, arr.length);
 
             for (int i = 0; i < 5; i++)
-                assertEquals((partIdx * 5 + i) * 2, arr[i]);
+                assertEquals((env.partition() * 5 + i) * 2, arr[i]);
         });
 
         assertEquals(10, cnt.intValue());
@@ -91,10 +93,10 @@ public class LocalDatasetBuilderTest {
     /** */
     private LocalDataset<Serializable, TestPartitionData> buildDataset(
         LocalDatasetBuilder<Integer, Integer> builder) {
-        PartitionContextBuilder<Integer, Integer, Serializable> partCtxBuilder = (upstream, upstreamSize) -> null;
+        PartitionContextBuilder<Integer, Integer, Serializable> partCtxBuilder = (env, upstream, upstreamSize) -> null;
 
         PartitionDataBuilder<Integer, Integer, Serializable, TestPartitionData> partDataBuilder
-            = (upstream, upstreamSize, ctx) -> {
+            = (env, upstream, upstreamSize, ctx) -> {
             int[] arr = new int[Math.toIntExact(upstreamSize)];
 
             int ptr = 0;
@@ -105,6 +107,7 @@ public class LocalDatasetBuilderTest {
         };
 
         return builder.build(
+            TestUtils.testEnvBuilder(),
             partCtxBuilder.andThen(x -> null),
             partDataBuilder.andThen((x, y) -> x)
         );
