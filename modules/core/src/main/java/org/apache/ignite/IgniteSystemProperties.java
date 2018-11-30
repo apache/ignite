@@ -1042,6 +1042,16 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_RECOVERY_VERBOSE_LOGGING = "IGNITE_RECOVERY_VERBOSE_LOGGING";
 
     /**
+     * When set to {@code true}, cache metrics are not included into the discovery metrics update message (in this
+     * case message contains only cluster metrics). By default cache metrics are included into the message and
+     * calculated each time the message is sent.
+     * <p>
+     * Cache metrics sending can also be turned off by disabling statistics per each cache, but in this case some cache
+     * metrics will be unavailable via JMX too.
+     */
+    public static final String IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE = "IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
