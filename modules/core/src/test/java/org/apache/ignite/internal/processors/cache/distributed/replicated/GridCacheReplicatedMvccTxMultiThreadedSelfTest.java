@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.cache.IgniteTxSingleThreadedAbstractTest;
+import org.apache.ignite.internal.processors.cache.IgniteMvccTxMultiThreadedAbstractTest;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -27,8 +27,8 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests for replicated transactions.
  */
-public class GridCacheReplicatedTxSingleThreadedSelfTest extends IgniteTxSingleThreadedAbstractTest {
-     /** {@inheritDoc} */
+public class GridCacheReplicatedMvccTxMultiThreadedSelfTest extends IgniteMvccTxMultiThreadedAbstractTest {
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -36,6 +36,7 @@ public class GridCacheReplicatedTxSingleThreadedSelfTest extends IgniteTxSingleT
 
         ccfg.setCacheMode(REPLICATED);
         ccfg.setEvictionPolicy(null);
+
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         cfg.setCacheConfiguration(ccfg);
@@ -59,8 +60,13 @@ public class GridCacheReplicatedTxSingleThreadedSelfTest extends IgniteTxSingleT
     }
 
     /** {@inheritDoc} */
+    @Override protected int threadCount() {
+        return 5;
+    }
+
+    /** {@inheritDoc} */
     @Override protected int iterations() {
-        return 20;
+        return 1000;
     }
 
     /** {@inheritDoc} */
