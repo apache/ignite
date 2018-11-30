@@ -15,8 +15,27 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.ml.inference.storage.model;
+
+import java.io.Serializable;
+
 /**
- * <!-- Package description. -->
- * Root package for inference model storages.
+ * Base interface for file or directory {@link ModelStorageProvider} works with.
  */
-package org.apache.ignite.ml.inference.storage;
+public interface FileOrDirectory extends Serializable {
+    /**
+     * Returns {@code true} if this object is a regular file, otherwise {@code false}.
+     *
+     * @return {@code true} if this object is a regular file, otherwise {@code false}.
+     */
+    public boolean isFile();
+
+    /**
+     * Return {@code true} if this object is a directory, otherwise {@code false}.
+     *
+     * @return {@code true} if this object is a directory, otherwise {@code false}.
+     */
+    public default boolean isDirectory() {
+        return !isFile();
+    }
+}
