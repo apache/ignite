@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.inference.plugin;
+package org.apache.ignite.ml.util.plugin;
 
 import org.apache.ignite.plugin.IgnitePlugin;
 
 /**
  * ML Inference plugin.
  */
-class MLInferencePlugin implements IgnitePlugin {
+class MLPlugin implements IgnitePlugin {
     /**
      * Creates a new instance of ML inference plugin.
      */
-    MLInferencePlugin() {}
+    MLPlugin() {}
 }

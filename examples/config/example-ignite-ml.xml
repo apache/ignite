@@ -29,7 +29,7 @@
 
     <bean parent="ignite.cfg">
         <property name="pluginConfigurations">
-            <bean class="org.apache.ignite.ml.inference.plugin.MLInferencePluginConfiguration">
+            <bean class="org.apache.ignite.ml.util.plugin.MLPluginConfiguration">
                 <property name="withMdlStorage" value="#{true}" />
                 <property name="withMdlDescStorage" value="#{true}" />
             </bean>

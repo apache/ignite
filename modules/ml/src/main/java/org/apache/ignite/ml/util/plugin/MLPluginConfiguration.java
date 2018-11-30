@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.inference.plugin;
+package org.apache.ignite.ml.util.plugin;
 
 import org.apache.ignite.plugin.PluginConfiguration;
 
 /**
  * Configuration of ML inference plugin that defines which ML inference services should be start up on Ignite startup.
  */
-public class MLInferencePluginConfiguration implements PluginConfiguration {
+public class MLPluginConfiguration implements PluginConfiguration {
     /** Model storage should be created on startup. */
     private boolean withMdlStorage;
 

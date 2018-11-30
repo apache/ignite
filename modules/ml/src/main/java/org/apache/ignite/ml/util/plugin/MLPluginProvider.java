@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.inference.plugin;
+package org.apache.ignite.ml.util.plugin;
 
 import java.io.Serializable;
 import java.util.UUID;
@@ -41,7 +41,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Machine learning inference plugin provider.
  */
-public class MLInferencePluginProvider implements PluginProvider<MLInferencePluginConfiguration> {
+public class MLPluginProvider implements PluginProvider<MLPluginConfiguration> {
     /** Plugin name. */
     private static final String ML_INFERENCE_PLUGIN_NAME = "ml-inference-plugin";
 
@@ -55,7 +55,7 @@ public class MLInferencePluginProvider implements PluginProvider<MLInferencePlug
     private static final int MODEL_DESCRIPTOR_STORAGE_DEFAULT_BACKUPS = 1;
 
     /** Plugin configuration. */
-    private MLInferencePluginConfiguration cfg;
+    private MLPluginConfiguration cfg;
 
     /** Ignite instance. */
     private Ignite ignite;
@@ -81,7 +81,7 @@ public class MLInferencePluginProvider implements PluginProvider<MLInferencePlug
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T extends IgnitePlugin> T plugin() {
-        return (T)new MLInferencePlugin();
+        return (T)new MLPlugin();
     }
 
     /** {@inheritDoc} */
@@ -93,8 +93,8 @@ public class MLInferencePluginProvider implements PluginProvider<MLInferencePlug
 
         if (igniteCfg.getPluginConfigurations() != null) {
             for (PluginConfiguration pluginCfg : igniteCfg.getPluginConfigurations()) {
-                if (pluginCfg instanceof MLInferencePluginConfiguration) {
-                    cfg = (MLInferencePluginConfiguration)pluginCfg;
+                if (pluginCfg instanceof MLPluginConfiguration) {
+                    cfg = (MLPluginConfiguration)pluginCfg;
                     break;
                 }
             }
@@ -158,7 +158,7 @@ public class MLInferencePluginProvider implements PluginProvider<MLInferencePlug
     /**
      * Starts model storage.
      */
-    private void startModelStorage(MLInferencePluginConfiguration cfg) {
+    private void startModelStorage(MLPluginConfiguration cfg) {
         CacheConfiguration<String, byte[]> storageCfg = new CacheConfiguration<>();
 
         storageCfg.setName(ModelStorageFactory.MODEL_STORAGE_CACHE_NAME);
@@ -178,7 +178,7 @@ public class MLInferencePluginProvider implements PluginProvider<MLInferencePlug
     /**
      * Starts model descriptor storage.
      */
-    private void startModelDescriptorStorage(MLInferencePluginConfiguration cfg) {
+    private void startModelDescriptorStorage(MLPluginConfiguration cfg) {
         CacheConfiguration<String, byte[]> storageCfg = new CacheConfiguration<>();
 
         storageCfg.setName(ModelDescriptorStorageFactory.MODEL_DESCRIPTOR_STORAGE_CACHE_NAME);
