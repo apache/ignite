@@ -126,11 +126,11 @@ public class GridCachePartitionedStorePutSelfTest extends GridCommonAbstractTest
 
     /**     */
     public void checkPut(int idx) {
-        IgniteCache<Object, Object> cache = grid(1).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> cache = grid(idx).cache(DEFAULT_CACHE_NAME);
 
         cache.put(0, 1);
 
-        try (Transaction tx = grid().transactions().txStart()) {
+        try (Transaction tx = grid(idx).transactions().txStart()) {
             cache.put(1, 1);
             cache.put(2, 2);
 

@@ -697,6 +697,8 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
                 @Override public Object call() throws Exception {
                     cache.invoke(KEY, createEntryProcessor());
 
+                    fail("Should never happened.");
+
                     tx.commit();
 
                     return null;

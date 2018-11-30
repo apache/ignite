@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import javax.cache.integration.CacheLoaderException;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -35,9 +36,6 @@ public class GridCacheLoadOnlyStoreAdapterSelfTest extends GridCommonAbstractTes
     /** Expected loadAll arguments, hardcoded on call site for convenience. */
     private static final Integer[] EXP_ARGS = {1, 2, 3};
 
-    /** */
-    private static final int GRID_CNT = 1;
-
     /** Store to use. */
     private CacheLoadOnlyStoreAdapter store;
 
@@ -47,7 +45,7 @@ public class GridCacheLoadOnlyStoreAdapterSelfTest extends GridCommonAbstractTes
 
         super.beforeTestsStarted();
 
-        startGridsMultiThreaded(GRID_CNT);
+        startGrid(0);
     }
 
     /** {@inheritDoc} */
@@ -87,16 +85,11 @@ public class GridCacheLoadOnlyStoreAdapterSelfTest extends GridCommonAbstractTes
 
         store = new TestStore(inputSize);
 
-        grid(0).createCache(cacheConfiguration());
+        IgniteCache<?, ?> cache = grid(0).createCache(cacheConfiguration());
 
-        jcache().localLoadCache(null, 1, 2, 3);
+        cache.localLoadCache(null, 1, 2, 3);
 
-        int cnt = 0;
-
-        for (int i = 0; i < GRID_CNT; i++)
-            cnt += jcache(i).localSize();
-
-        assertEquals(inputSize - (inputSize / 10), cnt);
+        assertEquals(inputSize - (inputSize / 10), cache.localSize());
     }
 
     /**
@@ -111,16 +104,11 @@ public class GridCacheLoadOnlyStoreAdapterSelfTest extends GridCommonAbstractTes
         store.setBatchQueueSize(1);
         store.setThreadsCount(2);
 
-        grid(0).createCache(cacheConfiguration());
+        IgniteCache<?, ?> cache = grid(0).createCache(cacheConfiguration());
 
-        jcache().localLoadCache(null, 1, 2, 3);
+        cache.localLoadCache(null, 1, 2, 3);
 
-        int cnt = 0;
-
-        for (int i = 0; i < GRID_CNT; i++)
-            cnt += jcache(i).localSize();
-
-        assertEquals(inputSize, cnt);
+        assertEquals(inputSize, cache.localSize());
 
     }
 

@@ -425,26 +425,17 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
         else
             clnCache = cln.cache(ccfg.getName());
 
-        putKeys(clnCache, EXPECTED_VALUE);
+        clnCache.put(KEY, EXPECTED_VALUE);
 
         try {
             // Explicit tx.
             for (int i = 0; i < ITERATION_CNT; i++) {
-                try (final Transaction tx = cln.transactions().txStart(txConcurrency, txIsolation)) {
-                    putKeys(clnCache, WRONG_VALUE);
+                if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
+                    checkMvccInvoke(cln, clnCache, txConcurrency, txIsolation);
+                else
+                    checkTxInvoke(cln, clnCache, txConcurrency, txIsolation);
 
-                    clnCache.invoke(KEY, new NonSerialazibleEntryProcessor());
-
-                    GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
-                        @Override public Object call() {
-                            tx.commit();
-
-                            return null;
-                        }
-                    }, NotSerializableException.class);
-                }
-
-                checkKeys(clnCache, EXPECTED_VALUE);
+                assertEquals(EXPECTED_VALUE, clnCache.get(KEY));
             }
 
             // From affinity node.
@@ -454,21 +445,12 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
 
             // Explicit tx.
             for (int i = 0; i < ITERATION_CNT; i++) {
-                try (final Transaction tx = grid.transactions().txStart(txConcurrency, txIsolation)) {
-                    putKeys(cache, WRONG_VALUE);
+                if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
+                    checkMvccInvoke(grid, cache, txConcurrency, txIsolation);
+                else
+                    checkTxInvoke(grid, cache, txConcurrency, txIsolation);
 
-                    cache.invoke(KEY, new NonSerialazibleEntryProcessor());
-
-                    GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
-                        @Override public Object call() {
-                            tx.commit();
-
-                            return null;
-                        }
-                    }, NotSerializableException.class);
-                }
-
-                checkKeys(cache, EXPECTED_VALUE);
+                assertEquals(EXPECTED_VALUE, cache.get(KEY));
             }
 
             final IgniteCache clnCache0 = clnCache;
@@ -484,7 +466,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
                 }, NotSerializableException.class);
             }
 
-            checkKeys(clnCache, EXPECTED_VALUE);
+            assertEquals(EXPECTED_VALUE, clnCache.get(KEY));
         }
         finally {
             grid(0).destroyCache(ccfg.getName());
@@ -492,19 +474,53 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
     }
 
     /**
-     * @param cache Cache.
-     * @param val Value.
+     * @param node Grid node.
+     * @param cache Node cache.
+     * @param txConcurrency Transaction concurrency.
+     * @param txIsolation Transaction isolation.
      */
-    private void putKeys(IgniteCache<Integer, Integer> cache, int val) {
-        cache.put(KEY, val);
+    @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
+    private void checkTxInvoke(Ignite node, IgniteCache cache, TransactionConcurrency txConcurrency,
+        TransactionIsolation txIsolation) {
+        try (final Transaction tx = node.transactions().txStart(txConcurrency, txIsolation)) {
+            cache.put(KEY, WRONG_VALUE);
+
+            cache.invoke(KEY, new NonSerialazibleEntryProcessor());
+
+            GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
+                @Override public Object call() {
+                    tx.commit();
+
+                    return null;
+                }
+            }, NotSerializableException.class);
+        }
     }
 
     /**
-     * @param cache Cache.
-     * @param expVal Expected value.
+     * @param node Grid node.
+     * @param cache Node cache.
+     * @param txConcurrency Transaction concurrency.
+     * @param txIsolation Transaction isolation.
      */
-    private void checkKeys(IgniteCache<Integer, Integer> cache, int expVal) {
-        assertEquals((Integer)expVal, cache.get(KEY));
+    @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
+    private void checkMvccInvoke(Ignite node, IgniteCache cache, TransactionConcurrency txConcurrency,
+        TransactionIsolation txIsolation) {
+        try (final Transaction tx = node.transactions().txStart(txConcurrency, txIsolation)) {
+            cache.put(KEY, WRONG_VALUE);
+
+            GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
+                @Override public Object call() {
+                    cache.invoke(KEY, new NonSerialazibleEntryProcessor());
+
+                    fail("Should never happened.");
+
+                    tx.commit();
+
+                    return null;
+                }
+            }, NotSerializableException.class);
+        }
     }
 
     /**
