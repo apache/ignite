@@ -88,70 +88,9 @@ public class IgniteCacheQuerySelfTestSuite3 extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Cache Queries Test Suite 3");
 
-        // Continuous queries.
-        suite.addTestSuite(GridCacheContinuousQueryLocalSelfTest.class);
-        suite.addTestSuite(GridCacheContinuousQueryLocalAtomicSelfTest.class);
-        suite.addTestSuite(GridCacheContinuousQueryReplicatedSelfTest.class);
-        suite.addTestSuite(GridCacheContinuousQueryReplicatedAtomicSelfTest.class);
-        suite.addTestSuite(GridCacheContinuousQueryReplicatedP2PDisabledSelfTest.class);
-        suite.addTestSuite(GridCacheContinuousQueryPartitionedSelfTest.class);
-        suite.addTestSuite(GridCacheContinuousQueryPartitionedOnlySelfTest.class);
-        suite.addTestSuite(GridCacheContinuousQueryPartitionedP2PDisabledSelfTest.class);
-        suite.addTestSuite(GridCacheContinuousQueryTxSelfTest.class);
-        suite.addTestSuite(GridCacheContinuousQueryAtomicSelfTest.class);
-        suite.addTestSuite(GridCacheContinuousQueryAtomicNearEnabledSelfTest.class);
-        suite.addTestSuite(GridCacheContinuousQueryAtomicP2PDisabledSelfTest.class);
-        suite.addTestSuite(GridCacheContinuousQueryReplicatedTxOneNodeTest.class);
-        suite.addTestSuite(GridCacheContinuousQueryReplicatedAtomicOneNodeTest.class);
-        suite.addTestSuite(GridCacheContinuousQueryPartitionTxOneNodeTest.class);
-        suite.addTestSuite(GridCacheContinuousQueryPartitionAtomicOneNodeTest.class);
-        suite.addTestSuite(IgniteCacheContinuousQueryClientTest.class);
-        suite.addTestSuite(IgniteCacheContinuousQueryClientReconnectTest.class);
-        suite.addTestSuite(IgniteCacheContinuousQueryClientTxReconnectTest.class);
-        suite.addTestSuite(CacheContinuousQueryRandomOperationsTest.class);
-        suite.addTestSuite(CacheContinuousQueryRandomOperationsTwoNodesTest.class);
-        suite.addTestSuite(GridCacheContinuousQueryConcurrentTest.class);
-        suite.addTestSuite(CacheContinuousQueryAsyncFilterListenerTest.class);
-        suite.addTestSuite(CacheContinuousQueryFactoryFilterRandomOperationTest.class);
-        suite.addTestSuite(CacheContinuousQueryFactoryAsyncFilterRandomOperationTest.class);
+        for(int i = 0; i < 100; i++)
         suite.addTestSuite(CacheContinuousQueryOrderingEventTest.class);
-        suite.addTestSuite(CacheContinuousQueryOperationFromCallbackTest.class);
-        suite.addTestSuite(CacheContinuousQueryOperationP2PTest.class);
-        suite.addTestSuite(CacheContinuousBatchAckTest.class);
-        suite.addTestSuite(CacheContinuousBatchForceServerModeAckTest.class);
-        suite.addTestSuite(CacheContinuousQueryExecuteInPrimaryTest.class);
-        suite.addTestSuite(CacheContinuousQueryLostPartitionTest.class);
-        suite.addTestSuite(ContinuousQueryRemoteFilterMissingInClassPathSelfTest.class);
-        suite.addTestSuite(GridCacheContinuousQueryNodesFilteringTest.class);
-        suite.addTestSuite(GridCacheContinuousQueryMultiNodesFilteringTest.class);
-        suite.addTestSuite(IgniteCacheContinuousQueryImmutableEntryTest.class);
-        suite.addTestSuite(CacheKeepBinaryIterationTest.class);
-        suite.addTestSuite(CacheKeepBinaryIterationStoreEnabledTest.class);
-        suite.addTestSuite(CacheKeepBinaryIterationNearEnabledTest.class);
-        suite.addTestSuite(IgniteCacheContinuousQueryBackupQueueTest.class);
-        suite.addTestSuite(IgniteCacheContinuousQueryNoUnsubscribeTest.class);
-        suite.addTestSuite(ClientReconnectContinuousQueryTest.class);
-        suite.addTestSuite(ContinuousQueryPeerClassLoadingTest.class);
-        suite.addTestSuite(ClientReconnectContinuousQueryTest.class);
-        suite.addTestSuite(ContinuousQueryMarshallerTest.class);
 
-        suite.addTestSuite(CacheContinuousQueryConcurrentPartitionUpdateTest.class);
-        suite.addTestSuite(CacheContinuousQueryEventBufferTest.class);
-
-        suite.addTestSuite(CacheContinuousWithTransformerReplicatedSelfTest.class);
-        suite.addTestSuite(CacheContinuousWithTransformerLocalSelfTest.class);
-        suite.addTestSuite(CacheContinuousWithTransformerPartitionedSelfTest.class);
-        suite.addTestSuite(CacheContinuousWithTransformerClientSelfTest.class);
-        suite.addTestSuite(CacheContinuousWithTransformerFailoverTest.class);
-        suite.addTestSuite(CacheContinuousWithTransformerRandomOperationsTest.class);
-
-        //suite.addTestSuite(CacheContinuousQueryCounterPartitionedAtomicTest.class);
-        //suite.addTestSuite(CacheContinuousQueryCounterPartitionedTxTest.class);
-        //suite.addTestSuite(CacheContinuousQueryCounterReplicatedAtomicTest.class);
-        //suite.addTestSuite(CacheContinuousQueryCounterReplicatedTxTest.class);
-        //suite.addTestSuite(CacheContinuousQueryFailoverAtomicNearEnabledSelfSelfTest.class);
-
-        //suite.addTestSuite(IgniteCacheContinuousQueryReconnectTest.class);
 
         return suite;
     }
