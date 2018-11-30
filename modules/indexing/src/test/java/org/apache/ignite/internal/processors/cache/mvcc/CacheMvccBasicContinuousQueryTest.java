@@ -37,6 +37,7 @@ import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
@@ -91,9 +92,12 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
         }, 3000);
 
         for (Ignite node : G.allGrids()) {
-            GridContinuousProcessor proc = ((IgniteEx)node).context().continuous();
+            GridKernalContext ctx = ((IgniteEx)node).context();
+            GridContinuousProcessor proc = ctx.continuous();
 
-            assertEquals(0, ((Map)U.field(proc, "locInfos")).size());
+            final int locInfosCnt = ctx.service().eventDrivenServiceProcessorEnabled() ? 0 : 1;
+
+            assertEquals(locInfosCnt, ((Map)U.field(proc, "locInfos")).size());
             assertEquals(0, ((Map)U.field(proc, "rmtInfos")).size());
             assertEquals(0, ((Map)U.field(proc, "startFuts")).size());
             assertEquals(0, ((Map)U.field(proc, "stopFuts")).size());

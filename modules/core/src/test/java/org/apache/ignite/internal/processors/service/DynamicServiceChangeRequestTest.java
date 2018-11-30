@@ -62,7 +62,7 @@ public class DynamicServiceChangeRequestTest {
 
     /** */
     @Test
-    public void serviceId() {
+    public void serviceIdTest() {
         IgniteUuid srvcId = IgniteUuid.randomUuid();
 
         DynamicServiceChangeRequest req = new DynamicServiceChangeRequest(srvcId);
@@ -72,7 +72,7 @@ public class DynamicServiceChangeRequestTest {
 
     /** */
     @Test
-    public void configuration() {
+    public void configurationTest() {
         ServiceConfiguration cfg = new ServiceConfiguration();
 
         cfg.setName(TEST_SERVICE_NAME);
@@ -87,7 +87,7 @@ public class DynamicServiceChangeRequestTest {
 
     /** */
     @Test
-    public void deployFlag() {
+    public void deployFlagTest() {
         DynamicServiceChangeRequest req = new DynamicServiceChangeRequest(IgniteUuid.randomUuid());
 
         assertFalse(req.deploy());
@@ -99,7 +99,7 @@ public class DynamicServiceChangeRequestTest {
 
     /** */
     @Test
-    public void undeployFlag() {
+    public void undeployFlagTest() {
         DynamicServiceChangeRequest req = new DynamicServiceChangeRequest(IgniteUuid.randomUuid());
 
         assertFalse(req.undeploy());

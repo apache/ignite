@@ -100,14 +100,14 @@ public class DynamicServiceChangeRequest implements Serializable {
     /**
      * @param cfg New service configuration.
      */
-    public void configuration(ServiceConfiguration cfg) {
+    void configuration(ServiceConfiguration cfg) {
         this.cfg = cfg;
     }
 
     /**
      * Marks the message's action as deploy service request.
      */
-    public void markDeploy() {
+    void markDeploy() {
         flags |= SERVICE_DEPLOY_FLAG_MASK;
     }
 
@@ -121,7 +121,7 @@ public class DynamicServiceChangeRequest implements Serializable {
     /**
      * Marks the message's action as undeploy service request.
      */
-    public void markUndeploy() {
+    void markUndeploy() {
         flags |= SERVICE_UNDEPLOY_FLAG_MASK;
     }
 

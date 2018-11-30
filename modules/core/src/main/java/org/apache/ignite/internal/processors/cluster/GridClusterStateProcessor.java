@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
+import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -1161,6 +1162,14 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 Exception e = null;
 
                 try {
+                    if (!ctx.service().eventDrivenServiceProcessorEnabled()) {
+                        GridServiceProcessor srvcProc = (GridServiceProcessor)ctx.service();
+
+                        srvcProc.onUtilityCacheStarted();
+
+                        srvcProc.onActivate(ctx);
+                    }
+
                     ctx.dataStructures().onActivate(ctx);
 
                     ctx.igfs().onActivate(ctx);

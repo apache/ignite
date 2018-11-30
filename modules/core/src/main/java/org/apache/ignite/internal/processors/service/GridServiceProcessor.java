@@ -118,9 +118,13 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Grid service processor.
  * <p/>
- * Obsolete implementation of service processor, based on replecated system cache.
+ * Obsolete implementation of service processor, based on replicated system cache.
+ * <p/>
+ * NOTE: if you fix a bug in this class, please take a look in {@link IgniteServiceProcessor}, perhaps the class
+ * contains a similar block of code which also should be fixed.
  *
- * @deprecated Here is even driven implementation {@link IgniteServiceProcessor}, see IEP-17 for details.
+ * @see IgniteServiceProcessor
+ * @deprecated Here is improved, but uncompatible implementation {@link IgniteServiceProcessor}, see IEP-17 for details.
  */
 @Deprecated
 @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "ConstantConditions"})
