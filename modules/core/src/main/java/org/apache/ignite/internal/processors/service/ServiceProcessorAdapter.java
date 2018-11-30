@@ -33,11 +33,11 @@ import org.apache.ignite.services.ServiceDescriptor;
 /**
  * Adapter for different service processor implementations.
  */
-public abstract class IgniteServiceProcessorAdapter extends GridProcessorAdapter {
+public abstract class ServiceProcessorAdapter extends GridProcessorAdapter {
     /**
      * @param ctx Kernal context.
      */
-    protected IgniteServiceProcessorAdapter(GridKernalContext ctx) {
+    protected ServiceProcessorAdapter(GridKernalContext ctx) {
         super(ctx);
     }
 

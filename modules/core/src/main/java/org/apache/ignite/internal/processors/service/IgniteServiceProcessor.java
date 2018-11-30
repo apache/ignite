@@ -94,7 +94,7 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
  * and communication spi.
  */
 @SkipDaemon
-public class IgniteServiceProcessor extends IgniteServiceProcessorAdapter implements IgniteChangeGlobalStateSupport {
+public class IgniteServiceProcessor extends ServiceProcessorAdapter implements IgniteChangeGlobalStateSupport {
     /** Local service instances. */
     private final ConcurrentMap<IgniteUuid, Collection<ServiceContextImpl>> locServices = new ConcurrentHashMap<>();
 

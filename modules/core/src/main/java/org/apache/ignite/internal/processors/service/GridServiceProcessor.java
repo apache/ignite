@@ -128,7 +128,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 @Deprecated
 @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "ConstantConditions"})
-public class GridServiceProcessor extends IgniteServiceProcessorAdapter implements IgniteChangeGlobalStateSupport {
+public class GridServiceProcessor extends ServiceProcessorAdapter implements IgniteChangeGlobalStateSupport {
     /** Time to wait before reassignment retries. */
     private static final long RETRY_TIMEOUT = 1000;
 

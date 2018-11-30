@@ -50,8 +50,7 @@ import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
-import org.apache.ignite.internal.processors.service.IgniteServiceProcessor;
-import org.apache.ignite.internal.processors.service.IgniteServiceProcessorAdapter;
+import org.apache.ignite.internal.processors.service.ServiceProcessorAdapter;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
@@ -87,7 +86,6 @@ import org.apache.ignite.internal.processors.rest.GridRestProcessor;
 import org.apache.ignite.internal.processors.schedule.IgniteScheduleProcessorAdapter;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
-import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
@@ -209,7 +207,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringInclude
-    private IgniteServiceProcessorAdapter svcProc;
+    private ServiceProcessorAdapter svcProc;
 
     /** */
     @GridToStringInclude
@@ -602,8 +600,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             portProc = (GridPortProcessor)comp;
         else if (comp instanceof GridClosureProcessor)
             closProc = (GridClosureProcessor)comp;
-        else if (comp instanceof IgniteServiceProcessorAdapter)
-            svcProc = (IgniteServiceProcessorAdapter)comp;
+        else if (comp instanceof ServiceProcessorAdapter)
+            svcProc = (ServiceProcessorAdapter)comp;
         else if (comp instanceof IgniteScheduleProcessorAdapter)
             scheduleProc = (IgniteScheduleProcessorAdapter)comp;
         else if (comp instanceof GridSegmentationProcessor)
@@ -756,7 +754,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteServiceProcessorAdapter service() {
+    @Override public ServiceProcessorAdapter service() {
         return svcProc;
     }
 
