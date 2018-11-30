@@ -195,7 +195,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
      * @param fullPageId page ID to determine segment for
      * @return segment related
      */
-    @SuppressWarnings("TypeMayBeWeakened") private ReentrantReadWriteLock getSegment(FullPageId fullPageId) {
+    private ReentrantReadWriteLock getSegment(FullPageId fullPageId) {
         ReentrantReadWriteLock[] segments = U.field(pageMemory, "segments");
 
         int idx = PageMemoryImpl.segmentIndex(fullPageId.groupId(), fullPageId.pageId(),
@@ -218,6 +218,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
 
         GridCacheSharedContext sctx = Mockito.mock(GridCacheSharedContext.class);
 
+        when(sctx.gridConfig()).thenReturn(cfg);
         when(sctx.pageStore()).thenReturn(new NoOpPageStoreManager());
         when(sctx.wal()).thenReturn(new NoOpWALManager());
         when(sctx.database()).thenReturn(db);

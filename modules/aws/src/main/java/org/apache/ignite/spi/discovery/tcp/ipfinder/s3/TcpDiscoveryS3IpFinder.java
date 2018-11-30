@@ -261,7 +261,6 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
      *
      * @throws org.apache.ignite.spi.IgniteSpiException In case of error.
      */
-    @SuppressWarnings({"BusyWait"})
     private void initClient() throws IgniteSpiException {
         if (initGuard.compareAndSet(false, true))
             try {

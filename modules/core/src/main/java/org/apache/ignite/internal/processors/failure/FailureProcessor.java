@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.failure;
 
-import java.util.Collections;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -30,8 +29,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-
-import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_BLOCKED;
 
 /**
  * General failure processing API
@@ -92,11 +89,7 @@ public class FailureProcessor extends GridProcessorAdapter {
      * @return Default {@link FailureHandler} implementation.
      */
     protected FailureHandler getDefaultFailureHandler() {
-        FailureHandler hnd = new StopNodeOrHaltFailureHandler();
-
-        hnd.setIgnoredFailureTypes(Collections.singleton(SYSTEM_WORKER_BLOCKED));
-
-        return hnd;
+        return new StopNodeOrHaltFailureHandler();
     }
 
     /**

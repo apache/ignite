@@ -388,97 +388,97 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage {
         }
 
         switch (writer.state()) {
-            case 3:
+            case 4:
                 if (!writer.writeBoolean("clientFirst", clientFirst))
                     return false;
 
                 writer.incrementState();
 
-            case 4:
+            case 5:
                 if (!writer.writeMessage("filter", filter))
                     return false;
 
                 writer.incrementState();
 
-            case 5:
+            case 6:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 writer.incrementState();
 
-            case 6:
+            case 7:
                 if (!writer.writeObjectArray("keys", keys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 7:
+            case 8:
                 if (!writer.writeMessage("lockVer", lockVer))
                     return false;
 
                 writer.incrementState();
 
-            case 8:
+            case 9:
                 if (!writer.writeInt("miniId", miniId))
                     return false;
 
                 writer.incrementState();
 
-            case 9:
+            case 10:
                 if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
                     return false;
 
                 writer.incrementState();
 
-            case 10:
+            case 11:
                 if (!writer.writeBoolean("needRes", needRes))
                     return false;
 
                 writer.incrementState();
 
-            case 11:
+            case 12:
                 if (!writer.writeByte("op", op != null ? (byte)op.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
-            case 12:
+            case 13:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 writer.incrementState();
 
-            case 13:
+            case 14:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
-            case 14:
+            case 15:
                 if (!writer.writeLong("threadId", threadId))
                     return false;
 
                 writer.incrementState();
 
-            case 15:
+            case 16:
                 if (!writer.writeLong("timeout", timeout))
                     return false;
 
                 writer.incrementState();
 
-            case 16:
-                if (!writer.writeMessage("topVer", topVer))
-                    return false;
-
-                writer.incrementState();
-
             case 17:
-                if (!writer.writeLong("txTimeout", txTimeout))
+                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
             case 18:
+                if (!writer.writeLong("txTimeout", txTimeout))
+                    return false;
+
+                writer.incrementState();
+
+            case 19:
                 if (!writer.writeObjectArray("values", values, MessageCollectionItemType.MSG))
                     return false;
 
@@ -500,7 +500,7 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage {
             return false;
 
         switch (reader.state()) {
-            case 3:
+            case 4:
                 clientFirst = reader.readBoolean("clientFirst");
 
                 if (!reader.isLastRead())
@@ -508,7 +508,7 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage {
 
                 reader.incrementState();
 
-            case 4:
+            case 5:
                 filter = reader.readMessage("filter");
 
                 if (!reader.isLastRead())
@@ -516,7 +516,7 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage {
 
                 reader.incrementState();
 
-            case 5:
+            case 6:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
@@ -524,7 +524,7 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage {
 
                 reader.incrementState();
 
-            case 6:
+            case 7:
                 keys = reader.readObjectArray("keys", MessageCollectionItemType.MSG, KeyCacheObject.class);
 
                 if (!reader.isLastRead())
@@ -532,7 +532,7 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage {
 
                 reader.incrementState();
 
-            case 7:
+            case 8:
                 lockVer = reader.readMessage("lockVer");
 
                 if (!reader.isLastRead())
@@ -540,7 +540,7 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage {
 
                 reader.incrementState();
 
-            case 8:
+            case 9:
                 miniId = reader.readInt("miniId");
 
                 if (!reader.isLastRead())
@@ -548,7 +548,7 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage {
 
                 reader.incrementState();
 
-            case 9:
+            case 10:
                 mvccSnapshot = reader.readMessage("mvccSnapshot");
 
                 if (!reader.isLastRead())
@@ -556,7 +556,7 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage {
 
                 reader.incrementState();
 
-            case 10:
+            case 11:
                 needRes = reader.readBoolean("needRes");
 
                 if (!reader.isLastRead())
@@ -564,7 +564,7 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage {
 
                 reader.incrementState();
 
-            case 11:
+            case 12:
                 byte opOrd;
 
                 opOrd = reader.readByte("op");
@@ -576,7 +576,7 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage {
 
                 reader.incrementState();
 
-            case 12:
+            case 13:
                 subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
@@ -584,7 +584,7 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage {
 
                 reader.incrementState();
 
-            case 13:
+            case 14:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
@@ -592,7 +592,7 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage {
 
                 reader.incrementState();
 
-            case 14:
+            case 15:
                 threadId = reader.readLong("threadId");
 
                 if (!reader.isLastRead())
@@ -600,7 +600,7 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage {
 
                 reader.incrementState();
 
-            case 15:
+            case 16:
                 timeout = reader.readLong("timeout");
 
                 if (!reader.isLastRead())
@@ -608,16 +608,8 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage {
 
                 reader.incrementState();
 
-            case 16:
-                topVer = reader.readMessage("topVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
             case 17:
-                txTimeout = reader.readLong("txTimeout");
+                topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -625,6 +617,14 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage {
                 reader.incrementState();
 
             case 18:
+                txTimeout = reader.readLong("txTimeout");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 19:
                 values = reader.readObjectArray("values", MessageCollectionItemType.MSG, Message.class);
 
                 if (!reader.isLastRead())
@@ -639,7 +639,7 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 19;
+        return 20;
     }
 
     /** {@inheritDoc} */

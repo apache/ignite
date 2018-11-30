@@ -297,7 +297,7 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
     }
 
     /**
-     * Recursive realisation of DectisionTree to String converting.
+     * Recursive realisation of DecisionTree to String converting.
      *
      * @param node Decision tree.
      * @param depth Current depth.

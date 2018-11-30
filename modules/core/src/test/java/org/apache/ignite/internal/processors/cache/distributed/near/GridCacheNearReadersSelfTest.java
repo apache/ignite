@@ -48,6 +48,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -67,10 +68,17 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Grid counter. */
-    private static AtomicInteger cntr = new AtomicInteger(0);
+    private AtomicInteger cntr = new AtomicInteger(0);
 
     /** Test cache affinity. */
     private GridCacheModuloAffinityFunction aff = new GridCacheModuloAffinityFunction();
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+
+        super.beforeTestsStarted();
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -465,7 +473,6 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
-    @SuppressWarnings({"SizeReplaceableByIsEmpty"})
     public void testImplicitLockReaders() throws Exception {
         grids = 3;
         aff.reset(grids, 1);

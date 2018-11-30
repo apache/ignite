@@ -34,6 +34,7 @@ import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -203,7 +204,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         super.init();
 
         updateReplyClos = new UpdateReplyClosure() {
-            @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
             @Override public void apply(GridNearAtomicAbstractUpdateRequest req, GridNearAtomicUpdateResponse res) {
                 if (req.writeSynchronizationMode() != FULL_ASYNC)
                     sendNearUpdateReply(res.nodeId(), res);
@@ -221,7 +221,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"IfMayBeConditional", "SimplifiableIfStatement"})
+    @SuppressWarnings({"IfMayBeConditional"})
     @Override public void start() throws IgniteCheckedException {
         super.start();
 
@@ -751,7 +751,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param op Operation closure.
      * @return Future.
      */
-    @SuppressWarnings("unchecked")
     private <T> IgniteInternalFuture<T> asyncOp(final CO<IgniteInternalFuture<T>> op) {
         IgniteInternalFuture<T> fail = asyncOpAcquire(/*retry*/false);
 
@@ -870,7 +869,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(Set<? extends K> keys,
         final EntryProcessor<K, V, T> entryProcessor,
         Object... args) {
@@ -1423,6 +1421,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             needVer,
             false,
             recovery,
+            null,
             null);
 
         fut.init();
@@ -1493,6 +1492,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                                 if (evt) {
                                     ctx.events().readEvent(key,
+                                        null,
                                         null,
                                         row.value(),
                                         subjId,
@@ -1630,6 +1630,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             skipVals,
             needVer,
             false,
+            null,
             null);
 
         fut.init(topVer);
@@ -1773,7 +1774,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 // Can not wait for topology future since it will break
                                 // GridNearAtomicCheckUpdateRequest processing.
                                 remap = !top.topologyVersionFuture().exchangeDone() ||
-                                    needRemap(req.topologyVersion(), top.readyTopologyVersion());
+                                    needRemap(req.topologyVersion(), top.readyTopologyVersion(), req.keys());
                             }
 
                             if (!remap) {
@@ -2725,6 +2726,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             final GridDhtAtomicAbstractUpdateFuture dhtFut = dhtUpdRes.dhtFuture();
 
+            Collection<Object> failedToUnwrapKeys = null;
+
             // Avoid iterator creation.
             for (int i = 0; i < entries.size(); i++) {
                 GridDhtCacheEntry entry = entries.get(i);
@@ -2737,9 +2740,26 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     continue;
                 }
 
-                if (storeErr != null &&
-                    storeErr.failedKeys().contains(entry.key().value(ctx.cacheObjectContext(), false)))
-                    continue;
+                if (storeErr != null) {
+                    Object key = entry.key();
+
+                    try {
+                        key = entry.key().value(ctx.cacheObjectContext(), false);
+                    }
+                    catch (BinaryInvalidTypeException e) {
+                        if (log.isDebugEnabled()) {
+                            if (failedToUnwrapKeys == null)
+                                failedToUnwrapKeys = new ArrayList<>();
+
+                            // To limit keys count in log message.
+                            if (failedToUnwrapKeys.size() < 5)
+                                failedToUnwrapKeys.add(key);
+                        }
+                    }
+
+                    if (storeErr.failedKeys().contains(key))
+                        continue;
+                }
 
                 try {
                     // We are holding java-level locks on entries at this point.
@@ -2868,6 +2888,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 dhtUpdRes.processedEntriesCount(firstEntryIdx + i + 1);
             }
 
+            if (failedToUnwrapKeys != null) {
+                log.warning("Failed to get values of keys: " + failedToUnwrapKeys +
+                    " (the binary objects will be used instead).");
+            }
         }
         catch (IgniteCheckedException e) {
             res.addFailedKeys(putMap != null ? putMap.keySet() : rmvKeys, e);
@@ -3542,7 +3566,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param nodeId Sender node ID.
      * @param res Dht atomic update response.
      */
-    @SuppressWarnings("unchecked")
     private void processDhtAtomicUpdateResponse(UUID nodeId, GridDhtAtomicUpdateResponse res) {
         GridDhtAtomicAbstractUpdateFuture updateFut =
             (GridDhtAtomicAbstractUpdateFuture)ctx.mvcc().atomicFuture(res.futureId());
@@ -3565,7 +3588,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param nodeId Sender node ID.
      * @param res Deferred atomic update response.
      */
-    @SuppressWarnings("unchecked")
     private void processDhtAtomicDeferredUpdateResponse(UUID nodeId, GridDhtAtomicDeferredUpdateResponse res) {
         GridLongList futIds = res.futureIds();
 

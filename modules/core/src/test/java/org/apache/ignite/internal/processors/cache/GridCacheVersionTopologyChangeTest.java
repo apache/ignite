@@ -37,6 +37,7 @@ import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -149,7 +150,7 @@ public class GridCacheVersionTopologyChangeTest extends GridCommonAbstractTest {
 
             int nodeIdx = 1;
 
-            for (int n = 0; n < 10; n++) {
+            for (int n = 0; n < SF.applyLB(10, 2); n++) {
                 startGrid(nodeIdx++);
 
                 for (int i = 0; i < caches.size(); i++)

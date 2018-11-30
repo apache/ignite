@@ -227,7 +227,7 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
      * @return {@code True} if topology is valid.
      */
     private boolean checkTopology(AffinityTopologyVersion topVer, MvccSnapshotResponseListener lsnr) {
-        MvccCoordinator crd = cctx.affinity().mvccCoordinator(topVer);
+        MvccCoordinator crd = cctx.shared().coordinators().currentCoordinator();
 
         if (crd == null) {
             lsnr.onError(noCoordinatorError(topVer));
@@ -239,16 +239,6 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
 
         synchronized (this) {
             crdVer = crd.coordinatorVersion();
-        }
-
-        MvccCoordinator curCrd = cctx.topology().mvccCoordinator();
-
-        if (!crd.equals(curCrd)) {
-            assert cctx.topology().topologyVersionFuture().initialVersion().compareTo(topVer) > 0;
-
-            tryRemap(lsnr);
-
-            return false;
         }
 
         return true;

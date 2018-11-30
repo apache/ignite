@@ -1271,29 +1271,71 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
     /** */
     public void testCacheConfigNoOutputFormat() throws Exception {
-        testCacheConfig(null);
+        testCacheConfig(null, 1, 1);
     }
 
     /** */
-    public void testCacheConfigSingleLineOutputFormat() throws Exception {
-        testCacheConfig(SINGLE_LINE);
+    public void testCacheConfigSingleLineOutputFormatSingleNodeSignleCache() throws Exception {
+        testCacheConfigSingleLineOutputFormat(1, 1);
     }
 
     /** */
-    public void testCacheConfigMultiLineOutputFormat() throws Exception {
-        testCacheConfig(MULTI_LINE);
+    public void testCacheConfigSingleLineOutputFormatTwoNodeSignleCache() throws Exception {
+        testCacheConfigSingleLineOutputFormat(2, 1);
     }
 
     /** */
-    private void testCacheConfig(OutputFormat outputFormat) throws Exception {
-        Ignite ignite = startGrid();
+    public void testCacheConfigSingleLineOutputFormatTwoNodeManyCaches() throws Exception {
+        testCacheConfigSingleLineOutputFormat(2, 100);
+    }
+
+    /** */
+    public void testCacheConfigMultiLineOutputFormatSingleNodeSingleCache() throws Exception {
+        testCacheConfigMultiLineOutputFormat(1, 1);
+    }
+
+    /** */
+    public void testCacheConfigMultiLineOutputFormatTwoNodeSingleCache() throws Exception {
+        testCacheConfigMultiLineOutputFormat(2, 1);
+    }
+
+    /** */
+    public void testCacheConfigMultiLineOutputFormatTwoNodeManyCaches() throws Exception {
+        testCacheConfigMultiLineOutputFormat(2, 100);
+    }
+
+    /** */
+    private void testCacheConfigSingleLineOutputFormat(int nodesCnt, int cachesCnt) throws Exception {
+        testCacheConfig(SINGLE_LINE, nodesCnt, cachesCnt);
+    }
+
+    /** */
+    private void testCacheConfigMultiLineOutputFormat(int nodesCnt, int cachesCnt) throws Exception {
+        testCacheConfig(MULTI_LINE, nodesCnt, cachesCnt);
+    }
+
+    /** */
+    private void testCacheConfig(OutputFormat outputFormat, int nodesCnt, int cachesCnt) throws Exception {
+        assertTrue("Invalid number of nodes or caches", nodesCnt > 0 && cachesCnt > 0);
+
+        Ignite ignite = startGrid(nodesCnt);
 
         ignite.cluster().active(true);
 
-        IgniteCache<Object, Object> cache1 = ignite.createCache(new CacheConfiguration<>()
-            .setAffinity(new RendezvousAffinityFunction(false, 32))
-            .setBackups(1)
-            .setName(DEFAULT_CACHE_NAME));
+        List<CacheConfiguration> ccfgs = new ArrayList<>(cachesCnt);
+
+        for (int i = 0; i < cachesCnt; i++) {
+            ccfgs.add(
+                new CacheConfiguration<>()
+                    .setAffinity(new RendezvousAffinityFunction(false, 32))
+                    .setBackups(1)
+                    .setName(DEFAULT_CACHE_NAME + i)
+            );
+        }
+
+        ignite.createCaches(ccfgs);
+
+        IgniteCache<Object, Object> cache1 = ignite.cache(DEFAULT_CACHE_NAME + 0);
 
         for (int i = 0; i < 100; i++)
             cache1.put(i, i);
@@ -1312,12 +1354,16 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         String outStr = testOut.toString();
 
         if (outputFormat == null || outputFormat == SINGLE_LINE) {
-            assertTrue(outStr.contains("name=" + DEFAULT_CACHE_NAME));
+            for (int i = 0; i < cachesCnt; i++)
+                assertTrue(outStr.contains("name=" + DEFAULT_CACHE_NAME + i));
+
             assertTrue(outStr.contains("partitions=32"));
             assertTrue(outStr.contains("function=o.a.i.cache.affinity.rendezvous.RendezvousAffinityFunction"));
         }
         else if (outputFormat == MULTI_LINE) {
-            assertTrue(outStr.contains("[cache = '" + DEFAULT_CACHE_NAME + "']"));
+            for (int i = 0; i < cachesCnt; i++)
+                assertTrue(outStr.contains("[cache = '" + DEFAULT_CACHE_NAME + i + "']"));
+
             assertTrue(outStr.contains("Affinity Partitions: 32"));
             assertTrue(outStr.contains("Affinity Function: o.a.i.cache.affinity.rendezvous.RendezvousAffinityFunction"));
         }

@@ -78,12 +78,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxyImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -481,7 +481,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
+    @Override public void setUp() throws Exception {
         // Disable SSL hostname verifier.
         HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() {
             @Override public boolean verify(String s, SSLSession sslSes) {
@@ -495,7 +495,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void tearDown() throws Exception {
+    @Override public void tearDown() throws Exception {
         getTestCounters().incrementStopped();
 
         super.tearDown();
@@ -528,7 +528,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @throws InterruptedException If interrupted.
      */
-    @SuppressWarnings("BusyWait")
     protected void awaitPartitionMapExchange() throws InterruptedException {
         awaitPartitionMapExchange(false, false, null);
     }
@@ -540,7 +539,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      *      be filtered
      * @throws InterruptedException If interrupted.
      */
-    @SuppressWarnings("BusyWait")
     protected void awaitPartitionMapExchange(
         boolean waitEvicts,
         boolean waitNode2PartUpdate,
@@ -948,7 +946,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     * Use method for manual rebalaincing cache on all nodes. Note that using
+     * Use method for manual rebalancing cache on all nodes. Note that using
      * <pre name="code" class="java">
      *   for (int i = 0; i < G.allGrids(); i++)
      *     grid(i).cache(CACHE_NAME).rebalance().get();
@@ -966,40 +964,52 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             return;
 
         IgniteFuture<Void> fut =
-            ignite.compute().withTimeout(5_000).broadcastAsync(new IgniteRunnable() {
-                /** */
-                @LoggerResource
-                IgniteLogger log;
-
-                /** */
-                @IgniteInstanceResource
-                private Ignite ignite;
-
-                /** {@inheritDoc} */
-                @Override public void run() {
-                    IgniteCache<?, ?> cache = ignite.cache(cacheName);
-
-                    assertNotNull(cache);
-
-                    while (!(Boolean)cache.rebalance().get()) {
-                        try {
-                            U.sleep(100);
-                        }
-                        catch (IgniteInterruptedCheckedException e) {
-                            throw new IgniteException(e);
-                        }
-                    }
-
-                    if (log.isInfoEnabled())
-                        log.info("Manual rebalance finished [node=" + ignite.name() + ", cache=" + cacheName + "]");
-                }
-            });
+            ignite.compute().withTimeout(5_000).broadcastAsync(new ManualRebalancer(cacheName));
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 return fut.isDone();
             }
         }, 5_000));
+    }
+
+    /**
+     *
+     */
+    private static class ManualRebalancer implements IgniteRunnable {
+        /** */
+        @LoggerResource
+        IgniteLogger log;
+
+        /** */
+        @IgniteInstanceResource
+        private Ignite ignite;
+
+        /** */
+        private final String cacheName;
+
+        public ManualRebalancer(String cacheName) {
+            this.cacheName = cacheName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            IgniteCache<?, ?> cache = ignite.cache(cacheName);
+
+            assertNotNull(cache);
+
+            while (!cache.rebalance().get()) {
+                try {
+                    U.sleep(100);
+                }
+                catch (IgniteInterruptedCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            }
+
+            if (log.isInfoEnabled())
+                log.info("Manual rebalance finished [node=" + ignite.name() + ", cache=" + cacheName + "]");
+        }
     }
 
     /**

@@ -71,7 +71,6 @@ public abstract class CacheDistributedGetFutureAdapter<K, V> extends GridCacheCo
     protected boolean trackable;
 
     /** Remap count. */
-    @SuppressWarnings("UnusedDeclaration")
     protected volatile int remapCnt;
 
     /** Subject ID. */
@@ -158,11 +157,12 @@ public abstract class CacheDistributedGetFutureAdapter<K, V> extends GridCacheCo
     }
 
     /**
+     * @param part Partition.
      * @param topVer Topology version.
      * @return Exception.
      */
-    protected final ClusterTopologyServerNotFoundException serverNotFoundError(AffinityTopologyVersion topVer) {
+    protected final ClusterTopologyServerNotFoundException serverNotFoundError(int part, AffinityTopologyVersion topVer) {
         return new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
-            "(all partition nodes left the grid) [topVer=" + topVer + ", cache=" + cctx.name() + ']');
+            "(all partition nodes left the grid) [topVer=" + topVer + ", part" + part + ", cache=" + cctx.name() + ']');
     }
 }

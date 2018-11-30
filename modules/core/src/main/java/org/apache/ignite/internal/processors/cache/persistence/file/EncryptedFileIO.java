@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
-
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
@@ -97,6 +96,21 @@ public class EncryptedFileIO implements FileIO {
 
         this.encryptionOverhead = pageSize - CU.encryptedPageSize(pageSize, encSpi);
         this.zeroes =  new byte[encryptionOverhead];
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getFileSystemBlockSize() {
+        return -1;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getSparseSize() {
+        return -1;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int punchHole(long position, int len) {
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */

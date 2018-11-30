@@ -60,6 +60,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.continuous.StartRoutineAckDiscoveryMessage;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -91,7 +92,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -2379,7 +2379,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     private static class TestEventDiscardSpi extends TcpDiscoverySpi {
         /** */
-        private ConcurrentHashSet<IgniteUuid> msgIds = new ConcurrentHashSet<>();
+        private GridConcurrentHashSet<IgniteUuid> msgIds = new GridConcurrentHashSet<>();
 
         /** */
         private volatile boolean checkDuplicates;
