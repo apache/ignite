@@ -137,7 +137,7 @@ public class IgniteCache150ClientsTest extends GridCommonAbstractTest {
         exec.waitFor();
         BufferedReader reader =
             new BufferedReader(new InputStreamReader(exec.getInputStream()));
-        System.out.println(commnad[commnad.length-1] + " :: " +reader.readLine());
+        log.info(commnad[commnad.length-1] + " :: " +reader.readLine());
         reader.close();
     }
 
