@@ -119,10 +119,10 @@ public interface CommunicationSpi<T extends Serializable> extends IgniteSpi {
     }
 
     /**
-     * @param node Destination cluster node to communicate with.
+     * @param remote Destination cluster node to communicate with.
      * @throws IgniteSpiException If fails.
      */
-    public default WritableByteChannel getOrCreateChannel(ClusterNode node) throws IgniteSpiException {
+    public default WritableByteChannel getOrCreateChannel(ClusterNode remote) throws IgniteSpiException {
         throw new UnsupportedOperationException();
     }
 }

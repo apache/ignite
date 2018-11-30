@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.nio.channels.ReadableByteChannel;
 import java.util.UUID;
 import org.apache.ignite.internal.util.nio.channel.GridNioSocketChannel;
 
@@ -31,7 +30,5 @@ public interface GridIoChannelListener {
      * @param sndId Remote nodeId.
      * @param ch Local created channel endpoint.
      */
-    public default void onChannelCreated(UUID sndId, GridNioSocketChannel ch) {
-        // No-op.
-    }
+    public void onChannelCreated(UUID sndId, GridNioSocketChannel ch);
 }

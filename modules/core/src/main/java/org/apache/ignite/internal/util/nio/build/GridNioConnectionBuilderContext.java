@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.util.nio.build;
 
-import java.nio.channels.Channel;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.ssl.GridSslMeta;
 import org.apache.ignite.plugin.extensions.communication.Message;

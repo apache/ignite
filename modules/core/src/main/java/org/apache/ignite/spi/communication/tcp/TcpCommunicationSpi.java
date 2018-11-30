@@ -4429,8 +4429,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     }
 
     /** {@inheritDoc} */
-    @Override public WritableByteChannel getOrCreateChannel(ClusterNode node) throws IgniteSpiException {
-        ConnectionKey connKey = new ConnectionKey(node.id(), 10, -1);
+    @Override public WritableByteChannel getOrCreateChannel(ClusterNode remote) throws IgniteSpiException {
+        ConnectionKey connKey = new ConnectionKey(remote.id(), 10, -1);
 
         GridNioSocketChannel nioCh = connMgr.getChannel(connKey);
 
@@ -4440,7 +4440,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             try {
                 final long start = System.currentTimeMillis();
 
-                nioCh = createGridNioSocketChannel(node, connKey);
+                nioCh = createGridNioSocketChannel(remote, connKey);
 
                 connMgr.addChannel(connKey, nioCh);
 
