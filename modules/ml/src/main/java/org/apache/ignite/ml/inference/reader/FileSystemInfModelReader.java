@@ -24,7 +24,7 @@ import java.nio.file.Paths;
 import org.apache.ignite.ml.inference.util.DirectorySerializer;
 
 /**
- * Model reader that reads directory and serializes it using {@link DirectorySerializer}.
+ * Model reader that reads directory or file and serializes it using {@link DirectorySerializer}.
  */
 public class FileSystemInfModelReader implements InfModelReader {
     /** */

@@ -15,8 +15,28 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.ml.inference.storage.model;
+
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+
 /**
- * <!-- Package description. -->
- * Root package for inference model storages.
+ * Model storage factory. Provides {@link ModelStorage}.
  */
-package org.apache.ignite.ml.inference.storage;
+public class ModelStorageFactory {
+    /** Model storage cache name. */
+    public static final String MODEL_STORAGE_CACHE_NAME = "MODEL_STORAGE";
+
+    /**
+     * Returns model storage based on Apache Ignite cache.
+     *
+     * @param ignite Ignite instance.
+     * @return Model storage.
+     */
+    public ModelStorage getModelStorage(Ignite ignite) {
+        IgniteCache<String, FileOrDirectory> cache = ignite.cache(MODEL_STORAGE_CACHE_NAME);
+        ModelStorageProvider storageProvider = new IgniteModelStorageProvider(cache);
+
+        return new DefaultModelStorage(storageProvider);
+    }
+}

@@ -15,8 +15,16 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.ml.util.plugin;
+
+import org.apache.ignite.plugin.IgnitePlugin;
+
 /**
- * <!-- Package description. -->
- * Root package for inference model storages.
+ * ML plugin.
  */
-package org.apache.ignite.ml.inference.storage;
+class MLPlugin implements IgnitePlugin {
+    /**
+     * Creates a new instance of ML inference plugin.
+     */
+    MLPlugin() {}
+}

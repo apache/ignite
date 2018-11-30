@@ -15,8 +15,34 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.ml.inference.storage.model;
+
 /**
- * <!-- Package description. -->
- * Root package for inference model storages.
+ * Implementation of file {@link ModelStorageProvider} works with.
  */
-package org.apache.ignite.ml.inference.storage;
+class File implements FileOrDirectory {
+    /** */
+    private static final long serialVersionUID = -7739751667495712802L;
+
+    /** File content. */
+    private final byte[] data;
+
+    /**
+     * Constructs a new instance of file.
+     *
+     * @param data File content.
+     */
+    protected File(byte[] data) {
+        this.data = data;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isFile() {
+        return true;
+    }
+
+    /** */
+    protected byte[] getData() {
+        return data;
+    }
+}
