@@ -33,14 +33,14 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public class GridMBeanDisableSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
+    @Override public void setUp() throws Exception {
         IgniteUtils.IGNITE_MBEANS_DISABLED = true;
 
         super.setUp();
     }
 
     /** {@inheritDoc} */
-    @Override protected void tearDown() throws Exception {
+    @Override public void tearDown() throws Exception {
         IgniteUtils.IGNITE_MBEANS_DISABLED = false;
 
         super.tearDown();

@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleRequest;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -74,7 +75,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.eclipse.jetty.util.ConcurrentHashSet;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -354,7 +354,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
 
             final AtomicInteger idx = new AtomicInteger(initNodes);
 
-            final ConcurrentHashSet<Integer> stopNodes = new ConcurrentHashSet<>();
+            final GridConcurrentHashSet<Integer> stopNodes = new GridConcurrentHashSet<>();
 
             IgniteInternalFuture fut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
@@ -419,7 +419,9 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void concurrentStart(final boolean withClients) throws Exception {
-        for (int i = 0; i < 5; i++) {
+        int iterations = GridTestUtils.SF.applyLB(5, 1);
+
+        for (int i = 0; i < iterations; i++) {
             log.info("Iteration: " + i);
 
             startGrid(0);

@@ -1570,7 +1570,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     pendingTree = pendingTree0;
 
-                    if (!hasPendingEntries && pendingTree0.size() > 0)
+                    if (!hasPendingEntries && !pendingTree0.isEmpty())
                         hasPendingEntries = true;
 
                     int grpId = grp.groupId();

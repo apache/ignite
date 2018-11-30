@@ -566,6 +566,21 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         }
 
         /** {@inheritDoc} */
+        @Override public int getFileSystemBlockSize() {
+            return delegate.getFileSystemBlockSize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getSparseSize() {
+            return delegate.getSparseSize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int punchHole(long position, int len) {
+            return delegate.punchHole(position, len);
+        }
+
+        /** {@inheritDoc} */
         @Override public long position() throws IOException {
             return delegate.position();
         }
