@@ -19,10 +19,12 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -83,6 +85,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -92,6 +95,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -613,10 +617,11 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Void> waitFor(GridCacheContext cctx, MvccVersion locked) throws IgniteCheckedException {
+    @Override public IgniteInternalFuture<Void> waitFor(GridCacheContext cctx, MvccVersion locked,
+        MvccVersion blockedVersion) throws IgniteCheckedException {
         TxKey key = new TxKey(locked.coordinatorVersion(), locked.counter());
 
-        LockFuture fut = new LockFuture(cctx.ioPolicy());
+        LockFuture fut = new LockFuture(cctx.ioPolicy(), blockedVersion);
 
         Waiter waiter = waitMap.merge(key, fut, Waiter::concat);
 
@@ -625,6 +630,10 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         if ((state == TxState.ABORTED || state == TxState.COMMITTED)
             && !waiter.hasLocalTransaction() && (waiter = waitMap.remove(key)) != null)
             waiter.run(ctx);
+
+        // t0d0 watch for exact falling asleep condition
+        new DdCollaborator(ctx.cache().context())
+            .startComputation(blockedVersion, locked);
 
         return fut;
     }
@@ -1799,12 +1808,64 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         }
     }
 
+    // t0d0 use pending futures in a common and RELIABLE (e.g. handling destination node left) way
+    private final ConcurrentHashMap<UUID, LockWaitCheckFuture> lockChecks = new ConcurrentHashMap<>();
+
+    @Override public IgniteInternalFuture<T2<GridCacheVersion, UUID>> checkWaiting(GridCacheVersion ver, UUID nodeId) {
+        LockWaitCheckFuture fut = new LockWaitCheckFuture(nodeId, ver);
+        fut.init();
+        return fut;
+    }
+
+    public class LockWaitCheckFuture extends GridFutureAdapter<T2<GridCacheVersion, UUID>> {
+        private final UUID nodeId;
+        private final UUID futId = UUID.randomUUID();
+        private final GridCacheVersion txVersion;
+
+        private LockWaitCheckFuture(UUID nodeId, GridCacheVersion txVersion) {
+            this.nodeId = nodeId;
+            this.txVersion = txVersion;
+        }
+
+        public void init() {
+            try {
+                lockChecks.put(futId, this);
+                sendMessage(nodeId, new LockWaitCheckRequest(futId, txVersion));
+            }
+            catch (IgniteCheckedException e) {
+                lockChecks.remove(futId);
+                e.printStackTrace();
+            }
+        }
+
+        public void onResponse(LockWaitCheckResponse res) {
+            lockChecks.remove(futId);
+            onDone(new T2<>(res.blockerTxVersion(), res.blockerNodeId()));
+        }
+    }
+
     /**
      *
      */
     private class CoordinatorMessageListener implements GridMessageListener {
         /** {@inheritDoc} */
         @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
+            if (msg instanceof DeadlockProbe) {
+                new DdCollaborator(ctx.cache().context()).handleDeadlockProbe((DeadlockProbe)msg);
+                return;
+            }
+
+            if (msg instanceof LockWaitCheckRequest) {
+                handleLockCheckRequest(nodeId, (LockWaitCheckRequest)msg);
+                return;
+            }
+
+            if (msg instanceof LockWaitCheckResponse) {
+                LockWaitCheckResponse checkRes = (LockWaitCheckResponse)msg;
+                lockChecks.get(checkRes.futId()).onResponse(checkRes);
+                return;
+            }
+
             MvccMessage msg0 = (MvccMessage)msg;
 
             if (msg0.waitForCoordinatorInit() && !initFut.isDone()) {
@@ -1854,6 +1915,42 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         /** {@inheritDoc} */
         @Override public String toString() {
             return "CoordinatorMessageListener[]";
+        }
+    }
+
+    private void handleLockCheckRequest(UUID nodeId, LockWaitCheckRequest req) {
+        // t0d0 ensure response is sent in all cases
+        Optional<IgniteInternalTx> optTx = ctx.cache().context().tm().activeTransactions().stream()
+            .filter(tx -> tx.nearXidVersion().equals(req.txVersion()) && tx.dht() && tx.local())
+            .findAny();
+        if (optTx.isPresent()) {
+            MvccSnapshot checkedSnapshot = optTx.get().mvccSnapshot();
+            waitMap.entrySet().stream()
+                .filter(e -> e.getValue().txVersion().stream().anyMatch(waitingVer -> DdCollaborator.belongToSameTx(waitingVer, checkedSnapshot)))
+                .map(e -> e.getKey())
+                .findAny()
+                .ifPresent(txKey -> {
+                    IgniteInternalTx blockerTx = ctx.cache().context().tm().activeTransactions().stream()
+                        .filter(tx -> tx.mvccSnapshot().coordinatorVersion() == txKey.major() && tx.mvccSnapshot().counter() == txKey.minor())
+                        .findAny()
+                        // t0d0 handle possible race here
+                        .get();
+                    try {
+                        sendMessage(nodeId, new LockWaitCheckResponse(
+                            req.futId(), blockerTx.nearXidVersion(), blockerTx.eventNodeId()));
+                    }
+                    catch (IgniteCheckedException e) {
+                        e.printStackTrace();
+                    }
+                });
+        }
+        else {
+            try {
+                sendMessage(nodeId, new LockWaitCheckResponse(req.futId(), null, null));
+            }
+            catch (IgniteCheckedException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -1955,18 +2052,26 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
          * @return {@code True} if it is a compound waiter.
          */
         boolean compound();
+
+        // t0d0 develop a good way for checking waiting transactions
+        default Set<MvccVersion> txVersion() {
+            return Collections.emptySet();
+        }
     }
 
     /** */
     private static class LockFuture extends GridFutureAdapter<Void> implements Waiter, Runnable {
         /** */
         private final byte plc;
+        private final MvccVersion txVersion;
 
         /**
          * @param plc Pool policy.
+         * @param version
          */
-        LockFuture(byte plc) {
+        LockFuture(byte plc, MvccVersion version) {
             this.plc = plc;
+            txVersion = version;
         }
 
         /** {@inheritDoc} */
@@ -1997,6 +2102,10 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         /** {@inheritDoc} */
         @Override public boolean compound() {
             return false;
+        }
+
+        @Override public Set<MvccVersion> txVersion() {
+            return Collections.singleton(txVersion);
         }
     }
 
@@ -2083,6 +2192,18 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         /** {@inheritDoc} */
         @Override public boolean compound() {
             return true;
+        }
+
+        @Override public Set<MvccVersion> txVersion() {
+            if (inner.getClass() == ArrayList.class) {
+                HashSet<MvccVersion> versions = new HashSet<>();
+                for (Waiter waiter : (List<Waiter>)inner) {
+                    versions.addAll(waiter.txVersion());
+                }
+                return versions;
+            }
+            else
+                return ((Waiter)inner).txVersion();
         }
     }
 

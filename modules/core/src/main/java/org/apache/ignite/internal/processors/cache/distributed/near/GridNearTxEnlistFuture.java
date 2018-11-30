@@ -92,7 +92,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
     private volatile GridCacheReturn res;
 
     /** */
-    private final Map<UUID, Batch> batches = new ConcurrentHashMap<>();
+    public final Map<UUID, Batch> batches = new ConcurrentHashMap<>();
 
     /** Row extracted from iterator but not yet used. */
     private Object peek;
@@ -625,7 +625,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
     /**
      * A batch of rows
      */
-    private static class Batch {
+    public static class Batch {
         /** Node ID. */
         @GridToStringExclude
         private final ClusterNode node;

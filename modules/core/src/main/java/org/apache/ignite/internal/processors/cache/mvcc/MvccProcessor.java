@@ -29,7 +29,9 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -112,10 +114,12 @@ public interface MvccProcessor extends GridProcessor {
     /**
      * @param cctx Cache context.
      * @param locked Version the entry is locked by.
+     * @param blockedVersion
      * @return Future, which is completed as soon as the lock is released.
      * @throws IgniteCheckedException If failed.
      */
-    IgniteInternalFuture<Void> waitFor(GridCacheContext cctx, MvccVersion locked) throws IgniteCheckedException;
+    IgniteInternalFuture<Void> waitFor(GridCacheContext cctx, MvccVersion locked,
+        MvccVersion blockedVersion) throws IgniteCheckedException;
 
     /**
      * @param tracker Query tracker.
@@ -237,4 +241,6 @@ public interface MvccProcessor extends GridProcessor {
      * @throws IgniteCheckedException If failed to initialize.
      */
     void ensureStarted() throws IgniteCheckedException;
+
+    IgniteInternalFuture<T2<GridCacheVersion, UUID>> checkWaiting(GridCacheVersion ver, UUID nodeId);
 }

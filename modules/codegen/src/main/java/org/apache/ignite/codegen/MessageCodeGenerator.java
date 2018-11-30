@@ -44,6 +44,9 @@ import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.DeadlockProbe;
+import org.apache.ignite.internal.processors.cache.mvcc.LockWaitCheckRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.LockWaitCheckResponse;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -167,6 +170,10 @@ public class MessageCodeGenerator {
             srcDir = args[0];
 
         MessageCodeGenerator gen = new MessageCodeGenerator(srcDir);
+
+        gen.generateAndWrite(DeadlockProbe.class);
+        gen.generateAndWrite(LockWaitCheckRequest.class);
+        gen.generateAndWrite(LockWaitCheckResponse.class);
 
 //        gen.generateAll(true);
 

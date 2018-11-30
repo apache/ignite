@@ -124,6 +124,9 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQu
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryResultsEnlistRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryResultsEnlistResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlockRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.DeadlockProbe;
+import org.apache.ignite.internal.processors.cache.mvcc.LockWaitCheckRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.LockWaitCheckResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionImpl;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestQueryCntr;
@@ -1111,6 +1114,21 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 166:
                 msg = new PartitionCountersNeighborcastResponse();
+
+                break;
+
+            case 167:
+                msg = new DeadlockProbe();
+
+                break;
+
+            case 168:
+                msg = new LockWaitCheckRequest();
+
+                break;
+
+            case 169:
+                msg = new LockWaitCheckResponse();
 
                 break;
 

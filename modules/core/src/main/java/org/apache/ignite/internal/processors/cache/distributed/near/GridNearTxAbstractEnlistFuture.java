@@ -67,7 +67,7 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
     protected final GridCacheContext<?, ?> cctx;
 
     /** Transaction. */
-    protected final GridNearTxLocal tx;
+    public final GridNearTxLocal tx;
 
     /** */
     protected AffinityTopologyVersion topVer;
