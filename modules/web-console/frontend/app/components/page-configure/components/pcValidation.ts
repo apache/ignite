@@ -16,16 +16,15 @@
  */
 
 import angular from 'angular';
+import {IInputErrorNotifier} from '../../../types';
 
-export class IgniteFormField {
+export class IgniteFormField implements IInputErrorNotifier {
     static animName = 'ignite-form-field__error-blink';
     static eventName = 'webkitAnimationEnd oAnimationEnd msAnimationEnd animationend';
     static $inject = ['$element', '$scope'];
+    onAnimEnd?: () => void
 
-    constructor($element, $scope) {
-        Object.assign(this, {$element});
-        this.$scope = $scope;
-    }
+    constructor(private $element: JQLite, private $scope: ng.IScope) {}
 
     $postLink() {
         this.onAnimEnd = () => this.$element.removeClass(IgniteFormField.animName);
@@ -41,22 +40,28 @@ export class IgniteFormField {
         if (!this.$element)
             return;
 
-        this.$element.addClass(IgniteFormField.animName);
-        this.$element.find('.form-field__error [bs-tooltip]').trigger('mouseenter');
+        if (this.isTooltipValidation())
+            this.$element.find('.form-field__error [bs-tooltip]').trigger('mouseenter');
+        else
+            this.$element.addClass(IgniteFormField.animName);
     }
 
     hideError() {
         if (!this.$element)
             return;
 
-        this.$element.find('.form-field__error [bs-tooltip]').trigger('mouseleave');
+        if (this.isTooltipValidation())
+            this.$element.find('.form-field__error [bs-tooltip]').trigger('mouseleave');
+    }
+
+    isTooltipValidation(): boolean {
+        return !this.$element.parents('.theme--ignite-errors-horizontal').length;
     }
 
     /**
      * Exposes control in $scope
-     * @param {ng.INgModelController} control
      */
-    exposeControl(control, name = '$input') {
+    exposeControl(control: ng.INgModelController, name = '$input') {
         this.$scope[name] = control;
         this.$scope.$on('$destroy', () => this.$scope[name] = null);
     }

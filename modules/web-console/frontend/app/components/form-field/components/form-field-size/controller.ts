@@ -16,25 +16,24 @@
  */
 
 import get from 'lodash/get';
+import {IInputErrorNotifier} from '../../../../types';
 
-export default class PCFormFieldSizeController {
-    /** @type {ng.INgModelController} */
-    ngModel;
-    /** @type {number} */
-    min;
-    /** @type {number} */
-    max;
-    /** @type {ng.ICompiledExpression} */
-    onScaleChange;
-    /** @type {ng.IFormController} */
-    innerForm;
-    /** @type {boolean?} */
-    autofocus;
+export default class PCFormFieldSizeController implements IInputErrorNotifier {
+    ngModel: ng.INgModelController;
+    min?: number;
+    max?: number;
+    onScaleChange: ng.ICompiledExpression;
+    innerForm: ng.IFormController;
+    inputElement?: HTMLInputElement
+    autofocus?: boolean;
+    id = Math.random();
+    sizesMenu?: ig.config.formFieldSize.ISizeTypes[keyof ig.config.formFieldSize.ISizeTypes]
+    private _sizeScale: ig.config.formFieldSize.ISizeTypeOption
+    value: number
 
     static $inject = ['$element', '$attrs'];
 
-    /** @type {ig.config.formFieldSize.ISizeTypes} */
-    static sizeTypes = {
+    static sizeTypes: ig.config.formFieldSize.ISizeTypes = {
         bytes: [
             {label: 'Kb', value: 1024},
             {label: 'Mb', value: 1024 * 1024},
@@ -56,15 +55,7 @@ export default class PCFormFieldSizeController {
         ]
     };
 
-    /**
-     * @param {JQLite} $element
-     * @param {ng.IAttributes} $attrs
-     */
-    constructor($element, $attrs) {
-        this.$element = $element;
-        this.$attrs = $attrs;
-        this.id = Math.random();
-    }
+    constructor(private $element: JQLite, private $attrs: ng.IAttributes) {}
 
     $onDestroy() {
         delete this.$element[0].focus;
@@ -101,10 +92,7 @@ export default class PCFormFieldSizeController {
         if ('min' in changes) this.ngModel.$validate();
     }
 
-    /**
-     * @param {ig.config.formFieldSize.ISizeTypeOption} value
-     */
-    set sizeScale(value) {
+    set sizeScale(value: ig.config.formFieldSize.ISizeTypeOption) {
         this._sizeScale = value;
         if (this.onScaleChange) this.onScaleChange({$event: this.sizeScale});
         if (this.ngModel) this.assignValue(this.ngModel.$viewValue);
@@ -114,10 +102,7 @@ export default class PCFormFieldSizeController {
         return this._sizeScale;
     }
 
-    /**
-     * @param {number} rawValue
-     */
-    assignValue(rawValue) {
+    assignValue(rawValue: number) {
         if (!this.sizesMenu) this.setDefaultSizeType();
         return this.value = rawValue
             ? rawValue / this.sizeScale.value
@@ -147,13 +132,17 @@ export default class PCFormFieldSizeController {
         this.sizeScale = this.chooseSizeScale();
     }
 
+    isTooltipValidation(): boolean {
+        return !this.$element.parents('.theme--ignite-errors-horizontal').length;
+    }
+
     notifyAboutError() {
-        if (this.$element)
+        if (this.$element && this.isTooltipValidation())
             this.$element.find('.form-field__error [bs-tooltip]').trigger('mouseenter');
     }
 
     hideError() {
-        if (this.$element)
+        if (this.$element && this.isTooltipValidation())
             this.$element.find('.form-field__error [bs-tooltip]').trigger('mouseleave');
     }
 

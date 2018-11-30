@@ -31,3 +31,8 @@ export interface IIgniteNg1StateDeclaration extends Ng1StateDeclaration {
     unsaved?: boolean,
     tfMetaTags: ITfMetatagsConfig
 }
+
+export interface IInputErrorNotifier {
+    notifyAboutError(): void
+    hideError(): void
+}
