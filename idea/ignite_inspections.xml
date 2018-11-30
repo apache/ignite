@@ -518,7 +518,7 @@
     <option name="ignoreAnonymousClassMethods" value="false" />
   </inspection_tool>
   <inspection_tool class="MissortedModifiers" enabled="true" level="WARNING" enabled_by_default="true">
-    <option name="m_requireAnnotationsFirst" value="true" />
+    <option name="m_requireAnnotationsFirst" value="false" />
   </inspection_tool>
   <inspection_tool class="MisspelledCompareTo" enabled="true" level="WARNING" enabled_by_default="true" />
   <inspection_tool class="MisspelledEquals" enabled="true" level="WARNING" enabled_by_default="true" />
