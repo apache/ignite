@@ -2898,8 +2898,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         Map<Integer, List<ExchangeActions.CacheActionData>> cachesToStop = exchActions.cacheStopRequests().stream()
                 .collect(Collectors.groupingBy(action -> action.descriptor().groupId()));
 
-        grpToStop.forEach(g -> g.getKey().preloader().onKernalStop());
-
         try {
             doInParallel(
                     parallelismLvl,

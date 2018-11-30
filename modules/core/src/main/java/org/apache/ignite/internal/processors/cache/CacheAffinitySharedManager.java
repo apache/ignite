@@ -253,6 +253,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         try {
             if (msg != null)
                 cctx.discovery().sendCustomEvent(msg);
+            else
+                log.info("CacheAffinityChangeMessage null for topVer " + topVer + ", call from onCacheGroupStopped");
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to send affinity change message.", e);
@@ -310,6 +312,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             try {
                 if (msg != null)
                     cctx.discovery().sendCustomEvent(msg);
+                else
+                    log.info("CacheAffinityChangeMessage null for topVer " + top.readyTopologyVersion() + ", call from checkRebalanceState for grpId " + checkGrpId + " " + waitInfo.waitGrps.keySet());
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to send affinity change message.", e);
