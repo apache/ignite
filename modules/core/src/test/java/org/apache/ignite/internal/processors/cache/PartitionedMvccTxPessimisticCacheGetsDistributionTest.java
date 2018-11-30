@@ -17,23 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.transactions.TransactionIsolation;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
- * Tests of partitioned atomic cache's 'get' requests distribution.
+ * Tests of pessimistic transactional partitioned cache's 'get' requests distribution.
  */
-public class PartitionedAtomicCacheGetsDistributionTest extends CacheGetsDistributionAbstractTest {
+public class PartitionedMvccTxPessimisticCacheGetsDistributionTest extends PartitionedTransactionalPessimisticCacheGetsDistributionTest {
     /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return PARTITIONED;
+    @Override protected TransactionIsolation transactionIsolation() {
+        return REPEATABLE_READ;
     }
 }
