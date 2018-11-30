@@ -105,6 +105,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheTxInvokeTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheTxLocalInvokeTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheTxNearEnabledInvokeTest;
 import org.apache.ignite.internal.processors.cache.IgniteClientAffinityAssignmentSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteGetNonPlainKeyReadThroughSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteIncompleteCacheObjectSelfTest;
 import org.apache.ignite.internal.processors.cache.IgnitePutAllLargeBatchSelfTest;
 import org.apache.ignite.internal.processors.cache.IgnitePutAllUpdateNonPreloadedPartitionSelfTest;
@@ -365,6 +366,8 @@ public class IgniteCacheTestSuite extends TestSuite {
         //suite.addTestSuite(InterceptorWithKeepBinaryCacheFullApiTest.class);
 
         suite.addTestSuite(BinaryMetadataRegistrationInsideEntryProcessorTest.class);
+
+        suite.addTestSuite(IgniteGetNonPlainKeyReadThroughSelfTest.class);
 
         return suite;
     }
