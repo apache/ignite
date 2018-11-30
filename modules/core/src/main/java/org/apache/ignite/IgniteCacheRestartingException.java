@@ -30,7 +30,7 @@ public class IgniteCacheRestartingException extends IgniteException {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private transient final IgniteFuture<?> restartFut;
+    private final transient IgniteFuture<?> restartFut;
 
     /**
      * Actual topology version when this exception was thrown.
