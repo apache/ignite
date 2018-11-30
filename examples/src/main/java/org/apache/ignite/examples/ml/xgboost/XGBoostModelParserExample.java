@@ -38,7 +38,7 @@ import org.apache.ignite.ml.xgboost.parser.XGModelParser;
  */
 public class XGBoostModelParserExample {
     /** Test model resource name. */
-    private static final String TEST_MODEL_RESOURCE = "ml/xgboost/agaricus-model.txt";
+    private static final String TEST_MODEL_RESOURCE = "models/xgboost/agaricus-model.txt";
 
     /** Parser. */
     private static final XGModelParser parser = new XGModelParser();
