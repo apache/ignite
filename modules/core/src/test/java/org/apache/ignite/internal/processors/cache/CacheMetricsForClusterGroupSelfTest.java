@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -71,27 +72,15 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(GRID_CNT);
-
-        daemon = true;
-
-        startGrid(GRID_CNT);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * Test cluster group metrics in case of statistics enabled.
      */
     public void testMetricsStatisticsEnabled() throws Exception {
-        createCaches(true);
+        startGrids();
 
         try {
+            createCaches(true);
+
             populateCacheData(cache1, ENTRY_CNT_CACHE1);
             populateCacheData(cache2, ENTRY_CNT_CACHE2);
 
@@ -112,7 +101,7 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
             assertMetrics(cache2, true);
         }
         finally {
-            destroyCaches();
+            stopAllGrids();
         }
     }
 
@@ -122,9 +111,11 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testMetricsStatisticsDisabled() throws Exception {
-        createCaches(false);
+        startGrids();
 
         try {
+            createCaches(false);
+
             populateCacheData(cache1, ENTRY_CNT_CACHE1);
             populateCacheData(cache2, ENTRY_CNT_CACHE2);
 
@@ -145,8 +136,59 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
             assertMetrics(cache2, false);
         }
         finally {
-            destroyCaches();
+            stopAllGrids();
         }
+    }
+
+    /**
+     * Tests that only local metrics are updating if discovery updates disabled.
+     */
+    public void testMetricsDiscoveryUpdatesDisabled() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE, "true");
+
+        try {
+            startGrids();
+
+            try {
+                createCaches(true);
+
+                populateCacheData(cache1, ENTRY_CNT_CACHE1);
+                populateCacheData(cache2, ENTRY_CNT_CACHE2);
+
+                readCacheData(cache1, ENTRY_CNT_CACHE1);
+                readCacheData(cache2, ENTRY_CNT_CACHE2);
+
+                awaitMetricsUpdate();
+
+                Collection<ClusterNode> nodes = grid(0).cluster().forRemotes().nodes();
+
+                for (ClusterNode node : nodes) {
+                    Map<Integer, CacheMetrics> metrics = ((IgniteClusterNode)node).cacheMetrics();
+                    assertNotNull(metrics);
+                    assertTrue(metrics.isEmpty());
+                }
+
+                assertOnlyLocalMetricsUpdating(CACHE1);
+                assertOnlyLocalMetricsUpdating(CACHE2);
+            }
+            finally {
+                stopAllGrids();
+            }
+        }
+        finally {
+            System.setProperty(IgniteSystemProperties.IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE, "false");
+        }
+    }
+
+    /**
+     * Start grids.
+     */
+    private void startGrids() throws Exception {
+        startGrids(GRID_CNT);
+
+        daemon = true;
+
+        startGrid(GRID_CNT);
     }
 
     /**
@@ -269,6 +311,34 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
                 assertEquals(cache.mxBean().getHeapEntriesCount(), sumHeapEntries);
             }
 
+        }
+    }
+
+    /**
+     * Asserts that only local metrics are updating.
+     *
+     * @param cacheName Cache name.
+     */
+    private void assertOnlyLocalMetricsUpdating(String cacheName) {
+        for (int i = 0; i < GRID_CNT; i++) {
+            IgniteCache cache = grid(i).cache(cacheName);
+
+            CacheMetrics clusterMetrics = cache.metrics(grid(i).cluster().forCacheNodes(cacheName));
+            CacheMetrics locMetrics = cache.localMetrics();
+
+            assertEquals(clusterMetrics.name(), locMetrics.name());
+
+            assertEquals(0L, clusterMetrics.getCacheGets());
+            assertEquals(0L, cache.mxBean().getCacheGets());
+            assertEquals(locMetrics.getCacheGets(), cache.localMxBean().getCacheGets());
+
+            assertEquals(0L, clusterMetrics.getCachePuts());
+            assertEquals(0L, cache.mxBean().getCachePuts());
+            assertEquals(locMetrics.getCachePuts(), cache.localMxBean().getCachePuts());
+
+            assertEquals(0L, clusterMetrics.getCacheHits());
+            assertEquals(0L, cache.mxBean().getCacheHits());
+            assertEquals(locMetrics.getCacheHits(), cache.localMxBean().getCacheHits());
         }
     }
 
