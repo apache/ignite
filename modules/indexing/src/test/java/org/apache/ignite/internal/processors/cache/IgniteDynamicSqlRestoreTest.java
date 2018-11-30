@@ -457,7 +457,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
 
                 return false;
             }
-        }, 5_000);
+        }, 30_000);
     }
 
     /**
