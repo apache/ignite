@@ -1442,10 +1442,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             Map<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer, top);
 
-            IgniteFuture<?> fut = lsnr.onDiscovery(type, topVer, node, top, hist, null);
-
-            if (type == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT)
-                lastCustomEvtLsnrFut = fut;
+            lsnr.onDiscovery(type, topVer, node, top, hist, null);
         }
         else {
             if (log.isDebugEnabled())
