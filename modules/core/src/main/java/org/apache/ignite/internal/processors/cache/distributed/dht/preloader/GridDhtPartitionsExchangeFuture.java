@@ -3022,29 +3022,19 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 return;
 
             for (String cacheName : cacheNames) {
-                boolean found = false;
+                DynamicCacheDescriptor cacheDesc = cctx.affinity().caches().get(CU.cacheId(cacheName));
 
-                for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-                    if (grp.isLocal())
-                        continue;
+                if (cacheDesc == null || cacheDesc.cacheConfiguration().getCacheMode() == CacheMode.LOCAL)
+                    continue;
 
-                    if (grp.hasCache(cacheName)) {
-                        grp.topology().resetLostPartitions(initialVersion());
+                CacheGroupContext grp = cctx.cache().cacheGroup(cacheDesc.groupId());
 
-                        found = true;
+                if (grp != null)
+                    grp.topology().resetLostPartitions(initialVersion());
+                else if (crd) {
+                    GridDhtPartitionTopology top = cctx.exchange().clientTopology(cacheDesc.groupId(), context().events().discoveryCache());
 
-                        break;
-                    }
-                }
-
-                if (crd && !found) {
-                    DynamicCacheDescriptor cacheDesc = cctx.affinity().caches().get(CU.cacheId(cacheName));
-
-                    if (cacheDesc != null) {
-                        GridDhtPartitionTopology top = cctx.exchange().clientTopology(cacheDesc.groupId(), context().events().discoveryCache());
-
-                        top.resetLostPartitions(initialVersion());
-                    }
+                    top.resetLostPartitions(initialVersion());
                 }
             }
         }
