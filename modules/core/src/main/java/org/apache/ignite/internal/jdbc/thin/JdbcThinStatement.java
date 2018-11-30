@@ -398,7 +398,7 @@ public class JdbcThinStatement implements Statement {
     }
 
     /**
-     * Returns true if statement was cancelled, false otherwise.
+     * @return Returns true if statement was cancelled, false otherwise.
      */
     boolean cancelled() {
         return canceled.get();
@@ -493,10 +493,11 @@ public class JdbcThinStatement implements Statement {
 
                 conn.sendQueryCancelRequest(new JdbcQueryCancelRequest(currReqId));
             }
-            else
+            else {
                 throw new SQLException("There is no request to cancel.",
                     SqlStateCode.INTERNAL_ERROR,
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+            }
         }
     }
 

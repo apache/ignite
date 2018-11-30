@@ -15,16 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc.odbc;
+package org.apache.ignite.internal.processors.odbc;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
-import org.apache.ignite.internal.processors.odbc.ClientListenerConnectionContext;
-import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
-import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
-import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContextHolder;
 import org.apache.ignite.internal.util.nio.GridNioFilterAdapter;
@@ -39,7 +35,7 @@ import org.apache.ignite.lang.IgniteInClosure;
  * Filter that checks whether message should be handled synchronously with high priority
  * and calls corresponding handle method with specified {@link GridNioParser}.
  */
-public class GridNioPriorityQueryFilter extends GridNioFilterAdapter {
+public class ClientListenerNioRequestPriorityFilter extends GridNioFilterAdapter {
     /** Grid logger. */
     @GridToStringExclude
     private IgniteLogger log;
@@ -47,7 +43,7 @@ public class GridNioPriorityQueryFilter extends GridNioFilterAdapter {
     /**
      * Constructor
      */
-    public GridNioPriorityQueryFilter(IgniteLogger log) {
+    public ClientListenerNioRequestPriorityFilter(IgniteLogger log) {
         super("GridNioPriorityQueryFilter");
 
         this.log = log;

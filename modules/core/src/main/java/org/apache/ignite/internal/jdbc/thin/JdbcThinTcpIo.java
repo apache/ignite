@@ -111,7 +111,7 @@ public class JdbcThinTcpIo {
     private BufferedOutputStream out;
 
     /** Input stream. */
-    public BufferedInputStream in;
+    private BufferedInputStream in;
 
     /** Connected flag. */
     private boolean connected;
@@ -532,7 +532,7 @@ public class JdbcThinTcpIo {
      * @throws IOException In case of IO error.
      */
     void sendCancelRequest(JdbcQueryCancelRequest cancellationRequest) throws IOException {
-        if (isQueryCancelationSupported())
+        if (isQueryCancellationSupported())
             sendRequestRaw(cancellationRequest);
     }
 
@@ -691,7 +691,7 @@ public class JdbcThinTcpIo {
     /**
      * @return Returns true if query cancellation supported, false otherwise.
      */
-    boolean isQueryCancelationSupported() {
+    boolean isQueryCancellationSupported() {
         assert srvProtocolVer != null;
 
         return srvProtocolVer.compareTo(VER_2_8_0) >= 0;
