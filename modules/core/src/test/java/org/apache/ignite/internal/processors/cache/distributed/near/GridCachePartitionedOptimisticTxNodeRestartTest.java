@@ -110,25 +110,22 @@ public class GridCachePartitionedOptimisticTxNodeRestartTest extends GridCacheAb
 
     /** {@inheritDoc} */
     @Override public void testRestartWithTxEightNodesTwoBackups() throws Throwable {
-//        super.testRestartWithTxEightNodesTwoBackups();
+        super.testRestartWithTxEightNodesTwoBackups();
     }
 
     /** {@inheritDoc} */
     @Override public void testRestartWithTxFourNodesNoBackups() throws Throwable {
-//        super.testRestartWithTxFourNodesNoBackups();
-        super.testRestartWithTxTenNodesTwoBackups();
+        super.testRestartWithTxFourNodesNoBackups();
     }
 
     /** {@inheritDoc} */
     @Override public void testRestartWithTxFourNodesOneBackups() throws Throwable {
-//        super.testRestartWithTxFourNodesOneBackups();
-        super.testRestartWithTxTenNodesTwoBackups();
+        super.testRestartWithTxFourNodesOneBackups();
     }
 
     /** {@inheritDoc} */
     @Override public void testRestartWithTxSixNodesTwoBackups() throws Throwable {
-//        super.testRestartWithTxSixNodesTwoBackups();
-        super.testRestartWithTxTenNodesTwoBackups();
+        super.testRestartWithTxSixNodesTwoBackups();
     }
 
     /** {@inheritDoc} */
@@ -137,19 +134,12 @@ public class GridCachePartitionedOptimisticTxNodeRestartTest extends GridCacheAb
     }
 
     /** {@inheritDoc} */
-    @Override public void testRestartWithTxPutAllTenNodesTwoBackups() throws Throwable {
-        super.testRestartWithTxPutAllTenNodesTwoBackups();
-    }
-
-    /** {@inheritDoc} */
     @Override public void testRestartWithTxTwoNodesNoBackups() throws Throwable {
-//        super.testRestartWithTxTwoNodesNoBackups();
-        super.testRestartWithTxPutAllTenNodesTwoBackups();
+        super.testRestartWithTxTwoNodesNoBackups();
     }
 
     /** {@inheritDoc} */
     @Override public void testRestartWithTxTwoNodesOneBackup() throws Throwable {
-//        super.testRestartWithTxTwoNodesOneBackup();
-        super.testRestartWithTxPutAllTenNodesTwoBackups();
+        super.testRestartWithTxTwoNodesOneBackup();
     }
 }

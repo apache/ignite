@@ -507,11 +507,7 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
 
     /** {@inheritDoc} */
     @Override public boolean isDebugEnabled() {
-        return debug || impl.isDebugEnabled();
-    }
-
-    public void turnOnDebug() {
-        debug = true;
+        return debug && impl.isDebugEnabled();
     }
 
     /** {@inheritDoc} */

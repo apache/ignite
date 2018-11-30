@@ -37,7 +37,7 @@ public class IgniteCacheRestartTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Cache Restart Test Suite");
 
 //        suite.addTestSuite(GridCachePartitionedNodeRestartTest.class);
-//        suite.addTestSuite(GridCachePartitionedOptimisticTxNodeRestartTest.class);
+        suite.addTestSuite(GridCachePartitionedOptimisticTxNodeRestartTest.class);
 //        suite.addTestSuite(GridCacheReplicatedNodeRestartSelfTest.class);
         suite.addTestSuite(GridCachePartitionedNearDisabledOptimisticTxNodeRestartTest.class);
 //        suite.addTestSuite(IgniteCacheNearRestartRollbackSelfTest.class);
