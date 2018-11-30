@@ -33,7 +33,6 @@ import static org.junit.Assert.assertArrayEquals;
  * Tests for {@link StandardScalerTrainer}.
  */
 public class StandardScalerTrainerTest extends TrainerTest {
-
     /** Data. */
     private DatasetBuilder<Integer, Vector> datasetBuilder;
 
