@@ -77,6 +77,30 @@ public class Arguments {
     /** Ping interval for grid client. See {@link GridClientConfiguration#pingInterval}. */
     private long pingInterval;
 
+    /** SSL Protocol. */
+    private String sslProtocol;
+
+    /** SSL Key Algorithm. */
+    private String sslKeyAlgorithm;
+
+    /** Keystore. */
+    private String sslKeyStorePath;
+
+    /** Keystore Type. */
+    private String sslKeyStoreType;
+
+    /** Keystore Password. */
+    private char[] sslKeyStorePassword;
+
+    /** Truststore. */
+    private String sslTrustStorePath;
+
+    /** Truststore Type. */
+    private String sslTrustStoreType;
+
+    /** Truststore Password. */
+    private char[] sslTrustStorePassword;
+
     /**
      * @param cmd Command.
      * @param host Host.
@@ -92,10 +116,20 @@ public class Arguments {
      * @param pingTimeout Ping timeout. See {@link GridClientConfiguration#pingTimeout}.
      * @param pingInterval Ping interval. See {@link GridClientConfiguration#pingInterval}.
      * @param autoConfirmation Auto confirmation flag.
+     * @param sslProtocol SSL Protocol.
+     * @param sslKeyAlgorithm SSL Key Algorithm.
+     * @param sslKeyStorePath Keystore.
+     * @param sslKeyStorePassword Keystore Password.
+     * @param sslKeyStoreType Keystore Type.
+     * @param sslTrustStorePath Truststore.
+     * @param sslTrustStorePassword Truststore Password.
+     * @param sslTrustStoreType Truststore Type.
      */
     public Arguments(Command cmd, String host, String port, String user, String pwd, String baselineAct,
-                     String baselineArgs, VisorTxTaskArg txArg, CacheArguments cacheArgs, String walAct, String walArgs,
-                     Long pingTimeout, Long pingInterval, boolean autoConfirmation) {
+        String baselineArgs, VisorTxTaskArg txArg, CacheArguments cacheArgs, String walAct, String walArgs,
+        Long pingTimeout, Long pingInterval, boolean autoConfirmation, String sslProtocol, String sslKeyAlgorithm,
+        String sslKeyStorePath, char[] sslKeyStorePassword, String sslKeyStoreType,
+        String sslTrustStorePath, char[] sslTrustStorePassword, String sslTrustStoreType) {
         this.cmd = cmd;
         this.host = host;
         this.port = port;
@@ -110,6 +144,14 @@ public class Arguments {
         this.pingTimeout = pingTimeout;
         this.pingInterval = pingInterval;
         this.autoConfirmation = autoConfirmation;
+        this.sslProtocol = sslProtocol;
+        this.sslKeyAlgorithm = sslKeyAlgorithm;
+        this.sslKeyStorePath = sslKeyStorePath;
+        this.sslKeyStoreType = sslKeyStoreType;
+        this.sslKeyStorePassword = sslKeyStorePassword;
+        this.sslTrustStorePath = sslTrustStorePath;
+        this.sslTrustStoreType = sslTrustStoreType;
+        this.sslTrustStorePassword = sslTrustStorePassword;
     }
 
     /**
@@ -226,5 +268,61 @@ public class Arguments {
      */
     public boolean autoConfirmation() {
         return autoConfirmation;
+    }
+
+    /**
+     * @return SSL protocol
+     */
+    public String sslProtocol() {
+        return sslProtocol;
+    }
+
+    /**
+     * @return SSL Key Algorithm
+     */
+    public String sslKeyAlgorithm() {
+        return sslKeyAlgorithm;
+    }
+
+    /**
+     * @return Keystore
+     */
+    public String sslKeyStorePath() {
+        return sslKeyStorePath;
+    }
+
+    /**
+     * @return Keystore type
+     */
+    public String sslKeyStoreType() {
+        return sslKeyStoreType;
+    }
+
+    /**
+     * @return Keystore password
+     */
+    public char[] sslKeyStorePassword() {
+        return sslKeyStorePassword;
+    }
+
+    /**
+     * @return Truststore
+     */
+    public String sslTrustStorePath() {
+        return sslTrustStorePath;
+    }
+
+    /**
+     * @return Truststore type
+     */
+    public String sslTrustStoreType() {
+        return sslTrustStoreType;
+    }
+
+    /**
+     * @return Truststore password
+     */
+    public char[] sslTrustStorePassword() {
+        return sslTrustStorePassword;
     }
 }
