@@ -25,7 +25,7 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.processors.service.ServicesExchangeActions;
+import org.apache.ignite.internal.processors.service.ServicesDeploymentActions;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -66,9 +66,9 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     @GridToStringExclude
     private transient ExchangeActions exchangeActions;
 
-    /** Services deployment actions to be processed on services deployment exchange. */
+    /** Services deployment actions to be processed on services deployment process. */
     @GridToStringExclude
-    @Nullable private transient ServicesExchangeActions servicesExchangeActions;
+    @Nullable private transient ServicesDeploymentActions servicesDeploymentActions;
 
     /**
      * @param reqId State change request ID.
@@ -123,17 +123,17 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     }
 
     /**
-     * @return Services deployment actions to be processed on services deployment exchange.
+     * @return Services deployment actions to be processed on services deployment process.
      */
-    @Nullable public ServicesExchangeActions servicesExchangeActions() {
-        return servicesExchangeActions;
+    @Nullable public ServicesDeploymentActions servicesDeploymentActions() {
+        return servicesDeploymentActions;
     }
 
     /**
-     * @param servicesExchangeActions Services deployment actions to be processed on services deployment exchange.
+     * @param servicesDeploymentActions Services deployment actions to be processed on services deployment process.
      */
-    public void servicesExchangeActions(ServicesExchangeActions servicesExchangeActions) {
-        this.servicesExchangeActions = servicesExchangeActions;
+    public void servicesDeploymentActions(ServicesDeploymentActions servicesDeploymentActions) {
+        this.servicesDeploymentActions = servicesDeploymentActions;
     }
 
     /** {@inheritDoc} */

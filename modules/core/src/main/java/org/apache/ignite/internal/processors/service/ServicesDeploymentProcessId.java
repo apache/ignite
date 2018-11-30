@@ -30,9 +30,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Services deployment exchange id.
+ * Services deployment process id.
  */
-public class ServicesDeploymentExchangeId implements Message {
+public class ServicesDeploymentProcessId implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -45,20 +45,20 @@ public class ServicesDeploymentExchangeId implements Message {
     /**
      * Empty constructor for marshalling purposes.
      */
-    public ServicesDeploymentExchangeId() {
+    public ServicesDeploymentProcessId() {
     }
 
     /**
      * @param topVer Topology version.
      */
-    ServicesDeploymentExchangeId(@NotNull AffinityTopologyVersion topVer) {
+    ServicesDeploymentProcessId(@NotNull AffinityTopologyVersion topVer) {
         this.topVer = topVer;
     }
 
     /**
      * @param reqId Request's id.
      */
-    ServicesDeploymentExchangeId(@NotNull IgniteUuid reqId) {
+    ServicesDeploymentProcessId(@NotNull IgniteUuid reqId) {
         this.reqId = reqId;
     }
 
@@ -129,7 +129,7 @@ public class ServicesDeploymentExchangeId implements Message {
                 reader.incrementState();
         }
 
-        return reader.afterMessageRead(ServicesDeploymentExchangeId.class);
+        return reader.afterMessageRead(ServicesDeploymentProcessId.class);
     }
 
     /** {@inheritDoc} */
@@ -155,7 +155,7 @@ public class ServicesDeploymentExchangeId implements Message {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        ServicesDeploymentExchangeId id = (ServicesDeploymentExchangeId)o;
+        ServicesDeploymentProcessId id = (ServicesDeploymentProcessId)o;
 
         return F.eq(topVer, id.topVer) && F.eq(reqId, id.reqId);
     }
@@ -167,6 +167,6 @@ public class ServicesDeploymentExchangeId implements Message {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ServicesDeploymentExchangeId.class, this);
+        return S.toString(ServicesDeploymentProcessId.class, this);
     }
 }

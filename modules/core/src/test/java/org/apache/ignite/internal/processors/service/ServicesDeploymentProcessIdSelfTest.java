@@ -36,10 +36,10 @@ import org.junit.runners.Parameterized;
 import static org.junit.Assert.assertEquals;
 
 /**
- * Tests of {@link ServicesDeploymentExchangeId}.
+ * Tests of {@link ServicesDeploymentProcessId}.
  */
 @RunWith(Parameterized.class)
-public class ServicesDeploymentExchangeIdSelfTest {
+public class ServicesDeploymentProcessIdSelfTest {
     /** Tests discovery event. */
     private final DiscoveryEvent evt;
 
@@ -47,19 +47,19 @@ public class ServicesDeploymentExchangeIdSelfTest {
     private final AffinityTopologyVersion topVer;
 
     /** Subject under test. */
-    private final ServicesDeploymentExchangeId sut;
+    private final ServicesDeploymentProcessId sut;
 
     /**
      * @param data Tests data.
      */
-    public ServicesDeploymentExchangeIdSelfTest(IgniteBiTuple<DiscoveryEvent, AffinityTopologyVersion> data) {
+    public ServicesDeploymentProcessIdSelfTest(IgniteBiTuple<DiscoveryEvent, AffinityTopologyVersion> data) {
         this.evt = data.get1();
         this.topVer = data.get2();
 
         if (evt instanceof DiscoveryCustomEvent)
-            this.sut = new ServicesDeploymentExchangeId(((DiscoveryCustomEvent)evt).customMessage().id());
+            this.sut = new ServicesDeploymentProcessId(((DiscoveryCustomEvent)evt).customMessage().id());
         else
-            this.sut = new ServicesDeploymentExchangeId(topVer);
+            this.sut = new ServicesDeploymentProcessId(topVer);
     }
 
     /**

@@ -30,41 +30,41 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Services full cluster map message.
+ * Services full cluster deployments message.
  */
-public class ServicesFullMapMessage implements DiscoveryCustomMessage {
+public class ServicesFullDeploymentsMessage implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Unique custom message ID. */
     private final IgniteUuid id = IgniteUuid.randomUuid();
 
-    /** Exchange id. */
-    private final ServicesDeploymentExchangeId exchId;
+    /** Deployment process id. */
+    private final ServicesDeploymentProcessId depId;
 
     /** Services deployments results. */
     @GridToStringInclude
     private Collection<ServiceFullDeploymentsResults> results;
 
-    /** Services deployment actions to be processed on services deployment exchange. */
+    /** Services deployment actions to be processed on services deployment process. */
     @GridToStringExclude
-    @Nullable private transient ServicesExchangeActions servicesExchangeActions;
+    @Nullable private transient ServicesDeploymentActions servicesDeploymentActions;
 
     /**
-     * @param exchId Exchange id.
+     * @param depId Deployment process id.
      * @param results Services deployments results.
      */
-    public ServicesFullMapMessage(@NotNull ServicesDeploymentExchangeId exchId,
+    public ServicesFullDeploymentsMessage(@NotNull ServicesDeploymentProcessId depId,
         @NotNull Collection<ServiceFullDeploymentsResults> results) {
-        this.exchId = exchId;
+        this.depId = depId;
         this.results = results;
     }
 
     /**
-     * @return Exchange id.
+     * @return Deployment process id.
      */
-    public ServicesDeploymentExchangeId exchangeId() {
-        return exchId;
+    public ServicesDeploymentProcessId deploymentId() {
+        return depId;
     }
 
     /**
@@ -75,17 +75,17 @@ public class ServicesFullMapMessage implements DiscoveryCustomMessage {
     }
 
     /**
-     * @return Services deployment actions to be processed on services deployment exchange.
+     * @return Services deployment actions to be processed on services deployment process.
      */
-    @Nullable public ServicesExchangeActions servicesExchangeActions() {
-        return servicesExchangeActions;
+    @Nullable public ServicesDeploymentActions servicesDeploymentActions() {
+        return servicesDeploymentActions;
     }
 
     /**
-     * @param servicesExchangeActions Services deployment actions to be processed on services deployment exchange.
+     * @param servicesDeploymentActions Services deployment actions to be processed on services deployment process.
      */
-    public void servicesExchangeActions(ServicesExchangeActions servicesExchangeActions) {
-        this.servicesExchangeActions = servicesExchangeActions;
+    public void servicesDeploymentActions(ServicesDeploymentActions servicesDeploymentActions) {
+        this.servicesDeploymentActions = servicesDeploymentActions;
     }
 
     /** {@inheritDoc} */
@@ -118,6 +118,6 @@ public class ServicesFullMapMessage implements DiscoveryCustomMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ServicesFullMapMessage.class, this);
+        return S.toString(ServicesFullDeploymentsMessage.class, this);
     }
 }

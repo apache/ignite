@@ -34,9 +34,9 @@ import org.jetbrains.annotations.Nullable;
  * IgniteInternalFuture#get get()} method after all futures complete or fail. Inner exception will contain
  * configurations of failed services.
  */
-public class GridServiceDeploymentCompoundFuture extends GridCompoundFuture<Object, Object> {
+public class GridServiceDeploymentCompoundFuture<T> extends GridCompoundFuture<Object, Object> {
     /** Ids of services written to cache during current deployment. */
-    private Collection<IgniteUuid> svcsToRollback;
+    private Collection<T> svcsToRollback;
 
     /** */
     private volatile ServiceDeploymentException err;
@@ -72,7 +72,7 @@ public class GridServiceDeploymentCompoundFuture extends GridCompoundFuture<Obje
      * @param fut Child future.
      * @param own If {@code true}, then corresponding service will be cancelled on failure.
      */
-    public void add(GridServiceDeploymentFuture fut, boolean own) {
+    public void add(GridServiceDeploymentFuture<T> fut, boolean own) {
         super.add(fut);
 
         if (own) {
@@ -86,7 +86,7 @@ public class GridServiceDeploymentCompoundFuture extends GridCompoundFuture<Obje
     /**
      * @return Collection of ids of services that were written to cache during current deployment.
      */
-    public Collection<IgniteUuid> servicesToRollback() {
+    public Collection<T> servicesToRollback() {
         if (svcsToRollback != null)
             return svcsToRollback;
         else

@@ -34,6 +34,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SECURITY_COMPATIBILITY_MODE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED;
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 
@@ -242,6 +243,36 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
         finally {
             stopAllGrids();
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testServiceProcessorModeProperty() throws Exception {
+        String backup = System.getProperty(IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED);
+
+        try {
+            runTestServiceProcessorModeProperty(true, false, true);
+            runTestServiceProcessorModeProperty(false, true, true);
+            runTestServiceProcessorModeProperty(true, true, false);
+            runTestServiceProcessorModeProperty(false, false, false);
+        }
+        finally {
+            if (backup != null)
+                System.setProperty(IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED, backup);
+            else
+                System.clearProperty(IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED);
+        }
+    }
+
+    /**
+     * @param first Service processor mode for first node.
+     * @param second Service processor mode for second node.
+     * @param fail Fail flag.
+     * @throws Exception If failed.
+     */
+    private void runTestServiceProcessorModeProperty(Object first, Object second, boolean fail) throws Exception {
+        doTestCompatibilityEnabled(IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED, first, second, fail);
     }
 
     /**

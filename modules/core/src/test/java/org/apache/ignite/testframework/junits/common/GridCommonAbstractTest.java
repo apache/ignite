@@ -78,18 +78,19 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxyImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
+import org.apache.ignite.internal.processors.service.IgniteServiceProcessor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -155,8 +156,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     * Get or create instance of cache specified by K,V types;
-     * new instance of cache is created for each pair of types key and value
+     * Get or create instance of cache specified by K,V types; new instance of cache is created for each pair of types
+     * key and value
      *
      * @param clsK Key class.
      * @param clsV Value class.
@@ -167,8 +168,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     * Get or create instance of cache specified by K,V types;
-     * new instance of cache is created for each pair of types key and value
+     * Get or create instance of cache specified by K,V types; new instance of cache is created for each pair of types
+     * key and value
      *
      * @param ig Ignite.
      * @param ccfg Cache configuration.
@@ -181,8 +182,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     * Get or create instance of cache specified by K,V types;
-     * new instance of cache is created for each pair of types key and value
+     * Get or create instance of cache specified by K,V types; new instance of cache is created for each pair of types
+     * key and value
      *
      * @param ig Ignite.
      * @param ccfg Cache configuration.
@@ -205,8 +206,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     * Get or create instance of cache specified by K,V types;
-     * new instance of cache is created
+     * Get or create instance of cache specified by K,V types; new instance of cache is created
      *
      * @param ig Ignite.
      * @param ccfg Cache configuration.
@@ -539,7 +539,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param waitEvicts If {@code true} will wait for evictions finished.
      * @param waitNode2PartUpdate If {@code true} will wait for nodes node2part info update finished.
      * @param nodes Optional nodes. If {@code null} method will wait for all nodes, for non null collection nodes will
-     *      be filtered
+     * be filtered
      * @throws InterruptedException If interrupted.
      */
     protected void awaitPartitionMapExchange(
@@ -561,7 +561,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param waitEvicts If {@code true} will wait for evictions finished.
      * @param waitNode2PartUpdate If {@code true} will wait for nodes node2part info update finished.
      * @param nodes Optional nodes. If {@code null} method will wait for all nodes, for non null collection nodes will
-     *      be filtered
+     * be filtered
      * @param printPartState If {@code true} will print partition state if evictions not happened.
      * @throws InterruptedException If interrupted.
      */
@@ -957,8 +957,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * for rebalancing cache will lead to flaky test cases.
      *
      * @param ignite Ignite server instance for getting {@code compute} facade over all cluster nodes.
-     * @param cacheName Cache name for manual rebalancing on cluster. Usually used when used when
-     * {@link CacheConfiguration#getRebalanceDelay()} configuration parameter set to {@code -1} value.
+     * @param cacheName Cache name for manual rebalancing on cluster. Usually used when used when {@link
+     * CacheConfiguration#getRebalanceDelay()} configuration parameter set to {@code -1} value.
      * @throws IgniteCheckedException If fails.
      */
     protected void manualCacheRebalancing(Ignite ignite,
@@ -1168,8 +1168,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     * Return list of keys that are primary for given node on current topology,
-     * but primary node will change after new node will be added.
+     * Return list of keys that are primary for given node on current topology, but primary node will change after new
+     * node will be added.
      *
      * @param ign Ignite.
      * @param cacheName Cache name.
@@ -1181,8 +1181,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     * Return list of keys that are primary for given node on current topology,
-     * but primary node will change after new node will be added.
+     * Return list of keys that are primary for given node on current topology, but primary node will change after new
+     * node will be added.
      *
      * @param ign Ignite.
      * @param cacheName Cache name.
@@ -1291,7 +1291,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         BitSet before = m1.get(ign.cluster().localNode());
         BitSet after = m2.get(ign.cluster().localNode());
 
-        for (int p = before.nextSetBit(0); p >= 0; p = before.nextSetBit(p+1)) {
+        for (int p = before.nextSetBit(0); p >= 0; p = before.nextSetBit(p + 1)) {
             if (!after.get(p)) {
                 partsToRet.add(p);
 
@@ -1951,16 +1951,15 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                 continue;
 
             GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)((IgniteEx)ignite).context()
-                    .cache().context().database();
+                .cache().context().database();
 
             dbMgr.waitForCheckpoint("test");
         }
     }
 
     /**
-     * Compares checksums between primary and backup partitions of specified caches.
-     * Works properly only on idle cluster - there may be false positive conflict reports if data in cluster is being
-     * concurrently updated.
+     * Compares checksums between primary and backup partitions of specified caches. Works properly only on idle cluster
+     * - there may be false positive conflict reports if data in cluster is being concurrently updated.
      *
      * @param ig Ignite instance.
      * @param caches Cache names (if null, all user caches will be verified).
@@ -2028,13 +2027,17 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @param ignite Ignite instance.
      * @param topVer Topology version to wait.
-     * @return If given topology ready.
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
-    protected boolean waitForServicesReadyTopology(final IgniteEx ignite,
+    protected void waitForServicesReadyTopology(final IgniteEx ignite,
         final AffinityTopologyVersion topVer) throws IgniteInterruptedCheckedException {
-        return GridTestUtils.waitForCondition(() -> {
-            AffinityTopologyVersion readyTopVer = ignite.context().service().exchange().readyTopologyVersion();
+        if (!ignite.context().service().eventDrivenServiceProcessorEnabled())
+            return;
+
+        final IgniteServiceProcessor srvcProc = (IgniteServiceProcessor)ignite.context().service();
+
+        GridTestUtils.waitForCondition(() -> {
+            AffinityTopologyVersion readyTopVer = srvcProc.deployment().readyTopologyVersion();
 
             return topVer.compareTo(readyTopVer) <= 0;
         }, SERVICE_DEPLOYMENT_WAIT_TIMEOUT);

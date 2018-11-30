@@ -23,7 +23,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.service.ServicesExchangeActions;
+import org.apache.ignite.internal.processors.service.ServicesDeploymentActions;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -54,9 +54,9 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
     /** Restarting caches. */
     private Set<String> restartingCaches;
 
-    /** Affinity (cache related) services updates to be processed on services deployment exchange. */
+    /** Affinity (cache related) services updates to be processed on services deployment process. */
     @GridToStringExclude
-    @Nullable private transient ServicesExchangeActions servicesExchangeActions;
+    @Nullable private transient ServicesDeploymentActions servicesDeploymentActions;
 
     /**
      * @param reqs Requests.
@@ -124,17 +124,17 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
     }
 
     /**
-     * @return Services deployment actions to be processed on services deployment exchange.
+     * @return Services deployment actions to be processed on services deployment process.
      */
-    @Nullable public ServicesExchangeActions servicesExchangeActions() {
-        return servicesExchangeActions;
+    @Nullable public ServicesDeploymentActions servicesDeploymentActions() {
+        return servicesDeploymentActions;
     }
 
     /**
-     * @param servicesExchangeActions Services deployment actions to be processed on services deployment exchange.
+     * @param servicesDeploymentActions Services deployment actions to be processed on services deployment process.
      */
-    public void servicesExchangeActions(ServicesExchangeActions servicesExchangeActions) {
-        this.servicesExchangeActions = servicesExchangeActions;
+    public void servicesDeploymentActions(ServicesDeploymentActions servicesDeploymentActions) {
+        this.servicesDeploymentActions = servicesDeploymentActions;
     }
 
     /**

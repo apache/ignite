@@ -75,14 +75,13 @@ import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentClas
 import org.apache.ignite.internal.processors.service.IgniteServiceDynamicCachesSelfTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceProxyTimeoutInitializedTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceReassignmentTest;
-import org.apache.ignite.internal.processors.service.IgniteServicesDeploymentFailuresPolicySelfTest;
 import org.apache.ignite.internal.processors.service.NonSerializableStaticServiceDeploymentTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentOnClientDisconnectTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentProcessingOnCoordinatorChangeTest;
 import org.apache.ignite.internal.processors.service.ServiceInfoSelfTest;
 import org.apache.ignite.internal.processors.service.ServicePredicateAccessCacheTest;
 import org.apache.ignite.internal.processors.service.ServiceReassignmentFunctionSelfTest;
-import org.apache.ignite.internal.processors.service.ServicesDeploymentExchangeIdSelfTest;
+import org.apache.ignite.internal.processors.service.ServicesDeploymentProcessIdSelfTest;
 import org.apache.ignite.internal.processors.service.SystemCacheNotConfiguredTest;
 import org.apache.ignite.internal.util.GridStartupWithUndefinedIgniteHomeSelfTest;
 import org.apache.ignite.services.ServiceThreadPoolSelfTest;
@@ -178,12 +177,11 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteServiceDeployment2ClassLoadersOptimizedMarshallerTest.class);
 
         suite.addTestSuite(ServiceDeploymentProcessingOnCoordinatorChangeTest.class);
-        suite.addTestSuite(IgniteServicesDeploymentFailuresPolicySelfTest.class);
         suite.addTestSuite(ServiceDeploymentOnClientDisconnectTest.class);
         suite.addTestSuite(NonSerializableStaticServiceDeploymentTest.class);
         suite.addTest(new junit.framework.JUnit4TestAdapter(ServiceReassignmentFunctionSelfTest.class));
         suite.addTest(new junit.framework.JUnit4TestAdapter(ServiceInfoSelfTest.class));
-        suite.addTest(new junit.framework.JUnit4TestAdapter(ServicesDeploymentExchangeIdSelfTest.class));
+        suite.addTest(new junit.framework.JUnit4TestAdapter(ServicesDeploymentProcessIdSelfTest.class));
         suite.addTest(new junit.framework.JUnit4TestAdapter(DynamicServiceChangeRequestTest.class));
 
         return suite;

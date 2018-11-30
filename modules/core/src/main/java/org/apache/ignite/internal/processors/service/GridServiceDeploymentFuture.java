@@ -25,18 +25,25 @@ import org.apache.ignite.services.ServiceConfiguration;
 /**
  * Service deployment future.
  */
-public class GridServiceDeploymentFuture extends GridFutureAdapter<Object> {
+public class GridServiceDeploymentFuture<T> extends GridFutureAdapter<Object> {
     /** */
     private final ServiceConfiguration cfg;
 
     /** */
-    private final IgniteUuid srvcId;
+    private final T srvcId;
+
+    /**
+     * @param cfg Configuration.
+     */
+    public GridServiceDeploymentFuture(ServiceConfiguration cfg) {
+        this(cfg, null);
+    }
 
     /**
      * @param cfg Configuration.
      * @param srvcId Service id.
      */
-    public GridServiceDeploymentFuture(ServiceConfiguration cfg, IgniteUuid srvcId) {
+    public GridServiceDeploymentFuture(ServiceConfiguration cfg, T srvcId) {
         this.cfg = cfg;
         this.srvcId = srvcId;
     }
@@ -51,7 +58,7 @@ public class GridServiceDeploymentFuture extends GridFutureAdapter<Object> {
     /**
      * @return Service id.
      */
-    public IgniteUuid serviceId() {
+    public T serviceId() {
         return srvcId;
     }
 

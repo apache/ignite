@@ -37,6 +37,7 @@ import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -60,7 +61,7 @@ public class ServiceReassignmentFunctionSelfTest {
     private final List<ClusterNode> nodes;
 
     /** */
-    private final List<GridServiceProcessor> processors;
+    private final List<IgniteServiceProcessor> processors;
 
     /** */
     @BeforeClass
@@ -97,7 +98,7 @@ public class ServiceReassignmentFunctionSelfTest {
      * Mocks GridServiceProcessor to test method {@link GridServiceProcessor#reassign(IgniteUuid, ServiceConfiguration,
      * AffinityTopologyVersion, Map)} )}.
      */
-    private GridServiceProcessor mockServiceProcessor() {
+    private IgniteServiceProcessor mockServiceProcessor() {
         GridTestKernalContext spyCtx = spy(new GridTestKernalContext(new GridTestLog4jLogger()));
 
         GridEventStorageManager mockEvt = mock(GridEventStorageManager.class);
@@ -112,7 +113,7 @@ public class ServiceReassignmentFunctionSelfTest {
 
         spyCtx.add(mockDisco);
 
-        return new GridServiceProcessor(spyCtx);
+        return new IgniteServiceProcessor(spyCtx);
     }
 
     /**
@@ -200,15 +201,16 @@ public class ServiceReassignmentFunctionSelfTest {
      * @param cfg Service configuration to test.
      * @throws Exception In case of an error.
      */
+    @Ignore
     public void runTestReassignFunction(IgniteUuid srvcId, ServiceConfiguration cfg,
         Map<UUID, Integer> oldTop) throws Exception {
-        final GridServiceProcessor proc0 = processors.get(0);
+        final IgniteServiceProcessor proc0 = processors.get(0);
         final AffinityTopologyVersion stubTopVer = AffinityTopologyVersion.NONE;
 
         Map<UUID, Integer> sut = proc0.reassign(srvcId, cfg, stubTopVer, oldTop);
 
         for (int idx = 1; idx < nodes.size(); idx++) {
-            GridServiceProcessor proc = processors.get(idx);
+            IgniteServiceProcessor proc = processors.get(idx);
 
             Map<UUID, Integer> assign = proc.reassign(srvcId, cfg, stubTopVer, oldTop);
 

@@ -31,15 +31,15 @@ import static org.apache.ignite.plugin.extensions.communication.MessageCollectio
 import static org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType.MSG;
 
 /**
- * Services single node map message.
+ * Services single node deployments message.
  */
-public class ServicesSingleMapMessage implements Message {
+public class ServicesSingleDeploymentsMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Exchange id. */
+    /** Deployment process id. */
     @GridToStringInclude
-    private ServicesDeploymentExchangeId exchId;
+    private ServicesDeploymentProcessId depId;
 
     /** Services deployments results. */
     @GridToStringInclude
@@ -48,16 +48,16 @@ public class ServicesSingleMapMessage implements Message {
     /**
      * Empty constructor for marshalling purposes.
      */
-    public ServicesSingleMapMessage() {
+    public ServicesSingleDeploymentsMessage() {
     }
 
     /**
-     * @param exchId Exchange id.
+     * @param depId Deployment process id.
      * @param results Services deployments results.
      */
-    public ServicesSingleMapMessage(@NotNull ServicesDeploymentExchangeId exchId,
+    public ServicesSingleDeploymentsMessage(@NotNull ServicesDeploymentProcessId depId,
         @NotNull Map<IgniteUuid, ServiceSingleDeploymentsResults> results) {
-        this.exchId = exchId;
+        this.depId = depId;
         this.results = results;
     }
 
@@ -69,10 +69,10 @@ public class ServicesSingleMapMessage implements Message {
     }
 
     /**
-     * @return Exchange id.
+     * @return Deployment process id.
      */
-    public ServicesDeploymentExchangeId exchangeId() {
-        return exchId;
+    public ServicesDeploymentProcessId deploymentId() {
+        return depId;
     }
 
     /** {@inheritDoc} */
@@ -88,7 +88,7 @@ public class ServicesSingleMapMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMessage("exchId", exchId))
+                if (!writer.writeMessage("depId", depId))
                     return false;
 
                 writer.incrementState();
@@ -112,7 +112,7 @@ public class ServicesSingleMapMessage implements Message {
 
         switch (reader.state()) {
             case 0:
-                exchId = reader.readMessage("exchId");
+                depId = reader.readMessage("depId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -128,7 +128,7 @@ public class ServicesSingleMapMessage implements Message {
                 reader.incrementState();
         }
 
-        return reader.afterMessageRead(ServicesSingleMapMessage.class);
+        return reader.afterMessageRead(ServicesSingleDeploymentsMessage.class);
     }
 
     /** {@inheritDoc} */
@@ -148,6 +148,6 @@ public class ServicesSingleMapMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ServicesSingleMapMessage.class, this);
+        return S.toString(ServicesSingleDeploymentsMessage.class, this);
     }
 }
