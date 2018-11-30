@@ -23,6 +23,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -106,10 +107,21 @@ public class IgniteCache150ClientsTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
+    public void testMaxThread() throws Exception {
+        int i = 0;
+        while (true) {
+            new Thread(LockSupport::park).start();
+
+            if (++i % 1000 == 0) {
+                log.info("Created thread count = " + i);
+            }
+        }
+    }
+
     /**
      * @throws Exception If failed.
      */
-    public void test150Clients() throws Exception {
+    public void ntest150Clients() throws Exception {
         Ignite srv = startGrid(0);
 
         assertFalse(srv.configuration().isClientMode());
