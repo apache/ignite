@@ -949,7 +949,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     * Use method for manual rebalaincing cache on all nodes. Note that using
+     * Use method for manual rebalancing cache on all nodes. Note that using
      * <pre name="code" class="java">
      *   for (int i = 0; i < G.allGrids(); i++)
      *     grid(i).cache(CACHE_NAME).rebalance().get();
@@ -967,40 +967,52 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             return;
 
         IgniteFuture<Void> fut =
-            ignite.compute().withTimeout(5_000).broadcastAsync(new IgniteRunnable() {
-                /** */
-                @LoggerResource
-                IgniteLogger log;
-
-                /** */
-                @IgniteInstanceResource
-                private Ignite ignite;
-
-                /** {@inheritDoc} */
-                @Override public void run() {
-                    IgniteCache<?, ?> cache = ignite.cache(cacheName);
-
-                    assertNotNull(cache);
-
-                    while (!(Boolean)cache.rebalance().get()) {
-                        try {
-                            U.sleep(100);
-                        }
-                        catch (IgniteInterruptedCheckedException e) {
-                            throw new IgniteException(e);
-                        }
-                    }
-
-                    if (log.isInfoEnabled())
-                        log.info("Manual rebalance finished [node=" + ignite.name() + ", cache=" + cacheName + "]");
-                }
-            });
+            ignite.compute().withTimeout(5_000).broadcastAsync(new ManualRebalancer(cacheName));
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 return fut.isDone();
             }
         }, 5_000));
+    }
+
+    /**
+     *
+     */
+    private static class ManualRebalancer implements IgniteRunnable {
+        /** */
+        @LoggerResource
+        IgniteLogger log;
+
+        /** */
+        @IgniteInstanceResource
+        private Ignite ignite;
+
+        /** */
+        private final String cacheName;
+
+        public ManualRebalancer(String cacheName) {
+            this.cacheName = cacheName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            IgniteCache<?, ?> cache = ignite.cache(cacheName);
+
+            assertNotNull(cache);
+
+            while (!cache.rebalance().get()) {
+                try {
+                    U.sleep(100);
+                }
+                catch (IgniteInterruptedCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            }
+
+            if (log.isInfoEnabled())
+                log.info("Manual rebalance finished [node=" + ignite.name() + ", cache=" + cacheName + "]");
+        }
     }
 
     /**
