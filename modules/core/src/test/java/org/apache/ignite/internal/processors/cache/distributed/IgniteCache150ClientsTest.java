@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -108,14 +111,34 @@ public class IgniteCache150ClientsTest extends GridCommonAbstractTest {
     }
 
     public void testMaxThread() throws Exception {
-        int i = 0;
-        while (true) {
-            new Thread(LockSupport::park).start();
+        executeCOmmand("/bin/sh", "-c","cat /proc/sys/kernel/threads-max");
+        executeCOmmand("/bin/sh", "-c","cat /proc/sys/kernel/pid_max");
+        executeCOmmand("/bin/sh", "-c","cat /proc/sys/vm/max_map_count");
+        executeCOmmand("/bin/sh", "-c", "cat /etc/systemd/logind.conf | grep UserTasksMax");
+        executeCOmmand("/bin/sh", "-c","ulimit -a | grep processes");
 
-            if (++i % 1000 == 0) {
-                log.info("Created thread count = " + i);
-            }
-        }
+//        int i = 0;
+//        while (true) {
+//            new Thread(LockSupport::park).start();
+//
+//            if (++i % 1000 == 0) {
+//                doSleep(
+//
+//
+//                    1000
+//                );
+//                log.info("Created thread count = " + i);
+//            }
+//        }
+    }
+
+    private void executeCOmmand(String... commnad) throws IOException, InterruptedException {
+        Process exec = Runtime.getRuntime().exec(commnad);
+        exec.waitFor();
+        BufferedReader reader =
+            new BufferedReader(new InputStreamReader(exec.getInputStream()));
+        System.out.println(commnad[commnad.length-1] + " :: " +reader.readLine());
+        reader.close();
     }
 
     /**
