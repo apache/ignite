@@ -27,8 +27,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.aware.
  * Holder of actual information of latest manipulation on WAL segments.
  */
 public class SegmentAware {
-    /** Latest truncated segment. */
-    private volatile long lastTruncatedArchiveIdx = -1L;
     /** Segment reservations storage: Protects WAL segments from deletion during WAL log cleanup. */
     private final SegmentReservationStorage reservationStorage = new SegmentReservationStorage();
     /** Lock on segment protects from archiving segment. */
@@ -106,7 +104,12 @@ public class SegmentAware {
      * there's no segment to archive right now.
      */
     public long waitNextSegmentToCompress() throws IgniteInterruptedCheckedException {
-        return Math.max(segmentCompressStorage.nextSegmentToCompressOrWait(), lastTruncatedArchiveIdx + 1);
+        long idx;
+
+        while ((idx = segmentCompressStorage.nextSegmentToCompressOrWait()) <= lastTruncatedArchiveIdx())
+            onSegmentCompressed(idx);
+
+        return idx;
     }
 
     /**
@@ -152,14 +155,14 @@ public class SegmentAware {
      * @param lastTruncatedArchiveIdx Last truncated segment;
      */
     public void lastTruncatedArchiveIdx(long lastTruncatedArchiveIdx) {
-        this.lastTruncatedArchiveIdx = lastTruncatedArchiveIdx;
+        segmentArchivedStorage.lastTruncatedArchiveIdx(lastTruncatedArchiveIdx);
     }
 
     /**
      * @return Last truncated segment.
      */
     public long lastTruncatedArchiveIdx() {
-        return lastTruncatedArchiveIdx;
+        return segmentArchivedStorage.lastTruncatedArchiveIdx();
     }
 
     /**

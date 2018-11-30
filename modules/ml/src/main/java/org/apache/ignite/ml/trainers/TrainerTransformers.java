@@ -190,9 +190,8 @@ public class TrainerTransformers {
         List<IgniteSupplier<M>> tasks = new ArrayList<>();
         List<IgniteBiFunction<K, V, Vector>> extractors = new ArrayList<>();
         if (mappings != null) {
-            for (int[] mapping : mappings) {
+            for (int[] mapping : mappings)
                 extractors.add(wrapExtractor(extractor, mapping));
-            }
         }
 
         for (int i = 0; i < ensembleSize; i++) {
@@ -212,9 +211,8 @@ public class TrainerTransformers {
 
         // If we need to do projection, do it.
         if (mappings != null) {
-            for (int i = 0; i < models.size(); i++) {
+            for (int i = 0; i < models.size(); i++)
                 models.get(i).setMapping(getProjector(mappings.get(i)));
-            }
         }
 
         double learningTime = (double)(System.currentTimeMillis() - startTs) / 1000.0;
@@ -245,9 +243,9 @@ public class TrainerTransformers {
     public static IgniteFunction<Vector, Vector> getProjector(int[] mapping) {
         return v -> {
             Vector res = VectorUtils.zeroes(mapping.length);
-            for (int i = 0; i < mapping.length; i++) {
+            for (int i = 0; i < mapping.length; i++)
                 res.set(i, v.get(mapping[i]));
-            }
+
             return res;
         };
     }
@@ -266,9 +264,9 @@ public class TrainerTransformers {
         int[] featureMapping) {
         return featureExtractor.andThen((IgniteFunction<Vector, Vector>)featureValues -> {
             double[] newFeaturesValues = new double[featureMapping.length];
-            for (int i = 0; i < featureMapping.length; i++) {
+            for (int i = 0; i < featureMapping.length; i++)
                 newFeaturesValues[i] = featureValues.get(featureMapping[i]);
-            }
+
             return VectorUtils.of(newFeaturesValues);
         });
     }
