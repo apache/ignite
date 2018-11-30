@@ -2840,7 +2840,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * @return The existing or just created client.
      * @throws IgniteCheckedException Thrown if any exception occurs.
      */
-    private GridCommunicationClient reserveClient(ClusterNode node, int connIdx) throws IgniteCheckedException {
+    private GridCommunicationClient  reserveClient(ClusterNode node, int connIdx) throws IgniteCheckedException {
         assert node != null;
         assert (connIdx >= 0 && connIdx < connectionsPerNode) || !usePairedConnections(node) : connIdx;
 
@@ -2900,8 +2900,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                                     }
                                 }
 
-                                log.info("NODE SPI : " + getSpiContext().node(node.id()));
-                                log.info("DISCOVERY SPI : " + ((TcpDiscoverySpi)ignite().configuration().getDiscoverySpi()).getNode0(node.id()));
+                                UUID id = node.id();
+                                log.info("NODE SPI : " + getSpiContext().node(id));
+                                TcpDiscoverySpi spi = (TcpDiscoverySpi)ignite().configuration().getDiscoverySpi();
+                                log.info("DISCOVERY SPI : " + spi.getNode0(node.id()));
 
                                 if (getSpiContext().node(node.id()) == null)
                                     throw new ClusterTopologyCheckedException("Failed to send message " +
@@ -2916,6 +2918,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                         if (e instanceof Error)
                             throw (Error)e;
+
+                        log.error("ReserveFail", e);
                     }
                     finally {
                         clientFuts.remove(connKey, fut);
@@ -3563,10 +3567,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 String msg = "TcpCommunicationSpi failed to establish connection to node, node will be dropped from " +
                     "cluster [" + "rmtNode=" + node + ']';
 
-                if (enableTroubleshootingLog)
+//                if (enableTroubleshootingLog)
                     U.error(log, msg, errs);
-                else
-                    U.warn(log, msg);
+//                else
+//                    U.warn(log, msg);
 
                 ctx.failNode(node.id(), "TcpCommunicationSpi failed to establish connection to node [" +
                     "rmtNode=" + node +
@@ -4508,6 +4512,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             if (!recoveryDesc.nodeAlive(getSpiContext().node(node.id())))
                 return;
 
+            log.info("ON DISCONNECT REMOTE : " + getSpiContext().remoteNodes());
+            log.info("ON DISCONNECT DISCO REMOTE : " + ((TcpDiscoverySpi)ignite().configuration().getDiscoverySpi()).getRemoteNodes());
+
             try {
                 if (log.isDebugEnabled())
                     log.debug("Recovery reconnect [rmtNode=" + recoveryDesc.node().id() + ']');
@@ -4523,24 +4530,24 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             catch (IgniteCheckedException | IgniteException e) {
                 try {
                     if (recoveryDesc.nodeAlive(getSpiContext().node(node.id())) && getSpiContext().pingNode(node.id())) {
-                        if (log.isDebugEnabled())
-                            log.debug("Recovery reconnect failed, will retry " +
-                                "[rmtNode=" + recoveryDesc.node().id() + ", err=" + e + ']');
+//                        if (log.isInfoEnabled())
+                            log.error("Recovery reconnect failed, will retry " +
+                                "[rmtNode=" + recoveryDesc.node().id() + ", err=" + e + ']', e);
 
                         addProcessDisconnectRequest(sesInfo);
                     }
                     else {
-                        if (log.isDebugEnabled())
-                            log.debug("Recovery reconnect failed, " +
-                                "node left [rmtNode=" + recoveryDesc.node().id() + ", err=" + e + ']');
+//                        if (log.isDebugEnabled())
+                            log.error("Recovery reconnect failed, " +
+                                "node left [rmtNode=" + recoveryDesc.node().id() + ", err=" + e + ']', e);
 
                         onException("Recovery reconnect failed, node left [rmtNode=" + recoveryDesc.node().id() + "]",
                             e);
                     }
                 }
                 catch (IgniteClientDisconnectedException ignored) {
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to ping node, client disconnected.");
+                    if (log.isInfoEnabled())
+                        log.info("Failed to ping node, client disconnected.");
                 }
             }
         }

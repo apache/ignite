@@ -837,6 +837,8 @@ class ServerImpl extends TcpDiscoveryImpl {
     @Override public void failNode(UUID nodeId, @Nullable String warning) {
         TcpDiscoveryNode node = ring.node(nodeId);
 
+        log.info("FAIL NODE : " + node);
+
         if (node != null) {
             TcpDiscoveryNodeFailedMessage msg = new TcpDiscoveryNodeFailedMessage(getLocalNodeId(),
                 node.id(),
