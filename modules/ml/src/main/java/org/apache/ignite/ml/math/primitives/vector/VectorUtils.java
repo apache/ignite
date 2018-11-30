@@ -186,4 +186,35 @@ public class VectorUtils {
 
         return answer;
     }
+
+    /**
+     * Concatenates two given vectors.
+     *
+     * @param v1 First vector.
+     * @param v2 Second vector.
+     * @return Concatenation result.
+     */
+    public static Vector concat(Vector v1, Vector v2) {
+        int size1 = v1.size();
+        int size2 = v2.size();
+        double[] vals = new double[size1 + size2];
+        System.arraycopy(v1.asArray(), 0, vals, 0, size1);
+        System.arraycopy(v2.asArray(), 0, vals, size1, size2);
+
+        return new DenseVector(vals);
+    }
+
+    /**
+     * Concatenates given vectors.
+     *
+     * @param v1 First vector.
+     * @param vs Other vectors.
+     * @return Concatenation result.
+     */
+    public static Vector concat(Vector v1, Vector... vs) {
+        Vector res = v1;
+        for (Vector v : vs)
+            res = concat(res, v);
+        return res;
+    }
 }

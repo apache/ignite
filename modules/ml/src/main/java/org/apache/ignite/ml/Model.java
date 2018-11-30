@@ -33,6 +33,14 @@ public interface Model<T, V> extends IgniteFunction<T, V> {
         return v -> combiner.apply(apply(v), other.apply(v));
     }
 
+    public static <X> Model<X, X> identityModel() {
+        return v -> v;
+    }
+
+    public default <V1> Model<T, V1> andThen(IgniteFunction<V, V1> after) {
+        return t -> after.apply(apply(t));
+    }
+
     /**
      * @param pretty Use pretty mode.
      */
