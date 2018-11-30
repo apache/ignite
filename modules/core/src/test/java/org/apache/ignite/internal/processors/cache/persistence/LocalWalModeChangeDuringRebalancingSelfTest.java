@@ -435,27 +435,32 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     private void doTestParallelExchange(AtomicReference<CountDownLatch> latchRef) throws Exception {
-        Ignite ignite = startGrids(3);
+        dfltCacheBackupCnt = 2;
+
+        Ignite ignite = startGrids(4);
 
         ignite.cluster().active(true);
 
+        ignite.cluster().setBaselineTopology(ignite.cluster().nodes());
+
+        stopGrid(3);
+
+        awaitExchange((IgniteEx)ignite);
+
         IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
-        for (int k = 0; k < getKeysCount(); k++)
-            cache.put(k, k);
+        doLoad(cache, 4, 10_000);
 
         IgniteEx newIgnite = startGrid(3);
 
-        CacheGroupContext grpCtx = newIgnite.cachex(DEFAULT_CACHE_NAME).context().group();
+        // Await fully exchange complete.
+        awaitExchange(newIgnite);
 
         CountDownLatch latch = new CountDownLatch(1);
 
         latchRef.set(latch);
 
-        ignite.cluster().setBaselineTopology(ignite.cluster().nodes());
-
-        // Await fully exchange complete.
-        awaitExchange(newIgnite);
+        CacheGroupContext grpCtx = newIgnite.cachex(DEFAULT_CACHE_NAME).context().group();
 
         for (Ignite g : G.allGrids())
             g.cache(DEFAULT_CACHE_NAME).rebalance();
