@@ -103,9 +103,8 @@ public class UpstreamTransformerChain<K, V> implements Serializable {
 
         Stream<UpstreamEntry<K, V>> res = upstream;
 
-        for (UpstreamTransformer<K, V> kvUpstreamTransformer : list) {
+        for (UpstreamTransformer<K, V> kvUpstreamTransformer : list)
             res = kvUpstreamTransformer.transform(rnd, res);
-        }
 
         return res;
     }

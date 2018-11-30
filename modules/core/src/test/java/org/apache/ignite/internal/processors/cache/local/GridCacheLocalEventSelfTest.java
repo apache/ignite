@@ -30,7 +30,7 @@ public class GridCacheLocalEventSelfTest extends GridCacheEventAbstractTest {
     /** {@inheritDoc} */
     @Override public void beforeTestsStarted() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
-
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
 
         super.beforeTestsStarted();
     }
