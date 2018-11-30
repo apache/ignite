@@ -19,8 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.TransactionConfiguration;
-import org.apache.ignite.internal.processors.cache.IgniteTxMultiThreadedAbstractTest;
+import org.apache.ignite.internal.processors.cache.IgniteMvccTxMultiThreadedAbstractTest;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -28,27 +27,21 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests for replicated transactions.
  */
-public class GridCacheReplicatedTxMultiThreadedSelfTest extends IgniteTxMultiThreadedAbstractTest {
+public class GridCacheReplicatedMvccTxMultiThreadedSelfTest extends IgniteMvccTxMultiThreadedAbstractTest {
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TransactionConfiguration tCfg = new TransactionConfiguration();
+        CacheConfiguration ccfg = defaultCacheConfiguration();
 
-        c.setTransactionConfiguration(tCfg);
+        ccfg.setCacheMode(REPLICATED);
+        ccfg.setEvictionPolicy(null);
 
-        CacheConfiguration cc = defaultCacheConfiguration();
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
-        cc.setCacheMode(REPLICATED);
+        cfg.setCacheConfiguration(ccfg);
 
-        cc.setEvictionPolicy(null);
-
-        cc.setWriteSynchronizationMode(FULL_SYNC);
-
-        c.setCacheConfiguration(cc);
-
-        return c;
+        return cfg;
     }
 
     /** {@inheritDoc} */

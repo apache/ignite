@@ -17,59 +17,28 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.cache.IgniteTxSingleThreadedAbstractTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteMvccTxTimeoutAbstractTest;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
- * Tests for replicated transactions.
+ * Simple cache test.
  */
-public class GridCacheReplicatedTxSingleThreadedSelfTest extends IgniteTxSingleThreadedAbstractTest {
-     /** {@inheritDoc} */
+public class GridCacheReplicatedMvccTxTimeoutSelfTest extends IgniteMvccTxTimeoutAbstractTest {
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
         ccfg.setCacheMode(REPLICATED);
-        ccfg.setEvictionPolicy(null);
-        ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 3;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int keyCount() {
-        return 3;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int maxKeyValue() {
-        return 3;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int iterations() {
-        return 20;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean isTestDebug() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean printMemoryStats() {
-        return true;
     }
 }

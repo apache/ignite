@@ -19,36 +19,30 @@ package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.TransactionConfiguration;
-import org.apache.ignite.internal.processors.cache.IgniteTxMultiThreadedAbstractTest;
+import org.apache.ignite.internal.processors.cache.IgniteMvccTxSingleThreadedAbstractTest;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Tests for replicated transactions.
  */
-public class GridCacheReplicatedTxMultiThreadedSelfTest extends IgniteTxMultiThreadedAbstractTest {
-    /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
+public class GridCacheReplicatedMvccTxSingleThreadedSelfTest extends IgniteMvccTxSingleThreadedAbstractTest {
+     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TransactionConfiguration tCfg = new TransactionConfiguration();
+        CacheConfiguration ccfg = defaultCacheConfiguration();
 
-        c.setTransactionConfiguration(tCfg);
+        ccfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
+        ccfg.setCacheMode(REPLICATED);
+        ccfg.setEvictionPolicy(null);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
-        CacheConfiguration cc = defaultCacheConfiguration();
+        cfg.setCacheConfiguration(ccfg);
 
-        cc.setCacheMode(REPLICATED);
-
-        cc.setEvictionPolicy(null);
-
-        cc.setWriteSynchronizationMode(FULL_SYNC);
-
-        c.setCacheConfiguration(cc);
-
-        return c;
+        return cfg;
     }
 
     /** {@inheritDoc} */
@@ -67,13 +61,8 @@ public class GridCacheReplicatedTxMultiThreadedSelfTest extends IgniteTxMultiThr
     }
 
     /** {@inheritDoc} */
-    @Override protected int threadCount() {
-        return 5;
-    }
-
-    /** {@inheritDoc} */
     @Override protected int iterations() {
-        return 1000;
+        return 20;
     }
 
     /** {@inheritDoc} */
