@@ -21,7 +21,6 @@ import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-import org.apache.ignite.plugin.security.SecurityPermission;
 
 /**
  * Cache destroy request.
@@ -43,8 +42,6 @@ public class ClientCacheDestroyRequest extends ClientRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        authorize(ctx, SecurityPermission.CACHE_DESTROY);
-
         String cacheName = ClientCacheRequest.cacheDescriptor(ctx, cacheId).cacheName();
 
         ctx.kernalContext().grid().destroyCache(cacheName);
