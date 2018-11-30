@@ -2585,8 +2585,15 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public void ownMoving() {
+    @Override public void ownMoving(AffinityTopologyVersion rebFinishedTopVer) {
         lock.writeLock().lock();
+
+        AffinityTopologyVersion lastAffChangeVer = ctx.exchange().lastAffinityChangedTopologyVersion(lastTopChangeVer);
+
+        if (lastAffChangeVer.compareTo(rebFinishedTopVer) > 0)
+            log.info("Affinity topology changed, no MOVING partitions will be owned " +
+                "[rebFinishedTopVer=" + rebFinishedTopVer +
+                ", lastAffChangeVer=" + lastAffChangeVer + "]");
 
         try {
             for (GridDhtLocalPartition locPart : grp.topology().currentLocalPartitions()) {
@@ -2594,8 +2601,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     boolean reserved = locPart.reserve();
 
                     try {
-                        if (reserved && locPart.state() == MOVING)
-                            grp.topology().own(locPart);
+                        if (reserved && locPart.state() == MOVING &&
+                            lastAffChangeVer.compareTo(rebFinishedTopVer) <= 0 &&
+                            rebFinishedTopVer.compareTo(lastTopChangeVer) <= 0)
+                                grp.topology().own(locPart);
                     }
                     finally {
                         if (reserved)

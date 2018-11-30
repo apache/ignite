@@ -506,7 +506,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
                         assert grp != null;
 
-                        grp.topology().ownMoving();
+                        grp.topology().ownMoving(grp.topology().readyTopologyVersion());
                     }
 
                     cctx.exchange().refreshPartitions();
