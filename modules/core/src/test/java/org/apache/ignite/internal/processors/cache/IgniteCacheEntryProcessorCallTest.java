@@ -143,7 +143,6 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
         }
     }
 
-
     /**
      * @throws Exception If failed.
      */
@@ -191,26 +190,24 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
 
         checkEntryProcessCall(key++, clientCache1, null, null, expCallCnt);
 
-        if (ccfg.getAtomicityMode() != ATOMIC) {
-            if (ccfg.getAtomicityMode() == TRANSACTIONAL) {
-                checkEntryProcessCall(key++, clientCache1, OPTIMISTIC, REPEATABLE_READ, expCallCnt + 1);
-                checkEntryProcessCall(key++, clientCache1, OPTIMISTIC, SERIALIZABLE, expCallCnt + 1);
-            }
-
+        if (ccfg.getAtomicityMode() == TRANSACTIONAL) {
+            checkEntryProcessCall(key++, clientCache1, OPTIMISTIC, REPEATABLE_READ, expCallCnt + 1);
+            checkEntryProcessCall(key++, clientCache1, OPTIMISTIC, SERIALIZABLE, expCallCnt + 1);
             checkEntryProcessCall(key++, clientCache1, PESSIMISTIC, REPEATABLE_READ, expCallCnt + 1);
         }
+        else if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
+            checkEntryProcessCall(key++, clientCache1, PESSIMISTIC, REPEATABLE_READ, expCallCnt);
 
         for (int i = 100; i < 110; i++) {
             checkEntryProcessCall(key++, srvCache, null, null, expCallCnt);
 
-            if (ccfg.getAtomicityMode() != ATOMIC) {
-                if (ccfg.getAtomicityMode() == TRANSACTIONAL) {
-                    checkEntryProcessCall(key++, clientCache1, OPTIMISTIC, REPEATABLE_READ, expCallCnt + 1);
-                    checkEntryProcessCall(key++, clientCache1, OPTIMISTIC, SERIALIZABLE, expCallCnt + 1);
-                }
-
+            if (ccfg.getAtomicityMode() == TRANSACTIONAL) {
+                checkEntryProcessCall(key++, clientCache1, OPTIMISTIC, REPEATABLE_READ, expCallCnt + 1);
+                checkEntryProcessCall(key++, clientCache1, OPTIMISTIC, SERIALIZABLE, expCallCnt + 1);
                 checkEntryProcessCall(key++, clientCache1, PESSIMISTIC, REPEATABLE_READ, expCallCnt + 1);
             }
+            else if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
+                checkEntryProcessCall(key++, clientCache1, PESSIMISTIC, REPEATABLE_READ, expCallCnt);
         }
 
         for (int i = 0; i < NODES; i++)
@@ -218,7 +215,6 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
      * @param key Key.
      * @param cache Cache.
      * @param concurrency Transaction concurrency.
@@ -240,6 +236,9 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
             ", primary=" + primary.attribute(ATTR_IGNITE_INSTANCE_NAME) +
             ", concurrency=" + concurrency +
             ", isolation=" + isolation + "]");
+
+        int expCallCntOnGet = cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == TRANSACTIONAL_SNAPSHOT ?
+            1 : expCallCnt;
 
         Transaction tx;
         TestReturnValue retVal;
@@ -273,7 +272,7 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
         if (tx != null)
             tx.commit();
 
-        assertEquals(expCallCnt, callCnt.get());
+        assertEquals(expCallCntOnGet, callCnt.get());
 
         checkReturnValue(retVal, "0");
         checkCacheValue(cache.getName(), key, new TestValue(0));
@@ -451,7 +450,7 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            TestValue testVal = (TestValue) o;
+            TestValue testVal = (TestValue)o;
 
             return val.equals(testVal.val);
 
@@ -509,7 +508,7 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            TestReturnValue testVal = (TestReturnValue) o;
+            TestReturnValue testVal = (TestReturnValue)o;
 
             return val.equals(testVal.val);
 
