@@ -24,7 +24,10 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Scan query over cache entries. Will accept all the entries if no predicate was set.
+ * Scan query over cache entries or single partition entries
+ * if partition is specified (see {@link #setPartition(Integer)}).
+ *
+ * Will accept all available the entries if no predicate is set (see {@link #setFilter(IgniteBiPredicate)}).
  *
  * @see IgniteCache#query(Query)
  */
