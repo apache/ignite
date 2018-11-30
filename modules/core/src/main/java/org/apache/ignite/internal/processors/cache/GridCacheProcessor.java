@@ -2944,13 +2944,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             throw new IgniteException(msg, e);
         }
 
-        try {
-            U.sleep(4000);
-        }
-        catch (Throwable e) {
-
-        }
-
         sharedCtx.database().checkpointReadLock();
 
         try {
