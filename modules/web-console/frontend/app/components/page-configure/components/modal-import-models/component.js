@@ -38,6 +38,13 @@ import {default as SqlTypes} from 'app/services/SqlTypes.service';
 import {default as JavaTypes} from 'app/services/JavaTypes.service';
 // eslint-disable-next-line
 import {default as ActivitiesData} from 'app/core/activities/Activities.data';
+import {tap, filter, take, pluck, switchMap} from 'rxjs/operators';
+import {race} from 'rxjs/observable/race';
+import {timer} from 'rxjs/observable/timer';
+import {merge} from 'rxjs/observable/merge';
+import {of} from 'rxjs/observable/of';
+import {from} from 'rxjs/observable/from';
+import {combineLatest} from 'rxjs/observable/combineLatest';
 
 function _mapCaches(caches = []) {
     return caches.map((cache) => {
@@ -126,34 +133,34 @@ export class ModalImportModels {
     }
 
     loadData() {
-        return Observable.of(this.clusterID)
-            .switchMap((id = 'new') => {
-                return this.ConfigureState.state$.let(this.ConfigSelectors.selectClusterToEdit(id, defaultNames.importedCluster));
-            })
-        .switchMap((cluster) => {
-            return (!(cluster.caches || []).length && !(cluster.models || []).length)
-                ? Observable.of({
-                    cluster,
-                    caches: [],
-                    models: []
-                })
-                : Observable.fromPromise(Promise.all([
-                    this.ConfigEffects.etp('LOAD_SHORT_CACHES', {ids: cluster.caches || [], clusterID: cluster._id}),
-                    this.ConfigEffects.etp('LOAD_SHORT_MODELS', {ids: cluster.models || [], clusterID: cluster._id})
-                ]))
-                .switchMap(() => {
-                    return Observable.combineLatest(
-                        this.ConfigureState.state$.let(this.ConfigSelectors.selectShortCachesValue()),
-                        this.ConfigureState.state$.let(this.ConfigSelectors.selectShortModelsValue()),
-                        (caches, models) => ({
-                            cluster,
-                            caches,
-                            models
-                        })
-                    ).take(1);
-                });
-        })
-        .take(1);
+        return of(this.clusterID).pipe(
+            switchMap((id = 'new') => {
+                return this.ConfigureState.state$.pipe(this.ConfigSelectors.selectClusterToEdit(id, defaultNames.importedCluster));
+            }),
+            switchMap((cluster) => {
+                return (!(cluster.caches || []).length && !(cluster.models || []).length)
+                    ? of({
+                        cluster,
+                        caches: [],
+                        models: []
+                    })
+                    : from(Promise.all([
+                        this.ConfigEffects.etp('LOAD_SHORT_CACHES', {ids: cluster.caches || [], clusterID: cluster._id}),
+                        this.ConfigEffects.etp('LOAD_SHORT_MODELS', {ids: cluster.models || [], clusterID: cluster._id})
+                    ])).pipe(switchMap(() => {
+                        return combineLatest(
+                            this.ConfigureState.state$.pipe(this.ConfigSelectors.selectShortCachesValue()),
+                            this.ConfigureState.state$.pipe(this.ConfigSelectors.selectShortModelsValue()),
+                            (caches, models) => ({
+                                cluster,
+                                caches,
+                                models
+                            })
+                        ).pipe(take(1));
+                    }));
+            }),
+            take(1)
+        );
     }
 
     saveBatch(batch) {
@@ -169,15 +176,20 @@ export class ModalImportModels {
             prevActions: []
         });
 
-        this.saveSubscription = Observable.race(
-            this.ConfigureState.actions$.filter((a) => a.type === 'ADVANCED_SAVE_COMPLETE_CONFIGURATION_OK')
-                .do(() => this.onHide()),
-            this.ConfigureState.actions$.filter((a) => a.type === 'ADVANCED_SAVE_COMPLETE_CONFIGURATION_ERR')
+        this.saveSubscription = race(
+            this.ConfigureState.actions$.pipe(
+                filter((a) => a.type === 'ADVANCED_SAVE_COMPLETE_CONFIGURATION_OK'),
+                tap(() => this.onHide())
+            ),
+            this.ConfigureState.actions$.pipe(
+                filter((a) => a.type === 'ADVANCED_SAVE_COMPLETE_CONFIGURATION_ERR')
+            )
+        ).pipe(
+            take(1),
+            tap(() => {
+                this.Loading.finish('importDomainFromDb');
+            })
         )
-        .take(1)
-        .do(() => {
-            this.Loading.finish('importDomainFromDb');
-        })
         .subscribe();
     }
 
@@ -231,18 +243,23 @@ export class ModalImportModels {
         if (this.loadedCaches[cacheID])
             return;
 
-        return this.onCacheSelectSubcription = Observable.merge(
-            Observable.timer(0, 1).take(1)
-                .do(() => this.ConfigureState.dispatchAction({type: 'LOAD_CACHE', cacheID})),
-            Observable.race(
-                this.ConfigureState.actions$
-                    .filter((a) => a.type === 'LOAD_CACHE_OK' && a.cache._id === cacheID).pluck('cache')
-                    .do((cache) => {
+        return this.onCacheSelectSubcription = merge(
+            timer(0, 1).pipe(
+                take(1),
+                tap(() => this.ConfigureState.dispatchAction({type: 'LOAD_CACHE', cacheID}))
+            ),
+            race(
+                this.ConfigureState.actions$.pipe(
+                    filter((a) => a.type === 'LOAD_CACHE_OK' && a.cache._id === cacheID),
+                    pluck('cache'),
+                    tap((cache) => {
                         this.loadedCaches[cacheID] = cache;
-                    }),
-                this.ConfigureState.actions$
-                    .filter((a) => a.type === 'LOAD_CACHE_ERR' && a.action.cacheID === cacheID)
-            ).take(1)
+                    })
+                ),
+                this.ConfigureState.actions$.pipe(
+                    filter((a) => a.type === 'LOAD_CACHE_ERR' && a.action.cacheID === cacheID)
+                )
+            ).pipe(take(1))
         )
         .subscribe();
     }
@@ -291,7 +308,7 @@ export class ModalImportModels {
 
         this.$scope.importCommon = {};
 
-        this.subscription = this.loadData().do((data) => {
+        this.subscription = this.loadData().pipe(tap((data) => {
             this.$scope.caches = _mapCaches(data.caches);
             this.$scope.domains = data.models;
             this.caches = data.caches;
@@ -306,7 +323,7 @@ export class ModalImportModels {
             }
             this.$scope.$watch('importCommon.action', this._fillCommonCachesOrTemplates(this.$scope.importCommon), true);
             this.$scope.importCommon.action = IMPORT_DM_NEW_CACHE;
-        }).subscribe();
+        })).subscribe();
 
         // New
         this.loadedCaches = {

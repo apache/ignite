@@ -19,9 +19,9 @@ import {uniqueName} from 'app/utils/uniqueName';
 import {of} from 'rxjs/observable/of';
 import {empty} from 'rxjs/observable/empty';
 import {combineLatest} from 'rxjs/observable/combineLatest';
-import 'rxjs/add/operator/filter';
-import 'rxjs/add/operator/mergeMap';
-import 'rxjs/add/observable/combineLatest';
+import {forkJoin} from 'rxjs/observable/forkJoin';
+import {pipe} from 'rxjs';
+import {filter, mergeMap, pluck, map, switchMap, take, distinctUntilChanged, exhaustMap} from 'rxjs/operators';
 import {Observable} from 'rxjs/Observable';
 import {defaultNames} from '../defaultNames';
 
@@ -30,22 +30,22 @@ import {default as Clusters} from 'app/services/Clusters';
 import {default as IGFSs} from 'app/services/IGFSs';
 import {default as Models} from 'app/services/Models';
 
-const isDefined = (s) => s.filter((v) => v);
+const isDefined = filter((v) => v);
 
-const selectItems = (path) => (s) => s.filter((s) => s).pluck(path).filter((v) => v);
+const selectItems = (path) => pipe(filter((s) => s), pluck(path), filter((v) => v));
 
-const selectValues = (s) => s.map((v) => v && [...v.value.values()]);
+const selectValues = map((v) => v && [...v.value.values()]);
 
-export const selectMapItem = (mapPath, key) => (s) => s.pluck(mapPath).map((v) => v && v.get(key));
+export const selectMapItem = (mapPath, key) => pipe(pluck(mapPath), map((v) => v && v.get(key)));
 
-const selectMapItems = (mapPath, keys) => (s) => s.pluck(mapPath).map((v) => v && keys.map((key) => v.get(key)));
+const selectMapItems = (mapPath, keys) => pipe(pluck(mapPath), map((v) => v && keys.map((key) => v.get(key))));
 
-const selectItemToEdit = ({items, itemFactory, defaultName = '', itemID}) => (s) => s.switchMap((item) => {
+const selectItemToEdit = ({items, itemFactory, defaultName = '', itemID}) => switchMap((item) => {
     if (item)
         return of(Object.assign(itemFactory(), item));
 
     if (itemID === 'new')
-        return items.take(1).map((items) => Object.assign(itemFactory(), {name: uniqueName(defaultName, items)}));
+        return items.pipe(take(1), map((items) => Object.assign(itemFactory(), {name: uniqueName(defaultName, items)})));
 
     if (!itemID)
         return of(null);
@@ -54,22 +54,24 @@ const selectItemToEdit = ({items, itemFactory, defaultName = '', itemID}) => (s)
 });
 
 const currentShortItems = ({changesKey, shortKey}) => (state$) => {
-    return Observable.combineLatest(
-        state$.pluck('edit', 'changes', changesKey).let(isDefined).distinctUntilChanged(),
-        state$.pluck(shortKey, 'value').let(isDefined).distinctUntilChanged()
-    )
-        .map(([{ids = [], changedItems}, shortItems]) => {
+    return combineLatest(
+        state$.pipe(pluck('edit', 'changes', changesKey), isDefined, distinctUntilChanged()),
+        state$.pipe(pluck(shortKey, 'value'), isDefined, distinctUntilChanged())
+    ).pipe(
+        map(([{ids = [], changedItems}, shortItems]) => {
             if (!ids.length || !shortItems)
                 return [];
 
             return ids.map((id) => changedItems.find(({_id}) => _id === id) || shortItems.get(id));
-        })
-        .map((v) => v.filter((v) => v));
+        }),
+        map((v) => v.filter((v) => v))
+    );
 };
 
-const selectNames = (itemIDs, nameAt = 'name') => (items) => items
-    .pluck('value')
-    .map((items) => itemIDs.map((id) => items.get(id)[nameAt]));
+const selectNames = (itemIDs, nameAt = 'name') => pipe(
+    pluck('value'),
+    map((items) => itemIDs.map((id) => items.get(id)[nameAt]))
+);
 
 export default class ConfigSelectors {
     static $inject = ['Caches', 'Clusters', 'IGFSs', 'Models'];
@@ -95,17 +97,18 @@ export default class ConfigSelectors {
          * @returns {(state$: Observable) => Observable<{pristine: boolean, value: Map<string, ig.config.model.ShortDomainModel>}>}
          */
         this.selectShortModels = () => selectItems('shortModels');
-        this.selectShortModelsValue = () => (state$) => state$.let(this.selectShortModels()).let(selectValues);
+        this.selectShortModelsValue = () => (state$) => state$.pipe(this.selectShortModels(), selectValues);
         /**
          * @returns {(state$: Observable) => Observable<Array<ig.config.cluster.ShortCluster>>}
          */
-        this.selectShortClustersValue = () => (state$) => state$.let(this.selectShortClusters()).let(selectValues);
+        this.selectShortClustersValue = () => (state$) => state$.pipe(this.selectShortClusters(), selectValues);
         /**
          * @returns {(state$: Observable) => Observable<Array<string>>}
          */
-        this.selectClusterNames = (clusterIDs) => (state$) => state$
-            .let(this.selectShortClusters())
-            .let(selectNames(clusterIDs));
+        this.selectClusterNames = (clusterIDs) => (state$) => state$.pipe(
+            this.selectShortClusters(),
+            selectNames(clusterIDs)
+        );
     }
 
     selectCluster = (id) => selectMapItem('clusters', id);
@@ -118,52 +121,55 @@ export default class ConfigSelectors {
 
     selectShortCaches = () => selectItems('shortCaches');
 
-    selectShortCachesValue = () => (state$) => state$.let(this.selectShortCaches()).let(selectValues);
+    selectShortCachesValue = () => (state$) => state$.pipe(this.selectShortCaches(), selectValues);
 
     selectShortIGFSs = () => selectItems('shortIgfss');
 
-    selectShortIGFSsValue = () => (state$) => state$.let(this.selectShortIGFSs()).let(selectValues);
+    selectShortIGFSsValue = () => (state$) => state$.pipe(this.selectShortIGFSs(), selectValues);
 
-    selectShortModelsValue = () => (state$) => state$.let(this.selectShortModels()).let(selectValues);
+    selectShortModelsValue = () => (state$) => state$.pipe(this.selectShortModels(), selectValues);
 
-    selectCacheToEdit = (cacheID) => (state$) => state$
-        .let(this.selectCache(cacheID))
-        .distinctUntilChanged()
-        .let(selectItemToEdit({
-            items: state$.let(this.selectCurrentShortCaches),
+    selectCacheToEdit = (cacheID) => (state$) => state$.pipe(
+        this.selectCache(cacheID),
+        distinctUntilChanged(),
+        selectItemToEdit({
+            items: state$.pipe(this.selectCurrentShortCaches),
             itemFactory: () => this.Caches.getBlankCache(),
             defaultName: defaultNames.cache,
             itemID: cacheID
-        }));
+        })
+    )
 
-    selectIGFSToEdit = (itemID) => (state$) => state$
-        .let(this.selectIGFS(itemID))
-        .distinctUntilChanged()
-        .let(selectItemToEdit({
-            items: state$.let(this.selectCurrentShortIGFSs),
+    selectIGFSToEdit = (itemID) => (state$) => state$.pipe(
+        this.selectIGFS(itemID),
+        distinctUntilChanged(),
+        selectItemToEdit({
+            items: state$.pipe(this.selectCurrentShortIGFSs),
             itemFactory: () => this.IGFSs.getBlankIGFS(),
             defaultName: defaultNames.igfs,
             itemID
-        }));
+        })
+    )
 
-    selectModelToEdit = (itemID) => (state$) => state$
-        .let(this.selectModel(itemID))
-        .distinctUntilChanged()
-        .let(selectItemToEdit({
-            items: state$.let(this.selectCurrentShortModels),
+    selectModelToEdit = (itemID) => (state$) => state$.pipe(
+        this.selectModel(itemID),
+        distinctUntilChanged(),
+        selectItemToEdit({
+            items: state$.pipe(this.selectCurrentShortModels),
             itemFactory: () => this.Models.getBlankModel(),
             itemID
-        }));
-
-    selectClusterToEdit = (clusterID, defaultName = defaultNames.cluster) => (state$) => state$
-        .let(this.selectCluster(clusterID))
-        .distinctUntilChanged()
-        .let(selectItemToEdit({
-            items: state$.let(this.selectShortClustersValue()),
+        })
+    )
+    selectClusterToEdit = (clusterID, defaultName = defaultNames.cluster) => (state$) => state$.pipe(
+        this.selectCluster(clusterID),
+        distinctUntilChanged(),
+        selectItemToEdit({
+            items: state$.pipe(this.selectShortClustersValue()),
             itemFactory: () => this.Clusters.getBlankCluster(),
             defaultName,
             itemID: clusterID
-        }));
+        })
+    )
 
     selectCurrentShortCaches = currentShortItems({changesKey: 'caches', shortKey: 'shortCaches'});
 
@@ -176,34 +182,35 @@ export default class ConfigSelectors {
             return of([]);
 
         return combineLatest(
-            state$.let(this.selectCluster(clusterID)).pluck('caches'),
-            state$.let(this.selectShortCaches()).pluck('value'),
+            state$.pipe(this.selectCluster(clusterID), pluck('caches')),
+            state$.pipe(this.selectShortCaches(), pluck('value')),
             (ids, items) => ids.map((id) => items.get(id))
         );
     };
 
     selectCompleteClusterConfiguration = ({clusterID, isDemo}) => (state$) => {
         const hasValues = (array) => !array.some((v) => !v);
-        return state$.let(this.selectCluster(clusterID))
-        .exhaustMap((cluster) => {
-            if (!cluster)
-                return of({__isComplete: false});
+        return state$.pipe(
+            this.selectCluster(clusterID),
+            exhaustMap((cluster) => {
+                if (!cluster)
+                    return of({__isComplete: false});
 
-            const withSpace = (array) => array.map((c) => ({...c, space: cluster.space}));
+                const withSpace = (array) => array.map((c) => ({...c, space: cluster.space}));
 
-            return Observable.forkJoin(
-                state$.let(selectMapItems('caches', cluster.caches || [])).take(1),
-                state$.let(selectMapItems('models', cluster.models || [])).take(1),
-                state$.let(selectMapItems('igfss', cluster.igfss || [])).take(1),
-            )
-            .map(([caches, models, igfss]) => ({
-                cluster,
-                caches,
-                domains: models,
-                igfss,
-                spaces: [{_id: cluster.space, demo: isDemo}],
-                __isComplete: !!cluster && !(!hasValues(caches) || !hasValues(models) || !hasValues(igfss))
-            }));
-        });
+                return forkJoin(
+                    state$.pipe(selectMapItems('caches', cluster.caches || []), take(1)),
+                    state$.pipe(selectMapItems('models', cluster.models || []), take(1)),
+                    state$.pipe(selectMapItems('igfss', cluster.igfss || []), take(1)),
+                ).pipe(map(([caches, models, igfss]) => ({
+                    cluster,
+                    caches,
+                    domains: models,
+                    igfss,
+                    spaces: [{_id: cluster.space, demo: isDemo}],
+                    __isComplete: !!cluster && !(!hasValues(caches) || !hasValues(models) || !hasValues(igfss))
+                })));
+            })
+        );
     };
 }

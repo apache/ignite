@@ -15,20 +15,11 @@
  * limitations under the License.
  */
 
-import {Observable} from 'rxjs/Observable';
-import 'rxjs/add/operator/filter';
-import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/take';
-import 'rxjs/add/operator/switchMap';
-import 'rxjs/add/operator/merge';
-import 'rxjs/add/operator/catch';
-import 'rxjs/add/operator/withLatestFrom';
-import 'rxjs/add/observable/empty';
-import 'rxjs/add/observable/of';
-import 'rxjs/add/observable/from';
-import 'rxjs/add/observable/forkJoin';
-import 'rxjs/add/observable/timer';
 import cloneDeep from 'lodash/cloneDeep';
+
+import {merge} from 'rxjs/observable/merge';
+import {timer} from 'rxjs/observable/timer';
+import {take, tap, ignoreElements, filter, map, pluck} from 'rxjs/operators';
 
 import {
     ofType
@@ -50,20 +41,25 @@ export default class PageConfigure {
     }
 
     getClusterConfiguration({clusterID, isDemo}) {
-        return Observable.merge(
-            Observable
-                .timer(1)
-                .take(1)
-                .do(() => this.ConfigureState.dispatchAction({type: 'LOAD_COMPLETE_CONFIGURATION', clusterID, isDemo}))
-                .ignoreElements(),
-            this.ConfigureState.actions$.let(ofType('LOAD_COMPLETE_CONFIGURATION_ERR')).take(1).pluck('error').map((e) => Promise.reject(e)),
-            this.ConfigureState.state$
-                .let(this.ConfigSelectors.selectCompleteClusterConfiguration({clusterID, isDemo}))
-                .filter((c) => c.__isComplete)
-                .take(1)
-                .map((data) => ({...data, clusters: [cloneDeep(data.cluster)]}))
-        )
-        .take(1)
+        return merge(
+            timer(1).pipe(
+                take(1),
+                tap(() => this.ConfigureState.dispatchAction({type: 'LOAD_COMPLETE_CONFIGURATION', clusterID, isDemo})),
+                ignoreElements()
+            ),
+            this.ConfigureState.actions$.pipe(
+                ofType('LOAD_COMPLETE_CONFIGURATION_ERR'),
+                take(1),
+                pluck('error'),
+                map((e) => Promise.reject(e))
+            ),
+            this.ConfigureState.state$.pipe(
+                this.ConfigSelectors.selectCompleteClusterConfiguration({clusterID, isDemo}),
+                filter((c) => c.__isComplete),
+                take(1),
+                map((data) => ({...data, clusters: [cloneDeep(data.cluster)]}))
+            )
+        ).pipe(take(1))
         .toPromise();
     }
 }

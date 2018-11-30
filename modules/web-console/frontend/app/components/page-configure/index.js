@@ -49,14 +49,9 @@ import pcSplitButton from './components/pc-split-button';
 import {errorState} from './transitionHooks/errorState';
 import {default as ActivitiesData} from 'app/core/activities/Activities.data';
 
-import 'rxjs/add/operator/withLatestFrom';
-import 'rxjs/add/operator/skip';
 
 import {Observable} from 'rxjs/Observable';
-
-Observable.prototype.debug = function(l) {
-    return this.do((v) => console.log(l, v), (e) => console.error(l, e), () => console.log(l, 'completed'));
-};
+import {withLatestFrom, tap, filter, skip, scan} from 'rxjs/operators';
 
 import {
     editReducer2,
@@ -123,10 +118,11 @@ export default angular
                 if (e.type === 'DISPATCH' && e.state) ConfigureState.actions$.next(e);
             });
 
-            ConfigureState.actions$
-                .filter((e) => e.type !== 'DISPATCH')
-                .withLatestFrom(ConfigureState.state$.skip(1))
-                .subscribe(([action, state]) => devTools.send(action, state));
+            ConfigureState.actions$.pipe(
+                filter((e) => e.type !== 'DISPATCH'),
+                withLatestFrom(ConfigureState.state$.pipe(skip(1)))
+            )
+            .subscribe(([action, state]) => devTools.send(action, state));
 
             ConfigureState.addReducer(reduxDevtoolsReducer);
         }
@@ -163,18 +159,19 @@ export default angular
             }
         });
 
-        const la = ConfigureState.actions$.scan((acc, action) => [...acc, action], []);
+        const la = ConfigureState.actions$.pipe(scan((acc, action) => [...acc, action], []));
 
-        ConfigureState.actions$
-            .filter((a) => a.type === 'UNDO_ACTIONS')
-            .withLatestFrom(la, ({actions}, actionsWindow, initialState) => {
+        ConfigureState.actions$.pipe(
+            filter((a) => a.type === 'UNDO_ACTIONS'),
+            withLatestFrom(la, ({actions}, actionsWindow, initialState) => {
                 return {
                     type: 'APPLY_ACTIONS_UNDO',
                     state: actionsWindow.filter((a) => !actions.includes(a)).reduce(ConfigureState._combinedReducer, {})
                 };
-            })
-            .do((a) => ConfigureState.dispatchAction(a))
-            .subscribe();
+            }),
+            tap((a) => ConfigureState.dispatchAction(a))
+        )
+        .subscribe();
         ConfigEffects.connect();
     }])
     .component('pageConfigure', component)

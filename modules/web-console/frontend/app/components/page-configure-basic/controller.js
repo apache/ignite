@@ -16,7 +16,9 @@
  */
 
 import {Observable} from 'rxjs/Observable';
-import 'rxjs/add/operator/map';
+import {forkJoin} from 'rxjs/observable/forkJoin';
+import {merge} from 'rxjs/observable/merge';
+import {map, tap, pluck, take, filter, distinctUntilChanged, switchMap, publishReplay, refCount} from 'rxjs/operators';
 import cloneDeep from 'lodash/cloneDeep';
 import get from 'lodash/get';
 import naturalCompare from 'natural-compare-lite';
@@ -88,10 +90,13 @@ export default class PageConfigureBasicController {
 
         $transition$.onSuccess({}, () => this.reset());
 
-        return Observable.forkJoin(
-            this.ConfigureState.state$.pluck('edit', 'changes').take(1),
-            this.clusterID$.switchMap((id) => this.ConfigureState.state$.let(this.ConfigSelectors.selectClusterShortCaches(id))).take(1),
-            this.shortCaches$.take(1)
+        return forkJoin(
+            this.ConfigureState.state$.pipe(pluck('edit', 'changes'), take(1)),
+            this.clusterID$.pipe(
+                switchMap((id) => this.ConfigureState.state$.pipe(this.ConfigSelectors.selectClusterShortCaches(id))),
+                take(1)
+            ),
+            this.shortCaches$.pipe(take(1))
         ).toPromise()
         .then(([changes, originalShortCaches, currentCaches]) => {
             return this.ConfigChangesGuard.guard(
@@ -110,23 +115,38 @@ export default class PageConfigureBasicController {
     $onInit() {
         this.onBeforeTransition = this.$uiRouter.transitionService.onBefore({}, (t) => this._uiCanExit(t));
 
-        this.memorySizeInputVisible$ = this.IgniteVersion.currentSbj
-            .map((version) => this.IgniteVersion.since(version.ignite, '2.0.0'));
+        this.memorySizeInputVisible$ = this.IgniteVersion.currentSbj.pipe(
+            map((version) => this.IgniteVersion.since(version.ignite, '2.0.0'))
+        );
 
-        const clusterID$ = this.$uiRouter.globals.params$.take(1).pluck('clusterID').filter((v) => v).take(1);
+        const clusterID$ = this.$uiRouter.globals.params$.pipe(
+            take(1),
+            pluck('clusterID'),
+            filter((v) => v),
+            take(1)
+        );
         this.clusterID$ = clusterID$;
 
-        this.isNew$ = this.$uiRouter.globals.params$.pluck('clusterID').map((id) => id === 'new');
-        this.shortCaches$ = this.ConfigureState.state$.let(this.ConfigSelectors.selectCurrentShortCaches);
-        this.shortClusters$ = this.ConfigureState.state$.let(this.ConfigSelectors.selectShortClustersValue());
-        this.originalCluster$ = clusterID$.distinctUntilChanged().switchMap((id) => {
-            return this.ConfigureState.state$.let(this.ConfigSelectors.selectClusterToEdit(id));
-        }).distinctUntilChanged().publishReplay(1).refCount();
+        this.isNew$ = this.$uiRouter.globals.params$.pipe(pluck('clusterID'), map((id) => id === 'new'));
+        this.shortCaches$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCurrentShortCaches);
+        this.shortClusters$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectShortClustersValue());
+        this.originalCluster$ = clusterID$.pipe(
+            distinctUntilChanged(),
+            switchMap((id) => {
+                return this.ConfigureState.state$.pipe(this.ConfigSelectors.selectClusterToEdit(id));
+            }),
+            distinctUntilChanged(),
+            publishReplay(1),
+            refCount()
+        );
 
-        this.subscription = Observable.merge(
-            this.shortCaches$.map((caches) => caches.sort((a, b) => naturalCompare(a.name, b.name))).do((v) => this.shortCaches = v),
-            this.shortClusters$.do((v) => this.shortClusters = v),
-            this.originalCluster$.do((v) => {
+        this.subscription = merge(
+            this.shortCaches$.pipe(
+                map((caches) => caches.sort((a, b) => naturalCompare(a.name, b.name))),
+                tap((v) => this.shortCaches = v)
+            ),
+            this.shortClusters$.pipe(tap((v) => this.shortClusters = v)),
+            this.originalCluster$.pipe(tap((v) => {
                 this.originalCluster = v;
                 // clonedCluster should be set only when particular cluster edit starts.
                 // 
@@ -136,7 +156,7 @@ export default class PageConfigureBasicController {
                 // made by user and we don't want that. Advanced configuration forms do the same too.
                 if (get(v, '_id') !== get(this.clonedCluster, '_id')) this.clonedCluster = cloneDeep(v);
                 this.defaultMemoryPolicy = this.Clusters.getDefaultClusterMemoryPolicy(this.clonedCluster);
-            })
+            }))
         ).subscribe();
 
         this.formActionsMenu = [

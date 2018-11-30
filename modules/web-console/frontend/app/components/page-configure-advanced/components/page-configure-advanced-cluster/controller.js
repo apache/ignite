@@ -18,7 +18,7 @@
 import {default as ConfigSelectors} from 'app/components/page-configure/store/selectors';
 import {default as ConfigureState} from 'app/components/page-configure/services/ConfigureState';
 import {advancedSaveCluster} from 'app/components/page-configure/store/actionCreators';
-import 'rxjs/add/operator/publishReplay';
+import {take, pluck, switchMap, map, filter, distinctUntilChanged, publishReplay, refCount} from 'rxjs/operators';
 
 // Controller for Clusters screen.
 export default class PageConfigureAdvancedCluster {
@@ -36,12 +36,23 @@ export default class PageConfigureAdvancedCluster {
     }
 
     $onInit() {
-        const clusterID$ = this.$uiRouter.globals.params$.take(1).pluck('clusterID').filter((v) => v).take(1);
-        this.shortCaches$ = this.ConfigureState.state$.let(this.ConfigSelectors.selectCurrentShortCaches);
-        this.originalCluster$ = clusterID$.distinctUntilChanged().switchMap((id) => {
-            return this.ConfigureState.state$.let(this.ConfigSelectors.selectClusterToEdit(id));
-        }).distinctUntilChanged().publishReplay(1).refCount();
-        this.isNew$ = this.$uiRouter.globals.params$.pluck('clusterID').map((id) => id === 'new');
+        const clusterID$ = this.$uiRouter.globals.params$.pipe(
+            take(1),
+            pluck('clusterID'),
+            filter((v) => v),
+            take(1)
+        );
+        this.shortCaches$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCurrentShortCaches);
+        this.originalCluster$ = clusterID$.pipe(
+            distinctUntilChanged(),
+            switchMap((id) => {
+                return this.ConfigureState.state$.pipe(this.ConfigSelectors.selectClusterToEdit(id));
+            }),
+            distinctUntilChanged(),
+            publishReplay(1),
+            refCount()
+        );
+        this.isNew$ = this.$uiRouter.globals.params$.pipe(pluck('clusterID'), map((id) => id === 'new'));
         this.isBlocked$ = clusterID$;
     }
 

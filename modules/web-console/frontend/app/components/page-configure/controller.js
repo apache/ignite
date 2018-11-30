@@ -17,9 +17,8 @@
 
 import get from 'lodash/get';
 import {Observable} from 'rxjs/Observable';
-import 'rxjs/add/observable/merge';
 import {combineLatest} from 'rxjs/observable/combineLatest';
-import 'rxjs/add/operator/distinctUntilChanged';
+import {distinctUntilChanged, pluck, switchMap, map} from 'rxjs/operators';
 import {default as ConfigureState} from './services/ConfigureState';
 import {default as ConfigSelectors} from './store/selectors';
 
@@ -39,9 +38,9 @@ export default class PageConfigureController {
 
     $onInit() {
         /** @type {Observable<string>} */
-        this.clusterID$ = this.$uiRouter.globals.params$.pluck('clusterID');
-        const cluster$ = this.clusterID$.switchMap((id) => this.ConfigureState.state$.let(this.ConfigSelectors.selectCluster(id)));
-        const isNew$ = this.clusterID$.map((v) => v === 'new');
+        this.clusterID$ = this.$uiRouter.globals.params$.pipe(pluck('clusterID'));
+        const cluster$ = this.clusterID$.pipe(switchMap((id) => this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCluster(id))));
+        const isNew$ = this.clusterID$.pipe(map((v) => v === 'new'));
         this.clusterName$ = combineLatest(cluster$, isNew$, (cluster, isNew) => {
             return `${isNew ? 'Create' : 'Edit'} cluster configuration ${isNew ? '' : `‘${get(cluster, 'name')}’`}`;
         });

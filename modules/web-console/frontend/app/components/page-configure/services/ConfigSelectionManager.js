@@ -18,9 +18,7 @@
 import {Observable} from 'rxjs/Observable';
 import {merge} from 'rxjs/observable/merge';
 import {RejectType} from '@uirouter/angularjs';
-import 'rxjs/add/operator/share';
-import 'rxjs/add/operator/mapTo';
-import 'rxjs/add/operator/startWith';
+import {share, distinctUntilChanged, startWith, filter, map, pluck, withLatestFrom, mapTo} from 'rxjs/operators';
 import isEqual from 'lodash/isEqual';
 
 /**
@@ -35,57 +33,63 @@ export default function configSelectionManager($transitions) {
         // but decides to stay after screen asks for leave confirmation.
         const abortedTransitions$ = Observable.create((observer) => {
             return $transitions.onError({}, (t) => observer.next(t));
-        })
-        .filter((t) => t.error().type === RejectType.ABORTED);
+        }).pipe(filter((t) => t.error().type === RejectType.ABORTED));
 
-        const firstItemID$ = visibleRows$.withLatestFrom(itemID$, loadedItems$)
-            .filter(([rows, id, items]) => !id && rows && rows.length === items.length)
-            .pluck('0', '0', 'entity', '_id');
+        const firstItemID$ = visibleRows$.pipe(
+            withLatestFrom(itemID$, loadedItems$),
+            filter(([rows, id, items]) => !id && rows && rows.length === items.length),
+            pluck('0', '0', 'entity', '_id')
+        );
 
-        const selectedItemRowsIDs$ = selectedItemRows$.map((rows) => rows.map((r) => r._id)).share();
-        const singleSelectionEdit$ = selectedItemRows$.filter((r) => r && r.length === 1).pluck('0', '_id');
-        const selectedMultipleOrNone$ = selectedItemRows$.filter((r) => r.length > 1 || r.length === 0);
-        const loadedItemIDs$ = loadedItems$.map((rows) => new Set(rows.map((r) => r._id))).share();
-        const currentItemWasRemoved$ = loadedItemIDs$
-            .withLatestFrom(
-                itemID$.filter((v) => v && v !== 'new'),
+        const selectedItemRowsIDs$ = selectedItemRows$.pipe(map((rows) => rows.map((r) => r._id)), share());
+        const singleSelectionEdit$ = selectedItemRows$.pipe(filter((r) => r && r.length === 1), pluck('0', '_id'));
+        const selectedMultipleOrNone$ = selectedItemRows$.pipe(filter((r) => r.length > 1 || r.length === 0));
+        const loadedItemIDs$ = loadedItems$.pipe(map((rows) => new Set(rows.map((r) => r._id))), share());
+        const currentItemWasRemoved$ = loadedItemIDs$.pipe(
+            withLatestFrom(
+                itemID$.pipe(filter((v) => v && v !== 'new')),
                 /**
                  * Without startWith currentItemWasRemoved$ won't emit in the following scenario:
                  * 1. User opens items page (no item id in location).
                  * 2. Selection manager commands to edit first item.
                  * 3. User removes said item.
                  */
-                selectedItemRowsIDs$.startWith([])
-            )
-            .filter(([existingIDs, itemID, selectedIDs]) => !existingIDs.has(itemID))
-            .map(([existingIDs, itemID, selectedIDs]) => selectedIDs.filter((id) => id !== itemID))
-            .share();
+                selectedItemRowsIDs$.pipe(startWith([]))
+            ),
+            filter(([existingIDs, itemID, selectedIDs]) => !existingIDs.has(itemID)),
+            map(([existingIDs, itemID, selectedIDs]) => selectedIDs.filter((id) => id !== itemID)),
+            share()
+        );
 
         // Edit first loaded item or when there's only one item selected
-        const editGoes$ = merge(firstItemID$, singleSelectionEdit$)
+        const editGoes$ = merge(firstItemID$, singleSelectionEdit$).pipe(
             // Don't go to non-existing items.
             // Happens when user naviagtes to older history and some items were already removed.
-            .withLatestFrom(loadedItemIDs$).filter(([id, loaded]) => id && loaded.has(id)).pluck('0');
+            withLatestFrom(loadedItemIDs$),
+            filter(([id, loaded]) => id && loaded.has(id)),
+            pluck('0')
+        );
         // Stop edit when multiple or none items are selected or when current item was removed
         const editLeaves$ = merge(
-            selectedMultipleOrNone$.mapTo({}),
-            currentItemWasRemoved$.mapTo({location: 'replace', custom: {justIDUpdate: true}})
-        ).share();
+            selectedMultipleOrNone$.pipe(mapTo({})),
+            currentItemWasRemoved$.pipe(mapTo({location: 'replace', custom: {justIDUpdate: true}}))
+        ).pipe(share());
 
         const selectedItemIDs$ = merge(
             // Select nothing when creating an item or select current item
-            itemID$.filter((id) => id).map((id) => id === 'new' ? [] : [id]),
+            itemID$.pipe(filter((id) => id), map((id) => id === 'new' ? [] : [id])),
             // Restore previous item selection when transition gets aborted
-            abortedTransitions$.withLatestFrom(itemID$, (_, id) => [id]),
+            abortedTransitions$.pipe(withLatestFrom(itemID$, (_, id) => [id])),
             // Select all incoming selected rows
             selectedItemRowsIDs$
-        )
-        // If nothing's selected and there are zero rows, ui-grid will behave as if all rows are selected
-        .startWith([])
-        // Some scenarios cause same item to be selected multiple times in a row,
-        // so it makes sense to filter out duplicate entries
-        .distinctUntilChanged(isEqual)
-        .share();
+        ).pipe(
+            // If nothing's selected and there are zero rows, ui-grid will behave as if all rows are selected
+            startWith([]),
+            // Some scenarios cause same item to be selected multiple times in a row,
+            // so it makes sense to filter out duplicate entries
+            distinctUntilChanged(isEqual),
+            share()
+        );
 
         return {selectedItemIDs$, editGoes$, editLeaves$};
     };

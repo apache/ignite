@@ -17,10 +17,10 @@
 
 import get from 'lodash/get';
 import {Observable} from 'rxjs/Observable';
-import 'rxjs/add/observable/fromPromise';
 import ObjectID from 'bson-objectid/objectid';
 import {uniqueName} from 'app/utils/uniqueName';
 import omit from 'lodash/fp/omit';
+import {from} from 'rxjs/observable/from';
 
 const uniqueNameValidator = (defaultName = '') => (a, items = []) => {
     return a && !items.some((b) => b._id !== a._id && (a.name || defaultName) === (b.name || defaultName));
@@ -117,7 +117,7 @@ export default class Clusters {
     }
 
     getClustersOverview$() {
-        return Observable.fromPromise(this.getClustersOverview());
+        return from(this.getClustersOverview());
     }
 
     saveCluster(cluster) {
@@ -125,7 +125,7 @@ export default class Clusters {
     }
 
     saveCluster$(cluster) {
-        return Observable.fromPromise(this.saveCluster(cluster));
+        return from(this.saveCluster(cluster));
     }
 
     removeCluster(cluster) {
@@ -133,7 +133,7 @@ export default class Clusters {
     }
 
     removeCluster$(cluster) {
-        return Observable.fromPromise(this.removeCluster(cluster));
+        return from(this.removeCluster(cluster));
     }
 
     saveBasic(changedItems) {

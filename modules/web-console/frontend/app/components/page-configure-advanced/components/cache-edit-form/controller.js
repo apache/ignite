@@ -17,6 +17,7 @@
 
 import cloneDeep from 'lodash/cloneDeep';
 import get from 'lodash/get';
+import {tap} from 'rxjs/operators';
 
 export default class CacheEditFormController {
     /** @type {ig.menu<string>} */
@@ -61,10 +62,11 @@ export default class CacheEditFormController {
 
         };
 
-        this.subscription = this.IgniteVersion.currentSbj
-            .do(rebuildDropdowns)
-            .do(filterModel)
-            .subscribe();
+        this.subscription = this.IgniteVersion.currentSbj.pipe(
+            tap(rebuildDropdowns),
+            tap(filterModel)
+        )
+        .subscribe();
 
         // TODO: Do we really need this?
         this.$scope.ui = this.IgniteFormUtils.formUI();

@@ -21,18 +21,22 @@ import pageConfigureAdvancedCachesComponent from '../page-configure-advanced/com
 import pageConfigureAdvancedIGFSComponent from '../page-configure-advanced/components/page-configure-advanced-igfs/component';
 
 import {Observable} from 'rxjs/Observable';
+import {switchMap, take, map} from 'rxjs/operators';
+import {from} from 'rxjs/observable/from';
+import {combineLatest} from 'rxjs/observable/combineLatest';
 
 const idRegex = `new|[a-z0-9]+`;
 
 const shortCachesResolve = ['ConfigSelectors', 'ConfigureState', 'ConfigEffects', '$transition$', function(ConfigSelectors, ConfigureState, {etp}, $transition$) {
     if ($transition$.params().clusterID === 'new')
         return Promise.resolve();
-    return Observable.fromPromise($transition$.injector().getAsync('_cluster'))
-        .switchMap(() => ConfigureState.state$.let(ConfigSelectors.selectCluster($transition$.params().clusterID)).take(1))
-        .switchMap((cluster) => {
+    return from($transition$.injector().getAsync('_cluster')).pipe(
+        switchMap(() => ConfigureState.state$.pipe(ConfigSelectors.selectCluster($transition$.params().clusterID), take(1))),
+        switchMap((cluster) => {
             return etp('LOAD_SHORT_CACHES', {ids: cluster.caches, clusterID: cluster._id});
         })
-        .toPromise();
+    )
+    .toPromise();
 }];
 
 function registerStates($stateProvider) {
@@ -77,17 +81,19 @@ function registerStates($stateProvider) {
         redirectTo: ($transition$) => {
             const [ConfigureState, ConfigSelectors] = ['ConfigureState', 'ConfigSelectors'].map((t) => $transition$.injector().get(t));
             const waitFor = ['_cluster', '_shortClusters'].map((t) => $transition$.injector().getAsync(t));
-            return Observable.fromPromise(Promise.all(waitFor)).switchMap(() => {
-                return Observable.combineLatest(
-                    ConfigureState.state$.let(ConfigSelectors.selectCluster($transition$.params().clusterID)).take(1),
-                    ConfigureState.state$.let(ConfigSelectors.selectShortClusters()).take(1)
-                );
-            })
-            .map(([cluster = {caches: []}, clusters]) => {
-                return (clusters.value.size > 10 || cluster.caches.length > 5)
-                    ? 'base.configuration.edit.advanced'
-                    : 'base.configuration.edit.basic';
-            })
+            return from(Promise.all(waitFor)).pipe(
+                switchMap(() => {
+                    return combineLatest(
+                        ConfigureState.state$.pipe(ConfigSelectors.selectCluster($transition$.params().clusterID), take(1)),
+                        ConfigureState.state$.pipe(ConfigSelectors.selectShortClusters(), take(1))
+                    );
+                }),
+                map(([cluster = {caches: []}, clusters]) => {
+                    return (clusters.value.size > 10 || cluster.caches.length > 5)
+                        ? 'base.configuration.edit.advanced'
+                        : 'base.configuration.edit.basic';
+                })
+            )
             .toPromise();
         },
         failState: 'signin',
@@ -138,16 +144,17 @@ function registerStates($stateProvider) {
                 if ($transition$.params().clusterID === 'new')
                     return Promise.resolve();
 
-                return Observable.fromPromise($transition$.injector().getAsync('_cluster'))
-                    .switchMap(() => ConfigureState.state$.let(ConfigSelectors.selectCluster($transition$.params().clusterID)).take(1))
-                    .map((cluster) => {
+                return from($transition$.injector().getAsync('_cluster')).pipe(
+                    switchMap(() => ConfigureState.state$.pipe(ConfigSelectors.selectCluster($transition$.params().clusterID), take(1))),
+                    map((cluster) => {
                         return Promise.all([
                             etp('LOAD_SHORT_CACHES', {ids: cluster.caches, clusterID: cluster._id}),
                             etp('LOAD_SHORT_MODELS', {ids: cluster.models, clusterID: cluster._id}),
                             etp('LOAD_SHORT_IGFSS', {ids: cluster.igfss, clusterID: cluster._id})
                         ]);
                     })
-                    .toPromise();
+                )
+                .toPromise();
             }]
         },
         resolvePolicy: {
@@ -188,15 +195,15 @@ function registerStates($stateProvider) {
                 if ($transition$.params().clusterID === 'new')
                     return Promise.resolve();
 
-                return Observable.fromPromise($transition$.injector().getAsync('_cluster'))
-                    .switchMap(() => ConfigureState.state$.let(ConfigSelectors.selectCluster($transition$.params().clusterID)).take(1))
-                    .map((cluster) => {
+                return from($transition$.injector().getAsync('_cluster')).pipe(
+                    switchMap(() => ConfigureState.state$.pipe(ConfigSelectors.selectCluster($transition$.params().clusterID), take(1))),
+                    map((cluster) => {
                         return Promise.all([
                             etp('LOAD_SHORT_CACHES', {ids: cluster.caches, clusterID: cluster._id}),
                             etp('LOAD_SHORT_MODELS', {ids: cluster.models, clusterID: cluster._id})
                         ]);
                     })
-                    .toPromise();
+                ).toPromise();
             }]
         },
         resolvePolicy: {
@@ -235,14 +242,14 @@ function registerStates($stateProvider) {
                 if ($transition$.params().clusterID === 'new')
                     return Promise.resolve();
 
-                return Observable.fromPromise($transition$.injector().getAsync('_cluster'))
-                    .switchMap(() => ConfigureState.state$.let(ConfigSelectors.selectCluster($transition$.params().clusterID)).take(1))
-                    .map((cluster) => {
+                return from($transition$.injector().getAsync('_cluster')).pipe(
+                    switchMap(() => ConfigureState.state$.pipe(ConfigSelectors.selectCluster($transition$.params().clusterID), take(1))),
+                    map((cluster) => {
                         return Promise.all([
                             etp('LOAD_SHORT_IGFSS', {ids: cluster.igfss, clusterID: cluster._id})
                         ]);
                     })
-                    .toPromise();
+                ).toPromise();
             }]
         },
         resolvePolicy: {

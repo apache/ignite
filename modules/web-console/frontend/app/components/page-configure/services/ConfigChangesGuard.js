@@ -20,6 +20,7 @@ import {Confirm} from 'app/services/Confirm.service';
 import {DiffPatcher} from 'jsondiffpatch';
 import {html} from 'jsondiffpatch/public/build/jsondiffpatch-formatters.js';
 import 'jsondiffpatch/public/formatters-styles/html.css';
+import {switchMap, catchError} from 'rxjs/operators';
 
 export class IgniteObjectDiffer {
     constructor() {
@@ -92,9 +93,9 @@ export default class ConfigChangesGuard {
         if (!a && !b)
             return Promise.resolve(true);
 
-        return of(this._hasChanges(a, b))
-            .switchMap((changes) => changes ? this._confirm(changes).then(() => true) : of(true))
-            .catch(() => of(false))
-            .toPromise();
+        return of(this._hasChanges(a, b)).pipe(
+            switchMap((changes) => changes ? this._confirm(changes).then(() => true) : of(true)),
+            catchError(() => of(false))
+        ).toPromise();
     }
 }

@@ -23,6 +23,7 @@ import {removeClusterItems, advancedSaveCache} from 'app/components/page-configu
 import ConfigureState from 'app/components/page-configure/services/ConfigureState';
 import ConfigSelectors from 'app/components/page-configure/store/selectors';
 import Caches from 'app/services/Caches';
+import {tap, map, refCount, pluck, publishReplay, switchMap, distinctUntilChanged} from 'rxjs/operators';
 
 // Controller for Caches screen.
 export default class Controller {
@@ -103,16 +104,23 @@ export default class Controller {
     }
 
     $onInit() {
-        const cacheID$ = this.$uiRouter.globals.params$.pluck('cacheID').publishReplay(1).refCount();
+        const cacheID$ = this.$uiRouter.globals.params$.pipe(
+            pluck('cacheID'),
+            publishReplay(1),
+            refCount()
+        );
 
-        this.shortCaches$ = this.ConfigureState.state$.let(this.ConfigSelectors.selectCurrentShortCaches);
-        this.shortModels$ = this.ConfigureState.state$.let(this.ConfigSelectors.selectCurrentShortModels);
-        this.shortIGFSs$ = this.ConfigureState.state$.let(this.ConfigSelectors.selectCurrentShortIGFSs);
-        this.originalCache$ = cacheID$.distinctUntilChanged().switchMap((id) => {
-            return this.ConfigureState.state$.let(this.ConfigSelectors.selectCacheToEdit(id));
-        });
+        this.shortCaches$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCurrentShortCaches);
+        this.shortModels$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCurrentShortModels);
+        this.shortIGFSs$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCurrentShortIGFSs);
+        this.originalCache$ = cacheID$.pipe(
+            distinctUntilChanged(),
+            switchMap((id) => {
+                return this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCacheToEdit(id));
+            })
+        );
 
-        this.isNew$ = cacheID$.map((id) => id === 'new');
+        this.isNew$ = cacheID$.pipe(map((id) => id === 'new'));
         this.itemEditTitle$ = combineLatest(this.isNew$, this.originalCache$, (isNew, cache) => {
             return `${isNew ? 'Create' : 'Edit'} cache ${!isNew && cache.name ? `‘${cache.name}’` : ''}`;
         });
@@ -125,13 +133,13 @@ export default class Controller {
 
         this.subscription = merge(
             this.originalCache$,
-            this.selectionManager.editGoes$.do((id) => this.edit(id)),
-            this.selectionManager.editLeaves$.do((options) => this.$state.go('base.configuration.edit.advanced.caches', null, options))
+            this.selectionManager.editGoes$.pipe(tap((id) => this.edit(id))),
+            this.selectionManager.editLeaves$.pipe(tap((options) => this.$state.go('base.configuration.edit.advanced.caches', null, options)))
         ).subscribe();
 
         this.isBlocked$ = cacheID$;
 
-        this.tableActions$ = this.selectionManager.selectedItemIDs$.map((selectedItems) => [
+        this.tableActions$ = this.selectionManager.selectedItemIDs$.pipe(map((selectedItems) => [
             {
                 action: 'Clone',
                 click: () => this.clone(selectedItems),
@@ -144,7 +152,7 @@ export default class Controller {
                 },
                 available: true
             }
-        ]);
+        ]));
     }
 
     /**

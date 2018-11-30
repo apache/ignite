@@ -19,6 +19,7 @@ import cloneDeep from 'lodash/cloneDeep';
 import get from 'lodash/get';
 import isEqual from 'lodash/isEqual';
 import _ from 'lodash';
+import {tap} from 'rxjs/operators';
 
 export default class ClusterEditFormController {
     /** @type {Array<ig.config.cache.ShortCache>} */
@@ -84,10 +85,11 @@ export default class ClusterEditFormController {
             }
         };
 
-        this.subscription = this.IgniteVersion.currentSbj
-            .do(rebuildDropdowns)
-            .do(() => filterModel(this.clonedCluster))
-            .subscribe();
+        this.subscription = this.IgniteVersion.currentSbj.pipe(
+            tap(rebuildDropdowns),
+            tap(() => filterModel(this.clonedCluster))
+        )
+        .subscribe();
 
         this.supportedJdbcTypes = this.IgniteLegacyUtils.mkOptions(this.IgniteLegacyUtils.SUPPORTED_JDBC_TYPES);
 
