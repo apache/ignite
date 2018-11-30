@@ -198,20 +198,19 @@ public class GridServiceProxy<T> implements Serializable {
                             true).get();
                     }
                 }
-                catch (ClusterTopologyCheckedException e) {
-                    if (log.isDebugEnabled())
-                        log.debug("Service was not found or topology changed (will retry): " + e.getMessage());
-                }
                 catch (RuntimeException | Error e) {
                     throw e;
                 }
                 catch (IgniteCheckedException e) {
                     // Check if ignorable exceptions are in the cause chain.
-                    Throwable ignorableCause = X.cause(e, ClusterTopologyCheckedException.class);
+                    Throwable ignorableCause = X.cause(e, GridServiceNotFoundException.class);
 
-                    if (ignorableCause != null) {
+                    if (ignorableCause == null)
+                        ignorableCause = X.cause(e, ClusterTopologyCheckedException.class);
+
+                    if (ignorableCause != null && !ctx.service().eventDrivenServiceProcessorEnabled()) {
                         if (log.isDebugEnabled())
-                            log.debug("Topology changed (will retry): " + ignorableCause.getMessage());
+                            log.debug("Service was not found or topology changed (will retry): " + ignorableCause.getMessage());
                     }
                     else {
                         // Rethrow original service method exception so that calling user code can handle it correctly.

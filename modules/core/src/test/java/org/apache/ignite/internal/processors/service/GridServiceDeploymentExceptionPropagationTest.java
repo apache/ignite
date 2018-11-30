@@ -26,7 +26,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /** */
 public class GridServiceDeploymentExceptionPropagationTest extends GridCommonAbstractTest {
     /** */
-    @SuppressWarnings("unused")
     public void testExceptionPropagation() throws Exception {
         try (Ignite srv = startGrid("server")) {
 
@@ -39,12 +38,7 @@ public class GridServiceDeploymentExceptionPropagationTest extends GridCommonAbs
                 }
                 catch (ServiceDeploymentException ex) {
                     assertTrue(ex.getSuppressed()[0].getMessage().contains("ServiceImpl init exception"));
-
-                    return; // Exception is what we expect.
                 }
-
-                // Fail explicitly if we've managed to get here though we shouldn't have.
-                fail("https://issues.apache.org/jira/browse/IGNITE-3392");
             }
         }
     }
