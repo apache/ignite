@@ -394,6 +394,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
 
         cfgs.addAll(cacheConfigurations(null, ATOMIC));
         cfgs.addAll(cacheConfigurations(null, TRANSACTIONAL));
+        cfgs.addAll(cacheConfigurations(null, TRANSACTIONAL_SNAPSHOT));
 
         assertEquals(6, cfgs.size());
 

@@ -21,6 +21,7 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
@@ -112,5 +113,50 @@ public class IgniteCacheInvokeReadThroughTest extends IgniteCacheInvokeReadThrou
      */
     public void testInvokeReadThroughTxReplicated() throws Exception {
         invokeReadThrough(cacheConfiguration(REPLICATED, TRANSACTIONAL, 0, false));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeReadThroughMvccTTx0() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8582");
+
+        invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL_SNAPSHOT, 0, false));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeReadThroughMvccTTx1() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8582");
+
+        invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL_SNAPSHOT, 1, false));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeReadThroughMvccTTx2() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8582");
+
+        invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL_SNAPSHOT, 2, false));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeReadThroughMvccTTxNearCache() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8582");
+
+        invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL_SNAPSHOT, 1, true));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeReadThroughMvccTxReplicated() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8582");
+
+        invokeReadThrough(cacheConfiguration(REPLICATED, TRANSACTIONAL_SNAPSHOT, 0, false));
     }
 }

@@ -32,15 +32,12 @@ import org.apache.ignite.internal.processors.cache.CacheOffheapMapEntrySelfTest;
 import org.apache.ignite.internal.processors.cache.CacheReadThroughAtomicRestartSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheReadThroughLocalAtomicRestartSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheReadThroughReplicatedAtomicRestartSelfTest;
-import org.apache.ignite.internal.processors.cache.CacheStopAndDestroySelfTest;
 import org.apache.ignite.internal.processors.cache.CacheStoreUsageMultinodeDynamicStartAtomicTest;
 import org.apache.ignite.internal.processors.cache.CacheStoreUsageMultinodeStaticStartAtomicTest;
 import org.apache.ignite.internal.processors.cache.CacheTxNotAllowReadFromBackupTest;
 import org.apache.ignite.internal.processors.cache.GridCacheMultinodeUpdateAtomicNearEnabledSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheMultinodeUpdateAtomicSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheStoreManagerDeserializationTest;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionMultinodeTest;
-import org.apache.ignite.internal.processors.cache.GridLocalCacheStoreManagerDeserializationTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicCopyOnReadDisabledTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicLocalPeekModesTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicLocalStoreValueTest;
@@ -50,31 +47,25 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicPeekModesTes
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicReplicatedPeekModesTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicStoreValueTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheConfigurationDefaultTemplateTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheConfigurationTemplateTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheContainsKeyAtomicTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheInvokeReadThroughSingleNodeTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheInvokeReadThroughTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheStartTest;
 import org.apache.ignite.internal.processors.cache.IgniteClientCacheInitializationFailTest;
-import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheFilterTest;
-import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartCoordinatorFailoverTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartNoExchangeTimeoutTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartStopConcurrentTest;
-import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheWithConfigStartSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicClientCacheStartSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteExchangeFutureHistoryTest;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCacheTypesTest;
 import org.apache.ignite.internal.processors.cache.IgniteStartCacheInTransactionAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteSystemCacheOnClientTest;
 import org.apache.ignite.internal.processors.cache.MarshallerCacheJobRunNodeRestartTest;
-import org.apache.ignite.internal.processors.cache.distributed.CacheAffinityEarlyTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheDiscoveryDataConcurrentJoinTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheGetFutureHangsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheGroupsPreloadTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheNoValueClassOnServerNodeTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheResultIsNotNullOnPartitionLossTest;
-import org.apache.ignite.internal.processors.cache.distributed.CacheStartOnJoinTest;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheCreatePutMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheCreatePutTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheFailedUpdateResponseTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheReadFromBackupTest;
@@ -115,7 +106,6 @@ public class IgniteCacheMvccTestSuite4 extends TestSuite {
         // Skip classes that already contains Mvcc tests
         ignoredTests.add(GridCacheVersionMultinodeTest.class);
         ignoredTests.add(IgniteCacheCreatePutTest.class);
-        ignoredTests.add(CacheStartOnJoinTest.class);
         ignoredTests.add(IgniteClientCacheInitializationFailTest.class);
         ignoredTests.add(IgniteCacheFailedUpdateResponseTest.class);
         ignoredTests.add(CacheGetEntryPessimisticRepeatableReadSelfTest.class);
@@ -123,7 +113,11 @@ public class IgniteCacheMvccTestSuite4 extends TestSuite {
         ignoredTests.add(CacheOffheapMapEntrySelfTest.class);
         ignoredTests.add(CacheGroupsPreloadTest.class);
         ignoredTests.add(CacheConnectionLeakStoreTxTest.class);
+        ignoredTests.add(IgniteCacheInvokeReadThroughTest.class);
         ignoredTests.add(IgniteCacheInvokeReadThroughSingleNodeTest.class);
+        ignoredTests.add(IgniteDynamicCacheStartSelfTest.class);
+        ignoredTests.add(IgniteDynamicClientCacheStartSelfTest.class);
+        ignoredTests.add(IgniteDynamicCacheStartNoExchangeTimeoutTest.class);
 
         // Optimistic tx tests.
         ignoredTests.add(CacheGetEntryOptimisticReadCommittedSelfTest.class);
@@ -172,18 +166,12 @@ public class IgniteCacheMvccTestSuite4 extends TestSuite {
         ignoredTests.add(CacheVersionedEntryPartitionedAtomicSelfTest.class);
         ignoredTests.add(CacheGetFutureHangsSelfTest.class);
         ignoredTests.add(IgniteCacheContainsKeyAtomicTest.class);
+        ignoredTests.add(CacheVersionedEntryReplicatedAtomicSelfTest.class);
+        ignoredTests.add(CacheResultIsNotNullOnPartitionLossTest.class);
 
         // Other non-tx tests.
-        ignoredTests.add(IgniteDynamicCacheStartSelfTest.class);
-        ignoredTests.add(IgniteDynamicCacheStartCoordinatorFailoverTest.class);
-        ignoredTests.add(IgniteDynamicCacheWithConfigStartSelfTest.class);
         ignoredTests.add(IgniteDynamicCacheStartStopConcurrentTest.class);
-        ignoredTests.add(IgniteCacheConfigurationTemplateTest.class);
-        ignoredTests.add(IgniteDynamicClientCacheStartSelfTest.class);
         ignoredTests.add(IgniteCacheConfigurationDefaultTemplateTest.class);
-        ignoredTests.add(IgniteDynamicCacheStartNoExchangeTimeoutTest.class);
-        ignoredTests.add(CacheAffinityEarlyTest.class);
-        ignoredTests.add(IgniteCacheCreatePutMultiNodeSelfTest.class);
         ignoredTests.add(IgniteCacheStartTest.class);
         ignoredTests.add(CacheDiscoveryDataConcurrentJoinTest.class);
         ignoredTests.add(IgniteCacheJdbcBlobStoreNodeRestartTest.class);
@@ -191,13 +179,7 @@ public class IgniteCacheMvccTestSuite4 extends TestSuite {
         ignoredTests.add(IgniteExchangeFutureHistoryTest.class);
         ignoredTests.add(CacheNoValueClassOnServerNodeTest.class);
         ignoredTests.add(IgniteSystemCacheOnClientTest.class);
-        ignoredTests.add(CacheStopAndDestroySelfTest.class);
-        ignoredTests.add(GridCacheStoreManagerDeserializationTest.class);
-        ignoredTests.add(GridLocalCacheStoreManagerDeserializationTest.class);
-        ignoredTests.add(CacheVersionedEntryReplicatedAtomicSelfTest.class);
-        ignoredTests.add(IgniteDynamicCacheFilterTest.class);
         ignoredTests.add(MarshallerCacheJobRunNodeRestartTest.class);
-        ignoredTests.add(CacheResultIsNotNullOnPartitionLossTest.class);
 
         // Skip classes which Mvcc implementations are added in this method below.
         // TODO IGNITE-10175: refactor these tests (use assume) to support both mvcc and non-mvcc modes after moving to JUnit4/5.

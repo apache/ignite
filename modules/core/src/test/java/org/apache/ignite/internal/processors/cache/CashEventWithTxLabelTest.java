@@ -106,6 +106,9 @@ public class CashEventWithTxLabelTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10270");
+
         super.beforeTestsStarted();
 
         client = false;
