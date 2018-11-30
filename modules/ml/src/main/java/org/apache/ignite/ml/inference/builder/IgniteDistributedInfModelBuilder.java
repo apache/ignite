@@ -176,17 +176,18 @@ public class IgniteDistributedInfModelBuilder implements AsyncInfModelBuilder {
             if (!running.get())
                 throw new IllegalStateException("Inference model is not running");
 
-            reqQueue.put(input);
+            CompletableFuture<O> fut = new CompletableFuture<>();
 
             try {
-                CompletableFuture<O> fut = new CompletableFuture<>();
                 futures.put(fut);
-                return fut;
             }
             catch (InterruptedException e) {
                 close(); // In case of exception in the above code the model state becomes invalid and model is closed.
                 throw new RuntimeException(e);
             }
+
+            reqQueue.put(input);
+            return fut;
         }
 
         /**
