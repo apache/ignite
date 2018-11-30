@@ -91,13 +91,13 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_VALIDATE_CACHE_REQUESTS;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
@@ -115,10 +115,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     implements GridCacheVersionedFuture<GridNearTxPrepareResponse>, IgniteDiagnosticAware {
     /** */
     private static final long serialVersionUID = 0L;
-
-    //TODO: write proper version for value
-    /** */
-    private static final IgniteProductVersion VALIDATE_CACHES_SINCE = IgniteProductVersion.fromString("2.7.0");
 
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
@@ -1103,13 +1099,17 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     /**
      * Returns {@code true} if cache validation needed.
      *
-     * @param node Originatiing node.
+     * @param node Originating node.
      * @return {@code True} if cache should be validated, {@code false} - otherwise.
      */
     private boolean needCacheValidation(ClusterNode node) {
-        IgniteProductVersion ver = node.version();
+        if (node == null) {
+            // The originating (aka near) node has left the topology
+            // and therefore the cache validation doesn't make sense.
+            return false;
+        }
 
-        return ver.compareToIgnoreTimestamp(VALIDATE_CACHES_SINCE) >= 0;
+        return Boolean.TRUE.equals(node.attribute(ATTR_VALIDATE_CACHE_REQUESTS));
     }
 
     /**
