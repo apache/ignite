@@ -19,14 +19,13 @@ package org.apache.ignite.internal.processors.service;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
-
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -74,9 +73,9 @@ public class ServicePredicateAccessCacheTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPredicateAccessCache() throws Exception {
-        final Ignite ignite0 = startGrid(0);
+        final IgniteEx ignite0 = startGrid(0);
 
-        CacheConfiguration<String, String> cacheCfg  = new CacheConfiguration<>();
+        CacheConfiguration<String, String> cacheCfg = new CacheConfiguration<>();
 
         cacheCfg.setName("testCache");
         cacheCfg.setAtomicityMode(ATOMIC);
@@ -85,11 +84,12 @@ public class ServicePredicateAccessCacheTest extends GridCommonAbstractTest {
 
         IgniteCache<String, String> cache = ignite0.getOrCreateCache(cacheCfg);
 
-        cache.put(ignite0.cluster().localNode().id().toString(), "val");
+        if (ignite0.context().service().eventDrivenServiceProcessorEnabled())
+            cache.put(ignite0.cluster().localNode().id().toString(), "val");
 
         latch = new CountDownLatch(1);
 
-        final ClusterGroup grp = ignite0.cluster().forPredicate((IgnitePredicate<ClusterNode>) node -> {
+        final ClusterGroup grp = ignite0.cluster().forPredicate((IgnitePredicate<ClusterNode>)node -> {
             System.out.println("Predicated started [thread=" + Thread.currentThread().getName() + ']');
 
             latch.countDown();

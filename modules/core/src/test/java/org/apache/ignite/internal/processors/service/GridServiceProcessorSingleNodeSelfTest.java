@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.service;
 
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.IgniteEx;
 
 /**
  * Single node services test.
@@ -35,11 +35,18 @@ public class GridServiceProcessorSingleNodeSelfTest extends GridServiceProcessor
     public void testNodeSingletonNotDeployedProxy() throws Exception {
         String name = "testNodeSingletonNotDeployedProxy";
 
-        Ignite ignite = randomGrid();
+        IgniteEx ignite = randomGrid();
 
         try {
             // Deploy only on remote nodes.
             ignite.services(ignite.cluster().forRemotes()).deployNodeSingleton(name, new CounterServiceImpl());
+
+            assertTrue("Exception was expected in this mode.", !ignite.context().service().eventDrivenServiceProcessorEnabled());
+
+            info("Deployed service: " + name);
+
+            // Get local proxy.
+            CounterService svc = ignite.services().serviceProxy(name, CounterService.class, false);
 
             fail("Should never reach here.");
         }

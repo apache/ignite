@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.service;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.services.ServiceDeploymentException;
@@ -27,7 +28,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public class GridServiceDeploymentExceptionPropagationTest extends GridCommonAbstractTest {
     /** */
     public void testExceptionPropagation() throws Exception {
-        try (Ignite srv = startGrid("server")) {
+        try (IgniteEx srv = startGrid("server")) {
+            
+            if (!srv.context().service().eventDrivenServiceProcessorEnabled())
+                return; // Skip for this mode
 
             try (Ignite client = startGrid("client", getConfiguration("client").setClientMode(true))) {
 
