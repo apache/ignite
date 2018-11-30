@@ -2174,7 +2174,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                     if (e instanceof Error)
                         throw (Error) e;
 
-                    U.error(log, "Vacuum error.", e);
+                    if (log.isDebugEnabled())
+                        U.warn(log, "Failed to perform vacuum.", e);
                 }
 
                 long delay = nextScheduledTime - U.currentTimeMillis();
@@ -2404,8 +2405,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             Object rest, GridCacheContext cctx, VacuumMetrics metrics) throws IgniteCheckedException {
             assert key != null && cctx != null && (!F.isEmpty(cleanupRows) || rest != null);
 
-            if (!cctx.gate().enterIfNotStopped())
-                return; // Skip entries belonged to stopped cache.
+            cctx.gate().enter();
 
             try {
                 long cleanupStartNanoTime = System.nanoTime();
