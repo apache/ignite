@@ -34,8 +34,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -3309,13 +3307,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /**
      * Checks, that cache interceptor should be skipped.
      * <p>
-     * In current cache interceptor implementation, if changes were got by DR, the following methods will be invoked:
-     * {@link CacheInterceptor#onBeforePut(Cache.Entry, Object)}, {@link CacheInterceptor#onAfterPut(Cache.Entry)},
-     * {@link CacheInterceptor#onBeforeRemove(Cache.Entry)} and {@link CacheInterceptor#onAfterRemove(Cache.Entry)}, but
-     * method {@link CacheInterceptor#onGet(Object, Object)} will not be invoked. This implementation could corrupt
-     * data. For example, cache interceptor wrap data on update/remove and unwrap data back on get from cache. For avoid
-     * this scenario and made changes by CacheInterceptor idempotent the method {@link
-     * IgniteSystemProperties#IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT} should be set {@code true}.
+     * It is expects by default behavior that mentioned Interceptor methods will be called, but onGet(). This can even
+     * make DR-update flow broken in case of non-idempotent Interceptor and force users to call onGet manually as the
+     * only workaround. Also, user may want to skip Interceptor to avoid redundant entry transformation for DR updates
+     * and exchange with internal data b/w data centres which is a normal case.
      *
      * @param explicitVer - Explicit version (if any).
      * @return {@code true} if cache interceptor should be skipped and {@code false} otherwise.
@@ -5937,7 +5932,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         private final Long updateCntr;
 
         /** */
-        private final boolean disableTriggeringCacheInterceptorOnConflict;
+        private final boolean skipInterceptorOnConflict;
 
         /** */
         private GridCacheUpdateAtomicResult updateRes;
@@ -5978,7 +5973,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             boolean conflictResolve,
             boolean intercept,
             @Nullable Long updateCntr,
-            boolean disableTriggeringCacheInterceptorOnConflict) {
+            boolean skipInterceptorOnConflict) {
             assert op == UPDATE || op == DELETE || op == TRANSFORM : op;
 
             this.entry = entry;
@@ -6000,7 +5995,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             this.conflictResolve = conflictResolve;
             this.intercept = intercept;
             this.updateCntr = updateCntr;
-            this.disableTriggeringCacheInterceptorOnConflict = disableTriggeringCacheInterceptorOnConflict;
+            this.skipInterceptorOnConflict = skipInterceptorOnConflict;
 
             switch (op) {
                 case UPDATE:
@@ -6378,7 +6373,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 newSysExpireTime = newExpireTime = conflictCtx.expireTime();
             }
 
-            if (intercept && (conflictVer == null || !disableTriggeringCacheInterceptorOnConflict)) {
+            if (intercept && (conflictVer == null || !skipInterceptorOnConflict)) {
                 Object updated0 = cctx.unwrapBinaryIfNeeded(updated, keepBinary, false);
 
                 CacheLazyEntry<Object, Object> interceptEntry =
@@ -6486,7 +6481,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             IgniteBiTuple<Boolean, Object> interceptRes = null;
 
-            if (intercept && (conflictVer == null || !disableTriggeringCacheInterceptorOnConflict)) {
+            if (intercept && (conflictVer == null || !skipInterceptorOnConflict)) {
                 CacheLazyEntry<Object, Object> intercepEntry =
                     new CacheLazyEntry<>(cctx, entry.key, null, oldVal, null, keepBinary);
 
