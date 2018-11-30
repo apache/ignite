@@ -218,7 +218,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         // TODO IGNITE-9484 Do not create worker if there is a possibility to unbind TX from threads.
         worker = new JdbcRequestHandlerWorker(ctx.igniteInstanceName(), log, this, ctx);
 
-        reqToCursorMappingCleanupTask = ctx.timeout().schedule(() -> cleanupReqToCursorMappings(),
+        reqToCursorMappingCleanupTask = ctx.timeout().schedule(this::cleanupReqToCursorMappings,
             CONN_CLEANUP_PERIOD, CONN_CLEANUP_PERIOD);
     }
 
@@ -474,6 +474,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         }
 
         bulkLoadRequests.clear();
+
+        requestToCursorMapping.values().forEach(lst -> lst.forEach(c -> U.close(c, log)));
+
+        requestToCursorMapping.clear();
 
         U.close(cliCtx, log);
 
@@ -1248,7 +1252,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private void cleanupReqToCursorMappings() {
         synchronized (cancellationProcessingMux) {
-            for (Long reqId: obsoleteRequestsMappings)
+            for (Long reqId : obsoleteRequestsMappings)
                 requestToCursorMapping.remove(reqId);
 
             obsoleteRequestsMappings.clear();

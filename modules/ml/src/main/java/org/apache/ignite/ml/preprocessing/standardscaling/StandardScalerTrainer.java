@@ -44,8 +44,8 @@ public class StandardScalerTrainer<K, V> implements PreprocessingTrainer<K, V, V
 
         for (int i = 0; i < n; i++) {
             mean[i] = standardScalerData.sum[i] / cnt;
-            double variace = (standardScalerData.squaredSum[i] - Math.pow(standardScalerData.sum[i], 2) / cnt) / cnt;
-            sigma[i] = Math.sqrt(variace);
+            double variance = (standardScalerData.squaredSum[i] - Math.pow(standardScalerData.sum[i], 2) / cnt) / cnt;
+            sigma[i] = Math.sqrt(variance);
         }
         return new StandardScalerPreprocessor<>(mean, sigma, basePreprocessor);
     }

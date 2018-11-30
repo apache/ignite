@@ -901,8 +901,6 @@ public class JdbcThinConnection implements Connection {
             streamBatchSize = cmd.batchSize();
 
             asyncRespReaderThread = new Thread(this::readResponses);
-
-
         }
 
         /**

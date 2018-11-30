@@ -44,7 +44,6 @@ import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.nio.GridNioAsyncNotifyFilter;
 import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
 import org.apache.ignite.internal.util.nio.GridNioFilter;
-import org.apache.ignite.internal.processors.odbc.odbc.GridNioPriorityQueryFilter;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
@@ -258,7 +257,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
         GridNioFilter codecFilter = new GridNioCodecFilter(new ClientListenerBufferedParser(), log, false);
 
-        GridNioFilter priorityFilter = new GridNioPriorityQueryFilter(log);
+        GridNioFilter priorityFilter = new ClientListenerNioRequestPriorityFilter(log);
 
         if (cliConnCfg.isSslEnabled()) {
             Factory<SSLContext> sslCtxFactory = cliConnCfg.isUseIgniteSslContextFactory() ?
