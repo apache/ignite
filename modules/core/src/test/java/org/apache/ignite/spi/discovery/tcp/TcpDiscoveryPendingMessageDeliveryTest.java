@@ -29,13 +29,13 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -54,7 +54,7 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         blockMsgs = false;
-        receivedEnsuredMsgs = new ConcurrentHashSet<>();
+        receivedEnsuredMsgs = new GridConcurrentHashSet<>();
     }
 
     /** {@inheritDoc} */
@@ -88,7 +88,7 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
         Ignite coord = startGrid("coordinator");
         TcpDiscoverySpi coordDisco = (TcpDiscoverySpi)coord.configuration().getDiscoverySpi();
 
-        Set<TcpDiscoveryAbstractMessage> sentEnsuredMsgs = new ConcurrentHashSet<>();
+        Set<TcpDiscoveryAbstractMessage> sentEnsuredMsgs = new GridConcurrentHashSet<>();
         coordDisco.addSendMessageListener(msg -> {
             if (coordDisco.ensured(msg))
                 sentEnsuredMsgs.add(msg);
@@ -143,7 +143,7 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
         Ignite coord = startGrid("coordinator");
         TcpDiscoverySpi coordDisco = (TcpDiscoverySpi)coord.configuration().getDiscoverySpi();
 
-        Set<TcpDiscoveryAbstractMessage> sentEnsuredMsgs = new ConcurrentHashSet<>();
+        Set<TcpDiscoveryAbstractMessage> sentEnsuredMsgs = new GridConcurrentHashSet<>();
         coordDisco.addSendMessageListener(msg -> {
             if (coordDisco.ensured(msg))
                 sentEnsuredMsgs.add(msg);

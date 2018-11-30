@@ -1527,6 +1527,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         boolean nearEnabled = GridCacheUtils.isNearEnabled(cfg);
 
+        CacheCompressionManager compressMgr = new CacheCompressionManager();
         GridCacheAffinityManager affMgr = new GridCacheAffinityManager();
         GridCacheEventManager evtMgr = new GridCacheEventManager();
         CacheEvictionManager evictMgr = (nearEnabled || cfg.isOnheapCacheEnabled()) ? new GridCacheEvictionManager() : new CacheOffheapEvictionManager();
@@ -1561,6 +1562,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
              * Managers in starting order!
              * ===========================
              */
+            compressMgr,
             evtMgr,
             storeMgr,
             evictMgr,
@@ -1697,6 +1699,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                  * Managers in starting order!
                  * ===========================
                  */
+                compressMgr,
                 evtMgr,
                 storeMgr,
                 evictMgr,
