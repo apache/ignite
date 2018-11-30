@@ -15,16 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed;
+package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
+
+import org.apache.ignite.configuration.CollectionConfiguration;
+import org.apache.ignite.util.AttributeNodeFilter;
+
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 
 /**
- *
+ * Tests IgniteSet with node filter on {@code PARTITIONED} cache.
  */
-public class IgniteOptimisticTxSuspendResumeMultiServerTest extends IgniteOptimisticTxSuspendResumeTest {
-    /**
-     * @return Number of server nodes.
-     */
-    @Override protected int serversNumber() {
-        return 4;
+public class GridCachePartitionedSetWithNodeFilterSelfTest extends GridCachePartitionedSetSelfTest {
+    /** {@inheritDoc} */
+    @Override protected CollectionConfiguration collectionConfiguration() {
+        CollectionConfiguration cfg = super.collectionConfiguration();
+
+        cfg.setNodeFilter(new AttributeNodeFilter(ATTR_IGNITE_INSTANCE_NAME, getTestIgniteInstanceName(0)));
+
+        return cfg;
     }
 }
