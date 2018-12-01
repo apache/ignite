@@ -101,7 +101,7 @@ public class OneVsRestTrainer<M extends Model<Vector, Double>>
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(MultiClassModel<M> mdl) {
+    @Override public boolean checkState(MultiClassModel<M> mdl) {
         return true;
     }
 

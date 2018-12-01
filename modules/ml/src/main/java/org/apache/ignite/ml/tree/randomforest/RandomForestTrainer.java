@@ -239,7 +239,7 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(ModelsComposition mdl) {
+    @Override public boolean checkState(ModelsComposition mdl) {
         ModelsComposition fakeComposition = buildComposition(Collections.emptyList());
         return mdl.getPredictionsAggregator().getClass() == fakeComposition.getPredictionsAggregator().getClass();
     }

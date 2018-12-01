@@ -140,7 +140,7 @@ public class LogisticRegressionSGDTrainer<P extends Serializable> extends Single
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(LogisticRegressionModel mdl) {
+    @Override public boolean checkState(LogisticRegressionModel mdl) {
         return true;
     }
 

@@ -37,4 +37,8 @@ public interface IgniteFunction<T, R> extends Function<T, R>, Serializable {
     static <T, R> IgniteFunction<T, R> constant(R r) {
         return t -> r;
     }
+
+    static <T> IgniteFunction<T, T> identity() {
+        return t -> t;
+    }
 }

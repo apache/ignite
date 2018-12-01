@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.environment.parallelism.Promise;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
@@ -101,6 +102,13 @@ public class StackedDatasetTrainer<IS, IA, O, L, AM extends Model<IA, O>> extend
         }
 
         return res && aggregatingTrainer.checkState(mdl.aggregatingModel());
+    }
+
+    @Override public StackedDatasetTrainer<IS, IA, O, L, AM> withEnvironmentBuilder(
+        LearningEnvironmentBuilder envBuilder) {
+        super.withEnvironmentBuilder(envBuilder);
+
+        return this;
     }
 
     protected <K, V> StackedModel<IS, IA, O, AM> runOnEnsemble(

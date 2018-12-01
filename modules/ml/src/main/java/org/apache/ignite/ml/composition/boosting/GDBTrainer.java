@@ -141,7 +141,7 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(ModelsComposition mdl) {
+    @Override public boolean checkState(ModelsComposition mdl) {
         return mdl instanceof GDBModel;
     }
 

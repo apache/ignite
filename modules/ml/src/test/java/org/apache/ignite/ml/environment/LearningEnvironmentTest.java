@@ -103,7 +103,7 @@ public class LearningEnvironmentTest {
             }
 
             /** {@inheritDoc} */
-            @Override protected boolean checkState(Model<Object, Vector> mdl) {
+            @Override public boolean checkState(Model<Object, Vector> mdl) {
                 return false;
             }
 

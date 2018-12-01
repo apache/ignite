@@ -149,7 +149,7 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(KMeansModel mdl) {
+    @Override public boolean checkState(KMeansModel mdl) {
         return mdl.getCenters().length == k && mdl.distanceMeasure().equals(distance);
     }
 

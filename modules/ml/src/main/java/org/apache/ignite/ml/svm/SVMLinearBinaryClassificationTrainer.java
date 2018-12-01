@@ -121,7 +121,7 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(SVMLinearBinaryClassificationModel mdl) {
+    @Override public boolean checkState(SVMLinearBinaryClassificationModel mdl) {
         return true;
     }
 

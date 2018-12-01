@@ -102,7 +102,7 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(ANNClassificationModel mdl) {
+    @Override public boolean checkState(ANNClassificationModel mdl) {
         return mdl.getDistanceMeasure().equals(distance) && mdl.getCandidates().rowSize() == k;
     }
 

@@ -195,7 +195,7 @@ public class BaggingTest extends TrainerTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected boolean checkState(Model<Vector, Double> mdl) {
+        @Override public boolean checkState(Model<Vector, Double> mdl) {
             return true;
         }
 

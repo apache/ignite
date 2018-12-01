@@ -109,7 +109,7 @@ public class SVMLinearMultiClassClassificationTrainer
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(SVMLinearMultiClassClassificationModel mdl) {
+    @Override public boolean checkState(SVMLinearMultiClassClassificationModel mdl) {
         return true;
     }
 

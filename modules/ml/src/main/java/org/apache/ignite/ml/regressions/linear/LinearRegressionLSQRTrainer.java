@@ -79,7 +79,7 @@ public class LinearRegressionLSQRTrainer extends SingleLabelDatasetTrainer<Linea
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(LinearRegressionModel mdl) {
+    @Override public boolean checkState(LinearRegressionModel mdl) {
         return true;
     }
 }

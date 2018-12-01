@@ -354,7 +354,7 @@ public class MLPTrainer<P extends Serializable> extends MultiLabelDatasetTrainer
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(MultilayerPerceptron mdl) {
+    @Override public boolean checkState(MultilayerPerceptron mdl) {
         return true;
     }
 

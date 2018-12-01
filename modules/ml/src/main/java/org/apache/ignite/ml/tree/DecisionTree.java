@@ -106,7 +106,7 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(DecisionTreeNode mdl) {
+    @Override public boolean checkState(DecisionTreeNode mdl) {
         return true;
     }
 

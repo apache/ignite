@@ -122,7 +122,7 @@ public class LogRegressionMultiClassTrainer<P extends Serializable>
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(LogRegressionMultiClassModel mdl) {
+    @Override public boolean checkState(LogRegressionMultiClassModel mdl) {
         return true;
     }
 
