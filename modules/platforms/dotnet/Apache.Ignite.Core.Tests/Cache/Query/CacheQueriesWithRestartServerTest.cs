@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             var cache = _client.GetOrCreateCache<int, Item>("Test");
 
-            cache.Put(1, new Item()
+            cache.Put(1, new Item
             {
                 Id = 10,
                 Title = "test"
@@ -63,6 +63,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 Title = "test"
             });
 
+            // This is the first time when we send this filter - why does BinaryStructureTracker consider it known?
             var filter = emptyFilterObject
                 ? (ICacheEntryFilter<int, Item>) new TestFilter()
                 : new TestFilterWithField();
