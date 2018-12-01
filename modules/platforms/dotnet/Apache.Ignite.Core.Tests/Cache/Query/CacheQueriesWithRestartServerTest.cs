@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         [Test]
-        public void Test()
+        public void Test([Values(true, false)] bool emptyFilterObject)
         {
             var cache = _client.GetOrCreateCache<int, Item>("Test");
 
@@ -57,13 +57,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             cache = _client.GetOrCreateCache<int, Item>("Test");
 
-            cache.Put(1, new Item()
+            cache.Put(1, new Item
             {
                 Id = 11,
                 Title = "test"
             });
 
-            var cursor = cache.Query(new ScanQuery<int, Item>(new TestFilter()));
+            var filter = emptyFilterObject
+                ? (ICacheEntryFilter<int, Item>) new TestFilter()
+                : new TestFilterWithField();
+
+            var cursor = cache.Query(new ScanQuery<int, Item>(filter));
 
             Assert.DoesNotThrow(() => cursor.GetAll());
         }
@@ -85,7 +89,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
                 ClientMode = client,
 
-                IgniteInstanceName = client ?  "client-" + i : "grid-" + i
+                IgniteInstanceName = client ? "client-" + i : "grid-" + i
             });
         }
 
@@ -110,7 +114,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
     }
 
-    public class TestFilter : ICacheEntryFilter<int, Item> {
+    public class TestFilter : ICacheEntryFilter<int, Item>
+    {
+        public bool Invoke(ICacheEntry<int, Item> entry)
+        {
+            return entry.Value.Id > 10;
+        }
+    }
+
+    public class TestFilterWithField : ICacheEntryFilter<int, Item>
+    {
+        public bool TestValue { get; set; }
+
         public bool Invoke(ICacheEntry<int, Item> entry)
         {
             return entry.Value.Id > 10;

@@ -120,6 +120,8 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
                 // Empty object (no fields).
                 // Null WriterTypeStructure indicates that meta has never been sent for this type.
                 // TODO: In case of node restarts, we need to send meta again. We can't rely on "never have been sent" logic?
+                // TODO: Does it also break down when non-empty object is used?
+
                 writer.Marshaller.GetBinaryTypeHandler(_desc);
                 writer.SaveMetadata(_desc, null);
                 _desc.UpdateWriteStructure(_curStructPath, null);
