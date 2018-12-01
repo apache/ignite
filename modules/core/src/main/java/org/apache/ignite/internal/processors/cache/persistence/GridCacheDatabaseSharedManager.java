@@ -4196,7 +4196,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /** {@inheritDoc} */
-        @Override public GridFutureAdapter finishFuture() {
+        @Override public GridFutureAdapter<Object> finishFuture() {
             return cpFinishFut;
         }
     }

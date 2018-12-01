@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -185,38 +184,10 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         if (rebFut.isDone() && !rebFut.result())
             return true; // Required, previous rebalance cancelled.
 
-        final AffinityTopologyVersion exchTopVer = exchFut.context().events().topologyVersion();
+        AffinityTopologyVersion lastAffChangeTopVer =
+            ctx.exchange().lastAffinityChangedTopologyVersion(exchFut.topologyVersion());
 
-        Collection<UUID> aliveNodes = ctx.discovery().aliveServerNodes().stream()
-            .map(ClusterNode::id)
-            .collect(Collectors.toList());
-
-        return assignmentsChanged(rebTopVer, exchTopVer) ||
-            !aliveNodes.containsAll(demander.remainingNodes()); // Some of nodes left before rabalance compelete.
-    }
-
-    /**
-     * @param oldTopVer Previous topology version.
-     * @param newTopVer New topology version to check result.
-     * @return {@code True} if affinity assignments changed between two versions for local node.
-     */
-    private boolean assignmentsChanged(AffinityTopologyVersion oldTopVer, AffinityTopologyVersion newTopVer) {
-        final AffinityAssignment aff = grp.affinity().readyAffinity(newTopVer);
-
-        // We should get affinity assignments based on previous rebalance to calculate difference.
-        // Whole history size described by IGNITE_AFFINITY_HISTORY_SIZE constant.
-        final AffinityAssignment prevAff = grp.affinity().cachedVersions().contains(oldTopVer) ?
-            grp.affinity().cachedAffinity(oldTopVer) : null;
-
-        if (prevAff == null)
-            return false;
-
-        boolean assignsChanged = false;
-
-        for (int p = 0; !assignsChanged && p < grp.affinity().partitions(); p++)
-            assignsChanged |= aff.get(p).contains(ctx.localNode()) != prevAff.get(p).contains(ctx.localNode());
-
-        return assignsChanged;
+        return lastAffChangeTopVer.compareTo(rebTopVer) > 0;
     }
 
     /** {@inheritDoc} */
