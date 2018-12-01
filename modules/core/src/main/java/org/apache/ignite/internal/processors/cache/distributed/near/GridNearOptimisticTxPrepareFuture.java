@@ -537,8 +537,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                     tx.taskNameHash(),
                     m.clientFirst(),
                     true,
-                    tx.activeCachesDeploymentEnabled(),
-                    tx.txState().recovery());
+                    tx.activeCachesDeploymentEnabled());
 
                 for (IgniteTxEntry txEntry : m.entries()) {
                     if (txEntry.op() == TRANSFORM)
