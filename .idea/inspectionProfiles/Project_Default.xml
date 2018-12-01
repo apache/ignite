@@ -750,7 +750,10 @@
         <option name="m_ignoreCatchBlocksWithComments" value="false"/>
         <option name="m_ignoreTestCases" value="false"/>
     </inspection_tool>
+    <!-- Unused imports used by IntelliJ Idea 2017 -->
     <inspection_tool class="UnusedImport" enabled="true" level="ERROR" enabled_by_default="true"/>
+    <!-- Unused imporst used by IntelliJ Idea 2018 -->
+    <inspection_tool class="UNUSED_IMPORT" enabled="true" level="ERROR" enabled_by_default="true"/>
     <inspection_tool class="UnusedLibrary" enabled="true" level="WARNING" enabled_by_default="true"/>
     <inspection_tool class="UnusedReturnValue" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="UpperCaseFieldNameNotConstant" enabled="true" level="WARNING" enabled_by_default="true"/>
