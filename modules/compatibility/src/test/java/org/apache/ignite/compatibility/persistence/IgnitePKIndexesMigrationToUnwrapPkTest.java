@@ -21,6 +21,7 @@ package org.apache.ignite.compatibility.persistence;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.compatibility.testframework.junits.Dependency;
@@ -50,13 +51,21 @@ public class IgnitePKIndexesMigrationToUnwrapPkTest extends IgnitePersistenceCom
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override protected Collection<Dependency> getDependencies(String igniteVer) {
+    @Override @NotNull protected Collection<Dependency> getDependencies(String igniteVer) {
         Collection<Dependency> dependencies = super.getDependencies(igniteVer);
 
-        dependencies.add(new Dependency("indexing", null, "ignite-indexing", igniteVer));
-        dependencies.add(new Dependency("h2", "com.h2database", "h2", "1.4.195", true));
+        dependencies.add(new Dependency("h2", "com.h2database", "h2", "1.4.195", false));
 
         return dependencies;
+    }
+
+    /** {@inheritDoc} */
+    @Override @NotNull protected Set<String> getExcluded(Collection<Dependency> dependencies) {
+        Set<String> excluded = super.getExcluded(dependencies);
+
+        excluded.add("h2");
+
+        return excluded;
     }
 
     /**
@@ -245,5 +254,4 @@ public class IgnitePKIndexesMigrationToUnwrapPkTest extends IgnitePersistenceCom
             cfg.setDataStorageConfiguration(memCfg);
         }
     }
-
 }
