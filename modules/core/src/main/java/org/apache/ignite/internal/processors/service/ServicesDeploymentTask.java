@@ -317,8 +317,8 @@ class ServicesDeploymentTask {
                     }
                 }
             }
-            catch (Error | RuntimeException | IgniteCheckedException err) {
-                depErrors.computeIfAbsent(srvcId, e -> new ArrayList<>()).add(err);
+            catch (IgniteCheckedException e) {
+                depErrors.computeIfAbsent(srvcId, c -> new ArrayList<>()).add(e);
             }
         });
 
@@ -463,7 +463,7 @@ class ServicesDeploymentTask {
                     depActions.deploymentTopologies(fullTops);
                     depActions.deploymentErrors(fullErrors);
 
-                    srvcProc.updateServicesTopologies(fullTops, fullErrors);
+                    srvcProc.updateServicesTopologies(fullTops);
 
                     final Map<IgniteUuid, ServiceInfo> services = srvcProc.deployedServices();
 
@@ -477,7 +477,13 @@ class ServicesDeploymentTask {
 
                             ServiceConfiguration cfg = desc.configuration();
 
-                            srvcProc.redeploy(srvcId, cfg, top);
+                            try {
+                                srvcProc.redeploy(srvcId, cfg, top);
+                            }
+                            catch (IgniteCheckedException e) {
+                                log.error("Error occured during cancel exceed service instances: " +
+                                    "[srvcId=" + srvcId + ", name=" + desc.name() + ']', e);
+                            }
                         }
                     });
 

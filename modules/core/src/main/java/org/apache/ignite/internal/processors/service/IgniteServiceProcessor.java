@@ -1029,8 +1029,10 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      * @param srvcId Service id.
      * @param cfg Service configuration.
      * @param top Service topology.
+     * @throws IgniteCheckedException In case of deployment errors.
      */
-    protected void redeploy(IgniteUuid srvcId, ServiceConfiguration cfg, Map<UUID, Integer> top) {
+    protected void redeploy(IgniteUuid srvcId, ServiceConfiguration cfg,
+        Map<UUID, Integer> top) throws IgniteCheckedException {
         String name = cfg.getName();
         String cacheName = cfg.getCacheName();
         Object affKey = cfg.getAffinityKey();
@@ -1078,13 +1080,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
                 ctxs.removeAll(toInit);
 
-                if (e instanceof Error)
-                    throw (Error)e;
-
-                if (e instanceof RuntimeException)
-                    throw (RuntimeException)e;
-
-                return;
+                throw new IgniteCheckedException("Error occured during service initialization: " +
+                    "[locId=" + ctx.localNodeId() + ", name=" + name + ']', e);
             }
 
             if (log.isInfoEnabled())
@@ -1272,15 +1269,13 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      * Processes deployment result.
      *
      * @param fullTops Deployment topologies.
-     * @param fullErrors Deployment errors.
      */
-    protected void updateServicesTopologies(@NotNull final Map<IgniteUuid, HashMap<UUID, Integer>> fullTops,
-        @NotNull final Map<IgniteUuid, Collection<byte[]>> fullErrors) {
+    protected void updateServicesTopologies(@NotNull final Map<IgniteUuid, HashMap<UUID, Integer>> fullTops) {
         if (!enterBusy())
             return;
 
         try {
-            updateServicesMap(deployedServices, fullTops, fullErrors);
+            updateServicesMap(deployedServices, fullTops);
         }
         finally {
             leaveBusy();
@@ -1629,7 +1624,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             }
 
             synchronized (servicesTopsUpdateMux) {
-                updateServicesMap(registeredServices, fullTops, fullErrors);
+                updateServicesMap(registeredServices, fullTops);
 
                 servicesTopsUpdateMux.notifyAll();
             }
@@ -1661,10 +1656,9 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      *
      * @param services Services info to update.
      * @param tops Deployment topologies.
-     * @param errors Deployment errors.
      */
     private void updateServicesMap(Map<IgniteUuid, ServiceInfo> services,
-        Map<IgniteUuid, HashMap<UUID, Integer>> tops, Map<IgniteUuid, Collection<byte[]>> errors) {
+        Map<IgniteUuid, HashMap<UUID, Integer>> tops) {
 
         tops.forEach((srvcId, top) -> {
             ServiceInfo desc = services.get(srvcId);
