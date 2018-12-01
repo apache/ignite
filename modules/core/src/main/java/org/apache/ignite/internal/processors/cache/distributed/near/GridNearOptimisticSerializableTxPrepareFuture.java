@@ -554,7 +554,8 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             tx.taskNameHash(),
             m.clientFirst(),
             txNodes.size() == 1,
-            tx.activeCachesDeploymentEnabled());
+            tx.activeCachesDeploymentEnabled(),
+            tx.txState().recovery());
 
         for (IgniteTxEntry txEntry : writes) {
             if (txEntry.op() == TRANSFORM)
