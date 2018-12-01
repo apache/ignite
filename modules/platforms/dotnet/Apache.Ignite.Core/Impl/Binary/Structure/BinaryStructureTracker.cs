@@ -115,7 +115,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
                     writer.SaveMetadata(_desc, fields);
                 }
             }
-            else if (_desc.WriterTypeStructure == null)
+            else // if (_desc.WriterTypeStructure == null)
             {
                 // Empty object (no fields).
                 // Null WriterTypeStructure indicates that meta has never been sent for this type.
