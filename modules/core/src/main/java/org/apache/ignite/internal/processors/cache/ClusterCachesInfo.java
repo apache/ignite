@@ -53,7 +53,6 @@ import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QuerySchemaPatch;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -643,8 +642,6 @@ class ClusterCachesInfo {
 
         if (req.restart()) {
             IgniteUuid restartId = req.restartId();
-
-            assert restartId != null : "Restart id is null!";
 
             restartingCaches.put(cacheName, restartId);
         }
