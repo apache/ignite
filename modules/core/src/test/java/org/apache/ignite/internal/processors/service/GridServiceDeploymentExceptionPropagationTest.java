@@ -29,19 +29,31 @@ public class GridServiceDeploymentExceptionPropagationTest extends GridCommonAbs
     /** */
     public void testExceptionPropagation() throws Exception {
         try (IgniteEx srv = startGrid("server")) {
-            
+
             if (!srv.context().service().eventDrivenServiceProcessorEnabled())
                 return; // Skip for this mode
 
             try (Ignite client = startGrid("client", getConfiguration("client").setClientMode(true))) {
+                final String srvcName = "my-service";
 
                 try {
-                    client.services().deployClusterSingleton("my-service", new ServiceImpl());
+                    client.services().deployClusterSingleton(srvcName, new ServiceImpl());
 
                     fail("Deployment exception has been expected.");
                 }
                 catch (ServiceDeploymentException ex) {
-                    assertTrue(ex.getSuppressed()[0].getMessage().contains("ServiceImpl init exception"));
+                    String errMsg = ex.getSuppressed()[0].getMessage();
+
+                    // Check that message contains cause node id
+                    assertTrue(errMsg.contains(srv.cluster().localNode().id().toString()));
+
+                    // Check that message contains service name
+                    assertTrue(errMsg.contains(srvcName));
+
+                    Throwable cause = ex.getSuppressed()[0].getCause();
+
+                    // Check that error's cause contains users message
+                    assertTrue(cause.getMessage().contains("ServiceImpl init exception"));
                 }
             }
         }

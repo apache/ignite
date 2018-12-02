@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.service;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -47,7 +46,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.services.ServiceConfiguration;
-import org.apache.ignite.services.ServiceDeploymentException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -522,23 +520,23 @@ class ServicesDeploymentTask {
                 return;
             }
 
-            ServiceDeploymentException ex = null;
+            Throwable depErr = null;
 
             for (byte[] error : errors) {
                 try {
                     Throwable t = U.unmarshal(ctx, error, null);
 
-                    if (ex == null)
-                        ex = new ServiceDeploymentException(t, Collections.singleton(desc.configuration()));
+                    if (depErr == null)
+                        depErr = t;
                     else
-                        ex.addSuppressed(t);
+                        depErr.addSuppressed(t);
                 }
                 catch (IgniteCheckedException e) {
-                    log.error("Failed to unmarshal deployment exception.", e);
+                    log.error("Failed to unmarshal deployment error.", e);
                 }
             }
 
-            srvcProc.completeInitiatingFuture(true, srvcId, ex);
+            srvcProc.completeInitiatingFuture(true, srvcId, depErr);
         });
 
         for (IgniteUuid reqSrvcId : depActions.servicesToUndeploy().keySet())
