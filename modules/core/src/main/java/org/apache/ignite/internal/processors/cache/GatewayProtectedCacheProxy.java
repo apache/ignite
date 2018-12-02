@@ -36,6 +36,7 @@ import javax.cache.integration.CompletionListener;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheEntryProcessor;
@@ -2289,7 +2290,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
 
                 return gate();
             }
-            catch (IgniteCheckedException ice) {
+            catch (IgniteCheckedException ignore) {
                 // Opportunity didn't work out.
             }
         }
@@ -2301,10 +2302,23 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
      * @return Previous projection set on this thread.
      */
     private CacheOperationGate onEnter() {
-        GridCacheGateway<K, V> gate = checkProxyIsValid(gate(), true);
+        try {
+            GridCacheGateway<K, V> gate = checkProxyIsValid(gate(), true);
 
-        return new CacheOperationGate(gate,
-            lock ? gate.enter(opCtx) : gate.enterNoLock(opCtx));
+            return new CacheOperationGate(gate,
+                lock ? gate.enter(opCtx) : gate.enterNoLock(opCtx));
+        }
+        catch (IgniteCacheRestartingException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            boolean isCacheProxy = delegate instanceof IgniteCacheProxyImpl;
+
+            if (isCacheProxy)
+                ((IgniteCacheProxyImpl)delegate).checkRestart();
+
+            throw new RuntimeException(e); // If checkRestart already didn't.
+        }
     }
 
     /**
