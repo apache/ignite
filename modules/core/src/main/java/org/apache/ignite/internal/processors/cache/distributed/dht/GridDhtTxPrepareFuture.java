@@ -71,6 +71,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
+import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
@@ -1261,10 +1262,17 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             // We are holding transaction-level locks for entries here, so we can get next write version.
             tx.writeVersion(cctx.versions().next(tx.topologyVersion()));
 
+            TxCounters counters = tx.txCounters(true);
+
             // Assign keys to primary nodes.
             if (!F.isEmpty(req.writes())) {
-                for (IgniteTxEntry write : req.writes())
-                    map(tx.entry(write.txKey()));
+                for (IgniteTxEntry write : req.writes()) {
+                    IgniteTxEntry entry = tx.entry(write.txKey());
+
+                    counters.incrementUpdateCounter(entry.cacheId(), entry.cached().partition());
+
+                    map(entry);
+                }
             }
 
             if (!F.isEmpty(req.reads())) {
@@ -1275,8 +1283,12 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             if (isDone())
                 return;
 
-            if (last)
+            if (last) {
+                if (!tx.txState().mvccEnabled())
+                    tx.calculatePartitionUpdateCounters();
+
                 sendPrepareRequests();
+            }
         }
         finally {
             markInitialized();
@@ -1287,6 +1299,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      *
      */
     private void sendPrepareRequests() {
+
         if (tx.onePhaseCommit() && !tx.nearMap().isEmpty()) {
             for (GridDistributedTxMapping nearMapping : tx.nearMap().values()) {
                 if (!tx.dhtMap().containsKey(nearMapping.primary().id())) {

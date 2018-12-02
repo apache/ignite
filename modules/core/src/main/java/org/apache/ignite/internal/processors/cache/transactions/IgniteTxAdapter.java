@@ -1197,6 +1197,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
                             throw new IgniteException(msg, e);
                         }
+
+                        // TODO FIXME write counters here to wal
                     }
 
                     if (!txState().mvccEnabled())

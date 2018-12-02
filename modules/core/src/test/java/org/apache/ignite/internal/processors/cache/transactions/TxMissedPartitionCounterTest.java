@@ -20,6 +20,8 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRebalanceTest;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
@@ -86,7 +88,7 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
             ccfg.setBackups(2);
             ccfg.setWriteSynchronizationMode(FULL_SYNC);
             ccfg.setOnheapCacheEnabled(false);
-            ccfg.setAffinity(new RendezvousAffinityFunction(false, 1));
+            ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
 
             cfg.setCacheConfiguration(ccfg);
         }
@@ -434,4 +436,211 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
 //            stopAllGrids();
 //        }
 //    }
+
+    public void testBasicCounterAssignmentOnPrimary() throws Exception {
+        try {
+            Ignite crd = startGridsMultiThreaded(2);
+
+            int key = 0;
+
+            Ignite prim = primaryNode(key, DEFAULT_CACHE_NAME);
+
+            IgniteEx client = startGrid("client");
+
+            assertNotNull(client.cache(DEFAULT_CACHE_NAME));
+
+            try(Transaction tx = client.transactions().txStart()) {
+                client.cache(DEFAULT_CACHE_NAME).put(key, 0);
+
+                tx.commit();
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    public void testFailPrimary() throws Exception {
+        try {
+            Ignite crd = startGridsMultiThreaded(3);
+
+            int key = 0;
+
+            Ignite prim = primaryNode(key, DEFAULT_CACHE_NAME);
+
+            IgniteEx client = startGrid("client");
+
+
+            TestRecordingCommunicationSpi.spi(prim).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+                @Override public boolean apply(ClusterNode node, Message msg) {
+                    return msg instanceof GridNearTxPrepareResponse;
+                }
+            });
+
+            assertNotNull(client.cache(DEFAULT_CACHE_NAME));
+
+            IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
+                @Override public void run() {
+                    try {
+                        TestRecordingCommunicationSpi.spi(prim).waitForBlocked();
+                    }
+                    catch (InterruptedException e) {
+                        fail();
+                    }
+
+                    prim.close();
+
+                    try {
+                        awaitPartitionMapExchange();
+                    }
+                    catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+
+            try(Transaction tx = client.transactions().txStart()) {
+                client.cache(DEFAULT_CACHE_NAME).put(key, 0);
+
+                tx.commit();
+            }
+
+            fut.get();
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    public void testFailPrimary2() throws Exception {
+        try {
+            Ignite crd = startGrids(3);
+            crd.cluster().active(true);
+            awaitPartitionMapExchange();
+
+            int key = 0;
+            int key1 = 1;
+
+            Ignite prim0 = primaryNode(key, DEFAULT_CACHE_NAME);
+            Ignite backup0 = backupNode(key, DEFAULT_CACHE_NAME);
+
+            Ignite prim1 = primaryNode(key1, DEFAULT_CACHE_NAME);
+            Ignite backup1 = backupNode(key1, DEFAULT_CACHE_NAME);
+
+            IgniteEx client = startGrid("client");
+
+            TestRecordingCommunicationSpi.spi(prim0).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+                @Override public boolean apply(ClusterNode node, Message msg) {
+                    return msg instanceof GridNearTxPrepareResponse;
+                }
+            });
+
+            TestRecordingCommunicationSpi.spi(prim1).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+                @Override public boolean apply(ClusterNode node, Message msg) {
+                    return msg instanceof GridNearTxPrepareResponse;
+                }
+            });
+
+            assertNotNull(client.cache(DEFAULT_CACHE_NAME));
+
+            IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
+                @Override public void run() {
+                    try {
+                        TestRecordingCommunicationSpi.spi(prim0).waitForBlocked();
+                        TestRecordingCommunicationSpi.spi(prim1).waitForBlocked();
+                    }
+                    catch (InterruptedException e) {
+                        fail();
+                    }
+
+                    TestRecordingCommunicationSpi.spi(prim0).stopBlock();
+
+                    try {
+                        U.sleep(2000);
+                    }
+                    catch (IgniteInterruptedCheckedException e) {
+                        e.printStackTrace();
+                    }
+
+                    prim1.close();
+
+                    try {
+                        awaitPartitionMapExchange();
+                    }
+                    catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+
+            try(Transaction tx = client.transactions().txStart()) {
+                client.cache(DEFAULT_CACHE_NAME).put(key, 0);
+                client.cache(DEFAULT_CACHE_NAME).put(key1, 0);
+
+                tx.commit();
+            }
+
+            fut.get();
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    public void testFailPrimary3() throws Exception {
+        try {
+            Ignite crd = startGrids(3);
+            crd.cluster().active(true);
+            awaitPartitionMapExchange();
+
+            int key = 0;
+
+            Ignite prim0 = primaryNode(key, DEFAULT_CACHE_NAME);
+
+            IgniteEx client = startGrid("client");
+
+            TestRecordingCommunicationSpi.spi(client).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+                @Override public boolean apply(ClusterNode node, Message msg) {
+                    return msg instanceof GridNearTxFinishRequest;
+                }
+            });
+
+            assertNotNull(client.cache(DEFAULT_CACHE_NAME));
+
+            IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
+                @Override public void run() {
+                    try {
+                        TestRecordingCommunicationSpi.spi(client).waitForBlocked();
+                    }
+                    catch (InterruptedException e) {
+                        fail();
+                    }
+
+                    prim0.close();
+
+                    try {
+                        awaitPartitionMapExchange();
+                    }
+                    catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+
+            try(Transaction tx = client.transactions().txStart()) {
+                client.cache(DEFAULT_CACHE_NAME).put(key, 0);
+
+                tx.commit();
+            }
+
+            fut.get();
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    @Override protected long getTestTimeout() {
+        return 10000000000000000L;
+    }
 }
