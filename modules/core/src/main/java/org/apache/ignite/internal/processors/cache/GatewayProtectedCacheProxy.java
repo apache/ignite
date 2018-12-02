@@ -49,9 +49,9 @@ import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.internal.AsyncSupportAdapter;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -2249,7 +2249,9 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
      * @return Cache Gateway.
      */
     @Nullable private GridCacheGateway<K, V> gate() {
-        GridCacheContext<K, V> cacheContext = delegate.context();
+        GridCacheContext<K, V> cacheContext = delegate instanceof IgniteCacheProxyImpl ?
+            ((IgniteCacheProxyImpl)delegate).context0() : delegate.context();
+
         return cacheContext != null ? cacheContext.gate() : null;
     }
 

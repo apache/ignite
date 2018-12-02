@@ -1099,8 +1099,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * Blocks all available gateways
      */
     public void blockGateways() {
-        for (IgniteCacheProxy<?, ?> proxy : jCacheProxies.values())
-            proxy.context().gate().onStopped();
+        for (IgniteCacheProxyImpl<?, ?> proxy : jCacheProxies.values())
+            proxy.context0().gate().onStopped();
     }
 
     /** {@inheritDoc} */
@@ -2749,7 +2749,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
 
             if (proxy != null)
-                proxy.context().gate().stopped();
+                proxy.context0().gate().stopped();
         }
         else if (proxy != null)
             proxy.closeProxy();
@@ -2785,7 +2785,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         if (proxy != null)
-            proxy.context().gate().onStopped();
+            proxy.context0().gate().onStopped();
     }
 
     /**

@@ -129,6 +129,9 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     /** Context. */
     private volatile GridCacheContext<K, V> ctx;
 
+    /** Old context. */
+    private transient volatile GridCacheContext<K, V> oldContext;
+
     /** Delegate. */
     @GridToStringInclude
     private volatile IgniteInternalCache<K, V> delegate;
@@ -215,6 +218,29 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
         if (ctx == null)
             checkRestart();
+
+        return ctx;
+    }
+
+    /**
+     * @return Context.
+     */
+    public GridCacheContext<K, V> context0() {
+        GridCacheContext<K, V> ctx = this.ctx;
+
+        if (ctx == null) {
+            synchronized (this) {
+                ctx = this.ctx;
+
+                if (ctx == null) {
+                    GridCacheContext<K, V> context = oldContext;
+
+                    assert context != null;
+
+                    return context;
+                }
+            }
+        }
 
         return ctx;
     }
@@ -2543,9 +2569,12 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             });
 
         synchronized (this) {
-            if (!curFut.isDone()) {
-                delegate = null;
-                ctx = null;
+            if (!restartFut.isDone()) {
+                if (oldContext == null) {
+                    oldContext = ctx;
+                    delegate = null;
+                    ctx = null;
+                }
             }
         }
 
@@ -2596,6 +2625,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             this.restartFut.compareAndSet(restartFut, null);
 
             this.ctx = ctx;
+            oldContext = null;
             this.delegate = delegate;
 
             restartFut.onDone();
