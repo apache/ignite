@@ -99,13 +99,15 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
 
         checkCacheMapEntry(TRANSACTIONAL, PARTITIONED, GridNearCacheEntry.class);
 
-        checkCacheMapEntry(TRANSACTIONAL_SNAPSHOT, PARTITIONED, GridDhtCacheEntry.class);
+        if (MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.CACHE_STORE))
+            checkCacheMapEntry(TRANSACTIONAL_SNAPSHOT, PARTITIONED, GridDhtCacheEntry.class);
 
         checkCacheMapEntry(ATOMIC, REPLICATED, GridDhtCacheEntry.class);
 
         checkCacheMapEntry(TRANSACTIONAL, REPLICATED, GridDhtCacheEntry.class);
 
-        checkCacheMapEntry(TRANSACTIONAL_SNAPSHOT, REPLICATED, GridDhtCacheEntry.class);
+        if (MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.CACHE_STORE))
+            checkCacheMapEntry(TRANSACTIONAL_SNAPSHOT, REPLICATED, GridDhtCacheEntry.class);
     }
 
     /**

@@ -396,7 +396,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
         cfgs.addAll(cacheConfigurations(null, TRANSACTIONAL));
         cfgs.addAll(cacheConfigurations(null, TRANSACTIONAL_SNAPSHOT));
 
-        assertEquals(6, cfgs.size());
+        assertEquals(9, cfgs.size());
 
         Collection<IgniteCache> caches = client.getOrCreateCaches(cfgs);
 
