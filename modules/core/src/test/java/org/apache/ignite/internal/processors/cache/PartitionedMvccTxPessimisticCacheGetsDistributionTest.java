@@ -15,21 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence;
+package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.transactions.TransactionIsolation;
+
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
- * Checkpoint futures.
+ * Tests of pessimistic transactional partitioned cache's 'get' requests distribution.
  */
-public interface CheckpointFuture  {
-    /**
-     * @return Begin future.
-     */
-    public GridFutureAdapter beginFuture();
-
-    /**
-     * @return Finish future.
-     */
-    public GridFutureAdapter<Object> finishFuture();
+public class PartitionedMvccTxPessimisticCacheGetsDistributionTest extends PartitionedTransactionalPessimisticCacheGetsDistributionTest {
+    /** {@inheritDoc} */
+    @Override protected TransactionIsolation transactionIsolation() {
+        return REPEATABLE_READ;
+    }
 }
