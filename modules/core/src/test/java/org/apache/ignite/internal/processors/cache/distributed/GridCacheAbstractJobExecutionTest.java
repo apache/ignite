@@ -97,6 +97,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticRepeatableRead() throws Exception {
         checkTransactions(PESSIMISTIC, REPEATABLE_READ, 1000);
     }
@@ -104,6 +105,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticSerializable() throws Exception {
         checkTransactions(PESSIMISTIC, SERIALIZABLE, 1000);
     }

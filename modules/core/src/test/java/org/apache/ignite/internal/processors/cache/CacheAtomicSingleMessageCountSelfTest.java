@@ -85,6 +85,7 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleMessage() throws Exception {
         startGrids(2);
 
@@ -117,6 +118,7 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleTransformMessage() throws Exception {
         startGrids(2);
 
@@ -159,6 +161,7 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleFilterMessage() throws Exception {
         startGrids(2);
 

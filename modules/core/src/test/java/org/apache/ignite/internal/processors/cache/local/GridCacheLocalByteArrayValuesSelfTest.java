@@ -87,6 +87,7 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimistic() throws Exception {
         testTransaction(cache, PESSIMISTIC, KEY_1, wrap(1));
     }
@@ -96,6 +97,7 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticMixed() throws Exception {
         testTransactionMixed(cache, PESSIMISTIC, KEY_1, wrap(1), KEY_2, 1);
     }
@@ -105,6 +107,7 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimistic() throws Exception {
         testTransaction(cache, OPTIMISTIC, KEY_1, wrap(1));
     }
@@ -114,6 +117,7 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticMixed() throws Exception {
         testTransactionMixed(cache, OPTIMISTIC, KEY_1, wrap(1), KEY_2, 1);
     }
@@ -124,6 +128,7 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
      * @throws Exception If failed.
      */
     @SuppressWarnings("TooBroadScope")
+    @Test
     public void testSwap() throws Exception {
         // TODO GG-11148.
         // assert cache.getConfiguration(CacheConfiguration.class).isSwapEnabled();

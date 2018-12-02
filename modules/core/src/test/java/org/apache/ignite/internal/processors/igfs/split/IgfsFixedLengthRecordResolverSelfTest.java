@@ -31,6 +31,7 @@ public class IgfsFixedLengthRecordResolverSelfTest extends IgfsAbstractRecordRes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testResolver() throws Exception {
         byte[] data = array(F.t(wrap(1), 24));
 

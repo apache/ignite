@@ -90,6 +90,7 @@ public abstract class GridCacheBasicStoreMultithreadedAbstractTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentGet() throws Exception {
         final AtomicInteger cntr = new AtomicInteger();
 

@@ -94,6 +94,7 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClientConnectToBigTopology() throws Exception {
         Ignite ignite = startGrids(3);
 

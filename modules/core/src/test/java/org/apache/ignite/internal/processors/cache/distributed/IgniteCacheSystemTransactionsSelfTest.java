@@ -70,6 +70,7 @@ public class IgniteCacheSystemTransactionsSelfTest extends GridCacheAbstractSelf
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSystemTxInsideUserTx() throws Exception {
         IgniteKernal ignite = (IgniteKernal)grid(0);
 
@@ -107,6 +108,7 @@ public class IgniteCacheSystemTransactionsSelfTest extends GridCacheAbstractSelf
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGridNearTxLocalDuplicateAsyncCommit() throws Exception {
         IgniteKernal ignite = (IgniteKernal)grid(0);
 

@@ -84,6 +84,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSynchronousTimeout() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -109,6 +110,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAsynchronousTimeout() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -126,6 +128,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSynchronousTimeoutMultithreaded() throws Exception {
         final Ignite ignite = G.ignite(getTestIgniteInstanceName());
 

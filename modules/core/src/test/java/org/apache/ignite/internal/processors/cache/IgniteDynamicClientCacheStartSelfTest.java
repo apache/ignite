@@ -88,6 +88,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConfiguredCacheOnClientNode() throws Exception {
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -133,6 +134,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearCacheStartError() throws Exception {
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -172,6 +174,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedCacheClient() throws Exception {
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -205,6 +208,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedWithNearCacheClient() throws Exception {
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -240,6 +244,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateCloseClientCache1() throws Exception {
         Ignite ignite0 = startGrid(0);
 
@@ -265,6 +270,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateCloseClientCache2_1() throws Exception {
         createCloseClientCache2(false);
     }
@@ -272,6 +278,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateCloseClientCache2_2() throws Exception {
         createCloseClientCache2(true);
     }
@@ -279,6 +286,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartMultipleClientCaches() throws Exception {
         startMultipleClientCaches(null);
     }
@@ -286,6 +294,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartMultipleClientCachesForGroup() throws Exception {
         startMultipleClientCaches("testGrp");
     }
@@ -377,6 +386,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testStartNewAndClientCaches() throws Exception {
         final int SRVS = 4;
 
@@ -551,6 +561,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartClientCachesOnCoordinatorWithGroup() throws Exception {
         startGrids(3);
 

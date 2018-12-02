@@ -55,6 +55,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalServer() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -66,6 +67,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalServerAsync() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -77,6 +79,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalListener() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -88,6 +91,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerClientMessage() throws Exception {
         if (!testsCfg.withClients())
             return;
@@ -102,6 +106,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerClientMessageAsync() throws Exception {
         if (!testsCfg.withClients())
             return;
@@ -116,6 +121,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientClientMessage() throws Exception {
         if (!testsCfg.withClients())
             return;
@@ -130,6 +136,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientClientMessageAsync() throws Exception {
         if (!testsCfg.withClients())
             return;
@@ -144,6 +151,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientServerMessage() throws Exception {
         if (!testsCfg.withClients())
             return;
@@ -158,6 +166,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientServerMessageAsync() throws Exception {
         if (!testsCfg.withClients())
             return;
@@ -172,6 +181,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollectionMessage() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -183,6 +193,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOrderedMessage() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -194,6 +205,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientServerOrderedMessage() throws Exception {
         if (!testsCfg.withClients())
             return;
@@ -208,6 +220,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientClientOrderedMessage() throws Exception {
         if (!testsCfg.withClients())
             return;
@@ -222,6 +235,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerClientOrderedMessage() throws Exception {
         if (!testsCfg.withClients())
             return;

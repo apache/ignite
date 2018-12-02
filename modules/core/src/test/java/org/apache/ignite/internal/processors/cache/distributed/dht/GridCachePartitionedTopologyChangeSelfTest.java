@@ -103,6 +103,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearTxNodeJoined() throws Exception {
         checkTxNodeJoined(PARTITION_READER);
     }
@@ -110,6 +111,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryTxNodeJoined() throws Exception {
         checkTxNodeJoined(PARTITION_PRIMARY);
     }
@@ -117,6 +119,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupTxNodeJoined() throws Exception {
         checkTxNodeJoined(PARTITION_BACKUP);
     }
@@ -124,6 +127,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearTxNodeLeft() throws Exception {
         checkTxNodeLeft(PARTITION_READER);
     }
@@ -131,6 +135,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryTxNodeLeft() throws Exception {
         // This test does not make sense because if node is primary for some partition,
         // it will reside on node until node leaves grid.
@@ -139,6 +144,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupTxNodeLeft() throws Exception {
         checkTxNodeLeft(PARTITION_BACKUP);
     }
@@ -146,6 +152,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExplicitLocks() throws Exception {
         try {
             startGridsMultiThreaded(2);

@@ -56,6 +56,7 @@ public class GridDataStorageConfigurationConsistencySelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMemoryConfigurationConsistency() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             /** {@inheritDoc} */

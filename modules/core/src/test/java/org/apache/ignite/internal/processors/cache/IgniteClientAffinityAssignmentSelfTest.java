@@ -75,6 +75,7 @@ public class IgniteClientAffinityAssignmentSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRendezvousAssignment() throws Exception {
         checkAffinityFunction();
     }

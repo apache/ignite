@@ -82,7 +82,8 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
     }
 
     /** {@inheritDoc} */
-    @Override public void testSendToManyNodes() throws Exception {
+    @Override @Test
+    public void testSendToManyNodes() throws Exception {
         super.testSendToManyNodes();
 
         // Test idle clients remove.
@@ -98,6 +99,7 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
     /**
      *
      */
+    @Test
     public void testCheckConnection1() {
         for (int i = 0; i < 100; i++) {
             for (Map.Entry<UUID, CommunicationSpi<Message>> entry : spis.entrySet()) {
@@ -120,6 +122,7 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCheckConnection2() throws Exception {
         final int THREADS = spis.size();
 

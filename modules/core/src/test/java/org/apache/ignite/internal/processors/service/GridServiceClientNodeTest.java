@@ -61,6 +61,7 @@ public class GridServiceClientNodeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployFromClient() throws Exception {
         startGrids(3);
 
@@ -74,6 +75,7 @@ public class GridServiceClientNodeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployFromClientAfterRouterStop1() throws Exception {
         startGrid(0);
 
@@ -102,6 +104,7 @@ public class GridServiceClientNodeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployFromClientAfterRouterStop2() throws Exception {
         startGrid(0);
 

@@ -113,6 +113,7 @@ public class IgnitePdsPageReplacementTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testPageReplacement() throws Exception {
         final IgniteEx ig = startGrid(0);
 

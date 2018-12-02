@@ -77,6 +77,7 @@ public class GridCachePartitionedNearDisabledMetricsSelfTest extends GridCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGettingRemovedKey() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-819");
 

@@ -60,6 +60,7 @@ public class GridStopWithCancelSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If an error occurs.
      */
+    @Test
     public void testStopGrid() throws Exception {
         cancelCorrect = false;
 

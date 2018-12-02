@@ -85,6 +85,7 @@ public class TcpDiscoveryNodeAttributesUpdateOnReconnectTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnect() throws Exception {
         Ignite srv = startGrid("server");
 

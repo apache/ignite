@@ -89,6 +89,7 @@ public class GridCacheStorePutxSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutShouldNotTriggerLoad() throws Exception {
         jcache().put(1, 1);
         jcache().put(2, 2);
@@ -99,6 +100,7 @@ public class GridCacheStorePutxSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutShouldNotTriggerLoadWithTx() throws Exception {
         IgniteCache<Integer, Integer> cache = jcache();
 

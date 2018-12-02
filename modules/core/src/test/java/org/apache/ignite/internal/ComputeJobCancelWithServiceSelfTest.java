@@ -61,6 +61,7 @@ public class ComputeJobCancelWithServiceSelfTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJobCancel() throws Exception {
         Ignite server = startGrid("server");
 

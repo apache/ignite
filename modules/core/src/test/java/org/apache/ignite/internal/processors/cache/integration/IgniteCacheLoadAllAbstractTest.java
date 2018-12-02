@@ -77,6 +77,7 @@ public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadAll() throws Exception {
         IgniteCache<Integer, String> cache0 = jcache(0);
 

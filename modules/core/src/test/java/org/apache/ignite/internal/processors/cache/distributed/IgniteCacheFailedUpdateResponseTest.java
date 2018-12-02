@@ -103,6 +103,7 @@ public class IgniteCacheFailedUpdateResponseTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeAtomic() throws Exception {
         testInvoke(atomicCache);
         testInvokeAll(atomicCache);
@@ -111,6 +112,7 @@ public class IgniteCacheFailedUpdateResponseTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeTx() throws Exception {
         testInvoke(txCache);
         testInvokeAll(txCache);

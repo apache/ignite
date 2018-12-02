@@ -66,6 +66,7 @@ public class GridClosureProcessorRemoteTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Thrown in case of failure.
      */
+    @Test
     public void testAnonymousBroadcast() throws Exception {
         Ignite g = grid(0);
 
@@ -90,6 +91,7 @@ public class GridClosureProcessorRemoteTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Thrown in case of failure.
      */
+    @Test
     public void testAnonymousUnicast() throws Exception {
         Ignite g = grid(0);
 
@@ -117,6 +119,7 @@ public class GridClosureProcessorRemoteTest extends GridCommonAbstractTest {
      *
      * @throws Exception Thrown in case of failure.
      */
+    @Test
     public void testAnonymousUnicastRequest() throws Exception {
         Ignite g = grid(0);
 

@@ -74,6 +74,7 @@ public class GridCacheDhtMappingSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testMapping() throws Exception {
         int nodeCnt = 5;
 

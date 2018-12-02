@@ -60,6 +60,7 @@ public class ClusterGroupHostsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testForHosts() throws Exception {
         if (!tcpDiscovery())
             return;
@@ -89,6 +90,7 @@ public class ClusterGroupHostsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testHostNames() throws Exception {
         Ignite ignite = grid();
 

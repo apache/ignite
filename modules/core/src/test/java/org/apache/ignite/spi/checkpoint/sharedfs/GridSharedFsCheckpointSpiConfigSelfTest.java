@@ -29,6 +29,7 @@ public class GridSharedFsCheckpointSpiConfigSelfTest extends GridSpiAbstractConf
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNegativeConfig() throws Exception {
         checkNegativeSpiProperty(new SharedFsCheckpointSpi(), "directoryPaths", null);
         checkNegativeSpiProperty(new SharedFsCheckpointSpi(), "directoryPaths", new LinkedList<String>());

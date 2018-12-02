@@ -117,6 +117,7 @@ public class GridCacheUtilsSelfTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Test
     public void testCacheKeyValidation() throws IgniteCheckedException {
         CU.validateCacheKey("key");
 

@@ -76,6 +76,7 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeMetricsLog() throws Exception {
         IgniteCache<Integer, String> cache1 = grid(0).createCache("TestCache1");
         IgniteCache<Integer, String> cache2 = grid(1).createCache("TestCache2");

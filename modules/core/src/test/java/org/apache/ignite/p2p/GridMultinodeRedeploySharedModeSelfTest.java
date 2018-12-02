@@ -31,6 +31,7 @@ public class GridMultinodeRedeploySharedModeSelfTest extends GridAbstractMultino
      *
      * @throws Throwable if error occur.
      */
+    @Test
     public void testSharedMode() throws Throwable {
         processTest(SHARED);
     }

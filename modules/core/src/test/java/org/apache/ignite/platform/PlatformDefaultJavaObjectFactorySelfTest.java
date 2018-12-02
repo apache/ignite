@@ -43,6 +43,7 @@ public class PlatformDefaultJavaObjectFactorySelfTest extends GridCommonAbstract
     /**
      * Test normal object creation.
      */
+    @Test
     public void testNormal() {
         final PlatformDefaultJavaObjectFactory factory = new PlatformDefaultJavaObjectFactory();
 
@@ -76,6 +77,7 @@ public class PlatformDefaultJavaObjectFactorySelfTest extends GridCommonAbstract
     /**
      * Test object creation with boxed property.
      */
+    @Test
     public void testBoxedProperty() {
         final PlatformDefaultJavaObjectFactory factory = new PlatformDefaultJavaObjectFactory();
 
@@ -89,6 +91,7 @@ public class PlatformDefaultJavaObjectFactorySelfTest extends GridCommonAbstract
     /**
      * Test object creation without properties.
      */
+    @Test
     public void testNoProperties() {
         final PlatformDefaultJavaObjectFactory factory = new PlatformDefaultJavaObjectFactory();
 
@@ -102,6 +105,7 @@ public class PlatformDefaultJavaObjectFactorySelfTest extends GridCommonAbstract
     /**
      * Test object creation with invalid property name.
      */
+    @Test
     public void testInvalidPropertyName() {
         final PlatformDefaultJavaObjectFactory factory = new PlatformDefaultJavaObjectFactory();
 
@@ -117,6 +121,7 @@ public class PlatformDefaultJavaObjectFactorySelfTest extends GridCommonAbstract
     /**
      * Test object creation with invalid property value.
      */
+    @Test
     public void testInvalidPropertyValue() {
         final PlatformDefaultJavaObjectFactory factory = new PlatformDefaultJavaObjectFactory();
 
@@ -132,6 +137,7 @@ public class PlatformDefaultJavaObjectFactorySelfTest extends GridCommonAbstract
     /**
      * Test object creation without default constructor.
      */
+    @Test
     public void testNoDefaultConstructor() {
         final PlatformDefaultJavaObjectFactory factory = new PlatformDefaultJavaObjectFactory();
 
@@ -147,6 +153,7 @@ public class PlatformDefaultJavaObjectFactorySelfTest extends GridCommonAbstract
     /**
      * Test object creation with null class name.
      */
+    @Test
     public void testNullClassName() {
         final PlatformDefaultJavaObjectFactory factory = new PlatformDefaultJavaObjectFactory();
 
@@ -170,6 +177,7 @@ public class PlatformDefaultJavaObjectFactorySelfTest extends GridCommonAbstract
     /**
      * Test object creation with invalid class name.
      */
+    @Test
     public void testInvalidClassName() {
         final PlatformDefaultJavaObjectFactory factory = new PlatformDefaultJavaObjectFactory();
 

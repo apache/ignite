@@ -89,6 +89,7 @@ public class GridCachePartitionedFilteredPutSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAndRollbackCheckNear() throws Exception {
         doPutAndRollback();
 
@@ -100,6 +101,7 @@ public class GridCachePartitionedFilteredPutSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAndRollbackCheckDht() throws Exception {
         doPutAndRollback();
 

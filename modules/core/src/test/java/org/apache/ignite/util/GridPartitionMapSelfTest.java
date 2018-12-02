@@ -35,6 +35,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 @GridCommonTest(group = "Utils")
 public class GridPartitionMapSelfTest extends GridCommonAbstractTest {
     /** */
+    @Test
     public void testPartitionStateMap() {
         GridPartitionStateMap map = initMap(new GridPartitionStateMap());
 
@@ -92,6 +93,7 @@ public class GridPartitionMapSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testEqualsAndHashCode() {
         GridPartitionStateMap map1 = initMap(new GridPartitionStateMap());
 
@@ -109,6 +111,7 @@ public class GridPartitionMapSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testCopy() {
         GridPartitionStateMap map1 = initMap(new GridPartitionStateMap());
 
@@ -134,6 +137,7 @@ public class GridPartitionMapSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testCopyNoActive() {
         GridPartitionStateMap map2 = new GridPartitionStateMap();
 
@@ -150,6 +154,7 @@ public class GridPartitionMapSelfTest extends GridCommonAbstractTest {
     /**
      * Tests that entries from {@link Iterator#next()} remain unaltered.
      */
+    @Test
     public void testIteratorNext() {
         GridPartitionStateMap map = new GridPartitionStateMap();
 
@@ -182,6 +187,7 @@ public class GridPartitionMapSelfTest extends GridCommonAbstractTest {
     /**
      * Tests {@link GridDhtPartitionState} compatibility with {@link TreeMap} on random operations.
      */
+    @Test
     public void testOnRandomOperations() {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 

@@ -100,6 +100,7 @@ public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRemovesDuringRebalancing() throws Exception {
         IgniteEx ig = startGrid(0);
 

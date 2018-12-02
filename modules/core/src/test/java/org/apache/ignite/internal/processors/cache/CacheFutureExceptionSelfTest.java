@@ -73,6 +73,7 @@ public class CacheFutureExceptionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAsyncCacheFuture() throws Exception {
         startGrid(0);
 

@@ -119,6 +119,7 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSameStore() throws Exception {
         IgniteEx grid = grid(0);
 
@@ -171,6 +172,7 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDifferentStores() throws Exception {
         IgniteEx grid = grid(0);
 
@@ -226,6 +228,7 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNonPersistentCache() throws Exception {
         IgniteEx grid = grid(0);
 

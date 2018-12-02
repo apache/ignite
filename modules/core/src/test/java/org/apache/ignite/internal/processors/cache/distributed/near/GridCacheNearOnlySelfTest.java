@@ -36,6 +36,7 @@ public abstract class GridCacheNearOnlySelfTest extends GridCacheClientModesAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateNearOnlyReader() throws Exception {
         IgniteCache<Object, Object> dhtCache = dhtCache();
 

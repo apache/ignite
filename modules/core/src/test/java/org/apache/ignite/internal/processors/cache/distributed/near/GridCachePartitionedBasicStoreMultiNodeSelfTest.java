@@ -130,6 +130,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutFromPrimary() throws Exception {
         IgniteCache<Integer, String> cache = jcache(0);
 
@@ -143,6 +144,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutFromBackup() throws Exception {
         IgniteCache<Integer, String> cache = jcache(0);
 
@@ -156,6 +158,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutFromNear() throws Exception {
         IgniteCache<Integer, String> cache = jcache(0);
 
@@ -169,6 +172,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutIfAbsentFromPrimary() throws Exception {
         IgniteCache<Integer, String> cache = jcache(0);
 
@@ -182,6 +186,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutIfAbsentFromBackup() throws Exception {
         IgniteCache<Integer, String> cache = jcache(0);
 
@@ -195,6 +200,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutIfAbsentFromNear() throws Exception {
         IgniteCache<Integer, String> cache = jcache(0);
 
@@ -208,6 +214,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAll() throws Exception {
         IgniteCache<Integer, String> cache = jcache(0);
 
@@ -224,6 +231,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleOperations() throws Exception {
         IgniteCache<Integer, String> cache = jcache(0);
 

@@ -116,6 +116,7 @@ public abstract class GridCacheGetAndTransformStoreAbstractTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAndTransform() throws Exception {
         final AtomicBoolean finish = new AtomicBoolean();
 

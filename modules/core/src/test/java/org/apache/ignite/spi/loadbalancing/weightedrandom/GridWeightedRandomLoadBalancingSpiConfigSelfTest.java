@@ -29,6 +29,7 @@ public class GridWeightedRandomLoadBalancingSpiConfigSelfTest extends
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNegativeConfig() throws Exception {
         checkNegativeSpiProperty(new WeightedRandomLoadBalancingSpi(), "nodeWeight", 0);
     }

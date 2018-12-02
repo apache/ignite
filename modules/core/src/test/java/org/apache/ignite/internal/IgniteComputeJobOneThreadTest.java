@@ -55,6 +55,7 @@ public class IgniteComputeJobOneThreadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoTimeout() throws Exception {
         Ignite ignite = ignite(0);
 

@@ -128,6 +128,7 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedPrimarySyncRestart() throws Exception {
         multithreadedTests(PRIMARY_SYNC, true);
     }
@@ -135,6 +136,7 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedPrimarySync() throws Exception {
         multithreadedTests(PRIMARY_SYNC, false);
     }
@@ -142,6 +144,7 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedFullSync() throws Exception {
         multithreadedTests(FULL_SYNC, false);
     }
@@ -149,6 +152,7 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedFullSyncRestart() throws Exception {
         multithreadedTests(FULL_SYNC, true);
     }
@@ -156,6 +160,7 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedFullAsync() throws Exception {
         multithreadedTests(FULL_ASYNC, false);
     }
@@ -163,6 +168,7 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedFullAsyncRestart() throws Exception {
         multithreadedTests(FULL_ASYNC, true);
     }

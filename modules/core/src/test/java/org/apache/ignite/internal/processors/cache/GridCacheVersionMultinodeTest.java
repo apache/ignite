@@ -89,6 +89,7 @@ public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVersionTx() throws Exception {
         atomicityMode = TRANSACTIONAL;
 
@@ -98,6 +99,7 @@ public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVersionTxNearEnabled() throws Exception {
         atomicityMode = TRANSACTIONAL;
 
@@ -109,6 +111,7 @@ public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVersionAtomicPrimary() throws Exception {
         atomicityMode = ATOMIC;
 
@@ -118,6 +121,7 @@ public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVersionAtomicPrimaryNearEnabled() throws Exception {
         atomicityMode = ATOMIC;
 

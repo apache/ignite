@@ -48,6 +48,7 @@ public class GridTaskInstanceExecutionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSynchronousExecute() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 

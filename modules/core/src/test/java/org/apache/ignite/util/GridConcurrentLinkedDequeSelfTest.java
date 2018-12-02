@@ -30,6 +30,7 @@ public class GridConcurrentLinkedDequeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPoll() throws Exception {
         ConcurrentLinkedDeque8<Integer> deque = new ConcurrentLinkedDeque8<>();
 
@@ -66,6 +67,7 @@ public class GridConcurrentLinkedDequeSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testUnlink() {
         ConcurrentLinkedDeque8<Integer> deque = new ConcurrentLinkedDeque8<>();
 
@@ -116,6 +118,7 @@ public class GridConcurrentLinkedDequeSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testEmptyDeque() {
         ConcurrentLinkedDeque8<Integer> deque = new ConcurrentLinkedDeque8<>();
 
@@ -175,6 +178,7 @@ public class GridConcurrentLinkedDequeSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testUnlinkWithIterator() {
         ConcurrentLinkedDeque8<Integer> q = new ConcurrentLinkedDeque8<>();
 
@@ -211,6 +215,7 @@ public class GridConcurrentLinkedDequeSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testUnlinkLastWithIterator() {
         ConcurrentLinkedDeque8<Integer> q = new ConcurrentLinkedDeque8<>();
 

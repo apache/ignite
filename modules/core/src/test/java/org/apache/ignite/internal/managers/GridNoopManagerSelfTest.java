@@ -35,6 +35,7 @@ public class GridNoopManagerSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testEnabledManager() throws IgniteCheckedException {
         GridTestKernalContext ctx = new GridTestKernalContext(new GridStringLogger());
 

@@ -64,6 +64,7 @@ public class OomFailureHandlerTest extends AbstractFailureHandlerTest {
     /**
      * Test OOME in IgniteCompute.
      */
+    @Test
     public void testComputeOomError() throws Exception {
         IgniteEx ignite0 = startGrid(0);
         IgniteEx ignite1 = startGrid(1);
@@ -88,6 +89,7 @@ public class OomFailureHandlerTest extends AbstractFailureHandlerTest {
     /**
      * Test OOME in EntryProcessor.
      */
+    @Test
     public void testEntryProcessorOomError() throws Exception {
         IgniteEx ignite0 = startGrid(0);
         IgniteEx ignite1 = startGrid(1);
@@ -121,6 +123,7 @@ public class OomFailureHandlerTest extends AbstractFailureHandlerTest {
     /**
      * Test OOME in service method invocation.
      */
+    @Test
     public void testServiceInvokeOomError() throws Exception {
         IgniteEx ignite0 = startGrid(0);
         IgniteEx ignite1 = startGrid(1);
@@ -149,6 +152,7 @@ public class OomFailureHandlerTest extends AbstractFailureHandlerTest {
     /**
      * Test OOME in service execute.
      */
+    @Test
     public void testServiceExecuteOomError() throws Exception {
         IgniteEx ignite0 = startGrid(0);
         IgniteEx ignite1 = startGrid(1);
@@ -168,6 +172,7 @@ public class OomFailureHandlerTest extends AbstractFailureHandlerTest {
     /**
      * Test OOME in event listener.
      */
+    @Test
     public void testEventListenerOomError() throws Exception {
         IgniteEx ignite0 = startGrid(0);
         IgniteEx ignite1 = startGrid(1);

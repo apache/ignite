@@ -42,6 +42,7 @@ public class IgnitePdsExchangeDuringCheckpointTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testExchangeOnNodeLeft() throws Exception {
         for (int i = 0; i < 5; i++) {
             startGrids(3);
@@ -63,6 +64,7 @@ public class IgnitePdsExchangeDuringCheckpointTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testExchangeOnNodeJoin() throws Exception {
         for (int i = 0; i < 5; i++) {
             startGrids(2);

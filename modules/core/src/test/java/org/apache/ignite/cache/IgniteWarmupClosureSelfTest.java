@@ -72,6 +72,7 @@ public class IgniteWarmupClosureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWarmupClosure() throws Exception {
         startGrid(1);
     }

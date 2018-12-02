@@ -105,6 +105,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandomOperationJCacheApiKeepBinary() throws Exception {
         testRandomOperation(true, false, false, false, true);
     }
@@ -112,6 +113,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandomOperationJCacheApiAsyncCallback() throws Exception {
         testRandomOperation(true, false, false, true, false);
     }
@@ -119,6 +121,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandomOperationJCacheApiWithFilter() throws Exception {
         testRandomOperation(true, false, true, false, false);
     }
@@ -126,6 +129,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandomOperationJCacheApiWithFilterAsyncCallback() throws Exception {
         testRandomOperation(true, false, true, true, false);
     }
@@ -133,6 +137,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandomOperationJCacheApiSyncWithFilter() throws Exception {
         testRandomOperation(true, true, true, false, false);
     }
@@ -140,6 +145,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandomOperation() throws Exception {
         testRandomOperation(true, true, false, false, false);
     }
@@ -147,6 +153,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandomOperationWithKeepBinary() throws Exception {
         testRandomOperation(true, true, false, false, true);
     }
@@ -154,6 +161,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandomOperationWithAsyncCallback() throws Exception {
         testRandomOperation(true, true, false, true, false);
     }
@@ -161,6 +169,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandomOperationWithFilter() throws Exception {
         testRandomOperation(true, true, true, false, false);
     }
@@ -168,6 +177,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandomOperationWithFilterWithKeepBinary() throws Exception {
         testRandomOperation(true, true, true, false, true);
     }
@@ -175,6 +185,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandomOperationWithFilterAsyncCallback() throws Exception {
         testRandomOperation(true, true, true, true, false);
     }
@@ -623,6 +634,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoveRemoveScenario() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -717,7 +729,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
                         while (evts.size() != 10) {
                             Thread.sleep(100);
                         }
-                        
+
                         evts.clear();
 
                         log.info("Finish iteration: " + i);

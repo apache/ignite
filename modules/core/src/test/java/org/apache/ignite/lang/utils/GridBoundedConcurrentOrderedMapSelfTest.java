@@ -32,6 +32,7 @@ public class GridBoundedConcurrentOrderedMapSelfTest extends GridCommonAbstractT
     /**
      *
      */
+    @Test
     public void testEvictionSingleElement() {
         SortedMap<Integer,String> m = new GridBoundedConcurrentOrderedMap<>(1);
 
@@ -52,6 +53,7 @@ public class GridBoundedConcurrentOrderedMapSelfTest extends GridCommonAbstractT
     /**
      *
      */
+    @Test
     public void testEvictionListener() {
         GridBoundedConcurrentOrderedMap<Integer,String> m = new GridBoundedConcurrentOrderedMap<>(1);
 

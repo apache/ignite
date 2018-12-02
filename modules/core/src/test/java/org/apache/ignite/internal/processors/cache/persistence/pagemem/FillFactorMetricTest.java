@@ -95,6 +95,7 @@ public class FillFactorMetricTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testEmptyCachePagesFillFactor() throws Exception {
         startGrids(1);
 
@@ -112,6 +113,7 @@ public class FillFactorMetricTest extends GridCommonAbstractTest {
     /**
      * throws if failed.
      */
+    @Test
     public void testFillAndEmpty() throws Exception {
         final AtomicBoolean stopLoadFlag = new AtomicBoolean();
         final AtomicBoolean doneFlag = new AtomicBoolean();

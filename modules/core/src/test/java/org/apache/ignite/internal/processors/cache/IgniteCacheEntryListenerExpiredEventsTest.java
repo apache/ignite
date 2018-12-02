@@ -74,6 +74,7 @@ public class IgniteCacheEntryListenerExpiredEventsTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExpiredEventAtomic() throws Exception {
         checkExpiredEvents(cacheConfiguration(PARTITIONED, ATOMIC));
     }
@@ -81,6 +82,7 @@ public class IgniteCacheEntryListenerExpiredEventsTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExpiredEventTx() throws Exception {
         checkExpiredEvents(cacheConfiguration(PARTITIONED, TRANSACTIONAL));
     }

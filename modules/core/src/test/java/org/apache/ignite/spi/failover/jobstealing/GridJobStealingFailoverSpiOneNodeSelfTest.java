@@ -69,6 +69,7 @@ public class GridJobStealingFailoverSpiOneNodeSelfTest extends GridSpiAbstractTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testFailover() throws Exception {
         ClusterNode rmt = getSpiContext().remoteNodes().iterator().next();
 
@@ -86,6 +87,7 @@ public class GridJobStealingFailoverSpiOneNodeSelfTest extends GridSpiAbstractTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNoFailover() throws Exception {
         ClusterNode rmt = getSpiContext().remoteNodes().iterator().next();
 

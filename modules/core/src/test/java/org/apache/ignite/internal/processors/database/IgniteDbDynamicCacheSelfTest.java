@@ -79,6 +79,7 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreate() throws Exception {
         int iterations = 200;
 
@@ -112,6 +113,7 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleDynamicCaches() throws Exception {
         int caches = 10;
 

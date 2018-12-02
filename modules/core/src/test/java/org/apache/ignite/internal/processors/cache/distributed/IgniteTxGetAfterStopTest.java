@@ -74,6 +74,7 @@ public class IgniteTxGetAfterStopTest extends IgniteCacheAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicated() throws Exception {
         getAfterStop(REPLICATED, null);
     }
@@ -81,6 +82,7 @@ public class IgniteTxGetAfterStopTest extends IgniteCacheAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitioned() throws Exception {
         getAfterStop(PARTITIONED, new NearCacheConfiguration());
     }
@@ -88,6 +90,7 @@ public class IgniteTxGetAfterStopTest extends IgniteCacheAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedNearDisabled() throws Exception {
         getAfterStop(PARTITIONED, null);
     }

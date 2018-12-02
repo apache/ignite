@@ -60,6 +60,7 @@ public class PageIdDistributionTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testDistributions() {
         printPageIdDistribution(
             CU.cacheId("partitioned"), 1024, 10_000, 32, 2.5f);
@@ -149,6 +150,7 @@ public class PageIdDistributionTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRealHistory() throws Exception {
         int capacity = CACHE_IDS.length * PARTS * PAGES;
 

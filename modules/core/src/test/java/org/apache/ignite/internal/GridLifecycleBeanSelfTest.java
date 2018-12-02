@@ -61,6 +61,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetIgnite() throws Exception {
         final AtomicBoolean done = new AtomicBoolean();
 
@@ -96,6 +97,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoErrors() throws Exception {
         bean = new LifeCycleBaseBean();
 
@@ -125,6 +127,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGridErrorBeforeStart() throws Exception {
         checkBeforeStart(true);
     }
@@ -132,6 +135,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOtherErrorBeforeStart() throws Exception {
         checkBeforeStart(false);
     }
@@ -139,6 +143,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGridErrorAfterStart() throws Exception {
         checkAfterStart(true);
     }
@@ -146,6 +151,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOtherErrorAfterStart() throws Exception {
         checkAfterStart(false);
     }
@@ -207,6 +213,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGridErrorBeforeStop() throws Exception {
         checkOnStop(BEFORE_NODE_STOP, true);
 
@@ -219,6 +226,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOtherErrorBeforeStop() throws Exception {
         checkOnStop(BEFORE_NODE_STOP, false);
 
@@ -231,6 +239,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGridErrorAfterStop() throws Exception {
         checkOnStop(AFTER_NODE_STOP, true);
 
@@ -243,6 +252,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOtherErrorAfterStop() throws Exception {
         checkOnStop(AFTER_NODE_STOP, false);
 

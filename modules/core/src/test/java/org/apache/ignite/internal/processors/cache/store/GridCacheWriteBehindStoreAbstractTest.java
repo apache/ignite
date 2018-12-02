@@ -116,6 +116,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
     }
 
     /** @throws Exception If test fails. */
+    @Test
     public void testWriteThrough() throws Exception {
         IgniteCache<Integer, String> cache = jcache();
 
@@ -181,6 +182,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
     }
 
     /** @throws Exception If test failed. */
+    @Test
     public void testReadThrough() throws Exception {
         IgniteCache<Integer, String> cache = jcache();
 
@@ -273,6 +275,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testMultithreaded() throws Exception {
         final ConcurrentMap<String, Set<Integer>> perThread = new ConcurrentHashMap<>();
 

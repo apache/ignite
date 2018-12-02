@@ -119,6 +119,7 @@ public class CacheDiscoveryDataConcurrentJoinTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentJoin() throws Exception {
         for (int iter = 0; iter < ITERATIONS; iter++) {
             log.info("Iteration: " + iter);
@@ -169,6 +170,7 @@ public class CacheDiscoveryDataConcurrentJoinTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentJoinCacheWithGroup() throws Exception {
         withCacheGrp = true;
 

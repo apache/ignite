@@ -65,6 +65,7 @@ public class IgniteUpdateNotifierPerClusterSettingSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNotifierEnabledForCluster() throws Exception {
         checkNotifierStatusForCluster(true);
     }
@@ -72,6 +73,7 @@ public class IgniteUpdateNotifierPerClusterSettingSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNotifierDisabledForCluster() throws Exception {
         checkNotifierStatusForCluster(false);
     }

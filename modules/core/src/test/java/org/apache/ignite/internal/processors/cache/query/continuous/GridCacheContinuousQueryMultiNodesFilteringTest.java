@@ -89,6 +89,7 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
     }
 
     /** */
+    @Test
     public void testFiltersAndListeners() throws Exception {
         for (int i = 1; i <= SERVER_GRIDS_COUNT; i++)
             startGrid(i, false);
@@ -146,6 +147,7 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWithNodeFilter() throws Exception {
         List<QueryCursor> qryCursors = new ArrayList<>();
 

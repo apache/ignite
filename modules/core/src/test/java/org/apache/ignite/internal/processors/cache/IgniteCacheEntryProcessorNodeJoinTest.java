@@ -128,6 +128,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleEntryProcessorNodeJoin() throws Exception {
         checkEntryProcessorNodeJoin(false);
     }
@@ -135,6 +136,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAllEntryProcessorNodeJoin() throws Exception {
         checkEntryProcessorNodeJoin(true);
     }
@@ -142,6 +144,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEntryProcessorNodeLeave() throws Exception {
         if (MvccFeatureChecker.forcedMvcc())
             fail("https://issues.apache.org/jira/browse/IGNITE-10254");
@@ -336,6 +339,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplaceNodeJoin() throws Exception {
         final AtomicReference<Throwable> error = new AtomicReference<>();
         final int started = 6;

@@ -84,6 +84,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdatePartitionAtomic() throws Exception {
         concurrentUpdatePartition(ATOMIC, false);
     }
@@ -91,6 +92,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdatePartitionTx() throws Exception {
         concurrentUpdatePartition(TRANSACTIONAL, false);
     }
@@ -98,6 +100,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdatePartitionMvccTx() throws Exception {
         concurrentUpdatePartition(TRANSACTIONAL_SNAPSHOT, false);
     }
@@ -105,6 +108,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdatePartitionAtomicCacheGroup() throws Exception {
         concurrentUpdatePartition(ATOMIC, true);
     }
@@ -112,6 +116,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdatePartitionTxCacheGroup() throws Exception {
         concurrentUpdatePartition(TRANSACTIONAL, true);
     }
@@ -119,6 +124,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdatePartitionMvccTxCacheGroup() throws Exception {
         concurrentUpdatePartition(TRANSACTIONAL_SNAPSHOT, true);
     }
@@ -274,6 +280,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdatesAndQueryStartAtomic() throws Exception {
         concurrentUpdatesAndQueryStart(ATOMIC, false);
     }
@@ -281,6 +288,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdatesAndQueryStartTx() throws Exception {
         concurrentUpdatesAndQueryStart(TRANSACTIONAL, false);
     }
@@ -288,6 +296,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdatesAndQueryStartMvccTx() throws Exception {
         concurrentUpdatesAndQueryStart(TRANSACTIONAL_SNAPSHOT, false);
     }
@@ -295,6 +304,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdatesAndQueryStartAtomicCacheGroup() throws Exception {
         concurrentUpdatesAndQueryStart(ATOMIC, true);
     }
@@ -302,6 +312,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdatesAndQueryStartTxCacheGroup() throws Exception {
         concurrentUpdatesAndQueryStart(TRANSACTIONAL, true);
     }
@@ -309,6 +320,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdatesAndQueryStartMvccTxCacheGroup() throws Exception {
         concurrentUpdatesAndQueryStart(TRANSACTIONAL_SNAPSHOT, true);
     }

@@ -95,6 +95,7 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRentingStateRepairAfterRestart() throws Exception {
         try {
             IgniteEx g0 = startGrid(0);

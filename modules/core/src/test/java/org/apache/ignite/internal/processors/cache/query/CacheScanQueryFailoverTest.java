@@ -85,6 +85,7 @@ public class CacheScanQueryFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testScanQueryWithFailedClosures() throws Exception {
         Ignite srv = startGrids(4);
         Ignite client = startGrid("client");
@@ -103,6 +104,7 @@ public class CacheScanQueryFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testScanQueryOverLocalCacheWithFailedClosures() throws Exception {
         Ignite srv = startGrids(4);
 

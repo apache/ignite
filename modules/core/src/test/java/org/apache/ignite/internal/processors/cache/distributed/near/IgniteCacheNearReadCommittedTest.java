@@ -51,6 +51,7 @@ public class IgniteCacheNearReadCommittedTest extends GridCacheAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadCommittedCacheCleanup() throws Exception {
         IgniteCache<Integer, Integer> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
 

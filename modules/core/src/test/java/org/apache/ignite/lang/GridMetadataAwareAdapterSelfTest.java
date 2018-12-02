@@ -36,6 +36,7 @@ public class GridMetadataAwareAdapterSelfTest extends GridCommonAbstractTest {
      * Junit.
      */
     @SuppressWarnings({"AssertWithSideEffects"})
+    @Test
     public void test() {
         GridMetadataAwareAdapter ma = new GridMetadataAwareAdapter();
 

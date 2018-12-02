@@ -31,6 +31,7 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNegativeConfig() throws Exception {
         checkNegativeSpiProperty(new TcpCommunicationSpi(), "localPort", 1023);
         checkNegativeSpiProperty(new TcpCommunicationSpi(), "localPort", 65636);
@@ -55,6 +56,7 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalPortRange() throws Exception {
         IgniteConfiguration cfg = getConfiguration();
 

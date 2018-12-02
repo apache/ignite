@@ -64,6 +64,7 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testKeepBinaryWithInterceptor() throws Exception {
         keepBinaryWithInterceptor(cacheConfiguration(ATOMIC, false));
         keepBinaryWithInterceptor(cacheConfiguration(TRANSACTIONAL, false));

@@ -33,6 +33,7 @@ public class FileLocksTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWriteLocks() throws Exception {
         final File file = new File(LOCK_FILE_PATH);
 
@@ -77,6 +78,7 @@ public class FileLocksTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadLocks() throws Exception {
         final File file = new File(LOCK_FILE_PATH);
 

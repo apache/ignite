@@ -98,6 +98,7 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testJobNotFailedOver() throws Exception {
         failed.set(false);
         routed.set(false);
@@ -129,6 +130,7 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testJobFailedOver() throws Exception {
         failed.set(false);
         routed.set(false);
@@ -166,6 +168,7 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
      *
      * @throws Exception If error happens.
      */
+    @Test
     public void testJobNotFailedOverWithStaticProjection() throws Exception {
         failed.set(false);
         routed.set(false);

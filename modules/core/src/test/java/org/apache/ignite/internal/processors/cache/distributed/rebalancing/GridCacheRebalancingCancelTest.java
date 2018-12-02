@@ -62,6 +62,7 @@ public class GridCacheRebalancingCancelTest extends GridCommonAbstractTest {
      *
      * @throws Exception Exception.
      */
+    @Test
     public void testClientNodeJoinAtRebalancing() throws Exception {
         final IgniteEx ignite0 = startGrid(0);
 

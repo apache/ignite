@@ -124,6 +124,7 @@ public class IgniteServiceDeploymentClassLoadingDefaultMarshallerTest extends Gr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServiceDeployment1() throws Exception {
         startGrid(SERVER_NODE);
 
@@ -141,6 +142,7 @@ public class IgniteServiceDeploymentClassLoadingDefaultMarshallerTest extends Gr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServiceDeployment2() throws Exception {
         startGrid(SERVER_NODE);
 
@@ -154,6 +156,7 @@ public class IgniteServiceDeploymentClassLoadingDefaultMarshallerTest extends Gr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServiceDeployment3() throws Exception {
         startGrid(SERVER_NODE_WITH_EXT_CLASS_LOADER).services().deploy(serviceConfig());
 

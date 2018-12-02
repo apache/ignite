@@ -81,6 +81,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testTwoJobsMultithreaded() throws Exception {
         final AtomicReference<Exception> fail = new AtomicReference<>(null);
 
@@ -136,6 +137,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testJoinedNodeCanStealJobs() throws Exception {
         final AtomicReference<Exception> fail = new AtomicReference<>(null);
 

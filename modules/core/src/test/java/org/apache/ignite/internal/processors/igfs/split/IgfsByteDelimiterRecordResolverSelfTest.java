@@ -31,6 +31,7 @@ public class IgfsByteDelimiterRecordResolverSelfTest extends IgfsAbstractRecordR
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNoDelimiters() throws Exception {
         byte[] delim = wrap(2);
         byte[] data = array(F.t(wrap(1), 8));
@@ -47,6 +48,7 @@ public class IgfsByteDelimiterRecordResolverSelfTest extends IgfsAbstractRecordR
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testHeadDelimiter() throws Exception {
         byte[] delim = array(F.t(wrap(2), 8));
         byte[] data = array(F.t(delim, 1), F.t(wrap(1), 8));
@@ -73,6 +75,7 @@ public class IgfsByteDelimiterRecordResolverSelfTest extends IgfsAbstractRecordR
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testEndDelimiter() throws Exception {
         byte[] delim = array(F.t(wrap(2), 8));
         byte[] data = array(F.t(wrap(1), 8), F.t(delim, 1));
@@ -99,6 +102,7 @@ public class IgfsByteDelimiterRecordResolverSelfTest extends IgfsAbstractRecordR
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMiddleDelimiter() throws Exception {
         byte[] delim = array(F.t(wrap(2), 8));
         byte[] data = array(F.t(wrap(1), 8), F.t(delim, 1), F.t(wrap(1), 8));
@@ -139,6 +143,7 @@ public class IgfsByteDelimiterRecordResolverSelfTest extends IgfsAbstractRecordR
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTwoHeadDelimiters() throws Exception {
         byte[] delim = array(F.t(wrap(2), 8));
         byte[] data = array(F.t(delim, 2), F.t(wrap(1), 8));
@@ -179,6 +184,7 @@ public class IgfsByteDelimiterRecordResolverSelfTest extends IgfsAbstractRecordR
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTwoTailDelimiters() throws Exception {
         byte[] delim = array(F.t(wrap(2), 8));
         byte[] data = array(F.t(wrap(1), 8), F.t(delim, 2));
@@ -219,6 +225,7 @@ public class IgfsByteDelimiterRecordResolverSelfTest extends IgfsAbstractRecordR
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testHeadAndTailDelimiters() throws Exception {
         byte[] delim = array(F.t(wrap(2), 8));
         byte[] data = array(F.t(delim, 1), F.t(wrap(1), 8), F.t(delim, 1));
@@ -259,6 +266,7 @@ public class IgfsByteDelimiterRecordResolverSelfTest extends IgfsAbstractRecordR
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDelimiterStartsWithTheSameBytesAsLastPreviousDataByte() throws Exception {
         byte[] delim = array(F.t(wrap(1, 1, 2), 1));
         byte[] data = array(F.t(wrap(1), 1), F.t(delim, 1), F.t(wrap(1), 1));

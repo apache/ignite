@@ -140,6 +140,7 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testCustomResolver() throws Exception {
         final Map<InetSocketAddress, Collection<InetSocketAddress>> map = new HashMap<>();
 
@@ -160,6 +161,7 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBasicResolverMapPorts() throws Exception {
         Map<String, String> map = new HashMap<>();
 
@@ -176,6 +178,7 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBasicResolverMapAddress() throws Exception {
         Map<String, String> map = new HashMap<>();
 
@@ -191,6 +194,7 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBasicResolverErrors() throws Exception {
         GridTestUtils.assertThrows(
             log,

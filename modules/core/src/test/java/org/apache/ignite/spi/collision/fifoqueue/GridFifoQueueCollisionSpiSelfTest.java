@@ -35,6 +35,7 @@ public class GridFifoQueueCollisionSpiSelfTest extends GridSpiAbstractTest<FifoQ
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollision0() throws Exception {
         int activeCnt = 2;
 
@@ -67,6 +68,7 @@ public class GridFifoQueueCollisionSpiSelfTest extends GridSpiAbstractTest<FifoQ
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollision1() throws Exception {
 
         getSpi().setParallelJobsNumber(32);
@@ -95,6 +97,7 @@ public class GridFifoQueueCollisionSpiSelfTest extends GridSpiAbstractTest<FifoQ
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollision2() throws Exception {
         getSpi().setParallelJobsNumber(3);
 
@@ -116,6 +119,7 @@ public class GridFifoQueueCollisionSpiSelfTest extends GridSpiAbstractTest<FifoQ
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollision3() throws Exception {
         getSpi().setParallelJobsNumber(15);
 

@@ -87,6 +87,7 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAutomaticPreload() throws Exception {
         Ignite g0 = startGrid(0);
 

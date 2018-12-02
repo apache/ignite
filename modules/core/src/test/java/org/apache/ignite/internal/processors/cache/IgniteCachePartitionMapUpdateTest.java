@@ -115,6 +115,7 @@ public class IgniteCachePartitionMapUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionMapUpdate1() throws Exception {
         cache1 = false;
         cache2 = false;
@@ -156,6 +157,7 @@ public class IgniteCachePartitionMapUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionMapUpdate2() throws Exception {
         startClientCache = true;
 
@@ -165,6 +167,7 @@ public class IgniteCachePartitionMapUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandom() throws Exception {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -202,6 +205,7 @@ public class IgniteCachePartitionMapUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandom2() throws Exception {
         startClientCache = true;
 

@@ -44,6 +44,7 @@ public class TcpClientDiscoverySpiCoordinatorChangeTest extends GridCommonAbstra
      *
      * @throws Exception If test fails.
      */
+    @Test
     public void testClientNotFailed() throws Exception {
         TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 

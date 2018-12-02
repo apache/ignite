@@ -80,6 +80,7 @@ public class IgnitePdsPageSizesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testPageSize_1k() throws Exception {
         checkPageSize(1024);
     }
@@ -87,6 +88,7 @@ public class IgnitePdsPageSizesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testPageSize_2k() throws Exception {
         checkPageSize(2 * 1024);
     }
@@ -94,6 +96,7 @@ public class IgnitePdsPageSizesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testPageSize_4k() throws Exception {
         checkPageSize(4 * 1024);
     }
@@ -101,6 +104,7 @@ public class IgnitePdsPageSizesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testPageSize_8k() throws Exception {
         checkPageSize(8 * 1024);
     }
@@ -108,6 +112,7 @@ public class IgnitePdsPageSizesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testPageSize_16k() throws Exception {
         checkPageSize(16 * 1024);
     }

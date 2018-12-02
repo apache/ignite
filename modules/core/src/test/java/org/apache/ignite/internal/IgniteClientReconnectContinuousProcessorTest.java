@@ -57,6 +57,7 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEventListenerReconnect() throws Exception {
         Ignite client = grid(serverCount());
 
@@ -114,6 +115,7 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMessageListenerReconnectAndStopFromServer() throws Exception {
         testMessageListenerReconnect(false);
     }
@@ -121,6 +123,7 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMessageListenerReconnectAndStopFromClient() throws Exception {
         testMessageListenerReconnect(true);
     }
@@ -212,6 +215,7 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheContinuousQueryReconnect() throws Exception {
         Ignite client = grid(serverCount());
 
@@ -249,6 +253,7 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheContinuousQueryReconnectNewServer() throws Exception {
         Ignite client = grid(serverCount());
 

@@ -33,7 +33,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
  *
- * Class to test the retrieval of a permit on a semaphore after initial semaphore owner has been closed. 
+ * Class to test the retrieval of a permit on a semaphore after initial semaphore owner has been closed.
  *
  * IGNITE-7090
  *
@@ -74,6 +74,7 @@ public class SemaphoreFailoverNoWaitingAcquirerTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReleasePermitsPartitioned() throws Exception {
         atomicsCacheMode = PARTITIONED;
 
@@ -83,6 +84,7 @@ public class SemaphoreFailoverNoWaitingAcquirerTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReleasePermitsReplicated() throws Exception {
         atomicsCacheMode = REPLICATED;
 

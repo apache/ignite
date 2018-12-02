@@ -225,6 +225,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      * Note: test was disabled for REPPLICATED cache case because IGNITE-607.
      * This comment should be removed if test passed stably.
      */
+    @Test
     public void testGetPutRemove() throws Exception {
         runTest(
             new TestCacheRunnable() {
@@ -252,6 +253,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testGetPutRemoveTx1() throws Exception {
         runTest(new TestCacheRunnable() {
             @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
@@ -285,6 +287,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testGetPutRemoveTx2() throws Exception {
         runTest(new TestCacheRunnable() {
             @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
@@ -325,6 +328,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      * Note: test was disabled for REPPLICATED cache case because IGNITE-607.
      * This comment should be removed if test passed stably.
      */
+    @Test
     public void testGetPutRemoveAsync() throws Exception {
         runTest(new TestCacheRunnable() {
             @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
@@ -351,6 +355,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testGetPutRemoveAsyncTx1() throws Exception {
         runTest(new TestCacheRunnable() {
             @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
@@ -384,6 +389,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testGetPutRemoveAsyncTx2() throws Exception {
         runTest(new TestCacheRunnable() {
             @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
@@ -421,6 +427,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testPutRemovex() throws Exception {
         runTest(new TestCacheRunnable() {
             @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
@@ -445,6 +452,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testPutRemovexTx1() throws Exception {
         runTest(new TestCacheRunnable() {
             @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
@@ -475,6 +483,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testPutRemovexTx2() throws Exception {
         runTest(new TestCacheRunnable() {
             @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
@@ -510,6 +519,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testPutIfAbsent() throws Exception {
         runTest(new TestCacheRunnable() {
             @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
@@ -541,6 +551,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testPutIfAbsentTx() throws Exception {
         runTest(new TestCacheRunnable() {
             @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
@@ -579,6 +590,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testPutIfAbsentAsync() throws Exception {
         runTest(new TestCacheRunnable() {
             @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
@@ -613,6 +625,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      * @throws Exception If test failed.
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testPutIfAbsentAsyncTx() throws Exception {
         IgniteBiTuple[] evts = new IgniteBiTuple[] {F.t(EVT_CACHE_OBJECT_PUT, 2 * gridCnt)};
 

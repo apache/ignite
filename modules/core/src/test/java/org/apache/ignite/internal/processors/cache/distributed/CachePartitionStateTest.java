@@ -89,6 +89,7 @@ public class CachePartitionStateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionState1_1() throws Exception {
         partitionState1(0, true);
     }
@@ -96,6 +97,7 @@ public class CachePartitionStateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionState1_2() throws Exception {
         partitionState1(1, true);
     }
@@ -103,6 +105,7 @@ public class CachePartitionStateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionState1_2_NoCacheOnCoordinator() throws Exception {
         partitionState1(1, false);
     }
@@ -110,6 +113,7 @@ public class CachePartitionStateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionState1_3() throws Exception {
         partitionState1(100, true);
     }
@@ -117,6 +121,7 @@ public class CachePartitionStateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionState2_1() throws Exception {
         partitionState2(0, true);
     }
@@ -124,6 +129,7 @@ public class CachePartitionStateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionState2_2() throws Exception {
         partitionState2(1, true);
     }
@@ -131,6 +137,7 @@ public class CachePartitionStateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionState2_2_NoCacheOnCoordinator() throws Exception {
         partitionState2(1, false);
     }
@@ -138,6 +145,7 @@ public class CachePartitionStateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionState2_3() throws Exception {
         partitionState2(100, true);
     }

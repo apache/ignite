@@ -32,6 +32,7 @@ public final class GridP2PTestTaskExecutionTest extends GridCommonAbstractTest {
      * Method executes GridP2PTestTask.
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testGridP2PTestTask() throws IgniteCheckedException {
         try (Ignite g  = G.start()) {
             assert g != null;

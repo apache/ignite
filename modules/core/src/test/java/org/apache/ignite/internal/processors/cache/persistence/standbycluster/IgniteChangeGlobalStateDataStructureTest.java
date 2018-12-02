@@ -37,6 +37,7 @@ public class IgniteChangeGlobalStateDataStructureTest extends IgniteChangeGlobal
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeActivateAndActivateAtomicLong() throws Exception {
         String lName = "myLong";
 
@@ -108,6 +109,7 @@ public class IgniteChangeGlobalStateDataStructureTest extends IgniteChangeGlobal
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeActivateAndActivateCountDownLatch() throws Exception {
         final AtomicInteger cnt = new AtomicInteger();
 
@@ -202,6 +204,7 @@ public class IgniteChangeGlobalStateDataStructureTest extends IgniteChangeGlobal
     /**
      *
      */
+    @Test
     public void testDeActivateAndActivateAtomicSequence(){
         String seqName = "mySeq";
 

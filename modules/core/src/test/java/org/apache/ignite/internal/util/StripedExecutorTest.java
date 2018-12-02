@@ -44,6 +44,7 @@ public class StripedExecutorTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCompletedTasks() throws Exception {
         stripedExecSvc.execute(0, new TestRunnable());
         stripedExecSvc.execute(1, new TestRunnable());
@@ -56,6 +57,7 @@ public class StripedExecutorTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStripesCompletedTasks() throws Exception {
         stripedExecSvc.execute(0, new TestRunnable());
         stripedExecSvc.execute(1, new TestRunnable());
@@ -72,6 +74,7 @@ public class StripedExecutorTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStripesActiveStatuses() throws Exception {
         stripedExecSvc.execute(0, new TestRunnable());
         stripedExecSvc.execute(1, new TestRunnable(true));
@@ -88,6 +91,7 @@ public class StripedExecutorTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActiveStripesCount() throws Exception {
         stripedExecSvc.execute(0, new TestRunnable());
         stripedExecSvc.execute(1, new TestRunnable(true));
@@ -100,6 +104,7 @@ public class StripedExecutorTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStripesQueueSizes() throws Exception {
         stripedExecSvc.execute(0, new TestRunnable());
         stripedExecSvc.execute(0, new TestRunnable(true));
@@ -120,6 +125,7 @@ public class StripedExecutorTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueueSize() throws Exception {
         stripedExecSvc.execute(1, new TestRunnable());
         stripedExecSvc.execute(1, new TestRunnable(true));

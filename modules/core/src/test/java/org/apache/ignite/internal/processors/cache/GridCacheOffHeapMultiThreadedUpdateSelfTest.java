@@ -40,6 +40,7 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransformTx() throws Exception {
         info(">>> PESSIMISTIC node 0");
 
@@ -109,6 +110,7 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutTxPessimistic() throws Exception {
         testPutTx(keyForNode(0), PESSIMISTIC);
 
@@ -121,6 +123,7 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPutTxOptimistic() throws Exception {
         testPutTx(keyForNode(0), OPTIMISTIC);
 
@@ -170,6 +173,7 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutxIfAbsentTxPessimistic() throws Exception {
         testPutxIfAbsentTx(keyForNode(0), PESSIMISTIC);
 
@@ -182,6 +186,7 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPutxIfAbsentTxOptimistic() throws Exception {
         testPutxIfAbsentTx(keyForNode(0), OPTIMISTIC);
 

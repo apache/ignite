@@ -51,6 +51,7 @@ public class GridNodeFilterSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSynchronousExecute() throws Exception {
         UUID nodeId = ignite.cluster().localNode().id();
 

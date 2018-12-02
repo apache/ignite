@@ -165,6 +165,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPut() throws Exception {
         executeTest(new Callable<Integer>() {
             /** {@inheritDoc} */
@@ -183,6 +184,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemove() throws Exception {
         executeTest(new Callable<Integer>() {
             /** {@inheritDoc} */
@@ -201,6 +203,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAsync() throws Exception {
         executeTest(new Callable<Object>() {
             /** {@inheritDoc} */
@@ -219,6 +222,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGet() throws Exception {
         bannedMsg.set(GridNearSingleGetRequest.class);
 
@@ -239,6 +243,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAll() throws Exception {
         bannedMsg.set(GridNearGetRequest.class);
 
@@ -302,6 +307,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutBatch() throws Exception {
         assert !suspended.get();
 

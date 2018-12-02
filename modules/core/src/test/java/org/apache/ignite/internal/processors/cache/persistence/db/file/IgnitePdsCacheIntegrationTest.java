@@ -111,6 +111,7 @@ public class IgnitePdsCacheIntegrationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testPutGetSimple() throws Exception {
         startGrids(GRID_CNT);
 
@@ -146,6 +147,7 @@ public class IgnitePdsCacheIntegrationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testPutMultithreaded() throws Exception {
         startGrids(4);
 

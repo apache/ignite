@@ -38,6 +38,7 @@ public class FileIOTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadLineFromBinaryFile() throws Exception {
         File file = new File(FILE_PATH);
 
@@ -79,6 +80,7 @@ public class FileIOTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleFilesCreation() throws Exception {
         File parent = new File(TMP_DIR, "testMultipleFilesCreation");
 
@@ -127,6 +129,7 @@ public class FileIOTest extends TestCase {
     /**
      *
      */
+    @Test
     public void testGetAbsolutePath() {
         for (int i = 0; i < 1000000; i++) {
             new File("/" + UUID.randomUUID().toString()).getAbsolutePath();

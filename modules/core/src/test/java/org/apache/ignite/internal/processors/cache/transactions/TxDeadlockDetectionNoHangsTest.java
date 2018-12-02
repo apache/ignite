@@ -105,6 +105,7 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoHangsPessimistic() throws Exception {
         assertTrue(grid(0).context().cache().context().tm().deadlockDetectionEnabled());
 
@@ -126,6 +127,7 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoHangsOptimistic() throws Exception {
         assertTrue(grid(0).context().cache().context().tm().deadlockDetectionEnabled());
 

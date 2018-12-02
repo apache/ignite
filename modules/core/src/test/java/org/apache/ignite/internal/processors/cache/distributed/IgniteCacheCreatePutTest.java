@@ -98,6 +98,7 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartNodes() throws Exception {
         long stopTime = System.currentTimeMillis() + 2 * 60_000;
 
@@ -140,6 +141,7 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdatesAndCacheStart() throws Exception {
         final int NODES = 4;
 

@@ -31,6 +31,7 @@ public class IgniteChangeGlobalStateCacheTest extends IgniteChangeGlobalStateAbs
     /**
      *
      */
+    @Test
     public void testCheckValueAfterActivation(){
         String cacheName = "my-cache";
 
@@ -64,6 +65,7 @@ public class IgniteChangeGlobalStateCacheTest extends IgniteChangeGlobalStateAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMoreKeyValueAfterActivate() throws Exception {
         String cacheName = "my-cache";
 
@@ -117,6 +119,7 @@ public class IgniteChangeGlobalStateCacheTest extends IgniteChangeGlobalStateAbs
     /**
      * @throws Exception if fail.
      */
+    @Test
     public void testDeActivateAndActivateCacheValue() throws Exception {
         String chName = "myCache";
 

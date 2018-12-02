@@ -72,6 +72,7 @@ public class SystemWorkersBlockingTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBlockingWorker() throws Exception {
         IgniteEx ignite = grid(0);
 

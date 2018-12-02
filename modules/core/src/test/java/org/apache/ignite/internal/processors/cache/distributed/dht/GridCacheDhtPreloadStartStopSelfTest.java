@@ -164,6 +164,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testDeadlock() throws Exception {
         info("Testing deadlock...");
 

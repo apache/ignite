@@ -52,6 +52,7 @@ public class GridPortProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any exception occurs.
      */
+    @Test
     public void testA() throws Exception {
         Class cls1 = TcpCommunicationSpi.class;
 
@@ -81,6 +82,7 @@ public class GridPortProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any exception occurs.
      */
+    @Test
     public void testB() throws Exception {
         final AtomicInteger ai = new AtomicInteger();
 

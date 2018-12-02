@@ -68,6 +68,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPrepareQueue() throws Exception {
         // Random sequence names.
         String queueName1 = UUID.randomUUID().toString();
@@ -99,6 +100,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddUnbounded() throws Exception {
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
@@ -117,6 +119,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddDeleteUnbounded() throws Exception {
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
@@ -137,6 +140,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCollectionMethods() throws Exception {
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
@@ -213,6 +217,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddPollUnbounded() throws Exception {
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
@@ -235,6 +240,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddPeekUnbounded() throws Exception {
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
@@ -258,6 +264,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIterator() throws Exception {
         checkIterator(false);
     }
@@ -265,6 +272,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIteratorCollocated() throws Exception {
         checkIterator(true);
     }
@@ -328,6 +336,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetUnbounded() throws Exception {
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
@@ -350,6 +359,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetMultithreadUnbounded() throws Exception {
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
@@ -378,6 +388,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetMultithreadBounded() throws Exception {
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
@@ -405,6 +416,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testQueueRemoveMultithreadBounded() throws Exception {
         // Random queue name.
         final String queueName = UUID.randomUUID().toString();
@@ -485,6 +497,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPutRemoveUnbounded() throws Exception {
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
@@ -510,6 +523,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPutRemoveMultiThreadedUnbounded() throws Exception {
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
@@ -544,6 +558,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPutRemovePeekPollUnbounded() throws Exception {
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
@@ -575,6 +590,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRemovePeek() throws Exception {
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
@@ -608,6 +624,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReuseCache() throws Exception {
         CollectionConfiguration colCfg = collectionConfiguration();
 
@@ -621,6 +638,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNotReuseCache() throws Exception {
         CollectionConfiguration colCfg1 = collectionConfiguration();
 
@@ -641,6 +659,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFilterNode() throws Exception {
         CollectionConfiguration colCfg1 = collectionConfiguration();
 
@@ -667,6 +686,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSystemCache() throws Exception {
         CollectionConfiguration colCfg = collectionConfiguration();
 
@@ -687,6 +707,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityRun() throws Exception {
         final CollectionConfiguration colCfg = collectionConfiguration();
 
@@ -735,6 +756,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityCall() throws Exception {
         final CollectionConfiguration colCfg = collectionConfiguration();
 
@@ -788,6 +810,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIsolation() throws Exception {
         Ignite ignite = grid(0);
 
@@ -841,6 +864,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheReuse() throws Exception {
         Ignite ignite = grid(0);
 
@@ -877,6 +901,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleStructuresInDifferentGroups() throws Exception {
         Ignite ignite = grid(0);
 

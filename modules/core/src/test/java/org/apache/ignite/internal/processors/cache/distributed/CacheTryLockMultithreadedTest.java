@@ -83,6 +83,7 @@ public class CacheTryLockMultithreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTryLock() throws Exception {
         Ignite client = grid(SRVS);
 

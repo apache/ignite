@@ -60,6 +60,7 @@ public class GridCachePutArrayValueSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInternalKeys() throws Exception {
         assert gridCount() >= 2;
 

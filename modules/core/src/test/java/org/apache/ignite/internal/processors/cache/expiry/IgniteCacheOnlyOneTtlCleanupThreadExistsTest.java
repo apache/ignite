@@ -36,6 +36,7 @@ public class IgniteCacheOnlyOneTtlCleanupThreadExistsTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOnlyOneTtlCleanupThreadExists() throws Exception {
         try (final Ignite g = startGrid(0)) {
             checkCleanupThreadExists(false);

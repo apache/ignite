@@ -138,6 +138,7 @@ public class GridTcpCommunicationSpiLanLoadTest extends GridSpiAbstractTest<TcpC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRunReceiver() throws Exception {
         info(">>> Starting receiving SPI. <<<");
 
@@ -153,6 +154,7 @@ public class GridTcpCommunicationSpiLanLoadTest extends GridSpiAbstractTest<TcpC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRunSender() throws Exception {
         reject = true;
 

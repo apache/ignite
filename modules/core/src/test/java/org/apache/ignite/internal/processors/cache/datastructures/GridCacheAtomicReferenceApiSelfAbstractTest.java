@@ -43,6 +43,7 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends Ignite
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPrepareAtomicReference() throws Exception {
         /* Name of first atomic. */
         String atomicName1 = UUID.randomUUID().toString();
@@ -81,6 +82,7 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends Ignite
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSetAndGet() throws Exception {
         String atomicName = UUID.randomUUID().toString();
 
@@ -100,6 +102,7 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends Ignite
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCompareAndSetSimpleValue() throws Exception {
         String atomicName = UUID.randomUUID().toString();
 
@@ -123,6 +126,7 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends Ignite
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCompareAndSetNullValue() throws Exception {
         String atomicName = UUID.randomUUID().toString();
 
@@ -142,6 +146,7 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends Ignite
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIsolation() throws Exception {
         Ignite ignite = grid(0);
 
@@ -192,6 +197,7 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends Ignite
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleStructuresInDifferentGroups() throws Exception {
         Ignite ignite = grid(0);
 

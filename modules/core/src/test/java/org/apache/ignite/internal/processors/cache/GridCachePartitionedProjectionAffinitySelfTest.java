@@ -80,6 +80,7 @@ public class GridCachePartitionedProjectionAffinitySelfTest extends GridCommonAb
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testAffinity() throws Exception {
         waitTopologyUpdate();
 
@@ -91,6 +92,7 @@ public class GridCachePartitionedProjectionAffinitySelfTest extends GridCommonAb
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testProjectionAffinity() throws Exception {
         waitTopologyUpdate();
 

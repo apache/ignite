@@ -55,6 +55,7 @@ public class IgniteCacheQueryCacheDestroySelfTest extends GridCommonAbstractTest
     /**
      * The main test code.
      */
+    @Test
     public void testQueue() throws Throwable {
         startGridsMultiThreaded(GRID_CNT);
 

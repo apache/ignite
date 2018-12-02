@@ -146,6 +146,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testCheckpointSimulationMultiThreaded() throws Exception {
         IgniteEx ig = startGrid(0);
 
@@ -203,6 +204,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testGetForInitialWrite() throws Exception {
         IgniteEx ig = startGrid(0);
 
@@ -303,6 +305,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testDataWalEntries() throws Exception {
         IgniteEx ig = startGrid(0);
 
@@ -410,6 +413,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testPageWalEntries() throws Exception {
         IgniteEx ig = startGrid(0);
 
@@ -510,6 +514,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testDirtyFlag() throws Exception {
         IgniteEx ig = startGrid(0);
 

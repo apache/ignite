@@ -94,6 +94,7 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSimple() throws Exception {
         String key = UUID.randomUUID().toString();
 
@@ -115,6 +116,7 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCustom() throws Exception {
         String key = UUID.randomUUID().toString();
 
@@ -136,6 +138,7 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomic() throws Exception {
         String key = UUID.randomUUID().toString();
 

@@ -82,6 +82,7 @@ public class IgniteCacheContinuousQueryReconnectTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectServer() throws Exception {
         testReconnect(false);
     }
@@ -89,6 +90,7 @@ public class IgniteCacheContinuousQueryReconnectTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectClient() throws Exception {
         testReconnect(true);
     }

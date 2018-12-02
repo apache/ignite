@@ -67,6 +67,7 @@ public class WalPathsTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testWalStoreAndArchivePathsEquality() throws Exception {
         IgniteConfiguration cfg = getConfig(false);
 
@@ -78,6 +79,7 @@ public class WalPathsTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testWalStoreAndArchiveAbsolutAndRelativePathsEquality() throws Exception {
         final IgniteConfiguration cfg = getConfig(true);
 

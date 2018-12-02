@@ -60,6 +60,7 @@ public class TcpDiscoverySharedFsIpFinderSelfTest
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testUniqueNames() throws Exception {
         InetSocketAddress node1 = new InetSocketAddress("10.7.7.7", 4343);
         InetAddress ia = InetAddress.getByAddress("localhost", new byte[] {10, 7, 7, 7});

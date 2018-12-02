@@ -77,6 +77,7 @@ public class IgniteCacheClearDuringRebalanceTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClearAll() throws Exception {
         final IgniteEx node = startGrid(0);
 

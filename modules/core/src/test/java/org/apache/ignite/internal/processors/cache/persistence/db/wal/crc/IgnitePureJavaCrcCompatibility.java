@@ -32,6 +32,7 @@ public class IgnitePureJavaCrcCompatibility extends TestCase {
      * Test crc algo equality results.
      * @throws Exception
      */
+    @Test
     public void testAlgoEqual() throws Exception {
         ByteBuffer buf = ByteBuffer.allocate(1024);
 

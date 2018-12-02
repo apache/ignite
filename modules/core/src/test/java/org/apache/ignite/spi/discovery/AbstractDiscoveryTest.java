@@ -125,6 +125,7 @@ public abstract class AbstractDiscoveryTest<T extends DiscoverySpi> extends Grid
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDiscovery() throws Exception {
         GridLocalEventListener discoLsnr = new DiscoveryListener();
 

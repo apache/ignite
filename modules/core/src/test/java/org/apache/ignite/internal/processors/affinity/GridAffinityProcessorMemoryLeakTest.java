@@ -84,6 +84,7 @@ public class GridAffinityProcessorMemoryLeakTest extends GridCommonAbstractTest 
      *
      * @throws Exception In case of any exception.
      */
+    @Test
     public void testAffinityProcessor() throws Exception {
         Ignite ignite = startGrid(0);
 

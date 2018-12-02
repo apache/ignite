@@ -31,6 +31,7 @@ public class GridCircularBufferSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testCreation() {
         try {
             GridCircularBuffer<Integer> buf = new GridCircularBuffer<>(-2);
@@ -73,6 +74,7 @@ public class GridCircularBufferSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleThreaded() throws Exception {
         int size = 8;
         int iterCnt = size * 10;
@@ -107,6 +109,7 @@ public class GridCircularBufferSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMutliThreaded() throws Exception {
         int size = 32 * 1024;
 
@@ -135,6 +138,7 @@ public class GridCircularBufferSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMutliThreaded2() throws Exception {
         int size = 256 * 1024;
 

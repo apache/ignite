@@ -85,6 +85,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testLocalCacheFifoEvictionPolicy() throws Exception {
         cacheMode = LOCAL;
         evictionPlc = new FifoEvictionPolicy();
@@ -93,6 +94,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testLocalCacheLruEvictionPolicy() throws Exception {
         cacheMode = LOCAL;
         evictionPlc = new LruEvictionPolicy();
@@ -101,6 +103,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testReplicatedCacheFifoEvictionPolicy() throws Exception {
         cacheMode = REPLICATED;
         evictionPlc = new FifoEvictionPolicy();
@@ -109,6 +112,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testReplicatedCacheLruEvictionPolicy() throws Exception {
         cacheMode = REPLICATED;
         evictionPlc = new LruEvictionPolicy();
@@ -117,6 +121,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPartitionedCacheFifoEvictionPolicy() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = true;
@@ -126,6 +131,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPartitionedCacheLruEvictionPolicy() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = true;
@@ -135,6 +141,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testColocatedCacheFifoEvictionPolicy() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = false;
@@ -144,6 +151,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testColocatedCacheLruEvictionPolicy() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = false;

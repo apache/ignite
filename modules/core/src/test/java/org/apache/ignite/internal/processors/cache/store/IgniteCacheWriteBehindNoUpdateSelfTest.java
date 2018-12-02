@@ -83,6 +83,7 @@ public class IgniteCacheWriteBehindNoUpdateSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEntryProcessorNoUpdate() throws Exception {
         IgniteCache<Object, Object> cache = ignite(0).cache(THROTTLES_CACHE_NAME);
 

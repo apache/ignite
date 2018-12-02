@@ -38,6 +38,7 @@ public class IgniteChangeGlobalStateDataStreamerTest extends IgniteChangeGlobalS
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeActivateAndActivateDataStreamer() throws Exception {
         Ignite ig1 = primary(0);
         Ignite ig2 = primary(1);

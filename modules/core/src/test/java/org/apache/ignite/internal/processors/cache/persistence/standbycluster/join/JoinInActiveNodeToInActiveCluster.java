@@ -153,56 +153,66 @@ public class JoinInActiveNodeToInActiveCluster extends AbstractNodeJoinTemplate 
     // Server node join.
 
     /** {@inheritDoc} */
-    @Override public void testJoinWithOutConfiguration() throws Exception {
+    @Override @Test
+    public void testJoinWithOutConfiguration() throws Exception {
         withOutConfigurationTemplate().execute();
     }
 
     /** {@inheritDoc} */
-    @Override public void testStaticCacheConfigurationOnJoin() throws Exception {
+    @Override @Test
+    public void testStaticCacheConfigurationOnJoin() throws Exception {
         staticCacheConfigurationOnJoinTemplate().execute();
     }
 
     /** {@inheritDoc} */
-    @Override public void testStaticCacheConfigurationInCluster() throws Exception {
+    @Override @Test
+    public void testStaticCacheConfigurationInCluster() throws Exception {
         staticCacheConfigurationInClusterTemplate().execute();
     }
 
     /** {@inheritDoc} */
-    @Override public void testStaticCacheConfigurationSameOnBoth() throws Exception {
+    @Override @Test
+    public void testStaticCacheConfigurationSameOnBoth() throws Exception {
         staticCacheConfigurationSameOnBothTemplate().execute();
     }
 
     /** {@inheritDoc} */
-    @Override public void testStaticCacheConfigurationDifferentOnBoth() throws Exception {
+    @Override @Test
+    public void testStaticCacheConfigurationDifferentOnBoth() throws Exception {
         staticCacheConfigurationDifferentOnBothTemplate().execute();
     }
 
     // Client node join.
 
     /** {@inheritDoc} */
-    @Override public void testJoinClientWithOutConfiguration() throws Exception {
+    @Override @Test
+    public void testJoinClientWithOutConfiguration() throws Exception {
         joinClientWithOutConfigurationTemplate().execute();
     }
 
     /** {@inheritDoc} */
-    @Override public void testJoinClientStaticCacheConfigurationOnJoin() throws Exception {
+    @Override @Test
+    public void testJoinClientStaticCacheConfigurationOnJoin() throws Exception {
         joinClientStaticCacheConfigurationOnJoinTemplate().execute();
     }
 
     /** {@inheritDoc} */
-    @Override public void testJoinClientStaticCacheConfigurationInCluster() throws Exception {
+    @Override @Test
+    public void testJoinClientStaticCacheConfigurationInCluster() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-5518");
 
         joinClientStaticCacheConfigurationInClusterTemplate().execute();
     }
 
     /** {@inheritDoc} */
-    @Override public void testJoinClientStaticCacheConfigurationSameOnBoth() throws Exception {
+    @Override @Test
+    public void testJoinClientStaticCacheConfigurationSameOnBoth() throws Exception {
         joinClientStaticCacheConfigurationSameOnBothTemplate().execute();
     }
 
     /** {@inheritDoc} */
-    @Override public void testJoinClientStaticCacheConfigurationDifferentOnBoth() throws Exception {
+    @Override @Test
+    public void testJoinClientStaticCacheConfigurationDifferentOnBoth() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-5518");
 
         joinClientStaticCacheConfigurationDifferentOnBothTemplate().execute();

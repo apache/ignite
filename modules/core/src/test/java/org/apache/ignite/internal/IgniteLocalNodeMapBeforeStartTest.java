@@ -39,6 +39,7 @@ public class IgniteLocalNodeMapBeforeStartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeLocalMapFromLifecycleBean() throws Exception {
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
 

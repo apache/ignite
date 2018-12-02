@@ -117,6 +117,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictionTxPessimisticReadCommitted() throws Exception {
         doTestEviction(PESSIMISTIC, READ_COMMITTED);
     }
@@ -126,6 +127,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictionTxPessimisticRepeatableRead() throws Exception {
         doTestEviction(PESSIMISTIC, REPEATABLE_READ);
     }
@@ -135,6 +137,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictionTxPessimisticSerializable() throws Exception {
         doTestEviction(PESSIMISTIC, SERIALIZABLE);
     }
@@ -144,6 +147,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictionTxOptimisticReadCommitted() throws Exception {
         doTestEviction(OPTIMISTIC, READ_COMMITTED);
     }
@@ -153,6 +157,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictionTxOptimisticRepeatableRead() throws Exception {
         doTestEviction(OPTIMISTIC, REPEATABLE_READ);
     }
@@ -162,6 +167,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictionTxOptimisticSerializable() throws Exception {
         doTestEviction(OPTIMISTIC, SERIALIZABLE);
     }

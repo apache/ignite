@@ -110,6 +110,7 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testRebalanceUpdate() throws Exception {
         interceptor = new RebalanceUpdateInterceptor();
 
@@ -123,6 +124,7 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testRebalanceUpdateInvoke() throws Exception {
         interceptor = new RebalanceUpdateInterceptor();
 
@@ -138,6 +140,7 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testRebalanceRemoveInvoke() throws Exception {
         interceptor = new RebalanceUpdateInterceptor();
 
@@ -153,6 +156,7 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testRebalanceRemove() throws Exception {
         interceptor = new RebalanceRemoveInterceptor();
 
@@ -166,6 +170,7 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testPutIfAbsent() throws Exception {
         interceptor = new RebalanceUpdateInterceptor();
 
@@ -179,6 +184,7 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testGetAndPut() throws Exception {
         interceptor = new RebalanceUpdateInterceptor();
 

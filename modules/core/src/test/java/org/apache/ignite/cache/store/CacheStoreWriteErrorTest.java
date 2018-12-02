@@ -60,6 +60,7 @@ public class CacheStoreWriteErrorTest extends GridCommonAbstractTest {
     /**
      * Checks primary error while saving batch with one entry.
      */
+    @Test
     public void testPrimaryErrorForBatchSize1() {
         checkPrimaryError(1);
     }
@@ -67,6 +68,7 @@ public class CacheStoreWriteErrorTest extends GridCommonAbstractTest {
     /**
      * Checks primary error while saving batch with two entries.
      */
+    @Test
     public void testPrimaryErrorForBatchSize2() {
         checkPrimaryError(2);
     }

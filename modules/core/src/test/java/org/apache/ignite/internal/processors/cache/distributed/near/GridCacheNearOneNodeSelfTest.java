@@ -103,6 +103,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testRemove() throws Exception {
         IgniteCache<Object, Object> near = jcache();
 
@@ -131,6 +132,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testReadThrough() throws Exception {
         IgniteCache<Integer, String> near = jcache();
 
@@ -160,6 +162,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticTxWriteThrough() throws Exception {
         IgniteCache<Object, Object> near = jcache();
         GridCacheAdapter<Integer, String> dht = dht();
@@ -192,6 +195,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSingleLockPut() throws Exception {
         IgniteCache<Integer, String> near = jcache();
 
@@ -214,6 +218,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSingleLock() throws Exception {
         IgniteCache<Integer, String> near = jcache();
 
@@ -245,6 +250,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSingleLockReentry() throws Exception {
         IgniteCache<Integer, String> near = jcache();
 
@@ -289,6 +295,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testTransactionSingleGet() throws Exception {
         IgniteCache<Object, Object> cache = jcache();
 
@@ -308,6 +315,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testTransactionSingleGetRemove() throws Exception {
         IgniteCache<Object, Object> cache = jcache();
 

@@ -107,6 +107,7 @@ public class GridCachePartitionedAtomicSequenceTxSelfTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTransactionIncrement() throws Exception {
         ignite(0).atomicSequence(SEQ_NAME, 0, true);
 
@@ -123,6 +124,7 @@ public class GridCachePartitionedAtomicSequenceTxSelfTest extends GridCommonAbst
     /**
      * Tests isolation of system and user transactions.
      */
+    @Test
     public void testIsolation() {
         IgniteAtomicSequence seq = ignite(0).atomicSequence(SEQ_NAME, 0, true);
 

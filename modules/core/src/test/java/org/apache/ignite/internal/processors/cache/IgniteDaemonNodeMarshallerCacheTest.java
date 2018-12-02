@@ -64,6 +64,7 @@ public class IgniteDaemonNodeMarshallerCacheTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMarshalOnDaemonNode1() throws Exception {
         marshalOnDaemonNode(true);
     }
@@ -71,6 +72,7 @@ public class IgniteDaemonNodeMarshallerCacheTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMarshalOnDaemonNode2() throws Exception {
         marshalOnDaemonNode(false);
     }

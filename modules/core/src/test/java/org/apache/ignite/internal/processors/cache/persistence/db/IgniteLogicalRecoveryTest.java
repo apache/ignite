@@ -176,6 +176,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRecoveryOnJoinToActiveCluster() throws Exception {
         IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3);
 
@@ -205,6 +206,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRecoveryOnJoinToInactiveCluster() throws Exception {
         IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3);
 
@@ -238,6 +240,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRecoveryOnDynamicallyStartedCaches() throws Exception {
         List<CacheConfiguration> dynamicCaches = Lists.newArrayList(
             cacheConfiguration(DYNAMIC_CACHE_PREFIX + 0, CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL),
@@ -252,6 +255,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRecoveryWithMvccCaches() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-10052");
 
@@ -298,6 +302,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRecoveryOnJoinToDifferentBlt() throws Exception {
         IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3);
 
@@ -330,6 +335,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRecoveryOnCrushDuringCheckpointOnNodeStart() throws Exception {
         IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3, false);
 

@@ -118,6 +118,7 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMassiveFailDisabledRecovery() throws Exception {
         timeout = 0; // Disable previous node check.
 
@@ -176,6 +177,7 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMassiveFailSelfKill() throws Exception {
         startGrids(5);
 
@@ -211,6 +213,7 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMassiveFailAndRecovery() throws Exception {
         startGrids(5);
 
@@ -254,6 +257,7 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMassiveFail() throws Exception {
         failNodes = true;
 
@@ -270,6 +274,7 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMassiveFailForceNodeFail() throws Exception {
         failNodes = true;
 
@@ -285,6 +290,7 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRecoveryOnDisconnect() throws Exception {
         startGrids(3);
 

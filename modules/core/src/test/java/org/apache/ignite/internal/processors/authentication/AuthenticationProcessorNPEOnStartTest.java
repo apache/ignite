@@ -72,6 +72,7 @@ public class AuthenticationProcessorNPEOnStartTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void test() throws Exception {
         final AtomicInteger nodeIdx = new AtomicInteger();
 

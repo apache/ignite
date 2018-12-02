@@ -106,6 +106,7 @@ public class IgfsStartCacheTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheStart() throws Exception {
         Ignite g0 = G.start(config(true, 0));
 

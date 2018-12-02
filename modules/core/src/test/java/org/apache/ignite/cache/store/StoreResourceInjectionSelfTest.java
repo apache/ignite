@@ -62,6 +62,7 @@ public class StoreResourceInjectionSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testResourcesInStoreFactory() throws Exception {
         cacheCfg.setCacheStoreFactory(new MyCacheStoreFactory());
 
@@ -71,6 +72,7 @@ public class StoreResourceInjectionSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testResourcesInLoaderFactory() throws Exception {
         cacheCfg.setCacheLoaderFactory(new MyCacheStoreFactory());
 
@@ -80,6 +82,7 @@ public class StoreResourceInjectionSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testResourcesInWriterFactory() throws Exception {
         cacheCfg.setCacheWriterFactory(new MyCacheStoreFactory());
 

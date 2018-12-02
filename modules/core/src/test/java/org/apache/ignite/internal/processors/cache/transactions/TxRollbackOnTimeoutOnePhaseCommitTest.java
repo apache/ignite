@@ -98,16 +98,19 @@ public class TxRollbackOnTimeoutOnePhaseCommitTest extends GridCommonAbstractTes
     }
 
     /** */
+    @Test
     public void testRollbackOnTimeoutPartitionDesyncPessimistic() throws Exception {
         doTestRollbackOnTimeoutPartitionDesync(PESSIMISTIC);
     }
 
     /** */
+    @Test
     public void testRollbackOnTimeoutPartitionDesyncOptimistic() throws Exception {
         doTestRollbackOnTimeoutPartitionDesync(OPTIMISTIC);
     }
 
     /** */
+    @Test
     public void testUnlockOptimistic() throws IgniteCheckedException {
         IgniteEx client = grid("client");
 

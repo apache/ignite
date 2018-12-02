@@ -69,6 +69,7 @@ public class GridCacheVersionTopologyChangeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVersionIncreaseAtomic() throws Exception {
         checkVersionIncrease(cacheConfigurations(ATOMIC));
     }
@@ -76,6 +77,7 @@ public class GridCacheVersionTopologyChangeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVersionIncreaseTx() throws Exception {
         checkVersionIncrease(cacheConfigurations(TRANSACTIONAL));
     }
@@ -83,6 +85,7 @@ public class GridCacheVersionTopologyChangeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVersionIncreaseMvccTx() throws Exception {
         checkVersionIncrease(cacheConfigurations(TRANSACTIONAL_SNAPSHOT));
     }

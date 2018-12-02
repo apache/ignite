@@ -149,6 +149,7 @@ public class TxWithSmallTimeoutAndContentionOneKeyTest extends GridCommonAbstrac
      *
      * @throws Exception If failed.
      */
+    @Test
     public void test() throws Exception {
         startGrids(4);
 

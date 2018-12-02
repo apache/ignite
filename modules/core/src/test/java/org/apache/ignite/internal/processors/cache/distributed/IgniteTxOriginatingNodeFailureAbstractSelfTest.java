@@ -67,6 +67,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testManyKeysCommit() throws Exception {
         Collection<Integer> keys = new ArrayList<>(200);
 
@@ -79,6 +80,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testManyKeysRollback() throws Exception {
         Collection<Integer> keys = new ArrayList<>(200);
 

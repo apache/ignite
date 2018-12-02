@@ -76,6 +76,7 @@ public class IgniteNearClientCacheCloseTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearCacheCloseAtomic1() throws Exception {
         nearCacheClose(1, false, ATOMIC);
 
@@ -85,6 +86,7 @@ public class IgniteNearClientCacheCloseTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearCacheCloseAtomic2() throws Exception {
         nearCacheClose(4, false, ATOMIC);
 
@@ -94,6 +96,7 @@ public class IgniteNearClientCacheCloseTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearCacheCloseTx1() throws Exception {
         nearCacheClose(1, false, TRANSACTIONAL);
 
@@ -103,6 +106,7 @@ public class IgniteNearClientCacheCloseTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearCacheCloseTx2() throws Exception {
         nearCacheClose(4, false, TRANSACTIONAL);
 
@@ -112,6 +116,7 @@ public class IgniteNearClientCacheCloseTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearCacheCloseMvccTx1() throws Exception {
         nearCacheClose(1, false, TRANSACTIONAL_SNAPSHOT);
 
@@ -122,6 +127,7 @@ public class IgniteNearClientCacheCloseTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearCacheCloseMvccTx2() throws Exception {
         nearCacheClose(4, false, TRANSACTIONAL_SNAPSHOT);
 
@@ -184,6 +190,7 @@ public class IgniteNearClientCacheCloseTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUpdateAndNearCacheClose() throws Exception {
         final int SRVS = 4;
 

@@ -90,6 +90,7 @@ public class TxOptimisticPrepareOnUnstableTopologyTest extends GridCommonAbstrac
     /**
      *
      */
+    @Test
     public void testPrepareOnUnstableTopology() throws Exception {
         for (TransactionIsolation isolation : TransactionIsolation.values()) {
             doPrepareOnUnstableTopology(4, false, isolation, 0);

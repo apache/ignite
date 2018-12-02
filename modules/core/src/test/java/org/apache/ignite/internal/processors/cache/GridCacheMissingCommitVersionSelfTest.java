@@ -86,6 +86,7 @@ public class GridCacheMissingCommitVersionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMissingCommitVersion() throws Exception {
         final IgniteCache<Integer, Integer> cache = jcache();
 

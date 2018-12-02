@@ -58,6 +58,7 @@ public class IgniteStaticCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployCacheOnNodeStart() throws Exception {
         startGrids(3);
 

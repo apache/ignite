@@ -42,6 +42,7 @@ public class GridThreadPoolExecutorServiceSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleThreadExecutor() throws Exception {
         ExecutorService exec = Executors.newSingleThreadExecutor();
 
@@ -63,6 +64,7 @@ public class GridThreadPoolExecutorServiceSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleGridThreadExecutor() throws Exception {
         ExecutorService exec = Executors.newSingleThreadExecutor(new IgniteThreadFactory("gridName", "testThread"));
 
@@ -84,6 +86,7 @@ public class GridThreadPoolExecutorServiceSelfTest extends GridCommonAbstractTes
     /**
      * @throws ExecutionException If failed.
      */
+    @Test
     public void testGridThreadPoolExecutor() throws Exception {
         IgniteThreadPoolExecutor exec = new IgniteThreadPoolExecutor("", "", 1, 1, 0, new LinkedBlockingQueue<Runnable>());
 
@@ -100,6 +103,7 @@ public class GridThreadPoolExecutorServiceSelfTest extends GridCommonAbstractTes
     /**
      * @throws ExecutionException If failed.
      */
+    @Test
     public void testGridThreadPoolExecutorRejection() throws Exception {
         IgniteThreadPoolExecutor exec = new IgniteThreadPoolExecutor("", "", 1, 1, 0, new LinkedBlockingQueue<Runnable>());
 
@@ -113,6 +117,7 @@ public class GridThreadPoolExecutorServiceSelfTest extends GridCommonAbstractTes
     /**
      * @throws ExecutionException If failed.
      */
+    @Test
     public void testGridThreadPoolExecutorPrestartCoreThreads() throws Exception {
         final AtomicInteger curPoolSize = new AtomicInteger();
 

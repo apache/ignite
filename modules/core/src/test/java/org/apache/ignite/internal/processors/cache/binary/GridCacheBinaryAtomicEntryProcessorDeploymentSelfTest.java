@@ -41,6 +41,7 @@ public class GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testGetDeployment() throws Exception {
         depMode = DeploymentMode.CONTINUOUS;
 
@@ -50,6 +51,7 @@ public class GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testGetDeployment2() throws Exception {
         depMode = DeploymentMode.SHARED;
 
@@ -59,6 +61,7 @@ public class GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testGetDeploymentWithKeepBinary() throws Exception {
         depMode = DeploymentMode.CONTINUOUS;
 
@@ -68,6 +71,7 @@ public class GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testGetDeployment2WithKeepBinary() throws Exception {
         depMode = DeploymentMode.SHARED;
 

@@ -61,6 +61,7 @@ public class GridP2PClassLoadingSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings({"ConstantConditions"})
+    @Test
     public void testClassLoading() throws Exception {
         ComputeTask<?, ?> task = (ComputeTask<?, ?>)tstClsLdr.loadClass(GridP2PTestTask.class.getName()).newInstance();
 

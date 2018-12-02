@@ -65,7 +65,8 @@ public class GridSelfTest extends ClusterGroupAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override public void testRemoteNodes() throws Exception {
+    @Override @Test
+    public void testRemoteNodes() throws Exception {
         int size = remoteNodeIds().size();
 
         String name = "oneMoreGrid";
@@ -85,7 +86,8 @@ public class GridSelfTest extends ClusterGroupAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override public void testRemoteProjection() throws Exception {
+    @Override @Test
+    public void testRemoteProjection() throws Exception {
         ClusterGroup remotePrj = projection().forRemotes();
 
         int size = remotePrj.nodes().size();
@@ -109,6 +111,7 @@ public class GridSelfTest extends ClusterGroupAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAsyncListen() throws Exception {
         final String hello = "HELLO!";
 
@@ -154,6 +157,7 @@ public class GridSelfTest extends ClusterGroupAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testForOthers() throws Exception {
         ClusterNode node0 = grid(0).localNode();
         ClusterNode node1 = grid(1).localNode();

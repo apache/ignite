@@ -85,6 +85,7 @@ public abstract class GridCacheMarshallerTxAbstractTest extends GridCommonAbstra
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testValueMarshallerFail() throws Exception {
         String key = UUID.randomUUID().toString();
         String value = UUID.randomUUID().toString();

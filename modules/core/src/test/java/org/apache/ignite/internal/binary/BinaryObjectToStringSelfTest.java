@@ -59,6 +59,7 @@ public class BinaryObjectToStringSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testToString() throws Exception {
         MyObject obj = new MyObject();
 

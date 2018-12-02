@@ -69,6 +69,7 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testEmptyProjection() throws Exception {
         try {
             grid(0).cluster().forPredicate(F.<ClusterNode>alwaysFalse()).metrics();
@@ -83,6 +84,7 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testTaskExecution() {
         for (int i = 0; i < ITER_CNT; i++) {
             info("Starting new iteration: " + i);

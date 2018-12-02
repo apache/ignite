@@ -269,6 +269,7 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCache() throws Exception {
         Connection conn = store.openConnection(false);
 
@@ -442,6 +443,7 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testParallelLoad() throws Exception {
         Connection conn = store.openConnection(false);
 
@@ -503,6 +505,7 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWriteRetry() throws Exception {
         CacheJdbcPojoStore<Object, Object> store = store();
 
@@ -556,6 +559,7 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTimestamp() throws Exception {
         Timestamp k = new Timestamp(System.currentTimeMillis());
 

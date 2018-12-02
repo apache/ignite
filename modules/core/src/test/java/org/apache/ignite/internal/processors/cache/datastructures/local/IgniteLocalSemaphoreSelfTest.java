@@ -43,7 +43,8 @@ public class IgniteLocalSemaphoreSelfTest extends IgniteSemaphoreAbstractSelfTes
     }
 
     /** {@inheritDoc} */
-    @Override public void testSemaphore() throws Exception {
+    @Override @Test
+    public void testSemaphore() throws Exception {
         // Test main functionality.
         IgniteSemaphore semaphore = grid(0).semaphore("semaphore", -2, false, true);
 

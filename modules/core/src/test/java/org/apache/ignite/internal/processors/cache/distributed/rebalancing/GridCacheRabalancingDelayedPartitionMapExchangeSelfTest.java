@@ -119,6 +119,7 @@ public class GridCacheRabalancingDelayedPartitionMapExchangeSelfTest extends Gri
     /**
      * @throws Exception e if failed.
      */
+    @Test
     public void test() throws Exception {
         IgniteEx ignite = startGrid(0);
 

@@ -46,6 +46,7 @@ public class LongJVMPauseDetectorTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJulMessage() throws Exception {
         this.strLog = new GridStringLogger(true);
 
@@ -59,6 +60,7 @@ public class LongJVMPauseDetectorTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopWorkerThread() throws Exception {
         strLog = new GridStringLogger(true);
 

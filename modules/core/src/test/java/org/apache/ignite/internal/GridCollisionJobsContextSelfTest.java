@@ -64,6 +64,7 @@ public class GridCollisionJobsContextSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testCollisionJobContext() throws Exception {
         G.ignite(getTestIgniteInstanceName()).compute().execute(new GridTestTask(), "some-arg");
     }

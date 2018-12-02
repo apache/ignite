@@ -125,6 +125,7 @@ public class GridCacheWriteBehindStoreLoadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCacheSequentialKeys() throws Exception {
         rndKeys = false;
 
@@ -136,6 +137,7 @@ public class GridCacheWriteBehindStoreLoadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCacheRandomKeys() throws Exception {
         rndKeys = true;
 

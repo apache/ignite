@@ -47,6 +47,7 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
     /**
      */
     @SuppressWarnings({"ThrowableNotThrown"})
+    @Test
     public void testPermissionBuilder() {
         SecurityBasicPermissionSet exp = new SecurityBasicPermissionSet();
 

@@ -27,6 +27,7 @@ public class IgniteStandByClientReconnectTest extends IgniteAbstractStandByClien
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActiveClientReconnectToActiveCluster() throws Exception {
         CountDownLatch activateLatch = new CountDownLatch(1);
 
@@ -108,6 +109,7 @@ public class IgniteStandByClientReconnectTest extends IgniteAbstractStandByClien
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActiveClientReconnectToInActiveCluster() throws Exception {
         CountDownLatch activateLatch = new CountDownLatch(1);
 
@@ -188,6 +190,7 @@ public class IgniteStandByClientReconnectTest extends IgniteAbstractStandByClien
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInActiveClientReconnectToActiveCluster() throws Exception {
         CountDownLatch activateLatch = new CountDownLatch(1);
 
@@ -245,6 +248,7 @@ public class IgniteStandByClientReconnectTest extends IgniteAbstractStandByClien
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInActiveClientReconnectToInActiveCluster() throws Exception {
         startNodes(null);
 

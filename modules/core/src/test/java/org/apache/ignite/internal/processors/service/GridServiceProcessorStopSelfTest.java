@@ -52,6 +52,7 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopDuringDeployment() throws Exception {
         final CountDownLatch depLatch = new CountDownLatch(1);
 
@@ -98,6 +99,7 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopDuringHangedDeployment() throws Exception {
         final CountDownLatch depLatch = new CountDownLatch(1);
 

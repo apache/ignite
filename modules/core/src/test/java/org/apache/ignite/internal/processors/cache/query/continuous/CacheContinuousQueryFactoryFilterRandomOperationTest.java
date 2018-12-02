@@ -91,6 +91,7 @@ public class CacheContinuousQueryFactoryFilterRandomOperationTest extends CacheC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInternalQuery() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
             1,

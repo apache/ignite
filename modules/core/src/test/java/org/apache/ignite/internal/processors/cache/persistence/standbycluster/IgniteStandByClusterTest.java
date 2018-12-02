@@ -81,6 +81,7 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if fail.
      */
+    @Test
     public void testStartDynamicCachesAfterActivation() throws Exception {
         final String cacheName0 = "cache0";
         final String cacheName = "cache";
@@ -146,6 +147,7 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if fail.
      */
+    @Test
     public void testStaticCacheStartAfterActivationWithCacheFilter() throws Exception {
         String cache1 = "cache1";
         String cache2 = "cache2";
@@ -213,6 +215,7 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if fail.
      */
+    @Test
     public void testSimple() throws Exception {
         IgniteEx ig = startGrid(0);
 
@@ -238,6 +241,7 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if fail.
      */
+    @Test
     public void testJoinDaemonAndDaemonStop() throws Exception {
         IgniteEx ig = startGrid(0);
 
@@ -258,6 +262,7 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
     /**
      * Check that daemon node does not move cluster to compatibility mode.
      */
+    @Test
     public void testJoinDaemonToBaseline() throws Exception {
         Ignite ignite0 = startGrid(0);
 
@@ -279,6 +284,7 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if fail.
      */
+    @Test
     public void testCheckStatusFromDaemon() throws Exception {
         IgniteEx ig = startGrid(0);
 
@@ -309,6 +315,7 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if fail.
      */
+    @Test
     public void testRestartCluster() throws Exception {
         IgniteEx ig1 = startGrid(getConfiguration("node1"));
         IgniteEx ig2 = startGrid(getConfiguration("node2"));
@@ -344,6 +351,7 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if fail.
      */
+    @Test
     public void testActivateDeActivateCallbackForPluginProviders() throws Exception {
         IgniteEx ig1 = startGrid(getConfiguration("node1"));
         IgniteEx ig2 = startGrid(getConfiguration("node2"));

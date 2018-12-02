@@ -49,6 +49,7 @@ public class CacheGetFromJobTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTopologyChange() throws Exception {
         final AtomicReference<Exception> err = new AtomicReference<>();
 

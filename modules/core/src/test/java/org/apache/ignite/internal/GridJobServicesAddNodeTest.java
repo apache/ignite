@@ -83,6 +83,7 @@ public class GridJobServicesAddNodeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testServiceDescriptorsJob() throws Exception {
         final int tasks = 5000;
         final int threads = 10;

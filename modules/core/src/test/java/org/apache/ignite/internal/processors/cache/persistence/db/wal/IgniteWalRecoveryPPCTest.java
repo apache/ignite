@@ -137,6 +137,7 @@ public class IgniteWalRecoveryPPCTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testWalSimple() throws Exception {
         try {
             IgniteEx ignite = startGrid(1);
@@ -233,6 +234,7 @@ public class IgniteWalRecoveryPPCTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testDynamicallyStartedNonPersistentCache() throws Exception {
         try {
             IgniteEx ignite = startGrid(1);

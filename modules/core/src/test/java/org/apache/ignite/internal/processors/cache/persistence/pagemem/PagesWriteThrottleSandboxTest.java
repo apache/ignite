@@ -112,6 +112,7 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testThrottle() throws Exception {
         startGrids(1).active(true);
 

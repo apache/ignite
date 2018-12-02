@@ -28,6 +28,7 @@ public class GridFifoQueueCollisionSpiConfigSelfTest extends GridSpiAbstractConf
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNegativeConfig() throws Exception {
         checkNegativeSpiProperty(new FifoQueueCollisionSpi(), "parallelJobsNumber", 0);
         checkNegativeSpiProperty(new FifoQueueCollisionSpi(), "waitingJobsNumber", -1);

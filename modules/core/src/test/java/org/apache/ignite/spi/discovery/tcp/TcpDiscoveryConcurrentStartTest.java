@@ -65,6 +65,7 @@ public class TcpDiscoveryConcurrentStartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentStart() throws Exception {
         for (int i = 0; i < 10; i++) {
             try {
@@ -79,6 +80,7 @@ public class TcpDiscoveryConcurrentStartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentStartClients() throws Exception {
         for (int i = 0; i < 20; i++) {
             try {

@@ -32,7 +32,8 @@ public class GridCachePartitionedAtomicSetFailoverSelfTest extends GridCacheSetF
     }
 
     /** {@inheritDoc} */
-    @Override public void testNodeRestart() throws Exception {
+    @Override @Test
+    public void testNodeRestart() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-170");
     }
 }

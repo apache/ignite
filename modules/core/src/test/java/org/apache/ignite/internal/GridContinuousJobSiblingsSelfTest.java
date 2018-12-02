@@ -49,6 +49,7 @@ public class GridContinuousJobSiblingsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testContinuousJobSiblings() throws Exception {
         try {
             Ignite ignite = startGrid(0);
@@ -64,6 +65,7 @@ public class GridContinuousJobSiblingsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testContinuousJobSiblingsLocalNode() throws Exception {
         try {
             Ignite ignite = startGrid(0);

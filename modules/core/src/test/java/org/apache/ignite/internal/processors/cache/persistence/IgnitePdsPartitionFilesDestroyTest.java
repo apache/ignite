@@ -145,6 +145,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionFileDestroyAfterCheckpoint() throws Exception {
         IgniteEx crd = (IgniteEx) startGrids(2);
 
@@ -177,6 +178,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionFileDestroyAndRecreate() throws Exception {
         IgniteEx crd = startGrid(0);
 
@@ -224,6 +226,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionFileDestroyCrashRecovery1() throws Exception {
         IgniteEx crd = startGrid(0);
 
@@ -277,6 +280,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionFileDestroyCrashRecovery2() throws Exception {
         IgniteEx crd = startGrid(0);
 
@@ -338,6 +342,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDestroyWhenPartitionsAreEmpty() throws Exception {
         IgniteEx crd = (IgniteEx) startGrids(2);
 

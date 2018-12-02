@@ -31,6 +31,7 @@ public class DataStorageConfigurationValidationTest extends TestCase {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testWalSegmentSizeOverflow() throws Exception {
         final DataStorageConfiguration cfg = new DataStorageConfiguration();
 
@@ -46,6 +47,7 @@ public class DataStorageConfigurationValidationTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSetWalSegmentSizeShouldThrowExceptionWhenSizeLessThen512Kb() throws Exception {
         final DataStorageConfiguration cfg = new DataStorageConfiguration();
 
@@ -61,6 +63,7 @@ public class DataStorageConfigurationValidationTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSetWalSegmentSizeShouldBeOkWhenSizeBetween512KbAnd2Gb() throws Exception {
         final DataStorageConfiguration cfg = new DataStorageConfiguration();
 

@@ -132,6 +132,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testCheckpointEvents() throws Exception {
         long tstamp = startTimestamp();
 
@@ -158,6 +159,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testTaskUndeployEvents() throws Exception {
         final long tstamp = startTimestamp();
 
@@ -201,6 +203,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testSuccessTask() throws Exception {
         generateEvents(null, new GridAllEventsSuccessTestJob()).get();
 
@@ -228,6 +231,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testFailoverJobTask() throws Exception {
         startGrid(0);
 
@@ -269,6 +273,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testFailTask() throws Exception {
         long tstamp = startTimestamp();
 
@@ -300,6 +305,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testTimeoutTask() throws Exception {
         long tstamp = startTimestamp();
 

@@ -32,6 +32,7 @@ public class GridBoundedConcurrentLinkedHashMapSelfTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBound() throws Exception {
         Map<Integer, Integer> map = new GridBoundedConcurrentLinkedHashMap<>(MAX);
 

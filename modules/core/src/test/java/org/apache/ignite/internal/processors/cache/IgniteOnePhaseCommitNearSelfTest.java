@@ -88,6 +88,7 @@ public class IgniteOnePhaseCommitNearSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOnePhaseCommitFromNearNode() throws Exception {
         backups = 1;
 

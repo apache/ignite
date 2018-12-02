@@ -66,6 +66,7 @@ public class TcpDiscoveryJdbcIpFinderSelfTest extends
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInitSchemaFlag() throws Exception {
         initSchema = false;
 

@@ -83,6 +83,7 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testNearEnabledOneNode() throws Exception {
         gridCnt = 1;
 
@@ -106,6 +107,7 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testNearEnabledTwoNodes() throws Exception {
         gridCnt = 2;
 
@@ -139,6 +141,7 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testNearEnabledThreeNodes() throws Exception {
         gridCnt = 3;
 

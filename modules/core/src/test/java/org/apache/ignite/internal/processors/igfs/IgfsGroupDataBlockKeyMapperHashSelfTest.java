@@ -29,6 +29,7 @@ public class IgfsGroupDataBlockKeyMapperHashSelfTest extends IgfsCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistribution() throws Exception {
         for (int i = 0; i < 100; i++) {
             int grpSize = ThreadLocalRandom.current().nextInt(2, 100000);
@@ -41,6 +42,7 @@ public class IgfsGroupDataBlockKeyMapperHashSelfTest extends IgfsCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIntOverflowDistribution() throws Exception {
         for (int i = 0; i < 100; i++)
             checkIntOverflowDistribution(ThreadLocalRandom.current().nextInt(1, Integer.MAX_VALUE));

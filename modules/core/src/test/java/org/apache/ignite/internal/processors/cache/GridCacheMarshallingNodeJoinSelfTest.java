@@ -83,6 +83,7 @@ public class GridCacheMarshallingNodeJoinSelfTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeJoin() throws Exception {
         final CountDownLatch allowJoin = new CountDownLatch(1);
         final CountDownLatch joined = new CountDownLatch(2);

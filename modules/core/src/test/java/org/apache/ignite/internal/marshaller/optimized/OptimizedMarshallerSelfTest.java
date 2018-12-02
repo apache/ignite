@@ -43,6 +43,7 @@ public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTestMarshalling() throws Exception {
         final String msg = "PASSED";
 
@@ -70,6 +71,7 @@ public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
      *
      * @throws IgniteCheckedException If marshalling failed.
      */
+    @Test
     public void testMarshallingSelfLink() throws IgniteCheckedException {
         SelfLink sl = new SelfLink("a string 1");
 
@@ -83,6 +85,7 @@ public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvalid() throws Exception {
         GridTestUtils.assertThrows(
             log,
@@ -105,6 +108,7 @@ public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNested() throws Exception {
         NestedTestObject obj = new NestedTestObject("String", 100);
 

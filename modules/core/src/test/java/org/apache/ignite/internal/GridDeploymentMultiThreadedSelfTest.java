@@ -47,6 +47,7 @@ public class GridDeploymentMultiThreadedSelfTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeploy() throws Exception {
         try {
             final Ignite ignite = startGrid(0);

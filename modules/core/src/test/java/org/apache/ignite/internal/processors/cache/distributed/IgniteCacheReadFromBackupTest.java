@@ -86,6 +86,7 @@ public class IgniteCacheReadFromBackupTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetFromBackupStoreReadThroughEnabled() throws Exception {
         for (CacheConfiguration<Object, Object> ccfg : cacheConfigurations()) {
             ccfg.setCacheStoreFactory(new TestStoreFactory());
@@ -130,6 +131,7 @@ public class IgniteCacheReadFromBackupTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetFromBackupStoreReadThroughDisabled() throws Exception {
         for (CacheConfiguration<Object, Object> ccfg : cacheConfigurations()) {
             ccfg.setCacheStoreFactory(new TestStoreFactory());
@@ -158,6 +160,7 @@ public class IgniteCacheReadFromBackupTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetFromPrimaryPreloadInProgress() throws Exception {
         for (final CacheConfiguration<Object, Object> ccfg : cacheConfigurations()) {
             boolean near = (ccfg.getNearConfiguration() != null);
@@ -244,6 +247,7 @@ public class IgniteCacheReadFromBackupTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoPrimaryReadPreloadFinished() throws Exception {
         for (CacheConfiguration<Object, Object> ccfg : cacheConfigurations()) {
             boolean near = (ccfg.getNearConfiguration() != null);

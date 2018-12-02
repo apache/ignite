@@ -70,6 +70,7 @@ public class IgniteCacheManyAsyncOperationsTest extends IgniteCacheAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testManyAsyncOperations() throws Exception {
         try (Ignite client = startGrid(gridCount())) {
             assertTrue(client.configuration().isClientMode());

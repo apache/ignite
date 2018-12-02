@@ -24,28 +24,32 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
  */
 public class IgniteCacheTransactionalStopBusySelfTest extends IgniteCacheAbstractStopBusySelfTest {
     /** {@inheritDoc} */
-    @Override public void testPut() throws Exception {
+    @Override @Test
+    public void testPut() throws Exception {
         bannedMsg.set(GridNearTxPrepareRequest.class);
 
         super.testPut();
     }
 
     /** {@inheritDoc} */
-    @Override public void testPutBatch() throws Exception {
+    @Override @Test
+    public void testPutBatch() throws Exception {
         bannedMsg.set(GridNearTxPrepareRequest.class);
 
         super.testPut();
     }
 
     /** {@inheritDoc} */
-    @Override public void testPutAsync() throws Exception {
+    @Override @Test
+    public void testPutAsync() throws Exception {
         bannedMsg.set(GridNearTxPrepareRequest.class);
 
         super.testPut();
     }
 
     /** {@inheritDoc} */
-    @Override public void testRemove() throws Exception {
+    @Override @Test
+    public void testRemove() throws Exception {
         bannedMsg.set(GridNearTxPrepareRequest.class);
 
         super.testPut();

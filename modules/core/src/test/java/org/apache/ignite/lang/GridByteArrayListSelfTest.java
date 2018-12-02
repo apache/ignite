@@ -34,6 +34,7 @@ public class GridByteArrayListSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testCapacity() {
         int cap = 10;
 
@@ -64,6 +65,7 @@ public class GridByteArrayListSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testAddSetByte() {
         GridByteArrayList list = new GridByteArrayList(10);
 
@@ -83,6 +85,7 @@ public class GridByteArrayListSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testAddSetInteger() {
         GridByteArrayList list = new GridByteArrayList(10);
 
@@ -118,6 +121,7 @@ public class GridByteArrayListSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testAddByteArray() {
         GridByteArrayList list = new GridByteArrayList(3);
 
@@ -140,6 +144,7 @@ public class GridByteArrayListSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testAddByteBuffer() {
         GridByteArrayList list = new GridByteArrayList(3);
 
@@ -167,6 +172,7 @@ public class GridByteArrayListSelfTest extends GridCommonAbstractTest {
      *
      */
     @SuppressWarnings({"ErrorNotRethrown"})
+    @Test
     public void testBounds()  {
         GridByteArrayList list = new GridByteArrayList(3);
 
@@ -201,6 +207,7 @@ public class GridByteArrayListSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRead() throws Exception {
         GridByteArrayList list = new GridByteArrayList(10);
 

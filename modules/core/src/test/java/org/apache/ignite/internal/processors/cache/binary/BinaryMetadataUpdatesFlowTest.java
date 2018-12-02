@@ -181,6 +181,7 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFlowNoConflicts() throws Exception {
         startGridsMultiThreaded(GRID_CNT);
 
@@ -204,6 +205,7 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFlowNoConflictsWithClients() throws Exception {
         startGridsMultiThreaded(GRID_CNT);
 
@@ -298,6 +300,7 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentMetadataUpdates() throws Exception {
         startGrid(0);
 

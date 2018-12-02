@@ -36,6 +36,7 @@ public class IpcSharedMemoryNativeLoaderSelfTest extends TestCase {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadWithCorruptedLibFile() throws Exception {
         if (U.isWindows())
             return;

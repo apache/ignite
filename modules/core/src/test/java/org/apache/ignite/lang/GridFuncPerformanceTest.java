@@ -39,6 +39,7 @@ public class GridFuncPerformanceTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testTransformingIteratorPerformance() {
         // Warmup.
         testBody();

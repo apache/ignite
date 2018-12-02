@@ -51,6 +51,7 @@ public class GridCacheLocalFullApiSelfTest extends GridCacheAbstractFullApiSelfT
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testMapKeysToNodes() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -85,6 +86,7 @@ public class GridCacheLocalFullApiSelfTest extends GridCacheAbstractFullApiSelfT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalClearAsync() throws Exception {
         localCacheClear(true);
     }
@@ -92,6 +94,7 @@ public class GridCacheLocalFullApiSelfTest extends GridCacheAbstractFullApiSelfT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalClear() throws Exception {
         localCacheClear(false);
     }

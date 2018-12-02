@@ -80,6 +80,7 @@ public class IgniteCachePartitionedBackupNodeFailureRecoveryTest extends IgniteC
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testBackUpFail() throws Exception {
         final IgniteEx node1 = grid(0);
         final IgniteEx node2 = grid(1);

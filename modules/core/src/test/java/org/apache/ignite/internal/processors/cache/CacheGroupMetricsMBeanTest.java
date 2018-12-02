@@ -234,6 +234,7 @@ public class CacheGroupMetricsMBeanTest extends GridCommonAbstractTest implement
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheGroupMetrics() throws Exception {
         pds = false;
 
@@ -336,6 +337,7 @@ public class CacheGroupMetricsMBeanTest extends GridCommonAbstractTest implement
     /**
      * Test allocated pages counts for cache groups.
      */
+    @Test
     public void testAllocatedPages() throws Exception {
         pds = true;
 

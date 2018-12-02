@@ -74,6 +74,7 @@ public class EncryptedCacheCreateTest extends AbstractEncryptionTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateEncryptedCache() throws Exception {
         CacheConfiguration<Long, String> ccfg = new CacheConfiguration<>(ENCRYPTED_CACHE);
 
@@ -95,6 +96,7 @@ public class EncryptedCacheCreateTest extends AbstractEncryptionTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateEncryptedNotPersistedCacheFail() throws Exception {
         GridTestUtils.assertThrowsWithCause(() -> {
             CacheConfiguration<Long, String> ccfg = new CacheConfiguration<>(NO_PERSISTENCE_REGION);
@@ -107,6 +109,7 @@ public class EncryptedCacheCreateTest extends AbstractEncryptionTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPersistedContentEncrypted() throws Exception {
         IgniteCache<Integer, String> enc = grid(0).createCache(
             new CacheConfiguration<Integer, String>(ENCRYPTED_CACHE)

@@ -135,6 +135,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicCacheInitialization() throws Exception {
         checkCacheInitialization(ATOMIC_CACHE_NAME);
     }
@@ -142,6 +143,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransactionalCacheInitialization() throws Exception {
         checkCacheInitialization(TX_CACHE_NAME);
     }
@@ -149,6 +151,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicNearCacheInitialization() throws Exception {
         checkCacheInitialization(NEAR_ATOMIC_CACHE_NAME);
     }
@@ -156,6 +159,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransactionalNearCacheInitialization() throws Exception {
         checkCacheInitialization(NEAR_TX_CACHE_NAME);
     }

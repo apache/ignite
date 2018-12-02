@@ -47,6 +47,7 @@ public class ClusterMetricsSnapshotSerializeSelfTest extends GridCommonAbstractT
     }
 
     /** */
+    @Test
     public void testMetricsSize() {
         byte[] data = new byte[ClusterMetricsSnapshot.METRICS_SIZE];
 
@@ -62,6 +63,7 @@ public class ClusterMetricsSnapshotSerializeSelfTest extends GridCommonAbstractT
     }
 
     /** */
+    @Test
     public void testSerialization() {
         byte[] data = new byte[ClusterMetricsSnapshot.METRICS_SIZE];
 
@@ -83,6 +85,7 @@ public class ClusterMetricsSnapshotSerializeSelfTest extends GridCommonAbstractT
     /**
      * Checks compatibility with old serialized metrics.
      */
+    @Test
     public void testMetricsCompatibility() {
         ClusterMetrics metrics = ClusterMetricsSnapshot.deserialize(METRICS_V1, 0);
 

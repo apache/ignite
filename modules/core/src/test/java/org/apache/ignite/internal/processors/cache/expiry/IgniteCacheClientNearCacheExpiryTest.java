@@ -80,6 +80,7 @@ public class IgniteCacheClientNearCacheExpiryTest extends IgniteCacheAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExpirationOnClient() throws Exception {
         Ignite ignite = grid(NODES - 1);
 

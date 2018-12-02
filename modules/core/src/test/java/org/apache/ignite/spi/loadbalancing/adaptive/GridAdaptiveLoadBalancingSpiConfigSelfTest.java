@@ -29,6 +29,7 @@ public class GridAdaptiveLoadBalancingSpiConfigSelfTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNegativeConfig() throws Exception {
         checkNegativeSpiProperty(new AdaptiveLoadBalancingSpi(), "loadProbe", null);
     }

@@ -102,6 +102,7 @@ public class GridCacheIncrementTransformTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIncrement() throws Exception {
         testIncrement(false);
     }
@@ -109,6 +110,7 @@ public class GridCacheIncrementTransformTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIncrementRestart() throws Exception {
         final AtomicBoolean stop = new AtomicBoolean();
         final AtomicReference<Throwable> error = new AtomicReference<>();

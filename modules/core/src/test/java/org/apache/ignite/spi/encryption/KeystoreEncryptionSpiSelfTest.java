@@ -32,6 +32,7 @@ import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYST
 /** */
 public class KeystoreEncryptionSpiSelfTest extends TestCase {
     /** @throws Exception If failed. */
+    @Test
     public void testCantStartWithEmptyParam() throws Exception {
         GridTestUtils.assertThrowsWithCause(() -> {
             EncryptionSpi encSpi = new KeystoreEncryptionSpi();
@@ -41,6 +42,7 @@ public class KeystoreEncryptionSpiSelfTest extends TestCase {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCantStartWithoutPassword() throws Exception {
         GridTestUtils.assertThrowsWithCause(() -> {
             KeystoreEncryptionSpi encSpi = new KeystoreEncryptionSpi();
@@ -52,6 +54,7 @@ public class KeystoreEncryptionSpiSelfTest extends TestCase {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCantStartKeystoreDoesntExists() throws Exception {
         GridTestUtils.assertThrowsWithCause(() -> {
             KeystoreEncryptionSpi encSpi = new KeystoreEncryptionSpi();
@@ -64,11 +67,12 @@ public class KeystoreEncryptionSpiSelfTest extends TestCase {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testEncryptDecrypt() throws Exception {
         EncryptionSpi encSpi = spi();
 
         KeystoreEncryptionKey k = GridTestUtils.getFieldValue(encSpi, "masterKey");
-        
+
         assertNotNull(k);
         assertNotNull(k.key());
 
@@ -79,7 +83,7 @@ public class KeystoreEncryptionSpiSelfTest extends TestCase {
 
         assertNotNull(cipherText);
         assertEquals(encSpi.encryptedSize(plainText.length), cipherText.length);
-        
+
         byte[] decryptedText = encSpi.decrypt(cipherText, k);
 
         assertNotNull(decryptedText);
@@ -89,9 +93,10 @@ public class KeystoreEncryptionSpiSelfTest extends TestCase {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testKeyEncryptDecrypt() throws Exception {
         EncryptionSpi encSpi = spi();
-        
+
         KeystoreEncryptionKey k = (KeystoreEncryptionKey)encSpi.create();
 
         assertNotNull(k);

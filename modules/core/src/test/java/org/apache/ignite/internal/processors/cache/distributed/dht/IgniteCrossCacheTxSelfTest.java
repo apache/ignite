@@ -107,6 +107,7 @@ public class IgniteCrossCacheTxSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticReadCommitted() throws Exception {
         checkTxsSingleOp(PESSIMISTIC, READ_COMMITTED);
     }
@@ -114,6 +115,7 @@ public class IgniteCrossCacheTxSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticRepeatableRead() throws Exception {
         checkTxsSingleOp(PESSIMISTIC, REPEATABLE_READ);
     }
@@ -121,6 +123,7 @@ public class IgniteCrossCacheTxSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticReadCommitted() throws Exception {
         checkTxsSingleOp(OPTIMISTIC, READ_COMMITTED);
     }
@@ -128,6 +131,7 @@ public class IgniteCrossCacheTxSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticRepeatableRead() throws Exception {
         checkTxsSingleOp(OPTIMISTIC, REPEATABLE_READ);
     }
@@ -135,6 +139,7 @@ public class IgniteCrossCacheTxSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticSerializable() throws Exception {
         checkTxsSingleOp(OPTIMISTIC, SERIALIZABLE);
     }

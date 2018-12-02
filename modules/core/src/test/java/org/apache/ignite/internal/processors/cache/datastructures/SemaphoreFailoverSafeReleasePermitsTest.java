@@ -66,6 +66,7 @@ public class SemaphoreFailoverSafeReleasePermitsTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReleasePermitsPartitioned() throws Exception {
         atomicsCacheMode = PARTITIONED;
 
@@ -75,6 +76,7 @@ public class SemaphoreFailoverSafeReleasePermitsTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReleasePermitsReplicated() throws Exception {
         atomicsCacheMode = REPLICATED;
 

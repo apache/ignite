@@ -84,6 +84,7 @@ public class IgniteDynamicCacheFilterTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCofiguredCacheFilter() throws Exception {
         attrVal = "A";
 

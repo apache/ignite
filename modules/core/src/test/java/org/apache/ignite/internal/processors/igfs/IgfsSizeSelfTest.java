@@ -173,6 +173,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitioned() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = true;
@@ -185,6 +186,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testColocated() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = false;
@@ -197,6 +199,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicated() throws Exception {
         cacheMode = REPLICATED;
 
@@ -208,6 +211,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedOversize() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = true;
@@ -220,6 +224,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testColocatedOversize() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = false;
@@ -232,6 +237,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedOversize() throws Exception {
         cacheMode = REPLICATED;
 
@@ -243,6 +249,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedPreload() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = true;
@@ -255,6 +262,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testColocatedPreload() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = false;

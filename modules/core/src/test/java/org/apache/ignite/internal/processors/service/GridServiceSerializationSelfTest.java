@@ -54,6 +54,7 @@ public class GridServiceSerializationSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServiceSerialization() throws Exception {
         try {
             Ignite server = startGridsMultiThreaded(3);

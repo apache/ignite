@@ -64,6 +64,7 @@ public class GridMarshallerPerformanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSerialization() throws Exception {
         final ByteArrayOutputStream out = new ByteArrayOutputStream();
 
@@ -112,6 +113,7 @@ public class GridMarshallerPerformanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGridMarshaller() throws Exception {
         final GridTuple<byte[]> tuple = new GridTuple<>();
 
@@ -135,6 +137,7 @@ public class GridMarshallerPerformanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testByteBuffer() throws Exception {
         final ByteBuffer buf = ByteBuffer.allocate(1024);
 
@@ -160,6 +163,7 @@ public class GridMarshallerPerformanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testKryo() throws Exception {
         final Kryo kryo = new Kryo();
 

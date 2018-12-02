@@ -26,6 +26,7 @@ public class GridCleanerTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreate() throws Exception {
         Object cleaner = GridCleaner.create(this, new Runnable() {
             @Override public void run() {

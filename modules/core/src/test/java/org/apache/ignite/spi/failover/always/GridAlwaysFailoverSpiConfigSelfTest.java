@@ -28,6 +28,7 @@ public class GridAlwaysFailoverSpiConfigSelfTest extends GridSpiAbstractConfigTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNegativeConfig() throws Exception {
         checkNegativeSpiProperty(new AlwaysFailoverSpi(), "maximumFailoverAttempts", -1);
     }

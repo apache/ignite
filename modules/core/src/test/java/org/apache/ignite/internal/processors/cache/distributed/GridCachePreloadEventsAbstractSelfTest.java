@@ -103,6 +103,7 @@ public abstract class GridCachePreloadEventsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testPreloadEvents() throws Exception {
         Ignite g1 = startGrid("g1");
 

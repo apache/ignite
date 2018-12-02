@@ -100,6 +100,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictions() throws Exception {
         try {
             final Ignite ignite1 = startGrid(1);

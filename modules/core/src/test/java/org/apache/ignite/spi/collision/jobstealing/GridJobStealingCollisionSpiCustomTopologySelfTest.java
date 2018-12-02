@@ -125,6 +125,7 @@ public class GridJobStealingCollisionSpiCustomTopologySelfTest extends
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testThiefNodeNotInTopology() throws Exception {
         List<CollisionJobContext> waitCtxs = new ArrayList<>(2);
 

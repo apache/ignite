@@ -90,6 +90,7 @@ public abstract class GridCacheDaemonNodeAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testImplicit() throws Exception {
         try {
             startGridsMultiThreaded(3);
@@ -121,6 +122,7 @@ public abstract class GridCacheDaemonNodeAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExplicit() throws Exception {
         try {
             startGridsMultiThreaded(3);
@@ -162,6 +164,7 @@ public abstract class GridCacheDaemonNodeAbstractSelfTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMapKeyToNode() throws Exception {
         try {
             // Start normal nodes.

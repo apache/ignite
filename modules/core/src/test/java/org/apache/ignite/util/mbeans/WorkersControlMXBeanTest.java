@@ -33,6 +33,7 @@ public class WorkersControlMXBeanTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Thrown if test fails.
      */
+    @Test
     public void testStopThreadByUniqueName() throws Exception {
         WorkersControlMXBean workersCtrlMXBean = new WorkersControlMXBeanImpl(null);
 
@@ -56,6 +57,7 @@ public class WorkersControlMXBeanTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Thrown if test fails.
      */
+    @Test
     public void testStopThreadById() throws Exception {
         WorkersControlMXBean workersCtrlMXBean = new WorkersControlMXBeanImpl(null);
 

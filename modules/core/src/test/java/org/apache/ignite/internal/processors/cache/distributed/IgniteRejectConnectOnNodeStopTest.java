@@ -89,6 +89,7 @@ public class IgniteRejectConnectOnNodeStopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeStop() throws Exception {
         Ignite srv = startGrid(0);
 

@@ -52,6 +52,7 @@ public class TcpDiscoverySnapshotHistoryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testHistorySupported() throws Exception {
         try {
             final Ignite g = startGrid();
@@ -72,6 +73,7 @@ public class TcpDiscoverySnapshotHistoryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testSettingNewTopologyHistorySize() throws Exception {
         try {
             final Ignite g = startGrid();
@@ -96,6 +98,7 @@ public class TcpDiscoverySnapshotHistoryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testNodeAdded() throws Exception {
         try {
             // Add grid #1
@@ -129,6 +132,7 @@ public class TcpDiscoverySnapshotHistoryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testNodeAddedAndRemoved() throws Exception {
         try {
             // Add grid #1

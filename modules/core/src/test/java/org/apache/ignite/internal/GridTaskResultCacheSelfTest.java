@@ -47,6 +47,7 @@ public class GridTaskResultCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoCacheResultAnnotationUsage() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -57,6 +58,7 @@ public class GridTaskResultCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoCacheResultMethodUsage() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -67,6 +69,7 @@ public class GridTaskResultCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheResults() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 

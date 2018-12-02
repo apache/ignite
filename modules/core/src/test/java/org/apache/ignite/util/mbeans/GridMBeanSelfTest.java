@@ -39,6 +39,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception Thrown if test fails.
      */
+    @Test
     public void testCorrectMBeanInfo() throws Exception {
         StandardMBean mbean = new IgniteStandardMXBean(new GridMBeanImplementation(), GridMBeanInterface.class);
 
@@ -85,6 +86,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception Thrown if test fails.
      */
+    @Test
     public void testMissedNameMBeanInfo() throws Exception {
         try {
             StandardMBean mbean = new IgniteStandardMXBean(new GridMBeanImplementation(), GridMBeanInterfaceBad.class);
@@ -103,6 +105,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception Thrown if test fails.
      */
+    @Test
     public void testMissedDescriptionMBeanInfo() throws Exception {
         try {
             StandardMBean mbean = new IgniteStandardMXBean(new GridMBeanImplementation(),
@@ -122,6 +125,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception Thrown if test fails.
      */
+    @Test
     public void testEmptyDescriptionMBeanInfo() throws Exception {
         try {
             StandardMBean mbean = new IgniteStandardMXBean(new GridMBeanImplementation(),
@@ -141,6 +145,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception Thrown if test fails.
      */
+    @Test
     public void testEmptyNameMBeanInfo() throws Exception {
         try {
             StandardMBean mbean = new IgniteStandardMXBean(new GridMBeanImplementation(),
@@ -160,6 +165,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception Thrown if test fails.
      */
+    @Test
     public void testIgniteKernalReturnsValidMBeanInfo() throws Exception {
         try {
             IgniteEx igniteCrd = startGrid(0);

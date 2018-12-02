@@ -109,6 +109,7 @@ public class AffinityClientNodeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientNodeNotInAffinity() throws Exception {
         checkCache(CACHE1, 2);
 

@@ -101,6 +101,7 @@ public class CacheConnectionLeakStoreTxTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectionLeakOneBackupAtomic() throws Exception {
         checkConnectionLeak(CacheAtomicityMode.ATOMIC, null, null);
     }
@@ -108,6 +109,7 @@ public class CacheConnectionLeakStoreTxTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectionLeakOneBackupAtomicLoadFromStore() throws Exception {
         isLoadFromStore = true;
 
@@ -117,6 +119,7 @@ public class CacheConnectionLeakStoreTxTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectionLeakOneBackupOptimisticRepeatableRead() throws Exception {
         checkConnectionLeak(CacheAtomicityMode.TRANSACTIONAL, OPTIMISTIC, REPEATABLE_READ);
     }
@@ -124,6 +127,7 @@ public class CacheConnectionLeakStoreTxTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectionLeakOneBackupOptimisticRepeatableReadLoadFromStore() throws Exception {
         isLoadFromStore = true;
 
@@ -133,6 +137,7 @@ public class CacheConnectionLeakStoreTxTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectionLeakOneBackupOptimisticReadCommitted() throws Exception {
         checkConnectionLeak(CacheAtomicityMode.TRANSACTIONAL, OPTIMISTIC, READ_COMMITTED);
     }
@@ -140,6 +145,7 @@ public class CacheConnectionLeakStoreTxTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectionLeakOneBackupOptimisticReadCommittedLoadFromStore() throws Exception {
         isLoadFromStore = true;
 
@@ -149,6 +155,7 @@ public class CacheConnectionLeakStoreTxTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectionLeakOneBackupPessimisticRepeatableRead() throws Exception {
         checkConnectionLeak(CacheAtomicityMode.TRANSACTIONAL, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -156,6 +163,7 @@ public class CacheConnectionLeakStoreTxTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectionLeakOneBackupPessimisticReadCommitted() throws Exception {
         checkConnectionLeak(CacheAtomicityMode.TRANSACTIONAL, PESSIMISTIC, READ_COMMITTED);
     }
@@ -163,6 +171,7 @@ public class CacheConnectionLeakStoreTxTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectionLeakOneBackupPessimisticReadCommittedLoadFromStore() throws Exception {
         isLoadFromStore = true;
 

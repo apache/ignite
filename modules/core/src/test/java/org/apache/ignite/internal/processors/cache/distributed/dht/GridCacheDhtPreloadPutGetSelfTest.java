@@ -93,6 +93,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetAsync0() throws Exception {
         preloadMode = ASYNC;
         backups = 0;
@@ -103,6 +104,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetAsync1() throws Exception {
         preloadMode = ASYNC;
         backups = 1;
@@ -113,6 +115,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetAsync2() throws Exception {
         preloadMode = ASYNC;
         backups = 2;
@@ -123,6 +126,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetSync0() throws Exception {
         preloadMode = SYNC;
         backups = 0;
@@ -133,6 +137,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetSync1() throws Exception {
         preloadMode = SYNC;
         backups = 1;
@@ -143,6 +148,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetSync2() throws Exception {
         preloadMode = SYNC;
         backups = 2;
@@ -153,6 +159,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetNone0() throws Exception {
         preloadMode = NONE;
         backups = 0;
@@ -163,6 +170,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetNone1() throws Exception {
         if (MvccFeatureChecker.forcedMvcc())
             fail("https://issues.apache.org/jira/browse/IGNITE-10261");
@@ -176,6 +184,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetNone2() throws Exception {
         if (MvccFeatureChecker.forcedMvcc())
             fail("https://issues.apache.org/jira/browse/IGNITE-10261");

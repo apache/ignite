@@ -49,6 +49,7 @@ public class IgniteSystemCacheOnClientTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSystemCacheOnClientNode() throws Exception {
         startGrids(2);
 

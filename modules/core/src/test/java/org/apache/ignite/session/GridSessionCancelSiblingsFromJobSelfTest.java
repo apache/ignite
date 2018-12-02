@@ -96,6 +96,7 @@ public class GridSessionCancelSiblingsFromJobSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCancelSiblings() throws Exception {
         refreshInitialData();
 
@@ -106,6 +107,7 @@ public class GridSessionCancelSiblingsFromJobSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiThreaded() throws Exception {
         refreshInitialData();
 

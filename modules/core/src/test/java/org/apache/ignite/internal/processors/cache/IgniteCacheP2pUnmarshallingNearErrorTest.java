@@ -43,7 +43,8 @@ public class IgniteCacheP2pUnmarshallingNearErrorTest extends IgniteCacheP2pUnma
     }
 
     /** {@inheritDoc} */
-    @Override public void testResponseMessageOnUnmarshallingFailed() throws InterruptedException {
+    @Override @Test
+    public void testResponseMessageOnUnmarshallingFailed() throws InterruptedException {
         //GridCacheEvictionRequest unmarshalling failed test.
         readCnt.set(5); //2 for each put.
 

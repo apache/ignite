@@ -123,6 +123,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticTxSalvageBeforeTimeout() throws Exception {
         checkSalvageBeforeTimeout(OPTIMISTIC, true);
     }
@@ -130,6 +131,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticcTxSalvageBeforeTimeout() throws Exception {
         checkSalvageBeforeTimeout(PESSIMISTIC, false);
     }
@@ -137,6 +139,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticTxSalvageAfterTimeout() throws Exception {
         checkSalvageAfterTimeout(OPTIMISTIC, true);
     }
@@ -144,6 +147,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticTxSalvageAfterTimeout() throws Exception {
         checkSalvageAfterTimeout(PESSIMISTIC, false);
     }

@@ -227,6 +227,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSize0PrivateMode() throws Exception {
         processSize0Test(DeploymentMode.PRIVATE);
     }
@@ -236,6 +237,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSize0IsolatedMode() throws Exception {
         processSize0Test(DeploymentMode.ISOLATED);
     }
@@ -245,6 +247,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSize0ContinuousMode() throws Exception {
         processSize0Test(DeploymentMode.CONTINUOUS);
     }
@@ -254,6 +257,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSize0SharedMode() throws Exception {
         processSize0Test(DeploymentMode.SHARED);
     }
@@ -262,6 +266,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSize2PrivateMode() throws Exception {
 //        processSize2Test(GridDeploymentMode.PRIVATE);
     }
@@ -271,6 +276,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSize2IsolatedMode() throws Exception {
 //        processSize2Test(GridDeploymentMode.ISOLATED);
     }
@@ -280,6 +286,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSize2ContinuousMode() throws Exception {
 //        processSize2Test(GridDeploymentMode.CONTINUOUS);
     }
@@ -289,6 +296,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSize2SharedMode() throws Exception {
 //        processSize2Test(GridDeploymentMode.SHARED);
     }

@@ -89,6 +89,7 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
     /**
      * Test entities count, calculated by different implementations.
      */
+    @Test
     public void testEnitiesCount() throws Exception {
         awaitPartitionMapExchange();
 

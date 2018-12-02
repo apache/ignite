@@ -80,6 +80,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testAtomicLongPartitioned() throws Exception {
         if (MvccFeatureChecker.forcedMvcc())
             fail("https://issues.apache.org/jira/browse/IGNITE-10391");
@@ -97,6 +98,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testAtomicLongReplicated() throws Exception {
         if (MvccFeatureChecker.forcedMvcc())
             fail("https://issues.apache.org/jira/browse/IGNITE-10391");
@@ -114,6 +116,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testAtomicLongLocal() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
@@ -128,6 +131,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOneAsyncOpPartitioned() throws Exception {
         mode = CacheMode.PARTITIONED;
 
@@ -142,6 +146,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOneAsyncOpReplicated() throws Exception {
         mode = CacheMode.REPLICATED;
 
@@ -156,6 +161,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOneAsyncOpLocal() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
@@ -170,6 +176,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSeveralAsyncOpsPartitioned() throws Exception {
         mode = CacheMode.PARTITIONED;
 
@@ -184,6 +191,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSeveralAsyncOpsReplicated() throws Exception {
         mode = CacheMode.REPLICATED;
 
@@ -198,6 +206,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSeveralAsyncOpsLocal() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
@@ -212,6 +221,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSyncOpAsyncCommitPartitioned() throws Exception {
         mode = CacheMode.PARTITIONED;
 
@@ -226,6 +236,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSyncOpAsyncCommitReplicated() throws Exception {
         mode = CacheMode.REPLICATED;
 
@@ -240,6 +251,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSyncOpAsyncCommitLocal() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
@@ -254,6 +266,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testAsyncOpsAsyncCommitPartitioned() throws Exception {
         mode = CacheMode.PARTITIONED;
 
@@ -268,6 +281,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testAsyncOpsAsyncCommitReplicated() throws Exception {
         mode = CacheMode.REPLICATED;
 
@@ -282,6 +296,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testAsyncOpsAsyncCommitLocal() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 

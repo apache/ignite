@@ -88,6 +88,7 @@ public class BinaryConfigurationCustomSerializerSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testThinClientConnected() throws Exception {
         UUID nid = ignite(0).cluster().localNode().id();
 

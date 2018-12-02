@@ -121,6 +121,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticReadCommitted() throws Exception {
         doTest(PESSIMISTIC, READ_COMMITTED);
     }
@@ -130,6 +131,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticRepeatableRead() throws Exception {
         doTest(PESSIMISTIC, REPEATABLE_READ);
     }
@@ -139,6 +141,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticSerializable() throws Exception {
         doTest(PESSIMISTIC, SERIALIZABLE);
     }
@@ -148,6 +151,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticReadCommitted() throws Exception {
         doTest(OPTIMISTIC, READ_COMMITTED);
     }
@@ -157,6 +161,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticRepeatableRead() throws Exception {
         doTest(OPTIMISTIC, REPEATABLE_READ);
     }
@@ -166,6 +171,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticSerializable() throws Exception {
         doTest(OPTIMISTIC, SERIALIZABLE);
     }

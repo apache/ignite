@@ -86,6 +86,7 @@ public class AtomicPutAllChangingTopologyTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllOnChangingTopology() throws Exception {
         List<IgniteInternalFuture> futs = new LinkedList<>();
 

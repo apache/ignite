@@ -104,6 +104,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testLocal() throws Exception {
         mode = LOCAL;
 
@@ -111,6 +112,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testReplicated() throws Exception {
         mode = REPLICATED;
 
@@ -118,6 +120,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPartitioned() throws Exception {
         mode = PARTITIONED;
         nearEnabled = true;
@@ -126,6 +129,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPartitionedNearDisabled() throws Exception {
         mode = PARTITIONED;
         nearEnabled = false;
@@ -190,6 +194,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedMixed() throws Exception {
         mode = PARTITIONED;
         nearEnabled = false;

@@ -30,6 +30,7 @@ public class GridNioEmbeddedFutureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNioEmbeddedFuture() throws Exception {
         // Original future.
         final GridNioFutureImpl<Integer> origFut = new GridNioFutureImpl<>(null);

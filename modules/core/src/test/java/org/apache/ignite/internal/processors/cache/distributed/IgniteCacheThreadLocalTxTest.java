@@ -68,6 +68,7 @@ public class IgniteCacheThreadLocalTxTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleNode() throws Exception {
         threadLocalTx(startGrid(0));
     }
@@ -75,6 +76,7 @@ public class IgniteCacheThreadLocalTxTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiNode() throws Exception {
         startGridsMultiThreaded(4);
 

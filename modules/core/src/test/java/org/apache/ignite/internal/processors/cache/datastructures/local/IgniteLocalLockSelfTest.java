@@ -43,7 +43,8 @@ public class IgniteLocalLockSelfTest extends IgniteLockAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override public void testReentrantLock() throws Exception {
+    @Override @Test
+    public void testReentrantLock() throws Exception {
         // Test main functionality.
         IgniteLock lock = grid(0).reentrantLock("lock", true, false, true);
 

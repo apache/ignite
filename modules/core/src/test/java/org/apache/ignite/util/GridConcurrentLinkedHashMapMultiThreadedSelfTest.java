@@ -46,6 +46,7 @@ public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPut() throws Exception {
         info(">>> Test grid concurrent linked hash map...");
 
@@ -64,6 +65,7 @@ public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutPerSegment() throws Exception {
         info(">>> Test grid concurrent linked hash map...");
 
@@ -81,6 +83,7 @@ public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEvict() throws Exception {
         info(">>> Test grid concurrent linked hash map...");
 
@@ -143,6 +146,7 @@ public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictPerSegment() throws Exception {
         info(">>> Test grid concurrent linked hash map...");
 
@@ -205,6 +209,7 @@ public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictPerSegmentOptimizedRemoves() throws Exception {
         info(">>> Test grid concurrent linked hash map...");
 
@@ -323,6 +328,7 @@ public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInsertOrderIterator() throws Exception {
         final AtomicBoolean run = new AtomicBoolean(true);
 
@@ -384,6 +390,7 @@ public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIteratorModificationInsertOrder() throws Exception {
         testGetRemovePutIterator();
     }
@@ -391,6 +398,7 @@ public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInsertOrderGetRemovePut() throws Exception {
         testPutGetRemove(false);
     }
@@ -398,6 +406,7 @@ public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInsertOrderPutGetRemove() throws Exception {
         testPutGetRemove(true);
     }
@@ -481,6 +490,7 @@ public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommon
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testGetRemovePutIterator() throws Exception {
 
         info(">>> Test grid concurrent linked hash map iterator...");

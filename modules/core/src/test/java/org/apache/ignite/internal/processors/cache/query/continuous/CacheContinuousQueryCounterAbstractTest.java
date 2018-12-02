@@ -177,6 +177,7 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAllEntries() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(CACHE_NAME);
 
@@ -248,6 +249,7 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTwoQueryListener() throws Exception {
         if (cacheMode() == LOCAL)
             return;
@@ -384,6 +386,7 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartQuery() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(CACHE_NAME);
 
@@ -442,6 +445,7 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEntriesByFilter() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(CACHE_NAME);
 
@@ -537,6 +541,7 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCache() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(CACHE_NAME);
 

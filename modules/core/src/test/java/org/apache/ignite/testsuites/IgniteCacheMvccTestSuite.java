@@ -96,7 +96,8 @@ public class IgniteCacheMvccTestSuite extends TestSuite {
         }
 
         /** {@inheritDoc} */
-        @Override public void testLocalEntries() throws Exception {
+        @Override @Test
+    public void testLocalEntries() throws Exception {
             fail("https://issues.apache.org/jira/browse/IGNITE-10167");
 
             super.testLocalEntries();
@@ -111,7 +112,8 @@ public class IgniteCacheMvccTestSuite extends TestSuite {
         }
 
         /** {@inheritDoc} */
-        @Override public void testLocalEntries() throws Exception {
+        @Override @Test
+    public void testLocalEntries() throws Exception {
             fail("https://issues.apache.org/jira/browse/IGNITE-10167");
 
             super.testLocalEntries();

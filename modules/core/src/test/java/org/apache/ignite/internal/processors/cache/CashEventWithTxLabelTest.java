@@ -134,6 +134,7 @@ public class CashEventWithTxLabelTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPassTxLabelInCashEventForAllCases() throws Exception {
         Ignite[] nodes = {client(), primary(), backup1(), backup2()};
 

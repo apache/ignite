@@ -96,6 +96,7 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopExplicitTransactions() throws Exception {
         testStop(true);
     }
@@ -103,6 +104,7 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopImplicitTransactions() throws Exception {
         testStop(false);
     }
@@ -110,6 +112,7 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopExplicitTransactionsReplicated() throws Exception {
         replicated = true;
 
@@ -119,6 +122,7 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopImplicitTransactionsReplicated() throws Exception {
         replicated = true;
 
@@ -128,6 +132,7 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopAtomic() throws Exception {
         atomic = true;
 
@@ -137,6 +142,7 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopMultithreaded() throws Exception {
         try {
             startGrid(0);

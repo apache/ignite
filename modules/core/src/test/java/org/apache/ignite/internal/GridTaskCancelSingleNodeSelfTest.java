@@ -61,6 +61,7 @@ public class GridTaskCancelSingleNodeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testImmediateCancellation() throws Exception {
         checkCancellation(0L);
     }
@@ -68,6 +69,7 @@ public class GridTaskCancelSingleNodeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCancellation() throws Exception {
         checkCancellation(2000L);
     }

@@ -84,6 +84,7 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSwapReplicated() throws Exception {
         cacheMode = REPLICATED;
 
@@ -91,6 +92,7 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSwapPartitioned() throws Exception {
         cacheMode = PARTITIONED;
 
@@ -142,6 +144,7 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSwapReplicatedMultithreaded() throws Exception {
         cacheMode = REPLICATED;
 
@@ -149,6 +152,7 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSwapPartitionedMultithreaded() throws Exception {
         cacheMode = PARTITIONED;
 

@@ -82,6 +82,7 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDefaultClosure() throws Exception {
         Set<String> srvNames = new HashSet<>(NODES_CNT - 1);
 
@@ -116,6 +117,7 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientClosure() throws Exception {
         for (int i = 0 ; i < NODES_CNT; i++) {
             log.info("Iteration: " + i);
@@ -143,6 +145,7 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCustomClosure() throws Exception {
         for (int i = 0 ; i < NODES_CNT; i++) {
             log.info("Iteration: " + i);
@@ -166,6 +169,7 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDefaultService() throws Exception {
         UUID clientNodeId = grid(CLIENT_IDX).cluster().localNode().id();
 
@@ -207,6 +211,7 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientService() throws Exception {
         UUID clientNodeId = grid(CLIENT_IDX).cluster().localNode().id();
 

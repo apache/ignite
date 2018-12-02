@@ -104,6 +104,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAddFailover() throws Exception {
         testAddFailover(false);
     }
@@ -111,6 +112,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAddFailoverCollocated() throws Exception {
         testAddFailover(true);
     }
@@ -199,6 +201,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPollFailover() throws Exception {
         testPollFailover(false);
     }
@@ -206,6 +209,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPollFailoverCollocated() throws Exception {
         testPollFailover(true);
     }

@@ -48,6 +48,7 @@ public class IgniteChangeGlobalStateServiceTest extends IgniteChangeGlobalStateA
     /**
      *
      */
+    @Test
     public void testDeployService() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-6629");
 

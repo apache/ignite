@@ -74,6 +74,7 @@ public class GridCacheStoreValueBytesSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testEnabled() throws Exception {
         storeValBytes = true;
 

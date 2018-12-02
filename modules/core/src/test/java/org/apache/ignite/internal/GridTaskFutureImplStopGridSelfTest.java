@@ -67,6 +67,7 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testGet() throws Exception {
         Ignite ignite = startGrid(getTestIgniteInstanceName());
 

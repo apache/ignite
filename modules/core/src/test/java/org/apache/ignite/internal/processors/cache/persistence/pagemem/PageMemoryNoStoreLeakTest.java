@@ -46,6 +46,7 @@ public class PageMemoryNoStoreLeakTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPageDoubleInitMemoryLeak() throws Exception {
         long initVMsize = D.getCommittedVirtualMemorySize();
 

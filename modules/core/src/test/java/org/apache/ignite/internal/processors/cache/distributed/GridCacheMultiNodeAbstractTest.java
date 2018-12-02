@@ -147,6 +147,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testBasicPut() throws Exception {
         checkPuts(3, ignite1);
     }
@@ -154,6 +155,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
     /**
      * @throws Exception If test fails.
      */
+    @Test
     public void testMultiNodePut() throws Exception {
         checkPuts(1, ignite1, ignite2, ignite3);
         checkPuts(1, ignite2, ignite1, ignite3);
@@ -163,6 +165,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
     /**
      * @throws Exception If test fails.
      */
+    @Test
     public void testMultiValuePut() throws Exception {
         checkPuts(1, ignite1);
     }
@@ -170,6 +173,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
     /**
      * @throws Exception If test fails.
      */
+    @Test
     public void testMultiValueMultiNodePut() throws Exception {
         checkPuts(3, ignite1, ignite2, ignite3);
         checkPuts(3, ignite2, ignite1, ignite3);
@@ -232,6 +236,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testLockUnlock() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
@@ -280,6 +285,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testConcurrentPutAsync() throws Exception {
         CountDownLatch latch = new CountDownLatch(9);
 
@@ -330,6 +336,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testGlobalClearAll() throws Exception {
         cache1.put(1, "val1");
         cache2.put(2, "val2");

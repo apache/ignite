@@ -114,6 +114,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRequestedMappingIsStoredInFS() throws Exception {
         Ignite srv1 = startGrid(0);
 
@@ -151,6 +152,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoNodesDieOnRequest() throws Exception {
         Ignite srv1 = startGrid(0);
 
@@ -181,6 +183,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
     /**
      *
      */
+    @Test
     public void testOneNodeDiesOnRequest() throws Exception {
         CountDownLatch nodeStopLatch = new CountDownLatch(1);
 
@@ -216,6 +219,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
     /**
      *
      */
+    @Test
     public void testTwoNodesDieOnRequest() throws Exception {
         CountDownLatch nodeStopLatch = new CountDownLatch(2);
 
@@ -252,6 +256,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
     /**
      *
      */
+    @Test
     public void testAllNodesDieOnRequest() throws Exception {
         CountDownLatch nodeStopLatch = new CountDownLatch(3);
 

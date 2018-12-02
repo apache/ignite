@@ -83,6 +83,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMarshalUnmarshalCandidate() throws Exception {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -115,6 +116,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     /**
      * Tests remote candidates.
      */
+    @Test
     public void testRemotes() {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -266,6 +268,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     /**
      * Tests that orderOwned does not reorder owned locks.
      */
+    @Test
     public void testNearRemoteWithOwned() {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -308,6 +311,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     /**
      * Tests that orderOwned does not reorder owned locks.
      */
+    @Test
     public void testNearRemoteWithOwned1() {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -354,6 +358,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     /**
      * Tests that orderOwned does not reorder owned locks.
      */
+    @Test
     public void testNearRemoteWithOwned2() {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -402,6 +407,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     /**
      * Tests remote candidates.
      */
+    @Test
     public void testLocal() {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -476,6 +482,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     /**
      * Tests assignment of local candidates when remote exist.
      */
+    @Test
     public void testLocalWithRemote() {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -512,6 +519,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testCompletedWithBaseInTheMiddle() {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -565,6 +573,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testCompletedWithCompletedBaseInTheMiddle() {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -607,6 +616,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testCompletedTwiceWithBaseInTheMiddle() {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -653,6 +663,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testCompletedWithBaseInTheMiddleNoChange() {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -692,6 +703,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testCompletedWithBaseInTheBeginning() {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -734,6 +746,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     /**
      * This case should never happen, nevertheless we need to test for it.
      */
+    @Test
     public void testCompletedWithBaseInTheBeginningNoChange() {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -773,6 +786,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     /**
      * This case should never happen, nevertheless we need to test for it.
      */
+    @Test
     public void testCompletedWithBaseInTheEndNoChange() {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -812,6 +826,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testCompletedWithBaseNotPresentInTheMiddle() {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -853,6 +868,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testCompletedWithBaseNotPresentInTheMiddleNoChange() {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -888,6 +904,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testCompletedWithBaseNotPresentInTheBeginning() {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -929,6 +946,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testCompletedWithBaseNotPresentInTheBeginningNoChange() {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -970,6 +988,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testCompletedWithBaseNotPresentInTheEndNoChange() {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -1007,6 +1026,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     /**
      * Test local and remote candidates together.
      */
+    @Test
     public void testLocalAndRemote() {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -1133,6 +1153,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testMultipleLocalAndRemoteLocks1() throws Exception {
         UUID nodeId = UUID.randomUUID();
 
@@ -1206,6 +1227,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testMultipleLocalAndRemoteLocks2() throws Exception {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -1293,6 +1315,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testMultipleLocalLocks() throws Exception {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -1334,6 +1357,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings({"ObjectEquality"})
+    @Test
     public void testUsedCandidates() throws Exception {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -1399,6 +1423,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     /**
      * Test 2 keys with candidates in reverse order.
      */
+    @Test
     public void testReverseOrder1() {
         UUID id = UUID.randomUUID();
 
@@ -1452,6 +1477,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testReverseOrder2() throws Exception {
         UUID id = UUID.randomUUID();
 
@@ -1514,6 +1540,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testReverseOrder3() throws Exception {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -1562,6 +1589,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testReverseOrder4() throws Exception {
         UUID id = UUID.randomUUID();
 

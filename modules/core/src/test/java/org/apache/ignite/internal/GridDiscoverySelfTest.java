@@ -101,6 +101,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetRemoteNodes() throws Exception {
         Collection<ClusterNode> nodes = ignite.cluster().forRemotes().nodes();
 
@@ -110,6 +111,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAllNodes() throws Exception {
         Collection<ClusterNode> nodes = ignite.cluster().nodes();
 
@@ -122,6 +124,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetLocalNode() throws Exception {
         ClusterNode node = ignite.cluster().localNode();
 
@@ -136,6 +139,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPingNode() throws Exception {
         ClusterNode node = ignite.cluster().localNode();
 
@@ -149,6 +153,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDiscoveryListener() throws Exception {
         ClusterNode node = ignite.cluster().localNode();
 
@@ -218,6 +223,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case of any exception.
      */
+    @Test
     public void testCacheNodes() throws Exception {
         // Validate only original node is available.
         GridDiscoveryManager discoMgr = ((IgniteKernal) ignite).context().discovery();

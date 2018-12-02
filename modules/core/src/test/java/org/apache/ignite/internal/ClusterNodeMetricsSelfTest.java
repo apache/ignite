@@ -120,6 +120,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAllocatedMemory() throws Exception {
         IgniteEx ignite = grid();
 
@@ -185,6 +186,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleTaskMetrics() throws Exception {
         Ignite ignite = grid();
 
@@ -243,6 +245,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInternalTaskMetrics() throws Exception {
         Ignite ignite = grid();
 
@@ -300,6 +303,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIoMetrics() throws Exception {
         Ignite ignite0 = grid();
         Ignite ignite1 = startGrid(1);
@@ -353,6 +357,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClusterNodeMetrics() throws Exception {
         final Ignite ignite0 = grid();
         final Ignite ignite1 = startGrid(1);
@@ -381,6 +386,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testJmxClusterMetrics() throws Exception {
         Ignite node = grid();
 

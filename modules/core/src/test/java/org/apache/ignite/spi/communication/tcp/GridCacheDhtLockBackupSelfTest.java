@@ -102,6 +102,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testLock() throws Exception {
         final int kv = 1;
 

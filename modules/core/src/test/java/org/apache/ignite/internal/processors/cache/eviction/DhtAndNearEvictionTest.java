@@ -84,6 +84,7 @@ public class DhtAndNearEvictionTest extends GridCommonAbstractTest {
      *     <li>backups=1</li>
      * </ul>
      */
+    @Test
     public void testConcurrentWritesAndReadsWithReadThrough() throws Exception {
         startGrid(0);
         startGrid(1);
@@ -136,6 +137,7 @@ public class DhtAndNearEvictionTest extends GridCommonAbstractTest {
     /**
      * Checking rebalancing which used to be affected by IGNITE-9315.
      */
+    @Test
     public void testRebalancing() throws Exception {
         Ignite grid0 = startGrid(0);
 

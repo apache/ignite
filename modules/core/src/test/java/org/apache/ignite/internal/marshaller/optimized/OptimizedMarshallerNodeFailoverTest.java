@@ -84,6 +84,7 @@ public class OptimizedMarshallerNodeFailoverTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClassCacheUpdateFailover1() throws Exception {
         classCacheUpdateFailover(false);
     }
@@ -91,6 +92,7 @@ public class OptimizedMarshallerNodeFailoverTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClassCacheUpdateFailover2() throws Exception {
         classCacheUpdateFailover(true);
     }
@@ -141,6 +143,7 @@ public class OptimizedMarshallerNodeFailoverTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartAllNodes() throws Exception {
         cache = true;
 

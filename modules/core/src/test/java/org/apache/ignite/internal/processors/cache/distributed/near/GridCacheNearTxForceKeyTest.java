@@ -63,6 +63,7 @@ public class GridCacheNearTxForceKeyTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNearTx() throws Exception {
         Ignite ignite0 = startGrid(0);
 

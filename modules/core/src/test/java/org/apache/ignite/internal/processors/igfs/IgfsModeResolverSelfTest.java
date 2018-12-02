@@ -49,6 +49,7 @@ public class IgfsModeResolverSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCanContain() throws Exception {
         for (IgfsMode m: IgfsMode.values()) {
             // Each mode can contain itself:
@@ -68,6 +69,7 @@ public class IgfsModeResolverSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testResolve() throws Exception {
         assertEquals(DUAL_SYNC, reslvr.resolveMode(IgfsPath.ROOT));
         assertEquals(DUAL_SYNC, reslvr.resolveMode(new IgfsPath("/a")));
@@ -89,6 +91,7 @@ public class IgfsModeResolverSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testModesValidation() throws Exception {
         // Another mode inside PRIMARY directory:
         try {
@@ -148,6 +151,7 @@ public class IgfsModeResolverSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDualParentsWithPrimaryChild() throws Exception {
         Set<IgfsPath> set = new HashSet<>();
 

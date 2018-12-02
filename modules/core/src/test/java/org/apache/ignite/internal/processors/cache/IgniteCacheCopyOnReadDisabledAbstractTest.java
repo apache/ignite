@@ -49,6 +49,7 @@ public abstract class IgniteCacheCopyOnReadDisabledAbstractTest extends GridCach
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCopyOnReadDisabled() throws Exception {
         IgniteCache<TestKey, TestValue> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
 

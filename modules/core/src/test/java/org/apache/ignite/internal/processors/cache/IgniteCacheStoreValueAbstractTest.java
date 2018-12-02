@@ -125,6 +125,7 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testValueNotStored() throws Exception {
         cpyOnRead = true;
 
@@ -296,6 +297,7 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testValueStored() throws Exception {
         cpyOnRead = false;
 

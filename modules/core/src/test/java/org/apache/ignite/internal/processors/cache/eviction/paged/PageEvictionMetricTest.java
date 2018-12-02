@@ -43,6 +43,7 @@ public class PageEvictionMetricTest extends PageEvictionAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPageEvictionMetric() throws Exception {
         IgniteEx ignite = startGrid(0);
 

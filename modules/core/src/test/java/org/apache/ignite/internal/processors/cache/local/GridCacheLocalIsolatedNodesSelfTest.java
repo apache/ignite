@@ -60,6 +60,7 @@ public class GridCacheLocalIsolatedNodesSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testIsolatedNodes() throws Exception {
         Ignite g1 = grid(0);
         UUID nid1 = g1.cluster().localNode().id();

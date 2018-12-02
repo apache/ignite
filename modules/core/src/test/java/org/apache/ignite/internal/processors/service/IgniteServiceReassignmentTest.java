@@ -87,6 +87,7 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeRestart1() throws Exception {
         srvcCfg = serviceConfiguration();
 
@@ -129,6 +130,7 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeRestart2() throws Exception {
         startGrids(3);
 
@@ -157,6 +159,7 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeRestartRandom() throws Exception {
         final int NODES = 5;
 
@@ -190,6 +193,7 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testZombieAssignmentsCleanup() throws Exception {
         useStrLog = true;
 
@@ -246,6 +250,7 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeStopWhileThereAreCacheActivitiesInServiceProcessor() throws Exception {
         final int nodesCnt = 2;
         final int maxSvc = 1024;

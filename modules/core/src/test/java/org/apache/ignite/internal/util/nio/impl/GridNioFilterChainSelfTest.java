@@ -66,6 +66,7 @@ public class GridNioFilterChainSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testChainEvents() throws Exception {
         final AtomicReference<String> connectedEvt = new AtomicReference<>();
         final AtomicReference<String> disconnectedEvt = new AtomicReference<>();

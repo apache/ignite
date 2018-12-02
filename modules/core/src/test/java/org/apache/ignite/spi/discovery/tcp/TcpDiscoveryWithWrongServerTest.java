@@ -123,6 +123,7 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
      *
      * @throws Exception in case of error.
      */
+    @Test
     public void testWrongHandshakeResponse() throws Exception {
         startTcpThread(new SomeResponseWorker(), SERVER_PORT);
         startTcpThread(new SomeResponseWorker(), LAST_SERVER_PORT);
@@ -135,6 +136,7 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
      *
      * @throws Exception in case of error.
      */
+    @Test
     public void testNoHandshakeResponse() throws Exception {
         startTcpThread(new NoResponseWorker(), SERVER_PORT);
         startTcpThread(new NoResponseWorker(), LAST_SERVER_PORT);
@@ -147,6 +149,7 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
      *
      * @throws Exception in case of error.
      */
+    @Test
     public void testDisconnectOnRequest() throws Exception {
         startTcpThread(new DisconnectOnRequestWorker(), SERVER_PORT);
         startTcpThread(new DisconnectOnRequestWorker(), LAST_SERVER_PORT);
@@ -159,6 +162,7 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
      *
      * @throws Exception in case of error.
      */
+    @Test
     public void testEarlyDisconnect() throws Exception {
         startTcpThread(new EarlyDisconnectWorker(), SERVER_PORT);
         startTcpThread(new EarlyDisconnectWorker(), LAST_SERVER_PORT);

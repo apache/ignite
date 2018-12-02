@@ -76,6 +76,7 @@ public class IgniteCacheStartWithLoadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testNoRebalanceDuringCacheStart() throws Exception {
         IgniteEx crd = (IgniteEx)startGrids(4);
 

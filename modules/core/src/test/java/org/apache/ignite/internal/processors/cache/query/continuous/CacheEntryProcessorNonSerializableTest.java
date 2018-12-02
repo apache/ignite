@@ -110,6 +110,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticOnePhaseCommit() throws Exception {
         CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 1);
 
@@ -123,6 +124,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticOnePhaseCommitWithNearCache() throws Exception {
         CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 1)
             .setNearConfiguration(new NearCacheConfiguration());
@@ -137,6 +139,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticOnePhaseCommitFullSync() throws Exception {
         CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 1);
 
@@ -150,6 +153,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticOnePhaseCommitFullSyncWithNearCache() throws Exception {
         CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 1)
             .setNearConfiguration(new NearCacheConfiguration());
@@ -164,6 +168,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimistic() throws Exception {
         CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 2);
 
@@ -177,6 +182,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticWithNearCache() throws Exception {
         CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 2)
             .setNearConfiguration(new NearCacheConfiguration());
@@ -191,6 +197,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticFullSync() throws Exception {
         CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 2);
 
@@ -204,6 +211,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticOnePhaseCommit() throws Exception {
         CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 1);
 
@@ -217,6 +225,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticOnePhaseCommitFullSync() throws Exception {
         CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 1);
 
@@ -230,6 +239,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticOnePhaseCommitFullSyncWithNearCache() throws Exception {
         CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 1)
             .setNearConfiguration(new NearCacheConfiguration());
@@ -244,6 +254,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimistic() throws Exception {
         CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 2);
 
@@ -257,6 +268,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticFullSync() throws Exception {
         CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 2);
 
@@ -270,6 +282,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticFullSyncWithNearCache() throws Exception {
         CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 2);
 

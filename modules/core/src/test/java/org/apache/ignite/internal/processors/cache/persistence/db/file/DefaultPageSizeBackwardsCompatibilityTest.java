@@ -104,6 +104,7 @@ public class DefaultPageSizeBackwardsCompatibilityTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartFrom16kDefaultStore() throws Exception {
         startGrids(2);
 

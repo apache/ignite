@@ -116,6 +116,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testApplyingUpdatesFromCompactedWal() throws Exception {
         testApplyingUpdatesFromCompactedWal(false);
     }
@@ -125,6 +126,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testApplyingUpdatesFromCompactedWalWhenCompressorDisabled() throws Exception {
         testApplyingUpdatesFromCompactedWal(true);
     }
@@ -241,6 +243,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testCompressorToleratesEmptyWalSegmentsFsync() throws Exception {
         testCompressorToleratesEmptyWalSegments(WALMode.FSYNC);
     }
@@ -248,6 +251,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testCompressorToleratesEmptyWalSegmentsLogOnly() throws Exception {
         testCompressorToleratesEmptyWalSegments(WALMode.LOG_ONLY);
     }
@@ -321,6 +325,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSeekingStartInCompactedSegment() throws Exception {
         IgniteEx ig = (IgniteEx)startGrids(3);
         ig.cluster().active(true);

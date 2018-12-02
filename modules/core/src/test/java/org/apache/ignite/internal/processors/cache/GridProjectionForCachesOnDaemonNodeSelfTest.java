@@ -89,6 +89,7 @@ public class GridProjectionForCachesOnDaemonNodeSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testForDataNodes() throws Exception {
         ClusterGroup grp = ignite.cluster().forDataNodes(DEFAULT_CACHE_NAME);
 
@@ -107,6 +108,7 @@ public class GridProjectionForCachesOnDaemonNodeSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testForClientNodes() throws Exception {
         ClusterGroup grp = ignite.cluster().forClientNodes(DEFAULT_CACHE_NAME);
 
@@ -125,6 +127,7 @@ public class GridProjectionForCachesOnDaemonNodeSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testForCacheNodes() throws Exception {
         ClusterGroup grp = ignite.cluster().forCacheNodes(DEFAULT_CACHE_NAME);
 

@@ -196,6 +196,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWalDisabledDuringRebalancing() throws Exception {
         doTestSimple();
     }
@@ -203,6 +204,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWalNotDisabledIfParameterSetToFalse() throws Exception {
         disableWalDuringRebalancing = false;
 
@@ -286,6 +288,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalAndGlobalWalStateInterdependence() throws Exception {
         Ignite ignite = startGrids(3);
 
@@ -325,6 +328,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testWithExchangesMerge() throws Exception {
         final int nodeCnt = 4;
         final int keyCnt = getKeysCount();
@@ -378,6 +382,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testParallelExchangeDuringRebalance() throws Exception {
         doTestParallelExchange(supplyMessageLatch);
     }
@@ -385,6 +390,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testParallelExchangeDuringCheckpoint() throws Exception {
         doTestParallelExchange(fileIOLatch);
     }
@@ -440,6 +446,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDataClearedAfterRestartWithDisabledWal() throws Exception {
         Ignite ignite = startGrid(0);
 
@@ -481,6 +488,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWalNotDisabledAfterShrinkingBaselineTopology() throws Exception {
         Ignite ignite = startGrids(4);
 

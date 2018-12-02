@@ -102,6 +102,7 @@ public class TxRecoveryStoreEnabledTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimistic() throws Exception {
         checkTxRecovery(OPTIMISTIC);
     }
@@ -109,6 +110,7 @@ public class TxRecoveryStoreEnabledTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimistic() throws Exception {
         checkTxRecovery(PESSIMISTIC);
     }

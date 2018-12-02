@@ -110,6 +110,7 @@ public abstract class GridCacheBinaryStoreAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPut() throws Exception {
         jcache().put(new Key(1), new Value(1));
 
@@ -119,6 +120,7 @@ public abstract class GridCacheBinaryStoreAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAll() throws Exception {
         Map<Object, Object> map = new HashMap<>();
 
@@ -133,6 +135,7 @@ public abstract class GridCacheBinaryStoreAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoad() throws Exception {
         populateMap(STORE.map(), 1);
 
@@ -146,6 +149,7 @@ public abstract class GridCacheBinaryStoreAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadAll() throws Exception {
         populateMap(STORE.map(), 1, 2, 3);
 
@@ -170,6 +174,7 @@ public abstract class GridCacheBinaryStoreAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemove() throws Exception {
         for (int i = 1; i <= 3; i++)
             jcache().put(new Key(i), new Value(i));
@@ -182,6 +187,7 @@ public abstract class GridCacheBinaryStoreAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoveAll() throws Exception {
         for (int i = 1; i <= 3; i++)
             jcache().put(new Key(i), new Value(i));

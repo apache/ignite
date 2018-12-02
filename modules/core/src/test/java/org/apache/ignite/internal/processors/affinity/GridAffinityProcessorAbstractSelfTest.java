@@ -107,6 +107,7 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
      *
      * @throws Exception In case of any exception.
      */
+    @Test
     public void testAffinityProcessor() throws Exception {
         Random rnd = new Random();
 
@@ -158,6 +159,7 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
      *
      * @throws Exception In case of any exception.
      */
+    @Test
     public void testPerformance() throws Exception {
         IgniteKernal grid = (IgniteKernal)grid(0);
         GridAffinityProcessor aff = grid.context().affinity();

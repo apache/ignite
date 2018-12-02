@@ -43,6 +43,7 @@ public class CacheRebalanceConfigValidationTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testParameterConsistency() throws Exception {
         rebalancePoolSize = 2;
 

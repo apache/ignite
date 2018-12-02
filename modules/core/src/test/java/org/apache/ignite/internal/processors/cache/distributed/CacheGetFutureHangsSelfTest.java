@@ -89,6 +89,7 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContainsKeyFailover() throws Exception {
         int cnt = 3;
 

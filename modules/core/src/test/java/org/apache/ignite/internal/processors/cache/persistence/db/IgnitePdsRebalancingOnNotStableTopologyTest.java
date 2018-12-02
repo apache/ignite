@@ -55,6 +55,7 @@ public class IgnitePdsRebalancingOnNotStableTopologyTest extends GridCommonAbstr
     /**
      * @throws Exception When fails.
      */
+    @Test
     public void test() throws Exception {
         Ignite ex = startGrid(0);
 

@@ -28,6 +28,7 @@ public class CacheComparatorTest extends TestCase {
     /**
      * Test if comparator not violates its general contract
      */
+    @Test
     public void testDirect() {
         DynamicCacheDescriptor desc1 = new DynamicCacheDescriptor(null,
             new CacheConfiguration().setName("1111"), CacheType.DATA_STRUCTURES,

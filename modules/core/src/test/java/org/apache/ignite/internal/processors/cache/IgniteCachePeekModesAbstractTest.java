@@ -106,6 +106,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalPeek() throws Exception {
         if (cacheMode() == LOCAL) {
             checkAffinityLocalCache();
@@ -371,6 +372,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSize() throws Exception {
         checkEmpty();
 
@@ -479,6 +481,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalPartitionSize() throws Exception {
         if (cacheMode() != LOCAL)
             return;
@@ -534,6 +537,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
     /**
      * @throws InterruptedException If failed.
      */
+    @Test
     public void testLocalPartitionSizeFlags() throws InterruptedException {
         if (true) // TODO GG-11148.
             return;
@@ -595,6 +599,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNonLocalPartitionSize() throws Exception {
         if (true) // TODO GG-11148.
             return;
@@ -1280,6 +1285,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalEntries() throws Exception {
         if (cacheMode() == LOCAL) {
             IgniteCache<Integer, String> cache0 = jcache(0);

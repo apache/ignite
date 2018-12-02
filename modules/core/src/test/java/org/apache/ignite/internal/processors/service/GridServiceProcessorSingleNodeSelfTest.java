@@ -33,6 +33,7 @@ public class GridServiceProcessorSingleNodeSelfTest extends GridServiceProcessor
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeSingletonNotDeployedProxy() throws Exception {
         String name = "testNodeSingletonNotDeployedProxy";
 

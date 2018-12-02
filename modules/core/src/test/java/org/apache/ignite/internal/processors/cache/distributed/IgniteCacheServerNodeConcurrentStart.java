@@ -81,6 +81,7 @@ public class IgniteCacheServerNodeConcurrentStart extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentStart() throws Exception {
         for (int i = 0; i < ITERATIONS; i++) {
             log.info("Iteration: " + i);

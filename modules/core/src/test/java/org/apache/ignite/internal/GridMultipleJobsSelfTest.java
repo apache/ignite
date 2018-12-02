@@ -99,6 +99,7 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNotAffinityJobs() throws Exception {
         /* =========== Test properties =========== */
         int jobsNum = 5000;
@@ -110,6 +111,7 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testAffinityJobs() throws Exception {
         /* =========== Test properties =========== */
         int jobsNum = 5000;

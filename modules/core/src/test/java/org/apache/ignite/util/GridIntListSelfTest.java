@@ -30,6 +30,7 @@ public class GridIntListSelfTest extends TestCase {
      * @throws Exception If failed.
      */
     @SuppressWarnings("ZeroLengthArrayAllocation")
+    @Test
     public void testCopyWithout() throws Exception {
         assertCopy(
             new GridIntList(new int[] {}),
@@ -67,6 +68,7 @@ public class GridIntListSelfTest extends TestCase {
     /**
      *
      */
+    @Test
     public void testTruncate() {
         GridIntList list = asList(1, 2, 3, 4, 5, 6, 7, 8);
 
@@ -108,6 +110,7 @@ public class GridIntListSelfTest extends TestCase {
     /**
      *
      */
+    @Test
     public void testRemove() {
         GridIntList list = asList(1, 2, 3, 4, 5, 6);
 
@@ -130,6 +133,7 @@ public class GridIntListSelfTest extends TestCase {
     /**
      *
      */
+    @Test
     public void testSort() {
         assertEquals(new GridIntList(), new GridIntList().sort());
         assertEquals(asList(1), asList(1).sort());

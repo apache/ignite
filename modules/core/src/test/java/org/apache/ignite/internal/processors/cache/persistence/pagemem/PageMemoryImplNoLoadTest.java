@@ -112,7 +112,8 @@ public class PageMemoryImplNoLoadTest extends PageMemoryNoLoadSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override public void testPageHandleDeallocation() throws Exception {
+    @Override @Test
+    public void testPageHandleDeallocation() throws Exception {
         // No-op.
     }
 }

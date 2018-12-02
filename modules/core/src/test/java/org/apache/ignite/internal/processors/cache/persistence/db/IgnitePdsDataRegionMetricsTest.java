@@ -121,6 +121,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testMemoryUsageSingleNode() throws Exception {
         DataRegionMetrics initMetrics = null;
 
@@ -164,6 +165,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testMemoryUsageMultipleNodes() throws Exception {
         IgniteEx node0 = startGrid(0);
         IgniteEx node1 = startGrid(1);
@@ -215,6 +217,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCheckpointBufferSize() throws Exception {
         IgniteEx ig = startGrid(0);
 
@@ -232,6 +235,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testUsedCheckpointBuffer() throws Exception {
         IgniteEx ig = startGrid(0);
 

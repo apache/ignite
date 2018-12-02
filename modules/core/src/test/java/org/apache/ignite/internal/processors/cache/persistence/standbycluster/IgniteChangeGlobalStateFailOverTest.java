@@ -57,6 +57,7 @@ public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalState
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivateDeActivateOnFixTopology() throws Exception {
         final Ignite igB1 = backUp(0);
         final Ignite igB2 = backUp(1);
@@ -143,6 +144,7 @@ public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalState
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivateDeActivateOnJoiningNode() throws Exception {
         final Ignite igB1 = backUp(0);
         final Ignite igB2 = backUp(1);
@@ -276,6 +278,7 @@ public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalState
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivateDeActivateOnFixTopologyWithPutValues() throws Exception {
         final Ignite igB1 = backUp(0);
         final Ignite igB2 = backUp(1);

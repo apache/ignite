@@ -114,6 +114,7 @@ public class GridP2PDoubleDeploymentSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if error occur.
      */
+    @Test
     public void testPrivateMode() throws Exception {
         processTestBothNodesDeploy(DeploymentMode.PRIVATE);
     }
@@ -121,6 +122,7 @@ public class GridP2PDoubleDeploymentSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if error occur.
      */
+    @Test
     public void testIsolatedMode() throws Exception {
         processTestBothNodesDeploy(DeploymentMode.ISOLATED);
     }
@@ -128,6 +130,7 @@ public class GridP2PDoubleDeploymentSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if error occur.
      */
+    @Test
     public void testContinuousMode() throws Exception {
         processTestBothNodesDeploy(DeploymentMode.CONTINUOUS);
     }
@@ -135,6 +138,7 @@ public class GridP2PDoubleDeploymentSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if error occur.
      */
+    @Test
     public void testSharedMode() throws Exception {
         processTestBothNodesDeploy(DeploymentMode.SHARED);
     }

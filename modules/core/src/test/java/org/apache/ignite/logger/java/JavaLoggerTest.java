@@ -36,6 +36,7 @@ public class JavaLoggerTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLogInitialize() throws Exception {
         log = new JavaLogger();
 

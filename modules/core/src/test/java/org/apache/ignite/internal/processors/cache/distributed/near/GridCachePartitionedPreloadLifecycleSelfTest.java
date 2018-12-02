@@ -156,6 +156,7 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLifecycleBean1() throws Exception {
         checkCache(keys(true, DFLT_KEYS.length, DFLT_KEYS));
     }
@@ -163,6 +164,7 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLifecycleBean2() throws Exception {
         checkCache(keys(false, DFLT_KEYS.length, DFLT_KEYS));
     }
@@ -170,6 +172,7 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLifecycleBean3() throws Exception {
         checkCache(keys(true, 500));
     }
@@ -177,6 +180,7 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLifecycleBean4() throws Exception {
         checkCache(keys(false, 500));
     }

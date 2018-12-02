@@ -72,6 +72,7 @@ public class ServicePredicateAccessCacheTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPredicateAccessCache() throws Exception {
         final Ignite ignite0 = startGrid(0);
 

@@ -109,6 +109,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBalance1() throws Exception {
         if (sslEnabled())
             return;
@@ -210,6 +211,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBalance2() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_IO_BALANCE_PERIOD, "1000");
 
@@ -317,6 +319,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandomBalance() throws Exception {
         System.setProperty(GridNioServer.IGNITE_IO_BALANCE_RANDOM_BALANCE, "true");
         System.setProperty(IgniteSystemProperties.IGNITE_IO_BALANCE_PERIOD, "500");

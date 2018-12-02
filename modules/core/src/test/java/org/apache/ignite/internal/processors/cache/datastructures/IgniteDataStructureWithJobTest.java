@@ -57,6 +57,7 @@ public class IgniteDataStructureWithJobTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJobWithRestart() throws Exception {
         Ignite ignite = startGrid(0);
 

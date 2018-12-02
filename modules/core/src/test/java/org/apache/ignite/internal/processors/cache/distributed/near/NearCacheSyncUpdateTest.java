@@ -71,6 +71,7 @@ public class NearCacheSyncUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearCacheSyncUpdateAtomic() throws Exception {
         nearCacheSyncUpdateTx(ATOMIC);
     }
@@ -78,6 +79,7 @@ public class NearCacheSyncUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearCacheSyncUpdateTx() throws Exception {
         nearCacheSyncUpdateTx(TRANSACTIONAL);
     }
@@ -85,6 +87,7 @@ public class NearCacheSyncUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearCacheSyncUpdateMvccTx() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-7187");
 

@@ -138,6 +138,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
      * If client joins topology during rebalancing process, rebalancing finishes successfully,
      * all partitions are owned as expected when rebalancing finishes.
      */
+    @Test
     public void testClientJoinsLeavesDuringRebalancing() throws Exception {
         Ignite ig0 = startGrids(2);
 
@@ -188,11 +189,12 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
     /**
      * If server nodes from BLT leave topology and then join again after additional keys were put to caches,
      * rebalance starts.
-     * 
+     *
      * Test verifies that all moving partitions get owned after rebalance finishes.
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testServerNodesFromBltLeavesAndJoinsDuringRebalancing() throws Exception {
         Ignite ig0 = startGridsMultiThreaded(4);
 

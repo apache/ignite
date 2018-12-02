@@ -49,6 +49,7 @@ public class IgniteClientReconnectDiscoveryStateTest extends IgniteClientReconne
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnect() throws Exception {
         final Ignite client = ignite(serverCount());
 

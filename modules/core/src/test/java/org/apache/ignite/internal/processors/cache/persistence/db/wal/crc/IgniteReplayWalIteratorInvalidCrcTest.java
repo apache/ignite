@@ -49,6 +49,7 @@ public class IgniteReplayWalIteratorInvalidCrcTest extends IgniteAbstractWalIter
      * {@inheritDoc}
      * Case is not relevant to the replay iterator.
      */
-    @Override public void testNotTailCorruptedPtr() {
+    @Override @Test
+    public void testNotTailCorruptedPtr() {
     }
 }

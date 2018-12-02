@@ -79,6 +79,7 @@ public class CacheAffinityEarlyTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartNodes() throws Exception {
         for (int i = 0; i < iters; i++) {
             try {

@@ -37,6 +37,7 @@ public class EncryptedCacheRestartTest extends AbstractEncryptionTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateEncryptedCache() throws Exception {
         T2<IgniteEx, IgniteEx> grids = startTestGrids(true);
 

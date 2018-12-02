@@ -138,6 +138,7 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDuplicateCacheConfigurations() throws Exception {
         // This grid should not start.
         startInvalidGrid(DUP_CACHES_IGNITE_INSTANCE_NAME);
@@ -149,6 +150,7 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If fails.
      */
+    @Test
     public void testCacheAttributesValidation() throws Exception {
         try {
             startGrid(0);

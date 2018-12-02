@@ -92,6 +92,7 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
 
     /** @throws Exception If check failed. */
     @SuppressWarnings("ErrorNotRethrown")
+    @Test
     public void testLockFromNearOrBackup() throws Exception {
         startGrids(GRID_CNT);
 

@@ -175,7 +175,8 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     }
 
     /** {@inheritDoc} */
-    @Override public void testSize() throws Exception {
+    @Override @Test
+    public void testSize() throws Exception {
         IgniteCache<String, Integer> nearCache = jcache();
 
         int size = 10;
@@ -204,13 +205,15 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     }
 
     /** {@inheritDoc} */
-    @Override public void testLoadAll() throws Exception {
+    @Override @Test
+    public void testLoadAll() throws Exception {
         // Not needed for near-only cache.
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReaderTtlTx() throws Exception {
         // IgniteProcessProxy#transactions is not implemented.
         if (isMultiJvm() || !txShouldBeUsed())
@@ -222,6 +225,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReaderTtlNoTx() throws Exception {
         checkReaderTtl(false);
     }
@@ -431,7 +435,8 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     }
 
     /** {@inheritDoc} */
-    @Override public void testClear() throws Exception {
+    @Override @Test
+    public void testClear() throws Exception {
         IgniteCache<String, Integer> nearCache = jcache();
         IgniteCache<String, Integer> primary = fullCache();
 
@@ -483,7 +488,8 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     }
 
     /** {@inheritDoc} */
-    @Override public void testLocalClearKeys() throws Exception {
+    @Override @Test
+    public void testLocalClearKeys() throws Exception {
         IgniteCache<String, Integer> nearCache = jcache();
         IgniteCache<String, Integer> primary = fullCache();
 
@@ -550,7 +556,8 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
     /** {@inheritDoc} */
     @SuppressWarnings("BusyWait")
-    @Override public void testLockUnlock() throws Exception {
+    @Override @Test
+    public void testLockUnlock() throws Exception {
         if (lockingEnabled()) {
             final CountDownLatch lockCnt = new CountDownLatch(1);
             final CountDownLatch unlockCnt = new CountDownLatch(1);

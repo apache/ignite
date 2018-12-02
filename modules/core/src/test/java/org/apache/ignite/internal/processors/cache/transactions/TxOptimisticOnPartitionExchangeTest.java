@@ -106,6 +106,7 @@ public class TxOptimisticOnPartitionExchangeTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConsistencyOnPartitionExchange() throws Exception {
         doTest(SERIALIZABLE, true);
         doTest(READ_COMMITTED, true);

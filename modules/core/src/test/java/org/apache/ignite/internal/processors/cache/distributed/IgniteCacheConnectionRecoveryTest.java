@@ -94,6 +94,7 @@ public class IgniteCacheConnectionRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectionRecovery() throws Exception {
         final Map<Integer, Integer> data = new TreeMap<>();
 

@@ -95,6 +95,7 @@ public class TcpClientDiscoverySpiMulticastTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientStartsFirst() throws Exception {
         IgniteInternalFuture<Ignite> fut = GridTestUtils.runAsync(new Callable<Ignite>() {
             @Override public Ignite call() throws Exception {
@@ -149,6 +150,7 @@ public class TcpClientDiscoverySpiMulticastTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinWithMulticast() throws Exception {
         joinWithMulticast();
     }
@@ -156,6 +158,7 @@ public class TcpClientDiscoverySpiMulticastTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinWithMulticastForceServer() throws Exception {
         forceSrv = true;
 

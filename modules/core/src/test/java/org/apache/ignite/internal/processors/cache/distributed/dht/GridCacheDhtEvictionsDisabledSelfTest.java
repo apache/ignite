@@ -73,6 +73,7 @@ public class GridCacheDhtEvictionsDisabledSelfTest extends GridCommonAbstractTes
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOneNode() throws Exception {
         checkNodes(startGridsMultiThreaded(1));
 
@@ -81,6 +82,7 @@ public class GridCacheDhtEvictionsDisabledSelfTest extends GridCommonAbstractTes
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testTwoNodes() throws Exception {
         checkNodes(startGridsMultiThreaded(2));
 
@@ -89,6 +91,7 @@ public class GridCacheDhtEvictionsDisabledSelfTest extends GridCommonAbstractTes
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testThreeNodes() throws Exception {
         checkNodes(startGridsMultiThreaded(3));
 

@@ -97,6 +97,7 @@ public class IgniteCacheCommitDelayTxRecoveryTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRecovery1() throws Exception {
         checkRecovery(1, false);
     }
@@ -104,6 +105,7 @@ public class IgniteCacheCommitDelayTxRecoveryTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRecovery2() throws Exception {
         checkRecovery(2, false);
     }
@@ -111,6 +113,7 @@ public class IgniteCacheCommitDelayTxRecoveryTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRecoveryStoreEnabled1() throws Exception {
         checkRecovery(1, true);
     }
@@ -118,6 +121,7 @@ public class IgniteCacheCommitDelayTxRecoveryTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRecoveryStoreEnabled2() throws Exception {
         checkRecovery(2, true);
     }

@@ -87,6 +87,7 @@ public class IgniteCacheScanPredicateDeploymentSelfTest extends GridCommonAbstra
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testDeployScanPredicate() throws Exception {
         startGrids(4);
 

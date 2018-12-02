@@ -95,6 +95,7 @@ public class IgniteMvccTxTimeoutAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testPessimisticRepeatableRead() throws Exception {
         checkTransactionTimeout(PESSIMISTIC, REPEATABLE_READ);
     }

@@ -176,6 +176,7 @@ public abstract class CacheGetsDistributionAbstractTest extends GridCommonAbstra
      * @throws Exception In case of an error.
      * @see #runTestBalancingDistribution(boolean)
      */
+    @Test
     public void testGetRequestsGeneratorDistribution() throws Exception {
         runTestBalancingDistribution(false);
     }
@@ -186,6 +187,7 @@ public abstract class CacheGetsDistributionAbstractTest extends GridCommonAbstra
      * @throws Exception In case of an error.
      * @see #runTestBalancingDistribution(boolean)
      */
+    @Test
     public void testGetAllRequestsGeneratorDistribution() throws Exception {
         runTestBalancingDistribution(true);
     }
@@ -263,6 +265,7 @@ public abstract class CacheGetsDistributionAbstractTest extends GridCommonAbstra
      * @throws Exception In case of an error.
      * @see #runTestSameHostDistribution(UUID, boolean)
      */
+    @Test
     public void testGetRequestsDistribution() throws Exception {
         UUID destId = grid(0).localNode().id();
 
@@ -275,6 +278,7 @@ public abstract class CacheGetsDistributionAbstractTest extends GridCommonAbstra
      * @throws Exception In case of an error.
      * @see #runTestSameHostDistribution(UUID, boolean)
      */
+    @Test
     public void testGetAllRequestsDistribution() throws Exception {
         UUID destId = grid(gridCount() - 1).localNode().id();
 

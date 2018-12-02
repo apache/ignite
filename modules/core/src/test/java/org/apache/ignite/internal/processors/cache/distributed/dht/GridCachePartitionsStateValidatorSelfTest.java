@@ -100,6 +100,7 @@ public class GridCachePartitionsStateValidatorSelfTest extends GridCommonAbstrac
     /**
      * Test partition update counters validation.
      */
+    @Test
     public void testPartitionCountersValidation() {
         UUID remoteNode = UUID.randomUUID();
         UUID ignoreNode = UUID.randomUUID();
@@ -139,6 +140,7 @@ public class GridCachePartitionsStateValidatorSelfTest extends GridCommonAbstrac
     /**
      * Test partition cache sizes validation.
      */
+    @Test
     public void testPartitionCacheSizesValidation() {
         UUID remoteNode = UUID.randomUUID();
         UUID ignoreNode = UUID.randomUUID();

@@ -57,6 +57,7 @@ public class GridServiceProxyClientReconnectSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnect() throws Exception {
         startGrid("server");
 
@@ -93,6 +94,7 @@ public class GridServiceProxyClientReconnectSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnectLongServiceInit() throws Exception {
         startGrid("server");
 

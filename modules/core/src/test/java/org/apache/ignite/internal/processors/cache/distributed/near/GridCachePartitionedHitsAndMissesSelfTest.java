@@ -98,6 +98,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testHitsAndMisses() throws Exception {
         startGrids(GRID_CNT);
 

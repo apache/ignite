@@ -47,6 +47,7 @@ public class GridFailedInputParametersSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Thrown in case of any errors.
      */
+    @Test
     public void testAddEventLocalListener() throws Exception {
         try {
             ignite.events().localListen(null, EVTS_ALL);
@@ -61,6 +62,7 @@ public class GridFailedInputParametersSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Thrown in case of any errors.
      */
+    @Test
     public void testRemoveEventLocalListener() throws Exception {
         try {
             ignite.events().stopLocalListen(null);
@@ -75,6 +77,7 @@ public class GridFailedInputParametersSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Thrown in case of any errors.
      */
+    @Test
     public void testAddDiscoveryListener() throws Exception {
         try {
             ignite.events().localListen(null, EVTS_ALL);
@@ -89,6 +92,7 @@ public class GridFailedInputParametersSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Thrown in case of any errors.
      */
+    @Test
     public void testRemoveDiscoveryListener() throws Exception {
         try {
             ignite.events().stopLocalListen(null);
@@ -103,6 +107,7 @@ public class GridFailedInputParametersSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Thrown in case of any errors.
      */
+    @Test
     public void testGetNode() throws Exception {
         try {
             ignite.cluster().node(null);
@@ -117,6 +122,7 @@ public class GridFailedInputParametersSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Thrown in case of any errors.
      */
+    @Test
     public void testPingNode() throws Exception {
         try {
             ignite.cluster().pingNode(null);
@@ -131,6 +137,7 @@ public class GridFailedInputParametersSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Thrown in case of any errors.
      */
+    @Test
     public void testDeployTask() throws Exception {
         try {
             ignite.compute().localDeployTask(null, null);

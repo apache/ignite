@@ -56,6 +56,7 @@ public class TxDeadlockDetectionMessageMarshallingTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMessageUnmarshallWithoutCacheContext() throws Exception {
         try {
             Ignite ignite = startGrid(0);

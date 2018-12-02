@@ -164,6 +164,7 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      * */
+    @Test
     public void testTransactionsDontHang() throws Exception {
         try {
             final Ignite g = startGrids(2);

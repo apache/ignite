@@ -148,6 +148,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testPersistenceMetrics() throws Exception {
         final IgniteEx ig = startGrid(0);
 

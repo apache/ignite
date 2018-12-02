@@ -88,6 +88,7 @@ public abstract class GridCacheSetFailoverAbstractSelfTest extends IgniteCollect
      * @throws Exception If failed.
      */
     @SuppressWarnings("WhileLoopReplaceableByForEach")
+    @Test
     public void testNodeRestart() throws Exception {
         IgniteSet<Integer> set = grid(0).set(SET_NAME, config(false));
 

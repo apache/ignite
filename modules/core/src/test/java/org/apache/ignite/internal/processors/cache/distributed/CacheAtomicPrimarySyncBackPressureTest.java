@@ -73,6 +73,7 @@ public class CacheAtomicPrimarySyncBackPressureTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientPut() throws Exception {
         Ignite srv1 = startGrid("server1");
         Ignite srv2 = startGrid("server2");
@@ -85,6 +86,7 @@ public class CacheAtomicPrimarySyncBackPressureTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerPut() throws Exception {
         Ignite srv1 = startGrid("server1");
         Ignite srv2 = startGrid("server2");

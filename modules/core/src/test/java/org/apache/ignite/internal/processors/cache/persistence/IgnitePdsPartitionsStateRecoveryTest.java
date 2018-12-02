@@ -94,6 +94,7 @@ public class IgnitePdsPartitionsStateRecoveryTest extends GridCommonAbstractTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionsStateConsistencyAfterRecovery() throws Exception {
         IgniteEx ignite = startGrid(0);
 
@@ -135,6 +136,7 @@ public class IgnitePdsPartitionsStateRecoveryTest extends GridCommonAbstractTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionsStateConsistencyAfterRecoveryNoCheckpoints() throws Exception {
         IgniteEx ignite = startGrid(0);
 

@@ -42,17 +42,20 @@ public class CacheContinuousQueryAsyncFailoverMvccTxSelfTest  extends CacheConti
     }
 
     /** {@inheritDoc} */
-    @Override public void testBackupQueueEvict() throws Exception {
+    @Override @Test
+    public void testBackupQueueEvict() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-7311");
     }
 
     /** {@inheritDoc} */
-    @Override public void testLeftPrimaryAndBackupNodes() throws Exception {
+    @Override @Test
+    public void testLeftPrimaryAndBackupNodes() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-10047");
     }
 
     /** {@inheritDoc} */
-    @Override public void testFailoverStartStopBackup() throws Exception {
+    @Override @Test
+    public void testFailoverStartStopBackup() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-10391");
     }
 }

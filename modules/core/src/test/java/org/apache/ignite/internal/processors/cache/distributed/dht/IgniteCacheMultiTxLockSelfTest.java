@@ -94,6 +94,7 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExplicitLockOneKey() throws Exception {
         checkExplicitLock(1, false);
     }
@@ -101,6 +102,7 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExplicitLockManyKeys() throws Exception {
         checkExplicitLock(4, false);
     }
@@ -108,6 +110,7 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExplicitLockManyKeysWithClient() throws Exception {
         checkExplicitLock(4, true);
     }

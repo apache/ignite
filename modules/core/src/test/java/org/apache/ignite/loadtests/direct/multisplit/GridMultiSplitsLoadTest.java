@@ -87,6 +87,7 @@ public class GridMultiSplitsLoadTest extends GridCommonAbstractTest {
      *
      * @throws Exception If task execution failed.
      */
+    @Test
     public void testLoad() throws Exception {
         final Ignite ignite = G.ignite(getTestIgniteInstanceName());
 

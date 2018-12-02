@@ -113,6 +113,7 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxOperations() throws Exception {
         txOperations(PARTITIONED, FULL_SYNC, false);
     }
@@ -120,6 +121,7 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCrossCacheTxOperations() throws Exception {
         txOperations(PARTITIONED, FULL_SYNC, true);
     }
@@ -127,6 +129,7 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCrossCacheTxOperationsPrimarySync() throws Exception {
         txOperations(PARTITIONED, PRIMARY_SYNC, true);
     }
@@ -134,6 +137,7 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCrossCacheTxOperationsReplicated() throws Exception {
         txOperations(REPLICATED, FULL_SYNC, true);
     }
@@ -141,6 +145,7 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCrossCacheTxOperationsReplicatedPrimarySync() throws Exception {
         txOperations(REPLICATED, PRIMARY_SYNC, true);
     }

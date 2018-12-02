@@ -83,6 +83,7 @@ public class IgniteCacheSerializationSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSerializeClosure() throws Exception {
         Ignite client = ignite(CLIENT);
 

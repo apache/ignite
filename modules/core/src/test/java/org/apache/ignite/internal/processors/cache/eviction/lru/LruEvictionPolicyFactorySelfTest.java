@@ -45,6 +45,7 @@ public class LruEvictionPolicyFactorySelfTest extends EvictionPolicyFactoryAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMiddleAccess() throws Exception {
         policyFactory = createPolicyFactory();
 

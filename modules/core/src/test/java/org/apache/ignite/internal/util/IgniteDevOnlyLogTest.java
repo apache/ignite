@@ -55,6 +55,7 @@ public class IgniteDevOnlyLogTest extends GridCommonAbstractTest {
     }
 
     /** Check that dev-only messages appear in the log. */
+    @Test
     public void testDevOnlyQuietMessage() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-9328");
 
@@ -72,6 +73,7 @@ public class IgniteDevOnlyLogTest extends GridCommonAbstractTest {
     }
 
     /** Check that dev-only messages appear in the log. */
+    @Test
     public void testDevOnlyVerboseMessage() throws Exception {
         additionalArgs = Collections.singletonList("-D" + IgniteSystemProperties.IGNITE_QUIET + "=false");
 
@@ -91,6 +93,7 @@ public class IgniteDevOnlyLogTest extends GridCommonAbstractTest {
      * doesn't print anything if {@link org.apache.ignite.IgniteSystemProperties#IGNITE_DEV_ONLY_LOGGING_DISABLED}
      * is set to {@code true}.
      */
+    @Test
     public void testDevOnlyDisabledProperty() throws Exception {
         additionalArgs = Collections.singletonList("-D" +
             IgniteSystemProperties.IGNITE_DEV_ONLY_LOGGING_DISABLED + "=true");

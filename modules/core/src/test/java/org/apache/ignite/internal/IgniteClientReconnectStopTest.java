@@ -43,6 +43,7 @@ public class IgniteClientReconnectStopTest extends IgniteClientReconnectAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopWhenDisconnected() throws Exception {
         clientMode = true;
 

@@ -54,6 +54,7 @@ public class CacheDhtLocalPartitionAfterRemoveSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMemoryUsage() throws Exception {
         assertEquals(10_000, GridDhtLocalPartition.MAX_DELETE_QUEUE_SIZE);
 

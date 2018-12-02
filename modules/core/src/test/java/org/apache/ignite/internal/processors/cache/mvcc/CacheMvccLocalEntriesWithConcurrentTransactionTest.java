@@ -34,6 +34,7 @@ public class CacheMvccLocalEntriesWithConcurrentTransactionTest extends CacheMvc
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testLocalEntries() throws Exception {
         doTestConsistency(clo);
     }

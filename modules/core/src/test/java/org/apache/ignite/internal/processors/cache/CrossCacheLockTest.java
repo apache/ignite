@@ -80,6 +80,7 @@ public class CrossCacheLockTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockUnlock() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
             Ignite ignite = ignite(i);

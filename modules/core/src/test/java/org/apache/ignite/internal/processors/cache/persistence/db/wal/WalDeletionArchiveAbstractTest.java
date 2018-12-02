@@ -94,6 +94,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
     /**
      * History size parameters consistency check. Should be set just one of wal history size or max wal archive size.
      */
+    @Test
     public void testGridDoesNotStart_BecauseBothWalHistorySizeAndMaxWalArchiveSizeUsed() throws Exception {
         //given: wal history size and max wal archive size are both set.
         IgniteConfiguration configuration = getConfiguration(getTestIgniteInstanceName());
@@ -124,6 +125,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
     /**
      * Correct delete archived wal files.
      */
+    @Test
     public void testCorrectDeletedArchivedWalFiles() throws Exception {
         //given: configured grid with setted max wal archive size
         long maxWalArchiveSize = 2 * 1024 * 1024;
@@ -164,6 +166,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
     /**
      * Checkpoint triggered depends on wal size.
      */
+    @Test
     public void testCheckpointStarted_WhenWalHasTooBigSizeWithoutCheckpoint() throws Exception {
         //given: configured grid with max wal archive size = 1MB, wal segment size = 512KB
         Ignite ignite = startGrid(dbCfg -> {
@@ -190,6 +193,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
      *
      * @deprecated Test old removing process depends on WalHistorySize.
      */
+    @Test
     public void testCheckpointHistoryRemovingByWalHistorySize() throws Exception {
         //given: configured grid with wal history size = 10
         int walHistorySize = 10;
@@ -224,6 +228,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
      * Correct delete checkpoint history from memory depends on IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE. WAL files
      * doesn't delete because deleting was disabled.
      */
+    @Test
     public void testCorrectDeletedCheckpointHistoryButKeepWalFiles() throws Exception {
         System.setProperty(IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE, "2");
         //given: configured grid with disabled WAL removing.

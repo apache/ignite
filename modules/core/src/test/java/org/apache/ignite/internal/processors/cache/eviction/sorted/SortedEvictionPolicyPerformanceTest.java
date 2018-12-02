@@ -87,6 +87,7 @@ public class SortedEvictionPolicyPerformanceTest extends GridCommonAbstractTest 
     /**
      * Tests throughput.
      */
+    @Test
     public void testThroughput() throws Exception {
         final LongAdder cnt = new LongAdder();
         final AtomicBoolean finished = new AtomicBoolean();

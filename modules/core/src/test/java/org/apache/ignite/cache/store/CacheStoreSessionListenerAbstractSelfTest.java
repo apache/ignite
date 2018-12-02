@@ -109,6 +109,7 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicCache() throws Exception {
         CacheConfiguration<Integer, Integer> cfg = cacheConfiguration(DEFAULT_CACHE_NAME, CacheAtomicityMode.ATOMIC);
 
@@ -134,6 +135,7 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransactionalCache() throws Exception {
         CacheConfiguration<Integer, Integer> cfg = cacheConfiguration(DEFAULT_CACHE_NAME, CacheAtomicityMode.TRANSACTIONAL);
 
@@ -159,6 +161,7 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExplicitTransaction() throws Exception {
         CacheConfiguration<Integer, Integer> cfg = cacheConfiguration(DEFAULT_CACHE_NAME, CacheAtomicityMode.TRANSACTIONAL);
 
@@ -184,6 +187,7 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCrossCacheTransaction() throws Exception {
         CacheConfiguration<Integer, Integer> cfg1 = cacheConfiguration("cache1", CacheAtomicityMode.TRANSACTIONAL);
         CacheConfiguration<Integer, Integer> cfg2 = cacheConfiguration("cache2", CacheAtomicityMode.TRANSACTIONAL);
@@ -212,6 +216,7 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCommit() throws Exception {
         write.set(true);
 
@@ -241,6 +246,7 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRollback() throws Exception {
         write.set(true);
         fail.set(true);

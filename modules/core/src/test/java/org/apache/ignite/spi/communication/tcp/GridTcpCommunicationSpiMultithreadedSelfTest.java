@@ -192,6 +192,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSendToRandomNodesMultithreaded() throws Exception {
         info(">>> Starting send to random nodes multithreaded test. <<<");
 
@@ -277,6 +278,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFlowSend() throws Exception {
         reject = true;
 
@@ -387,6 +389,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPassThroughPerformance() throws Exception {
         reject = true;
 

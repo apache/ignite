@@ -68,6 +68,7 @@ public class IgnitePdsMarshallerMappingRestoreOnNodeStartTest extends GridCommon
      * Test verifies that binary metadata from regular java classes is saved and restored correctly
      * on cluster restart.
      */
+    @Test
     public void testStaticMetadataIsRestoredOnRestart() throws Exception {
         startGrids(1);
 

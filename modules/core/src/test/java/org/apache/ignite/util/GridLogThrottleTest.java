@@ -42,6 +42,7 @@ public class GridLogThrottleTest extends GridCommonAbstractTest {
      *
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testThrottle() throws Exception {
         LT.throttleTimeout(1000);
 

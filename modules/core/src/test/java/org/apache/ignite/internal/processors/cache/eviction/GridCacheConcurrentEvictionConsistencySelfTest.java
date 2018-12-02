@@ -105,6 +105,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPolicyConsistencyFifoLocalTwoKeys() throws Exception {
         FifoEvictionPolicy<Object, Object> plc = new FifoEvictionPolicy<>();
         plc.setMaxSize(1);
@@ -120,6 +121,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPolicyConsistencyLruLocalTwoKeys() throws Exception {
         LruEvictionPolicy<Object, Object> plc = new LruEvictionPolicy<>();
         plc.setMaxSize(1);
@@ -135,6 +137,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPolicyConsistencySortedLocalTwoKeys() throws Exception {
         SortedEvictionPolicy<Object, Object> plc = new SortedEvictionPolicy<>();
         plc.setMaxSize(1);
@@ -150,6 +153,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPolicyConsistencyFifoLocalFewKeys() throws Exception {
         FifoEvictionPolicy<Object, Object> plc = new FifoEvictionPolicy<>();
         plc.setMaxSize(POLICY_QUEUE_SIZE);
@@ -164,6 +168,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPolicyConsistencyLruLocalFewKeys() throws Exception {
         LruEvictionPolicy<Object, Object> plc = new LruEvictionPolicy<>();
         plc.setMaxSize(POLICY_QUEUE_SIZE);
@@ -178,6 +183,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPolicyConsistencySortedLocalFewKeys() throws Exception {
         SortedEvictionPolicy<Object, Object> plc = new SortedEvictionPolicy<>();
         plc.setMaxSize(POLICY_QUEUE_SIZE);
@@ -192,6 +198,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPolicyConsistencyFifoLocal() throws Exception {
         FifoEvictionPolicy<Object, Object> plc = new FifoEvictionPolicy<>();
         plc.setMaxSize(POLICY_QUEUE_SIZE);
@@ -206,6 +213,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPolicyConsistencyLruLocal() throws Exception {
         LruEvictionPolicy<Object, Object> plc = new LruEvictionPolicy<>();
         plc.setMaxSize(POLICY_QUEUE_SIZE);
@@ -220,6 +228,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPolicyConsistencySortedLocal() throws Exception {
         SortedEvictionPolicy<Object, Object> plc = new SortedEvictionPolicy<>();
         plc.setMaxSize(POLICY_QUEUE_SIZE);

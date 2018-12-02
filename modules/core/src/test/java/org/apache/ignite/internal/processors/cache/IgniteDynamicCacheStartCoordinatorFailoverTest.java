@@ -101,6 +101,7 @@ public class IgniteDynamicCacheStartCoordinatorFailoverTest extends GridCommonAb
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testCoordinatorFailure() throws Exception {
         // Start coordinator node.
         appendCustomAttribute = true;

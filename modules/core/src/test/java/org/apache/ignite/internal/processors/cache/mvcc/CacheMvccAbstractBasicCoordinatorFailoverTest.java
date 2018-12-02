@@ -688,6 +688,7 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleCoordinatorsLeft2Persistence() throws Exception {
         persistence = true;
 
@@ -697,6 +698,7 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleCoordinatorsLeft3Persistence() throws Exception {
         persistence = true;
 
@@ -706,6 +708,7 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleCoordinatorsLeft4() throws Exception {
         checkCoordinatorsLeft(4, true);
     }

@@ -62,6 +62,7 @@ public class Cache64kPartitionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testManyPartitionsNoPersistence() throws Exception {
         checkManyPartitions();
     }
@@ -69,6 +70,7 @@ public class Cache64kPartitionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testManyPartitionsWithPersistence() throws Exception {
         persistenceEnabled = true;
 

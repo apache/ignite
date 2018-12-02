@@ -31,6 +31,7 @@ public abstract class PageEvictionWithRebalanceAbstractTest extends PageEviction
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictionWithRebalance() throws Exception {
         startGridsMultiThreaded(4);
 

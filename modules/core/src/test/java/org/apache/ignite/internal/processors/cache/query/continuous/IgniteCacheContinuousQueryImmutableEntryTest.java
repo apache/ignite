@@ -96,6 +96,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEventAvailabilityScope() throws Exception {
         startGrids(GRID_COUNT);
 
@@ -135,6 +136,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
     /**
      *
      */
+    @Test
     public void testCacheContinuousQueryEntrySerialization() {
         CacheContinuousQueryEntry e0 = new CacheContinuousQueryEntry(
             1,

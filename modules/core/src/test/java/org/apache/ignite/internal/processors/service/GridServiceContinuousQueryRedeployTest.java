@@ -62,6 +62,7 @@ public class GridServiceContinuousQueryRedeployTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServiceRedeploymentAfterCancel() throws Exception {
         final Ignite ignite = startGrid(0);
 

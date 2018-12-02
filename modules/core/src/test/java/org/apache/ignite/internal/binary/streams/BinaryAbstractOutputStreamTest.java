@@ -26,6 +26,7 @@ public class BinaryAbstractOutputStreamTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testCapacity() {
         assertEquals(256, BinaryAbstractOutputStream.capacity(0, 1));
 

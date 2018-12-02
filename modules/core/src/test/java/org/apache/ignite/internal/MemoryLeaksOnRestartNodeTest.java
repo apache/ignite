@@ -70,6 +70,7 @@ public class MemoryLeaksOnRestartNodeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception On failed.
      */
+    @Test
     public void test() throws Exception {
         // Warmup
         for (int i = 0; i < RESTARTS / 2; ++i) {

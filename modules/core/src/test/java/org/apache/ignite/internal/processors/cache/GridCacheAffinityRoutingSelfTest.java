@@ -129,6 +129,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityRun() throws Exception {
         for (int i = 0; i < KEY_CNT; i++)
             grid(0).compute().affinityRun(NON_DFLT_CACHE_NAME, i, new CheckRunnable(i, i));
@@ -137,6 +138,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityCallRestartFails() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -150,6 +152,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityCallRestart() throws Exception {
         assertEquals(MAX_FAILOVER_ATTEMPTS,
             grid(0).compute().affinityCall(NON_DFLT_CACHE_NAME, "key",
@@ -159,6 +162,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityRunRestartFails() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -172,6 +176,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityRunRestart() throws Exception {
         grid(0).compute().affinityRun(NON_DFLT_CACHE_NAME, "key", new FailedRunnable("key", MAX_FAILOVER_ATTEMPTS));
     }
@@ -181,6 +186,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityRunComplexKey() throws Exception {
         for (int i = 0; i < KEY_CNT; i++) {
             AffinityTestKey key = new AffinityTestKey(i);
@@ -195,6 +201,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityCall() throws Exception {
         for (int i = 0; i < KEY_CNT; i++)
             grid(0).compute().affinityCall(NON_DFLT_CACHE_NAME, i, new CheckCallable(i, i));
@@ -205,6 +212,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityCallComplexKey() throws Exception {
         for (int i = 0; i < KEY_CNT; i++) {
             final AffinityTestKey key = new AffinityTestKey(i);

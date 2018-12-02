@@ -155,6 +155,7 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxGetInsideLockStopPrimary() throws Exception {
         getInsideLockStopPrimary(ignite(SRVS), TX_CACHE1);
         getInsideLockStopPrimary(ignite(SRVS + 1), TX_CACHE1);
@@ -166,6 +167,7 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicGetInsideLockStopPrimary() throws Exception {
         getInsideLockStopPrimary(ignite(SRVS), ATOMIC_CACHE);
 
@@ -175,6 +177,7 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicGetInsideTxStopPrimary() throws Exception {
         getInsideTxStopPrimary(ignite(SRVS), ATOMIC_CACHE);
 
@@ -184,6 +187,7 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadCommittedPessimisticStopPrimary() throws Exception {
         getReadCommittedStopPrimary(ignite(SRVS), TX_CACHE1, PESSIMISTIC);
         getReadCommittedStopPrimary(ignite(SRVS + 1), TX_CACHE1, PESSIMISTIC);
@@ -195,6 +199,7 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadCommittedOptimisticStopPrimary() throws Exception {
         getReadCommittedStopPrimary(ignite(SRVS), TX_CACHE1, OPTIMISTIC);
         getReadCommittedStopPrimary(ignite(SRVS + 1), TX_CACHE1, OPTIMISTIC);
@@ -363,6 +368,7 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreaded() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-2204");
 

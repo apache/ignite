@@ -87,6 +87,7 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSendMessage() throws Exception {
         try {
             startGridsMultiThreaded(2);
@@ -101,6 +102,7 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSendMessageOverByteId() throws Exception {
         try {
             startGridsMultiThreaded(2);
@@ -115,6 +117,7 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSendMessageWithBuffer() throws Exception {
         bufSize = 8192;
 

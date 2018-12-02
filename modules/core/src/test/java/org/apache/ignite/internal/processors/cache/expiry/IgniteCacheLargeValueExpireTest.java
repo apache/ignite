@@ -62,6 +62,7 @@ public class IgniteCacheLargeValueExpireTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExpire() throws Exception {
         try (Ignite ignite = startGrid(0)) {
             checkExpire(ignite, true);

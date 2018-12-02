@@ -61,6 +61,7 @@ public abstract class IgniteAtomicLongApiAbstractSelfTest extends IgniteAtomicsA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateRemove() throws Exception {
         info("Running test [name=" + getName() + ", cacheMode=" + atomicsCacheMode() + ']');
 
@@ -102,6 +103,7 @@ public abstract class IgniteAtomicLongApiAbstractSelfTest extends IgniteAtomicsA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIncrementAndGet() throws Exception {
         info("Running test [name=" + getName() + ", cacheMode=" + atomicsCacheMode() + ']');
 
@@ -118,6 +120,7 @@ public abstract class IgniteAtomicLongApiAbstractSelfTest extends IgniteAtomicsA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAndIncrement() throws Exception {
         info("Running test [name=" + getName() + ", cacheMode=" + atomicsCacheMode() + ']');
 
@@ -134,6 +137,7 @@ public abstract class IgniteAtomicLongApiAbstractSelfTest extends IgniteAtomicsA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDecrementAndGet() throws Exception {
         info("Running test [name=" + getName() + ", cacheMode=" + atomicsCacheMode() + ']');
 
@@ -150,6 +154,7 @@ public abstract class IgniteAtomicLongApiAbstractSelfTest extends IgniteAtomicsA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAndDecrement() throws Exception {
         info("Running test [name=" + getName() + ", cacheMode=" + atomicsCacheMode() + ']');
 
@@ -166,6 +171,7 @@ public abstract class IgniteAtomicLongApiAbstractSelfTest extends IgniteAtomicsA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAndAdd() throws Exception {
         info("Running test [name=" + getName() + ", cacheMode=" + atomicsCacheMode() + ']');
 
@@ -184,6 +190,7 @@ public abstract class IgniteAtomicLongApiAbstractSelfTest extends IgniteAtomicsA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAddAndGet() throws Exception {
         info("Running test [name=" + getName() + ", cacheMode=" + atomicsCacheMode() + ']');
 
@@ -202,6 +209,7 @@ public abstract class IgniteAtomicLongApiAbstractSelfTest extends IgniteAtomicsA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAndSet() throws Exception {
         info("Running test [name=" + getName() + ", cacheMode=" + atomicsCacheMode() + ']');
 
@@ -220,6 +228,7 @@ public abstract class IgniteAtomicLongApiAbstractSelfTest extends IgniteAtomicsA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCompareAndSet() throws Exception {
         info("Running test [name=" + getName() + ", cacheMode=" + atomicsCacheMode() + ']');
 
@@ -245,6 +254,7 @@ public abstract class IgniteAtomicLongApiAbstractSelfTest extends IgniteAtomicsA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAndSetInTx() throws Exception {
         info("Running test [name=" + getName() + ", cacheMode=" + atomicsCacheMode() + ']');
 
@@ -272,6 +282,7 @@ public abstract class IgniteAtomicLongApiAbstractSelfTest extends IgniteAtomicsA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIsolation() throws Exception {
         Ignite ignite = grid(0);
 
@@ -298,6 +309,7 @@ public abstract class IgniteAtomicLongApiAbstractSelfTest extends IgniteAtomicsA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleStructuresInDifferentGroups() throws Exception {
         Ignite ignite = grid(0);
 

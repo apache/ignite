@@ -76,6 +76,7 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCheckDifferentSerializerVersions() throws Exception {
         System.setProperty(IGNITE_WAL_SERIALIZER_VERSION, "1");
 
@@ -127,6 +128,7 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCheckDifferentSerializerVersionsAndLogTimestamp() throws Exception {
         IgniteCallable<List<WALRecord>> recordsFactory = new IgniteCallable<List<WALRecord>>() {
             @Override public List<WALRecord> call() throws Exception {

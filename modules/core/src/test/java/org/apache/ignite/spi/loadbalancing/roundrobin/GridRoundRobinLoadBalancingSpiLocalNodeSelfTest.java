@@ -35,6 +35,7 @@ public class GridRoundRobinLoadBalancingSpiLocalNodeSelfTest extends
      * @throws Exception If failed.
      */
     @SuppressWarnings({"ObjectEquality"})
+    @Test
     public void testLocalNode() throws Exception {
         assert getDiscoverySpi().getRemoteNodes().isEmpty();
 

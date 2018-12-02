@@ -50,6 +50,7 @@ public class GridCacheConcurrentGetCacheOnClientTest extends GridCommonAbstractT
     /**
      *
      */
+    @Test
     public void test() throws Exception {
         IgniteConfiguration node1cfg = getConfiguration("node1");
         IgniteConfiguration node2cfg = getConfiguration("node2");

@@ -93,6 +93,7 @@ public class IgnitePdsReserveWalSegmentsTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testWalManagerRangeReservation() throws Exception {
         IgniteEx ig0 = prepareGrid(4);
 
@@ -122,6 +123,7 @@ public class IgnitePdsReserveWalSegmentsTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testWalDoesNotTruncatedWhenSegmentReserved() throws Exception {
         IgniteEx ig0 = prepareGrid(4);
 

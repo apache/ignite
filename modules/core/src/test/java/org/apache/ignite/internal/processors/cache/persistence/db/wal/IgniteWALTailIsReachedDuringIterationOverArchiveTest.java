@@ -118,6 +118,7 @@ public class IgniteWALTailIsReachedDuringIterationOverArchiveTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStandAloneIterator() throws Exception {
         IgniteEx ig = grid();
 
@@ -133,6 +134,7 @@ public class IgniteWALTailIsReachedDuringIterationOverArchiveTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWALManagerIterator() throws Exception {
         IgniteEx ig = grid();
 

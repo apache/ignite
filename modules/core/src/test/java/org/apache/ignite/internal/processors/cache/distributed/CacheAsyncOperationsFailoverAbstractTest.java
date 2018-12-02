@@ -96,6 +96,7 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllAsyncFailover() throws Exception {
         putAllAsyncFailover(5, 10);
     }
@@ -103,6 +104,7 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllAsyncFailoverManyThreads() throws Exception {
         putAllAsyncFailover(ignite(0).configuration().getSystemThreadPoolSize() * 2, 3);
     }
@@ -110,6 +112,7 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAsyncFailover() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-9759");
 

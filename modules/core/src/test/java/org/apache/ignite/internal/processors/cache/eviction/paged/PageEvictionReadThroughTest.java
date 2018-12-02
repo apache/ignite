@@ -42,6 +42,7 @@ public class PageEvictionReadThroughTest extends PageEvictionAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictionWithReadThroughAtomicReplicated() throws Exception {
         testEvictionWithReadThrough(CacheAtomicityMode.ATOMIC, CacheMode.REPLICATED);
     }
@@ -49,6 +50,7 @@ public class PageEvictionReadThroughTest extends PageEvictionAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictionWithReadThroughAtomicLocal() throws Exception {
         testEvictionWithReadThrough(CacheAtomicityMode.ATOMIC, CacheMode.LOCAL);
     }
@@ -56,6 +58,7 @@ public class PageEvictionReadThroughTest extends PageEvictionAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictionWithReadThroughTxReplicated() throws Exception {
         testEvictionWithReadThrough(CacheAtomicityMode.TRANSACTIONAL, CacheMode.REPLICATED);
     }
@@ -63,6 +66,7 @@ public class PageEvictionReadThroughTest extends PageEvictionAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictionWithReadThroughTxLocal() throws Exception {
         testEvictionWithReadThrough(CacheAtomicityMode.TRANSACTIONAL, CacheMode.LOCAL);
     }

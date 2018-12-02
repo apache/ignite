@@ -121,6 +121,7 @@ public class IgnitePdsBinarySortObjectFieldsTest extends GridCommonAbstractTest 
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testGivenCacheWithPojoValueAndPds_WhenPut_ThenNoHangup() throws Exception {
         System.setProperty("IGNITE_BINARY_SORT_OBJECT_FIELDS", "true");
 

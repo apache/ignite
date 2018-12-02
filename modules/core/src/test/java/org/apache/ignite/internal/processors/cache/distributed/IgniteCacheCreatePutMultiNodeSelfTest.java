@@ -68,6 +68,7 @@ public class IgniteCacheCreatePutMultiNodeSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartNodes() throws Exception {
         try {
             Collection<IgniteInternalFuture<?>> futs = new ArrayList<>(GRID_CNT);

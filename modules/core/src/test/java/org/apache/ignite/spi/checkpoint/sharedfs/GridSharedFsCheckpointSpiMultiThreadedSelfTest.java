@@ -65,6 +65,7 @@ public class GridSharedFsCheckpointSpiMultiThreadedSelfTest extends
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSpi() throws Exception {
         final AtomicInteger writeFinished = new AtomicInteger();
 

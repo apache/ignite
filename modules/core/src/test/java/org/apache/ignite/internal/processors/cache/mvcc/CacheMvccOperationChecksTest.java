@@ -61,6 +61,7 @@ public class CacheMvccOperationChecksTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testClearOperationsUnsupported() throws Exception {
         checkOperationUnsupported("clear", m("Clear"), E);
 
@@ -79,6 +80,7 @@ public class CacheMvccOperationChecksTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testLoadOperationsUnsupported() throws Exception {
         checkOperationUnsupported("loadCache", m("Load"), t(IgniteBiPredicate.class, Object[].class),
             P, new Object[]{ 1 });
@@ -96,6 +98,7 @@ public class CacheMvccOperationChecksTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testLockOperationsUnsupported() throws Exception {
         checkOperationUnsupported("lock", m("Lock"), t(Object.class), 1);
 
@@ -105,6 +108,7 @@ public class CacheMvccOperationChecksTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testEvictOperationsUnsupported() throws Exception {
         checkOperationUnsupported("localEvict", m("Evict"), t(Collection.class), Collections.singleton(1));
     }
@@ -112,6 +116,7 @@ public class CacheMvccOperationChecksTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testWithExpiryPolicyUnsupported() throws Exception {
         checkOperationUnsupported("withExpiryPolicy", m("withExpiryPolicy"), t(ExpiryPolicy.class),
             EternalExpiryPolicy.factoryOf().create());

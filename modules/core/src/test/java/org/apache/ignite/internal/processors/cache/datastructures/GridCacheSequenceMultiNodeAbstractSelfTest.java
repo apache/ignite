@@ -59,6 +59,7 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends IgniteA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIncrementAndGet() throws Exception {
         Collection<Long> res = new HashSet<>();
 
@@ -94,6 +95,7 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends IgniteA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAndIncrement() throws Exception {
         Collection<Long> res = new HashSet<>();
 
@@ -129,6 +131,7 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends IgniteA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMarshalling() throws Exception {
         String seqName = UUID.randomUUID().toString();
 

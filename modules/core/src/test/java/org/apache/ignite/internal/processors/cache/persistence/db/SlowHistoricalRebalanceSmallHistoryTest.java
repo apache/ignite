@@ -118,6 +118,7 @@ public class SlowHistoricalRebalanceSmallHistoryTest extends GridCommonAbstractT
     /**
      * Checks that we reserve and release the same WAL index on exchange.
      */
+    @Test
     public void testReservation() throws Exception {
         IgniteEx ig = startGrid(0);
 

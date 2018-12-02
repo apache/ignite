@@ -131,6 +131,7 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateProperties() throws Exception {
         assertEmpty(mgr.directoryListing(ROOT_ID));
 
@@ -219,6 +220,7 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testStructure() throws Exception {
         IgfsEntryInfo rootInfo = IgfsUtils.createDirectory(ROOT_ID);
 

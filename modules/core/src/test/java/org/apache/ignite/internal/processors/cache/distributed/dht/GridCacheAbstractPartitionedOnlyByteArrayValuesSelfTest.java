@@ -83,6 +83,7 @@ public abstract class GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest ex
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomic() throws Exception {
         testAtomic0(cachesAtomic);
     }

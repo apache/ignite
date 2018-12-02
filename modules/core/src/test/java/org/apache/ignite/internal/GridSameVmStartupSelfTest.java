@@ -53,6 +53,7 @@ public class GridSameVmStartupSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSameVmStartup() throws Exception {
         Ignite ignite1 = startGrid(1);
 

@@ -98,6 +98,7 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testThatNotificationWorkAsExpected() throws Exception {
         try (final Ignite g = startGrid(0)) {
             final BlockingArrayQueue<Event> queue = new BlockingArrayQueue<>();
@@ -134,6 +135,7 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testThatNotificationWorkAsExpectedInMultithreadedMode() throws Exception {
         final CyclicBarrier barrier = new CyclicBarrier(21);
         final AtomicInteger keysRangeGen = new AtomicInteger();
@@ -185,6 +187,7 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testThatNotificationWorkAsExpectedManyCaches() throws Exception {
         final int smallDuration = 4_000;
 

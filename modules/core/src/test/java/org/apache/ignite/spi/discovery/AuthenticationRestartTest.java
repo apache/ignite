@@ -62,6 +62,7 @@ public class AuthenticationRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnect() throws Exception {
         stopGrid("server");
 

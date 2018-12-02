@@ -103,6 +103,7 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testSynchronousCommit() throws Exception {
         try {
             Ignite firstIgnite = startGrid("1");
@@ -129,6 +130,7 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testSynchronousCommitNodeLeave() throws Exception {
         try {
             Ignite ignite1 = startGrid("1");

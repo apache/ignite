@@ -99,6 +99,7 @@ public class IgniteSlowClientDetectionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSlowClient() throws Exception {
         final IgniteEx slowClient = grid(nodeCount() - 1);
 

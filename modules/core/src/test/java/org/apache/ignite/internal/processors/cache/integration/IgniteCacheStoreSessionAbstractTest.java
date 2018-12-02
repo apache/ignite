@@ -113,6 +113,7 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStoreSession() throws Exception {
         assertEquals(DEFAULT_CACHE_NAME, jcache(0).getName());
 

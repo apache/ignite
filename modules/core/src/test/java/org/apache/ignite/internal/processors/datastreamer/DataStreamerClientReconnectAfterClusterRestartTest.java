@@ -53,21 +53,25 @@ public class DataStreamerClientReconnectAfterClusterRestartTest extends GridComm
     }
 
     /** */
+    @Test
     public void testOneClient() throws Exception {
         clusterRestart(false, false);
     }
 
     /** */
+    @Test
     public void testOneClientAllowOverwrite() throws Exception {
         clusterRestart(false, true);
     }
 
     /** */
+    @Test
     public void testTwoClients() throws Exception {
         clusterRestart(true, false);
     }
 
     /** */
+    @Test
     public void testTwoClientsAllowOverwrite() throws Exception {
         clusterRestart(true, true);
     }

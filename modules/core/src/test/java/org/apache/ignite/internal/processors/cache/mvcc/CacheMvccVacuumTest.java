@@ -40,6 +40,7 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartStopVacuumInMemory() throws Exception {
         Ignite node0 = startGrid(0);
         Ignite node1 = startGrid(1);
@@ -70,6 +71,7 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartStopVacuumPersistence() throws Exception {
         persistence = true;
 
@@ -131,6 +133,7 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVacuumNotStartedWithoutMvcc() throws Exception {
         IgniteConfiguration cfg = getConfiguration("grid1");
 
@@ -142,6 +145,7 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVacuumNotStartedWithoutMvccPersistence() throws Exception {
         persistence = true;
 

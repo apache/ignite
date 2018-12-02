@@ -53,6 +53,7 @@ public class IgniteCacheContainsKeyAtomicTest extends GridCacheAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContainsPutIfAbsent() throws Exception {
         checkPutIfAbsent(false);
     }
@@ -60,6 +61,7 @@ public class IgniteCacheContainsKeyAtomicTest extends GridCacheAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContainsPutIfAbsentAll() throws Exception {
         checkPutIfAbsent(true);
     }

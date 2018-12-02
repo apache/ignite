@@ -32,6 +32,7 @@ public class GridArraysSelfTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Test
     public void testSet() {
         String[] arr = set(EMPTY, 4, "aa");
 
@@ -71,6 +72,7 @@ public class GridArraysSelfTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Test
     public void testClearTail() {
         String[] arr = new String[10];
 
@@ -105,6 +107,7 @@ public class GridArraysSelfTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Test
     public void testRemoveLong() {
         long[] arr = {0,1,2,3,4,5,6};
 
@@ -117,6 +120,7 @@ public class GridArraysSelfTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Test
     public void testRemove() {
         Integer[] arr = {0,1,2,3,4,5,6};
 

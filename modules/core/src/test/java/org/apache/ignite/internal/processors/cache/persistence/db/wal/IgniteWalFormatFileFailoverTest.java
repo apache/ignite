@@ -96,6 +96,7 @@ public class IgniteWalFormatFileFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeStartFailedFsync() throws Exception {
         fsync = true;
 
@@ -107,6 +108,7 @@ public class IgniteWalFormatFileFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFailureHandlerTriggeredFsync() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-10035");
 
@@ -118,6 +120,7 @@ public class IgniteWalFormatFileFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFailureHandlerTriggered() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-10035");
 

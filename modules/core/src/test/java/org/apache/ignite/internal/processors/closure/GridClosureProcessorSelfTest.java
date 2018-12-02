@@ -314,6 +314,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRunAsyncSingle() throws Exception {
         IgniteRunnable job = new ClosureTestRunnable();
 
@@ -340,6 +341,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRunAsyncMultiple() throws Exception {
         Collection<ClosureTestRunnable> jobs = F.asList(new ClosureTestRunnable(), new ClosureTestRunnable());
 
@@ -354,6 +356,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCallAsyncSingle() throws Exception {
         IgniteCallable<Integer> job = new ClosureTestCallable();
 
@@ -382,6 +385,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCallAsyncErrorNoFailover() throws Exception {
         IgniteCompute comp = compute(grid(0).cluster().forPredicate(F.notEqualTo(grid(0).localNode())));
 
@@ -400,6 +404,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWithName() throws Exception {
         grid(0).compute().withName("TestTaskName").call(new ClosureTestCallable());
     }
@@ -407,6 +412,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWithTimeout() throws Exception {
         Collection<TestCallableTimeout> jobs = F.asList(new TestCallableTimeout());
 
@@ -438,6 +444,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCallAsyncMultiple() throws Exception {
         Collection<ClosureTestCallable> jobs = F.asList(new ClosureTestCallable(), new ClosureTestCallable());
 
@@ -457,6 +464,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReduceAsync() throws Exception {
         Collection<ClosureTestCallable> jobs = F.asList(new ClosureTestCallable(), new ClosureTestCallable());
 
@@ -477,6 +485,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReducerError() throws Exception {
         final Ignite g = grid(0);
 

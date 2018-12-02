@@ -32,6 +32,7 @@ public class GridProductVersionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFromString() throws Exception {
         IgniteProductVersion ver = IgniteProductVersion.fromString("1.2.3");
 

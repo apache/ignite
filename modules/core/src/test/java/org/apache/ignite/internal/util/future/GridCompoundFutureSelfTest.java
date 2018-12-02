@@ -33,6 +33,7 @@ public class GridCompoundFutureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMarkInitialized() throws Exception {
         GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>();
 
@@ -53,6 +54,7 @@ public class GridCompoundFutureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCompleteOnReducer() throws Exception {
         GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>(CU.boolReducer());
 
@@ -85,6 +87,7 @@ public class GridCompoundFutureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCompleteOnException() throws Exception {
         GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>(CU.boolReducer());
 
@@ -117,6 +120,7 @@ public class GridCompoundFutureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentCompletion() throws Exception {
         GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>(CU.boolReducer());
 
@@ -149,6 +153,7 @@ public class GridCompoundFutureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentRandomCompletion() throws Exception {
         GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>(CU.boolReducer());
 

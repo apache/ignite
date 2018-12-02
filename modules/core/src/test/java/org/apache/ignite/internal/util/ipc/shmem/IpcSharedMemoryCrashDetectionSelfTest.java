@@ -70,6 +70,7 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIgfsServerClientInteractionsUponClientKilling() throws Exception {
         // Run server endpoint.
         IpcSharedMemoryServerEndpoint srv = new IpcSharedMemoryServerEndpoint(U.defaultWorkDirectory());
@@ -112,6 +113,7 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIgfsClientServerInteractionsUponServerKilling() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-1386");
 
@@ -163,6 +165,7 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientThrowsCorrectExceptionUponServerKilling() throws Exception {
         info("Shared memory IDs before starting server-client interactions: " +
             IpcSharedMemoryUtils.sharedMemoryIds());

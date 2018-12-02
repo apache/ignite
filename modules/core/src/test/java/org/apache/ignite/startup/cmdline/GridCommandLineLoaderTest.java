@@ -44,6 +44,7 @@ public class GridCommandLineLoaderTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoader() throws Exception {
         String path = U.getIgniteHome() + GRID_CFG_PATH;
 

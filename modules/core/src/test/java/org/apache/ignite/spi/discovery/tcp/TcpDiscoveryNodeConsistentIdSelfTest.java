@@ -55,6 +55,7 @@ public class TcpDiscoveryNodeConsistentIdSelfTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConsistentId() throws Exception {
         Object id0 = grid(0).localNode().consistentId();
 

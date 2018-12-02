@@ -56,7 +56,8 @@ public class CacheNodeSafeAssertion implements Assertion {
     }
 
     /** {@inheritDoc} */
-    @Override public void test() throws AssertionError {
+    @Override @Test
+    public void test() throws AssertionError {
         Affinity<?> affinity = ignite.affinity(cacheName);
 
         int partCnt = affinity.partitions();

@@ -54,6 +54,7 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeLeaveBeforePreloadingComplete() throws Exception {
         try {
             final CountDownLatch startLatch = new CountDownLatch(1);
@@ -111,6 +112,7 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentNodesStart() throws Exception {
         try {
             multithreadedAsync(
@@ -137,6 +139,7 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentNodesStartStop() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 

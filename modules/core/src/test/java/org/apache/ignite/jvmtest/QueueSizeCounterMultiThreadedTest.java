@@ -36,6 +36,7 @@ public class QueueSizeCounterMultiThreadedTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueueSizeCounter() throws Exception {
         final ConcurrentLinkedQueue<Integer> q = new ConcurrentLinkedQueue<>();
 

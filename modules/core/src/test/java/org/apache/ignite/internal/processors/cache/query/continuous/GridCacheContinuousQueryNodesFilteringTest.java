@@ -51,6 +51,7 @@ public class GridCacheContinuousQueryNodesFilteringTest extends GridCommonAbstra
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testNodeWithoutAttributeExclusion() throws Exception {
         try (Ignite node1 = startNodeWithCache()) {
             try (Ignite node2 = startGrid("node2", getConfiguration("node2", false, null))) {
@@ -64,6 +65,7 @@ public class GridCacheContinuousQueryNodesFilteringTest extends GridCommonAbstra
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testNodeWithAttributeFailure() throws Exception {
         try (Ignite node1 = startNodeWithCache()) {
             GridStringLogger log = new GridStringLogger();

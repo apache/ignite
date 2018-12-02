@@ -70,6 +70,7 @@ public class IgniteComputeEmptyClusterGroupTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAsync() throws Exception {
         ClusterGroup empty = ignite(0).cluster().forNodeId(UUID.randomUUID());
 
@@ -89,6 +90,7 @@ public class IgniteComputeEmptyClusterGroupTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSync() throws Exception {
         ClusterGroup empty = ignite(0).cluster().forNodeId(UUID.randomUUID());
 

@@ -100,6 +100,7 @@ public class IgniteCacheGroupsPartitionLossPolicySelfTest extends GridCommonAbst
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testReadOnlySafe() throws Exception {
         partLossPlc = PartitionLossPolicy.READ_ONLY_SAFE;
 
@@ -109,6 +110,7 @@ public class IgniteCacheGroupsPartitionLossPolicySelfTest extends GridCommonAbst
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testReadOnlyAll() throws Exception {
         partLossPlc = PartitionLossPolicy.READ_ONLY_ALL;
 
@@ -118,6 +120,7 @@ public class IgniteCacheGroupsPartitionLossPolicySelfTest extends GridCommonAbst
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testReadWriteSafe() throws Exception {
         partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
 
@@ -127,6 +130,7 @@ public class IgniteCacheGroupsPartitionLossPolicySelfTest extends GridCommonAbst
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testReadWriteAll() throws Exception {
         partLossPlc = PartitionLossPolicy.READ_WRITE_ALL;
 
@@ -136,6 +140,7 @@ public class IgniteCacheGroupsPartitionLossPolicySelfTest extends GridCommonAbst
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testIgnore() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-5078");
 

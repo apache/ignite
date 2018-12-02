@@ -62,6 +62,7 @@ public class DepthFirstSearchTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoCycle() throws Exception {
         assertNull(findCycle(Collections.<GridCacheVersion, Set<GridCacheVersion>>emptyMap(), T1));
 
@@ -115,6 +116,7 @@ public class DepthFirstSearchTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFindCycle2() throws Exception {
         Map<GridCacheVersion, Set<GridCacheVersion>> wfg = new HashMap<GridCacheVersion, Set<GridCacheVersion>>() {{
             put(T1, Collections.singleton(T2));
@@ -180,6 +182,7 @@ public class DepthFirstSearchTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFindCycle3() throws Exception {
         Map<GridCacheVersion, Set<GridCacheVersion>> wfg = new HashMap<GridCacheVersion, Set<GridCacheVersion>>() {{
             put(T1, Collections.singleton(T2));
@@ -240,6 +243,7 @@ public class DepthFirstSearchTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFindCycle4() throws Exception {
         Map<GridCacheVersion, Set<GridCacheVersion>> wfg = new HashMap<GridCacheVersion, Set<GridCacheVersion>>() {{
             put(T1, Collections.singleton(T2));
@@ -255,6 +259,7 @@ public class DepthFirstSearchTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandomNoExceptions() throws Exception {
         int maxNodesCnt = 100;
         int minNodesCnt = 10;

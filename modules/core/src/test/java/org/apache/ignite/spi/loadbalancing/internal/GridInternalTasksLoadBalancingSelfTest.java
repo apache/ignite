@@ -82,6 +82,7 @@ public class GridInternalTasksLoadBalancingSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception In case of error.
      */
+    @Test
     public void testInternalTaskBalancing() throws Exception {
         customLoadBalancer = true;
 
@@ -113,6 +114,7 @@ public class GridInternalTasksLoadBalancingSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception In case of error.
      */
+    @Test
     public void testInternalTaskDefaultBalancing() throws Exception {
         customLoadBalancer = false;
 

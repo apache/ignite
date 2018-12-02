@@ -30,6 +30,7 @@ public class IgniteDbSingleNodeTinyPutGetTest extends IgniteDbSingleNodePutGetTe
     }
 
     /** */
+    @Test
     public void testPutGetTiny() {
         IgniteEx ig = grid(0);
 
@@ -43,107 +44,128 @@ public class IgniteDbSingleNodeTinyPutGetTest extends IgniteDbSingleNodePutGetTe
     }
 
     /** {@inheritDoc} */
-    @Override public void testGradualRandomPutAllRemoveAll() {
+    @Override @Test
+    public void testGradualRandomPutAllRemoveAll() {
         // No-op
     }
 
     /** {@inheritDoc} */
-    @Override public void testRandomRemove() {
+    @Override @Test
+    public void testRandomRemove() {
         // No-op
     }
 
     /** {@inheritDoc} */
-    @Override public void testRandomPut() {
+    @Override @Test
+    public void testRandomPut() {
         // No-op
     }
 
     /** {@inheritDoc} */
-    @Override public void testPutGetSimple() {
+    @Override @Test
+    public void testPutGetSimple() {
         // No-op
     }
 
     /** {@inheritDoc} */
-    @Override public void testPutGetLarge() {
+    @Override @Test
+    public void testPutGetLarge() {
         // No-op
     }
 
     /** {@inheritDoc} */
-    @Override public void testPutGetOverwrite() {
+    @Override @Test
+    public void testPutGetOverwrite() {
         // No-op
     }
 
     /** {@inheritDoc} */
-    @Override public void testOverwriteNormalSizeAfterSmallerSize() {
+    @Override @Test
+    public void testOverwriteNormalSizeAfterSmallerSize() {
         // No-op
     }
 
     /** {@inheritDoc} */
-    @Override public void testPutDoesNotTriggerRead() {
+    @Override @Test
+    public void testPutDoesNotTriggerRead() {
         // No-op
     }
 
     /** {@inheritDoc} */
-    @Override public void testPutGetMultipleObjects() {
+    @Override @Test
+    public void testPutGetMultipleObjects() {
         // No-op
     }
 
     /** {@inheritDoc} */
-    @Override public void testSizeClear() {
+    @Override @Test
+    public void testSizeClear() {
         // No-op
     }
 
     /** {@inheritDoc} */
-    @Override public void testBounds() {
+    @Override @Test
+    public void testBounds() {
         // No-op
     }
 
     /** {@inheritDoc} */
-    @Override public void testMultithreadedPut() {
+    @Override @Test
+    public void testMultithreadedPut() {
         // No-op
     }
 
     /** {@inheritDoc} */
-    @Override public void testPutGetRandomUniqueMultipleObjects() {
+    @Override @Test
+    public void testPutGetRandomUniqueMultipleObjects() {
         // No-op
     }
 
     /** {@inheritDoc} */
-    @Override public void testPutPrimaryUniqueSecondaryDuplicates() {
+    @Override @Test
+    public void testPutPrimaryUniqueSecondaryDuplicates() {
         // No-op
     }
 
     /** {@inheritDoc} */
-    @Override public void testPutGetRandomNonUniqueMultipleObjects() {
+    @Override @Test
+    public void testPutGetRandomNonUniqueMultipleObjects() {
         // No-op
     }
 
     /** {@inheritDoc} */
-    @Override public void testPutGetRemoveMultipleForward() {
+    @Override @Test
+    public void testPutGetRemoveMultipleForward() {
         // No-op
     }
 
     /** {@inheritDoc} */
-    @Override public void testRandomPutGetRemove() {
+    @Override @Test
+    public void testRandomPutGetRemove() {
         // No-op
     }
 
     /** {@inheritDoc} */
-    @Override public void testPutGetRemoveMultipleBackward() {
+    @Override @Test
+    public void testPutGetRemoveMultipleBackward() {
         // No-op
     }
 
     /** {@inheritDoc} */
-    @Override public void testIndexOverwrite() {
+    @Override @Test
+    public void testIndexOverwrite() {
         // No-op
     }
 
     /** {@inheritDoc} */
-    @Override public void testObjectKey() {
+    @Override @Test
+    public void testObjectKey() {
         // No-op
     }
 
     /** {@inheritDoc} */
-    @Override public void testIterators() {
+    @Override @Test
+    public void testIterators() {
         // No-op
     }
 }

@@ -111,6 +111,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testAffinity() throws Exception {
         waitTopologyUpdate();
 
@@ -162,6 +163,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testAffinityWithPut() throws Exception {
         waitTopologyUpdate();
 

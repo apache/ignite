@@ -243,6 +243,7 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testFilePrimary() throws Exception {
         start();
 
@@ -267,6 +268,7 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testFileDual() throws Exception {
         start();
 
@@ -297,6 +299,7 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testFileDualExclusion() throws Exception {
         start();
 
@@ -324,6 +327,7 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRenameDifferentExcludeSettings() throws Exception {
         start();
 
@@ -351,6 +355,7 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testBlockCountEviction() throws Exception {
         start();
 
@@ -386,6 +391,7 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDataSizeEviction() throws Exception {
         start();
 

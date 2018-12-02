@@ -74,6 +74,7 @@ public class GridP2PJobClassLoaderSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testPrivateMode() throws Exception {
         processTest(DeploymentMode.PRIVATE);
     }
@@ -83,6 +84,7 @@ public class GridP2PJobClassLoaderSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testIsolatedMode() throws Exception {
         processTest(DeploymentMode.ISOLATED);
     }
@@ -92,6 +94,7 @@ public class GridP2PJobClassLoaderSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testContinuousMode() throws Exception {
         processTest(DeploymentMode.CONTINUOUS);
     }
@@ -101,6 +104,7 @@ public class GridP2PJobClassLoaderSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSharedMode() throws Exception {
         processTest(DeploymentMode.SHARED);
     }

@@ -79,6 +79,7 @@ public class CacheCheckpointSpiSecondCacheSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSecondCachePutRemove() throws Exception {
         IgniteCache<Integer, Integer> data = grid().cache(DEFAULT_CACHE_NAME);
         IgniteCache<Integer, String> cp = grid().cache(CP_CACHE);

@@ -73,6 +73,7 @@ public class TxOnCachesStartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransactionCloseOnCachesStartAndStop() throws Exception {
         Ignite srv =  startGrids(5);
 

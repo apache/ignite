@@ -74,6 +74,7 @@ public class IgniteCacheNearTxRollbackTest extends IgniteCacheAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllRollback() throws Exception {
         IgniteCache<Integer, Integer> cache = jcache(0);
 

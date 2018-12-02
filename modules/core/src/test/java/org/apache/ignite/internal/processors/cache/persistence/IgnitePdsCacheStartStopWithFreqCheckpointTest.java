@@ -103,6 +103,7 @@ public class IgnitePdsCacheStartStopWithFreqCheckpointTest extends GridCommonAbs
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCheckpointDeadlock() throws Exception {
         IgniteEx crd = startGrid(0);
 

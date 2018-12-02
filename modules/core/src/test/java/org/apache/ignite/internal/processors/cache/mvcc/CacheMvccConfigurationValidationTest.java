@@ -77,6 +77,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @SuppressWarnings("ThrowableNotThrown")
+    @Test
     public void testMvccModeMismatchForGroup1() throws Exception {
         final Ignite node = startGrid(0);
 
@@ -98,6 +99,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @SuppressWarnings("ThrowableNotThrown")
+    @Test
     public void testMvccModeMismatchForGroup2() throws Exception {
         final Ignite node = startGrid(0);
 
@@ -120,6 +122,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @SuppressWarnings("ThrowableNotThrown")
+    @Test
     public void testMvccLocalCacheDisabled() throws Exception {
         final Ignite node1 = startGrid(1);
         final Ignite node2 = startGrid(2);
@@ -152,6 +155,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @SuppressWarnings("ThrowableNotThrown")
+    @Test
     public void testNodeRestartWithCacheModeChangedTxToMvcc() throws Exception {
         cleanPersistenceDir();
 
@@ -199,6 +203,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @SuppressWarnings("ThrowableNotThrown")
+    @Test
     public void testNodeRestartWithCacheModeChangedMvccToTx() throws Exception {
         cleanPersistenceDir();
 
@@ -248,6 +253,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testTransactionalSnapshotLimitations() throws Exception {
         assertCannotStart(
             mvccCacheConfig().setCacheMode(LOCAL),

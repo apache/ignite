@@ -54,6 +54,7 @@ public class GridStripedLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIntLocking() throws Exception {
         GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {
@@ -87,6 +88,7 @@ public class GridStripedLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLongLocking() throws Exception {
         GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {
@@ -120,6 +122,7 @@ public class GridStripedLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testObjectLocking() throws Exception {
         GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {

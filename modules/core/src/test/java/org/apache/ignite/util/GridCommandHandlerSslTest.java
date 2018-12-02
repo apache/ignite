@@ -69,6 +69,7 @@ public class GridCommandHandlerSslTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testActivate() throws Exception {
         Ignite ignite = startGrids(1);
 

@@ -53,6 +53,7 @@ public abstract class CacheNearUpdateTopologyChangeAbstractTest extends IgniteCa
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearUpdateTopologyChange() throws Exception {
         awaitPartitionMapExchange();
 

@@ -100,6 +100,7 @@ public class CacheMvccClusterRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestart1() throws Exception {
        restart1(3, 3);
     }
@@ -107,6 +108,7 @@ public class CacheMvccClusterRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestart2() throws Exception {
         restart1(1, 3);
     }
@@ -114,6 +116,7 @@ public class CacheMvccClusterRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestart3() throws Exception {
         restart1(3, 1);
     }

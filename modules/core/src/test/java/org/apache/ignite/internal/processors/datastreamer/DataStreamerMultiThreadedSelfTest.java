@@ -84,6 +84,7 @@ public class DataStreamerMultiThreadedSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartStopIgnites() throws Exception {
         startStopIgnites();
     }
@@ -91,6 +92,7 @@ public class DataStreamerMultiThreadedSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartStopIgnitesDynamicCache() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-1602");
 

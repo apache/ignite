@@ -110,6 +110,7 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticTransaction() throws Exception {
         for (IgniteCache<Integer, String> cache : caches) {
             Transaction tx = cache.unwrap(Ignite.class).transactions().txStart(OPTIMISTIC, REPEATABLE_READ);

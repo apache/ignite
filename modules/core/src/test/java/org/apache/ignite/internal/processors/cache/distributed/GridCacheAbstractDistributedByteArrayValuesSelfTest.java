@@ -112,6 +112,7 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimistic() throws Exception {
         testTransaction0(caches, PESSIMISTIC, KEY_1, wrap(1));
     }
@@ -121,6 +122,7 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticMixed() throws Exception {
         testTransactionMixed0(caches, PESSIMISTIC, KEY_1, wrap(1), KEY_2, 1);
     }
@@ -130,6 +132,7 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimistic() throws Exception {
         testTransaction0(caches, OPTIMISTIC, KEY_1, wrap(1));
     }
@@ -139,6 +142,7 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticMixed() throws Exception {
         testTransactionMixed0(caches, OPTIMISTIC, KEY_1, wrap(1), KEY_2, 1);
     }

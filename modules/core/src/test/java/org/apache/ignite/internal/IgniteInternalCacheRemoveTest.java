@@ -32,6 +32,7 @@ public class IgniteInternalCacheRemoveTest extends GridCacheAbstractSelfTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testRemove() throws IgniteCheckedException {
         jcache().put("key", 1);
 

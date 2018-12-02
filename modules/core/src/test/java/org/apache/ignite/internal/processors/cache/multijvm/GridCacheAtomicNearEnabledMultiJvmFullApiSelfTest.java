@@ -30,7 +30,8 @@ public class GridCacheAtomicNearEnabledMultiJvmFullApiSelfTest extends
     }
 
     /** {@inheritDoc} */
-    @Override public void testPutAllPutAll() throws Exception {
+    @Override @Test
+    public void testPutAllPutAll() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-1112");
     }
 }

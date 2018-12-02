@@ -60,6 +60,7 @@ public class CacheLateAffinityAssignmentNodeJoinValidationTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinValidation1() throws Exception {
         checkNodeJoinValidation(false);
     }
@@ -67,6 +68,7 @@ public class CacheLateAffinityAssignmentNodeJoinValidationTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinValidation2() throws Exception {
         checkNodeJoinValidation(true);
     }

@@ -72,6 +72,7 @@ public class CachePageWriteLockUnlockTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testPreloadPartition() throws Exception {
         try {
             IgniteEx grid0 = startGrid(0);

@@ -234,6 +234,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testBasicLock() throws Exception {
         IgniteCache<Integer, String> cache = ignite1.cache(DEFAULT_CACHE_NAME);
 
@@ -275,6 +276,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
     /**
      * @throws Exception If test fails.
      */
+    @Test
     public void testMultiNodeLock() throws Exception {
         IgniteCache<Integer, String> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
         IgniteCache<Integer, String> cache2 = ignite2.cache(DEFAULT_CACHE_NAME);
@@ -333,6 +335,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
     /**
      * @throws Exception If test fails.
      */
+    @Test
     public void testMultiNodeLockWithKeyLists() throws Exception {
         IgniteCache<Integer, String> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
         IgniteCache<Integer, String> cache2 = ignite2.cache(DEFAULT_CACHE_NAME);
@@ -410,6 +413,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testLockReentry() throws IgniteCheckedException {
         IgniteCache<Integer, String> cache = ignite1.cache(DEFAULT_CACHE_NAME);
 
@@ -438,6 +442,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testLockMultithreaded() throws Exception {
         final IgniteCache<Integer, String> cache = ignite1.cache(DEFAULT_CACHE_NAME);
 
@@ -556,6 +561,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTwoCaches() throws Exception {
         IgniteCache<Integer, String> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
         IgniteCache<Integer, String> cache2 = ignite1.cache(CACHE2);

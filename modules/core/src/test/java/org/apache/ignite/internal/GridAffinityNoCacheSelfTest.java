@@ -52,6 +52,7 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityProxyNoCache() throws Exception {
         checkAffinityProxyNoCache(new Object());
     }
@@ -59,6 +60,7 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityProxyNoCacheCacheObject() throws Exception {
         checkAffinityProxyNoCache(new TestCacheObject(new Object()));
     }
@@ -81,6 +83,7 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityImplCacheDeleted() throws Exception {
         checkAffinityImplCacheDeleted(new Object());
     }
@@ -88,6 +91,7 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityImplCacheDeletedCacheObject() throws Exception {
         checkAffinityImplCacheDeleted(new TestCacheObject(new Object()));
     }

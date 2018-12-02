@@ -130,6 +130,7 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testReloadEvictionLocalCache() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
@@ -144,6 +145,7 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testReloadEvictionPartitionedCacheNearEnabled() throws Exception {
         cacheMode = PARTITIONED;
 
@@ -156,6 +158,7 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testReloadEvictionPartitionedCacheNearDisabled() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = false;
@@ -168,6 +171,7 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testReloadEvictionReplicatedCache() throws Exception {
         cacheMode = CacheMode.REPLICATED;
 

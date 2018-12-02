@@ -59,6 +59,7 @@ public class TcpDiscoverySslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSameCipherSuite() throws Exception {
         checkDiscoverySuccess(
             new String[][] {
@@ -80,6 +81,7 @@ public class TcpDiscoverySslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOneCommonCipherSuite() throws Exception {
         checkDiscoverySuccess(
             new String[][] {
@@ -99,6 +101,7 @@ public class TcpDiscoverySslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoCommonCipherSuite() throws Exception {
         checkDiscoveryFailure(
             new String[][] {
@@ -117,6 +120,7 @@ public class TcpDiscoverySslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNonExistentCipherSuite() throws Exception {
         checkDiscoveryFailure(
             new String[][] {
@@ -138,6 +142,7 @@ public class TcpDiscoverySslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoCommonProtocols() throws Exception {
         checkDiscoveryFailure(
             null,
@@ -157,6 +162,7 @@ public class TcpDiscoverySslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNonExistentProtocol() throws Exception {
         checkDiscoveryFailure(
             null,
@@ -177,6 +183,7 @@ public class TcpDiscoverySslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSameProtocols() throws Exception {
         checkDiscoverySuccess(null,
             new String[][] {
@@ -195,6 +202,7 @@ public class TcpDiscoverySslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOneCommonProtocol() throws Exception {
         checkDiscoverySuccess(null,
             new String[][] {

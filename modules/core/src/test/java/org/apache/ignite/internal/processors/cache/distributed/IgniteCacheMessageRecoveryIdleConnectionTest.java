@@ -84,6 +84,7 @@ public class IgniteCacheMessageRecoveryIdleConnectionTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheOperationsIdleConnectionCloseTx() throws Exception {
         cacheOperationsIdleConnectionClose(TRANSACTIONAL);
     }
@@ -91,6 +92,7 @@ public class IgniteCacheMessageRecoveryIdleConnectionTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheOperationsIdleConnectionCloseAtomic() throws Exception {
         cacheOperationsIdleConnectionClose(ATOMIC);
     }

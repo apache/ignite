@@ -38,6 +38,7 @@ public class OptimizedMarshallerSerialPersistentFieldsSelfTest  extends GridMars
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimizedMarshaller() throws Exception {
         unmarshal(marshal(new TestClass()));
 

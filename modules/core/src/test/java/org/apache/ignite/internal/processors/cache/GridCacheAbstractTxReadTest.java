@@ -52,6 +52,7 @@ public abstract class GridCacheAbstractTxReadTest extends GridCacheAbstractSelfT
     /**
      * @throws IgniteCheckedException If failed
      */
+    @Test
     public void testTxReadOptimisticReadCommitted() throws IgniteCheckedException {
         checkTransactionalRead(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.READ_COMMITTED);
     }
@@ -59,6 +60,7 @@ public abstract class GridCacheAbstractTxReadTest extends GridCacheAbstractSelfT
     /**
      * @throws IgniteCheckedException If failed
      */
+    @Test
     public void testTxReadOptimisticRepeatableRead() throws IgniteCheckedException {
         checkTransactionalRead(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.REPEATABLE_READ);
     }
@@ -66,6 +68,7 @@ public abstract class GridCacheAbstractTxReadTest extends GridCacheAbstractSelfT
     /**
      * @throws IgniteCheckedException If failed
      */
+    @Test
     public void testTxReadOptimisticSerializable() throws IgniteCheckedException {
         checkTransactionalRead(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.SERIALIZABLE);
     }
@@ -73,6 +76,7 @@ public abstract class GridCacheAbstractTxReadTest extends GridCacheAbstractSelfT
     /**
      * @throws IgniteCheckedException If failed
      */
+    @Test
     public void testTxReadPessimisticReadCommitted() throws IgniteCheckedException {
         checkTransactionalRead(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED);
     }
@@ -80,6 +84,7 @@ public abstract class GridCacheAbstractTxReadTest extends GridCacheAbstractSelfT
     /**
      * @throws IgniteCheckedException If failed
      */
+    @Test
     public void testTxReadPessimisticRepeatableRead() throws IgniteCheckedException {
         checkTransactionalRead(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ);
     }
@@ -87,6 +92,7 @@ public abstract class GridCacheAbstractTxReadTest extends GridCacheAbstractSelfT
     /**
      * @throws IgniteCheckedException If failed
      */
+    @Test
     public void testTxReadPessimisticSerializable() throws IgniteCheckedException {
         checkTransactionalRead(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.SERIALIZABLE);
     }

@@ -125,6 +125,7 @@ public class GridP2PDifferentClassLoaderSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testPrivateMode() throws Exception {
         depMode = DeploymentMode.PRIVATE;
 
@@ -136,6 +137,7 @@ public class GridP2PDifferentClassLoaderSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testIsolatedMode() throws Exception {
         depMode = DeploymentMode.ISOLATED;
 
@@ -147,6 +149,7 @@ public class GridP2PDifferentClassLoaderSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testContinuousMode() throws Exception {
         depMode = DeploymentMode.CONTINUOUS;
 
@@ -158,6 +161,7 @@ public class GridP2PDifferentClassLoaderSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSharedMode() throws Exception {
         depMode = DeploymentMode.SHARED;
 
@@ -169,6 +173,7 @@ public class GridP2PDifferentClassLoaderSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testRedeployPrivateMode() throws Exception {
         depMode = DeploymentMode.PRIVATE;
 
@@ -180,6 +185,7 @@ public class GridP2PDifferentClassLoaderSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testRedeployIsolatedMode() throws Exception {
         depMode = DeploymentMode.ISOLATED;
 
@@ -191,6 +197,7 @@ public class GridP2PDifferentClassLoaderSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testRedeployContinuousMode() throws Exception {
         depMode = DeploymentMode.CONTINUOUS;
 
@@ -202,6 +209,7 @@ public class GridP2PDifferentClassLoaderSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testRedeploySharedMode() throws Exception {
         depMode = DeploymentMode.SHARED;
 

@@ -29,6 +29,7 @@ public class CacheMvccSizeWithConcurrentTransactionTest extends CacheMvccAbstrac
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testSize() throws Exception {
         doTestConsistency(clo);
     }

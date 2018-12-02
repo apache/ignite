@@ -97,6 +97,7 @@ public class GridCacheMultiNodeLoadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testMany() throws Exception {
         ignite1.compute().execute(GridCacheLoadPopulationTask.class, null);
     }

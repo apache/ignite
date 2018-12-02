@@ -70,6 +70,7 @@ public class GridContinuousJobAnnotationSelfTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testJobAnnotation() throws Exception {
         testContinuousJobAnnotation(TestJob.class);
     }
@@ -77,6 +78,7 @@ public class GridContinuousJobAnnotationSelfTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testJobChildAnnotation() throws Exception {
         testContinuousJobAnnotation(TestJobChild.class);
     }
@@ -85,6 +87,7 @@ public class GridContinuousJobAnnotationSelfTest extends GridCommonAbstractTest 
      * @param jobCls Job class.
      * @throws Exception If test failed.
      */
+    @Test
     public void testContinuousJobAnnotation(Class<?> jobCls) throws Exception {
         try {
             Ignite ignite = startGrid(0);

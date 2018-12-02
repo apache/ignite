@@ -57,6 +57,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Test
     public void testStartStop() {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -78,6 +79,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopWhileInUse() throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -145,6 +147,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStoppedState() throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
 

@@ -66,6 +66,7 @@ public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void test() throws Exception {
         captureErr();
 

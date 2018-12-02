@@ -175,6 +175,7 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testReloadAll() throws Exception {
         // Fill caches with values.
         for (IgniteCache<Integer, String> cache : caches) {

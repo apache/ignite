@@ -115,6 +115,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientsReconnectAfterStart() throws Exception {
         Ignite srv1 = startGrid("server1");
 
@@ -192,6 +193,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientsReconnect() throws Exception {
         Ignite srv1 = startGrid("server1");
 
@@ -268,6 +270,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientsReconnectDisabled() throws Exception {
         clientReconnectDisabled = true;
 

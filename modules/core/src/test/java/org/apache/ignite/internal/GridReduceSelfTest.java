@@ -37,6 +37,7 @@ public class GridReduceSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReduce() throws Exception {
         startGrids(GRID_CNT);
 
@@ -79,6 +80,7 @@ public class GridReduceSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReduceAsync() throws Exception {
         startGrids(GRID_CNT);
 

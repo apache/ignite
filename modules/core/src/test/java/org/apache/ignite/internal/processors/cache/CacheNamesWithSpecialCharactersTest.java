@@ -53,6 +53,7 @@ public class CacheNamesWithSpecialCharactersTest extends GridCommonAbstractTest 
     /**
      * @throws Exception In case of failure.
      */
+    @Test
     public void testCacheNames() throws Exception {
         try {
             startGridsMultiThreaded(2);

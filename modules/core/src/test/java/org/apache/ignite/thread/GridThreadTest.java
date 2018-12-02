@@ -33,6 +33,7 @@ public class GridThreadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAssertion() throws Exception {
         Collection<IgniteThread> ts = new ArrayList<>();
 

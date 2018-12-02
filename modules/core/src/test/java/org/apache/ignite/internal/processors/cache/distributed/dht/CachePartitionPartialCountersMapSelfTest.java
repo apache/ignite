@@ -22,6 +22,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 public class CachePartitionPartialCountersMapSelfTest extends GridCommonAbstractTest {
 
+    @Test
     public void testAddAndRemove() throws Exception {
         CachePartitionPartialCountersMap map = new CachePartitionPartialCountersMap(10);
 

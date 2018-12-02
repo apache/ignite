@@ -98,6 +98,7 @@ public abstract class IgniteTxReentryAbstractSelfTest extends GridCommonAbstract
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testLockReentry() throws Exception {
         startGridsMultiThreaded(gridCount(), true);
 

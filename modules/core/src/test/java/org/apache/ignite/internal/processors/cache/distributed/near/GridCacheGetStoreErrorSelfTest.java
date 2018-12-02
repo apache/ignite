@@ -88,21 +88,25 @@ public class GridCacheGetStoreErrorSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testGetErrorNear() throws Exception {
         checkGetError(true, PARTITIONED);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testGetErrorColocated() throws Exception {
         checkGetError(false, PARTITIONED);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testGetErrorReplicated() throws Exception {
         checkGetError(false, REPLICATED);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testGetErrorLocal() throws Exception {
         checkGetError(false, LOCAL);
     }

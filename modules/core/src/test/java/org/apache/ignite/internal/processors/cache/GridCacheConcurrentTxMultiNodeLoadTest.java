@@ -172,6 +172,7 @@ public class GridCacheConcurrentTxMultiNodeLoadTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictions() throws Exception {
         try {
             cacheOn = true;

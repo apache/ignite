@@ -88,6 +88,7 @@ public class IgniteCacheBinaryEntryProcessorSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedTransactional() throws Exception {
         checkInvokeBinaryObject(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL);
     }
@@ -95,6 +96,7 @@ public class IgniteCacheBinaryEntryProcessorSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedTransactional() throws Exception {
         checkInvokeBinaryObject(CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL);
     }
@@ -102,6 +104,7 @@ public class IgniteCacheBinaryEntryProcessorSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedAtomic() throws Exception {
         checkInvokeBinaryObject(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL);
     }
@@ -109,6 +112,7 @@ public class IgniteCacheBinaryEntryProcessorSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedAtomic() throws Exception {
         checkInvokeBinaryObject(CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL);
     }

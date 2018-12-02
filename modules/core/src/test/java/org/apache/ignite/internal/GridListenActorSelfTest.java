@@ -52,6 +52,7 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception Thrown if failed.
      */
+    @Test
     public void testBasicFlow() throws Exception {
         final AtomicInteger cnt = new AtomicInteger(0);
 
@@ -85,6 +86,7 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testImmediateStop() throws Exception {
         doSendReceive(MSG_QTY, 1);
     }
@@ -92,6 +94,7 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReceiveAll() throws Exception {
         doSendReceive(MSG_QTY, MSG_QTY);
     }
@@ -101,6 +104,7 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRespondToRemote() throws Exception {
         startGrid(1);
 
@@ -144,6 +148,7 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPingPong() throws Exception {
         final AtomicInteger pingCnt = new AtomicInteger();
         final AtomicInteger pongCnt = new AtomicInteger();

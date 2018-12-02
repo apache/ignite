@@ -59,6 +59,7 @@ public class IgniteDynamicCacheStartStopConcurrentTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentStartStop() throws Exception {
         awaitPartitionMapExchange();
 

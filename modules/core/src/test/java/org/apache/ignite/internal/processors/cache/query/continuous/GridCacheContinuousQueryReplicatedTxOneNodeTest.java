@@ -87,6 +87,7 @@ public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocal() throws Exception {
         if (cacheMode() == CacheMode.REPLICATED)
             doTest(true);
@@ -95,6 +96,7 @@ public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributed() throws Exception {
         doTest(false);
     }
@@ -102,6 +104,7 @@ public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalOneNode() throws Exception {
         doTestOneNode(true);
     }
@@ -109,6 +112,7 @@ public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedOneNode() throws Exception {
         doTestOneNode(false);
     }

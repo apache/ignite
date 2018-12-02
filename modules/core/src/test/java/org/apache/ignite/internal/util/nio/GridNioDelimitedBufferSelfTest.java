@@ -34,6 +34,7 @@ public class GridNioDelimitedBufferSelfTest extends TestCase {
     /**
      * Tests simple delimiter (excluded from alphabet)
      */
+    @Test
     public void testReadZString() throws Exception {
         Random rnd = new Random();
 
@@ -81,6 +82,7 @@ public class GridNioDelimitedBufferSelfTest extends TestCase {
     /**
      * Tests compound delimiter (included to alphabet)
      */
+    @Test
     public void testDelim() throws Exception {
         byte[] delim = "aabb".getBytes(ASCII);
 

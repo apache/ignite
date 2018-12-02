@@ -59,6 +59,7 @@ public class IgniteClientReconnectDelayedSpiTest extends IgniteClientReconnectAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectCacheDestroyedDelayedAffinityChange() throws Exception {
         Ignite ignite = ignite(1);
 

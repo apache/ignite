@@ -37,6 +37,7 @@ public class OptimizedMarshallerEnumSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEnumSerialisation() throws Exception {
         OptimizedMarshaller marsh = new OptimizedMarshaller();
 

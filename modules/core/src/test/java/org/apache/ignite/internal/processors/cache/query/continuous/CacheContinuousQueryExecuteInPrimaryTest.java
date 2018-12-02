@@ -99,6 +99,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalCache() throws Exception {
         CacheConfiguration<Integer, String> ccfg = cacheConfiguration(ATOMIC, LOCAL);
 
@@ -109,6 +110,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedCache() throws Exception {
         CacheConfiguration<Integer, String> ccfg = cacheConfiguration(ATOMIC, REPLICATED);
 
@@ -119,6 +121,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedCache() throws Exception {
         CacheConfiguration<Integer, String> ccfg = cacheConfiguration(ATOMIC, PARTITIONED);
 
@@ -129,6 +132,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransactionLocalCache() throws Exception {
         CacheConfiguration<Integer, String> ccfg = cacheConfiguration(TRANSACTIONAL, LOCAL);
 
@@ -139,6 +143,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransactionReplicatedCache() throws Exception {
         CacheConfiguration<Integer, String> ccfg = cacheConfiguration(TRANSACTIONAL, REPLICATED);
 
@@ -149,6 +154,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransactionPartitionedCache() throws Exception {
         CacheConfiguration<Integer, String> ccfg = cacheConfiguration(TRANSACTIONAL, PARTITIONED);
 
@@ -159,6 +165,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMvccTransactionLocalCache() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-9530");
 
@@ -171,6 +178,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMvccTransactionReplicatedCache() throws Exception {
         CacheConfiguration<Integer, String> ccfg = cacheConfiguration(TRANSACTIONAL_SNAPSHOT, REPLICATED);
 
@@ -181,6 +189,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMvccTransactionPartitionedCache() throws Exception {
         CacheConfiguration<Integer, String> ccfg = cacheConfiguration(TRANSACTIONAL_SNAPSHOT, PARTITIONED);
 

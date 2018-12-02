@@ -129,6 +129,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTopologyChange() throws Exception {
         testTopologyChange(null, null);
     }
@@ -136,6 +137,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConstantTopologyChange() throws Exception {
         testConstantTopologyChange(null, null);
     }

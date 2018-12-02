@@ -57,6 +57,7 @@ public class GridRoundRobinLoadBalancingSpiTopologyChangeSelfTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTopologyChange() throws Exception {
         ComputeTaskSession ses = new GridTestTaskSession(IgniteUuid.randomUuid());
 

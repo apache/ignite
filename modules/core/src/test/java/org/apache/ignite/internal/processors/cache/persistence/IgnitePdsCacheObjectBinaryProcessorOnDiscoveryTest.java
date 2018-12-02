@@ -71,6 +71,7 @@ public class IgnitePdsCacheObjectBinaryProcessorOnDiscoveryTest extends GridComm
      * Tests that joining node metadata correctly handled on client.
      * @throws Exception If fails.
      */
+    @Test
     public void testJoiningNodeBinaryMetaOnClient() throws Exception {
         IgniteEx ig0 = (IgniteEx)startGrids(2);
 

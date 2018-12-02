@@ -137,6 +137,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSendMessage() throws Exception {
         try {
             startGridsMultiThreaded(2);
@@ -151,6 +152,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSendBadMessage() throws Exception {
         try {
             startGrids(2);

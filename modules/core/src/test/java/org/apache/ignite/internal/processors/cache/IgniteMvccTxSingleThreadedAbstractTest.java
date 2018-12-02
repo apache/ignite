@@ -29,6 +29,7 @@ public abstract class IgniteMvccTxSingleThreadedAbstractTest extends IgniteTxAbs
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testPessimisticRepeatableReadCommit() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-10261");
 
@@ -40,6 +41,7 @@ public abstract class IgniteMvccTxSingleThreadedAbstractTest extends IgniteTxAbs
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testPessimisticRepeatableReadRollback() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-10261");
 

@@ -66,6 +66,7 @@ public class BinaryConfigurationConsistencySelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSkipCheckConsistencyFlagEnabled() throws Exception {
         String backup = System.setProperty(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK, "true");
 
@@ -95,6 +96,7 @@ public class BinaryConfigurationConsistencySelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPositiveNullConfig() throws Exception {
         binaryCfg = null;
 
@@ -108,6 +110,7 @@ public class BinaryConfigurationConsistencySelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPositiveEmptyConfig() throws Exception {
         binaryCfg = new BinaryConfiguration();
 
@@ -121,6 +124,7 @@ public class BinaryConfigurationConsistencySelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPositiveCustomConfig() throws Exception {
         binaryCfg = customConfig(false);
 
@@ -134,6 +138,7 @@ public class BinaryConfigurationConsistencySelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNegativeNullEmptyConfigs() throws Exception {
         checkNegative(null, new BinaryConfiguration());
     }
@@ -141,6 +146,7 @@ public class BinaryConfigurationConsistencySelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNegativeEmptyNullConfigs() throws Exception {
         checkNegative(new BinaryConfiguration(), null);
     }
@@ -148,6 +154,7 @@ public class BinaryConfigurationConsistencySelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNegativeEmptyCustomConfigs() throws Exception {
         checkNegative(new BinaryConfiguration(), customConfig(false));
     }
@@ -156,6 +163,7 @@ public class BinaryConfigurationConsistencySelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNegativeCustomNullConfigs() throws Exception {
         checkNegative(customConfig(false), null);
     }

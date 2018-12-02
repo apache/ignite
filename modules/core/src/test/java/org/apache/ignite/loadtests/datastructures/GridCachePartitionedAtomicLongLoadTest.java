@@ -96,6 +96,7 @@ public class GridCachePartitionedAtomicLongLoadTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoad() throws Exception {
         startGrid();
 

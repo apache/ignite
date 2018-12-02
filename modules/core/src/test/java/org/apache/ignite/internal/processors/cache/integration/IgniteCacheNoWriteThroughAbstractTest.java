@@ -75,6 +75,7 @@ public abstract class IgniteCacheNoWriteThroughAbstractTest extends IgniteCacheA
      * @throws Exception If failed.
      */
     @SuppressWarnings("UnnecessaryLocalVariable")
+    @Test
     public void testNoWriteThrough() throws Exception {
         IgniteCache<Integer, Integer> cache = jcache(0);
 

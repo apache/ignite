@@ -49,6 +49,7 @@ public class GridTransientTest extends GridCommonAbstractTest implements Seriali
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransientSerialization() throws Exception {
         GridTransientTest objSrc = new GridTransientTest();
 

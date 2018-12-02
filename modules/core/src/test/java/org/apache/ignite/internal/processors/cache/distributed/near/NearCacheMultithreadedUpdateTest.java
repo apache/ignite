@@ -77,6 +77,7 @@ public class NearCacheMultithreadedUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateMultithreadedTx() throws Exception {
         updateMultithreaded(TRANSACTIONAL, false);
     }
@@ -84,6 +85,7 @@ public class NearCacheMultithreadedUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateMultithreadedTxRestart() throws Exception {
         updateMultithreaded(TRANSACTIONAL, true);
     }
@@ -91,6 +93,7 @@ public class NearCacheMultithreadedUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateMultithreadedAtomic() throws Exception {
         updateMultithreaded(ATOMIC, false);
     }
@@ -98,6 +101,7 @@ public class NearCacheMultithreadedUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateMultithreadedAtomicRestart() throws Exception {
         updateMultithreaded(ATOMIC, true);
     }

@@ -39,6 +39,7 @@ public class EncryptedCacheDestroyTest extends AbstractEncryptionTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEncryptedCacheDestroy() throws Exception {
         T2<IgniteEx, IgniteEx> grids = startTestGrids(true);
 
@@ -62,6 +63,7 @@ public class EncryptedCacheDestroyTest extends AbstractEncryptionTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEncryptedCacheFromGroupDestroy() throws Exception {
         T2<IgniteEx, IgniteEx> grids = startTestGrids(true);
 

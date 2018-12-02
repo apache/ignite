@@ -83,6 +83,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testMetaStorageMassivePutFixed() throws Exception {
         IgniteEx ig = startGrid(0);
 
@@ -120,6 +121,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testMetaStorageMassivePutRandom() throws Exception {
         IgniteEx ig = startGrid(0);
 
@@ -164,6 +166,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMetaStorageMassivePutUpdateRestart() throws Exception {
         IgniteEx ig = startGrid(0);
 
@@ -188,6 +191,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fails.
      */
+    @Test
     public void testRecoveryOfMetastorageWhenNodeNotInBaseline() throws Exception {
         IgniteEx ig0 = startGrid(0);
 

@@ -128,6 +128,7 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentClientsStart1() throws Exception {
         concurrentClientsStart(false);
     }
@@ -135,6 +136,7 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentClientsStart2() throws Exception {
         concurrentClientsStart(true);
     }

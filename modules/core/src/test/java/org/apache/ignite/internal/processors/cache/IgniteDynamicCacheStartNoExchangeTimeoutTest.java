@@ -90,6 +90,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultinodeCacheStart() throws Exception {
         for (int i = 0; i < 10; i++) {
             log.info("Iteration: " + i);
@@ -121,6 +122,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOldestNotAffinityNode1() throws Exception {
         for (CacheConfiguration ccfg : cacheConfigurations())
             oldestNotAffinityNode1(ccfg);
@@ -149,6 +151,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOldestNotAffinityNode2() throws Exception {
         for (CacheConfiguration ccfg : cacheConfigurations())
             oldestNotAffinityNode2(ccfg);
@@ -180,6 +183,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNotAffinityNode1() throws Exception {
         for (CacheConfiguration ccfg : cacheConfigurations())
             notAffinityNode1(ccfg);
@@ -208,6 +212,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNotAffinityNode2() throws Exception {
         for (CacheConfiguration ccfg : cacheConfigurations())
             notAffinityNode2(ccfg);
@@ -239,6 +244,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOldestChanged1() throws Exception {
         IgniteEx ignite0 = grid(0);
 
@@ -266,6 +272,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOldestChanged2() throws Exception {
         IgniteEx ignite0 = grid(0);
 
@@ -291,6 +298,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOldestChanged3() throws Exception {
         IgniteEx ignite0 = grid(0);
 

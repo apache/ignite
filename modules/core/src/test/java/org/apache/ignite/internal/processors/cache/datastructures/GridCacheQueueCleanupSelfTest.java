@@ -74,6 +74,7 @@ public class GridCacheQueueCleanupSelfTest extends IgniteCollectionAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCleanup() throws Exception {
         IgniteQueue<Integer> queue = grid(0).queue(QUEUE_NAME1, 0, config(false));
 

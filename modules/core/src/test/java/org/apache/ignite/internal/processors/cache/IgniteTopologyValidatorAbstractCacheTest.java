@@ -240,6 +240,7 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTopologyValidator() throws Exception {
         putValid(DEFAULT_CACHE_NAME);
         remove(DEFAULT_CACHE_NAME);

@@ -102,6 +102,7 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoHangs() throws Exception {
         final AtomicBoolean stop = new AtomicBoolean();
 
@@ -182,6 +183,7 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoDeadlockSimple() throws Exception {
         final AtomicInteger threadCnt = new AtomicInteger();
 
@@ -236,6 +238,7 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoDeadlock() throws Exception {
         for (int i = 2; i <= 10; i++) {
             final int threads = i;
@@ -310,6 +313,7 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFailedTxLocksRequest() throws Exception {
         doTestFailedMessage(TxLocksRequest.class);
     }
@@ -317,6 +321,7 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFailedTxLocksResponse() throws Exception {
         doTestFailedMessage(TxLocksResponse.class);
     }

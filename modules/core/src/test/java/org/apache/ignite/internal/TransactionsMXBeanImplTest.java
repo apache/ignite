@@ -73,6 +73,7 @@ public class TransactionsMXBeanImplTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testBasic() throws Exception {
         IgniteEx ignite = startGrid(0);
 

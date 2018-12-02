@@ -76,6 +76,7 @@ public class IgniteCacheStartStopLoadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMemoryLeaks() throws Exception {
         final Ignite ignite = ignite(0);
 

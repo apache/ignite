@@ -110,6 +110,7 @@ public class IgniteRebalanceScheduleResendPartitionsTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void test() throws Exception {
         Ignite ig0 = startGrids(3);
 

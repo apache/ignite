@@ -87,6 +87,7 @@ public class GridSessionSetFutureAttributeSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testSetAttribute() throws Exception {
         refreshInitialData();
 
@@ -97,6 +98,7 @@ public class GridSessionSetFutureAttributeSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testMultiThreaded() throws Exception {
         refreshInitialData();
 

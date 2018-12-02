@@ -87,6 +87,7 @@ public class GridCacheLeakTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLeakTransactional() throws Exception {
         checkLeak(TRANSACTIONAL);
     }
@@ -94,6 +95,7 @@ public class GridCacheLeakTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLeakAtomic() throws Exception {
         checkLeak(ATOMIC);
     }

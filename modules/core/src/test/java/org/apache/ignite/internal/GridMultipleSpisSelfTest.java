@@ -109,6 +109,7 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFailoverTask() throws Exception {
         // Start local and remote grids.
         Ignite ignite1 = startGrid(1);

@@ -113,6 +113,7 @@ public class PublicThreadpoolStarvationTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheSizeOnPublicThreadpoolStarvation() throws Exception {
         grid(0).compute().run(new IgniteRunnable() {
             @Override public void run() {

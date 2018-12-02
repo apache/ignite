@@ -57,6 +57,7 @@ public class IndexStorageSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testMetaIndexAllocation() throws Exception {
         metaAllocation();
     }

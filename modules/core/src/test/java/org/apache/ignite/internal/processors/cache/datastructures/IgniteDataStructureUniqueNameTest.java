@@ -81,6 +81,7 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUniqueNameMultithreaded() throws Exception {
         testUniqueName(true);
     }
@@ -88,6 +89,7 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUniqueNameMultinode() throws Exception {
         testUniqueName(false);
     }
@@ -95,6 +97,7 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateRemove() throws Exception {
         final String name = IgniteUuid.randomUuid().toString();
 
@@ -232,6 +235,7 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUniqueNamePerGroup() throws Exception {
         Ignite ignite = ignite(0);
 

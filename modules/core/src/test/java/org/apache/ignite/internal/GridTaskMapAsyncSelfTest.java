@@ -65,6 +65,7 @@ public class GridTaskMapAsyncSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTaskMap() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 

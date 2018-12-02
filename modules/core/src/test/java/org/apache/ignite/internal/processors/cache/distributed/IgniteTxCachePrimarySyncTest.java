@@ -133,6 +133,7 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleKeyCommitFromPrimary() throws Exception {
         singleKeyCommitFromPrimary(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 1, true, false));
 
@@ -246,6 +247,7 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleKeyPrimaryNodeFail1() throws Exception {
         singleKeyPrimaryNodeLeft(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 1, true, false));
 
@@ -255,6 +257,7 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleKeyPrimaryNodeFail2() throws Exception {
         singleKeyPrimaryNodeLeft(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 2, true, false));
 
@@ -371,6 +374,7 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleKeyCommit() throws Exception {
         singleKeyCommit(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 1, true, false));
 
@@ -513,6 +517,7 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWaitPrimaryResponse() throws Exception {
         checkWaitPrimaryResponse(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 1, true, false));
 
@@ -651,6 +656,7 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOnePhaseMessages() throws Exception {
         checkOnePhaseMessages(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 1, false, false));
     }
@@ -754,6 +760,7 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxSyncMode() throws Exception {
         Ignite ignite = ignite(0);
 

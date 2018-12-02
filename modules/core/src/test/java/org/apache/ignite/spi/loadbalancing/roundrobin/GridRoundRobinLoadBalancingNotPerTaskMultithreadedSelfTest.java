@@ -73,6 +73,7 @@ public class GridRoundRobinLoadBalancingNotPerTaskMultithreadedSelfTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleTaskSessionsMultithreaded() throws Exception {
         final RoundRobinLoadBalancingSpi spi = getSpi();
 

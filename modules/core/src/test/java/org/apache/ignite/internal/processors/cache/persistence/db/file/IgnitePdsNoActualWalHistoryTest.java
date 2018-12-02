@@ -98,6 +98,7 @@ public class IgnitePdsNoActualWalHistoryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testWalBig() throws Exception {
         try {
             IgniteEx ignite = startGrid(1);

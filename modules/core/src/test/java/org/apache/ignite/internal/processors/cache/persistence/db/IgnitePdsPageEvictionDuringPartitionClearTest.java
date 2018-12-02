@@ -85,6 +85,7 @@ public class IgnitePdsPageEvictionDuringPartitionClearTest extends GridCommonAbs
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testPageEvictionOnNodeStart() throws Exception {
         for (int r = 0; r < 3; r++) {
             cleanPersistenceDir();

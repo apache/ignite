@@ -57,6 +57,7 @@ public class PageEvictionPagesRecyclingAndReusingTest extends PageEvictionAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPagesRecyclingAndReusingAtomicReplicated() throws Exception {
         testPagesRecyclingAndReusing(CacheAtomicityMode.ATOMIC, CacheMode.REPLICATED);
     }
@@ -64,6 +65,7 @@ public class PageEvictionPagesRecyclingAndReusingTest extends PageEvictionAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPagesRecyclingAndReusingAtomicLocal() throws Exception {
         testPagesRecyclingAndReusing(CacheAtomicityMode.ATOMIC, CacheMode.LOCAL);
     }
@@ -71,6 +73,7 @@ public class PageEvictionPagesRecyclingAndReusingTest extends PageEvictionAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPagesRecyclingAndReusingTxReplicated() throws Exception {
         testPagesRecyclingAndReusing(CacheAtomicityMode.TRANSACTIONAL, CacheMode.REPLICATED);
     }
@@ -78,6 +81,7 @@ public class PageEvictionPagesRecyclingAndReusingTest extends PageEvictionAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPagesRecyclingAndReusingTxLocal() throws Exception {
         testPagesRecyclingAndReusing(CacheAtomicityMode.TRANSACTIONAL, CacheMode.LOCAL);
     }

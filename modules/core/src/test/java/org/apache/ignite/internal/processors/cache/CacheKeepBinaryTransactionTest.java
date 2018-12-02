@@ -69,6 +69,7 @@ public class CacheKeepBinaryTransactionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBinaryGet() throws Exception {
         IgniteEx ignite = grid(0);
         IgniteCache<Object, Object> cache = ignite.cache("tx-cache").withKeepBinary();
@@ -84,6 +85,7 @@ public class CacheKeepBinaryTransactionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBinaryContains() throws Exception {
         IgniteEx ignite = grid(0);
         IgniteCache<Object, Object> cache = ignite.cache("tx-cache").withKeepBinary();
@@ -99,6 +101,7 @@ public class CacheKeepBinaryTransactionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBinaryPutGetContains() throws Exception {
         IgniteEx ignite = grid(0);
         IgniteCache<Object, Object> cache = ignite.cache("tx-cache").withKeepBinary();

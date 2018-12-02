@@ -73,6 +73,7 @@ public class TcpDiscoveryClientSuspensionSelfTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOneServer() throws Exception {
         doTestClientSuspension(1);
     }
@@ -80,6 +81,7 @@ public class TcpDiscoveryClientSuspensionSelfTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTwoServers() throws Exception {
         doTestClientSuspension(2);
     }
@@ -87,6 +89,7 @@ public class TcpDiscoveryClientSuspensionSelfTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testThreeServers() throws Exception {
         doTestClientSuspension(3);
     }

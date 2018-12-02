@@ -63,6 +63,7 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetSimple() throws Exception {
         checkPutGet(new SimpleTestObject("one"), null);
     }
@@ -70,6 +71,7 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetSerializable() throws Exception {
         checkPutGet(new SerializableTestObject("test"), null);
     }
@@ -77,6 +79,7 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetExternalizable() throws Exception {
         checkPutGet(new ExternalizableTestObject("test"), null);
     }
@@ -84,6 +87,7 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetBinarylizable() throws Exception {
         checkPutGet(new BinarylizableTestObject("test"), "binaryIgnite");
     }

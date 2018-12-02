@@ -105,6 +105,7 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxConsistency() throws Exception {
         startGridsMultiThreaded(GRID_CNT);
 

@@ -65,6 +65,7 @@ public class IgniteInternalCacheTypesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheTypes() throws Exception {
         Ignite ignite0 = startGrid(0);
 

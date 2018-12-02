@@ -57,6 +57,7 @@ public class GridCacheRebalancingSyncCheckDataTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDataRebalancing() throws Exception {
         Ignite ignite = startGrid(0);
 

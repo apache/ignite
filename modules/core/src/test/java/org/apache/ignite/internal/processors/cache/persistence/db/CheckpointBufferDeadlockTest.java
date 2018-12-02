@@ -146,6 +146,7 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testFourCheckpointThreads() throws Exception {
         checkpointThreads = 4;
 
@@ -155,6 +156,7 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testOneCheckpointThread() throws Exception {
         checkpointThreads = 1;
 

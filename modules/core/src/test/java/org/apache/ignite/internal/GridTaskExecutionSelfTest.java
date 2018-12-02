@@ -78,6 +78,7 @@ public class GridTaskExecutionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSynchronousExecute() throws Exception {
         ComputeTaskFuture<?> fut = ignite.compute().executeAsync(GridTestTask.class,  "testArg");
 
@@ -91,6 +92,7 @@ public class GridTaskExecutionSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testJobIdCollision() throws Exception {
         fail("Test refactoring is needed: https://issues.apache.org/jira/browse/IGNITE-4706");
 
@@ -155,6 +157,7 @@ public class GridTaskExecutionSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testExecuteTaskWithInvalidName() throws Exception {
         try {
             ComputeTaskFuture<?> fut = ignite.compute().execute("invalid.task.name", null);

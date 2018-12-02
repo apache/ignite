@@ -55,6 +55,7 @@ public class GridSessionSetJobAttributeOrderSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJobSetAttribute() throws Exception {
         try {
             Ignite ignite1 = startGrid(1);

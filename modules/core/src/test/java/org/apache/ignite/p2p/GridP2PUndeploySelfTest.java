@@ -171,6 +171,7 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testUndeployLocalPrivateMode() throws Exception {
         processTestUndeployLocalTasks(DeploymentMode.PRIVATE);
     }
@@ -180,6 +181,7 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testUndeployLocalIsolatedMode() throws Exception {
         processTestUndeployLocalTasks(DeploymentMode.ISOLATED);
     }
@@ -189,6 +191,7 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testUndeployLocalContinuousMode() throws Exception {
         processTestUndeployLocalTasks(DeploymentMode.CONTINUOUS);
     }
@@ -198,6 +201,7 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testUndeployLocalSharedMode() throws Exception {
         processTestUndeployLocalTasks(DeploymentMode.SHARED);
     }
@@ -207,6 +211,7 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testUndeployP2PPrivateMode() throws Exception {
         processTestUndeployP2PTasks(DeploymentMode.PRIVATE);
     }
@@ -216,6 +221,7 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testUndeployP2PIsolatedMode() throws Exception {
         processTestUndeployP2PTasks(DeploymentMode.ISOLATED);
     }
@@ -225,6 +231,7 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testUndeployP2PContinuousMode() throws Exception {
         processTestUndeployP2PTasks(DeploymentMode.CONTINUOUS);
     }
@@ -234,6 +241,7 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testUndeployP2PSharedMode() throws Exception {
         processTestUndeployP2PTasks(DeploymentMode.SHARED);
     }

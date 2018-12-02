@@ -57,6 +57,7 @@ public abstract class IgniteCacheNodeJoinAbstractTest extends IgniteCacheAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGet() throws Exception {
         final IgniteCache<Integer, Integer> cache = jcache(0);
 
@@ -111,6 +112,7 @@ public abstract class IgniteCacheNodeJoinAbstractTest extends IgniteCacheAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testScanQuery() throws Exception {
         final IgniteCache<Integer, Integer> cache = jcache(0);
 

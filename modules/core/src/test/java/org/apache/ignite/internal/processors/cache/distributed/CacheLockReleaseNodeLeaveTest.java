@@ -93,6 +93,7 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockRelease() throws Exception {
         startGrids(2);
 
@@ -139,6 +140,7 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockTopologyChange() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-9213");
 
@@ -191,6 +193,7 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxLockRelease() throws Exception {
         startGrids(2);
 
@@ -239,6 +242,7 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockRelease2() throws Exception {
         final Ignite ignite0 = startGrid(0);
 
@@ -285,6 +289,7 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockRelease3() throws Exception {
         startGrid(0);
 
@@ -319,6 +324,7 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxLockRelease2() throws Exception {
         final Ignite ignite0 = startGrid(0);
 

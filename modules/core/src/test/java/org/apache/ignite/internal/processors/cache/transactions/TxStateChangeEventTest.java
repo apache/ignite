@@ -70,6 +70,7 @@ public class TxStateChangeEventTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testLocal() throws Exception {
         check(true);
     }
@@ -77,6 +78,7 @@ public class TxStateChangeEventTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRemote() throws Exception {
         check(false);
     }

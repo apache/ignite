@@ -49,6 +49,7 @@ public class ServiceThreadPoolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDefaultPoolSize() throws Exception {
         Ignite ignite = startGrid("grid", new IgniteConfiguration());
 
@@ -61,6 +62,7 @@ public class ServiceThreadPoolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInheritedPoolSize() throws Exception {
         Ignite ignite = startGrid("grid", new IgniteConfiguration().setPublicThreadPoolSize(42));
 
@@ -73,6 +75,7 @@ public class ServiceThreadPoolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCustomPoolSize() throws Exception {
         Ignite ignite = startGrid("grid", new IgniteConfiguration().setServiceThreadPoolSize(42));
 
@@ -85,6 +88,7 @@ public class ServiceThreadPoolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExecution() throws Exception {
         startGrid(0); // Server.
 

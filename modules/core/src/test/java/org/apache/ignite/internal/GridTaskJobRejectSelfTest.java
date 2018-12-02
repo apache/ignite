@@ -70,6 +70,7 @@ public class GridTaskJobRejectSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReject() throws Exception {
         grid(1).events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {

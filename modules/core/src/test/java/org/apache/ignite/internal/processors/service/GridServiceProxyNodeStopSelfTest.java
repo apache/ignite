@@ -53,6 +53,7 @@ public class GridServiceProxyNodeStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testProxyHashCode() throws Exception {
         Ignite server = startGrid("server");
 

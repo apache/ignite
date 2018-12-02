@@ -86,6 +86,7 @@ public class GridTaskFailoverAffinityRunTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeRestart() throws Exception {
         clientMode = false;
 
@@ -95,6 +96,7 @@ public class GridTaskFailoverAffinityRunTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeRestartClient() throws Exception {
         clientMode = true;
 

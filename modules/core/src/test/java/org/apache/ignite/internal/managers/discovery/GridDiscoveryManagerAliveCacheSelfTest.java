@@ -159,6 +159,7 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAlives() throws Exception {
         clientMode = false;
 
@@ -168,6 +169,7 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAlivesClient() throws Exception {
         clientMode = true;
 

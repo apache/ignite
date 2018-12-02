@@ -66,6 +66,7 @@ public class GridCachePartitionExchangeManagerHistSizeTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleExchangeHistSize() throws Exception {
         System.setProperty(IGNITE_EXCHANGE_HISTORY_SIZE, "1");
 

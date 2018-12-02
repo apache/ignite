@@ -68,6 +68,7 @@ public class GridServletLoaderTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoader() throws Exception {
         JMXConnector jmx = null;
 

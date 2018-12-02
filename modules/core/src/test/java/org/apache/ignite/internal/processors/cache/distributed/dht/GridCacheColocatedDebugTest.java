@@ -106,6 +106,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimplestPessimistic() throws Exception {
         checkSinglePut(false, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -113,6 +114,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleOptimistic() throws Exception {
         checkSinglePut(true, OPTIMISTIC, REPEATABLE_READ);
     }
@@ -120,6 +122,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReentry() throws Exception {
         checkReentry(PESSIMISTIC, REPEATABLE_READ);
     }
@@ -127,6 +130,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedInTxSeparatePessimistic() throws Exception {
         checkDistributedPut(true, true, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -134,6 +138,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedInTxPessimistic() throws Exception {
         checkDistributedPut(true, false, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -141,6 +146,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedSeparatePessimistic() throws Exception {
         checkDistributedPut(false, true, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -148,6 +154,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedPessimistic() throws Exception {
         checkDistributedPut(false, false, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -155,6 +162,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedNonLocalInTxSeparatePessimistic() throws Exception {
         checkNonLocalPuts(true, true, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -162,6 +170,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedNonLocalInTxPessimistic() throws Exception {
         checkNonLocalPuts(true, false, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -169,6 +178,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedNonLocalSeparatePessimistic() throws Exception {
         checkNonLocalPuts(false, true, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -176,6 +186,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedNonLocalPessimistic() throws Exception {
         checkNonLocalPuts(false, false, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -183,6 +194,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRollbackSeparatePessimistic() throws Exception {
         checkRollback(true, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -190,6 +202,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedInTxSeparateOptimistic() throws Exception {
         checkDistributedPut(true, true, OPTIMISTIC, REPEATABLE_READ);
     }
@@ -197,6 +210,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedInTxOptimistic() throws Exception {
         checkDistributedPut(true, false, OPTIMISTIC, REPEATABLE_READ);
     }
@@ -204,6 +218,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedNonLocalInTxSeparateOptimistic() throws Exception {
         checkNonLocalPuts(true, true, OPTIMISTIC, REPEATABLE_READ);
     }
@@ -211,6 +226,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedNonLocalInTxOptimistic() throws Exception {
         checkNonLocalPuts(true, false, OPTIMISTIC, REPEATABLE_READ);
     }
@@ -218,6 +234,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRollbackSeparateOptimistic() throws Exception {
         checkRollback(true, OPTIMISTIC, REPEATABLE_READ);
     }
@@ -225,6 +242,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRollback() throws Exception {
         checkRollback(false, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -232,6 +250,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutsMultithreadedColocated() throws Exception {
         checkPutsMultithreaded(true, false, 100000);
     }
@@ -239,6 +258,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutsMultithreadedRemote() throws Exception {
        checkPutsMultithreaded(false, true, 100000);
     }
@@ -246,6 +266,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutsMultithreadedMixed() throws Exception {
         checkPutsMultithreaded(true, true, 100000);
     }
@@ -352,6 +373,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockLockedLocal() throws Exception {
         checkLockLocked(true);
     }
@@ -359,6 +381,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockLockedRemote() throws Exception {
         checkLockLocked(false);
     }
@@ -430,6 +453,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticGet() throws Exception {
         storeEnabled = false;
 
@@ -709,6 +733,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWriteThrough() throws Exception {
         storeEnabled = true;
 
@@ -894,6 +919,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExplicitLocks() throws Exception {
         storeEnabled = false;
 
@@ -920,6 +946,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExplicitLocksDistributed() throws Exception {
         storeEnabled = false;
 

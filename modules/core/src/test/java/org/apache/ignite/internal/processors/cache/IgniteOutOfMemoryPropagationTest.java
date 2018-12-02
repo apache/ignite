@@ -66,11 +66,13 @@ public class IgniteOutOfMemoryPropagationTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPutOOMPropagation() throws Exception {
         testOOMPropagation(false);
     }
 
     /** */
+    @Test
     public void testStreamerOOMPropagation() throws Exception {
         testOOMPropagation(true);
     }

@@ -85,6 +85,7 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Test
     public void testTaskDeployment() throws Exception {
         ClassLoader ldr = getExternalClassLoader();
 
@@ -124,6 +125,7 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheValueDeploymentOnPut() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-4551");
 

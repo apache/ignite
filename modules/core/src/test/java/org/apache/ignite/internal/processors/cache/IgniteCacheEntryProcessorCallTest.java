@@ -99,6 +99,7 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEntryProcessorCall() throws Exception {
         {
             CacheConfiguration<Integer, TestValue> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);

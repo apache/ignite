@@ -51,6 +51,7 @@ public class GridWeightedRandomLoadBalancingSpiWeightedSelfTest
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testWeights() throws Exception {
         List<ClusterNode> nodes = new ArrayList<>();
 

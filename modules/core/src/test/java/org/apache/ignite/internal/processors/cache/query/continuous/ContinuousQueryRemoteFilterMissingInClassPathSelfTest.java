@@ -97,6 +97,7 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testWarningMessageOnClientNode() throws Exception {
         ldr = new URLClassLoader(URLS, getClass().getClassLoader());
 
@@ -121,6 +122,7 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testNoWarningMessageOnClientNode() throws Exception {
         ldr = new URLClassLoader(URLS, getClass().getClassLoader());
 
@@ -143,6 +145,7 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testExceptionOnServerNode() throws Exception {
         ldr = new URLClassLoader(URLS, getClass().getClassLoader());
 
@@ -168,6 +171,7 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testNoExceptionOnServerNode() throws Exception {
         ldr = new URLClassLoader(URLS, getClass().getClassLoader());
 

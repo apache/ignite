@@ -59,6 +59,7 @@ public class IgniteCacheConfigurationDefaultTemplateTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDefaultTemplate() throws Exception {
         Ignite ignite = startGrid(0);
 

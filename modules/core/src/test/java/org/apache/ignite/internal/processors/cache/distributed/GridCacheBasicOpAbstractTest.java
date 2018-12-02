@@ -103,6 +103,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
      *
      * @throws Exception If error occur.
      */
+    @Test
     public void testBasicOps() throws Exception {
         CountDownLatch latch = new CountDownLatch(3);
 
@@ -178,6 +179,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If test fails.
      */
+    @Test
     public void testBasicOpsAsync() throws Exception {
         CountDownLatch latch = new CountDownLatch(3);
 
@@ -258,6 +260,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
      *
      * @throws IgniteCheckedException If test fails.
      */
+    @Test
     public void testOptimisticTransaction() throws Exception {
         CountDownLatch latch = new CountDownLatch(9);
 
@@ -332,6 +335,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
      *
      * @throws Exception In case of error.
      */
+    @Test
     public void testPutWithExpiration() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
 

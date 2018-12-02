@@ -110,6 +110,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testTtlIsApplied() throws Exception {
         loadAndWaitForCleanup(false);
     }
@@ -117,6 +118,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testTtlIsAppliedAfterRestart() throws Exception {
         loadAndWaitForCleanup(true);
     }
@@ -148,6 +150,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRebalancingWithTtlExpirable() throws Exception {
         IgniteEx srv = startGrid(0);
         srv.cluster().active(true);
@@ -171,6 +174,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testStartStopAfterRebalanceWithTtlExpirable() throws Exception {
         try {
             IgniteEx srv = startGrid(0);

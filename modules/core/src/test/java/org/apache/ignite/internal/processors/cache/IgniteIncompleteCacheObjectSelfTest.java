@@ -36,6 +36,7 @@ public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIncompleteObject() throws Exception {
         final byte[] data = new byte[1024];
 

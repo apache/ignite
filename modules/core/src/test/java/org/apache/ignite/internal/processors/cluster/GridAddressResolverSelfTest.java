@@ -76,6 +76,7 @@ public class GridAddressResolverSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void test() throws Exception {
         startGrid(0);
 

@@ -71,6 +71,7 @@ public class GridCacheEntryVersionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVersionAtomic() throws Exception {
         atomicityMode = ATOMIC;
 
@@ -80,6 +81,7 @@ public class GridCacheEntryVersionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVersionTransactional() throws Exception {
         atomicityMode = TRANSACTIONAL;
 
@@ -89,6 +91,7 @@ public class GridCacheEntryVersionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVersionMvccTx() throws Exception {
         atomicityMode = TRANSACTIONAL_SNAPSHOT;
 

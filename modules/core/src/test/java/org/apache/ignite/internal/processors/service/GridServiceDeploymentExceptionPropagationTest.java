@@ -28,6 +28,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public class GridServiceDeploymentExceptionPropagationTest extends GridCommonAbstractTest {
     /** */
     @SuppressWarnings("unused")
+    @Test
     public void testExceptionPropagation() throws Exception {
         try (Ignite srv = startGrid("server")) {
 

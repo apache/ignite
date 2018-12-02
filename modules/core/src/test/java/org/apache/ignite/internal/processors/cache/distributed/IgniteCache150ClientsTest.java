@@ -111,6 +111,7 @@ public class IgniteCache150ClientsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void test150Clients() throws Exception {
         Ignite srv = startGrid(0);
 

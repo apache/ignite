@@ -184,6 +184,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleFileNestedDirs() throws Exception {
         final List<Event> evtList = new ArrayList<>();
 
@@ -265,6 +266,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDirWithFiles() throws Exception {
         final List<Event> evtList = new ArrayList<>();
 
@@ -346,6 +348,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleEmptyDir() throws Exception {
         final List<Event> evtList = new ArrayList<>();
 
@@ -403,6 +406,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTwoFiles() throws Exception {
         final List<Event> evtList = new ArrayList<>();
 
@@ -490,6 +494,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeleteNonRecursive() throws Exception {
         final List<Event> evtList = new ArrayList<>();
 
@@ -544,6 +549,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveFile() throws Exception {
         final List<Event> evtList = new ArrayList<>();
 
@@ -611,6 +617,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNestedEmptyDirs() throws Exception {
         final List<Event> evtList = new ArrayList<>();
 
@@ -661,6 +668,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleFileOverwrite() throws Exception {
         final List<Event> evtList = new ArrayList<>();
 
@@ -747,6 +755,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testFileDataEvents() throws Exception {
         final List<Event> evtList = new ArrayList<>();
 

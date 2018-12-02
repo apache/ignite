@@ -86,6 +86,7 @@ public class GridCachePartitionedWritesTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If test fails. */
+    @Test
     public void testWrite() throws Exception {
         final AtomicInteger putCnt = new AtomicInteger();
         final AtomicInteger rmvCnt = new AtomicInteger();

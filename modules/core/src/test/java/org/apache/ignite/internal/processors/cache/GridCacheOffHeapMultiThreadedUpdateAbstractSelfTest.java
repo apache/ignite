@@ -71,6 +71,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransform() throws Exception {
         testTransform(keyForNode(0));
 
@@ -115,6 +116,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPut() throws Exception {
         testPut(keyForNode(0));
 
@@ -161,6 +163,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutxIfAbsent() throws Exception {
         testPutxIfAbsent(keyForNode(0));
 
@@ -205,6 +208,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGet() throws Exception {
         testPutGet(keyForNode(0));
 

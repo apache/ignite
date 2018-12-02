@@ -128,6 +128,7 @@ public class CacheParallelStartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testParallelStartAndStop() throws Exception {
         testParallelStartAndStop(true);
     }
@@ -135,6 +136,7 @@ public class CacheParallelStartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testSequentialStartAndStop() throws Exception {
         testParallelStartAndStop(false);
     }

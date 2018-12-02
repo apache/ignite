@@ -89,6 +89,7 @@ public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleIndexingSpi() throws Exception {
         indexingSpi = new MyIndexingSpi();
 
@@ -110,6 +111,7 @@ public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIndexingSpiWithDisabledQueryProcessor() throws Exception {
         indexingSpi = new MyIndexingSpi();
 
@@ -131,6 +133,7 @@ public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBinaryIndexingSpi() throws Exception {
         indexingSpi = new MyBinaryIndexingSpi();
 
@@ -159,6 +162,7 @@ public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNonBinaryIndexingSpi() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI, "true");
 
@@ -193,6 +197,7 @@ public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIndexingSpiFailure() throws Exception {
         indexingSpi = new MyBrokenIndexingSpi();
 

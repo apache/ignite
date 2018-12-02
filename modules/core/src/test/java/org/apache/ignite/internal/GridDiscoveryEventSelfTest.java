@@ -94,6 +94,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinSequenceEvents() throws Exception {
         try {
             Ignite g0 = startGrid(0);
@@ -156,6 +157,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLeaveSequenceEvents() throws Exception {
         try {
             Ignite g0 = startGrid(0);
@@ -224,6 +226,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMixedSequenceEvents() throws Exception {
         try {
             Ignite g0 = startGrid(0);
@@ -343,6 +346,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentJoinEvents() throws Exception {
         try {
             Ignite g0 = startGrid(0);
@@ -397,6 +401,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDaemonNodeJoin() throws Exception {
         try {
             startGridsMultiThreaded(3);

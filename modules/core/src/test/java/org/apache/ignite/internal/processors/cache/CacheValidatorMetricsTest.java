@@ -90,6 +90,7 @@ public class CacheValidatorMetricsTest extends GridCommonAbstractTest implements
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheValidatorMetrics() throws Exception {
         startGrid(1);
 

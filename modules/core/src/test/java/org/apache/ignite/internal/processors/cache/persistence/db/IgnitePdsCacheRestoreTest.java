@@ -93,6 +93,7 @@ public class IgnitePdsCacheRestoreTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestoreAndNewCache1() throws Exception {
         restoreAndNewCache(false);
     }
@@ -100,6 +101,7 @@ public class IgnitePdsCacheRestoreTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestoreAndNewCache2() throws Exception {
         restoreAndNewCache(true);
     }

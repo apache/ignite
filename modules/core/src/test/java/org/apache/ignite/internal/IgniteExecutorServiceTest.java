@@ -46,6 +46,7 @@ public class IgniteExecutorServiceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Thrown in case of test failure.
      */
+    @Test
     public void testExecute() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -70,6 +71,7 @@ public class IgniteExecutorServiceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Thrown in case of test failure.
      */
+    @Test
     public void testSubmit() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -107,6 +109,7 @@ public class IgniteExecutorServiceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Thrown in case of test failure.
      */
+    @Test
     public void testSubmitWithFutureTimeout() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -134,6 +137,7 @@ public class IgniteExecutorServiceTest extends GridCommonAbstractTest {
      * @throws Exception Thrown in case of test failure.
      */
     @SuppressWarnings("TooBroadScope")
+    @Test
     public void testInvokeAll() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -164,6 +168,7 @@ public class IgniteExecutorServiceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Thrown in case of test failure.
      */
+    @Test
     public void testInvokeAllWithTimeout() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -210,6 +215,7 @@ public class IgniteExecutorServiceTest extends GridCommonAbstractTest {
      * @throws Exception Thrown in case of test failure.
      */
     @SuppressWarnings("TooBroadScope")
+    @Test
     public void testInvokeAny() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -235,6 +241,7 @@ public class IgniteExecutorServiceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Thrown in case of test failure.
      */
+    @Test
     public void testInvokeAnyWithTimeout() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 

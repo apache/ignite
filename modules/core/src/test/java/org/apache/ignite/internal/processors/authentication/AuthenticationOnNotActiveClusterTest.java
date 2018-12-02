@@ -94,6 +94,7 @@ public class AuthenticationOnNotActiveClusterTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDefaultUser() throws Exception {
         startGrids(NODES_COUNT);
 
@@ -108,6 +109,7 @@ public class AuthenticationOnNotActiveClusterTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNotDefaultUser() throws Exception {
         startGrids(NODES_COUNT + 1);
 

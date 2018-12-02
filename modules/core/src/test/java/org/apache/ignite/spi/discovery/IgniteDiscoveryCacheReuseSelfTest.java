@@ -60,6 +60,7 @@ public class IgniteDiscoveryCacheReuseSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDiscoCacheReuseOnNodeJoin() throws Exception {
         startGridsMultiThreaded(2);
 

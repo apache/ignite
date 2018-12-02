@@ -110,6 +110,7 @@ public class GridCacheNearPartitionedClearSelfTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClear() throws Exception {
         IgniteCache cache = cacheForIndex(0);
 

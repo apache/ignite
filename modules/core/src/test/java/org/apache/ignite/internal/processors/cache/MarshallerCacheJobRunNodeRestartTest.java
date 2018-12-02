@@ -55,6 +55,7 @@ public class MarshallerCacheJobRunNodeRestartTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJobRun() throws Exception {
         for (int i = 0; i < 5; i++) {
             U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", true);

@@ -100,6 +100,7 @@ public class WalCompactionAfterRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void test() throws Exception {
         IgniteEx ig = startGrid(0);
 

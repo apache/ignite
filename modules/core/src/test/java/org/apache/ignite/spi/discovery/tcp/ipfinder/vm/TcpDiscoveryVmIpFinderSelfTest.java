@@ -56,6 +56,7 @@ public class TcpDiscoveryVmIpFinderSelfTest
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testAddressesInitialization() throws Exception {
         TcpDiscoveryVmIpFinder finder = ipFinder();
 
@@ -125,6 +126,7 @@ public class TcpDiscoveryVmIpFinderSelfTest
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testIpV6AddressesInitialization() throws Exception {
         TcpDiscoveryVmIpFinder finder = ipFinder();
 
@@ -202,6 +204,7 @@ public class TcpDiscoveryVmIpFinderSelfTest
     /**
      *
      */
+    @Test
     public void testUnregistration() throws Exception {
         Ignition.start(config("server1", false, false));
 

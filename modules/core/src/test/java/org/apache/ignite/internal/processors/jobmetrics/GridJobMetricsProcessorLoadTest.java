@@ -55,6 +55,7 @@ public class GridJobMetricsProcessorLoadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testJobMetricsMultiThreaded() throws Exception {
         GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {

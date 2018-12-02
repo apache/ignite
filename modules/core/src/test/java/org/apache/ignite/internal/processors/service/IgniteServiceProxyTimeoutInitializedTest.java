@@ -103,6 +103,7 @@ public class IgniteServiceProxyTimeoutInitializedTest extends GridCommonAbstract
      * @throws Exception If fail.
      */
     @SuppressWarnings({"Convert2Lambda"})
+    @Test
     public void testUnavailableService() throws Exception {
         srvc = new TestWaitServiceImpl();
 
@@ -143,6 +144,7 @@ public class IgniteServiceProxyTimeoutInitializedTest extends GridCommonAbstract
      * @throws Exception If fail.
      */
     @SuppressWarnings({"Convert2Lambda"})
+    @Test
     public void testServiceException() throws Exception {
         srvc = new HangServiceImpl();
 
@@ -195,7 +197,8 @@ public class IgniteServiceProxyTimeoutInitializedTest extends GridCommonAbstract
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public void test() {
+        @Override @Test
+    public void test() {
             // No-op
         }
 

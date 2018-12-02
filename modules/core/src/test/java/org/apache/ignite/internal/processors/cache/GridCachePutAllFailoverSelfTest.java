@@ -134,6 +134,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllFailoverColocatedNearEnabledThreeBackups() throws Exception {
         checkPutAllFailoverColocated(true, 7, 3);
     }
@@ -141,6 +142,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllFailoverColocatedNearDisabledThreeBackups() throws Exception {
         checkPutAllFailoverColocated(false, 7, 3);
     }
@@ -148,6 +150,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllFailoverNearEnabledOneBackup() throws Exception {
         checkPutAllFailover(true, 3, 1);
     }
@@ -155,6 +158,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllFailoverNearDisabledOneBackup() throws Exception {
         checkPutAllFailover(false, 3, 1);
     }
@@ -162,6 +166,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllFailoverNearEnabledTwoBackups() throws Exception {
         checkPutAllFailover(true, 5, 2);
     }
@@ -169,6 +174,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllFailoverNearDisabledTwoBackups() throws Exception {
         checkPutAllFailover(false, 5, 2);
     }
@@ -176,6 +182,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllFailoverNearEnabledThreeBackups() throws Exception {
         checkPutAllFailover(true, 7, 3);
     }
@@ -183,6 +190,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllFailoverNearDisabledThreeBackups() throws Exception {
         checkPutAllFailover(false, 7, 3);
     }
@@ -190,6 +198,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllFailoverColocatedNearEnabledOneBackup() throws Exception {
         checkPutAllFailoverColocated(true, 3, 1);
     }
@@ -197,6 +206,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllFailoverColocatedNearDisabledOneBackup() throws Exception {
         checkPutAllFailoverColocated(false, 3, 1);
     }
@@ -204,6 +214,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllFailoverColocatedNearEnabledTwoBackups() throws Exception {
         checkPutAllFailoverColocated(true, 5, 2);
     }
@@ -211,6 +222,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllFailoverColocatedNearDisabledTwoBackups() throws Exception {
         checkPutAllFailoverColocated(false, 5, 2);
     }

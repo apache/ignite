@@ -34,6 +34,7 @@ public class GridListSetSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testUnsorted() {
         GridListSet<V1> set = new GridListSet<>();
 
@@ -91,6 +92,7 @@ public class GridListSetSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testSortedNotStrict() {
         GridListSet<V1> set = new GridListSet<>(new Comparator<V1>() {
             @Override public int compare(V1 o1, V1 o2) {
@@ -153,6 +155,7 @@ public class GridListSetSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testSortedStrict() {
         List<V2> vals = new ArrayList<>();
 

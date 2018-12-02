@@ -133,6 +133,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSamePartitionMap() throws Exception {
         backups = 1;
         partitions = 10;
@@ -182,6 +183,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testDisabledPreloader() throws Exception {
         try {
             Ignite ignite1 = startGrid(0);

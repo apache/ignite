@@ -28,6 +28,7 @@ public class GridJobStealingFailoverSpiConfigSelfTest extends GridSpiAbstractCon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNegativeConfig() throws Exception {
         checkNegativeSpiProperty(new JobStealingFailoverSpi(), "maximumFailoverAttempts", -1);
     }

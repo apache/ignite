@@ -54,6 +54,7 @@ public class IgniteClientConnectAfterCommunicationFailureTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnects() throws Exception {
         Ignite srv1 = startGrid("server1");
         Ignite srv2 = startGrid("server2");
@@ -66,6 +67,7 @@ public class IgniteClientConnectAfterCommunicationFailureTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientThreadsSuspended() throws Exception {
         Ignite srv1 = startGrid("server1");
         Ignite srv2 = startGrid("server2");

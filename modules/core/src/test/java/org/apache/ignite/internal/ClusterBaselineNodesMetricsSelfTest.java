@@ -53,6 +53,7 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBaselineNodes() throws Exception {
         // Start 2 server nodes.
         IgniteEx ignite0 = startGrid(0);

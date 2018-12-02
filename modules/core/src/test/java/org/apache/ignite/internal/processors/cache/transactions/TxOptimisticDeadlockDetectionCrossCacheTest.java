@@ -83,6 +83,7 @@ public class TxOptimisticDeadlockDetectionCrossCacheTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlock() throws Exception {
         startGrids(2);
 

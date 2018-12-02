@@ -71,6 +71,7 @@ public class DataStreamerUpdateAfterLoadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateAfterLoad() throws Exception {
         Ignite ignite0 = ignite(0);
 

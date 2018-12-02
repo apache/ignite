@@ -126,6 +126,7 @@ public class CacheResultIsNotNullOnPartitionLossTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheResultIsNotNullOnClient() throws Exception {
         testCacheResultIsNotNull0(client);
     }
@@ -133,6 +134,7 @@ public class CacheResultIsNotNullOnPartitionLossTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheResultIsNotNullOnLastServer() throws Exception {
         testCacheResultIsNotNull0(grid(SERVERS - 1));
     }
@@ -140,6 +142,7 @@ public class CacheResultIsNotNullOnPartitionLossTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheResultIsNotNullOnServer() throws Exception {
         testCacheResultIsNotNull0(grid(SERVERS - 2));
     }

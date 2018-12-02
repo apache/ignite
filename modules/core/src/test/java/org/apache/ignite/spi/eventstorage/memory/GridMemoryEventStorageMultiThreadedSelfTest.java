@@ -34,6 +34,7 @@ public class GridMemoryEventStorageMultiThreadedSelfTest extends GridSpiAbstract
     /**
      * @throws Exception If test failed
      */
+    @Test
     public void testMultiThreaded() throws Exception {
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {

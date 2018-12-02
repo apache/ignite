@@ -30,6 +30,7 @@ public class GridServicePackagePrivateSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPackagePrivateService() throws Exception {
         try {
             Ignite server = startGrid("server");

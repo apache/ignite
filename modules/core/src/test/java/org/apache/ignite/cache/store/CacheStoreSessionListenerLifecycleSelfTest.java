@@ -75,6 +75,7 @@ public class CacheStoreSessionListenerLifecycleSelfTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoCaches() throws Exception {
         try {
             startGrid();
@@ -90,6 +91,7 @@ public class CacheStoreSessionListenerLifecycleSelfTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoOverride() throws Exception {
         try {
             Ignite ignite = startGrid();
@@ -152,6 +154,7 @@ public class CacheStoreSessionListenerLifecycleSelfTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartialOverride() throws Exception {
         try {
             Ignite ignite = startGrid();
@@ -227,6 +230,7 @@ public class CacheStoreSessionListenerLifecycleSelfTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOverride() throws Exception {
         try {
             Ignite ignite = startGrid();

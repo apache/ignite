@@ -32,6 +32,7 @@ public class ClusterReadOnlyModeTest extends ClusterReadOnlyModeAbstractTest {
     /**
      * Tests cache get/put/remove.
      */
+    @Test
     public void testCacheGetPutRemove() {
         assertCachesReadOnlyMode(false);
 
@@ -47,6 +48,7 @@ public class ClusterReadOnlyModeTest extends ClusterReadOnlyModeAbstractTest {
     /**
      * Tests data streamer.
      */
+    @Test
     public void testDataStreamerReadOnly() {
         assertDataStreamerReadOnlyMode(false);
 

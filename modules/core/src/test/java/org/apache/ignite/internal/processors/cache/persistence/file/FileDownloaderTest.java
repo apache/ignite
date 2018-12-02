@@ -68,6 +68,7 @@ public class FileDownloaderTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void test() throws Exception {
         assertTrue(UPLOADER_PATH.toFile().createNewFile());
         assertTrue(!DOWNLOADER_PATH.toFile().exists());

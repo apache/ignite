@@ -85,6 +85,7 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testJobSubjectId() throws Exception {
         node2.events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {
@@ -110,6 +111,7 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testModifiedSubjectId() throws Exception {
         node1.events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {

@@ -101,6 +101,7 @@ public class GridPartitionedBackupLoadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupLoad() throws Exception {
         grid(0).cache(DEFAULT_CACHE_NAME).put(1, 1);
 

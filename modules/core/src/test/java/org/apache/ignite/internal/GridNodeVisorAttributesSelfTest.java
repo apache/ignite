@@ -82,6 +82,7 @@ public class GridNodeVisorAttributesSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIncludeNull() throws Exception {
         inclProps = null;
 
@@ -94,6 +95,7 @@ public class GridNodeVisorAttributesSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("ZeroLengthArrayAllocation")
+    @Test
     public void testIncludeEmpty() throws Exception {
         inclProps = new String[] {};
 
@@ -105,6 +107,7 @@ public class GridNodeVisorAttributesSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIncludeNonEmpty() throws Exception {
         inclProps = new String[] {"prop1", "prop2"};
 

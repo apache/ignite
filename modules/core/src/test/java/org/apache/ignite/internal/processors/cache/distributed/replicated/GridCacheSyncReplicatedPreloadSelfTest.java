@@ -86,6 +86,7 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
      * @throws Exception If test failed.
      */
     @SuppressWarnings({"TooBroadScope"})
+    @Test
     public void testNodeRestart() throws Exception {
         int keyCnt = 1000;
         int retries = 20;
@@ -116,6 +117,7 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
      * @throws Exception If test failed.
      */
     @SuppressWarnings({"TooBroadScope"})
+    @Test
     public void testNodeRestartMultithreaded() throws Exception {
         final int keyCnt = 1000;
         final int retries = 50;

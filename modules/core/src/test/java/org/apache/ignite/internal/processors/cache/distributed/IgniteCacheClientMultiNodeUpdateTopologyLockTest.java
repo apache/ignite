@@ -78,6 +78,7 @@ public class IgniteCacheClientMultiNodeUpdateTopologyLockTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticTx() throws Exception {
         startGrids(3);
 

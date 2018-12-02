@@ -114,6 +114,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRebalance() throws Exception {
         Ignite ignite = startGrids(4);
 
@@ -171,6 +172,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRebalanceEstimateFinishTime() throws Exception {
         System.setProperty(IGNITE_REBALANCE_STATISTICS_TIME_INTERVAL, String.valueOf(1000));
 
@@ -298,6 +300,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRebalanceDelay() throws Exception {
         Ignite ig1 = startGrid(1);
 

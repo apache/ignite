@@ -52,61 +52,73 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
     }
 
     /** */
+    @Test
     public void testPrimaryIndexCorruptionDuringCommitPrimaryColocatedThrowsError() throws Exception {
         doTestTransferAmount0(true, true, () -> new AssertionError("Test"));
     }
 
     /** */
+    @Test
     public void testPrimaryIndexCorruptionDuringCommitPrimaryColocatedThrowsUnchecked() throws Exception {
         doTestTransferAmount0(true, true, () -> new RuntimeException("Test"));
     }
 
     /** */
+    @Test
     public void testPrimaryIndexCorruptionDuringCommitPrimaryColocatedThrowsChecked() throws Exception {
         doTestTransferAmount0(true, true, () -> new IgniteCheckedException("Test"));
     }
 
     /** */
+    @Test
     public void testPrimaryIndexCorruptionDuringCommitPrimaryNonColocatedThrowsError() throws Exception {
         doTestTransferAmount0(false, true, () -> new AssertionError("Test"));
     }
 
     /** */
+    @Test
     public void testPrimaryIndexCorruptionDuringCommitPrimaryNonColocatedThrowsUnchecked() throws Exception {
         doTestTransferAmount0(false, true, () -> new RuntimeException("Test"));
     }
 
     /** */
+    @Test
     public void testPrimaryIndexCorruptionDuringCommitPrimaryNonColocatedThrowsChecked() throws Exception {
         doTestTransferAmount0(false, true, () -> new IgniteCheckedException("Test"));
     }
 
     /** */
+    @Test
     public void testPrimaryIndexCorruptionDuringCommitBackupColocatedThrowsError() throws Exception {
         doTestTransferAmount0(true, false, () -> new AssertionError("Test"));
     }
 
     /** */
+    @Test
     public void testPrimaryIndexCorruptionDuringCommitBackupColocatedThrowsUnchecked() throws Exception {
         doTestTransferAmount0(true, false, () -> new RuntimeException("Test"));
     }
 
     /** */
+    @Test
     public void testPrimaryIndexCorruptionDuringCommitBackupColocatedThrowsChecked() throws Exception {
         doTestTransferAmount0(true, false, () -> new IgniteCheckedException("Test"));
     }
 
     /** */
+    @Test
     public void testPrimaryIndexCorruptionDuringCommitBackupNonColocatedThrowsError() throws Exception {
         doTestTransferAmount0(false, false, () -> new AssertionError("Test"));
     }
 
     /** */
+    @Test
     public void testPrimaryIndexCorruptionDuringCommitBackupNonColocatedThrowsUnchecked() throws Exception {
         doTestTransferAmount0(false, false, () -> new RuntimeException("Test"));
     }
 
     /** */
+    @Test
     public void testPrimaryIndexCorruptionDuringCommitBackupNonColocatedThrowsChecked() throws Exception {
         doTestTransferAmount0(false, false, () -> new IgniteCheckedException("Test"));
     }

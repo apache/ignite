@@ -122,6 +122,7 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFailover() throws Exception {
         grid(1).compute().execute(FailoverTestTask.class, null);
     }
@@ -129,6 +130,7 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReduce() throws Exception {
         grid(1).compute().execute(ReduceTestTask.class, null);
     }

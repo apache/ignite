@@ -34,7 +34,8 @@ public class CacheGetEntryPessimisticRepeatableReadSeltTest extends CacheGetEntr
         return TransactionIsolation.REPEATABLE_READ;
     }
 
-    @Override public void testReplicatedTransactional() throws Exception {
+    @Override @Test
+    public void testReplicatedTransactional() throws Exception {
         super.testReplicatedTransactional();
     }
 }

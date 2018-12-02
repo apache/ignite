@@ -75,6 +75,7 @@ public class TaskNodeRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTaskNodeRestart() throws Exception {
         final AtomicBoolean finished = new AtomicBoolean();
 

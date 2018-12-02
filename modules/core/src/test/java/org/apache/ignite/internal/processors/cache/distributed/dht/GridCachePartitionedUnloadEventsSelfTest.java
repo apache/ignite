@@ -89,6 +89,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testUnloadEvents() throws Exception {
         final Ignite g1 = startGrid("g1");
 

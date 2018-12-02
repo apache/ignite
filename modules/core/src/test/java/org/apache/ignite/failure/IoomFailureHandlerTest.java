@@ -96,6 +96,7 @@ public class IoomFailureHandlerTest extends AbstractFailureHandlerTest {
     /**
      * Test IgniteOutOfMemoryException handling with no store.
      */
+    @Test
     public void testIoomErrorNoStoreHandling() throws Exception {
         testIoomErrorHandling(false, false);
     }
@@ -103,6 +104,7 @@ public class IoomFailureHandlerTest extends AbstractFailureHandlerTest {
     /**
      * Test IgniteOutOfMemoryException handling with PDS.
      */
+    @Test
     public void testIoomErrorPdsHandling() throws Exception {
         testIoomErrorHandling(true, false);
     }
@@ -110,6 +112,7 @@ public class IoomFailureHandlerTest extends AbstractFailureHandlerTest {
     /**
      * Test IgniteOutOfMemoryException handling with no store.
      */
+    @Test
     public void testIoomErrorMvccNoStoreHandling() throws Exception {
         testIoomErrorHandling(false, true);
     }
@@ -117,6 +120,7 @@ public class IoomFailureHandlerTest extends AbstractFailureHandlerTest {
     /**
      * Test IgniteOutOfMemoryException handling with PDS.
      */
+    @Test
     public void testIoomErrorMvccPdsHandling() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-10185");
 
@@ -126,6 +130,7 @@ public class IoomFailureHandlerTest extends AbstractFailureHandlerTest {
     /**
      * Test IOOME handling.
      */
+    @Test
     public void testIoomErrorHandling(boolean pds, boolean mvcc) throws Exception {
         this.pds = pds;
         this.mvcc = mvcc;

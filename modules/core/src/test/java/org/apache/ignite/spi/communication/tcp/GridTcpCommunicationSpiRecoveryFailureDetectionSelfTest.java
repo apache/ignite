@@ -46,6 +46,7 @@ public class GridTcpCommunicationSpiRecoveryFailureDetectionSelfTest extends Gri
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testFailureDetectionEnabled() throws Exception {
         for (TcpCommunicationSpi spi: spis) {
             assertTrue(spi.failureDetectionTimeoutEnabled());

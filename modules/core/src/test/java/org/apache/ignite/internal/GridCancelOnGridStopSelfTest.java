@@ -53,6 +53,7 @@ public class GridCancelOnGridStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCancelingJob() throws Exception {
         cancelCall = false;
 

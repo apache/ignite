@@ -67,6 +67,7 @@ public class IgniteCacheGetCustomCollectionsSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGet() throws Exception {
         startGrids(3);
 

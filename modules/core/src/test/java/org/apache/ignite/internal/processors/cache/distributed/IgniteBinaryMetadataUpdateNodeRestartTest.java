@@ -81,7 +81,7 @@ public class IgniteBinaryMetadataUpdateNodeRestartTest extends GridCommonAbstrac
 
         CacheConfiguration ccfg1 = cacheConfiguration(TX_CACHE, TRANSACTIONAL);
         CacheConfiguration ccfg2 = cacheConfiguration(ATOMIC_CACHE, ATOMIC);
-        
+
         cfg.setCacheConfiguration(ccfg1, ccfg2);
 
         cfg.setClientMode(client);
@@ -121,6 +121,7 @@ public class IgniteBinaryMetadataUpdateNodeRestartTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeRestart() throws Exception {
         for (int i = 0; i < 10; i++) {
             log.info("Iteration: " + i);

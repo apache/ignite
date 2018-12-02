@@ -29,6 +29,7 @@ public class SqlParserTransactionalKeywordsSelfTest extends SqlParserAbstractSel
     /**
      * Test parsing of different forms of BEGIN/START.
      */
+    @Test
     public void testBegin() {
         assertBegin("begin");
         assertBegin("BEGIN");
@@ -44,6 +45,7 @@ public class SqlParserTransactionalKeywordsSelfTest extends SqlParserAbstractSel
     /**
      * Test parsing of different forms of COMMIT.
      */
+    @Test
     public void testCommit() {
         assertCommit("commit");
         assertCommit("COMMIT transaction");
@@ -54,6 +56,7 @@ public class SqlParserTransactionalKeywordsSelfTest extends SqlParserAbstractSel
     /**
      * Test parsing of different forms of ROLLBACK.
      */
+    @Test
     public void testRollback() {
         assertRollback("rollback");
         assertRollback("ROLLBACK transaction");

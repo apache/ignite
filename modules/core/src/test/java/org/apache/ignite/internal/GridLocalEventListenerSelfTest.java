@@ -67,6 +67,7 @@ public class GridLocalEventListenerSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testListener() throws Exception {
         startGrids(2);
 

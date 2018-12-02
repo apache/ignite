@@ -75,13 +75,15 @@ public class GridNioSslSelfTest extends GridNioSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override public void testWriteTimeout() throws Exception {
+    @Override @Test
+    public void testWriteTimeout() throws Exception {
         // Skip base test because it enables "skipWrite" mode in the GridNioServer
         // which makes SSL handshake impossible.
     }
 
     /** {@inheritDoc} */
-    @Override public void testAsyncSendReceive() throws Exception {
+    @Override @Test
+    public void testAsyncSendReceive() throws Exception {
         // No-op, do not want to mess with SSL channel.
     }
 }

@@ -69,6 +69,7 @@ public class CacheEntryProcessorCopySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMutableEntryWithP2PEnabled() throws Exception {
         doTestMutableEntry(true);
     }
@@ -76,6 +77,7 @@ public class CacheEntryProcessorCopySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMutableEntryWithP2PDisabled() throws Exception {
         doTestMutableEntry(false);
     }

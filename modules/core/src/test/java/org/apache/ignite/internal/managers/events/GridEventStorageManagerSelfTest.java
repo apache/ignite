@@ -60,6 +60,7 @@ public class GridEventStorageManagerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWaitForEvent() throws Exception {
         Ignite ignite = grid();
 
@@ -92,6 +93,7 @@ public class GridEventStorageManagerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWaitForEventContinuationTimeout() throws Exception {
         Ignite ignite = grid();
 
@@ -111,6 +113,7 @@ public class GridEventStorageManagerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUserEvent() throws Exception {
         Ignite ignite = grid();
 

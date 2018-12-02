@@ -64,6 +64,7 @@ public class GridCacheReplicatedPreloadStartStopEventsSelfTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartStopEvents() throws Exception {
         Ignite ignite = startGrid(0);
 

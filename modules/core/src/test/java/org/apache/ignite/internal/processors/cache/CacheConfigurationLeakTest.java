@@ -60,6 +60,7 @@ public class CacheConfigurationLeakTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheCreateLeak() throws Exception {
         final Ignite ignite = grid();
 

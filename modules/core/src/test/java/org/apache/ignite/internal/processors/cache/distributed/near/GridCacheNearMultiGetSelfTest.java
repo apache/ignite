@@ -125,102 +125,121 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOptimisticReadCommittedNoPut() throws Exception {
         checkDoubleGet(OPTIMISTIC, READ_COMMITTED, false);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOptimisticReadCommittedWithPut() throws Exception {
         checkDoubleGet(OPTIMISTIC, READ_COMMITTED, true);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOptimisticReadCommitted() throws Exception {
         checkDoubleGet(OPTIMISTIC, READ_COMMITTED, false);
         checkDoubleGet(OPTIMISTIC, READ_COMMITTED, true);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOptimisticRepeatableReadNoPut() throws Exception {
         checkDoubleGet(OPTIMISTIC, REPEATABLE_READ, false);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOptimisticRepeatableReadWithPut() throws Exception {
         checkDoubleGet(OPTIMISTIC, REPEATABLE_READ, true);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOptimisticRepeatableRead() throws Exception {
         checkDoubleGet(OPTIMISTIC, REPEATABLE_READ, false);
         checkDoubleGet(OPTIMISTIC, REPEATABLE_READ, true);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOptimisticSerializableNoPut() throws Exception {
         checkDoubleGet(OPTIMISTIC, SERIALIZABLE, false);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOptimisticSerializableWithPut() throws Exception {
         checkDoubleGet(OPTIMISTIC, SERIALIZABLE, true);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOptimisticSerializable() throws Exception {
         checkDoubleGet(OPTIMISTIC, SERIALIZABLE, false);
         checkDoubleGet(OPTIMISTIC, SERIALIZABLE, true);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPessimisticReadCommittedNoPut() throws Exception {
         checkDoubleGet(PESSIMISTIC, READ_COMMITTED, false);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPessimisticReadCommittedWithPut() throws Exception {
         checkDoubleGet(PESSIMISTIC, READ_COMMITTED, true);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPessimisticReadCommitted() throws Exception {
         checkDoubleGet(PESSIMISTIC, READ_COMMITTED, false);
         checkDoubleGet(PESSIMISTIC, READ_COMMITTED, true);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPessimisticRepeatableReadNoPut() throws Exception {
         checkDoubleGet(PESSIMISTIC, REPEATABLE_READ, false);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPessimisticRepeatableReadWithPut() throws Exception {
         checkDoubleGet(PESSIMISTIC, REPEATABLE_READ, true);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPessimisticRepeatableRead() throws Exception {
         checkDoubleGet(PESSIMISTIC, REPEATABLE_READ, false);
         checkDoubleGet(PESSIMISTIC, REPEATABLE_READ, true);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPessimisticSerializableNoPut() throws Exception {
         checkDoubleGet(PESSIMISTIC, SERIALIZABLE, false);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPessimisticSerializableWithPut() throws Exception {
         checkDoubleGet(PESSIMISTIC, SERIALIZABLE, true);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPessimisticSerializable() throws Exception {
         checkDoubleGet(PESSIMISTIC, SERIALIZABLE, false);
         checkDoubleGet(PESSIMISTIC, SERIALIZABLE, true);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testMvccPessimisticRepeatableReadNoPut() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-7187");
 
@@ -230,6 +249,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testMvccPessimisticRepeatableReadWithPut() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-7187");
 

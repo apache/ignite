@@ -82,6 +82,7 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheMapEntry() throws Exception {
         checkCacheMapEntry(ATOMIC, LOCAL, GridLocalCacheEntry.class);
 

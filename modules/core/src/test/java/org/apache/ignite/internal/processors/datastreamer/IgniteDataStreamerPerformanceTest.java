@@ -115,6 +115,7 @@ public class IgniteDataStreamerPerformanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPerformance() throws Exception {
         doTest();
     }

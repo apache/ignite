@@ -100,6 +100,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddDataFromMap() throws Exception {
         try {
             binaries = false;
@@ -148,6 +149,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddMissingBinary() throws Exception {
         try {
             binaries = true;
@@ -183,6 +185,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddBinaryDataFromMap() throws Exception {
         try {
             binaries = true;
@@ -242,6 +245,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddBinaryCreatedWithBuilder() throws Exception {
         try {
             binaries = true;

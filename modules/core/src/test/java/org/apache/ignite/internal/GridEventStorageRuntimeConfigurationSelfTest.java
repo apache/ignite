@@ -61,6 +61,7 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEnableWithDefaults() throws Exception {
         inclEvtTypes = null;
 
@@ -95,6 +96,7 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEnableWithIncludes() throws Exception {
         inclEvtTypes = new int[] { EVT_TASK_STARTED, EVT_TASK_FINISHED };
 
@@ -129,6 +131,7 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDisableWithIncludes() throws Exception {
         inclEvtTypes = null;
 
@@ -165,6 +168,7 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEnableDisable() throws Exception {
         inclEvtTypes = null;
 
@@ -188,6 +192,7 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvalidTypes() throws Exception {
         inclEvtTypes = new int[]{EVT_TASK_STARTED};
 
@@ -223,6 +228,7 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetters() throws Exception {
         inclEvtTypes = new int[]{EVT_TASK_STARTED, EVT_TASK_FINISHED, 30000};
 

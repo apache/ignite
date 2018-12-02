@@ -62,6 +62,7 @@ public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFailoverTask() throws Exception {
         isFailoverCalled = false;
 
@@ -85,6 +86,7 @@ public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoneFailoverTask() throws Exception {
         isFailoverCalled = false;
 

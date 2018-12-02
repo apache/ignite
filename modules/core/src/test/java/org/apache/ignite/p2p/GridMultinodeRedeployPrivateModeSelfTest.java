@@ -31,6 +31,7 @@ public class GridMultinodeRedeployPrivateModeSelfTest extends GridAbstractMultin
      *
      * @throws Throwable if error occur.
      */
+    @Test
     public void testPrivateMode() throws Throwable {
         processTest(PRIVATE);
     }

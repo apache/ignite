@@ -213,6 +213,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testMetrics() throws Exception {
         IgniteFileSystem fs = igfsPrimary[0];
 
@@ -353,6 +354,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testMultipleClose() throws Exception {
         IgniteFileSystem fs = igfsPrimary[0];
 
@@ -378,6 +380,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings({"ResultOfMethodCallIgnored", "ConstantConditions"})
+    @Test
     public void testBlockMetrics() throws Exception {
         IgfsEx igfs = (IgfsEx)igfsPrimary[0];
 

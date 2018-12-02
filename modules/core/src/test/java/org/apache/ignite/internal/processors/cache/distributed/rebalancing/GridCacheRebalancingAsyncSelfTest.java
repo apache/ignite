@@ -43,6 +43,7 @@ public class GridCacheRebalancingAsyncSelfTest extends GridCacheRebalancingSyncS
     /**
      * @throws Exception Exception.
      */
+    @Test
     public void testNodeFailedAtRebalancing() throws Exception {
         IgniteEx ignite = startGrid(0);
 

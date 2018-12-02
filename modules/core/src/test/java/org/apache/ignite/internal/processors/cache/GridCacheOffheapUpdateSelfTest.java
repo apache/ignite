@@ -56,6 +56,7 @@ public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateInPessimisticTxOnRemoteNode() throws Exception {
         try {
             Ignite ignite = startGrids(2);
@@ -99,6 +100,7 @@ public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadEvictedPartition() throws Exception {
         try {
             Ignite grid = startGrid(0);

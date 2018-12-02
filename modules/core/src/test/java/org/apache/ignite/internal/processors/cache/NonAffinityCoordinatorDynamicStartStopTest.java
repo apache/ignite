@@ -98,6 +98,7 @@ public class NonAffinityCoordinatorDynamicStartStopTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartStop() throws Exception {
         startGrids(2);
 

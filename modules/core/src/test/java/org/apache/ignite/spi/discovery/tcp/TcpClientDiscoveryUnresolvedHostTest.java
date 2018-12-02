@@ -58,6 +58,7 @@ public class TcpClientDiscoveryUnresolvedHostTest extends GridCommonAbstractTest
      *
      * @throws Exception in case of error.
      */
+    @Test
     public void test() throws Exception {
         try {
             startGrid(0);

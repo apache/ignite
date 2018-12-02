@@ -172,6 +172,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testMultiThreadedClientsRestart() throws Exception {
         final AtomicBoolean done = new AtomicBoolean();
 
@@ -220,6 +221,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testMultiThreadedClientsServersRestart() throws Throwable {
         fail("https://issues.apache.org/jira/browse/IGNITE-1123");
 
@@ -229,6 +231,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testMultiThreadedServersRestart() throws Throwable {
         fail("https://issues.apache.org/jira/browse/IGNITE-1123");
 
@@ -426,6 +429,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testTopologyVersion() throws Exception {
         clientFlagGlobal = false;
 
@@ -450,6 +454,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testMultipleStartOnCoordinatorStop() throws Exception{
         for (int k = 0; k < 3; k++) {
             log.info("Iteration: " + k);
@@ -499,6 +504,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCustomEventOnJoinCoordinatorStop() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-10198");
 
@@ -597,6 +603,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientContinuousQueryCoordinatorStop() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-10198");
 
@@ -668,6 +675,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCustomEventNodeRestart() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-10249");
 

@@ -107,6 +107,7 @@ public abstract class AffinityFunctionExcludeNeighborsAbstractSelfTest extends G
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityMultiNode() throws Exception {
         int grids = 9;
 
@@ -158,6 +159,7 @@ public abstract class AffinityFunctionExcludeNeighborsAbstractSelfTest extends G
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinitySingleNode() throws Exception {
         Ignite g = startGrid();
 

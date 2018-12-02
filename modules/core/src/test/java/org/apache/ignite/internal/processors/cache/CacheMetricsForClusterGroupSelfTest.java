@@ -75,6 +75,7 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
     /**
      * Test cluster group metrics in case of statistics enabled.
      */
+    @Test
     public void testMetricsStatisticsEnabled() throws Exception {
         startGrids();
 
@@ -110,6 +111,7 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMetricsStatisticsDisabled() throws Exception {
         startGrids();
 
@@ -143,6 +145,7 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
     /**
      * Tests that only local metrics are updating if discovery updates disabled.
      */
+    @Test
     public void testMetricsDiscoveryUpdatesDisabled() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE, "true");
 

@@ -79,6 +79,7 @@ public class DataStreamerTimeoutTest extends GridCommonAbstractTest {
      * Test timeout on {@code DataStreamer.addData()} method
      * @throws Exception If fail.
      */
+    @Test
     public void testTimeoutOnCloseMethod() throws Exception {
         failOn = 1;
 
@@ -109,6 +110,7 @@ public class DataStreamerTimeoutTest extends GridCommonAbstractTest {
      *
      * @throws Exception If fail.
      */
+    @Test
     public void testTimeoutOnAddData() throws Exception {
         failOn = 1;
 

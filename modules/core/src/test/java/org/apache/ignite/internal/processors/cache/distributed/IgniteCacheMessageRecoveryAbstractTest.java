@@ -107,6 +107,7 @@ public abstract class IgniteCacheMessageRecoveryAbstractTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMessageRecovery() throws Exception {
         final Ignite ignite = grid(0);
 

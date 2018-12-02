@@ -34,6 +34,7 @@ public class GridSnapshotLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSyncConsistent() throws Exception {
         final AtomicBoolean stop = new AtomicBoolean();
 

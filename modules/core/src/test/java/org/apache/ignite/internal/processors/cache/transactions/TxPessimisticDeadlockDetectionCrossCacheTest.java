@@ -75,6 +75,7 @@ public class TxPessimisticDeadlockDetectionCrossCacheTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlockNoNear() throws Exception {
         doTestDeadlock(false, false);
     }
@@ -82,6 +83,7 @@ public class TxPessimisticDeadlockDetectionCrossCacheTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlockOneNear() throws Exception {
         doTestDeadlock(false, true);
     }
@@ -89,6 +91,7 @@ public class TxPessimisticDeadlockDetectionCrossCacheTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlockAnotherNear() throws Exception {
         doTestDeadlock(true, false);
         doTestDeadlock(false, true);
@@ -97,6 +100,7 @@ public class TxPessimisticDeadlockDetectionCrossCacheTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlockBothNear() throws Exception {
         doTestDeadlock(true, true);
     }

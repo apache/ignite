@@ -94,6 +94,7 @@ public class LruNearOnlyNearEvictionPolicySelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedAtomicNearEvictionMaxSize() throws Exception {
         atomicityMode = ATOMIC;
         cacheMode = PARTITIONED;
@@ -104,6 +105,7 @@ public class LruNearOnlyNearEvictionPolicySelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedTransactionalNearEvictionMaxSize() throws Exception {
         atomicityMode = TRANSACTIONAL;
         cacheMode = PARTITIONED;
@@ -114,6 +116,7 @@ public class LruNearOnlyNearEvictionPolicySelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedAtomicNearEvictionMaxSize() throws Exception {
         atomicityMode = ATOMIC;
         cacheMode = REPLICATED;
@@ -124,6 +127,7 @@ public class LruNearOnlyNearEvictionPolicySelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedTransactionalNearEvictionMaxSize() throws Exception {
         atomicityMode = TRANSACTIONAL;
         cacheMode = REPLICATED;

@@ -103,6 +103,7 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSizeBasedDefaultConverter() throws Exception {
         test(null, null, new Runnable() {
             @Override public void run() {
@@ -131,6 +132,7 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleEntriesFromOneMessage() throws Exception {
         test(null, null, new Runnable() {
             @Override public void run() {
@@ -162,6 +164,7 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSizeBasedCustomConverter() throws Exception {
         SocketMessageConverter<Message> converter = new SocketMessageConverter<Message>() {
             @Override public Message convert(byte[] msg) {
@@ -201,6 +204,7 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDelimiterBasedDefaultConverter() throws Exception {
         test(null, DELIM, new Runnable() {
             @Override public void run() {
@@ -226,6 +230,7 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDelimiterBasedCustomConverter() throws Exception {
         SocketMessageConverter<Message> converter = new SocketMessageConverter<Message>() {
             @Override public Message convert(byte[] msg) {
@@ -263,8 +268,8 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
      * @param converter Converter.
      * @param r Runnable..
      */
-    private void test(@Nullable SocketMessageConverter<Message> converter, 
-        @Nullable byte[] delim, 
+    private void test(@Nullable SocketMessageConverter<Message> converter,
+        @Nullable byte[] delim,
         Runnable r,
         boolean oneMessagePerTuple) throws Exception {
         SocketStreamer<Message, Integer, String> sockStmr = null;

@@ -92,6 +92,7 @@ public class IgniteBinaryMetadataUpdateChangingTopologySelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoDeadlockOptimistic() throws Exception {
         int key1 = primaryKey(ignite(1).cache("cache"));
         int key2 = primaryKey(ignite(2).cache("cache"));
@@ -131,6 +132,7 @@ public class IgniteBinaryMetadataUpdateChangingTopologySelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoDeadlockInvoke() throws Exception {
         int key1 = primaryKey(ignite(1).cache("cache"));
         int key2 = primaryKey(ignite(2).cache("cache"));

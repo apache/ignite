@@ -130,6 +130,7 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
      *
      * @throws Exception if fail.
      */
+    @Test
     public void testReactivateGridBeforeResetLostPartitions() throws Exception {
         doRebalanceAfterPartitionsWereLost(true);
     }
@@ -139,6 +140,7 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
      *
      * @throws Exception if fail.
      */
+    @Test
     public void testResetLostPartitions() throws Exception {
         doRebalanceAfterPartitionsWereLost(false);
     }

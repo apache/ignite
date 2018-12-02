@@ -39,6 +39,7 @@ public class GridCacheNearAtomicMetricsSelfTest extends GridCacheNearMetricsSelf
     /**
      * Checks that enabled near cache does not affect metrics.
      */
+    @Test
     public void testNearCachePutRemoveGetMetrics() {
         IgniteEx initiator = grid(0);
 

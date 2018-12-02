@@ -100,6 +100,7 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case of fail
      */
+    @Test
     public void testErrorOnFlushByTimeout() throws Exception {
         flushByTimeout = true;
         flushingErrorTest();
@@ -110,6 +111,7 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case of fail
      */
+    @Test
     public void testErrorOnDirectFlush() throws Exception {
         flushByTimeout = false;
         flushingErrorTest();

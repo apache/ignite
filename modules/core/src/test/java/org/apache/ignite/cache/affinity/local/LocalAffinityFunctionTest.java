@@ -61,6 +61,7 @@ public class LocalAffinityFunctionTest extends GridCommonAbstractTest {
         startGrids(NODE_CNT);
     }
 
+    @Test
     public void testWronglySetAffinityFunctionForLocalCache() {
         Ignite node = ignite(NODE_CNT - 1);
 

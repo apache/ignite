@@ -70,6 +70,7 @@ public class IgniteDynamicCacheWithConfigStartSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartCacheOnClient() throws Exception {
         int srvCnt = 3;
 

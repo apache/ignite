@@ -96,6 +96,7 @@ public class GridCacheEvictionLockUnlockSelfTest extends GridCommonAbstractTest 
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testLocal() throws Exception {
         mode = LOCAL;
         gridCnt = 1;
@@ -104,6 +105,7 @@ public class GridCacheEvictionLockUnlockSelfTest extends GridCommonAbstractTest 
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testReplicated() throws Exception {
         mode = REPLICATED;
         gridCnt = 3;
@@ -112,6 +114,7 @@ public class GridCacheEvictionLockUnlockSelfTest extends GridCommonAbstractTest 
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPartitioned() throws Exception {
         mode = PARTITIONED;
         gridCnt = 3;

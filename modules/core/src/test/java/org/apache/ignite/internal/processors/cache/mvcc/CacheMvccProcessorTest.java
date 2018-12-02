@@ -37,6 +37,7 @@ public class CacheMvccProcessorTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTreeWithPersistence() throws Exception {
         persistence = true;
 
@@ -46,6 +47,7 @@ public class CacheMvccProcessorTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTreeWithoutPersistence() throws Exception {
         persistence = false;
 

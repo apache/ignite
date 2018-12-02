@@ -189,6 +189,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testMultiNearAndPrimary() throws Exception {
 //        resetLog4j(Level.INFO, true, GridCacheTxManager.class.getName());
 
@@ -204,6 +205,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOneNearAndPrimary() throws Exception {
 //        resetLog4j(Level.INFO, true, GridCacheTxManager.class.getName());
 
@@ -519,6 +521,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testMultiNearAndPrimaryMultiNode() throws Exception {
         int gridCnt = 4;
 
@@ -528,6 +531,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOneNearAndPrimaryMultiNode() throws Exception {
         int gridCnt = 2;
 

@@ -31,6 +31,7 @@ public abstract class CacheStoreUsageMultinodeStaticStartAbstractTest extends Ca
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStaticConfiguration() throws Exception {
         checkStoreUpdateStaticConfig(true);
     }
@@ -38,6 +39,7 @@ public abstract class CacheStoreUsageMultinodeStaticStartAbstractTest extends Ca
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStaticConfigurationNearEnabled() throws Exception {
         nearCache = true;
 
@@ -47,6 +49,7 @@ public abstract class CacheStoreUsageMultinodeStaticStartAbstractTest extends Ca
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStaticConfigurationLocalStore() throws Exception {
         locStore = true;
 
@@ -56,6 +59,7 @@ public abstract class CacheStoreUsageMultinodeStaticStartAbstractTest extends Ca
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStaticConfigurationLocalStoreNearEnabled() throws Exception {
         locStore = true;
 
@@ -67,6 +71,7 @@ public abstract class CacheStoreUsageMultinodeStaticStartAbstractTest extends Ca
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStaticConfigurationTxLocalStoreNoClientStore() throws Exception {
         locStore = true;
 
@@ -76,6 +81,7 @@ public abstract class CacheStoreUsageMultinodeStaticStartAbstractTest extends Ca
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStaticConfigurationTxLocalStoreNoClientStoreNearEnabled() throws Exception {
         locStore = true;
 
@@ -87,6 +93,7 @@ public abstract class CacheStoreUsageMultinodeStaticStartAbstractTest extends Ca
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStaticConfigurationTxWriteBehindStore() throws Exception {
         writeBehind = true;
 
@@ -96,6 +103,7 @@ public abstract class CacheStoreUsageMultinodeStaticStartAbstractTest extends Ca
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStaticConfigurationTxWriteBehindStoreNearEnabled() throws Exception {
         writeBehind = true;
 
@@ -107,6 +115,7 @@ public abstract class CacheStoreUsageMultinodeStaticStartAbstractTest extends Ca
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStaticConfigurationTxWriteBehindStoreNoClientStore() throws Exception {
         writeBehind = true;
 
@@ -116,6 +125,7 @@ public abstract class CacheStoreUsageMultinodeStaticStartAbstractTest extends Ca
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStaticConfigurationTxWriteBehindStoreNoClientStoreNearEnabled() throws Exception {
         writeBehind = true;
 

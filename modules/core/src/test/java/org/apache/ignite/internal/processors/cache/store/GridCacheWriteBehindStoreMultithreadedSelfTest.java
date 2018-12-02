@@ -33,6 +33,7 @@ public class GridCacheWriteBehindStoreMultithreadedSelfTest extends GridCacheWri
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetRemoveWithCoalescing() throws Exception {
         testPutGetRemove(true);
     }
@@ -42,6 +43,7 @@ public class GridCacheWriteBehindStoreMultithreadedSelfTest extends GridCacheWri
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetRemoveWithoutCoalescing() throws Exception {
         testPutGetRemove(false);
     }
@@ -86,6 +88,7 @@ public class GridCacheWriteBehindStoreMultithreadedSelfTest extends GridCacheWri
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testStoreFailureWithCoalescing() throws Exception {
         testStoreFailure(true);
     }
@@ -95,6 +98,7 @@ public class GridCacheWriteBehindStoreMultithreadedSelfTest extends GridCacheWri
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testStoreFailureWithoutCoalescing() throws Exception {
         testStoreFailure(false);
     }
@@ -162,6 +166,7 @@ public class GridCacheWriteBehindStoreMultithreadedSelfTest extends GridCacheWri
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testFlushFromTheSameThreadWithCoalescing() throws Exception {
         testFlushFromTheSameThread(true);
     }
@@ -172,6 +177,7 @@ public class GridCacheWriteBehindStoreMultithreadedSelfTest extends GridCacheWri
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testFlushFromTheSameThreadWithoutCoalescing() throws Exception {
         testFlushFromTheSameThread(false);
     }

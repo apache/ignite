@@ -72,6 +72,7 @@ public class TcpDiscoveryMarshallerCheckSelfTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMarshallerInConsistency() throws Exception {
         sameMarsh = false;
 
@@ -93,6 +94,7 @@ public class TcpDiscoveryMarshallerCheckSelfTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMarshallerConsistency() throws Exception {
         sameMarsh = true;
 

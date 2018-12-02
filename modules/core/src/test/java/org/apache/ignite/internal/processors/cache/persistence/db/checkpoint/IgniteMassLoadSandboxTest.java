@@ -173,6 +173,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testContinuousPutMultithreaded() throws Exception {
         try {
             // System.setProperty(IgniteSystemProperties.IGNITE_DIRTY_PAGES_PARALLEL, "true");
@@ -233,6 +234,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testDataStreamerContinuousPutMultithreaded() throws Exception {
         try {
             // System.setProperty(IgniteSystemProperties.IGNITE_DIRTY_PAGES_PARALLEL, "true");
@@ -309,6 +311,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testCoveredWalLogged() throws Exception {
         GridStringLogger log0 = null;
 
@@ -484,6 +487,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testPutRemoveMultithreaded() throws Exception {
         setWalArchAndWorkToSameVal = false;
         customWalMode = WALMode.LOG_ONLY;

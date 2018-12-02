@@ -37,6 +37,7 @@ public class FailureHandlerTriggeredTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFailureHandlerTriggeredOnExchangeWorkerTermination() throws Exception {
         try {
             CountDownLatch latch = new CountDownLatch(1);

@@ -111,6 +111,7 @@ public abstract class GridCacheBinaryObjectsAbstractDataStreamerSelfTest extends
      * @throws Exception If failed.
      */
     @SuppressWarnings("BusyWait")
+    @Test
     public void testGetPut() throws Exception {
         final AtomicBoolean flag = new AtomicBoolean();
 

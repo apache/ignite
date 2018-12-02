@@ -36,6 +36,7 @@ public class GridSpinReadWriteLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testWriteLockReentry() throws Exception {
         GridSpinReadWriteLock lock = new GridSpinReadWriteLock();
 
@@ -51,6 +52,7 @@ public class GridSpinReadWriteLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testReadLockReentry() throws Exception {
         final GridSpinReadWriteLock lock = new GridSpinReadWriteLock();
 
@@ -93,6 +95,7 @@ public class GridSpinReadWriteLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testLockDowngrade() throws Exception {
         GridSpinReadWriteLock lock = new GridSpinReadWriteLock();
 
@@ -124,6 +127,7 @@ public class GridSpinReadWriteLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testMonitorState() throws Exception {
         GridSpinReadWriteLock lock = new GridSpinReadWriteLock();
 

@@ -75,6 +75,7 @@ public class IgniteMarshallerCacheConcurrentReadWriteTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentReadWrite() throws Exception {
         Ignite ignite = startGrid(0);
 

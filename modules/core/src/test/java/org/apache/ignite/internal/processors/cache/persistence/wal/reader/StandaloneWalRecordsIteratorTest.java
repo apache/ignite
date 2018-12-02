@@ -131,6 +131,7 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
      *
      * @throws Exception if test failed.
      */
+    @Test
     public void testCorrectClosingFileDescriptors() throws Exception {
 
         // Iterate by all archived WAL segments.
@@ -147,6 +148,7 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
      *
      * @throws Exception if test failed.
      */
+    @Test
     public void testStrictBounds() throws Exception {
         String dir = createWalFiles();
 

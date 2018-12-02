@@ -42,6 +42,7 @@ public class CacheDeferredDeleteSanitySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fails.
      */
+    @Test
     public void testDeferredDelete() throws Exception {
         testDeferredDelete(LOCAL, ATOMIC, false, false);
         testDeferredDelete(LOCAL, TRANSACTIONAL, false, false);

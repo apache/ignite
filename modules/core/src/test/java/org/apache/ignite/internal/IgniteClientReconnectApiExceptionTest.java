@@ -84,6 +84,7 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testErrorOnDisconnect() throws Exception {
         // Check cache operations.
         cacheOperationsTest();

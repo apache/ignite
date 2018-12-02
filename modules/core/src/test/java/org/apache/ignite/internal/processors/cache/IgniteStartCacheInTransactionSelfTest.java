@@ -90,6 +90,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartCache() throws Exception {
         final Ignite ignite = grid(0);
 
@@ -116,6 +117,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartConfigurationCache() throws Exception {
         final Ignite ignite = grid(0);
 
@@ -142,6 +144,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartConfigurationCacheWithNear() throws Exception {
         final Ignite ignite = grid(0);
 
@@ -168,6 +171,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetOrCreateCache() throws Exception {
         final Ignite ignite = grid(0);
 
@@ -194,6 +198,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetOrCreateCacheConfiguration() throws Exception {
         final Ignite ignite = grid(0);
 
@@ -220,6 +225,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopCache() throws Exception {
         final Ignite ignite = grid(0);
 
@@ -246,6 +252,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockCache() throws Exception {
         if (atomicityMode() != TRANSACTIONAL)
             return;

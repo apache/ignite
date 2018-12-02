@@ -30,6 +30,7 @@ public class IgniteReflectionFactorySelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testByteMethod() throws Exception {
         byte    expByteVal    = 42;
         short   expShortVal   = 42;

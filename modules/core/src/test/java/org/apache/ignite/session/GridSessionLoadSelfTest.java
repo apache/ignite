@@ -82,6 +82,7 @@ public class GridSessionLoadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSessionLoad() throws Exception {
         locMarsh = true;
 
@@ -91,6 +92,7 @@ public class GridSessionLoadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSessionLoadNoLocalMarshalling() throws Exception {
         locMarsh = false;
 

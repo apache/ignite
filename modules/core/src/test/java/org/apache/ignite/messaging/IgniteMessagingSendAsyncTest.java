@@ -75,6 +75,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSendDefaultMode() throws Exception {
         Ignite ignite1 = startGrid(1);
 
@@ -91,6 +92,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSendAsyncMode() throws Exception {
         Ignite ignite1 = startGrid(1);
 
@@ -107,6 +109,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSendDefaultMode2Nodes() throws Exception {
         Ignite ignite1 = startGrid(1);
         Ignite ignite2 = startGrid(2);
@@ -124,6 +127,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSendAsyncMode2Node() throws Exception {
         Ignite ignite1 = startGrid(1);
         Ignite ignite2 = startGrid(2);
@@ -141,6 +145,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSendOrderedDefaultMode() throws Exception {
         Ignite ignite1 = startGrid(1);
 
@@ -159,6 +164,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSendOrderedDefaultMode2Node() throws Exception {
         Ignite ignite1 = startGrid(1);
         Ignite ignite2 = startGrid(2);
@@ -176,6 +182,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSendOrderedDefaultModeMultiThreads() throws Exception {
         Ignite ignite = startGrid(1);
 
@@ -185,6 +192,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSendOrderedDefaultModeMultiThreadsWith2Node() throws Exception {
         Ignite ignite1 = startGrid(1);
         Ignite ignite2 = startGrid(2);

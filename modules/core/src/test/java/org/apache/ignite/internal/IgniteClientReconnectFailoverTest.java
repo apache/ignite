@@ -75,6 +75,7 @@ public class IgniteClientReconnectFailoverTest extends IgniteClientReconnectFail
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectAtomicCache() throws Exception {
         final Ignite client = grid(serverCount());
 
@@ -114,6 +115,7 @@ public class IgniteClientReconnectFailoverTest extends IgniteClientReconnectFail
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectTxCache() throws Exception {
         final Ignite client = grid(serverCount());
 
@@ -181,6 +183,7 @@ public class IgniteClientReconnectFailoverTest extends IgniteClientReconnectFail
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectComputeApi() throws Exception {
         final Ignite client = grid(serverCount());
 
@@ -200,6 +203,7 @@ public class IgniteClientReconnectFailoverTest extends IgniteClientReconnectFail
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectStreamerApi() throws Exception {
         final Ignite client = grid(serverCount());
 

@@ -102,6 +102,7 @@ public class LocalWacModeNoChangeDuringRebalanceOnNonNodeAssignTest extends Grid
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void test() throws Exception {
         Ignite ig = startGrids(NODES);
 

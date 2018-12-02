@@ -29,6 +29,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
     /** */
+    @Test
     public void testBuffers() {
         ByteBuffer b1 = GridUnsafe.allocateBuffer(10);
         ByteBuffer b2 = GridUnsafe.allocateBuffer(20);
@@ -64,6 +65,7 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBytes() throws Exception {
         GridUnsafeMemory mem = new GridUnsafeMemory(64);
 
@@ -90,6 +92,7 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testByte() throws Exception {
         GridUnsafeMemory mem = new GridUnsafeMemory(64);
 
@@ -120,6 +123,7 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testShort() throws Exception {
         GridUnsafeMemory mem = new GridUnsafeMemory(64);
 
@@ -142,6 +146,7 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testFloat() {
         GridUnsafeMemory mem = new GridUnsafeMemory(64);
 
@@ -164,6 +169,7 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testDouble() {
         GridUnsafeMemory mem = new GridUnsafeMemory(64);
 
@@ -187,6 +193,7 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInt() throws Exception {
         GridUnsafeMemory mem = new GridUnsafeMemory(64);
 
@@ -223,6 +230,7 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLong() throws Exception {
         GridUnsafeMemory mem = new GridUnsafeMemory(64);
 
@@ -258,6 +266,7 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCompare1() throws Exception {
         checkCompare("123");
     }
@@ -265,6 +274,7 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCompare2() throws Exception {
         checkCompare("1234567890");
     }
@@ -272,6 +282,7 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCompare3() throws Exception {
         checkCompare("12345678901234567890");
     }
@@ -310,6 +321,7 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOutOfMemory() throws Exception {
         int cap = 64;
         int block = 9;

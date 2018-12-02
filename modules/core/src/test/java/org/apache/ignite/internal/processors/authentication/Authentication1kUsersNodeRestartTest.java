@@ -93,6 +93,7 @@ public class Authentication1kUsersNodeRestartTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void test1kUsersNodeRestartServer() throws Exception {
         startGrid(0);
 

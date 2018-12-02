@@ -158,6 +158,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception In case of exception.
      */
+    @Test
     public void testCreateFile() throws Exception {
         IgfsPath path = new IgfsPath("/asdf");
 
@@ -171,6 +172,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateFileColocated() throws Exception {
         IgfsPath path = new IgfsPath("/colocated");
 
@@ -209,6 +211,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateFileFragmented() throws Exception {
         IgfsEx impl = (IgfsEx)grid(0).fileSystem("igfs");
         String metaCacheName = grid(0).igfsx("igfs").configuration().getMetaCacheConfiguration().getName();

@@ -76,6 +76,7 @@ public class IgniteCacheClientNodeConcurrentStart extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentStart() throws Exception {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 

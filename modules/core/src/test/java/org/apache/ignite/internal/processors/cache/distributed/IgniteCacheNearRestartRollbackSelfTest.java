@@ -128,6 +128,7 @@ public class IgniteCacheNearRestartRollbackSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestarts() throws Exception {
         startGrids(4);
 

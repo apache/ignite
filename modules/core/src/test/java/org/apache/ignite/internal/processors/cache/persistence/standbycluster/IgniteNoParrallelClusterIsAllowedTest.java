@@ -32,6 +32,7 @@ public class IgniteNoParrallelClusterIsAllowedTest extends IgniteChangeGlobalSta
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testSimple() throws Exception {
         startPrimaryNodes(primaryNodes());
 

@@ -122,6 +122,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllPrimaryFailure1() throws Exception {
         putAllPrimaryFailure(true, false);
     }
@@ -129,6 +130,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllPrimaryFailure1_UnstableTopology() throws Exception {
         blockRebalance = true;
 
@@ -138,6 +140,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllPrimaryFailure2() throws Exception {
         putAllPrimaryFailure(true, true);
     }
@@ -145,6 +148,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllPrimaryFailure2_UnstableTopology() throws Exception {
         blockRebalance = true;
 
@@ -214,6 +218,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllBackupFailure1() throws Exception {
         putAllBackupFailure1();
     }
@@ -221,6 +226,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllBackupFailure1_UnstableTopology() throws Exception {
         blockRebalance = true;
 
@@ -275,6 +281,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutBackupFailure1() throws Exception {
         putBackupFailure1();
     }
@@ -282,6 +289,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutBackupFailure1_UnstableTopology() throws Exception {
         blockRebalance = true;
 
@@ -331,6 +339,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFullAsyncPutRemap() throws Exception {
         fullAsyncRemap(false);
     }
@@ -338,6 +347,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFullAsyncPutAllRemap() throws Exception {
         fullAsyncRemap(true);
     }
@@ -406,6 +416,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutPrimarySync() throws Exception {
         startGrids(2);
 
@@ -448,6 +459,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutNearNodeFailure() throws Exception {
         startGrids(2);
 
@@ -485,6 +497,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllNearNodeFailure() throws Exception {
         final int SRVS = 4;
 
@@ -545,6 +558,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheOperations0() throws Exception {
         cacheOperations(0);
     }
@@ -552,6 +566,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheOperations_UnstableTopology0() throws Exception {
         blockRebalance = true;
 
@@ -561,6 +576,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheOperations1() throws Exception {
         cacheOperations(1);
     }
@@ -568,6 +584,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheOperations_UnstableTopology1() throws Exception {
         blockRebalance = true;
 
@@ -577,6 +594,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheOperations2() throws Exception {
         cacheOperations(2);
     }
@@ -584,6 +602,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheOperations_UnstableTopology2() throws Exception {
         blockRebalance = true;
 
@@ -639,6 +658,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutMissedDhtRequest_UnstableTopology() throws Exception {
         blockRebalance = true;
 
@@ -678,6 +698,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllMissedDhtRequest_UnstableTopology1() throws Exception {
         putAllMissedDhtRequest_UnstableTopology(true, false);
     }
@@ -685,6 +706,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllMissedDhtRequest_UnstableTopology2() throws Exception {
         putAllMissedDhtRequest_UnstableTopology(true, true);
     }
@@ -750,6 +772,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutReaderUpdate1() throws Exception {
         readerUpdateDhtFails(false, false, false);
 
@@ -761,6 +784,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutReaderUpdate2() throws Exception {
         readerUpdateDhtFails(true, false, false);
 
@@ -772,6 +796,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllReaderUpdate1() throws Exception {
         readerUpdateDhtFails(false, false, true);
 
@@ -783,6 +808,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllReaderUpdate2() throws Exception {
         readerUpdateDhtFails(true, false, true);
 

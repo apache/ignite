@@ -27,6 +27,7 @@ public class IgfsPrimaryRelaxedConsistencyMultiNodeSelfTest extends IgfsPrimaryR
     }
 
     @Override
+    @Test
     public void testCreateConsistencyMultithreaded() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-8823");
 

@@ -74,6 +74,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOsEditionDoesNotSupportRollingUpdates() throws Exception {
         nodeVer = "1.0.0";
 
@@ -101,6 +102,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOsEditionDoesNotSupportRollingUpdatesClientMode() throws Exception {
         nodeVer = "1.0.0";
 

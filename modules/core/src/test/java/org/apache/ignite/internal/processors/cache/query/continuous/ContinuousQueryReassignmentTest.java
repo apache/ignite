@@ -63,6 +63,7 @@ public class ContinuousQueryReassignmentTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testContinuousQueryNotCalledOnReassignment() throws Exception {
         testContinuousQueryNotCalledOnReassignment(false);
     }
@@ -70,6 +71,7 @@ public class ContinuousQueryReassignmentTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testLocalContinuousQueryNotCalledOnReassignment() throws Exception {
         testContinuousQueryNotCalledOnReassignment(true);
     }
@@ -114,6 +116,7 @@ public class ContinuousQueryReassignmentTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContinuousQueryWithRemoteFilterNotCalledOnReassignment() throws Exception {
         Ignite lsnrNode = startGrid(1);
         Ignite victim = startGrid(2);

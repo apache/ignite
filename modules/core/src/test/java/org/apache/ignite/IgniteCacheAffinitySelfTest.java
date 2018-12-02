@@ -87,6 +87,7 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testAffinity() throws Exception {
         checkAffinity();
 

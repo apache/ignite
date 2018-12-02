@@ -132,7 +132,8 @@ package org.apache.ignite.loadtests.communication;
 //     * @throws Exception If failed.
 //     */
 //    @SuppressWarnings("deprecation")
-//    public void testThroughput() throws Exception {
+//    @Test
+    public void testThroughput() throws Exception {
 //        assert spis.size() == 2;
 //        assert nodes.size() == 2;
 //
@@ -246,7 +247,8 @@ package org.apache.ignite.loadtests.communication;
 //     * @throws Exception If failed.
 //     */
 //    @SuppressWarnings("deprecation")
-//    public void testLatency() throws Exception {
+//    @Test
+    public void testLatency() throws Exception {
 //        assert spis.size() == 2;
 //        assert nodes.size() == 2;
 //
@@ -373,7 +375,8 @@ package org.apache.ignite.loadtests.communication;
 //     * @throws Exception If failed.
 //     */
 //    @SuppressWarnings("deprecation")
-//    public void testVariableLoad() throws Exception {
+//    @Test
+    public void testVariableLoad() throws Exception {
 //        assert spis.size() == 2;
 //        assert nodes.size() == 2;
 //

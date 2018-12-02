@@ -81,6 +81,7 @@ public class IgniteCacheIncrementTxTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIncrementTxTopologyChange0() throws Exception {
         nodeJoin(cacheConfiguration(0));
     }
@@ -88,6 +89,7 @@ public class IgniteCacheIncrementTxTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIncrementTxTopologyChange1() throws Exception {
         if (MvccFeatureChecker.forcedMvcc())
             fail("https://issues.apache.org/jira/browse/IGNITE-10264");
@@ -98,6 +100,7 @@ public class IgniteCacheIncrementTxTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIncrementTxTopologyChange2() throws Exception {
         if (MvccFeatureChecker.forcedMvcc())
             fail("https://issues.apache.org/jira/browse/IGNITE-10264");

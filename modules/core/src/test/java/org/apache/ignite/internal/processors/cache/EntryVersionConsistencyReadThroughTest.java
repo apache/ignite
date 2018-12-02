@@ -104,6 +104,7 @@ public class EntryVersionConsistencyReadThroughTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeAllTransactionalCache() throws Exception {
         check(false, createCacheConfiguration(TRANSACTIONAL));
     }
@@ -111,6 +112,7 @@ public class EntryVersionConsistencyReadThroughTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeAllMvccTxCache() throws Exception {
         if (!MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.CACHE_STORE))
             fail("https://issues.apache.org/jira/browse/IGNITE-8582");
@@ -121,6 +123,7 @@ public class EntryVersionConsistencyReadThroughTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeAllAtomicCache() throws Exception {
         check(false, createCacheConfiguration(ATOMIC));
     }
@@ -128,6 +131,7 @@ public class EntryVersionConsistencyReadThroughTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeAtomicCache() throws Exception {
         check(true, createCacheConfiguration(ATOMIC));
     }
@@ -135,6 +139,7 @@ public class EntryVersionConsistencyReadThroughTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeTransactionalCache() throws Exception {
         check(true, createCacheConfiguration(TRANSACTIONAL));
     }
@@ -142,6 +147,7 @@ public class EntryVersionConsistencyReadThroughTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeMvccTxCache() throws Exception {
         if (!MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.CACHE_STORE))
             fail("https://issues.apache.org/jira/browse/IGNITE-8582");

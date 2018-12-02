@@ -39,6 +39,7 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testShutdownWithFailureWithCoalescing() throws Exception {
         testShutdownWithFailure(true);
     }
@@ -48,6 +49,7 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testShutdownWithFailureWithoutCoalescing() throws Exception {
         testShutdownWithFailure(false);
     }
@@ -93,6 +95,7 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleStoreWithCoalescing() throws Exception {
         testSimpleStore(true);
     }
@@ -102,6 +105,7 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleStoreWithoutCoalescing() throws Exception {
         testSimpleStore(false);
     }
@@ -112,6 +116,7 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleStoreFlushFrequencyWithoutCoalescing() throws Exception {
         initStore(1, false);
 
@@ -177,6 +182,7 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testValuePropagationWithCoalescing() throws Exception {
         testValuePropagation(true);
     }
@@ -187,6 +193,7 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testValuePropagationWithoutCoalescing() throws Exception {
         testValuePropagation(false);
     }
@@ -233,6 +240,7 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testContinuousPutWithCoalescing() throws Exception {
         testContinuousPut(true);
     }
@@ -242,6 +250,7 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testContinuousPutWithoutCoalescing() throws Exception {
         testContinuousPut(false);
     }
@@ -318,6 +327,7 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testShutdownWithCoalescing() throws Exception {
         testShutdown(true);
     }
@@ -328,6 +338,7 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testShutdownWithoutCoalescing() throws Exception {
         testShutdown(false);
     }
@@ -387,6 +398,7 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testBatchApplyWithCoalescing() throws Exception {
         testBatchApply(true);
     }
@@ -397,6 +409,7 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testBatchApplyWithoutCoalescing() throws Exception {
         testBatchApply(false);
     }

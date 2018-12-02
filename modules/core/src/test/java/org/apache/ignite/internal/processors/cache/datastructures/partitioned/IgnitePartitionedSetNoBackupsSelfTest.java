@@ -43,6 +43,7 @@ public class IgnitePartitionedSetNoBackupsSelfTest extends GridCachePartitionedS
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollocation() throws Exception {
         Set<Integer> set0 = grid(0).set(SET_NAME, config(true));
 

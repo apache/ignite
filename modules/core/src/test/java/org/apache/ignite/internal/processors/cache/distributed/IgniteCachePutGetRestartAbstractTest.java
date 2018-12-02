@@ -104,6 +104,7 @@ public abstract class IgniteCachePutGetRestartAbstractTest extends IgniteCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxPutGetRestart() throws Exception {
         int clientGrid = gridCount() - 1;
 

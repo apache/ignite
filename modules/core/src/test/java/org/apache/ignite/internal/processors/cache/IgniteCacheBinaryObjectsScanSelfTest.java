@@ -119,6 +119,7 @@ public class IgniteCacheBinaryObjectsScanSelfTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testScanNoClasses() throws Exception {
         Ignite client = grid("client");
 

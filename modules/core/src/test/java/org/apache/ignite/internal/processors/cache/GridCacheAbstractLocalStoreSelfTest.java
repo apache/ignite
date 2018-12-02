@@ -203,6 +203,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEvict() throws Exception {
         Ignite ignite1 = startGrid(1);
 
@@ -231,6 +232,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryNode() throws Exception {
         Ignite ignite1 = startGrid(1);
 
@@ -279,6 +281,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupRestorePrimary() throws Exception {
         testBackupRestore();
     }
@@ -286,6 +289,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupRestore() throws Exception {
         final IgniteEx ignite1 = startGrid(1);
         Ignite ignite2 = startGrid(2);
@@ -405,6 +409,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalStoreCorrespondsAffinityWithBackups() throws Exception {
         testLocalStoreCorrespondsAffinity(BACKUP_CACHE_2);
     }
@@ -412,6 +417,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalStoreCorrespondsAffinityWithBackup() throws Exception {
         testLocalStoreCorrespondsAffinity(BACKUP_CACHE_1);
     }
@@ -419,6 +425,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalStoreCorrespondsAffinityNoBackups() throws Exception {
         testLocalStoreCorrespondsAffinity(DEFAULT_CACHE_NAME);
     }
@@ -505,6 +512,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalStoreWithNearKeysPrimary() throws Exception {
         try {
             System.setProperty(IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY, "true");
@@ -519,6 +527,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalStoreWithNearKeysPrimaryAndBackups() throws Exception {
         testLocalStoreWithNearKeys();
     }
@@ -526,6 +535,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalStoreWithNearKeys() throws Exception {
         if (getCacheMode() == REPLICATED)
             return;
@@ -618,6 +628,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupNode() throws Exception {
         Ignite ignite1 = startGrid(1);
 
@@ -683,6 +694,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSwap() throws Exception {
         Ignite ignite1 = startGrid(1);
 

@@ -58,6 +58,7 @@ public class GridMessageCollectionTest extends TestCase {
     /**
      *
      */
+    @Test
     public void testMarshal() {
         UUIDCollectionMessage um0 = UUIDCollectionMessage.of();
         UUIDCollectionMessage um1 = UUIDCollectionMessage.of(randomUUID());

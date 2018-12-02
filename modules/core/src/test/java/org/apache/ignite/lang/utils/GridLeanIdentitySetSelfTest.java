@@ -32,6 +32,7 @@ public class GridLeanIdentitySetSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddSizeContainsClear() throws Exception {
         Set<Integer> set = new GridLeanIdentitySet<>();
 

@@ -83,6 +83,7 @@ public class TcpDiscoveryRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestart() throws Exception {
         err = new AtomicReference<>();
 

@@ -27,6 +27,7 @@ public class SqlParserSetStreamingSelfTest extends SqlParserAbstractSelfTest {
     /**
      *
      */
+    @Test
     public void testParseSetStreaming() {
         parseValidate("set streaming on", true, false, 2048, 0, 0, 0, false);
         parseValidate("set streaming 1", true, false, 2048, 0, 0, 0, false);

@@ -53,6 +53,7 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIgniteVersionLogging() throws Exception {
         int gridCnt = 4;
 
@@ -72,6 +73,7 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
     /**
      * Checks that re-register works fine.
      */
+    @Test
     public void testUnregister() {
         String msg = "catch me";
 
@@ -107,6 +109,7 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
     /**
      * Ensures that listener will be re-registered only once.
      */
+    @Test
     public void testRegister() {
         AtomicInteger cntr = new AtomicInteger();
 
@@ -123,6 +126,7 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
     /**
      * Checks basic API.
      */
+    @Test
     public void testBasicApi() {
         LogListener lsnr = LogListener.matches(Pattern.compile("a[a-z]+"))
             .andMatches("Exception message.").andMatches(".java:").build();
@@ -141,6 +145,7 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
     /**
      * Checks blank lines matching.
      */
+    @Test
     public void testEmptyLine() {
         LogListener emptyLineLsnr = LogListener.matches("").build();
 
@@ -152,6 +157,7 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPredicateExceptions() {
         LogListener lsnr = LogListener.matches(msg -> {
             assertFalse(msg.contains("Target"));
@@ -182,6 +188,7 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
     /**
      * Validates listener range definition.
      */
+    @Test
     public void testRange() {
         String msg = "range";
 
@@ -211,6 +218,7 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
     /**
      * Checks that substring was not found in the log messages.
      */
+    @Test
     public void testNotPresent() {
         String msg = "vacuum";
 
@@ -230,6 +238,7 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
     /**
      * Checks that the substring is found at least twice.
      */
+    @Test
     public void testAtLeast() {
         String msg = "at least";
 
@@ -249,6 +258,7 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
     /**
      * Checks that the substring is found no more than twice.
      */
+    @Test
     public void testAtMost() {
         String msg = "at most";
 
@@ -271,6 +281,7 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
     /**
      * Checks that only last value is taken into account.
      */
+    @Test
     public void testMultiRange() {
         String msg = "multi range";
 
@@ -304,6 +315,7 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
     /**
      * Checks that matches are counted for each message.
      */
+    @Test
     public void testMatchesPerMessage() {
         LogListener lsnr = LogListener.matches("aa").times(4).build();
 
@@ -337,6 +349,7 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreaded() throws Exception {
         int iterCnt = 50_000;
         int threadCnt = 6;
@@ -371,6 +384,7 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
     /**
      * Check "echo" logger.
      */
+    @Test
     public void testEchoLogger() {
         IgniteLogger echo = new StringLogger();
 

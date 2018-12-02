@@ -80,6 +80,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetKeys() throws Exception {
         IgniteCache<Integer, String> cache = grid().createCache("test-cache");
 
@@ -111,6 +112,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetKeysFiltered() throws Exception {
         IgniteCache<Integer, String> cache = grid().createCache("test-cache");
 
@@ -148,6 +150,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetObjectField() throws Exception {
         IgniteCache<Integer, Value> cache = grid().createCache("test-cache");
 
@@ -179,6 +182,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetObjectFieldPartitioned() throws Exception {
         IgniteCache<Integer, Value> cache = grid().createCache("test-cache");
 
@@ -219,6 +223,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetObjectFieldFiltered() throws Exception {
         IgniteCache<Integer, Value> cache = grid().createCache("test-cache");
 
@@ -256,6 +261,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testKeepBinary() throws Exception {
         IgniteCache<Integer, Value> cache = grid().createCache("test-cache");
 
@@ -289,6 +295,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testKeepBinaryFiltered() throws Exception {
         IgniteCache<Integer, Value> cache = grid().createCache("test-cache");
 
@@ -328,6 +335,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocal() throws Exception {
         IgniteCache<Integer, Value> cache = grid().createCache("test-cache");
 
@@ -369,6 +377,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalFiltered() throws Exception {
         IgniteCache<Integer, Value> cache = grid().createCache("test-cache");
 
@@ -416,6 +425,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalKeepBinary() throws Exception {
         IgniteCache<Integer, Value> cache = grid().createCache("test-cache");
 
@@ -457,6 +467,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalKeepBinaryFiltered() throws Exception {
         IgniteCache<Integer, Value> cache = grid().createCache("test-cache");
 
@@ -504,6 +515,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUnsupported() throws Exception {
         final IgniteCache<Integer, Integer> cache = grid().createCache("test-cache");
 
@@ -592,6 +604,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPageSize() throws Exception {
         IgniteCache<Integer, Value> cache = grid().createCache("test-cache");
 
@@ -629,6 +642,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalInjection() throws Exception {
         IgniteCache<Integer, Value> cache = grid().createCache("test-cache");
 

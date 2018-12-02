@@ -184,6 +184,7 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
     /**
      * Test for projection on not existing node IDs.
      */
+    @Test
     public void testInvalidProjection() {
         Collection<UUID> ids = new HashSet<>();
 
@@ -198,6 +199,7 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testProjection() throws Exception {
         assert prj != null;
 
@@ -217,6 +219,7 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testRemoteNodes() throws Exception {
         Collection<UUID> remoteNodeIds = remoteNodeIds();
 
@@ -247,6 +250,7 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testRemoteProjection() throws Exception {
         Collection<UUID> remoteNodeIds = remoteNodeIds();
 
@@ -277,6 +281,7 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testExecution() throws Exception {
         String name = "oneMoreGrid";
 

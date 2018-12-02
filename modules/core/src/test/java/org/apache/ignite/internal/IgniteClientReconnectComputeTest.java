@@ -44,6 +44,7 @@ public class IgniteClientReconnectComputeTest extends IgniteClientReconnectAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectAffinityCallInProgress() throws Exception {
         final Ignite client = grid(serverCount());
 
@@ -98,6 +99,7 @@ public class IgniteClientReconnectComputeTest extends IgniteClientReconnectAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectBroadcastInProgress() throws Exception {
         final Ignite client = grid(serverCount());
 
@@ -147,6 +149,7 @@ public class IgniteClientReconnectComputeTest extends IgniteClientReconnectAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectApplyInProgress() throws Exception {
         final Ignite client = grid(serverCount());
 

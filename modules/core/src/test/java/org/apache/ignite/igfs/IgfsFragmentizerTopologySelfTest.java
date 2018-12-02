@@ -26,6 +26,7 @@ public class IgfsFragmentizerTopologySelfTest extends IgfsFragmentizerAbstractSe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCoordinatorLeave() throws Exception {
         stopGrid(0);
 

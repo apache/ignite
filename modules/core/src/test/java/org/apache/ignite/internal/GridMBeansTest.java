@@ -54,6 +54,7 @@ public class GridMBeansTest extends GridCommonAbstractTest {
     }
 
     /** Check that kernal bean is available */
+    @Test
     public void testKernalBeans() throws Exception {
         checkBean("Kernal", "IgniteKernal", "InstanceName", grid().name());
         checkBean("Kernal", "ClusterMetricsMXBeanImpl", "TotalServerNodes", 1);
@@ -61,6 +62,7 @@ public class GridMBeansTest extends GridCommonAbstractTest {
     }
 
     /** Check that kernal bean is available */
+    @Test
     public void testExecutorBeans() throws Exception {
         // standard executors
         checkBean("Thread Pools", "GridExecutionExecutor", "Terminated", false);

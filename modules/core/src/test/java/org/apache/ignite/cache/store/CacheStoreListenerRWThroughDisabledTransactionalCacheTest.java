@@ -44,6 +44,7 @@ public class CacheStoreListenerRWThroughDisabledTransactionalCacheTest extends C
     /**
      * Tests {@link IgniteCache#get(Object)} with disabled read-through and write-through modes.
      */
+    @Test
     public void testTransactionalLookup() {
         testTransactionalLookup(OPTIMISTIC, READ_COMMITTED);
         testTransactionalLookup(OPTIMISTIC, REPEATABLE_READ);
@@ -74,6 +75,7 @@ public class CacheStoreListenerRWThroughDisabledTransactionalCacheTest extends C
     /**
      * Tests {@link IgniteCache#put(Object, Object)} with disabled read-through and write-through modes.
      */
+    @Test
     public void testTransactionalUpdate() {
         testTransactionalUpdate(OPTIMISTIC, READ_COMMITTED);
         testTransactionalUpdate(OPTIMISTIC, REPEATABLE_READ);
@@ -104,6 +106,7 @@ public class CacheStoreListenerRWThroughDisabledTransactionalCacheTest extends C
     /**
      * Tests {@link IgniteCache#remove(Object)} with disabled read-through and write-through modes.
      */
+    @Test
     public void testTransactionalRemove() {
         testTransactionalRemove(OPTIMISTIC, READ_COMMITTED);
         testTransactionalRemove(OPTIMISTIC, REPEATABLE_READ);

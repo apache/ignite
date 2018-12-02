@@ -65,6 +65,7 @@ public class CacheDeferredDeleteQueueTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeferredDeleteQueue() throws Exception {
         testQueue(ATOMIC, false);
 

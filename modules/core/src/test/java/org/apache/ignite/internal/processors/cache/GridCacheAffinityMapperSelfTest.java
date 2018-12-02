@@ -37,6 +37,7 @@ public class GridCacheAffinityMapperSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testMethodAffinityMapper() {
         AffinityKeyMapper mapper =
             new GridCacheDefaultAffinityKeyMapper();
@@ -63,6 +64,7 @@ public class GridCacheAffinityMapperSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testFieldAffinityMapper() {
         AffinityKeyMapper mapper =
             new GridCacheDefaultAffinityKeyMapper();
@@ -89,6 +91,7 @@ public class GridCacheAffinityMapperSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testFieldAffinityMapperWithWrongClass() {
         AffinityKeyMapper mapper =
             new GridCacheDefaultAffinityKeyMapper();

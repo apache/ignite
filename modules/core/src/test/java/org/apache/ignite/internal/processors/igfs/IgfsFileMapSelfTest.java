@@ -36,6 +36,7 @@ public class IgfsFileMapSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRanges() throws Exception {
         IgfsFileMap map = new IgfsFileMap();
 
@@ -69,6 +70,7 @@ public class IgfsFileMapSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAddUpdateAdd() throws Exception {
         IgfsFileMap map = new IgfsFileMap();
 
@@ -94,6 +96,7 @@ public class IgfsFileMapSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRangeUpdate1() throws Exception {
         IgfsFileMap map = new IgfsFileMap();
 
@@ -141,6 +144,7 @@ public class IgfsFileMapSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRangeUpdate2() throws Exception {
         IgfsFileMap map = new IgfsFileMap();
 
@@ -244,6 +248,7 @@ public class IgfsFileMapSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvalidRangeUpdates() throws Exception {
         final IgfsFileMap map = new IgfsFileMap();
 
@@ -291,6 +296,7 @@ public class IgfsFileMapSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRangeSplit() throws Exception {
         IgniteUuid affKey = IgniteUuid.randomUuid();
 

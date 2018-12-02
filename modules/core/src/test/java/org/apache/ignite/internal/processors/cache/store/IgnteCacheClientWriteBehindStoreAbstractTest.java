@@ -91,6 +91,7 @@ public abstract class IgnteCacheClientWriteBehindStoreAbstractTest extends Ignit
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientWithoutStore() throws Exception {
         Ignite client = grid(2);
 

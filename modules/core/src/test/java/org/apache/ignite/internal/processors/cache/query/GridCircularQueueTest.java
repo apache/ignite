@@ -27,6 +27,7 @@ public class GridCircularQueueTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testQueue() {
         GridCacheQueryManager.CircularQueue<Integer> q = new GridCacheQueryManager.CircularQueue<>(4);
 

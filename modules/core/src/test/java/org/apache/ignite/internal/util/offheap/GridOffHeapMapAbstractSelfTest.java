@@ -140,6 +140,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInsert() throws Exception {
         map = newMap();
 
@@ -160,6 +161,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRehash() throws Exception {
         initCap = 10;
 
@@ -197,6 +199,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGet() throws Exception {
         map = newMap();
 
@@ -217,6 +220,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPut1() throws Exception {
         map = newMap();
 
@@ -237,6 +241,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPut2() throws Exception {
         map = newMap();
 
@@ -265,6 +270,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemove() throws Exception {
         map = newMap();
 
@@ -294,6 +300,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemovex() throws Exception {
         map = newMap();
 
@@ -322,6 +329,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIterator() throws Exception {
         initCap = 10;
 
@@ -394,6 +402,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIteratorMultithreaded() throws Exception {
         initCap = 10;
 
@@ -468,6 +477,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
     /**
      *
      */
+    @Test
     public void testInsertLoad() {
         map = newMap();
 
@@ -502,6 +512,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
     /**
      *
      */
+    @Test
     public void testPutLoad() {
         map = newMap();
 
@@ -537,6 +548,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
     /**
      *
      */
+    @Test
     public void testLru1() {
         lruStripes = 1;
         mem = 10;
@@ -579,6 +591,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
     /**
      *
      */
+    @Test
     public void testLru2() {
         mem = 1000 + 64 * 16; // Add segment size.
 
@@ -616,6 +629,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLruMultithreaded() throws Exception {
         mem = 1000 + 64 * 16; // Add segment size.
 
@@ -667,6 +681,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIteratorAfterRehash() throws Exception {
         mem = 0;
         initCap = 10;
@@ -737,6 +752,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedOps() throws Exception {
         mem = 1512; // Small enough for evictions.
 

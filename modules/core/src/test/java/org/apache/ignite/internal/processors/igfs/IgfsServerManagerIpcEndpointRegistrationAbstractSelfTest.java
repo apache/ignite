@@ -62,6 +62,7 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoopbackEndpointsRegistration() throws Exception {
         IgniteConfiguration cfg = gridConfiguration();
 
@@ -81,6 +82,7 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoopbackEndpointsCustomHostRegistration() throws Exception {
         IgniteConfiguration cfg = gridConfigurationManyIgfsCaches(2);
 

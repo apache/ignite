@@ -215,6 +215,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestart() throws Exception {
         rebalancMode = SYNC;
         partitions = 3;
@@ -291,6 +292,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartWithPutTwoNodesNoBackups() throws Throwable {
         backups = 0;
         nodeCnt = 2;
@@ -307,6 +309,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartWithTxTwoNodesNoBackups() throws Throwable {
         backups = 0;
         nodeCnt = 2;
@@ -323,6 +326,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartWithPutTwoNodesOneBackup() throws Throwable {
         backups = 1;
         nodeCnt = 2;
@@ -339,6 +343,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartWithTxTwoNodesOneBackup() throws Throwable {
         backups = 1;
         nodeCnt = 2;
@@ -355,6 +360,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartWithPutFourNodesNoBackups() throws Throwable {
         backups = 0;
         nodeCnt = 4;
@@ -371,6 +377,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartWithTxFourNodesNoBackups() throws Throwable {
         backups = 0;
         nodeCnt = 4;
@@ -387,6 +394,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartWithPutFourNodesOneBackups() throws Throwable {
         backups = 1;
         nodeCnt = 4;
@@ -403,6 +411,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartWithPutFourNodesOneBackupsOffheapEvict() throws Throwable {
         backups = 1;
         nodeCnt = 4;
@@ -419,6 +428,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartWithTxFourNodesOneBackups() throws Throwable {
         backups = 1;
         nodeCnt = 4;
@@ -435,6 +445,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartWithTxFourNodesOneBackupsOffheapEvict() throws Throwable {
         backups = 1;
         nodeCnt = 4;
@@ -451,6 +462,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartWithPutSixNodesTwoBackups() throws Throwable {
         backups = 2;
         nodeCnt = 6;
@@ -467,6 +479,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartWithTxSixNodesTwoBackups() throws Throwable {
         backups = 2;
         nodeCnt = 6;
@@ -483,6 +496,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartWithPutEightNodesTwoBackups() throws Throwable {
         backups = 2;
         nodeCnt = 8;
@@ -499,6 +513,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartWithTxEightNodesTwoBackups() throws Throwable {
         backups = 2;
         nodeCnt = 8;
@@ -515,6 +530,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartWithPutTenNodesTwoBackups() throws Throwable {
         backups = 2;
         nodeCnt = 10;
@@ -531,6 +547,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartWithTxTenNodesTwoBackups() throws Throwable {
         backups = 2;
         nodeCnt = 10;
@@ -547,6 +564,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartWithTxPutAllTenNodesTwoBackups() throws Throwable {
         backups = 2;
         nodeCnt = 10;
@@ -563,6 +581,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartWithTxPutAllFourNodesTwoBackups() throws Throwable {
         backups = 2;
         nodeCnt = 4;

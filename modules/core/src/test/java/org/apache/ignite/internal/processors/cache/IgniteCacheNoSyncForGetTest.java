@@ -92,6 +92,7 @@ public class IgniteCacheNoSyncForGetTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicGet() throws Exception {
         getTest(ATOMIC);
     }
@@ -99,6 +100,7 @@ public class IgniteCacheNoSyncForGetTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxGet() throws Exception {
         getTest(TRANSACTIONAL);
     }
@@ -106,6 +108,7 @@ public class IgniteCacheNoSyncForGetTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMvccTxGet() throws Exception {
         getTest(TRANSACTIONAL_SNAPSHOT);
     }

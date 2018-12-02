@@ -72,6 +72,7 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadAll() throws Exception {
         IgniteCache<Integer, Integer> cache = jcache(0);
 
@@ -124,6 +125,7 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCache() throws Exception {
         IgniteCache<Integer, Integer> cache = jcache(0);
 
@@ -150,6 +152,7 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadThrough() throws Exception {
         IgniteCache<Integer, Integer> cache = jcache(0);
 
@@ -182,6 +185,7 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetReadThrough() throws Exception {
         getReadThrough(false, null, null);
         getReadThrough(true, null, null);

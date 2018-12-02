@@ -76,6 +76,7 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      * TODO IGNITE-581 enable when fixed.
      */
+    @Test
     public void testTransformTransactionalNoBackups() throws Exception {
         // Test works too long and fails.
         fail("https://issues.apache.org/jira/browse/IGNITE-581");
@@ -87,6 +88,7 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      * TODO IGNITE-581 enable when fixed.
      */
+    @Test
     public void testTransformTransactionalOneBackup() throws Exception {
         // Test works too long and fails.
         fail("https://issues.apache.org/jira/browse/IGNITE-581");

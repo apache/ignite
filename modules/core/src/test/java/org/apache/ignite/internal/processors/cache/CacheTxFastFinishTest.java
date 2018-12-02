@@ -91,6 +91,7 @@ public class CacheTxFastFinishTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFastFinishTxNearCache() throws Exception {
         nearCache = true;
 
@@ -100,6 +101,7 @@ public class CacheTxFastFinishTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFastFinishTx() throws Exception {
         fastFinishTx();
     }

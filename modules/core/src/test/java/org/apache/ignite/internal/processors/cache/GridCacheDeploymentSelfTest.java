@@ -124,6 +124,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     @SuppressWarnings("unchecked")
+    @Test
     public void testDeployment() throws Exception {
         try {
             depMode = CONTINUOUS;
@@ -150,6 +151,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     @SuppressWarnings("unchecked")
+    @Test
     public void testDeployment2() throws Exception {
         try {
             depMode = CONTINUOUS;
@@ -185,6 +187,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     @SuppressWarnings("unchecked")
+    @Test
     public void testDeployment3() throws Exception {
         try {
             depMode = SHARED;
@@ -231,12 +234,14 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     @SuppressWarnings("unchecked")
+    @Test
     public void testDeployment4() throws Exception {
         doDeployment4(false);
     }
 
     /** @throws Exception If failed. */
     @SuppressWarnings("unchecked")
+    @Test
     public void testDeployment4BackupLeavesGrid() throws Exception {
         doDeployment4(true);
     }
@@ -288,6 +293,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     @SuppressWarnings("unchecked")
+    @Test
     public void testDeployment5() throws Exception {
         ClassLoader ldr = getExternalClassLoader();
 
@@ -345,6 +351,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     @SuppressWarnings("unchecked")
+    @Test
     public void testDeployment6() throws Exception {
         try {
             depMode = SHARED;
@@ -378,6 +385,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     @SuppressWarnings("unchecked")
+    @Test
     public void testDeployment7() throws Exception {
         try {
             depMode = SHARED;
@@ -410,6 +418,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPartitionedDeploymentPreloading() throws Exception {
         ClassLoader ldr = getExternalClassLoader();
 
@@ -434,6 +443,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheUndeploymentSharedMode() throws Exception {
         testCacheUndeployment(SHARED);
     }
@@ -441,6 +451,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheUndeploymentContMode() throws Exception {
         testCacheUndeployment(CONTINUOUS);
     }

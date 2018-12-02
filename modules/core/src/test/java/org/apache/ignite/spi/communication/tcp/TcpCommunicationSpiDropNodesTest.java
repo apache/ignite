@@ -111,6 +111,7 @@ public class TcpCommunicationSpiDropNodesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOneNode() throws Exception {
         pred = new IgniteBiPredicate<ClusterNode, ClusterNode>() {
             @Override public boolean apply(ClusterNode locNode, ClusterNode rmtNode) {
@@ -187,6 +188,7 @@ public class TcpCommunicationSpiDropNodesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTwoNodesEachOther() throws Exception {
         pred = new IgniteBiPredicate<ClusterNode, ClusterNode>() {
             @Override public boolean apply(ClusterNode locNode, ClusterNode rmtNode) {

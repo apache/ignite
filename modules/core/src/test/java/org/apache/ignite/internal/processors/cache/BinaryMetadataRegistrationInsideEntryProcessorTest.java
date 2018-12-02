@@ -50,6 +50,7 @@ public class BinaryMetadataRegistrationInsideEntryProcessorTest extends GridComm
     /**
      * @throws Exception If failed;
      */
+    @Test
     public void test() throws Exception {
         Ignite ignite = startGrids(2);
 

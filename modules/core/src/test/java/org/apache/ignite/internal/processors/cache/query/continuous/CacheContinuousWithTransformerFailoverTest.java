@@ -83,6 +83,7 @@ public class CacheContinuousWithTransformerFailoverTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerNodeLeft() throws Exception {
         startGrids(3);
 
@@ -150,6 +151,7 @@ public class CacheContinuousWithTransformerFailoverTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransformerException() throws Exception {
         try {
             startGrids(1);
@@ -204,6 +206,7 @@ public class CacheContinuousWithTransformerFailoverTest extends GridCommonAbstra
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCrossCallback() throws Exception {
         startGrids(2);
         try {

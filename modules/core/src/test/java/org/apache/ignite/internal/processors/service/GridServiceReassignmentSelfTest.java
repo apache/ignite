@@ -46,6 +46,7 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClusterSingleton() throws Exception {
         checkReassigns(1, 1);
     }
@@ -53,6 +54,7 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeSingleton() throws Exception {
         checkReassigns(0, 1);
     }
@@ -60,6 +62,7 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLimited1() throws Exception {
         checkReassigns(5, 2);
     }
@@ -67,6 +70,7 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLimited2() throws Exception {
         checkReassigns(7, 3);
     }

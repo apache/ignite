@@ -47,6 +47,7 @@ public class EncryptedCacheBigEntryTest extends AbstractEncryptionTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateEncryptedCacheWithBigEntry() throws Exception {
         T2<IgniteEx, IgniteEx> grids = startTestGrids(true);
 

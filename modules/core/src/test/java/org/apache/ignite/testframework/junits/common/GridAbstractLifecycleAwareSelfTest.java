@@ -107,6 +107,7 @@ public abstract class GridAbstractLifecycleAwareSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLifecycleAware() throws Exception {
         Ignite ignite = startGrid();
 

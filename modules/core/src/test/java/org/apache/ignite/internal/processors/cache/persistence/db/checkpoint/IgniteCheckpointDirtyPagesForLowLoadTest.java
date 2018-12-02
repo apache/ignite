@@ -98,6 +98,7 @@ public class IgniteCheckpointDirtyPagesForLowLoadTest extends GridCommonAbstract
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testManyCachesAndNotManyPuts() throws Exception {
         try {
             IgniteEx ignite = startGrid(0);

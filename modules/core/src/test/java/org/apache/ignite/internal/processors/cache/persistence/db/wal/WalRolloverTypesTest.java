@@ -101,41 +101,49 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testCurrentSegmentTypeLogOnlyModeArchiveOn() throws Exception {
         checkCurrentSegmentType(LOG_ONLY, false);
     }
 
     /** */
+    @Test
     public void testCurrentSegmentTypeLogOnlyModeArchiveOff() throws Exception {
         checkCurrentSegmentType(LOG_ONLY, true);
     }
 
     /** */
+    @Test
     public void testCurrentSegmentTypeLogFsyncModeArchiveOn() throws Exception {
         checkCurrentSegmentType(FSYNC, false);
     }
 
     /** */
+    @Test
     public void testCurrentSegmentTypeLogFsyncModeArchiveOff() throws Exception {
         checkCurrentSegmentType(FSYNC, true);
     }
 
     /** */
+    @Test
     public void testNextSegmentTypeLogOnlyModeArchiveOn() throws Exception {
         checkNextSegmentType(LOG_ONLY, false);
     }
 
     /** */
+    @Test
     public void testNextSegmentTypeLogOnlyModeArchiveOff() throws Exception {
         checkNextSegmentType(LOG_ONLY, true);
     }
 
     /** */
+    @Test
     public void testNextSegmentTypeFsyncModeArchiveOn() throws Exception {
         checkNextSegmentType(FSYNC, false);
     }
 
     /** */
+    @Test
     public void testNextSegmentTypeFsyncModeArchiveOff() throws Exception {
         checkNextSegmentType(FSYNC, true);
     }
@@ -187,21 +195,25 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testNextSegmentTypeWithCacheActivityLogOnlyModeArchiveOn() throws Exception {
         checkNextSegmentTypeWithCacheActivity(LOG_ONLY, false);
     }
 
     /** */
+    @Test
     public void testNextSegmentTypeWithCacheActivityLogOnlyModeArchiveOff() throws Exception {
         checkNextSegmentTypeWithCacheActivity(LOG_ONLY, true);
     }
 
     /** */
+    @Test
     public void testNextSegmentTypeWithCacheActivityFsyncModeArchiveOn() throws Exception {
         checkNextSegmentTypeWithCacheActivity(FSYNC, false);
     }
 
     /** */
+    @Test
     public void testNextSegmentTypeWithCacheActivityFsyncModeArchiveOff() throws Exception {
         checkNextSegmentTypeWithCacheActivity(FSYNC, true);
     }
@@ -273,21 +285,25 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testCurrentSegmentTypeWithCacheActivityLogOnlyModeArchiveOn() throws Exception {
         checkCurrentSegmentTypeWithCacheActivity(LOG_ONLY, false);
     }
 
     /** */
+    @Test
     public void testCurrentSegmentTypeWithCacheActivityLogOnlyModeArchiveOff() throws Exception {
         checkCurrentSegmentTypeWithCacheActivity(LOG_ONLY, true);
     }
 
     /** */
+    @Test
     public void testCurrentSegmentTypeWithCacheActivityFsyncModeArchiveOn() throws Exception {
         checkCurrentSegmentTypeWithCacheActivity(FSYNC, false);
     }
 
     /** */
+    @Test
     public void testCurrentSegmentTypeWithCacheActivityFsyncModeArchiveOff() throws Exception {
         checkCurrentSegmentTypeWithCacheActivity(FSYNC, true);
     }

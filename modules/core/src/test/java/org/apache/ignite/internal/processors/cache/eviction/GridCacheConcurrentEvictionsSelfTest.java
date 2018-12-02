@@ -99,6 +99,7 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentPutsFifoLocal() throws Exception {
         mode = LOCAL;
 
@@ -115,6 +116,7 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentPutsLruLocal() throws Exception {
         mode = LOCAL;
 
@@ -131,6 +133,7 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentPutsSortedLocal() throws Exception {
         mode = LOCAL;
 

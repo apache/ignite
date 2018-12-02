@@ -125,6 +125,7 @@ public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPreloadOrderPartitionedPartitioned() throws Exception {
         checkPreloadOrder(PARTITIONED, PARTITIONED);
     }
@@ -132,6 +133,7 @@ public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPreloadOrderReplicatedReplicated() throws Exception {
         checkPreloadOrder(REPLICATED, REPLICATED);
     }
@@ -139,6 +141,7 @@ public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPreloadOrderPartitionedReplicated() throws Exception {
         checkPreloadOrder(PARTITIONED, REPLICATED);
     }
@@ -146,6 +149,7 @@ public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPreloadOrderReplicatedPartitioned() throws Exception {
         checkPreloadOrder(REPLICATED, PARTITIONED);
     }

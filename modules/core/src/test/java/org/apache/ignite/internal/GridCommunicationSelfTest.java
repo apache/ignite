@@ -49,6 +49,7 @@ public class GridCommunicationSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSendMessageToEmptyNodes() throws Exception {
         Collection<ClusterNode> empty = Collections.emptyList();
 

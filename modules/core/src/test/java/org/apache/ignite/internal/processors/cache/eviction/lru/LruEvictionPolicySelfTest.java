@@ -30,6 +30,7 @@ public class LruEvictionPolicySelfTest extends
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMiddleAccess() throws Exception {
         startGrid();
 

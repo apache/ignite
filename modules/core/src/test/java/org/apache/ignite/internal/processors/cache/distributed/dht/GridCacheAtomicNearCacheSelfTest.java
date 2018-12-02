@@ -100,6 +100,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoBackups() throws Exception {
         doStartGrids(0);
 
@@ -109,6 +110,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWithBackups() throws Exception {
         doStartGrids(2);
 

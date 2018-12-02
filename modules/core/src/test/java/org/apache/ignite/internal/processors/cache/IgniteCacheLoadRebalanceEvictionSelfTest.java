@@ -95,6 +95,7 @@ public class IgniteCacheLoadRebalanceEvictionSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartRebalancing() throws Exception {
         List<IgniteInternalFuture<Object>> futs = new ArrayList<>();
 

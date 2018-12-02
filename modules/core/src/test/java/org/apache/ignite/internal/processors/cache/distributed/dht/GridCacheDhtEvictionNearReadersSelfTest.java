@@ -187,6 +187,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testReaders() throws Exception {
         Integer key = 1;
 

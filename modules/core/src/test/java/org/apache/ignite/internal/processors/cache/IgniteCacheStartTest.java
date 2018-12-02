@@ -71,6 +71,7 @@ public class IgniteCacheStartTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testStartAndNodeJoin() throws Exception {
         Ignite node0 = startGrid(0);
 
@@ -103,6 +104,7 @@ public class IgniteCacheStartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartFromJoiningNode1() throws Exception {
         checkStartFromJoiningNode(false);
     }
@@ -110,6 +112,7 @@ public class IgniteCacheStartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartFromJoiningNode2() throws Exception {
         checkStartFromJoiningNode(true);
     }

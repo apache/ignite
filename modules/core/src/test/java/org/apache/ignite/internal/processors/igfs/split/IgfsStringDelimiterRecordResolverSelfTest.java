@@ -36,6 +36,7 @@ public class IgfsStringDelimiterRecordResolverSelfTest extends IgfsAbstractRecor
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testResolver() throws Exception {
         String delim = "aaaaaaaa";
 

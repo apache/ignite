@@ -35,11 +35,13 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 public class GridSetWrapperSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
+    @Test
     public void testEmptySet() throws Exception {
         checkCollectionEmptiness(new GridSetWrapper<>(new HashMap<String, Object>()));
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testMultipleValuesSet() throws Exception {
         Set<String> set = new GridSetWrapper<>(new HashMap<String, Object>());
 
@@ -76,6 +78,7 @@ public class GridSetWrapperSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSetRemove() throws Exception {
         Collection<String> set = new GridSetWrapper<>(new HashMap<String, Object>());
 
@@ -117,6 +120,7 @@ public class GridSetWrapperSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSetRemoveAll() throws Exception {
         Collection<String> set = new GridSetWrapper<>(new HashMap<String, Object>());
 
@@ -138,6 +142,7 @@ public class GridSetWrapperSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSetClear() throws Exception {
         Collection<String> set = new GridSetWrapper<>(new HashMap<String, Object>());
 
@@ -156,6 +161,7 @@ public class GridSetWrapperSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testIterator() throws Exception {
         Set<String> set = new GridSetWrapper<>(new HashMap<String, Object>());
 

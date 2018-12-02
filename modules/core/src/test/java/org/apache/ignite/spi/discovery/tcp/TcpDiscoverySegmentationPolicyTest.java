@@ -59,6 +59,7 @@ public class TcpDiscoverySegmentationPolicyTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopOnSegmentation() throws Exception {
         startGrids(NODES_CNT);
 

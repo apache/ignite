@@ -87,6 +87,7 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSequence() throws Exception {
         Ignite clientNode = clientIgnite();
         Ignite srvNode = serverNode();
@@ -147,6 +148,7 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicLong() throws Exception {
         Ignite clientNode = clientIgnite();
         Ignite srvNode = serverNode();
@@ -226,6 +228,7 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSet() throws Exception {
         Ignite clientNode = clientIgnite();
         Ignite srvNode = serverNode();
@@ -274,6 +277,7 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLatch() throws Exception {
         Ignite clientNode = clientIgnite();
         Ignite srvNode = serverNode();
@@ -352,6 +356,7 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSemaphore() throws Exception {
         Ignite clientNode = clientIgnite();
         Ignite srvNode = serverNode();
@@ -430,6 +435,7 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReentrantLock() throws Exception {
         Ignite clientNode = clientIgnite();
         Ignite srvNode = serverNode();
@@ -520,6 +526,7 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueue() throws Exception {
         Ignite clientNode = clientIgnite();
         Ignite srvNode = serverNode();

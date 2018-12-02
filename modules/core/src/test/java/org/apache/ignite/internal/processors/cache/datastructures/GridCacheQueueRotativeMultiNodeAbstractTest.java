@@ -79,6 +79,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends Ignite
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPutRotativeNodes() throws Exception {
         String queueName = UUID.randomUUID().toString();
 
@@ -108,6 +109,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends Ignite
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPutTakeRotativeNodes() throws Exception {
         String queueName = UUID.randomUUID().toString();
 
@@ -137,6 +139,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends Ignite
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTakeRemoveRotativeNodes() throws Exception {
         lthTake = new CountDownLatch(1);
 

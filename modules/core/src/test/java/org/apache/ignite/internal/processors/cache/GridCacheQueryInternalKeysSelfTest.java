@@ -68,6 +68,7 @@ public class GridCacheQueryInternalKeysSelfTest extends GridCacheAbstractSelfTes
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testInternalKeysPreloading() throws Exception {
         try {
             IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);

@@ -77,6 +77,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
     /**
      * Verifies that proper exception is thrown when DataRegion is misconfigured for cache.
      */
+    @Test
     public void testMissingDataRegion() {
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -88,6 +89,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
     /**
      * Verifies that {@link IgniteOutOfMemoryException} is thrown when cache is configured with too small DataRegion.
      */
+    @Test
     public void testTooSmallDataRegion() throws Exception {
         memCfg = new DataStorageConfiguration();
 
@@ -142,6 +144,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
     /**
      * Verifies that with enough memory allocated adding values to cache doesn't cause any exceptions.
      */
+    @Test
     public void testProperlySizedMemoryPolicy() throws Exception {
         memCfg = new DataStorageConfiguration();
 
@@ -177,6 +180,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
      * Verifies that {@link IgniteCheckedException} is thrown when swap and persistence are enabled at the same time
      * for a data region.
      */
+    @Test
     public void testSetPersistenceAndSwap() {
         DataRegionConfiguration invCfg = new DataRegionConfiguration();
 
@@ -200,6 +204,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
     /**
      * Verifies that {@link IgniteCheckedException} is thrown when page eviction threshold is less than 0.5.
      */
+    @Test
     public void testSetSmallInvalidEviction() {
         final double SMALL_EVICTION_THRESHOLD = 0.1D;
         DataRegionConfiguration invCfg = new DataRegionConfiguration();
@@ -222,6 +227,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
     /**
      * Verifies that {@link IgniteCheckedException} is thrown when page eviction threshold is greater than 0.999.
      */
+    @Test
     public void testSetBigInvalidEviction() {
         final double BIG_EVICTION_THRESHOLD = 1.0D;
         DataRegionConfiguration invCfg = new DataRegionConfiguration();
@@ -244,6 +250,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
     /**
      * Verifies that {@link IgniteCheckedException} is thrown when empty pages pool size is less than 10
      */
+    @Test
     public void testInvalidSmallEmptyPagesPoolSize() {
         final int SMALL_PAGES_POOL_SIZE = 5;
         DataRegionConfiguration invCfg = new DataRegionConfiguration();
@@ -267,6 +274,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
      * Verifies that {@link IgniteCheckedException} is thrown when empty pages pool size is greater than
      * DataRegionConfiguration.getMaxSize() / DataStorageConfiguration.getPageSize() / 10.
      */
+    @Test
     public void testInvalidBigEmptyPagesPoolSize() {
         final int DFLT_PAGE_SIZE = 1024;
         long expectedMaxPoolSize;
@@ -298,6 +306,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
      * Verifies that {@link IgniteCheckedException} is thrown when IgniteCheckedException if validation of
      * memory metrics properties fails. Metrics rate time interval must not be less than 1000ms.
      */
+    @Test
     public void testInvalidMetricsProperties() {
         final long SMALL_RATE_TIME_INTERVAL_MS = 999;
         DataRegionConfiguration invCfg = new DataRegionConfiguration();
@@ -321,6 +330,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
      * Verifies that {@link IgniteCheckedException} is thrown when IgniteCheckedException if validation of
      * memory metrics properties fails. Metrics sub interval count must be positive.
      */
+    @Test
     public void testInvalidSubIntervalCount() {
         final int NEG_SUB_INTERVAL_COUNT = -1000;
         DataRegionConfiguration invCfg = new DataRegionConfiguration();

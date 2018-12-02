@@ -81,6 +81,7 @@ public class IgniteWalIteratorExceptionDuringReadTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void test() throws Exception {
         IgniteEx ig = (IgniteEx)startGrid();
 

@@ -86,6 +86,7 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientMetadataInitialization() throws Exception {
         startGrids(2);
 
@@ -181,6 +182,7 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFailoverOnStart() throws Exception {
         startGrids(4);
 
@@ -267,6 +269,7 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientStartsFirst() throws Exception {
         client = true;
 

@@ -114,6 +114,7 @@ public class GridP2PContinuousDeploymentSelfTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testDeployment() throws Exception {
         startGridsMultiThreaded(GRID_CNT);
 
@@ -139,6 +140,7 @@ public class GridP2PContinuousDeploymentSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testServerJoinWithP2PClassDeployedInCluster() throws Exception {
         startGrids(GRID_CNT);
 

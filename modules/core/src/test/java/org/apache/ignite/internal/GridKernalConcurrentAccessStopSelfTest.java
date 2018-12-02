@@ -41,6 +41,7 @@ public class GridKernalConcurrentAccessStopSelfTest  extends GridCommonAbstractT
     /**
      *
      */
+    @Test
     public void testConcurrentAccess() {
         for (int i = 0; i < GRIDS; i++) {
             grid(i).events().localListen(new IgnitePredicate<Event>() {

@@ -60,6 +60,7 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimitiveMarshalling() throws Exception {
         BinaryMarshaller marsh = createMarshaller();
 
@@ -101,6 +102,7 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTimeMarshalling() throws Exception {
         BinaryMarshaller marsh = createMarshaller();
 
@@ -122,6 +124,7 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDecimalFieldMarshalling() throws Exception {
         BinaryMarshaller marsh = createMarshaller();
 

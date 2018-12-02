@@ -66,6 +66,7 @@ public class IgniteIoTestMessagesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIoTestMessages() throws Exception {
         for (Ignite node : G.allGrids()) {
             IgniteKernal ignite = (IgniteKernal)node;

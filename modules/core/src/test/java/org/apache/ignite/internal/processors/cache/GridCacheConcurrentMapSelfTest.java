@@ -75,6 +75,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRehash() throws Exception {
         IgniteCache<Integer, String> c = grid().cache(DEFAULT_CACHE_NAME);
 
@@ -106,6 +107,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRehashRandom() throws Exception {
         IgniteCache<Integer, String> c = grid().cache(DEFAULT_CACHE_NAME);
 
@@ -145,6 +147,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRehashMultithreaded1() throws Exception {
         final AtomicInteger tidGen = new AtomicInteger();
 
@@ -217,6 +220,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRehashMultithreaded2() throws Exception {
         final AtomicInteger tidGen = new AtomicInteger(0);
 
@@ -310,6 +314,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEmptyWeakIterator() throws Exception {
         final IgniteCache<Integer, String> c = grid().cache(DEFAULT_CACHE_NAME);
 

@@ -36,6 +36,7 @@ public class IpcSharedMemoryUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPid() throws Exception {
         int pid = IpcSharedMemoryUtils.pid();
 
@@ -50,6 +51,7 @@ public class IpcSharedMemoryUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIdsGet() throws Exception {
         File tokFile = new File(IgniteSystemProperties.getString("java.io.tmpdir"), getTestIgniteInstanceName());
 

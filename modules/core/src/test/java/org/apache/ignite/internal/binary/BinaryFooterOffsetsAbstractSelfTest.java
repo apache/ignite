@@ -78,6 +78,7 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
+    @Test
     public void test1Byte() throws Exception {
         check(POW_8 >> 2);
     }
@@ -87,6 +88,7 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
+    @Test
     public void test1ByteSign() throws Exception {
         check(POW_8 >> 1);
     }
@@ -96,6 +98,7 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
+    @Test
     public void test2Bytes() throws Exception {
         check(POW_16 >> 2);
     }
@@ -105,6 +108,7 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
+    @Test
     public void test2BytesSign() throws Exception {
         check(POW_16 >> 1);
     }
@@ -114,6 +118,7 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
+    @Test
     public void test4Bytes() throws Exception {
         check(POW_16 << 2);
     }

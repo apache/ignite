@@ -195,6 +195,7 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedPut() throws Exception {
         IgniteInternalFuture<?> fut1 = runMultiThreadedAsync(new Callable<Object>() {
             private final Random rnd = new Random();
@@ -243,6 +244,7 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedPutAll() throws Exception {
         multithreaded(new Callable<Object>() {
             private final Random rnd = new Random();
@@ -285,6 +287,7 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedExplicitTx() throws Exception {
         runMultiThreaded(new Callable<Object>() {
             private final Random rnd = new Random();

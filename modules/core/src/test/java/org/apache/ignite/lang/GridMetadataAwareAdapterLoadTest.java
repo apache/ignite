@@ -40,6 +40,7 @@ public class GridMetadataAwareAdapterLoadTest extends GridCommonAbstractTest {
      *
      * @throws Exception
      */
+    @Test
     public void test() throws Exception {
         String[] dic = new String[1_000_000];
 

@@ -138,6 +138,7 @@ public class CacheGetReadFromBackupFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFailover() throws Exception {
         Ignite ignite = ignite(0);
 

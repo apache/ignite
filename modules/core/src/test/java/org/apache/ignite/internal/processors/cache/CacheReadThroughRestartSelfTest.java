@@ -84,6 +84,7 @@ public class CacheReadThroughRestartSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadThroughInTx() throws Exception {
         testReadThroughInTx(false);
     }
@@ -91,6 +92,7 @@ public class CacheReadThroughRestartSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadEntryThroughInTx() throws Exception {
         testReadThroughInTx(true);
     }
@@ -139,6 +141,7 @@ public class CacheReadThroughRestartSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadThrough() throws Exception {
         testReadThrough(false);
     }
@@ -146,6 +149,7 @@ public class CacheReadThroughRestartSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadEntryThrough() throws Exception {
         testReadThrough(true);
     }

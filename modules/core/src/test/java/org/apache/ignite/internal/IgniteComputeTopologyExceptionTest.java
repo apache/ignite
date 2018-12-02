@@ -46,6 +46,7 @@ public class IgniteComputeTopologyExceptionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCorrectException() throws Exception {
         Ignite ignite = ignite(0);
 
@@ -72,6 +73,7 @@ public class IgniteComputeTopologyExceptionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCorrectCheckedException() throws Exception {
         IgniteKernal ignite0 = (IgniteKernal)ignite(0);
 

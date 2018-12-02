@@ -93,6 +93,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends IgniteCollection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIteratorIfBackupDisabled() throws Exception {
         backups = 0;
 
@@ -102,6 +103,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends IgniteCollection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIteratorIfNoPreloadingAndBackupDisabledAndRepartitionForced() throws Exception {
         backups = 0;
 
@@ -113,6 +115,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends IgniteCollection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIteratorIfBackupEnabled() throws Exception {
         backups = 1;
 
@@ -122,6 +125,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends IgniteCollection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIteratorIfBackupEnabledAndOneNodeIsKilled() throws Exception {
         backups = 1;
 

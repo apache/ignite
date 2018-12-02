@@ -76,6 +76,7 @@ public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearOnlyPutMultithreaded() throws Exception {
         final Ignite ignite1 = ignite(1);
 
@@ -113,6 +114,7 @@ public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticTx() throws Exception {
         txMultithreaded(true);
     }
@@ -120,6 +122,7 @@ public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticTx() throws Exception {
         txMultithreaded(false);
     }
@@ -174,6 +177,7 @@ public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentTx() throws Exception {
         final Ignite ignite1 = ignite(1);
 

@@ -31,6 +31,7 @@ public class GridMultinodeRedeployContinuousModeSelfTest extends GridAbstractMul
      *
      * @throws Throwable if error occur.
      */
+    @Test
     public void testContinuousMode() throws Throwable {
         processTest(CONTINUOUS);
     }

@@ -70,6 +70,7 @@ public abstract class PageEvictionMultinodeAbstractTest extends PageEvictionAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPageEviction() throws Exception {
         for (int i = 0; i < CACHE_MODES.length; i++) {
             for (int j = 0; j < ATOMICITY_MODES.length; j++) {

@@ -43,6 +43,7 @@ public class SqlParserCreateIndexSelfTest extends SqlParserAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateIndex() throws Exception {
         // Base.
         parseValidate(null, "CREATE INDEX idx ON tbl(a)", null, "TBL", "IDX", DEFAULT_PROPS, "A", false);

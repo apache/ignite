@@ -39,6 +39,7 @@ public class GridDeploymentManagerStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOnKernalStop() throws Exception {
         DeploymentSpi spi = new GridTestDeploymentSpi();
 

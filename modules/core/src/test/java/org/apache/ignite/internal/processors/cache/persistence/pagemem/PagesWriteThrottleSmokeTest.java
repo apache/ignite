@@ -123,6 +123,7 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testThrottle() throws Exception {
         startGrids(2).active(true);
 

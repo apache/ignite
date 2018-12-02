@@ -117,6 +117,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCopyOnReadFlagP2PEnabled() throws Exception {
         doTest(true);
     }
@@ -124,6 +125,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCopyOnReadFlagP2PDisbaled() throws Exception {
         doTest(false);
     }

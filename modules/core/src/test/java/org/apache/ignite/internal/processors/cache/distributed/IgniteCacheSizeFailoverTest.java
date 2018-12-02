@@ -73,6 +73,7 @@ public class IgniteCacheSizeFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSize() throws Exception {
         startGrids(2);
 

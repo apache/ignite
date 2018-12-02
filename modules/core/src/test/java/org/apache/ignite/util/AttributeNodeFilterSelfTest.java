@@ -68,6 +68,7 @@ public class AttributeNodeFilterSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleAttribute() throws Exception {
         IgnitePredicate<ClusterNode> filter = new AttributeNodeFilter("attr", "value");
 
@@ -82,6 +83,7 @@ public class AttributeNodeFilterSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleAttributeNullValue() throws Exception {
         IgnitePredicate<ClusterNode> filter = new AttributeNodeFilter("attr", null);
 
@@ -95,6 +97,7 @@ public class AttributeNodeFilterSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleAttributes() throws Exception {
         IgnitePredicate<ClusterNode> filter =
             new AttributeNodeFilter(F.<String, Object>asMap("attr1", "value1", "attr2", "value2"));
@@ -111,6 +114,7 @@ public class AttributeNodeFilterSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleAttributesNullValues() throws Exception {
         IgnitePredicate<ClusterNode> filter = new AttributeNodeFilter(F.asMap("attr1", null, "attr2", null));
 
@@ -126,6 +130,7 @@ public class AttributeNodeFilterSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClusterGroup() throws Exception {
         Ignite group1 = startGridsMultiThreaded(3);
 
@@ -146,6 +151,7 @@ public class AttributeNodeFilterSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheFilter() throws Exception {
         Ignite group1 = startGridsMultiThreaded(3);
 

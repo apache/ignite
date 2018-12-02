@@ -80,6 +80,7 @@ public class CacheContinuousQueryLostPartitionTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxEvent() throws Exception {
         testEvent(TX_CACHE_NAME, false);
     }
@@ -87,6 +88,7 @@ public class CacheContinuousQueryLostPartitionTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMvccTxEvent() throws Exception {
         testEvent(MVCC_TX_CACHE_NAME, false);
     }
@@ -94,6 +96,7 @@ public class CacheContinuousQueryLostPartitionTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicEvent() throws Exception {
         testEvent(CACHE_NAME, false);
     }
@@ -101,6 +104,7 @@ public class CacheContinuousQueryLostPartitionTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxClientEvent() throws Exception {
         testEvent(TX_CACHE_NAME, true);
     }
@@ -108,6 +112,7 @@ public class CacheContinuousQueryLostPartitionTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMvccTxClientEvent() throws Exception {
         testEvent(MVCC_TX_CACHE_NAME, true);
     }
@@ -115,6 +120,7 @@ public class CacheContinuousQueryLostPartitionTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicClientEvent() throws Exception {
         testEvent(CACHE_NAME, true);
     }
@@ -123,6 +129,7 @@ public class CacheContinuousQueryLostPartitionTest extends GridCommonAbstractTes
      * @param cacheName Cache name.
      * @throws Exception If failed.
      */
+    @Test
     public void testEvent(String cacheName, boolean client) throws Exception {
         IgniteCache<Integer, String> cache1 = grid(0).getOrCreateCache(cacheName);
 

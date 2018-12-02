@@ -71,6 +71,7 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
     }
 
     /** */
+    @Test
     public void testIndexingSpiWithTxClient() throws Exception {
         IgniteEx client = startGrid("client");
 
@@ -80,6 +81,7 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
     }
 
     /** */
+    @Test
     public void testIndexingSpiWithTxLocal() throws Exception {
         IgniteEx ignite = (IgniteEx)primaryNode(0, DEFAULT_CACHE_NAME);
 
@@ -87,6 +89,7 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
     }
 
     /** */
+    @Test
     public void testIndexingSpiWithTxNotLocal() throws Exception {
         IgniteEx ignite = (IgniteEx)primaryNode(0, DEFAULT_CACHE_NAME);
 

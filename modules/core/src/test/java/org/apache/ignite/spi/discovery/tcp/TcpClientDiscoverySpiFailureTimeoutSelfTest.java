@@ -110,6 +110,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
     /**
      * @throws Exception in case of error.
      */
+    @Test
     public void testFailureDetectionTimeoutEnabled() throws Exception {
         startServerNodes(1);
         startClientNodes(1);
@@ -130,6 +131,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
     /**
      * @throws Exception in case of error.
      */
+    @Test
     public void testFailureTimeoutWorkabilityAvgTimeout() throws Exception {
         failureThreshold = 3000;
 
@@ -144,6 +146,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
     /**
      * @throws Exception in case of error.
      */
+    @Test
     public void testFailureTimeoutWorkabilitySmallTimeout() throws Exception {
         failureThreshold = 500;
 
@@ -160,6 +163,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
      *
      * @throws Exception in case of error.
      */
+    @Test
     public void testFailureTimeoutServerClient() throws Exception {
         failureThreshold = 3000;
         clientFailureDetectionTimeout = 2000;
@@ -213,6 +217,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
      *
      * @throws Exception in case of error.
      */
+    @Test
     public void testFailureTimeout3Server() throws Exception {
         failureThreshold = 1000;
         clientFailureDetectionTimeout = 10000;
@@ -319,6 +324,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnectOnCoordinatorRouterFail1() throws Exception {
         clientReconnectOnCoordinatorRouterFail(1);
     }
@@ -326,6 +332,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnectOnCoordinatorRouterFail2() throws Exception {
         clientReconnectOnCoordinatorRouterFail(2);
     }

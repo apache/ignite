@@ -88,6 +88,7 @@ public class GridComputationBinarylizableClosuresSelfTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testJob() throws Exception {
         Ignite ignite = startGrid(1);
         startGrid(2);
@@ -110,6 +111,7 @@ public class GridComputationBinarylizableClosuresSelfTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMasterLeaveAwareJob() throws Exception {
         Ignite ignite = startGrid(1);
         startGrid(2);
@@ -134,6 +136,7 @@ public class GridComputationBinarylizableClosuresSelfTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCallable() throws Exception {
         Ignite ignite = startGrid(1);
         startGrid(2);
@@ -153,6 +156,7 @@ public class GridComputationBinarylizableClosuresSelfTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMasterLeaveAwareCallable() throws Exception {
         Ignite ignite = startGrid(1);
         startGrid(2);
@@ -174,6 +178,7 @@ public class GridComputationBinarylizableClosuresSelfTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRunnable() throws Exception {
         Ignite ignite = startGrid(1);
         startGrid(2);
@@ -193,6 +198,7 @@ public class GridComputationBinarylizableClosuresSelfTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMasterLeaveAwareRunnable() throws Exception {
         Ignite ignite = startGrid(1);
         startGrid(2);

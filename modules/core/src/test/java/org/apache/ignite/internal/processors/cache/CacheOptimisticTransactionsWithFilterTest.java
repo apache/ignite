@@ -92,6 +92,7 @@ public class CacheOptimisticTransactionsWithFilterTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCasReplace() throws Exception {
         executeTestForAllCaches(new TestClosure() {
             @Override public void apply(Ignite ignite, String cacheName) throws Exception {
@@ -179,6 +180,7 @@ public class CacheOptimisticTransactionsWithFilterTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutIfAbsent() throws Exception {
         executeTestForAllCaches(new TestClosure() {
             @Override public void apply(Ignite ignite, String cacheName) throws Exception {
@@ -238,6 +240,7 @@ public class CacheOptimisticTransactionsWithFilterTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplace() throws Exception {
         executeTestForAllCaches(new TestClosure() {
             @Override public void apply(Ignite ignite, String cacheName) throws Exception {
@@ -297,6 +300,7 @@ public class CacheOptimisticTransactionsWithFilterTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoveWithOldValue() throws Exception {
         executeTestForAllCaches(new TestClosure() {
             @Override public void apply(Ignite ignite, String cacheName) throws Exception {

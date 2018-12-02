@@ -109,6 +109,7 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
     /**
      * Tests rollbacks on topology change.
      */
+    @Test
     public void testRollbackOnTopologyChange() throws Exception {
         final AtomicBoolean stop = new AtomicBoolean();
 

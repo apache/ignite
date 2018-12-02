@@ -36,6 +36,7 @@ public class JdbcTypesDefaultTransformerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransformer() throws Exception {
         // Connection to H2.
         String jdbcUrl = "jdbc:h2:mem:JdbcTypesDefaultTransformerTest";

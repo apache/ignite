@@ -144,6 +144,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception if failed
      */
+    @Test
     public void testLoadCacheWithDataStreamer() throws Exception {
         configured = true;
 
@@ -171,6 +172,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception if failed
      */
+    @Test
     public void testLoadCacheFromStore() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-4210");
 
@@ -184,6 +186,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception if failed
      */
+    @Test
     public void testLoadCacheWithDataStreamerSequentialClient() throws Exception {
         client = true;
 
@@ -198,6 +201,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception if failed
      */
+    @Test
     public void testLoadCacheWithDataStreamerSequentialClientWithConfig() throws Exception {
         client = true;
         configured = true;
@@ -214,6 +218,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception if failed
      */
+    @Test
     public void testLoadCacheWithDataStreamerSequential() throws Exception {
         loadCacheWithDataStreamerSequential();
     }
@@ -221,6 +226,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception if failed
      */
+    @Test
     public void testLoadCacheWithDataStreamerSequentialWithConfigAndRestarts() throws Exception {
         restarts = true;
         configured = true;
@@ -237,6 +243,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception if failed
      */
+    @Test
     public void testLoadCacheWithDataStreamerSequentialWithConfig() throws Exception {
         configured = true;
 

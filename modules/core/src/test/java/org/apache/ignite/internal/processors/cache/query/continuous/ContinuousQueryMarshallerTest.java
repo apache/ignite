@@ -65,6 +65,7 @@ public class ContinuousQueryMarshallerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoteFilterFactoryClient() throws Exception {
         check("server", "client");
     }
@@ -72,6 +73,7 @@ public class ContinuousQueryMarshallerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoteFilterFactoryServer() throws Exception {
         check("server1", "server2");
     }

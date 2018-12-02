@@ -83,6 +83,7 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNearReaderPreload() throws Exception {
         for (int i = 0; i < REPEAT_CNT; i++) {
             startUp();

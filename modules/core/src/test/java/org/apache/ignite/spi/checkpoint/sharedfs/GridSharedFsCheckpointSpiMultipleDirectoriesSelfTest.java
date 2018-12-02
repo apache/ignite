@@ -59,6 +59,7 @@ public class GridSharedFsCheckpointSpiMultipleDirectoriesSelfTest extends
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleSharedDirectories() throws Exception {
         String data = "Test check point data.";
 

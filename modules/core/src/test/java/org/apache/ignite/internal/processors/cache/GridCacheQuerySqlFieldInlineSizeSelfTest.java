@@ -35,6 +35,7 @@ public class GridCacheQuerySqlFieldInlineSizeSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleFieldIndexes() throws Exception {
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
@@ -57,6 +58,7 @@ public class GridCacheQuerySqlFieldInlineSizeSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGroupIndex() throws Exception {
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
@@ -76,6 +78,7 @@ public class GridCacheQuerySqlFieldInlineSizeSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGroupIndexInvalidAnnotaion() throws Exception {
         final CacheConfiguration ccfg = defaultCacheConfiguration();
 
@@ -91,6 +94,7 @@ public class GridCacheQuerySqlFieldInlineSizeSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNegativeInlineSize() throws Exception {
         final CacheConfiguration ccfg = defaultCacheConfiguration();
 

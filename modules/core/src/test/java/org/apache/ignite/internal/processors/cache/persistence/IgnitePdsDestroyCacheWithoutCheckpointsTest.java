@@ -39,6 +39,7 @@ public class IgnitePdsDestroyCacheWithoutCheckpointsTest extends IgnitePdsDestro
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDestroyCachesAbruptlyWithoutCheckpoints() throws Exception {
         Ignite ignite = startGrids(NODES);
 
@@ -56,6 +57,7 @@ public class IgnitePdsDestroyCacheWithoutCheckpointsTest extends IgnitePdsDestro
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDestroyGroupCachesAbruptlyWithoutCheckpoints() throws Exception {
         Ignite ignite = startGrids(NODES);
 

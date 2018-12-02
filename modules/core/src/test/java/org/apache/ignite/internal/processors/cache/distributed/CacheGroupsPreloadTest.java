@@ -90,6 +90,7 @@ public class CacheGroupsPreloadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCachePreload1() throws Exception {
         cachePreloadTest();
     }
@@ -97,6 +98,7 @@ public class CacheGroupsPreloadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCachePreload2() throws Exception {
         atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
 
@@ -106,6 +108,7 @@ public class CacheGroupsPreloadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCachePreload3() throws Exception {
         cacheMode = CacheMode.REPLICATED;
 
@@ -115,6 +118,7 @@ public class CacheGroupsPreloadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCachePreload4() throws Exception {
         cacheMode = CacheMode.REPLICATED;
         atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
@@ -125,6 +129,7 @@ public class CacheGroupsPreloadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCachePreload5() throws Exception {
         sameGrp = false;
 
@@ -134,6 +139,7 @@ public class CacheGroupsPreloadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCachePreload6() throws Exception {
         sameGrp = false;
         atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
@@ -144,6 +150,7 @@ public class CacheGroupsPreloadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCachePreload7() throws Exception {
         sameGrp = false;
         cacheMode = CacheMode.REPLICATED;
@@ -154,6 +161,7 @@ public class CacheGroupsPreloadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCachePreload8() throws Exception {
         sameGrp = false;
         cacheMode = CacheMode.REPLICATED;

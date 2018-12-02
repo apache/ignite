@@ -76,6 +76,7 @@ public class GridJobStealingFailoverSpiSelfTest extends GridSpiAbstractTest<JobS
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testFailover() throws Exception {
         ClusterNode rmt = getSpiContext().remoteNodes().iterator().next();
 
@@ -96,6 +97,7 @@ public class GridJobStealingFailoverSpiSelfTest extends GridSpiAbstractTest<JobS
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testMaxHopsExceeded() throws Exception {
         ClusterNode rmt = getSpiContext().remoteNodes().iterator().next();
 
@@ -115,6 +117,7 @@ public class GridJobStealingFailoverSpiSelfTest extends GridSpiAbstractTest<JobS
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testMaxHopsExceededThiefNotSet() throws Exception {
         ClusterNode rmt = getSpiContext().remoteNodes().iterator().next();
 
@@ -132,6 +135,7 @@ public class GridJobStealingFailoverSpiSelfTest extends GridSpiAbstractTest<JobS
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNonZeroFailoverCount() throws Exception {
         ClusterNode rmt = getSpiContext().remoteNodes().iterator().next();
 
@@ -154,6 +158,7 @@ public class GridJobStealingFailoverSpiSelfTest extends GridSpiAbstractTest<JobS
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testThiefNotInTopology() throws Exception {
         ClusterNode rmt = new GridTestNode(UUID.randomUUID());
 
@@ -175,6 +180,7 @@ public class GridJobStealingFailoverSpiSelfTest extends GridSpiAbstractTest<JobS
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testThiefEqualsVictim() throws Exception {
         ClusterNode rmt = getSpiContext().remoteNodes().iterator().next();
 
@@ -196,6 +202,7 @@ public class GridJobStealingFailoverSpiSelfTest extends GridSpiAbstractTest<JobS
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testThiefIdNotSet() throws Exception {
         ClusterNode rmt = getSpiContext().remoteNodes().iterator().next();
 

@@ -48,22 +48,26 @@ public class GridCachePartitionedBasicOpSelfTest extends GridCacheBasicOpAbstrac
     }
 
     /** {@inheritDoc} */
-    @Override public void testBasicOps() throws Exception {
+    @Override @Test
+    public void testBasicOps() throws Exception {
         super.testBasicOps();
     }
 
     /** {@inheritDoc} */
-    @Override public void testBasicOpsAsync() throws Exception {
+    @Override @Test
+    public void testBasicOpsAsync() throws Exception {
         super.testBasicOpsAsync();
     }
 
     /** {@inheritDoc} */
-    @Override public void testOptimisticTransaction() throws Exception {
+    @Override @Test
+    public void testOptimisticTransaction() throws Exception {
         super.testOptimisticTransaction();
     }
 
     /** {@inheritDoc} */
-    @Override public void testPutWithExpiration() throws Exception {
+    @Override @Test
+    public void testPutWithExpiration() throws Exception {
         super.testPutWithExpiration();
     }
 }

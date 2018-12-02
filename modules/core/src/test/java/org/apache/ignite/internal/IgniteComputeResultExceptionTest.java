@@ -38,31 +38,37 @@ import org.jetbrains.annotations.Nullable;
  */
 public class IgniteComputeResultExceptionTest extends GridCommonAbstractTest {
     /** */
+    @Test
     public void testIgniteExceptionExecute() throws Exception {
         checkExecuteException(new IgniteException());
     }
 
     /** */
+    @Test
     public void testIgniteExceptionWithCauseExecute() throws Exception {
         checkExecuteException(new IgniteException(new Exception()));
     }
 
     /** */
+    @Test
     public void testIgniteExceptionWithCauseChainExecute() throws Exception {
         checkExecuteException(new IgniteException(new Exception(new Throwable())));
     }
 
     /** */
+    @Test
     public void testCustomExceptionExecute() throws Exception {
         checkExecuteException(new TaskException());
     }
 
     /** */
+    @Test
     public void testCustomExceptionWithCauseExecute() throws Exception {
         checkExecuteException(new TaskException(new Exception()));
     }
 
     /** */
+    @Test
     public void testCustomExceptionWithCauseChainExecute() throws Exception {
         checkExecuteException(new TaskException(new Exception(new Throwable())));
     }
@@ -80,32 +86,38 @@ public class IgniteComputeResultExceptionTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testIgniteExceptionExecuteAsync() throws Exception {
         checkExecuteAsyncException(new IgniteException());
     }
 
     /** */
+    @Test
     public void testIgniteExceptionWithCauseExecuteAsync() throws Exception {
         checkExecuteAsyncException(new IgniteException(new Exception()));
     }
 
     /** */
+    @Test
     public void testIgniteExceptionWithCauseChainExecuteAsync() throws Exception {
         checkExecuteAsyncException(new IgniteException(new Exception(new Throwable())));
     }
 
 
     /** */
+    @Test
     public void testCustomExceptionExecuteAsync() throws Exception {
         checkExecuteAsyncException(new TaskException());
     }
 
     /** */
+    @Test
     public void testCustomExceptionWithCauseExecuteAsync() throws Exception {
         checkExecuteAsyncException(new TaskException(new Exception()));
     }
 
     /** */
+    @Test
     public void testCustomExceptionWithCauseChainExecuteAsync() throws Exception {
         checkExecuteAsyncException(new TaskException(new Exception(new Throwable())));
     }

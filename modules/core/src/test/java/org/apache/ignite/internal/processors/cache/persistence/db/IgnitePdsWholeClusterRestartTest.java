@@ -96,6 +96,7 @@ public class IgnitePdsWholeClusterRestartTest extends GridCommonAbstractTest {
         /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRestarts() throws Exception {
         startGrids(GRID_CNT);
 

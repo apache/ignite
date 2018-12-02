@@ -96,6 +96,7 @@ public class GridInternalTaskUnusedWalSegmentsTest extends GridCommonAbstractTes
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testCorrectnessOfDeletionTaskSegments() throws Exception {
         try {
             IgniteEx ig0 = (IgniteEx)startGrids(4);

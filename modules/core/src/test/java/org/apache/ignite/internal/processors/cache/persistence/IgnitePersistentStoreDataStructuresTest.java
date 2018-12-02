@@ -92,6 +92,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueue() throws Exception {
         Ignite ignite = startGrids(4);
 
@@ -117,6 +118,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomic() throws Exception {
         Ignite ignite = startGrids(4);
 
@@ -142,6 +144,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSequence() throws Exception {
         Ignite ignite = startGrids(4);
 
@@ -171,6 +174,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSequenceAfterAutoactivation() throws Exception {
         final String seqName = "testSequence";
 
@@ -215,6 +219,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSet() throws Exception {
         Ignite ignite = startGrids(4);
 
@@ -246,6 +251,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockVolatility() throws Exception {
         Ignite ignite = startGrids(4);
 
@@ -269,6 +275,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSemaphoreVolatility() throws Exception {
         Ignite ignite = startGrids(4);
 
@@ -292,6 +299,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLatchVolatility() throws Exception {
         Ignite ignite = startGrids(4);
 

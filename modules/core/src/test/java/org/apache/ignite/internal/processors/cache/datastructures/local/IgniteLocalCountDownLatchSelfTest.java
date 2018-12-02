@@ -44,7 +44,8 @@ public class IgniteLocalCountDownLatchSelfTest extends IgniteCountDownLatchAbstr
     }
 
     /** {@inheritDoc} */
-    @Override public void testLatch() throws Exception {
+    @Override @Test
+    public void testLatch() throws Exception {
         // Test main functionality.
         IgniteCountDownLatch latch = grid(0).countDownLatch("latch", 2, false, true);
 

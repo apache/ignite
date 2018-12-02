@@ -94,6 +94,7 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void test() throws Exception {
         for (NodeStopPoint nodeStopPoint : NodeStopPoint.values()) {
             testStopNodeWithDisableWAL(nodeStopPoint);

@@ -96,6 +96,7 @@ public abstract class IncludeSensitiveAbstractTest extends GridCacheAbstractSelf
      *
      * @throws Exception If failed.
      */
+    @Test
     public void test() throws Exception {
         IgniteCache<Long, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 

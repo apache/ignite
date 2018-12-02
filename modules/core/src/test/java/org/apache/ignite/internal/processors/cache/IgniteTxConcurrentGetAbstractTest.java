@@ -88,6 +88,7 @@ public abstract class IgniteTxConcurrentGetAbstractTest extends GridCommonAbstra
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGet() throws Exception {
         // Random key.
         final String key = UUID.randomUUID().toString();

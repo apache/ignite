@@ -121,6 +121,7 @@ public class IgniteTxConcurrentRemoveObjectsTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTxLeavesObjectsInLocalPartition() throws Exception {
         IgniteEx igniteEx = startGrid(getConfiguration());
 

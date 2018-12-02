@@ -43,6 +43,7 @@ public class StopNodeFailureHandlerTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeStopped() throws Exception {
         try {
             IgniteEx ignite0 = startGrid(0);

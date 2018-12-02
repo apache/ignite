@@ -35,6 +35,7 @@ public class IgfsServerManagerIpcEndpointRegistrationOnWindowsSelfTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testShmemEndpointsRegistration() throws Exception {
         Throwable e = GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {

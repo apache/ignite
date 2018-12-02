@@ -256,6 +256,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /**  Test mappings. */
+    @Test
     public void testMappings() {
         mapDebug = false;
 
@@ -316,6 +317,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testReadThroughAndPut() throws Exception {
         Integer key = 100000;
 
@@ -339,6 +341,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testReadThrough() throws Exception {
         ClusterNode loc = grid(0).localNode();
 
@@ -384,6 +387,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings({"ConstantConditions"})
+    @Test
     public void testOptimisticWriteThrough() throws Exception {
         IgniteCache<Integer, String> near = jcache(0);
 
@@ -429,6 +433,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testNoTransactionSinglePutx() throws Exception {
         IgniteCache<Integer, String> near = jcache(0);
 
@@ -446,6 +451,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testNoTransactionSinglePut() throws Exception {
         IgniteCache<Integer, String> near = jcache(0);
 
@@ -488,6 +494,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testNoTransactionWriteThrough() throws Exception {
         IgniteCache<Integer, String> near = jcache(0);
 
@@ -517,6 +524,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings({"ConstantConditions"})
+    @Test
     public void testPessimisticWriteThrough() throws Exception {
         IgniteCache<Integer, String> near = jcache(0);
 
@@ -556,6 +564,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testConcurrentOps() throws Exception {
         // Don't create missing values.
         store.create(false);
@@ -587,11 +596,13 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testBackupsLocalAffinity() throws Exception {
         checkBackupConsistency(2);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testBackupsRemoteAffinity() throws Exception {
         checkBackupConsistency(1);
     }
@@ -618,11 +629,13 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSingleLockLocalAffinity() throws Exception {
         checkSingleLock(2);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSingleLockRemoteAffinity() throws Exception {
         checkSingleLock(1);
     }
@@ -733,11 +746,13 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Throwable If failed. */
+    @Test
     public void testSingleLockReentryLocalAffinity() throws Throwable {
         checkSingleLockReentry(2);
     }
 
     /** @throws Throwable If failed. */
+    @Test
     public void testSingleLockReentryRemoteAffinity() throws Throwable {
         checkSingleLockReentry(1);
     }
@@ -800,11 +815,13 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testTransactionSingleGetLocalAffinity() throws Exception {
         checkTransactionSingleGet(2);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testTransactionSingleGetRemoteAffinity() throws Exception {
         checkTransactionSingleGet(1);
     }
@@ -846,11 +863,13 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testTransactionSingleGetRemoveLocalAffinity() throws Exception {
         checkTransactionSingleGetRemove(2);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testTransactionSingleGetRemoveRemoteAffinity() throws Exception {
         checkTransactionSingleGetRemove(1);
     }

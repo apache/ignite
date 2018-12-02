@@ -75,6 +75,7 @@ public class SystemWorkersTerminationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSyntheticWorkerTermination() throws Exception {
         IgniteEx ignite = grid(0);
 

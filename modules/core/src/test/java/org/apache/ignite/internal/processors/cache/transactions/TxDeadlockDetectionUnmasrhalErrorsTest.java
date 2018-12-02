@@ -86,6 +86,7 @@ public class TxDeadlockDetectionUnmasrhalErrorsTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlockCacheObjectContext() throws Exception {
         IgniteCache<Integer, Integer> cache0 = null;
         IgniteCache<Integer, Integer> cache1 = null;

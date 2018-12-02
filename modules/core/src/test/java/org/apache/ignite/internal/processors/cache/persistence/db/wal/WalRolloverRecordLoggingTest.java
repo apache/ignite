@@ -93,6 +93,7 @@ public abstract class WalRolloverRecordLoggingTest extends GridCommonAbstractTes
     }
 
     /** */
+    @Test
     public void testAvoidInfinityWaitingOnRolloverOfSegment() throws Exception {
         IgniteEx ig = startGrid(0);
 

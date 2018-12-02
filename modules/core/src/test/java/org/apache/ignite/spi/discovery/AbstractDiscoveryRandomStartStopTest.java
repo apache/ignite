@@ -151,6 +151,7 @@ public abstract class AbstractDiscoveryRandomStartStopTest<T extends DiscoverySp
      * @throws Exception If failed.
      */
     @SuppressWarnings({"BusyWait"})
+    @Test
     public void testDiscovery() throws Exception {
         Random rand = new Random();
 

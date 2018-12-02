@@ -38,6 +38,7 @@ public class NotStringSystemPropertyTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testGridStart() throws Exception {
         Some some = new Some(0, "prop");
 

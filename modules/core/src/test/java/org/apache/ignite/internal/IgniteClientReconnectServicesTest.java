@@ -48,6 +48,7 @@ public class IgniteClientReconnectServicesTest extends IgniteClientReconnectAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnect() throws Exception {
         Ignite client = grid(serverCount());
 
@@ -83,6 +84,7 @@ public class IgniteClientReconnectServicesTest extends IgniteClientReconnectAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServiceRemove() throws Exception {
         Ignite client = grid(serverCount());
 
@@ -125,6 +127,7 @@ public class IgniteClientReconnectServicesTest extends IgniteClientReconnectAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectInDeploying() throws Exception {
         Ignite client = grid(serverCount());
 
@@ -172,6 +175,7 @@ public class IgniteClientReconnectServicesTest extends IgniteClientReconnectAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectInProgress() throws Exception {
         Ignite client = grid(serverCount());
 

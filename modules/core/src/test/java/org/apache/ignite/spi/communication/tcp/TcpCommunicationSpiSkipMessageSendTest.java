@@ -105,6 +105,7 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientSegmented() throws Exception {
         startGrid("server");
 

@@ -56,6 +56,7 @@ public class StopNodeOrHaltFailureHandlerTest extends GridCommonAbstractTest {
     /**
      * Tests failed node's JVM is halted after triggering StopNodeOrHaltFailureHandler.
      */
+    @Test
     public void testJvmHalted() throws Exception {
         IgniteEx g = grid(0);
         IgniteEx rmt1 = grid(1);

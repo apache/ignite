@@ -64,6 +64,7 @@ public class IgnitePdsCheckpointSimpleTest extends GridCommonAbstractTest {
      * Checks if same data can be loaded after checkpoint.
      * @throws Exception if failed.
      */
+    @Test
     public void testRecoveryAfterCpEnd() throws Exception {
         IgniteEx ignite = startGrid(0);
 

@@ -28,6 +28,7 @@ public class GridMemoryEventStorageSpiConfigSelfTest extends GridSpiAbstractConf
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNegativeConfig() throws Exception {
         checkNegativeSpiProperty(new MemoryEventStorageSpi(), "expireCount", 0);
         checkNegativeSpiProperty(new MemoryEventStorageSpi(), "expireAgeMs", 0);

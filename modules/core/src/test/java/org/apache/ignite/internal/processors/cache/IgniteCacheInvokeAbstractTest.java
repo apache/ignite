@@ -65,6 +65,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvoke() throws Exception {
         IgniteCache<Integer, Integer> cache = jcache();
 
@@ -80,6 +81,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInternalInvokeNullable() throws Exception {
         IgniteInternalCache<Integer, Integer> cache = grid(0).cachex(DEFAULT_CACHE_NAME);
 
@@ -230,6 +232,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeAll() throws Exception {
         IgniteCache<Integer, Integer> cache = jcache();
 
@@ -305,6 +308,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeAllAppliedOnceOnBinaryTypeRegistration() {
         IgniteCache<MyKey, Integer> cache = jcache();
 

@@ -72,6 +72,7 @@ public abstract class IgniteCacheNoLoadPreviousValueAbstractTest extends IgniteC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoLoadPreviousValue() throws Exception {
         IgniteCache<Integer, Integer> cache = jcache(0);
 

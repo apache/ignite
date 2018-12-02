@@ -134,6 +134,7 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("ConstantConditions")
+    @Test
     public void testStatistics() throws Exception {
         startGrids(2);
 

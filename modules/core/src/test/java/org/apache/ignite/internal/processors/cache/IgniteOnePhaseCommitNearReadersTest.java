@@ -80,6 +80,7 @@ public class IgniteOnePhaseCommitNearReadersTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutReadersUpdate1() throws Exception {
         putReadersUpdate(1);
     }
@@ -87,6 +88,7 @@ public class IgniteOnePhaseCommitNearReadersTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutReadersUpdate2() throws Exception {
         putReadersUpdate(0);
     }
@@ -145,6 +147,7 @@ public class IgniteOnePhaseCommitNearReadersTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutReaderUpdatePrimaryFails1() throws Exception {
         putReaderUpdatePrimaryFails(1);
     }
@@ -152,6 +155,7 @@ public class IgniteOnePhaseCommitNearReadersTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutReaderUpdatePrimaryFails2() throws Exception {
         putReaderUpdatePrimaryFails(0);
     }

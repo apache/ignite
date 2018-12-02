@@ -199,6 +199,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDhtDoubleDestroy() throws Exception {
         startGridsMultiThreaded(gridCount());
 
@@ -239,6 +240,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClientDoubleDestroy() throws Exception {
         startGridsMultiThreaded(gridCount());
 
@@ -279,6 +281,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNearDoubleDestroy() throws Exception {
         startGridsMultiThreaded(gridCount());
 
@@ -319,6 +322,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalDoubleDestroy() throws Exception {
         startGridsMultiThreaded(gridCount());
 
@@ -354,6 +358,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDhtClose() throws Exception {
         startGridsMultiThreaded(gridCount());
 
@@ -435,6 +440,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDhtCloseWithTry() throws Exception {
         startGridsMultiThreaded(gridCount());
 
@@ -472,6 +478,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClientClose() throws Exception {
         startGridsMultiThreaded(gridCount());
 
@@ -523,6 +530,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClientCloseWithTry() throws Exception {
         startGridsMultiThreaded(gridCount());
 
@@ -562,6 +570,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNearClose() throws Exception {
         startGridsMultiThreaded(gridCount());
 
@@ -635,6 +644,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNearCloseWithTry() throws Exception {
         startGridsMultiThreaded(gridCount());
 
@@ -673,6 +683,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalClose() throws Exception {
         memCfg = new DataStorageConfiguration();
 
@@ -724,6 +735,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalCloseWithTry() throws Exception {
         memCfg = new DataStorageConfiguration();
 
@@ -756,6 +768,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
     /**
      * Tests start -> destroy -> start -> close using CacheManager.
      */
+    @Test
     public void testTckStyleCreateDestroyClose() throws Exception {
         startGridsMultiThreaded(gridCount());
 
@@ -788,6 +801,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUseAndCloseFromClient() throws Exception {
         testConcurrentUseAndClose(true);
     }
@@ -795,6 +809,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentUseAndCloseFromServer() throws Exception {
         testConcurrentUseAndClose(false);
     }

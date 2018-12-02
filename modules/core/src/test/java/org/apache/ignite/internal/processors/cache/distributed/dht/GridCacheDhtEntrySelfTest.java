@@ -144,6 +144,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testClearWithReaders() throws Exception {
         Integer key = 1;
 
@@ -192,6 +193,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testRemoveWithReaders() throws Exception {
         Integer key = 1;
 
@@ -240,6 +242,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testEvictWithReaders() throws Exception {
         Integer key = 1;
 

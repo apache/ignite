@@ -66,6 +66,7 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSpiFail() throws Exception {
         Ignite ignite = startGrid();
 

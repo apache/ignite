@@ -68,6 +68,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticSimpleTxsNear() throws Exception {
         checkSimpleTxs(true, PESSIMISTIC);
     }
@@ -75,6 +76,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticSimpleTxsColocated() throws Exception {
         checkSimpleTxs(false, PESSIMISTIC);
     }
@@ -82,6 +84,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticSimpleTxsColocated() throws Exception {
         checkSimpleTxs(false, OPTIMISTIC);
     }
@@ -89,6 +92,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticSimpleTxsNear() throws Exception {
         checkSimpleTxs(false, OPTIMISTIC);
     }

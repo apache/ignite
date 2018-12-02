@@ -86,6 +86,7 @@ public class IgniteDataIntegrityTests extends TestCase {
     /**
      *
      */
+    @Test
     public void testSuccessfulPath() throws Exception {
         checkIntegrity();
     }
@@ -93,6 +94,7 @@ public class IgniteDataIntegrityTests extends TestCase {
     /**
      *
      */
+    @Test
     public void testIntegrityViolationChecking() throws Exception {
         toggleOneRandomBit(0, 1024 - 16);
 
@@ -108,6 +110,7 @@ public class IgniteDataIntegrityTests extends TestCase {
     /**
      *
      */
+    @Test
     public void testSkipingLastCorruptedEntry() throws Exception {
         toggleOneRandomBit(1024 - 16, 1024);
 
@@ -123,6 +126,7 @@ public class IgniteDataIntegrityTests extends TestCase {
     /**
      *
      */
+    @Test
     public void testExpandBuffer() {
         ByteBufferExpander expBuf = new ByteBufferExpander(24, ByteOrder.nativeOrder());
 

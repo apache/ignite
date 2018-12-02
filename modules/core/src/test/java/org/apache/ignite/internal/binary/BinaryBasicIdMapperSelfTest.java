@@ -28,6 +28,7 @@ public class BinaryBasicIdMapperSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLowerCase() throws Exception {
         BinaryBasicIdMapper mapper = new BinaryBasicIdMapper(true);
 
@@ -40,6 +41,7 @@ public class BinaryBasicIdMapperSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDefaultCase() throws Exception {
         BinaryBasicIdMapper mapper = new BinaryBasicIdMapper(false);
 

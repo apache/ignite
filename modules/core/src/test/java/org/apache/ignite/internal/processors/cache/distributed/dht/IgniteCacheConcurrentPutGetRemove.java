@@ -67,6 +67,7 @@ public class IgniteCacheConcurrentPutGetRemove extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetRemoveAtomic() throws Exception {
         putGetRemove(cacheConfiguration(ATOMIC, 1));
     }
@@ -74,6 +75,7 @@ public class IgniteCacheConcurrentPutGetRemove extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetRemoveTx() throws Exception {
         putGetRemove(cacheConfiguration(TRANSACTIONAL, 1));
     }

@@ -110,6 +110,7 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
     /**
      * Checks that tasks canceling does not lead to node failure.
      */
+    @Test
     public void testFailNodesOnCanceledTask() throws Exception {
         cleanPersistenceDir();
 
@@ -181,6 +182,7 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
     /**
      * Test FilePageStore with multiple interrupted threads.
      */
+    @Test
     public void testFilePageStoreInterruptThreads() throws Exception {
         failure.set(false);
 

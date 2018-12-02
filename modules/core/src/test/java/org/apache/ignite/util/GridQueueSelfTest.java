@@ -30,6 +30,7 @@ public class GridQueueSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testQueue() {
         GridQueue<String> q = new GridQueue<>();
         for (char c = 'a'; c <= 'z'; c++)

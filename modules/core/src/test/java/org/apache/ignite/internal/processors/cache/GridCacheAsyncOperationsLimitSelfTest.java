@@ -47,6 +47,7 @@ public class GridCacheAsyncOperationsLimitSelfTest extends GridCacheAbstractSelf
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAsyncOps() throws Exception {
         final AtomicInteger cnt = new AtomicInteger();
         final GridAtomicInteger max = new GridAtomicInteger();

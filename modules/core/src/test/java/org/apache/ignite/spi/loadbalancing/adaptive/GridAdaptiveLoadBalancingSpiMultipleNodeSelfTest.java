@@ -72,6 +72,7 @@ public class GridAdaptiveLoadBalancingSpiMultipleNodeSelfTest extends GridSpiAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWeights() throws Exception {
         // Seal it.
         List<ClusterNode> nodes = new ArrayList<>(getSpiContext().remoteNodes());

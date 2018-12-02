@@ -54,6 +54,7 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
      *
      * @throws Exception if fails.
      */
+    @Test
     public void testMBean() throws Exception {
         startGrids(3);
 

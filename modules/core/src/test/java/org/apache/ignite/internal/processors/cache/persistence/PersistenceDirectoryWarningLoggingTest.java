@@ -60,6 +60,7 @@ public class PersistenceDirectoryWarningLoggingTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPdsDirWarningSuppressed() throws Exception {
         startGrid();
 
@@ -69,6 +70,7 @@ public class PersistenceDirectoryWarningLoggingTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPdsDirWarningIsLogged() throws Exception {
         IgniteConfiguration cfg = getConfiguration("0");
 

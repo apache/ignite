@@ -84,6 +84,7 @@ public class GridCacheMixedPartitionExchangeSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeJoinLeave() throws Exception {
         try {
             cache = true;

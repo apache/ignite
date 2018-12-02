@@ -80,6 +80,7 @@ public class GridCacheLoadOnlyStoreAdapterSelfTest extends GridCacheAbstractSelf
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStore() throws Exception {
         try {
             int inputSize = 100;
@@ -107,6 +108,7 @@ public class GridCacheLoadOnlyStoreAdapterSelfTest extends GridCacheAbstractSelf
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStoreSmallQueueSize() throws Exception {
         try {
             int inputSize = 1500;

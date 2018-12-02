@@ -365,7 +365,8 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
     /** {@inheritDoc} */
     @SuppressWarnings("ErrorNotRethrown")
-    @Override public void testLifecycleAware() throws Exception {
+    @Override @Test
+    public void testLifecycleAware() throws Exception {
         for (boolean nearEnabled : new boolean[] {true, false}) {
             near = nearEnabled;
 

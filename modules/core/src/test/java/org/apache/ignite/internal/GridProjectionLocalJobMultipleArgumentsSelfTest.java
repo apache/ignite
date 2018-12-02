@@ -84,6 +84,7 @@ public class GridProjectionLocalJobMultipleArgumentsSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityCall() throws Exception {
         Collection<Integer> res = new ArrayList<>();
 
@@ -104,6 +105,7 @@ public class GridProjectionLocalJobMultipleArgumentsSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityRun() throws Exception {
         for (int i : F.asList(1, 2, 3)) {
             grid().compute().affinityRun(DEFAULT_CACHE_NAME, i, new IgniteRunnable() {
@@ -122,6 +124,7 @@ public class GridProjectionLocalJobMultipleArgumentsSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCall() throws Exception {
         Collection<Integer> res = grid().compute().apply(new C1<Integer, Integer>() {
             @Override public Integer apply(Integer arg) {
@@ -138,6 +141,7 @@ public class GridProjectionLocalJobMultipleArgumentsSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCallWithProducer() throws Exception {
         Collection<Integer> args = Arrays.asList(1, 2, 3);
 

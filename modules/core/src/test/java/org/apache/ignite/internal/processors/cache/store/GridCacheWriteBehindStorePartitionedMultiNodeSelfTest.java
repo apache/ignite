@@ -122,6 +122,7 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleWritesOnDhtNode() throws Exception {
         checkSingleWrites();
     }
@@ -129,6 +130,7 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBatchWritesOnDhtNode() throws Exception {
         checkBatchWrites();
     }
@@ -136,6 +138,7 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxWritesOnDhtNode() throws Exception {
         checkTxWrites();
     }

@@ -69,6 +69,7 @@ public class BinaryObjectTypeCompatibilityTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCompatibilityWithObject() throws Exception {
         Ignite ignite = startGrid();
 

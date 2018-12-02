@@ -108,6 +108,7 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testUserTxTimeout() throws Exception {
         final Ignite ignite = grid(0);
 
@@ -122,6 +123,7 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSystemCacheTx() throws Exception {
         final Ignite ignite = grid(0);
 

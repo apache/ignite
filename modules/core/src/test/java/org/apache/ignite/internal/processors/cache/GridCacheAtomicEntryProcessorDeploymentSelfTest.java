@@ -130,6 +130,7 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testInvokeDeployment() throws Exception {
         depMode = DeploymentMode.CONTINUOUS;
 
@@ -139,6 +140,7 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testInvokeDeployment2() throws Exception {
         depMode = DeploymentMode.SHARED;
 
@@ -148,6 +150,7 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testInvokeAllDeployment() throws Exception {
         depMode = DeploymentMode.CONTINUOUS;
 
@@ -157,6 +160,7 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testInvokeAllDeployment2() throws Exception {
         depMode = DeploymentMode.SHARED;
 

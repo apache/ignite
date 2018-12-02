@@ -84,6 +84,7 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetTransactional() throws Exception {
         checkGet(TRANSACTIONAL);
     }
@@ -91,6 +92,7 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAtomic() throws Exception {
         checkGet(ATOMIC);
     }
@@ -98,6 +100,7 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutTransactional() throws Exception {
         checkPut(TRANSACTIONAL);
     }
@@ -105,6 +108,7 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAtomic() throws Exception {
         checkPut(ATOMIC);
     }
@@ -112,6 +116,7 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoveTransactional() throws Exception {
         checkRemove(TRANSACTIONAL);
     }
@@ -119,6 +124,7 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoveAtomic() throws Exception {
         checkRemove(ATOMIC);
     }

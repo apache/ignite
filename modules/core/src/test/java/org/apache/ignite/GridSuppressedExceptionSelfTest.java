@@ -29,6 +29,7 @@ public class GridSuppressedExceptionSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testHasCause() throws Exception {
         IgniteCheckedException me = prepareMultiException();
 
@@ -40,6 +41,7 @@ public class GridSuppressedExceptionSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetCause() throws Exception {
         IgniteCheckedException me = prepareMultiException();
 
@@ -55,6 +57,7 @@ public class GridSuppressedExceptionSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testXHasCause() throws Exception {
         IgniteCheckedException me = prepareMultiException();
 
@@ -71,6 +74,7 @@ public class GridSuppressedExceptionSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testXGetSuppressedList() throws Exception {
         IgniteCheckedException me = prepareMultiException();
 
@@ -91,6 +95,7 @@ public class GridSuppressedExceptionSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testXCause() throws Exception {
         IgniteCheckedException me = prepareMultiException();
 

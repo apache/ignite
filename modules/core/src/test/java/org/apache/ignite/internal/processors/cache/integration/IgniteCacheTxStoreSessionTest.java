@@ -61,6 +61,7 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStoreSessionTx() throws Exception {
         testTxPut(jcache(0), null, null);
 
@@ -256,6 +257,7 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSessionCrossCacheTx() throws Exception {
         IgniteCache<Object, Object> cache0 = ignite(0).cache(DEFAULT_CACHE_NAME);
 

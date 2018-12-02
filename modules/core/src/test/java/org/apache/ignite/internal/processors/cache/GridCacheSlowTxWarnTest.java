@@ -75,6 +75,7 @@ public class GridCacheSlowTxWarnTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWarningOutput() throws Exception {
         try {
             IgniteKernal g = (IgniteKernal)startGrid(1);

@@ -98,6 +98,7 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinity() throws Exception {
         checkAffinity(grid(0));
 
@@ -167,6 +168,7 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityRun() throws Exception {
         Affinity<Object> aff = grid(0).affinity(DEFAULT_CACHE_NAME);
 
@@ -200,6 +202,7 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityCall() throws Exception {
         Affinity<Object> aff = grid(0).affinity(DEFAULT_CACHE_NAME);
 

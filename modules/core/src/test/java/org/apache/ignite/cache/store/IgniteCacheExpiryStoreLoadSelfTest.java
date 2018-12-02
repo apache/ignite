@@ -79,6 +79,7 @@ public class IgniteCacheExpiryStoreLoadSelfTest extends GridCacheAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCacheWithExpiry() throws Exception {
         checkLoad(false);
     }
@@ -86,6 +87,7 @@ public class IgniteCacheExpiryStoreLoadSelfTest extends GridCacheAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCacheWithExpiryAsync() throws Exception {
         checkLoad(true);
     }
@@ -119,6 +121,7 @@ public class IgniteCacheExpiryStoreLoadSelfTest extends GridCacheAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalLoadCacheWithExpiry() throws Exception {
         checkLocalLoad(false);
     }
@@ -126,6 +129,7 @@ public class IgniteCacheExpiryStoreLoadSelfTest extends GridCacheAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalLoadCacheWithExpiryAsync() throws Exception {
         checkLocalLoad(true);
     }
@@ -159,6 +163,7 @@ public class IgniteCacheExpiryStoreLoadSelfTest extends GridCacheAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadAllWithExpiry() throws Exception {
         IgniteCache<Integer, Integer> cache = ignite(0).<Integer, Integer>cache(DEFAULT_CACHE_NAME)
             .withExpiryPolicy(new CreatedExpiryPolicy(new Duration(MILLISECONDS, TIME_TO_LIVE)));

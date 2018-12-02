@@ -94,6 +94,7 @@ public class GridCacheNearClientHitTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalPeekAfterPrimaryNodeLeft() throws Exception {
         try {
             Ignite crd = startGrid("coordinator", getConfiguration("coordinator"));

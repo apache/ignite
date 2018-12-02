@@ -84,6 +84,7 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCause() throws Exception {
         startGrids(1);
 
@@ -96,6 +97,7 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCauseSeveralNodes() throws Exception {
         startGrids(2);
 
@@ -108,6 +110,7 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCauseNear() throws Exception {
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
@@ -124,6 +127,7 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCauseSeveralNodesNear() throws Exception {
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
@@ -146,6 +150,7 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
      *              instead of {@link IgniteCache#get(java.lang.Object)} and {@link IgniteCache#put(java.lang.Object, java.lang.Object)} operations sequence.
      * @throws Exception If failed.
      */
+    @Test
     public void testCauseObject(int nodes, final int keysCnt, final long timeout, final TransactionIsolation isolation, final boolean oneOp) throws Exception {
         final Ignite ignite = grid(new Random().nextInt(nodes));
 

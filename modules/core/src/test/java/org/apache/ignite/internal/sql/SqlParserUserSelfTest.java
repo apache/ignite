@@ -31,6 +31,7 @@ public class SqlParserUserSelfTest extends SqlParserAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateUser() throws Exception {
         // Base.
         parseValidateCreate("CREATE USER test WITH PASSWORD 'test'", "TEST", "test");
@@ -51,6 +52,7 @@ public class SqlParserUserSelfTest extends SqlParserAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAlterUser() throws Exception {
         // Base.
         parseValidateAlter("ALTER USER test WITH PASSWORD 'test'", "TEST", "test");
@@ -71,6 +73,7 @@ public class SqlParserUserSelfTest extends SqlParserAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDropUser() throws Exception {
         // Base.
         parseValidateDrop("DROP USER test", "TEST");

@@ -56,6 +56,7 @@ public class FilterDataForClientNodeDiscoveryTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDataBag() throws Exception {
         startGrid(configuration(0, false));
         startGrid(configuration(1, false));
@@ -73,6 +74,7 @@ public class FilterDataForClientNodeDiscoveryTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDiscoveryServerOnlyCustomMessage() throws Exception {
         startGrid(configuration(0, false));
         startGrid(configuration(1, false));

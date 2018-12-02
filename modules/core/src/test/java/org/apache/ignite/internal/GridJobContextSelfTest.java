@@ -43,6 +43,7 @@ public class GridJobContextSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If anything failed.
      */
+    @Test
     public void testJobContext() throws Exception {
         Ignite ignite = startGrid(1);
 

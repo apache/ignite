@@ -42,6 +42,7 @@ public class TxLabelTest extends GridCommonAbstractTest {
     /**
      * Tests transaction labels.
      */
+    @Test
     public void testLabel() {
         testLabel0(grid(0), "lbl0");
         testLabel0(grid(0), "lbl1");

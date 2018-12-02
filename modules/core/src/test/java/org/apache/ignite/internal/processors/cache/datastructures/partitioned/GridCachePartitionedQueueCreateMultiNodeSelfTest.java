@@ -107,6 +107,7 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends IgniteColl
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueueCreation() throws Exception {
         final AtomicInteger idx = new AtomicInteger();
 
@@ -161,6 +162,7 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends IgniteColl
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTx() throws Exception {
         if (cacheConfiguration().getAtomicityMode() != TRANSACTIONAL)
             return;

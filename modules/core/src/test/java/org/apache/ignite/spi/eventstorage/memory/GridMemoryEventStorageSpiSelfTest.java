@@ -55,6 +55,7 @@ public class GridMemoryEventStorageSpiSelfTest extends GridSpiAbstractTest<Memor
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMemoryEventStorage() throws Exception {
         MemoryEventStorageSpi spi = getSpi();
 
@@ -101,6 +102,7 @@ public class GridMemoryEventStorageSpiSelfTest extends GridSpiAbstractTest<Memor
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFilter() throws Exception {
         MemoryEventStorageSpi spi = getSpi();
 

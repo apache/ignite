@@ -90,6 +90,7 @@ public class CacheManualRebalancingTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRebalance() throws Exception {
         // Fill cache with large dataset to make rebalancing slow.
         try (IgniteDataStreamer<Object, Object> streamer = grid(0).dataStreamer(MYCACHE)) {
@@ -143,7 +144,7 @@ public class CacheManualRebalancingTest extends GridCommonAbstractTest {
                 assertNotNull(cache);
 
                 boolean finished;
-                
+
                 log.info("Start rebalancing cache: " + cacheName + ", size: " + cache.localSize());
 
                 do {

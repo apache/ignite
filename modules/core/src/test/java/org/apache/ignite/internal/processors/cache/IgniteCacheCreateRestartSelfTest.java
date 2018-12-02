@@ -70,6 +70,7 @@ public class IgniteCacheCreateRestartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopOriginatingNode() throws Exception {
         startGrids(NODES);
 

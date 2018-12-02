@@ -44,37 +44,44 @@ public class GridCacheReplicatedTxMultiNodeBasicTest extends IgniteTxMultiNodeAb
     }
 
     /** {@inheritDoc} */
-    @Override public void testPutOneEntryInTx() throws Exception {
+    @Override @Test
+    public void testPutOneEntryInTx() throws Exception {
         super.testPutOneEntryInTx();
     }
 
     /** {@inheritDoc} */
-    @Override public void testPutTwoEntriesInTx() throws Exception {
+    @Override @Test
+    public void testPutTwoEntriesInTx() throws Exception {
         super.testPutTwoEntriesInTx();
     }
 
     /** {@inheritDoc} */
-    @Override public void testPutOneEntryInTxMultiThreaded() throws Exception {
+    @Override @Test
+    public void testPutOneEntryInTxMultiThreaded() throws Exception {
         super.testPutOneEntryInTxMultiThreaded();
     }
 
     /** {@inheritDoc} */
-    @Override public void testPutTwoEntryInTxMultiThreaded() throws Exception {
+    @Override @Test
+    public void testPutTwoEntryInTxMultiThreaded() throws Exception {
         super.testPutTwoEntryInTxMultiThreaded();
     }
 
     /** {@inheritDoc} */
-    @Override public void testRemoveInTxQueried() throws Exception {
+    @Override @Test
+    public void testRemoveInTxQueried() throws Exception {
         super.testRemoveInTxQueried();
     }
 
     /** {@inheritDoc} */
-    @Override public void testRemoveInTxSimple() throws Exception {
+    @Override @Test
+    public void testRemoveInTxSimple() throws Exception {
         super.testRemoveInTxSimple();
     }
 
     /** {@inheritDoc} */
-    @Override public void testRemoveInTxQueriedMultiThreaded() throws Exception {
+    @Override @Test
+    public void testRemoveInTxQueriedMultiThreaded() throws Exception {
         super.testRemoveInTxQueriedMultiThreaded();
     }
 }

@@ -74,6 +74,7 @@ public class CacheOperationsInterruptTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInterruptPessimisticTx() throws Exception {
         final int NODES = 3;
 

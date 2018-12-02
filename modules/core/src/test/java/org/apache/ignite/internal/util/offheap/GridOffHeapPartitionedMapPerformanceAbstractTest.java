@@ -108,6 +108,7 @@ public abstract class GridOffHeapPartitionedMapPerformanceAbstractTest extends G
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPuts() throws Exception {
         info("Warming up...");
 
@@ -121,6 +122,7 @@ public abstract class GridOffHeapPartitionedMapPerformanceAbstractTest extends G
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutsConcurrentMap() throws Exception {
         info("Warming up...");
 
@@ -134,6 +136,7 @@ public abstract class GridOffHeapPartitionedMapPerformanceAbstractTest extends G
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutRemoves() throws Exception {
         info("Warming up...");
 
@@ -147,6 +150,7 @@ public abstract class GridOffHeapPartitionedMapPerformanceAbstractTest extends G
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutRemovesConcurrentMap() throws Exception {
         info("Warming up...");
 

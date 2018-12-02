@@ -170,6 +170,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalNoSplit() throws Exception {
         test(Mode.TEST_LOCAL, CLEAR_ALL_SPLIT_THRESHOLD / 2);
     }
@@ -179,6 +180,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalSplit() throws Exception {
         test(Mode.TEST_LOCAL, CLEAR_ALL_SPLIT_THRESHOLD + 1);
     }
@@ -188,6 +190,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedNoSplit() throws Exception {
         test(Mode.TEST_PARTITIONED, CLEAR_ALL_SPLIT_THRESHOLD / 2);
     }
@@ -197,6 +200,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedSplit() throws Exception {
         test(Mode.TEST_PARTITIONED, CLEAR_ALL_SPLIT_THRESHOLD + 1);
     }
@@ -206,6 +210,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testColocatedNoSplit() throws Exception {
         test(Mode.TEST_COLOCATED, CLEAR_ALL_SPLIT_THRESHOLD / 2);
     }
@@ -215,6 +220,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testColocatedSplit() throws Exception {
         test(Mode.TEST_COLOCATED, CLEAR_ALL_SPLIT_THRESHOLD + 1);
     }
@@ -224,6 +230,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedNoSplit() throws Exception {
         test(Mode.TEST_REPLICATED, CLEAR_ALL_SPLIT_THRESHOLD / 2);
     }
@@ -233,6 +240,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedSplit() throws Exception {
         test(Mode.TEST_REPLICATED, CLEAR_ALL_SPLIT_THRESHOLD + 1);
     }

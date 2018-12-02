@@ -84,6 +84,7 @@ public class TransactionMetricsMxBeanImplTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testTxMetric() throws Exception {
         //given:
         int keysNumber = 10;
@@ -171,6 +172,7 @@ public class TransactionMetricsMxBeanImplTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testNearTxInfo() throws Exception {
         IgniteEx primaryNode1 = startGrid(0);
         IgniteEx primaryNode2 = startGrid(1);

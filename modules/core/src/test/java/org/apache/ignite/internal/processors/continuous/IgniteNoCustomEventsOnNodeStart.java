@@ -56,6 +56,7 @@ public class IgniteNoCustomEventsOnNodeStart extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoCustomEventsOnStart() throws Exception {
         failed = false;
 

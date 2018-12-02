@@ -96,6 +96,7 @@ public class IgniteCachePrimarySyncTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGet() throws Exception {
         Ignite ignite = ignite(SRVS);
 

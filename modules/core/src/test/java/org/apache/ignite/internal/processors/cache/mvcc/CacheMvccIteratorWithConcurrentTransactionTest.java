@@ -33,6 +33,7 @@ public class CacheMvccIteratorWithConcurrentTransactionTest extends CacheMvccAbs
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testScanQuery() throws Exception {
         doTestConsistency(clo);
     }

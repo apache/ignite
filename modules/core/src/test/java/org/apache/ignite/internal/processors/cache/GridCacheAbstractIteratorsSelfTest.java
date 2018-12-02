@@ -47,6 +47,7 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheIterator() throws Exception {
         int cnt = 0;
 
@@ -68,6 +69,7 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheIteratorMultithreaded() throws Exception {
         for (int i = 0; i < gridCount(); i++)
             jcache(i).removeAll();
@@ -95,6 +97,7 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEntrySetIterator() throws Exception {
         assert jcache().localSize(CachePeekMode.ALL) == entryCount();
 
@@ -118,6 +121,7 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEntrySetIteratorMultithreaded() throws Exception {
         for (int i = 0; i < gridCount(); i++)
             jcache(i).removeAll();

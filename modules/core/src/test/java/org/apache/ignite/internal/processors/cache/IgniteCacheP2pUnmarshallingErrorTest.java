@@ -152,6 +152,7 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testResponseMessageOnUnmarshallingFailed() throws Exception {
         // GridNearAtomicFullUpdateRequest unmarshalling failed test.
         readCnt.set(1);

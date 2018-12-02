@@ -100,6 +100,7 @@ public class IgfsCacheSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCache() throws Exception {
         final Ignite g = grid();
 

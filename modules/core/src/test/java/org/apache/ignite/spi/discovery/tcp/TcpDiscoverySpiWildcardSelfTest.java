@@ -49,6 +49,7 @@ public class TcpDiscoverySpiWildcardSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTopology() throws Exception {
         try {
             startGridsMultiThreaded(NODES);

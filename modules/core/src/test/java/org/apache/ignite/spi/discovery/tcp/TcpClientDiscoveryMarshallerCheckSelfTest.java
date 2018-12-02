@@ -82,6 +82,7 @@ public class TcpClientDiscoveryMarshallerCheckSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMarshallerInConsistency() throws Exception {
         startGrid(0);
 
@@ -101,6 +102,7 @@ public class TcpClientDiscoveryMarshallerCheckSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInconsistentCompactFooterSingle() throws Exception {
         clientServerInconsistentConfigFail(false, 1, 1);
     }
@@ -108,6 +110,7 @@ public class TcpClientDiscoveryMarshallerCheckSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInconsistentCompactFooterMulti() throws Exception {
         clientServerInconsistentConfigFail(true, 2, 10);
     }

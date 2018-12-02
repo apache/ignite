@@ -59,6 +59,7 @@ public class IpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBasicOperations() throws Exception {
         File tokFile = new File(IgniteSystemProperties.getString("java.io.tmpdir"), UUID.randomUUID().toString());
 
@@ -155,6 +156,7 @@ public class IpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testForceClose() throws Exception {
         File tokFile = new File(IgniteSystemProperties.getString("java.io.tmpdir"), getTestIgniteInstanceName());
 
@@ -196,6 +198,7 @@ public class IpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadAfterClose() throws Exception {
         File tokFile = new File(IgniteSystemProperties.getString("java.io.tmpdir"), getTestIgniteInstanceName());
 
@@ -234,6 +237,7 @@ public class IpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWriteAfterClose() throws Exception {
         File tokFile = new File(IgniteSystemProperties.getString("java.io.tmpdir"), getTestIgniteInstanceName());
 

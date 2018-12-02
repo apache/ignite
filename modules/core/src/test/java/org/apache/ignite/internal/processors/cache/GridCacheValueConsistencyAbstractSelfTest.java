@@ -105,6 +105,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutRemove() throws Exception {
         awaitPartitionMapExchange();
 
@@ -163,6 +164,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutRemoveAll() throws Exception {
         awaitPartitionMapExchange();
 
@@ -226,6 +228,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutConsistencyMultithreaded() throws Exception {
         if (nearEnabled())
             fail("https://issues.apache.org/jira/browse/IGNITE-627");
@@ -279,6 +282,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutRemoveConsistencyMultithreaded() throws Exception {
         if (nearEnabled())
             fail("https://issues.apache.org/jira/browse/IGNITE-627");

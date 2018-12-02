@@ -85,6 +85,7 @@ public class GridManagerLocalMessageListenerSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSendMessage() throws Exception {
         startGridsMultiThreaded(2);
 
@@ -121,6 +122,7 @@ public class GridManagerLocalMessageListenerSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAddLocalMessageListener() throws Exception {
         startGrid();
 
@@ -136,6 +138,7 @@ public class GridManagerLocalMessageListenerSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoveLocalMessageListener() throws Exception {
         startGrid();
 

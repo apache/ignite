@@ -121,6 +121,7 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testUnloadZeroBackupsTwoNodes() throws Exception {
         preloadMode = SYNC;
         backups = 0;
@@ -148,6 +149,7 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testUnloadOneBackupTwoNodes() throws Exception {
         preloadMode = SYNC;
         backups = 1;
@@ -226,6 +228,7 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testUnloadOneBackupThreeNodes() throws Exception {
         preloadMode = SYNC;
         backups = 1;
@@ -258,6 +261,7 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testUnloadOneBackThreeNodesWithLifeCycleBean() throws Exception {
         preloadMode = SYNC;
         backups = 1;

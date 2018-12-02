@@ -86,6 +86,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerLogs() throws Exception {
         MockLogger log = new MockLogger();
 
@@ -97,6 +98,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerDebugLogs() throws Exception {
         MockLogger log = new MockLogger();
 
@@ -138,6 +140,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerAndClientLogs() throws Exception {
         MockLogger log = new MockLogger();
 
@@ -149,6 +152,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerAndClientDebugLogs() throws Exception {
         MockLogger log = new MockLogger();
 
@@ -192,6 +196,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testForceServerAndClientLogs() throws Exception {
         MockLogger log = new MockLogger();
 
@@ -203,6 +208,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testForceServerAndClientDebugLogs() throws Exception {
         MockLogger log = new MockLogger();
 

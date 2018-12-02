@@ -81,6 +81,7 @@ public class TxDataConsistencyOnCommitFailureTest extends GridCommonAbstractTest
     }
 
     /** */
+    @Test
     public void testCommitErrorOnNearNode2PC() throws Exception {
         nodesCnt = 3;
 
@@ -97,6 +98,7 @@ public class TxDataConsistencyOnCommitFailureTest extends GridCommonAbstractTest
     }
 
     /** */
+    @Test
     public void testCommitErrorOnNearNode1PC() throws Exception {
         nodesCnt = 2;
 
@@ -114,6 +116,7 @@ public class TxDataConsistencyOnCommitFailureTest extends GridCommonAbstractTest
 
     /** */
     @IgniteIgnore(value = "https://issues.apache.org/jira/browse/IGNITE-9806", forceFailure = false)
+    @Test
     public void testCommitErrorOnColocatedNode2PC() throws Exception {
         nodesCnt = 3;
 

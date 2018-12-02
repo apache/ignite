@@ -37,7 +37,8 @@ public class GridCacheContinuousQueryAtomicSelfTest extends GridCacheContinuousQ
     }
 
     /** {@inheritDoc} */
-    @Override public void testInternalKey() throws Exception {
+    @Override @Test
+    public void testInternalKey() throws Exception {
         // No-op.
     }
 }

@@ -83,6 +83,7 @@ public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTe
     /**
      *
      */
+    @Test
     public void testDefaultTxTimeoutOnPartitionMapExchange() throws Exception {
         IgniteEx ig1 = startGrid(1);
         IgniteEx ig2 = startGrid(2);
@@ -99,6 +100,7 @@ public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTe
     /**
      *
      */
+    @Test
     public void testJmxSetTxTimeoutOnPartitionMapExchange() throws Exception {
         startGrid(1);
         startGrid(2);
@@ -121,6 +123,7 @@ public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTe
     /**
      *
      */
+    @Test
     public void testClusterSetTxTimeoutOnPartitionMapExchange() throws Exception {
         Ignite ig1 = startGrid(1);
         Ignite ig2 = startGrid(2);
@@ -140,6 +143,7 @@ public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTe
      *
      * @throws Exception If fails.
      */
+    @Test
     public void testSetTxTimeoutDuringPartitionMapExchange() throws Exception {
         IgniteEx ig = (IgniteEx) startGrids(2);
 
@@ -151,6 +155,7 @@ public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTe
      *
      * @throws Exception If fails.
      */
+    @Test
     public void testSetTxTimeoutOnClientDuringPartitionMapExchange() throws Exception {
         IgniteEx ig = (IgniteEx) startGrids(2);
         IgniteEx client = startGrid(getConfiguration("client").setClientMode(true));

@@ -51,6 +51,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testTimeoutSetLocalGuarantee() throws Exception {
         Ignite ignite = startGrid(0);
 
@@ -103,6 +104,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testLabelFilledLocalGuarantee() throws Exception {
         Ignite ignite = startGrid(0);
 
@@ -142,6 +144,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testLabelFilledRemoteGuarantee() throws Exception {
         Ignite ignite = startGrid(0);
         Ignite remote = startGrid(1);
@@ -202,6 +205,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testTimeoutSetRemoteGuarantee() throws Exception {
         Ignite ignite = startGrid(0);
         Ignite remote = startGrid(1);
@@ -264,6 +268,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRollbackInsideLocalListenerAfterRemoteFilter() throws Exception {
         Ignite ignite = startGrid(0);
         Ignite remote = startGrid(1);

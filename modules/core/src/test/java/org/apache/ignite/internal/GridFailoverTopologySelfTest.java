@@ -92,6 +92,7 @@ public class GridFailoverTopologySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testFailoverTopology() throws Exception {
         try {
             Ignite ignite1 = startGrid(1);

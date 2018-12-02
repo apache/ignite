@@ -57,6 +57,7 @@ public class DynamicProxySerializationMultiJvmSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBinaryMarshaller() throws Exception {
         marshFactory = new Callable<Marshaller>() {
             @Override public Marshaller call() throws Exception {
@@ -70,6 +71,7 @@ public class DynamicProxySerializationMultiJvmSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testToBinary() throws Exception {
         marshFactory = new Callable<Marshaller>() {
             @Override public Marshaller call() throws Exception {
@@ -89,6 +91,7 @@ public class DynamicProxySerializationMultiJvmSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBinaryField() throws Exception {
         marshFactory = new Callable<Marshaller>() {
             @Override public Marshaller call() throws Exception {

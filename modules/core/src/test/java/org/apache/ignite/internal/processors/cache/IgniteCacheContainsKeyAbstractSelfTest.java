@@ -76,6 +76,7 @@ public abstract class IgniteCacheContainsKeyAbstractSelfTest extends GridCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedContains() throws Exception {
         String key = "1";
 
@@ -91,6 +92,7 @@ public abstract class IgniteCacheContainsKeyAbstractSelfTest extends GridCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContainsInTx() throws Exception {
         if (atomicityMode() == TRANSACTIONAL) {
             String key = "1";

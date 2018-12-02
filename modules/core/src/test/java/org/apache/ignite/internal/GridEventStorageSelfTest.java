@@ -82,6 +82,7 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testAddRemoveGlobalListener() throws Exception {
         IgnitePredicate<Event> lsnr = new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {
@@ -99,6 +100,7 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testAddRemoveDiscoListener() throws Exception {
         IgnitePredicate<Event> lsnr = new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {
@@ -117,6 +119,7 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testLocalNodeEventStorage() throws Exception {
         TestEventListener lsnr = new TestEventListener();
 
@@ -164,6 +167,7 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testRemoteNodeEventStorage() throws Exception {
         IgnitePredicate<Event> filter = new TestEventFilter();
 
@@ -180,6 +184,7 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testRemoteAndLocalNodeEventStorage() throws Exception {
         IgnitePredicate<Event> filter = new TestEventFilter();
 
@@ -211,6 +216,7 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testGridInternalEvents() throws Exception {
         IgnitePredicate<Event> lsnr = new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {

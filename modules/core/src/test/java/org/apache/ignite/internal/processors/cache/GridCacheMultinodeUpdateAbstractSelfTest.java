@@ -74,6 +74,7 @@ public abstract class GridCacheMultinodeUpdateAbstractSelfTest extends GridCache
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvoke() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 

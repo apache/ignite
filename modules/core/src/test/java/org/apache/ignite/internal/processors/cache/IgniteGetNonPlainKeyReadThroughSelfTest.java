@@ -113,6 +113,7 @@ public class IgniteGetNonPlainKeyReadThroughSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetNullRead() throws Exception {
         storeFactory = new StoreFactory(true);
 
@@ -122,6 +123,7 @@ public class IgniteGetNonPlainKeyReadThroughSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetValueRead() throws Exception {
         storeFactory = new StoreFactory(false);
 

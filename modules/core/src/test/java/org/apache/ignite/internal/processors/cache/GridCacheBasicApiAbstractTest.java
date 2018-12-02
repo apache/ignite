@@ -89,6 +89,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testBasicLock() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
@@ -108,6 +109,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testSingleLockReentry() throws IgniteCheckedException {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
@@ -138,6 +140,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testReentry() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
@@ -179,6 +182,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
     /**
      *
      */
+    @Test
     public void testInterruptLock() throws InterruptedException {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
@@ -225,6 +229,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
     /**
      *
      */
+    @Test
     public void testInterruptLockWithTimeout() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
@@ -286,6 +291,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testManyLockReentries() throws IgniteCheckedException {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
@@ -331,6 +337,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testLockMultithreaded() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
@@ -451,6 +458,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      *
      * @throws Exception If error occur.
      */
+    @Test
     public void testBasicOps() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
@@ -515,6 +523,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
     /**
      * @throws Exception If error occur.
      */
+    @Test
     public void testBasicOpsWithReentry() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
@@ -590,6 +599,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testMultiLocks() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
@@ -623,6 +633,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testGetPutRemove() throws IgniteCheckedException {
         IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
@@ -647,6 +658,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      *
      * @throws Exception In case of error.
      */
+    @Test
     public void testPutWithExpiration() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);

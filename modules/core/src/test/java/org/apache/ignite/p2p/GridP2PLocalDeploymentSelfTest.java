@@ -105,6 +105,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     @SuppressWarnings({"unchecked"})
+    @Test
     public void testLocalDeployment() throws Exception {
         depMode = DeploymentMode.PRIVATE;
 
@@ -182,6 +183,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testPrivateMode() throws Exception {
         processIsolatedModeTest(DeploymentMode.PRIVATE);
     }
@@ -191,6 +193,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testIsolatedMode() throws Exception {
         processIsolatedModeTest(DeploymentMode.ISOLATED);
     }
@@ -200,6 +203,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testContinuousMode() throws Exception {
         processSharedModeTest(DeploymentMode.CONTINUOUS);
     }
@@ -209,6 +213,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSharedMode() throws Exception {
         processSharedModeTest(DeploymentMode.SHARED);
     }
@@ -216,6 +221,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
     /**
      * Tests concurrent deployment using delegating classloader for the task.
      */
+    @Test
     public void testConcurrentDeploymentWithDelegatingClassloader() throws Exception {
         depMode = DeploymentMode.SHARED;
 

@@ -69,6 +69,7 @@ public class GridFailFastNodeFailureDetectionSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFailFast() throws Exception {
         startGridsMultiThreaded(5);
 

@@ -42,6 +42,7 @@ public class TransactionIntegrityWithSystemWorkerDeathTest extends AbstractTrans
     }
 
     /** */
+    @Test
     public void testFailoverWithDiscoWorkerTermination() throws Exception {
         doTestTransferAmount(new FailoverScenario() {
             static final int failedNodeIdx = 1;

@@ -72,6 +72,7 @@ public class FsyncWalRolloverDoesNotBlockTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void test() throws Exception {
         IgniteEx ig = startGrid(0);
 

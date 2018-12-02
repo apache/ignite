@@ -138,6 +138,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
      *
      * @throws Exception In case of fail
      */
+    @Test
     public void testFailWhileStart() throws Exception {
         failWhilePut(true);
     }
@@ -147,6 +148,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
      *
      * @throws Exception In case of fail
      */
+    @Test
     public void testFailAfterStart() throws Exception {
         failWhilePut(false);
     }

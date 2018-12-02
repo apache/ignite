@@ -40,6 +40,7 @@ public class GridAlwaysFailoverSpiSelfTest extends GridSpiAbstractTest<AlwaysFai
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleNode() throws Exception {
         AlwaysFailoverSpi spi = getSpi();
 
@@ -57,6 +58,7 @@ public class GridAlwaysFailoverSpiSelfTest extends GridSpiAbstractTest<AlwaysFai
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testTwoNodes() throws Exception {
         AlwaysFailoverSpi spi = getSpi();
 
@@ -78,6 +80,7 @@ public class GridAlwaysFailoverSpiSelfTest extends GridSpiAbstractTest<AlwaysFai
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxAttempts() throws Exception {
         AlwaysFailoverSpi spi = getSpi();
 

@@ -95,6 +95,7 @@ public class LargeEntryUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEntryUpdate() throws Exception {
         try (Ignite ignite = startGrid()) {
             for (int i = 0; i < CACHE_COUNT; ++i) {

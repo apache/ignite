@@ -60,6 +60,7 @@ public class IgniteCacheSyncRebalanceModeSelfTest extends GridCommonAbstractTest
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testStaticCache() throws Exception {
         IgniteEx ignite = startGrid(0);
 
@@ -85,6 +86,7 @@ public class IgniteCacheSyncRebalanceModeSelfTest extends GridCommonAbstractTest
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testDynamicCache() throws Exception {
         IgniteEx ignite = startGrid(0);
 

@@ -77,6 +77,7 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLatch() throws Exception {
         checkLatch();
     }
@@ -87,6 +88,7 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIsolation() throws Exception {
         Ignite ignite = grid(0);
 
@@ -325,6 +327,7 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLatchMultinode1() throws Exception {
         if (gridCount() == 1)
             return;
@@ -382,6 +385,7 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLatchBroadcast() throws Exception {
         Ignite ignite = grid(0);
         ClusterGroup srvsGrp = ignite.cluster().forServers();
@@ -434,6 +438,7 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLatchMultinode2() throws Exception {
         if (gridCount() == 1)
             return;

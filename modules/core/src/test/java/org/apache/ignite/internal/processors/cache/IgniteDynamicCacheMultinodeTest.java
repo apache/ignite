@@ -73,6 +73,7 @@ public class IgniteDynamicCacheMultinodeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetOrCreateCache() throws Exception {
         createCacheMultinode(TestOp.GET_OR_CREATE_CACHE);
     }
@@ -80,6 +81,7 @@ public class IgniteDynamicCacheMultinodeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetOrCreateCaches() throws Exception {
         createCacheMultinode(TestOp.GET_OR_CREATE_CACHES);
     }

@@ -144,6 +144,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingletonUpdateTopology() throws Exception {
         checkSingletonUpdateTopology(CLUSTER_SINGLE);
     }
@@ -151,6 +152,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployOnEachNodeUpdateTopology() throws Exception {
         checkDeployOnEachNodeUpdateTopology(NODE_SINGLE);
     }
@@ -158,6 +160,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployOnEachNodeButClientUpdateTopology() throws Exception {
         checkDeployOnEachNodeButClientUpdateTopology(NODE_SINGLE_BUT_CLIENT);
     }
@@ -165,6 +168,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAll() throws Exception {
         checkSingletonUpdateTopology(CLUSTER_SINGLE);
 
@@ -182,6 +186,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityUpdateTopology() throws Exception {
         Ignite g = randomGrid();
 
@@ -204,6 +209,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployLimits() throws Exception {
         final Ignite g = randomGrid();
 

@@ -62,6 +62,7 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testValues() throws Exception {
         String seqName = UUID.randomUUID().toString();
 
@@ -137,16 +138,19 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testUpdatedSync() throws Exception {
         checkUpdate(true);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPreviousSync() throws Exception {
         checkUpdate(false);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testIncrementAndGet() throws Exception {
         // Random sequence names.
         String seqName = UUID.randomUUID().toString();
@@ -163,6 +167,7 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testIncrementAndGetAsync() throws Exception {
         // Random sequence names.
         String seqName = UUID.randomUUID().toString();
@@ -179,6 +184,7 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testGetAndIncrement() throws Exception {
         // Random sequence names.
         String seqName = UUID.randomUUID().toString();
@@ -195,6 +201,7 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testGetAndIncrementAsync() throws Exception {
         // Random sequence names.
         String seqName = UUID.randomUUID().toString();
@@ -211,6 +218,7 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testAddAndGet() throws Exception {
         // Random sequence names.
         String seqName = UUID.randomUUID().toString();
@@ -227,6 +235,7 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testGetAndAdd() throws Exception {
         // Random sequence names.
         String seqName = UUID.randomUUID().toString();
@@ -243,6 +252,7 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testMixed1() throws Exception {
         // Random sequence names.
         String seqName = UUID.randomUUID().toString();
@@ -264,6 +274,7 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testMixed2() throws Exception {
         // Random sequence names.
         String seqName = UUID.randomUUID().toString();
@@ -285,6 +296,7 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testMultipleSequences() throws Exception {
         final int seqCnt = 5;
         final int threadCnt = 5;

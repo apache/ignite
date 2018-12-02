@@ -98,6 +98,7 @@ public class IgniteSequenceInternalCleanupTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testDeactivate() throws Exception {
         try {
             Ignite ignite = startGridsMultiThreaded(GRIDS_CNT);

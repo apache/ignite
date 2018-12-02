@@ -58,6 +58,7 @@ public class IgnitePartitionedQueueNoBackupsTest extends GridCachePartitionedQue
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollocation() throws Exception {
         IgniteQueue<Integer> queue = grid(0).queue("queue", 0, config(true));
 

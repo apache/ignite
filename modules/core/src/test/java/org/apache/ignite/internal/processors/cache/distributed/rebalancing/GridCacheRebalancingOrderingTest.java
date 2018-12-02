@@ -268,6 +268,7 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEvents() throws Exception {
         Ignite ignite = startGrid(0);
 

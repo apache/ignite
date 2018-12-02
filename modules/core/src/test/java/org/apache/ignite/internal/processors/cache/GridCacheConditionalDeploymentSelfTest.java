@@ -104,6 +104,7 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testNoDeploymentInfo() throws Exception {
         GridCacheIoManager ioMgr = cacheIoManager();
 
@@ -121,6 +122,7 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testAddedDeploymentInfo() throws Exception {
         GridCacheContext ctx = cacheContext();
 
@@ -144,6 +146,7 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testAddedDeploymentInfo2() throws Exception {
         GridCacheContext ctx = cacheContext();
 

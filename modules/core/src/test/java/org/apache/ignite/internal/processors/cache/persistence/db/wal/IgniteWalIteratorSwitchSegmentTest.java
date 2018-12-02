@@ -105,6 +105,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
      *
      * @throws Exception If some thing failed.
      */
+    @Test
     public void testCheckSerializer() throws Exception {
         for (int serVer : checkSerializerVers) {
             checkInvariantSwitchSegmentSize(serVer);
@@ -161,6 +162,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
      *
      * @throws Exception If some thing failed.
      */
+    @Test
     public void testInvariantSwitchSegment() throws Exception {
         for (int serVer : checkSerializerVers) {
             try {
@@ -177,6 +179,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
      *
      * @throws Exception If some thing failed.
      */
+    @Test
     public void testSwitchReadingSegmentFromWorkToArchive() throws Exception {
         for (int serVer : checkSerializerVers) {
             try {

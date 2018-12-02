@@ -73,6 +73,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testThatAllocationTooMuchPagesCauseToOOMException() throws Exception {
         PageMemoryImpl memory = createPageMemory(PageMemoryImpl.ThrottlingPolicy.DISABLED);
 
@@ -90,6 +91,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCheckpointBufferOverusageDontCauseWriteLockLeak() throws Exception {
         PageMemoryImpl memory = createPageMemory(PageMemoryImpl.ThrottlingPolicy.DISABLED);
 
@@ -143,6 +145,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
      * Tests that checkpoint buffer won't be overflowed with enabled CHECKPOINT_BUFFER_ONLY throttling.
      * @throws Exception If failed.
      */
+    @Test
     public void testCheckpointBufferCantOverflowMixedLoad() throws Exception {
         testCheckpointBufferCantOverflowWithThrottlingMixedLoad(PageMemoryImpl.ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY);
     }
@@ -151,6 +154,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
      * Tests that checkpoint buffer won't be overflowed with enabled SPEED_BASED throttling.
      * @throws Exception If failed.
      */
+    @Test
     public void testCheckpointBufferCantOverflowMixedLoadSpeedBased() throws Exception {
         testCheckpointBufferCantOverflowWithThrottlingMixedLoad(PageMemoryImpl.ThrottlingPolicy.SPEED_BASED);
     }
@@ -159,6 +163,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
      * Tests that checkpoint buffer won't be overflowed with enabled TARGET_RATIO_BASED throttling.
      * @throws Exception If failed.
      */
+    @Test
     public void testCheckpointBufferCantOverflowMixedLoadRatioBased() throws Exception {
         testCheckpointBufferCantOverflowWithThrottlingMixedLoad(PageMemoryImpl.ThrottlingPolicy.TARGET_RATIO_BASED);
     }

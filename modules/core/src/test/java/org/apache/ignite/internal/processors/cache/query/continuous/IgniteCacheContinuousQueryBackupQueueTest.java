@@ -130,6 +130,7 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupQueue() throws Exception {
         final CacheEventListener lsnr = new CacheEventListener();
 
@@ -153,6 +154,7 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testManyQueryBackupQueue() throws Exception {
         List<QueryCursor> qryCursors = new ArrayList<>();
 
@@ -185,6 +187,7 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupQueueAutoUnsubscribeFalse() throws Exception {
         try {
             client = true;

@@ -90,6 +90,7 @@ public class IgnitePdsCacheDestroyDuringCheckpointTest extends GridCommonAbstrac
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testCacheCreatePutCheckpointDestroy() throws Exception {
         IgniteEx ig = startGrid(0);
         ig.active(true);

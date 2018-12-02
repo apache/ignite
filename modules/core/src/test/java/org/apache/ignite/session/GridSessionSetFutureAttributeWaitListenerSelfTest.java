@@ -89,6 +89,7 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSetAttribute() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 

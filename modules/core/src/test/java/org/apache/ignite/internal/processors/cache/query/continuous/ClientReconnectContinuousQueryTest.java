@@ -102,6 +102,7 @@ public class ClientReconnectContinuousQueryTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnect() throws Exception {
         try {
             startGrids(2);

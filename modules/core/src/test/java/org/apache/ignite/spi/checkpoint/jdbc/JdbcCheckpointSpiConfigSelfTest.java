@@ -37,6 +37,7 @@ public class JdbcCheckpointSpiConfigSelfTest extends GridSpiAbstractConfigTest<J
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNegativeConfig() throws Exception {
         checkNegativeSpiProperty(new JdbcCheckpointSpi(), "dataSource", null);
 

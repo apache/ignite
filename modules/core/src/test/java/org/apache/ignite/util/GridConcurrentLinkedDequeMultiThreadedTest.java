@@ -36,6 +36,7 @@ public class GridConcurrentLinkedDequeMultiThreadedTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueueMultiThreaded() throws Exception {
         final AtomicBoolean done = new AtomicBoolean();
 

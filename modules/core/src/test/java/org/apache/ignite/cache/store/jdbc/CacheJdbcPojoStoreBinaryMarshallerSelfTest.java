@@ -32,6 +32,7 @@ public class CacheJdbcPojoStoreBinaryMarshallerSelfTest extends CacheJdbcPojoSto
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCacheNoKeyClasses() throws Exception {
         startTestGrid(false, true, false, false, 512);
 
@@ -41,6 +42,7 @@ public class CacheJdbcPojoStoreBinaryMarshallerSelfTest extends CacheJdbcPojoSto
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCacheNoKeyClassesTx() throws Exception {
         startTestGrid(false, true, false, true, 512);
 
@@ -50,6 +52,7 @@ public class CacheJdbcPojoStoreBinaryMarshallerSelfTest extends CacheJdbcPojoSto
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCacheNoValueClasses() throws Exception {
         startTestGrid(false, false, true, false, 512);
 
@@ -59,6 +62,7 @@ public class CacheJdbcPojoStoreBinaryMarshallerSelfTest extends CacheJdbcPojoSto
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCacheNoValueClassesTx() throws Exception {
         startTestGrid(false, false, true, true, 512);
 
@@ -68,6 +72,7 @@ public class CacheJdbcPojoStoreBinaryMarshallerSelfTest extends CacheJdbcPojoSto
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCacheNoKeyAndValueClasses() throws Exception {
         startTestGrid(false, true, true, false, 512);
 
@@ -77,6 +82,7 @@ public class CacheJdbcPojoStoreBinaryMarshallerSelfTest extends CacheJdbcPojoSto
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCacheNoKeyAndValueClassesTx() throws Exception {
         startTestGrid(false, true, true, true, 512);
 

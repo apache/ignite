@@ -38,6 +38,7 @@ public class IgniteCacheInvokeReadThroughTest extends IgniteCacheInvokeReadThrou
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeReadThroughAtomic0() throws Exception {
         invokeReadThrough(cacheConfiguration(PARTITIONED, ATOMIC, 0, false));
     }
@@ -45,6 +46,7 @@ public class IgniteCacheInvokeReadThroughTest extends IgniteCacheInvokeReadThrou
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeReadThroughAtomic1() throws Exception {
         invokeReadThrough(cacheConfiguration(PARTITIONED, ATOMIC, 1, false));
     }
@@ -52,6 +54,7 @@ public class IgniteCacheInvokeReadThroughTest extends IgniteCacheInvokeReadThrou
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeReadThroughAtomic2() throws Exception {
         invokeReadThrough(cacheConfiguration(PARTITIONED, ATOMIC, 2, false));
     }
@@ -59,6 +62,7 @@ public class IgniteCacheInvokeReadThroughTest extends IgniteCacheInvokeReadThrou
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeReadThroughAtomicNearCache() throws Exception {
         invokeReadThrough(cacheConfiguration(PARTITIONED, ATOMIC, 1, true));
     }
@@ -66,6 +70,7 @@ public class IgniteCacheInvokeReadThroughTest extends IgniteCacheInvokeReadThrou
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeReadThroughAtomicReplicated() throws Exception {
         invokeReadThrough(cacheConfiguration(REPLICATED, ATOMIC, 0, false));
     }
@@ -73,6 +78,7 @@ public class IgniteCacheInvokeReadThroughTest extends IgniteCacheInvokeReadThrou
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeReadThroughTx0() throws Exception {
         invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL, 0, false));
     }
@@ -80,6 +86,7 @@ public class IgniteCacheInvokeReadThroughTest extends IgniteCacheInvokeReadThrou
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeReadThroughTx1() throws Exception {
         invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL, 1, false));
     }
@@ -87,6 +94,7 @@ public class IgniteCacheInvokeReadThroughTest extends IgniteCacheInvokeReadThrou
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeReadThroughTx2() throws Exception {
         invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL, 2, false));
     }
@@ -94,6 +102,7 @@ public class IgniteCacheInvokeReadThroughTest extends IgniteCacheInvokeReadThrou
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeReadThroughTxNearCache() throws Exception {
         invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL, 1, true));
     }
@@ -101,6 +110,7 @@ public class IgniteCacheInvokeReadThroughTest extends IgniteCacheInvokeReadThrou
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeReadThroughTxReplicated() throws Exception {
         invokeReadThrough(cacheConfiguration(REPLICATED, TRANSACTIONAL, 0, false));
     }

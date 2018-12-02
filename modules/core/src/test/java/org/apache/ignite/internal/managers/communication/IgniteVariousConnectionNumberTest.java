@@ -86,6 +86,7 @@ public class IgniteVariousConnectionNumberTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVariousConnectionNumber() throws Exception {
         startGridsMultiThreaded(3);
 

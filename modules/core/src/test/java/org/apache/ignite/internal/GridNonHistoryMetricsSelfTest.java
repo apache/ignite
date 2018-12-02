@@ -66,6 +66,7 @@ public class GridNonHistoryMetricsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleTaskMetrics() throws Exception {
         final Ignite ignite = grid();
 

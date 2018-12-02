@@ -49,6 +49,7 @@ public class IgniteComputeCustomExecutorConfigurationSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConfigurations() throws Exception {
         try {
             checkStartWithInvalidConfiguration(getConfiguration("node0")

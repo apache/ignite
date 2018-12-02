@@ -80,6 +80,7 @@ public class IgniteCacheTxPreloadNoWriteTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxNoWrite() throws Exception {
         txNoWrite(true);
     }
@@ -87,6 +88,7 @@ public class IgniteCacheTxPreloadNoWriteTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxNoWriteRollback() throws Exception {
         txNoWrite(false);
     }

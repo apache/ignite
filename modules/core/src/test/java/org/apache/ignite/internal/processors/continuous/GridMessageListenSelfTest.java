@@ -143,6 +143,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNullTopic() throws Exception {
         latch = new CountDownLatch(MSG_CNT * GRID_CNT);
 
@@ -163,6 +164,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNonNullTopic() throws Exception {
         latch = new CountDownLatch(MSG_CNT * GRID_CNT);
 
@@ -183,6 +185,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopListen() throws Exception {
         latch = new CountDownLatch(GRID_CNT);
 
@@ -208,6 +211,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testProjection() throws Exception {
         latch = new CountDownLatch(MSG_CNT * (GRID_CNT - 1));
 
@@ -227,6 +231,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeJoin() throws Exception {
         latch = new CountDownLatch(MSG_CNT * (GRID_CNT + 1));
 
@@ -259,6 +264,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeJoinWithProjection() throws Exception {
         latch = new CountDownLatch(MSG_CNT * GRID_CNT);
 
@@ -298,6 +304,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNullTopicWithDeployment() throws Exception {
         Class<?> cls = getExternalClassLoader().loadClass(LSNR_CLS_NAME);
 
@@ -317,6 +324,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNonNullTopicWithDeployment() throws Exception {
         ClassLoader ldr = getExternalClassLoader();
 
@@ -341,6 +349,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testListenActor() throws Exception {
         latch = new CountDownLatch(MSG_CNT * (GRID_CNT + 1));
 

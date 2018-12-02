@@ -78,6 +78,7 @@ public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testSetAttribute() throws Exception {
         for (int i = 0; i < EXEC_COUNT; i++)
             checkTask(i);
@@ -86,6 +87,7 @@ public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testMultiThreaded() throws Exception {
         final GridThreadSerialNumber sNum = new GridThreadSerialNumber();
 

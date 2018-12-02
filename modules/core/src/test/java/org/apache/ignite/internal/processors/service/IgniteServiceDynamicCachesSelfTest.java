@@ -63,6 +63,7 @@ public class IgniteServiceDynamicCachesSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployCalledAfterCacheStart() throws Exception {
         String cacheName = "cache";
 
@@ -108,6 +109,7 @@ public class IgniteServiceDynamicCachesSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployCalledBeforeCacheStart() throws Exception {
         String cacheName = "cache";
 

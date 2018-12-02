@@ -108,6 +108,7 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
      *
      * @throws Exception if test failed.
      */
+    @Test
     public void testAfterClientDisconnect() throws Exception {
         ClassLoader extClsLdr = new GridTestExternalClassLoader(new URL[] {new URL(GridTestProperties.getProperty("p2p.uri.cls"))});
 

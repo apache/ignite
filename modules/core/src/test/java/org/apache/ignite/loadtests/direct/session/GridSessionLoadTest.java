@@ -59,6 +59,7 @@ public class GridSessionLoadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSessionLoad() throws Exception {
         final Ignite ignite = G.ignite(getTestIgniteInstanceName());
 

@@ -66,6 +66,7 @@ public class TcpCommunicationSpiHalfOpenedConnectionTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnect() throws Exception {
         pairedConnections = false;
 
@@ -75,6 +76,7 @@ public class TcpCommunicationSpiHalfOpenedConnectionTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectPaired() throws Exception {
         pairedConnections = true;
 

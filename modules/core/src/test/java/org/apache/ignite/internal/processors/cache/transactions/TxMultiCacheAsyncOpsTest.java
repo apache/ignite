@@ -77,6 +77,7 @@ public class TxMultiCacheAsyncOpsTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testCommitAfterAsyncPut() {
         CacheConfiguration[] caches = cacheConfigurations();
 
@@ -106,6 +107,7 @@ public class TxMultiCacheAsyncOpsTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testCommitAfterAsyncGet() {
         CacheConfiguration[] caches = cacheConfigurations();
 

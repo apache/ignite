@@ -65,6 +65,7 @@ public class IgniteClientReconnectCollectionsTest extends IgniteClientReconnectA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollectionsReconnectClusterRestart() throws Exception {
         Ignite client = grid(serverCount());
 
@@ -113,6 +114,7 @@ public class IgniteClientReconnectCollectionsTest extends IgniteClientReconnectA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueueReconnect() throws Exception {
         queueReconnect(TX_CFGS);
 
@@ -122,6 +124,7 @@ public class IgniteClientReconnectCollectionsTest extends IgniteClientReconnectA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueueReconnectRemoved() throws Exception {
         queueReconnectRemoved(TX_CFGS);
 
@@ -131,6 +134,7 @@ public class IgniteClientReconnectCollectionsTest extends IgniteClientReconnectA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueueReconnectInProgress() throws Exception {
         queueReconnectInProgress(TX_CFGS);
 
@@ -140,6 +144,7 @@ public class IgniteClientReconnectCollectionsTest extends IgniteClientReconnectA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSetReconnect() throws Exception {
         setReconnect(TX_CFGS);
 
@@ -149,6 +154,7 @@ public class IgniteClientReconnectCollectionsTest extends IgniteClientReconnectA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSetReconnectRemoved() throws Exception {
         setReconnectRemove(TX_CFGS);
 
@@ -158,6 +164,7 @@ public class IgniteClientReconnectCollectionsTest extends IgniteClientReconnectA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSetReconnectInProgress() throws Exception {
         setReconnectInProgress(TX_CFGS);
 
@@ -167,6 +174,7 @@ public class IgniteClientReconnectCollectionsTest extends IgniteClientReconnectA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerReconnect() throws Exception {
         serverNodeReconnect(TX_CFGS);
 

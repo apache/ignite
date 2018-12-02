@@ -118,6 +118,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPolicyConsistency() throws Exception {
         FifoEvictionPolicy<Object, Object> plc = new FifoEvictionPolicy<>();
         plc.setMaxSize(500);
@@ -173,6 +174,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictSingle() throws Exception {
         FifoEvictionPolicy<Object, Object> plc = new FifoEvictionPolicy<>();
         plc.setMaxSize(500);
@@ -203,6 +205,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictAll() throws Exception {
         FifoEvictionPolicy<Object, Object> plc = new FifoEvictionPolicy<>();
         plc.setMaxSize(500);
@@ -238,6 +241,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReload() throws Exception {
         FifoEvictionPolicy<Object, Object> plc = new FifoEvictionPolicy<>();
         plc.setMaxSize(100);

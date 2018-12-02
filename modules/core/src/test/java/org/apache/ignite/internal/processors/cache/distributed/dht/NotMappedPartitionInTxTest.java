@@ -88,6 +88,7 @@ public class NotMappedPartitionInTxTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testOneServerTx() throws Exception {
         try {
             isClient = false;
@@ -110,6 +111,7 @@ public class NotMappedPartitionInTxTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testOneServerMvcc() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-10377");
 
@@ -132,6 +134,7 @@ public class NotMappedPartitionInTxTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testFourServersTx() throws Exception {
         try {
             isClient = false;
@@ -154,6 +157,7 @@ public class NotMappedPartitionInTxTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testFourServersMvcc() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-10377");
 

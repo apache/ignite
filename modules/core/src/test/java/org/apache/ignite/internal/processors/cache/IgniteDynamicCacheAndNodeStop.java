@@ -54,6 +54,7 @@ public class IgniteDynamicCacheAndNodeStop extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheAndNodeStop() throws Exception {
         final Ignite ignite = startGrid(0);
 

@@ -68,6 +68,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllRemoveAll() throws Exception {
         for (int i = 0; i < gridCount(); i++)
             info(">>>>> Grid" + i + ": " + grid(i).localNode().id());
@@ -95,6 +96,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllPutAll() throws Exception {
         for (int i = 0; i < gridCount(); i++)
             info(">>>>> Grid" + i + ": " + grid(i).localNode().id());
@@ -134,6 +136,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutDebug() throws Exception {
         for (int i = 0; i < gridCount(); i++)
             info(">>>>> Grid" + i + ": " + grid(i).localNode().id());
@@ -168,6 +171,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPeekPartitionedModes() throws Exception {
         jcache().put("key", 1);
 
@@ -207,6 +211,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPeekAsyncPartitionedModes() throws Exception {
         jcache().put("key", 1);
 
@@ -237,6 +242,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testNearDhtKeySize() throws Exception {
         List<String> keys = new ArrayList<>(5);
 
@@ -312,6 +318,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinity() throws Exception {
         for (int i = 0; i < gridCount(); i++)
             info("Grid " + i + ": " + grid(i).localNode().id());

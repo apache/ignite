@@ -58,6 +58,7 @@ public class GridComputeJobExecutionErrorToLogManualTest extends GridCommonAbstr
     /**
      * @throws Exception If fails.
      */
+    @Test
     public void testRuntimeException() throws Exception {
         Ignite ignite = grid(0);
 

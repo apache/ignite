@@ -122,6 +122,7 @@ public class CacheClientsConcurrentStartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartNodes() throws Exception {
         for (int i = 0; i < ITERATIONS; i++) {
             try {

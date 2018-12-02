@@ -72,6 +72,7 @@ public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCache() throws Exception {
         loadCache(false, false);
     }
@@ -79,6 +80,7 @@ public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCacheAsyncOld() throws Exception {
         loadCache(true, true);
     }
@@ -86,6 +88,7 @@ public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCacheAsync() throws Exception {
         loadCache(true, false);
     }

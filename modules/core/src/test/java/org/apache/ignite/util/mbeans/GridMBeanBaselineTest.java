@@ -71,6 +71,7 @@ public class GridMBeanBaselineTest extends GridCommonAbstractTest {
      *
      * @throws Exception Thrown if test fails.
      */
+    @Test
     public void testIgniteKernalNodeInBaselineTest() throws Exception {
         try {
             IgniteEx ignite0 = (IgniteEx)startGrids(NODES);

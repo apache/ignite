@@ -45,6 +45,7 @@ public class GridBoundedPriorityQueueSelfTest extends GridCommonAbstractTest {
     /**
      * Test eviction in bounded priority queue.
      */
+    @Test
     public void testEviction() {
         GridBoundedPriorityQueue<Integer> queue = new GridBoundedPriorityQueue<>(3, CMP);
 

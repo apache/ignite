@@ -279,6 +279,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTxLocalOptimisticRepeatableRead() throws Exception {
         checkTx(LOCAL, OPTIMISTIC, REPEATABLE_READ);
     }
@@ -288,6 +289,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTxLocalOptimisticReadCommitted() throws Exception {
         checkTx(LOCAL, OPTIMISTIC, READ_COMMITTED);
     }
@@ -297,6 +299,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTxLocalOptimisticSerializable() throws Exception {
         checkTx(LOCAL, OPTIMISTIC, SERIALIZABLE);
     }
@@ -306,6 +309,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTxLocalPessimisticRepeatableRead() throws Exception {
         checkTx(LOCAL, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -315,6 +319,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTxLocalPessimisticReadCommitted() throws Exception {
         checkTx(LOCAL, PESSIMISTIC, READ_COMMITTED);
     }
@@ -324,6 +329,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTxLocalPessimisticSerializable() throws Exception {
         checkTx(LOCAL, PESSIMISTIC, SERIALIZABLE);
     }
@@ -333,6 +339,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMvccTxLocalPessimisticRepeatableRead() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-9530");
 
@@ -344,6 +351,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTxPartitionedOptimisticRepeatableRead() throws Exception {
         checkTx(PARTITIONED, OPTIMISTIC, REPEATABLE_READ);
     }
@@ -353,6 +361,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTxPartitionedOptimisticReadCommitted() throws Exception {
         checkTx(PARTITIONED, OPTIMISTIC, READ_COMMITTED);
     }
@@ -362,6 +371,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTxPartitionedOptimisticSerializable() throws Exception {
         checkTx(PARTITIONED, OPTIMISTIC, SERIALIZABLE);
     }
@@ -371,6 +381,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTxPartitionedPessimisticRepeatableRead() throws Exception {
         checkTx(PARTITIONED, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -380,6 +391,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTxPartitionedPessimisticReadCommitted() throws Exception {
         checkTx(PARTITIONED, PESSIMISTIC, READ_COMMITTED);
     }
@@ -389,6 +401,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTxPartitionedPessimisticSerializable() throws Exception {
         checkTx(PARTITIONED, PESSIMISTIC, SERIALIZABLE);
     }
@@ -398,6 +411,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMvccTxPartitionedPessimisticRepeatableRead() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-9321");
 
@@ -410,6 +424,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTxReplicatedOptimisticRepeatableRead() throws Exception {
         checkTx(REPLICATED, OPTIMISTIC, REPEATABLE_READ);
     }
@@ -419,6 +434,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTxReplicatedOptimisticReadCommitted() throws Exception {
         checkTx(REPLICATED, OPTIMISTIC, READ_COMMITTED);
     }
@@ -428,6 +444,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTxReplicatedOptimisticSerializable() throws Exception {
         checkTx(REPLICATED, OPTIMISTIC, SERIALIZABLE);
     }
@@ -437,6 +454,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTxReplicatedPessimisticRepeatableRead() throws Exception {
         checkTx(REPLICATED, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -446,6 +464,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTxReplicatedPessimisticReadCommitted() throws Exception {
         checkTx(REPLICATED, PESSIMISTIC, READ_COMMITTED);
     }
@@ -455,6 +474,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTxReplicatedPessimisticSerializable() throws Exception {
         checkTx(REPLICATED, PESSIMISTIC, SERIALIZABLE);
     }
@@ -464,6 +484,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMvccTxReplicatedPessimisticRepeatableRead() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-9321");
 
@@ -475,6 +496,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicLocal() throws Exception {
         checkAtomic(LOCAL);
     }
@@ -484,6 +506,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicPartitioned() throws Exception {
         checkAtomic(PARTITIONED);
     }
@@ -493,6 +516,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicReplicated() throws Exception {
         checkAtomic(REPLICATED);
     }

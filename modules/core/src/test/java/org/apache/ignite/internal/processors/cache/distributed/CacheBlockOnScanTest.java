@@ -49,73 +49,85 @@ public class CacheBlockOnScanTest extends CacheBlockOnReadAbstractTest {
 
     /** {@inheritDoc} */
     @Params(baseline = 9, atomicityMode = ATOMIC, cacheMode = PARTITIONED, allowException = true)
-    @Override public void testStopBaselineAtomicPartitioned() throws Exception {
+    @Override @Test
+    public void testStopBaselineAtomicPartitioned() throws Exception {
         super.testStopBaselineAtomicPartitioned();
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 9, atomicityMode = ATOMIC, cacheMode = REPLICATED, allowException = true)
-    @Override public void testStopBaselineAtomicReplicated() throws Exception {
+    @Override @Test
+    public void testStopBaselineAtomicReplicated() throws Exception {
         super.testStopBaselineAtomicReplicated();
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 9, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED, allowException = true)
-    @Override public void testStopBaselineTransactionalPartitioned() throws Exception {
+    @Override @Test
+    public void testStopBaselineTransactionalPartitioned() throws Exception {
         super.testStopBaselineTransactionalPartitioned();
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 9, atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED, allowException = true)
-    @Override public void testStopBaselineTransactionalReplicated() throws Exception {
+    @Override @Test
+    public void testStopBaselineTransactionalReplicated() throws Exception {
         super.testStopBaselineTransactionalReplicated();
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = REPLICATED)
-    @Override public void testStartClientAtomicReplicated() {
+    @Override @Test
+    public void testStartClientAtomicReplicated() {
         fail("https://issues.apache.org/jira/browse/IGNITE-9987");
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
-    @Override public void testStartClientTransactionalReplicated() {
+    @Override @Test
+    public void testStartClientTransactionalReplicated() {
         fail("https://issues.apache.org/jira/browse/IGNITE-9987");
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = REPLICATED)
-    @Override public void testStopClientAtomicReplicated() {
+    @Override @Test
+    public void testStopClientAtomicReplicated() {
         fail("https://issues.apache.org/jira/browse/IGNITE-9987");
     }
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
-    @Override public void testStopClientTransactionalReplicated() {
+    @Override @Test
+    public void testStopClientTransactionalReplicated() {
         fail("https://issues.apache.org/jira/browse/IGNITE-9987");
     }
 
     /** {@inheritDoc} */
     @Params(atomicityMode = ATOMIC, cacheMode = PARTITIONED)
-    @Override public void testStartClientAtomicPartitioned() throws Exception {
+    @Override @Test
+    public void testStartClientAtomicPartitioned() throws Exception {
         super.testStartClientTransactionalReplicated();
     }
 
     /** {@inheritDoc} */
     @Params(atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
-    @Override public void testStartClientTransactionalPartitioned() throws Exception {
+    @Override @Test
+    public void testStartClientTransactionalPartitioned() throws Exception {
         super.testStartClientTransactionalReplicated();
     }
 
     /** {@inheritDoc} */
     @Params(atomicityMode = ATOMIC, cacheMode = PARTITIONED)
-    @Override public void testStopClientAtomicPartitioned() throws Exception {
+    @Override @Test
+    public void testStopClientAtomicPartitioned() throws Exception {
         super.testStopClientTransactionalReplicated();
     }
 
     /** {@inheritDoc} */
     @Params(atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
-    @Override public void testStopClientTransactionalPartitioned() throws Exception {
+    @Override @Test
+    public void testStopClientTransactionalPartitioned() throws Exception {
         super.testStopClientTransactionalReplicated();
     }
 }

@@ -127,6 +127,7 @@ public class IgnitePdsCacheAssignmentNodeRestartsTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAssignmentAfterRestarts() throws Exception {
         try {
             System.setProperty(IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC, "true");

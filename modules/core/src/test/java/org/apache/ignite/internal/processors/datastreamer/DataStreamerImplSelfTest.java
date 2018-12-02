@@ -114,6 +114,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCloseWithCancellation() throws Exception {
         cnt = 0;
 
@@ -142,6 +143,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNullPointerExceptionUponDataStreamerClosing() throws Exception {
         cnt = 0;
 
@@ -189,6 +191,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddDataFromMap() throws Exception {
         cnt = 0;
 
@@ -225,6 +228,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If fail.
      */
+    @Test
     public void testNoDataNodesOnClose() throws Exception {
         boolean failed = false;
 
@@ -254,6 +258,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If fail.
      */
+    @Test
     public void testNoDataNodesOnFlush() throws Exception {
         boolean failed = false;
 
@@ -296,6 +301,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAllOperationFinishedBeforeFutureCompletion() throws Exception {
         cnt = 0;
 
@@ -348,6 +354,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemapOnTopologyChangeDuringUpdatePreparation() throws Exception {
         cnt = 0;
 
@@ -430,6 +437,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed
      */
+    @Test
     public void testRetryWhenTopologyMismatch() throws Exception {
         final int KEY = 1;
         final String VAL = "1";
@@ -465,6 +473,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientEventsNotCausingRemaps() throws Exception {
         Ignite ignite = startGrids(2);
 
@@ -493,6 +502,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerEventsCauseRemaps() throws Exception {
         Ignite ignite = startGrids(2);
 
@@ -525,6 +535,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDataStreamerWaitsUntilDynamicCacheStartIsFinished() throws Exception {
         final Ignite ignite0 = startGrids(2);
         final Ignite ignite1 = grid(1);

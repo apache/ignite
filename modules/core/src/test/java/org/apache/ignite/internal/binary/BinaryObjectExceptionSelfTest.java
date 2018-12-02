@@ -86,6 +86,7 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testUnexpectedFieldType() throws Exception {
         IgniteEx grid = grid(0);
 
@@ -156,6 +157,7 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testFailedMarshallingLogging() throws Exception {
         BinaryMarshaller marshaller = createStandaloneBinaryMarshaller();
 

@@ -108,6 +108,7 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueueCreateNodesJoin() throws Exception {
         CountDownLatch startLatch = new CountDownLatch(GRID_CNT);
         final AtomicBoolean run = new AtomicBoolean(true);
@@ -136,6 +137,7 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientAtomicLongCreateCloseFailover() throws Exception {
         testFailoverWithClient(new IgniteInClosure<Ignite>() {
             @Override public void apply(Ignite ignite) {
@@ -151,6 +153,7 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientQueueCreateCloseFailover() throws Exception {
         testFailoverWithClient(new IgniteInClosure<Ignite>() {
             @Override public void apply(Ignite ignite) {
@@ -172,6 +175,7 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientSetCreateCloseFailover() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-9015");
 
@@ -181,6 +185,7 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientCollocatedSetCreateCloseFailover() throws Exception {
         checkClientSetCreateCloseFailover(true);
     }
@@ -284,6 +289,7 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIncrementConsistency() throws Exception {
         startGrids(GRID_CNT);
 
@@ -323,6 +329,7 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueueClose() throws Exception {
         startGrids(GRID_CNT);
 

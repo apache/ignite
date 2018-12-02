@@ -105,6 +105,7 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testDynamicCacheStart() throws Exception {
         activeOnStart = false;
 
@@ -134,6 +135,7 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testNoRebalancing() throws Exception {
         activeOnStart = false;
 
@@ -215,6 +217,7 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testActivationFromClient() throws Exception {
         forbidden.add(GridDhtPartitionSupplyMessage.class);
         forbidden.add(GridDhtPartitionDemandMessage.class);
@@ -273,6 +276,7 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
      *
      * @throws Exception If fails.
      */
+    @Test
     public void testDeactivationWithPendingLock() throws Exception {
         startGrids(GRID_CNT);
 
@@ -297,6 +301,7 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeactivationWithPendingTransaction() throws Exception {
         startGrids(GRID_CNT);
 

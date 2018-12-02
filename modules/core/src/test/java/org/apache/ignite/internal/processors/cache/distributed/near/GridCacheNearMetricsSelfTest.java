@@ -107,6 +107,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearCacheDoesNotAffectCacheSize() throws Exception {
         IgniteCache<Integer, Integer> cache0 = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -132,6 +133,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryPut() throws Exception {
         Ignite g0 = grid(0);
 
@@ -187,6 +189,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupPut() throws Exception {
         Ignite g0 = grid(0);
 
@@ -241,6 +244,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearPut() throws Exception {
         Ignite g0 = grid(0);
 
@@ -293,6 +297,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryRead() throws Exception {
         Ignite g0 = grid(0);
 
@@ -349,6 +354,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupRead() throws Exception {
         Ignite g0 = grid(0);
 
@@ -400,6 +406,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearRead() throws Exception {
         Ignite g0 = grid(0);
 
@@ -453,6 +460,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateReadRemoveInvokesFromPrimary() throws Exception {
         Ignite g0 = grid(0);
 
@@ -508,6 +516,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateReadRemoveInvokesFromBackup() throws Exception {
         Ignite g0 = grid(0);
 
@@ -563,6 +572,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateReadRemoveInvokesFromNear() throws Exception {
         Ignite g0 = grid(0);
 
@@ -618,6 +628,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadRemoveInvokesFromPrimary() throws Exception {
         Ignite g0 = grid(0);
 
@@ -664,6 +675,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadRemoveInvokesFromBackup() throws Exception {
         Ignite g0 = grid(0);
 
@@ -709,6 +721,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadRemoveInvokesFromNear() throws Exception {
         Ignite g0 = grid(0);
 

@@ -64,6 +64,7 @@ public class GridJobCheckpointCleanupSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testCheckpointCleanup() throws Exception {
         try {
             checkpointSpi = new TestCheckpointSpi("task-checkpoints", cntr);

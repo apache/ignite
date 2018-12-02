@@ -41,6 +41,7 @@ public class GridCacheDhtMultiBackupTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed
      */
+    @Test
     public void testPut() throws Exception {
         try {
             Ignite g = G.start("examples/config/example-cache.xml");

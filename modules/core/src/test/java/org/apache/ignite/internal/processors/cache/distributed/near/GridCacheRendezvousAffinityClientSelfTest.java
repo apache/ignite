@@ -63,6 +63,7 @@ public class GridCacheRendezvousAffinityClientSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientNode() throws Exception {
         try {
             client = true;

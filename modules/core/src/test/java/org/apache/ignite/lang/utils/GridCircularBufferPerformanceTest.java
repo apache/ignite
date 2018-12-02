@@ -35,6 +35,7 @@ public class GridCircularBufferPerformanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testThroughput() throws Exception {
         int size = 256 * 1024;
 
@@ -74,6 +75,7 @@ public class GridCircularBufferPerformanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDequeueThroughput() throws Exception {
 
         final FastSizeDeque<Integer> buf = new FastSizeDeque<>(new ConcurrentLinkedDeque<>());
@@ -117,6 +119,7 @@ public class GridCircularBufferPerformanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testArrayBlockingQueueThroughput() throws Exception {
         final int size = 256 * 1024;
 
@@ -158,6 +161,7 @@ public class GridCircularBufferPerformanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAdderThroughput() throws Exception {
         final int size = 256 * 1024;
 
@@ -194,6 +198,7 @@ public class GridCircularBufferPerformanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicLongThroughput() throws Exception {
         final int size = 256 * 1024;
 

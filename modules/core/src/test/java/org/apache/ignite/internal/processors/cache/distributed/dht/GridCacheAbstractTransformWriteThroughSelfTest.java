@@ -159,6 +159,7 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransformOptimisticNearUpdate() throws Exception {
         checkTransform(OPTIMISTIC, NEAR_NODE, OP_UPDATE);
     }
@@ -166,6 +167,7 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransformOptimisticPrimaryUpdate() throws Exception {
         checkTransform(OPTIMISTIC, PRIMARY_NODE, OP_UPDATE);
     }
@@ -173,6 +175,7 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransformOptimisticBackupUpdate() throws Exception {
         checkTransform(OPTIMISTIC, BACKUP_NODE, OP_UPDATE);
     }
@@ -180,6 +183,7 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransformOptimisticNearDelete() throws Exception {
         checkTransform(OPTIMISTIC, NEAR_NODE, OP_DELETE);
     }
@@ -187,6 +191,7 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransformOptimisticPrimaryDelete() throws Exception {
         checkTransform(OPTIMISTIC, PRIMARY_NODE, OP_DELETE);
     }
@@ -194,6 +199,7 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransformOptimisticBackupDelete() throws Exception {
         checkTransform(OPTIMISTIC, BACKUP_NODE, OP_DELETE);
     }
@@ -201,6 +207,7 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransformPessimisticNearUpdate() throws Exception {
         checkTransform(PESSIMISTIC, NEAR_NODE, OP_UPDATE);
     }
@@ -208,6 +215,7 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransformPessimisticPrimaryUpdate() throws Exception {
         checkTransform(PESSIMISTIC, PRIMARY_NODE, OP_UPDATE);
     }
@@ -215,6 +223,7 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransformPessimisticBackupUpdate() throws Exception {
         checkTransform(PESSIMISTIC, BACKUP_NODE, OP_UPDATE);
     }
@@ -222,6 +231,7 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransformPessimisticNearDelete() throws Exception {
         checkTransform(PESSIMISTIC, NEAR_NODE, OP_DELETE);
     }
@@ -229,6 +239,7 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransformPessimisticPrimaryDelete() throws Exception {
         checkTransform(PESSIMISTIC, PRIMARY_NODE, OP_DELETE);
     }
@@ -236,6 +247,7 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransformPessimisticBackupDelete() throws Exception {
         checkTransform(PESSIMISTIC, BACKUP_NODE, OP_DELETE);
     }

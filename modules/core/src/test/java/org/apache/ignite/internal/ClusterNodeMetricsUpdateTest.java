@@ -62,6 +62,7 @@ public class ClusterNodeMetricsUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMetrics() throws Exception {
         int NODES = 6;
 

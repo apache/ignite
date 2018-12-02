@@ -41,6 +41,7 @@ public class CacheMvccRemoteTxOnNearNodeStartTest extends CacheMvccAbstractTest 
      * when first request is sent to OWNING partition and second to MOVING partition.
      * @throws Exception if failed.
      */
+    @Test
     public void testRemoteTxOnNearNodeIsStartedIfPartitionIsMoving() throws Exception {
         startGridsMultiThreaded(3);
 

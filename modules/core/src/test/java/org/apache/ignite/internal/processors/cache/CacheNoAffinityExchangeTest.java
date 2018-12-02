@@ -85,6 +85,7 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoAffinityChangeOnClientJoin() throws Exception {
         Ignite ig = startGrids(4);
 
@@ -142,6 +143,7 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoAffinityChangeOnClientLeft() throws Exception {
         Ignite ig = startGrids(4);
 

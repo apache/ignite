@@ -73,6 +73,7 @@ public class CacheAsyncOperationsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAsyncOperationsTx() throws Exception {
         asyncOperations(TRANSACTIONAL);
     }
@@ -80,6 +81,7 @@ public class CacheAsyncOperationsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAsyncOperationsMvccTx() throws Exception {
         asyncOperations(TRANSACTIONAL_SNAPSHOT);
     }
@@ -87,6 +89,7 @@ public class CacheAsyncOperationsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAsyncOperationsAtomic() throws Exception {
         asyncOperations(ATOMIC);
     }

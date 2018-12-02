@@ -61,6 +61,7 @@ public class GridCacheValueBytesPreloadingSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOnHeapTiered() throws Exception {
         startGrids(1);
 

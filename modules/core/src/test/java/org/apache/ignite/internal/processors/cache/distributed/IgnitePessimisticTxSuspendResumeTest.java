@@ -64,6 +64,7 @@ public class IgnitePessimisticTxSuspendResumeTest extends GridCommonAbstractTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSuspendPessimisticTx() throws Exception {
         try (Ignite g = startGrid()) {
             IgniteCache<Integer, String> cache = jcache();

@@ -143,6 +143,7 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testStream() throws Exception {
         final Ignite grid = startGrid();
 
@@ -168,6 +169,7 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionMove() throws Exception {
         final Ignite grid = startGrid("binaryGrid1");
 
@@ -206,6 +208,7 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testBinaryStream() throws Exception {
         final Ignite grid = startGrid("binaryGrid");
 

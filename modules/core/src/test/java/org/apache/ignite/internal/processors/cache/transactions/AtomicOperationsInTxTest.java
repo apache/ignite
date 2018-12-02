@@ -71,6 +71,7 @@ public class AtomicOperationsInTxTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEnablingAtomicOperationDuringTransaction() throws Exception {
         GridTestUtils.assertThrows(log, (Callable<IgniteCache>)() -> {
             try (Transaction tx = grid(0).transactions().txStart()) {
@@ -85,6 +86,7 @@ public class AtomicOperationsInTxTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAllowedAtomicOperations() throws Exception {
         checkOperations(true);
     }
@@ -92,6 +94,7 @@ public class AtomicOperationsInTxTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNotAllowedAtomicOperations() throws Exception {
         checkOperations(false);
     }

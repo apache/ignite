@@ -73,6 +73,7 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testImplicitDeployLocally() throws Exception {
         execImplicitDeployLocally(true, true, true);
     }
@@ -80,6 +81,7 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testImplicitDeployP2P() throws Exception {
         execImplicitDeployP2P(true, true, true);
     }
@@ -87,6 +89,7 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testExplicitDeployLocally() throws Exception {
         execExplicitDeployLocally(true, true, true);
     }
@@ -94,6 +97,7 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testExplicitDeployP2P() throws Exception {
         execExplicitDeployP2P(true, true, true);
     }

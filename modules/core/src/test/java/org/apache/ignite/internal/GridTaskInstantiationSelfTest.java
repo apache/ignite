@@ -49,6 +49,7 @@ public class GridTaskInstantiationSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If an error occurs.
      */
+    @Test
     public void testTasksInstantiation() throws Exception {
         grid().compute().execute(PrivateClassTask.class, null);
 

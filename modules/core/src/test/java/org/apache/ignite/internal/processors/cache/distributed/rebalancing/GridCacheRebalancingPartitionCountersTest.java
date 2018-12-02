@@ -93,6 +93,7 @@ public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstrac
     /**
      * Tests that after rebalancing all partition update counters have the same value on all nodes.
      */
+    @Test
     public void test() throws Exception {
         IgniteEx ignite = (IgniteEx)startGrids(3);
 

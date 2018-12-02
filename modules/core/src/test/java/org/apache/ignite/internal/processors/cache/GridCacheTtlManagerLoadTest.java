@@ -36,6 +36,7 @@ public class GridCacheTtlManagerLoadTest extends GridCacheTtlManagerSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoad() throws Exception {
         cacheMode = REPLICATED;
 

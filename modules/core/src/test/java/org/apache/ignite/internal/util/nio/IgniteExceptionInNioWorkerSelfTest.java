@@ -65,6 +65,7 @@ public class IgniteExceptionInNioWorkerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBrokenMessage() throws Exception {
         startGrids(GRID_CNT);
 

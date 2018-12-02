@@ -102,6 +102,7 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateFromTemplate() throws Exception {
         addTemplate = true;
 
@@ -156,6 +157,7 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetOrCreateFromTemplate() throws Exception {
         addTemplate = true;
 
@@ -233,6 +235,7 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartClientNodeFirst() throws Exception {
         addTemplate = true;
         clientMode = true;
@@ -259,6 +262,7 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAddCacheConfigurationMultinode() throws Exception {
         addTemplate = true;
 
@@ -306,6 +310,7 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoPartitionExchangeForTemplate() throws Exception{
         final int GRID_CNT = 3;
 
@@ -355,6 +360,7 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTemplateCleanup() throws Exception {
         startGridsMultiThreaded(3);
 

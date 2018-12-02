@@ -104,6 +104,7 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCachePutGetClassesWithNameConflict() throws Exception {
         Ignite srv1 = startGrid(0);
         Ignite srv2 = startGrid(1);

@@ -125,6 +125,7 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLargeObjects() throws Exception {
         preloadMode = SYNC;
 
@@ -159,6 +160,7 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLargeObjectsWithLifeCycleBean() throws Exception {
         preloadMode = SYNC;
         partitions = 23;

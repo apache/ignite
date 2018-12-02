@@ -80,6 +80,7 @@ public class IgnteCacheClientWriteBehindStoreNonCoalescingTest extends IgniteCac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNonCoalescingIncrementing() throws Exception {
         Ignite ignite = grid(0);
 

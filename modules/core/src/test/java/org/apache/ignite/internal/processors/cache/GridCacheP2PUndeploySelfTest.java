@@ -121,6 +121,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSwapP2PReplicated() throws Exception {
         offheap = false;
 
@@ -128,6 +129,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOffHeapP2PReplicated() throws Exception {
         offheap = true;
 
@@ -135,6 +137,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSwapP2PPartitioned() throws Exception {
         offheap = false;
 
@@ -142,6 +145,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOffheapP2PPartitioned() throws Exception {
         offheap = true;
 
@@ -149,6 +153,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSwapP2PReplicatedNoPreloading() throws Exception {
         mode = NONE;
         offheap = false;
@@ -157,6 +162,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOffHeapP2PReplicatedNoPreloading() throws Exception {
         mode = NONE;
         offheap = true;
@@ -165,6 +171,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSwapP2PPartitionedNoPreloading() throws Exception {
         mode = NONE;
         offheap = false;
@@ -173,6 +180,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOffHeapP2PPartitionedNoPreloading() throws Exception {
         mode = NONE;
         offheap = true;

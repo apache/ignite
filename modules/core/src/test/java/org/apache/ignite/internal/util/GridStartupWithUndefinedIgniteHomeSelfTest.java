@@ -60,6 +60,7 @@ public class GridStartupWithUndefinedIgniteHomeSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartStopWithUndefinedIgniteHome() throws Exception {
         IgniteUtils.nullifyHomeDirectory();
 

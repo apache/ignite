@@ -144,6 +144,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGet() throws Exception {
         testGet(primaryKey(0), false);
 
@@ -156,6 +157,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetEntry() throws Exception {
         testGet(primaryKey(0), true);
 
@@ -263,6 +265,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAll() throws Exception {
         testGetAll(false);
     }
@@ -270,6 +273,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetEntries() throws Exception {
         testGetAll(true);
     }
@@ -416,6 +420,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCancelUpdate() throws Exception {
         for (Operation op : Operation.values()) {
             testCancelUpdate(primaryKey(0), op);
@@ -523,6 +528,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testModifyUpdate() throws Exception {
         for (Operation op : Operation.values()) {
             testModifyUpdate(primaryKey(0), op);
@@ -598,6 +604,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCancelRemove() throws Exception {
         for (Operation op : Operation.values()) {
             testCancelRemove(primaryKey(0), op);
@@ -709,6 +716,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemove() throws Exception {
         for (Operation op : Operation.values()) {
             testRemove(primaryKey(0), op);
@@ -842,6 +850,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearNodeKey() throws Exception {
         if (cacheMode() != PARTITIONED)
             return;
@@ -909,6 +918,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBatchUpdate() throws Exception {
         testBatchUpdate(Operation.UPDATE);
 
@@ -999,6 +1009,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBatchRemove() throws Exception {
         testBatchRemove(Operation.UPDATE);
 

@@ -96,6 +96,7 @@ public class IgniteComputeCustomExecutorSelfTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If fails.
      */
+    @Test
     public void testInvalidCustomExecutor() throws Exception {
         grid(0).compute().withExecutor("invalid").broadcast(new IgniteRunnable() {
             @Override public void run() {
@@ -107,6 +108,7 @@ public class IgniteComputeCustomExecutorSelfTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If fails.
      */
+    @Test
     public void testAllComputeApiByCustomExecutor() throws Exception {
         IgniteCompute comp = grid(0).compute().withExecutor(EXEC_NAME0);
 

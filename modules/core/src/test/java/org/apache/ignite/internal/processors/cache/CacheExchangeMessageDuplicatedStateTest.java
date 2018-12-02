@@ -146,6 +146,7 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExchangeMessages() throws Exception {
         ignite(0);
 

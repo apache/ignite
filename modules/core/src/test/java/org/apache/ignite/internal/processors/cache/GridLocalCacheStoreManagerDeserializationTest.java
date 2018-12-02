@@ -50,6 +50,7 @@ public class GridLocalCacheStoreManagerDeserializationTest extends GridCacheStor
      *
      * @throws Exception
      */
+    @Test
     public void testUpdate() throws Exception {
         // Goal is to check correct saving to store (no exception must be thrown)
 
@@ -78,6 +79,7 @@ public class GridLocalCacheStoreManagerDeserializationTest extends GridCacheStor
      *
      * @throws Exception
      */
+    @Test
     public void testBinaryUpdate() throws Exception {
         // Goal is to check correct saving to store (no exception must be thrown)
         final Ignite grid = startGrid("binaryGrid");

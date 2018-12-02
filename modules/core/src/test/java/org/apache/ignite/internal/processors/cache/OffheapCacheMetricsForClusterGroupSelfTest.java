@@ -63,6 +63,7 @@ public class OffheapCacheMetricsForClusterGroupSelfTest extends GridCommonAbstra
             startGrid("client-" + i);
     }
 
+    @Test
     public void testGetOffHeapPrimaryEntriesCount() throws Exception {
         String cacheName = "testGetOffHeapPrimaryEntriesCount";
         IgniteCache<Integer, Integer> cache = grid("client-0").createCache(cacheConfiguration(cacheName));

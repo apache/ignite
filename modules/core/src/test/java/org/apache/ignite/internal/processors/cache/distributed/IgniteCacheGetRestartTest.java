@@ -119,6 +119,7 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetRestartReplicated() throws Exception {
         CacheConfiguration<Object, Object> cache = cacheConfiguration(REPLICATED, 0, false);
 
@@ -128,6 +129,7 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetRestartPartitioned1() throws Exception {
         CacheConfiguration<Object, Object> cache = cacheConfiguration(PARTITIONED, 1, false);
 
@@ -137,6 +139,7 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetRestartPartitioned2() throws Exception {
         CacheConfiguration<Object, Object> cache = cacheConfiguration(PARTITIONED, 2, false);
 
@@ -146,6 +149,7 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetRestartPartitionedNearEnabled() throws Exception {
         CacheConfiguration<Object, Object> cache = cacheConfiguration(PARTITIONED, 1, true);
 

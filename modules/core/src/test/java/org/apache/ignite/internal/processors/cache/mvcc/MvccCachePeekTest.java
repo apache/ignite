@@ -57,6 +57,7 @@ public class MvccCachePeekTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testPeek() throws Exception {
         doWithCache(this::checkPeekSerial);
         doWithCache(this::checkPeekDoesNotSeeAbortedVersions);

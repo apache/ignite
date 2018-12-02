@@ -89,6 +89,7 @@ public class CachePutEventListenerErrorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedAtomicOnHeap() throws Exception {
         doTest(CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC);
     }
@@ -96,6 +97,7 @@ public class CachePutEventListenerErrorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedTransactionalOnHeap() throws Exception {
         doTest(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL);
     }
@@ -103,6 +105,7 @@ public class CachePutEventListenerErrorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedAtomicOnHeap() throws Exception {
         doTest(CacheMode.REPLICATED, CacheAtomicityMode.ATOMIC);
     }
@@ -110,6 +113,7 @@ public class CachePutEventListenerErrorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedTransactionalOnHeap() throws Exception {
         doTest(CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL);
     }

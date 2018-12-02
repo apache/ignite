@@ -51,6 +51,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicsReconnectClusterRestart() throws Exception {
         Ignite client = grid(serverCount());
 
@@ -106,6 +107,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicSeqReconnect() throws Exception {
         Ignite client = grid(serverCount());
 
@@ -139,6 +141,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicSeqReconnectRemoved() throws Exception {
         Ignite client = grid(serverCount());
 
@@ -187,6 +190,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicSeqReconnectInProgress() throws Exception {
         Ignite client = grid(serverCount());
 
@@ -248,6 +252,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicReferenceReconnect() throws Exception {
         Ignite client = grid(serverCount());
 
@@ -289,6 +294,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicReferenceReconnectRemoved() throws Exception {
         Ignite client = grid(serverCount());
 
@@ -342,6 +348,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicReferenceReconnectInProgress() throws Exception {
         Ignite client = grid(serverCount());
 
@@ -409,6 +416,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicStampedReconnect() throws Exception {
         Ignite client = grid(serverCount());
 
@@ -450,6 +458,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicStampedReconnectRemoved() throws Exception {
         Ignite client = grid(serverCount());
 
@@ -501,6 +510,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicStampedReconnectInProgress() throws Exception {
         Ignite client = grid(serverCount());
 
@@ -569,6 +579,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicLongReconnect() throws Exception {
         Ignite client = grid(serverCount());
 
@@ -600,6 +611,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicLongReconnectRemoved() throws Exception {
         Ignite client = grid(serverCount());
 
@@ -641,6 +653,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicLongReconnectInProgress() throws Exception {
         Ignite client = grid(serverCount());
 
@@ -696,6 +709,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLatchReconnect() throws Exception {
         Ignite client = grid(serverCount());
 
@@ -737,6 +751,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSemaphoreReconnect() throws Exception {
         Ignite client = grid(serverCount());
 
@@ -778,6 +793,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReentrantLockReconnect() throws Exception {
         testReentrantLockReconnect(false);
 

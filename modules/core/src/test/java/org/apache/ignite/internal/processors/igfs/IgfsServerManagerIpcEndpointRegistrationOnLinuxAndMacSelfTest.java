@@ -32,6 +32,7 @@ public class IgfsServerManagerIpcEndpointRegistrationOnLinuxAndMacSelfTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoopbackAndShmemEndpointsRegistration() throws Exception {
         IgniteConfiguration cfg = gridConfigurationManyIgfsCaches(3);
 

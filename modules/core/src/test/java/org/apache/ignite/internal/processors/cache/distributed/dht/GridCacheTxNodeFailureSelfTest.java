@@ -106,6 +106,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryNodeFailureBackupCommitPessimistic() throws Exception {
         checkPrimaryNodeFailureBackupCommit(PESSIMISTIC, false, true);
     }
@@ -113,6 +114,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryNodeFailureBackupCommitOptimistic() throws Exception {
         checkPrimaryNodeFailureBackupCommit(OPTIMISTIC, false, true);
     }
@@ -120,6 +122,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryNodeFailureBackupCommitPessimisticOnBackup() throws Exception {
         checkPrimaryNodeFailureBackupCommit(PESSIMISTIC, true, true);
     }
@@ -127,6 +130,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryNodeFailureBackupCommitOptimisticOnBackup() throws Exception {
         checkPrimaryNodeFailureBackupCommit(OPTIMISTIC, true, true);
     }
@@ -134,6 +138,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryNodeFailureBackupRollbackPessimistic() throws Exception {
         checkPrimaryNodeFailureBackupCommit(PESSIMISTIC, false, false);
     }
@@ -141,6 +146,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryNodeFailureBackupRollbackOptimistic() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-1731");
 
@@ -150,6 +156,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryNodeFailureBackupRollbackPessimisticOnBackup() throws Exception {
         checkPrimaryNodeFailureBackupCommit(PESSIMISTIC, true, false);
     }
@@ -157,6 +164,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryNodeFailureBackupRollbackOptimisticOnBackup() throws Exception {
         checkPrimaryNodeFailureBackupCommit(OPTIMISTIC, true, false);
     }
@@ -164,6 +172,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryNodeFailureBackupCommitImplicit() throws Exception {
         checkPrimaryNodeFailureBackupCommit(null, false, true);
     }
@@ -171,6 +180,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryNodeFailureBackupCommitImplicitOnBackup() throws Exception {
         checkPrimaryNodeFailureBackupCommit(null, true, true);
     }
@@ -178,6 +188,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryNodeFailureBackupRollbackImplicit() throws Exception {
         checkPrimaryNodeFailureBackupCommit(null, false, false);
     }
@@ -185,6 +196,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryNodeFailureBackupRollbackImplicitOnBackup() throws Exception {
         checkPrimaryNodeFailureBackupCommit(null, true, false);
     }

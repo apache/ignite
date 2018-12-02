@@ -123,6 +123,7 @@ public class IgnitePdsCorruptedIndexTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testCorruption() throws Exception {
         final String corruptedNodeName = "corrupted";
 

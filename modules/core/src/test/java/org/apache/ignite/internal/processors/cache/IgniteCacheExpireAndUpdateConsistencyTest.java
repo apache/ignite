@@ -97,6 +97,7 @@ public class IgniteCacheExpireAndUpdateConsistencyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomic1() throws Exception {
         updateAndEventConsistencyTest(cacheConfiguration(ATOMIC, 0));
     }
@@ -104,6 +105,7 @@ public class IgniteCacheExpireAndUpdateConsistencyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomic2() throws Exception {
         updateAndEventConsistencyTest(cacheConfiguration(ATOMIC, 1));
     }
@@ -111,6 +113,7 @@ public class IgniteCacheExpireAndUpdateConsistencyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomic3() throws Exception {
         updateAndEventConsistencyTest(cacheConfiguration(ATOMIC, 2));
     }
@@ -118,6 +121,7 @@ public class IgniteCacheExpireAndUpdateConsistencyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTx1() throws Exception {
         updateAndEventConsistencyTest(cacheConfiguration(TRANSACTIONAL, 0));
     }
@@ -125,6 +129,7 @@ public class IgniteCacheExpireAndUpdateConsistencyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTx2() throws Exception {
         updateAndEventConsistencyTest(cacheConfiguration(TRANSACTIONAL, 1));
     }
@@ -132,6 +137,7 @@ public class IgniteCacheExpireAndUpdateConsistencyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTx3() throws Exception {
         updateAndEventConsistencyTest(cacheConfiguration(TRANSACTIONAL, 2));
     }

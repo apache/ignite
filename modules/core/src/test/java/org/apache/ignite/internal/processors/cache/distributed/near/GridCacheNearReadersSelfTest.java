@@ -148,6 +148,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testTwoNodesTwoKeysNoBackups() throws Exception {
         aff.backups(0);
         grids = 2;
@@ -241,6 +242,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testTwoNodesTwoKeysOneBackup() throws Exception {
         aff.backups(1);
         grids = 2;
@@ -357,6 +359,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPutAllManyKeysOneReader() throws Exception {
         aff.backups(1);
         grids = 4;
@@ -393,6 +396,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPutAllManyKeysTwoReaders() throws Exception {
         aff.backups(1);
         grids = 5;
@@ -436,6 +440,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testBackupEntryReaders() throws Exception {
         aff.backups(1);
         grids = 2;
@@ -473,6 +478,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testImplicitLockReaders() throws Exception {
         grids = 3;
         aff.reset(grids, 1);
@@ -552,6 +558,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testExplicitLockReaders() throws Exception {
         if (atomicityMode() == ATOMIC)
             return;

@@ -346,6 +346,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     /**
      * @throws IOException On error.
      */
+    @Test
     public void testDistribution() throws IOException {
         AffinityFunction aff0 = new RendezvousAffinityFunction(true, 1024);
 
@@ -397,6 +398,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     /**
      *
      */
+    @Test
     public void testAffinityBenchmarkAdd() {
         mode = TopologyModificationMode.ADD;
 
@@ -410,6 +412,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     /**
      *
      */
+    @Test
     public void testAffinityBenchmarkChangeLast() {
         mode = TopologyModificationMode.CHANGE_LAST_NODE;
 
@@ -503,6 +506,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     /**
      *
      */
+    @Test
     public void testPartitionsMigrate() {
         int[] nodesCnts = {2, 3, 10, 64, 100, 200, 300, 400, 500, 600};
 
@@ -548,6 +552,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     /**
      *
      */
+    @Test
     public void testAffinityCompatibility() {
         AffinityFunction aff0 = new RendezvousAffinityFunction(true, 1024);
 

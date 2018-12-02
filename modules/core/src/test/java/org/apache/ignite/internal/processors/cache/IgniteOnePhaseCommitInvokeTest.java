@@ -90,6 +90,7 @@ public class IgniteOnePhaseCommitInvokeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOnePhaseInvoke() throws Exception {
         boolean flags[] = {true, false};
 

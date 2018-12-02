@@ -84,6 +84,7 @@ public class IgniteCacheStoreCollectionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStoreMap() throws Exception {
         IgniteCache<Object, Object> cache1 = ignite(0).cache(CACHE1);
         IgniteCache<Object, Object> cache2 = ignite(0).cache(CACHE2);

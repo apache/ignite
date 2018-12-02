@@ -101,6 +101,7 @@ public class GridMarshallerMappingConsistencyTest extends GridCommonAbstractTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMappingsPersistedOnJoin() throws Exception {
         Ignite g1 = startGrid(1);
         Ignite g2 = startGrid(2);
@@ -140,6 +141,7 @@ public class GridMarshallerMappingConsistencyTest extends GridCommonAbstractTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPersistedMappingsSharedOnJoin() throws Exception {
         Ignite g1 = startGrid(1);
         startGrid(2);

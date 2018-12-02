@@ -36,6 +36,7 @@ public class IgniteExceptionRegistrySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testOnException() throws Exception {
         awaitPartitionMapExchange();
 
@@ -90,6 +91,7 @@ public class IgniteExceptionRegistrySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testMultiThreadedMaxSize() throws Exception {
         final int maxSize = 10;
 

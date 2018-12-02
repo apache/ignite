@@ -150,6 +150,7 @@ public abstract class IgniteAbstractWalIteratorInvalidCrcTest extends GridCommon
      * Test that iteration fails if one of archive segments contains record with invalid CRC.
      * @throws Exception If failed.
      */
+    @Test
     public void testArchiveCorruptedPtr() throws Exception {
         doTest((archiveDescs, descs) -> archiveDescs.get(random.nextInt(archiveDescs.size())), false, true);
     }
@@ -159,6 +160,7 @@ public abstract class IgniteAbstractWalIteratorInvalidCrcTest extends GridCommon
      * and it is not the tail segment.
      * @throws Exception If failed.
      */
+    @Test
     public void testNotTailCorruptedPtr() throws Exception {
         doTest((archiveDescs, descs) -> descs.get(random.nextInt(descs.size() - 1)), true, true);
     }
@@ -168,6 +170,7 @@ public abstract class IgniteAbstractWalIteratorInvalidCrcTest extends GridCommon
      * Test that iteration does not fail if tail segment in working directory contains record with invalid CRC.
      * @throws Exception If failed.
      */
+    @Test
     public void testTailCorruptedPtr() throws Exception {
         doTest((archiveDescs, descs) -> descs.get(descs.size() - 1), false, false);
     }

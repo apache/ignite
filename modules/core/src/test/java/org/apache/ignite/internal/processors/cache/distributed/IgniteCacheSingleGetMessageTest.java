@@ -87,6 +87,7 @@ public class IgniteCacheSingleGetMessageTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleGetMessage() throws Exception {
         assertFalse(ignite(0).configuration().isClientMode());
         assertTrue(ignite(SRVS).configuration().isClientMode());

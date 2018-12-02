@@ -93,6 +93,7 @@ public class IgniteDbPutGetWithCacheStoreTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testWriteThrough() throws Exception {
         checkWriteThrough(ATOMIC);
         checkWriteThrough(TRANSACTIONAL);
@@ -101,6 +102,7 @@ public class IgniteDbPutGetWithCacheStoreTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testReadThrough() throws Exception {
         checkReadThrough(ATOMIC);
         checkReadThrough(TRANSACTIONAL);

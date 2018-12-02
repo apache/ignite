@@ -28,6 +28,7 @@ public class CacheCheckpointSpiConfigSelfTest extends GridSpiAbstractConfigTest<
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNegativeConfig() throws Exception {
         checkNegativeSpiProperty(new CacheCheckpointSpi(), "cacheName", null);
         checkNegativeSpiProperty(new CacheCheckpointSpi(), "cacheName", "");

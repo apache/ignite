@@ -36,6 +36,7 @@ public class GridNeverFailoverSpiSelfTest extends GridSpiAbstractTest<NeverFailo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAlwaysNull() throws Exception {
         List<ClusterNode> nodes = new ArrayList<>();
 

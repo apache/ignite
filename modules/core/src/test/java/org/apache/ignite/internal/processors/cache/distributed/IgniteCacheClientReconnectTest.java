@@ -129,6 +129,7 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed
      */
+    @Test
     public void testClientReconnectOnExchangeHistoryExhaustion() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE, "1");
 
@@ -161,6 +162,7 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed
      */
+    @Test
     public void testClientInForceServerModeStopsOnExchangeHistoryExhaustion() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE, "1");
 
@@ -268,6 +270,7 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnect() throws Exception {
         startGrids(SRV_CNT);
 

@@ -89,6 +89,7 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityCallRestartNode() throws Exception {
         startGridsMultiThreaded(SRVS);
 
@@ -98,6 +99,7 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityCallFromClientRestartNode() throws Exception {
         startGridsMultiThreaded(SRVS + 1);
 
@@ -146,6 +148,7 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityCallNoServerNode() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-1741");
 

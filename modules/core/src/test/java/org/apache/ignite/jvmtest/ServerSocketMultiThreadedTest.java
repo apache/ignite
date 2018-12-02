@@ -47,6 +47,7 @@ public class ServerSocketMultiThreadedTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentBind() throws Exception {
         final AtomicInteger bindExCnt = new AtomicInteger();
         final AtomicInteger sockExCnt = new AtomicInteger();

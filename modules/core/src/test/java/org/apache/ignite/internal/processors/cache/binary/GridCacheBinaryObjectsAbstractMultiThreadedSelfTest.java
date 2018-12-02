@@ -124,7 +124,8 @@ public abstract class GridCacheBinaryObjectsAbstractMultiThreadedSelfTest extend
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("BusyWait") public void testGetPut() throws Exception {
+    @SuppressWarnings("BusyWait") @Test
+    public void testGetPut() throws Exception {
         final AtomicBoolean flag = new AtomicBoolean();
 
         final LongAdder cnt = new LongAdder();

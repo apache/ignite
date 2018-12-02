@@ -96,6 +96,7 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings( {"unchecked"})
+    @Test
     public void testTxCleanup() throws Exception {
         backups = 1;
 
@@ -184,6 +185,7 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxReadersUpdate() throws Exception {
         startGridsMultiThreaded(GRID_CNT);
 

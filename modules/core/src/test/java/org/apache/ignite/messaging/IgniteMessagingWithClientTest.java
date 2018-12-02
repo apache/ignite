@@ -77,6 +77,7 @@ public class IgniteMessagingWithClientTest extends GridCommonAbstractTest implem
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMessageSendWithClientJoin() throws Exception {
         startGrid(0);
 

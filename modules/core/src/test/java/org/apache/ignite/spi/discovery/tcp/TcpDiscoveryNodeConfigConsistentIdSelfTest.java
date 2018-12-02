@@ -56,6 +56,7 @@ public class TcpDiscoveryNodeConfigConsistentIdSelfTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConsistentId() throws Exception {
         Object id0 = grid(0).localNode().consistentId();
         Serializable id1 = grid(0).configuration().getConsistentId();

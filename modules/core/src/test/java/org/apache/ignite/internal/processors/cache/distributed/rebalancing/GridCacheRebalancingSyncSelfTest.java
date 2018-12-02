@@ -254,6 +254,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleRebalancing() throws Exception {
         IgniteKernal ignite = (IgniteKernal)startGrid(0);
 
@@ -305,6 +306,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadRebalancing() throws Exception {
         final Ignite ignite = startGrid(0);
 
@@ -492,6 +494,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testComplexRebalancing() throws Exception {
         final Ignite ignite = startGrid(0);
 

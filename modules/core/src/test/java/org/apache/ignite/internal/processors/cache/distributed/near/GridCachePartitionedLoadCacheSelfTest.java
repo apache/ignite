@@ -85,6 +85,7 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalLoadCache() throws Exception {
         loadCache(false);
     }
@@ -92,6 +93,7 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalLoadCacheAsync() throws Exception {
         loadCache(true);
     }

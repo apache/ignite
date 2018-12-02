@@ -107,6 +107,7 @@ public class GridCachePartitionedAffinityExcludeNeighborsPerformanceTest extends
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCountPerformance() throws Exception {
         excNeighbores = false;
 
@@ -188,6 +189,7 @@ public class GridCachePartitionedAffinityExcludeNeighborsPerformanceTest extends
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTimedPerformance() throws Exception {
         excNeighbores = false;
 

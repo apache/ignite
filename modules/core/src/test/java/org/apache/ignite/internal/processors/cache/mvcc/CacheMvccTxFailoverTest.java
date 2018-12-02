@@ -88,6 +88,7 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fails.
      */
+    @Test
     public void testSingleNodeTxMissedRollback() throws Exception {
         checkSingleNodeRestart(true, false, true);
     }
@@ -95,6 +96,7 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fails.
      */
+    @Test
     public void testSingleNodeTxMissedRollbackRecoverFromWAL() throws Exception {
         checkSingleNodeRestart(true, true, true);
     }
@@ -102,6 +104,7 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fails.
      */
+    @Test
     public void testSingleNodeTxMissedCommit() throws Exception {
         checkSingleNodeRestart(false, false, true);
     }
@@ -109,6 +112,7 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fails.
      */
+    @Test
     public void testSingleNodeTxMissedCommitRecoverFromWAL() throws Exception {
         checkSingleNodeRestart(false, true, true);
     }
@@ -116,6 +120,7 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fails.
      */
+    @Test
     public void testSingleNodeRollbackedTxRecoverFromWAL() throws Exception {
         checkSingleNodeRestart(true, true, false);
     }
@@ -123,6 +128,7 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fails.
      */
+    @Test
     public void testSingleNodeCommitedTxRecoverFromWAL() throws Exception {
         checkSingleNodeRestart(false, true, false);
     }
@@ -208,6 +214,7 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fails.
      */
+    @Test
     public void testLostRollbackOnBackup() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-10219");
 

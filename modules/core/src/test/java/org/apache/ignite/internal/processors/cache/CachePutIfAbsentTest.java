@@ -111,6 +111,7 @@ public class CachePutIfAbsentTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxConflictGetAndPutIfAbsent() throws Exception {
         Ignite ignite0 = ignite(0);
 

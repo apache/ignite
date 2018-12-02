@@ -118,6 +118,7 @@ public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonA
     /**
      * @throws Exception e.
      */
+    @Test
     public void test() throws Exception {
         String marshClsName = GridTestProperties.getProperty(GridTestProperties.MARSH_CLASS_NAME);
 

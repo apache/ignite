@@ -135,6 +135,7 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCrossCachePessimisticTxFailover() throws Exception {
         crossCacheTxFailover(PARTITIONED, true, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -142,6 +143,7 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCrossCachePessimisticTxFailoverDifferentAffinity() throws Exception {
         crossCacheTxFailover(PARTITIONED, false, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -149,6 +151,7 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCrossCacheOptimisticTxFailover() throws Exception {
         crossCacheTxFailover(PARTITIONED, true, OPTIMISTIC, REPEATABLE_READ);
     }
@@ -156,6 +159,7 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCrossCacheOptimisticSerializableTxFailover() throws Exception {
         crossCacheTxFailover(PARTITIONED, true, OPTIMISTIC, SERIALIZABLE);
     }
@@ -163,6 +167,7 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCrossCacheOptimisticTxFailoverDifferentAffinity() throws Exception {
         crossCacheTxFailover(PARTITIONED, false, OPTIMISTIC, REPEATABLE_READ);
     }
@@ -170,6 +175,7 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCrossCachePessimisticTxFailoverReplicated() throws Exception {
         crossCacheTxFailover(REPLICATED, true, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -177,6 +183,7 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCrossCacheOptimisticTxFailoverReplicated() throws Exception {
         crossCacheTxFailover(REPLICATED, true, OPTIMISTIC, REPEATABLE_READ);
     }
@@ -184,6 +191,7 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCrossCachePessimisticTxFailoverDifferentAffinityReplicated() throws Exception {
         crossCacheTxFailover(PARTITIONED, false, PESSIMISTIC, REPEATABLE_READ);
     }

@@ -240,6 +240,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
      *
      * @throws Exception If failed.
      */
+    @Test
     public void test() throws Exception {
         startUp();
 

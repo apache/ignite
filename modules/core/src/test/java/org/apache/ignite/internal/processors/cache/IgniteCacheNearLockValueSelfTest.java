@@ -71,6 +71,7 @@ public class IgniteCacheNearLockValueSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDhtVersion() throws Exception {
         CacheConfiguration<Object, Object> pCfg = new CacheConfiguration<>("partitioned");
 

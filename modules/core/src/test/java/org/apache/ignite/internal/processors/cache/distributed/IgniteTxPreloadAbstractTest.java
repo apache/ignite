@@ -77,6 +77,7 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoteTxPreloading() throws Exception {
         IgniteCache<String, Integer> cache = jcache(0);
 
@@ -146,6 +147,7 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalTxPreloadingOptimistic() throws Exception {
         testLocalTxPreloading(OPTIMISTIC);
     }
@@ -153,6 +155,7 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalTxPreloadingPessimistic() throws Exception {
         testLocalTxPreloading(PESSIMISTIC);
     }

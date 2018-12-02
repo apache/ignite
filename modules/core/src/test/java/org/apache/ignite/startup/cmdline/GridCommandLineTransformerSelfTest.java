@@ -28,6 +28,7 @@ public class GridCommandLineTransformerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransformIfNoArguments() throws Exception {
         assertEquals(
             "\"INTERACTIVE=0\" \"QUIET=-DIGNITE_QUIET=true\" \"NO_PAUSE=0\" " +
@@ -38,6 +39,7 @@ public class GridCommandLineTransformerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransformIfArgumentIsnull() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @SuppressWarnings("NullArgumentToVariableArgMethod")
@@ -53,6 +55,7 @@ public class GridCommandLineTransformerSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTransformIfUnsupportedOptions() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -64,6 +67,7 @@ public class GridCommandLineTransformerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransformIfUnsupportedJvmOptions() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -87,6 +91,7 @@ public class GridCommandLineTransformerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransformIfSeveralArgumentsWithoutDashPrefix() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -98,6 +103,7 @@ public class GridCommandLineTransformerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransformIfOnlyPathToConfigSpecified() throws Exception {
         assertEquals(
             "\"INTERACTIVE=0\" \"QUIET=-DIGNITE_QUIET=true\" \"NO_PAUSE=0\" \"NO_JMX=0\" " +
@@ -108,6 +114,7 @@ public class GridCommandLineTransformerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransformIfAllSupportedArguments() throws Exception {
         assertEquals(
             "\"INTERACTIVE=1\" \"QUIET=-DIGNITE_QUIET=false\" \"NO_PAUSE=1\" \"NO_JMX=1\" " +

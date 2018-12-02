@@ -26,6 +26,7 @@ public class ClassSetTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAddAndContains() throws Exception {
         ClassSet clsSet = new ClassSet();
 
@@ -39,6 +40,7 @@ public class ClassSetTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAddWithMaskAndContains() throws Exception {
         ClassSet clsSet = new ClassSet();
 
@@ -52,6 +54,7 @@ public class ClassSetTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReduceOnAddWithMask() throws Exception {
         ClassSet clsSet = new ClassSet();
 

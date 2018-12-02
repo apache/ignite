@@ -35,6 +35,7 @@ public class GridStringBuilderFactorySelfTest extends GridCommonAbstractTest {
     /**
      * Tests string builder factory.
      */
+    @Test
     public void testStringBuilderFactory() {
         SB b1 = GridStringBuilderFactory.acquire();
 

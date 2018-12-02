@@ -53,6 +53,7 @@ public class EncryptedCacheGroupCreateTest extends AbstractEncryptionTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateEncryptedCacheGroup() throws Exception {
         KeystoreEncryptionKey key = createEncryptedCache(ENCRYPTED_CACHE, ENCRYPTED_GROUP);
 
@@ -78,6 +79,7 @@ public class EncryptedCacheGroupCreateTest extends AbstractEncryptionTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateNotEncryptedCacheInEncryptedGroupFails() throws Exception {
         createEncryptedCache(ENCRYPTED_CACHE + "3", ENCRYPTED_GROUP + "3");
 

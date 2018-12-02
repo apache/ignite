@@ -89,6 +89,7 @@ public class GridCacheMultiUpdateLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiUpdateLocksNear() throws Exception {
         checkMultiUpdateLocks(true);
     }
@@ -96,6 +97,7 @@ public class GridCacheMultiUpdateLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiUpdateLocksColocated() throws Exception {
         checkMultiUpdateLocks(false);
     }

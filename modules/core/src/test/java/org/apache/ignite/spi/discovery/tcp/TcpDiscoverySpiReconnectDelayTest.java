@@ -61,11 +61,13 @@ public class TcpDiscoverySpiReconnectDelayTest extends GridCommonAbstractTest {
     //region Client joins after failNode()
 
     /** */
+    @Test
     public void testClientJoinAfterFailureShortTimeout() throws Exception {
         checkClientJoinAfterNodeFailure(5, 500);
     }
 
     /** */
+    @Test
     public void testClientJoinAfterFailureLongTimeout() throws Exception {
         checkClientJoinAfterNodeFailure(3, 5000);
     }
@@ -157,11 +159,13 @@ public class TcpDiscoverySpiReconnectDelayTest extends GridCommonAbstractTest {
     //region Client joins after brakeConnection()
 
     /** */
+    @Test
     public void testClientJoinAfterSocketClosedShortTimeout() throws Exception {
         checkClientJoinAfterSocketClosed(5, 500);
     }
 
     /** */
+    @Test
     public void testClientJoinAfterSocketClosedLongTimeout() throws Exception {
         checkClientJoinAfterSocketClosed(3, 5000);
     }
@@ -221,21 +225,25 @@ public class TcpDiscoverySpiReconnectDelayTest extends GridCommonAbstractTest {
     //region Client joins at start
 
     /** */
+    @Test
     public void testClientJoinAtStartShortTimeout() throws Exception {
         checkClientJoinAtStart(5, 500);
     }
 
     /** */
+    @Test
     public void testClientJoinAtStartLongTimeout() throws Exception {
         checkClientJoinAtStart(3, 5000);
     }
 
     /** */
+    @Test
     public void testServerJoinAtStartShortTimeout() throws Exception {
         checkServerJoinAtStart(5, 500);
     }
 
     /** */
+    @Test
     public void testServerJoinAtStartLongTimeout() throws Exception {
         checkServerJoinAtStart(3, 5000);
     }

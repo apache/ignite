@@ -75,6 +75,7 @@ public class GridJobStealingZeroActiveJobsSelfTest extends GridCommonAbstractTes
      *
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testTwoJobs() throws IgniteCheckedException {
         ignite1.compute().execute(JobStealingTask.class, null);
     }

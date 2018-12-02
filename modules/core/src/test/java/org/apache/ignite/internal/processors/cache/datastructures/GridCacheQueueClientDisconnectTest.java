@@ -84,6 +84,7 @@ public class GridCacheQueueClientDisconnectTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientDisconnect() throws Exception {
         try {
             Ignite server = startGrid(0);

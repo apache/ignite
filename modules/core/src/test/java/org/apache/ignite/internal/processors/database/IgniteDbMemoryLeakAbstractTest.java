@@ -173,6 +173,7 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMemoryLeak() throws Exception {
         final IgniteEx ignite = grid(0);
 

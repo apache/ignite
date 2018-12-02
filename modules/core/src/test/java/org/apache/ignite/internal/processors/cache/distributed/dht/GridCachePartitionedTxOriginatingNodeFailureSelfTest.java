@@ -58,6 +58,7 @@ public class GridCachePartitionedTxOriginatingNodeFailureSelfTest extends
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxFromPrimary() throws Exception {
         ClusterNode txNode = grid(originatingNode()).localNode();
 
@@ -79,6 +80,7 @@ public class GridCachePartitionedTxOriginatingNodeFailureSelfTest extends
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxFromBackup() throws Exception {
         ClusterNode txNode = grid(originatingNode()).localNode();
 
@@ -100,6 +102,7 @@ public class GridCachePartitionedTxOriginatingNodeFailureSelfTest extends
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxFromNotColocated() throws Exception {
         ClusterNode txNode = grid(originatingNode()).localNode();
 
@@ -122,6 +125,7 @@ public class GridCachePartitionedTxOriginatingNodeFailureSelfTest extends
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxAllNodes() throws Exception {
         List<ClusterNode> allNodes = new ArrayList<>(GRID_CNT);
 

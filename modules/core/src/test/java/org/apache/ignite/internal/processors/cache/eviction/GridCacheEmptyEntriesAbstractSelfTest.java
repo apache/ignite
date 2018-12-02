@@ -121,6 +121,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testFifo() throws Exception {
         FifoEvictionPolicy plc = new FifoEvictionPolicy();
         plc.setMaxSize(50);

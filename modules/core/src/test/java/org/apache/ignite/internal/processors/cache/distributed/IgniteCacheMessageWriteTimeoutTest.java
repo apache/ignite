@@ -74,6 +74,7 @@ public class IgniteCacheMessageWriteTimeoutTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMessageQueueLimit() throws Exception {
         for (int i = 0; i < 3; i++) {
             log.info("Iteration: " + i);

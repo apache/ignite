@@ -97,6 +97,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerNodeLeave() throws Exception {
         Ignite ignite0 = startGrid(0);
 
@@ -146,6 +147,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSkipPreload() throws Exception {
         Ignite ignite0 = startGrid(0);
 
@@ -198,6 +200,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionsExchange() throws Exception {
         partitionsExchange(false);
     }
@@ -205,6 +208,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionsExchangeCompatibilityMode() throws Exception {
         System.setProperty(IGNITE_EXCHANGE_COMPATIBILITY_VER_1, "true");
 
@@ -474,6 +478,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientOnlyCacheStart() throws Exception {
         clientOnlyCacheStart(false, false);
     }
@@ -481,6 +486,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearOnlyCacheStart() throws Exception {
         clientOnlyCacheStart(true, false);
     }
@@ -488,6 +494,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientOnlyCacheStartFromServerNode() throws Exception {
         clientOnlyCacheStart(false, true);
     }
@@ -495,6 +502,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearOnlyCacheStartFromServerNode() throws Exception {
         clientOnlyCacheStart(true, true);
     }

@@ -44,6 +44,7 @@ public class IgniteCacheDynamicStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopStartCacheWithDataLoaderNoOverwrite() throws Exception {
         checkStopStartCacheWithDataLoader(false);
     }
@@ -51,6 +52,7 @@ public class IgniteCacheDynamicStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopStartCacheWithDataLoaderOverwrite() throws Exception {
         checkStopStartCacheWithDataLoader(true);
     }

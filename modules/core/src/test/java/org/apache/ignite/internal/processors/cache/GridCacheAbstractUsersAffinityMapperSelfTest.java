@@ -106,6 +106,7 @@ public abstract class GridCacheAbstractUsersAffinityMapperSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityMapper() throws Exception {
         IgniteCache<Object, Object> cache = startGrid(0).cache(DEFAULT_CACHE_NAME);
 

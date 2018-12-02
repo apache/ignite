@@ -49,6 +49,7 @@ public class GridCachePartitionedClientOnlyNoPrimaryFullApiSelfTest extends Grid
     /**
      *
      */
+    @Test
     public void testMapKeysToNodes() {
         grid(0).affinity(DEFAULT_CACHE_NAME).mapKeysToNodes(Arrays.asList("1", "2"));
     }
@@ -56,6 +57,7 @@ public class GridCachePartitionedClientOnlyNoPrimaryFullApiSelfTest extends Grid
     /**
      *
      */
+    @Test
     public void testMapKeyToNode() {
         assert grid(0).affinity(DEFAULT_CACHE_NAME).mapKeyToNode("1") == null;
     }

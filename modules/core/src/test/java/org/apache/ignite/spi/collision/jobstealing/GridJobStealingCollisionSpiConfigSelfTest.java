@@ -28,6 +28,7 @@ public class GridJobStealingCollisionSpiConfigSelfTest extends GridSpiAbstractCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNegativeConfig() throws Exception {
         checkNegativeSpiProperty(new JobStealingCollisionSpi(), "messageExpireTime", 0);
         checkNegativeSpiProperty(new JobStealingCollisionSpi(), "waitJobsThreshold", -1);

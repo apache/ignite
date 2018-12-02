@@ -203,6 +203,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If test failed.
      */
     @SuppressWarnings({"TooBroadScope"})
+    @Test
     public void testLockSingleThread() throws Exception {
         int k = 1;
         String v = String.valueOf(k);
@@ -237,6 +238,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testLock() throws Exception {
         final int kv = 1;
 
@@ -327,6 +329,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testLockAndPut() throws Exception {
         final CountDownLatch l1 = new CountDownLatch(1);
         final CountDownLatch l2 = new CountDownLatch(1);
@@ -412,6 +415,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testLockTimeoutTwoThreads() throws Exception {
         int keyCnt = 1;
 
@@ -507,6 +511,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws Throwable If failed.
      */
+    @Test
     public void testLockReentrancy() throws Throwable {
         Affinity<Integer> aff = ignite1.affinity(DEFAULT_CACHE_NAME);
 

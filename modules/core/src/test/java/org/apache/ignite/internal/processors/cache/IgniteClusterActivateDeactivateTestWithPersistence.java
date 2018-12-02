@@ -73,6 +73,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivateCachesRestore_SingleNode() throws Exception {
         activateCachesRestore(1, false);
     }
@@ -80,6 +81,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivateCachesRestore_SingleNode_WithNewCaches() throws Exception {
         activateCachesRestore(1, true);
     }
@@ -87,6 +89,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivateCachesRestore_5_Servers() throws Exception {
         activateCachesRestore(5, false);
     }
@@ -94,6 +97,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivateCachesRestore_5_Servers_WithNewCaches() throws Exception {
         activateCachesRestore(5, true);
     }
@@ -103,6 +107,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeactivateInactiveCluster() throws Exception {
         ccfgs = new CacheConfiguration[] {
             new CacheConfiguration<>("test_cache_1")
@@ -225,6 +230,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
     /**
      * @see <a href="https://issues.apache.org/jira/browse/IGNITE-7330">IGNITE-7330</a> for more information about context of the test
      */
+    @Test
     public void testClientJoinsWhenActivationIsInProgress() throws Exception {
         startGridsAndLoadData(5);
 
@@ -283,6 +289,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivateCacheRestoreConfigurationConflict() throws Exception {
         final int SRVS = 3;
 
@@ -319,6 +326,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeactivateDuringEvictionAndRebalance() throws Exception {
         IgniteEx srv = (IgniteEx) startGrids(3);
 

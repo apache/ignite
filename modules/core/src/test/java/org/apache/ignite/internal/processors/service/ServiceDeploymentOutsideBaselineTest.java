@@ -93,6 +93,7 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployOutsideBaseline() throws Exception {
         checkDeploymentFromOutsideNode(true, false);
     }
@@ -100,6 +101,7 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployOutsideBaselineNoPersistence() throws Exception {
         checkDeploymentFromOutsideNode(false, false);
     }
@@ -107,6 +109,7 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployOutsideBaselineStatic() throws Exception {
         checkDeploymentFromOutsideNode(true, true);
     }
@@ -114,6 +117,7 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployOutsideBaselineStaticNoPersistence() throws Exception {
         checkDeploymentFromOutsideNode(false, true);
     }
@@ -121,6 +125,7 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployFromNodeAddedToBlt() throws Exception {
         checkDeployWithNodeAddedToBlt(true);
     }
@@ -128,6 +133,7 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployToNodeAddedToBlt() throws Exception {
         checkDeployWithNodeAddedToBlt(false);
     }
@@ -135,6 +141,7 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployFromNodeRemovedFromBlt() throws Exception {
         checkDeployFromNodeRemovedFromBlt(true, false);
     }
@@ -142,6 +149,7 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployFromNodeRemovedFromBltStatic() throws Exception {
         checkDeployFromNodeRemovedFromBlt(true, true);
     }
@@ -149,6 +157,7 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployToNodeRemovedFromBlt() throws Exception {
         checkDeployFromNodeRemovedFromBlt(false, false);
     }
@@ -156,6 +165,7 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStaticDeployFromEachPersistentNodes() throws Exception {
         checkDeployFromEachNodes(true, true);
     }
@@ -163,6 +173,7 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployFromEachNodes() throws Exception {
         checkDeployFromEachNodes(false, false);
     }
@@ -170,6 +181,7 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStaticDeployFromEachNodes() throws Exception {
         checkDeployFromEachNodes(false, true);
     }

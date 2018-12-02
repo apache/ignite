@@ -108,6 +108,7 @@ public class IgnitePdsMultiNodePutGetRestartTest extends GridCommonAbstractTest 
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testPutGetSimple() throws Exception {
         String home = U.getIgniteHome();
 

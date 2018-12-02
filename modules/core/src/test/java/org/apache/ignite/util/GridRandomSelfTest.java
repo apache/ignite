@@ -28,6 +28,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public class GridRandomSelfTest extends GridCommonAbstractTest {
     /**
      */
+    @Test
     public void testRandom() {
         for (int i = 0; i < 100; i++) {
             long seed = ThreadLocalRandom.current().nextLong();

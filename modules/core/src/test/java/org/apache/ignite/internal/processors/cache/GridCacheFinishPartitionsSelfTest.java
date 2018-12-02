@@ -93,6 +93,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxFinishPartitions() throws Exception {
         String key = "key";
         String val = "value";
@@ -175,6 +176,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMvccFinishPartitions() throws Exception {
         String key = "key";
 
@@ -201,6 +203,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMvccFinishKeys() throws Exception {
         IgniteCache<String, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -234,6 +237,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMvccFinishPartitionsContinuousLockAcquireRelease() throws Exception {
         int key = 1;
 

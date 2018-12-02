@@ -35,6 +35,7 @@ public class ParametersTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEnumVariations() throws Exception {
         ConfigParameter<CacheConfiguration>[] modes = Parameters.enumParameters("setCacheMode", CacheMode.class);
 
@@ -60,6 +61,7 @@ public class ParametersTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEnumVariationsWithNull() throws Exception {
         ConfigParameter<CacheConfiguration>[] cfgParam =
             Parameters.enumParameters(true, "setCacheMode", CacheMode.class);

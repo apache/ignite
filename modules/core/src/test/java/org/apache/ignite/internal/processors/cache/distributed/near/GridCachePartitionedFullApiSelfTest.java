@@ -56,6 +56,7 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdate() throws Exception {
         if (gridCount() > 1) {
             IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);

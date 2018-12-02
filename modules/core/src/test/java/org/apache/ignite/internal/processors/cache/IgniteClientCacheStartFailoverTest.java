@@ -99,6 +99,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientStartCoordinatorFailsAtomic() throws Exception {
         clientStartCoordinatorFails(ATOMIC);
     }
@@ -106,6 +107,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientStartCoordinatorFailsTx() throws Exception {
         clientStartCoordinatorFails(TRANSACTIONAL);
     }
@@ -113,6 +115,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientStartCoordinatorFailsMvccTx() throws Exception {
         clientStartCoordinatorFails(TRANSACTIONAL_SNAPSHOT);
     }
@@ -167,6 +170,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientStartLastServerFailsAtomic() throws Exception {
         clientStartLastServerFails(ATOMIC);
     }
@@ -174,6 +178,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientStartLastServerFailsTx() throws Exception {
         clientStartLastServerFails(TRANSACTIONAL);
     }
@@ -181,6 +186,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientStartLastServerFailsMvccTx() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-10262");
 
@@ -273,6 +279,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRebalanceState() throws Exception {
         final int SRVS = 3;
 
@@ -344,6 +351,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRebalanceStateConcurrentStart() throws Exception {
         final int SRVS1 = 3;
         final int CLIENTS = 5;
@@ -438,6 +446,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientStartCloseServersRestart() throws Exception {
         final int SRVS = 4;
         final int CLIENTS = 4;

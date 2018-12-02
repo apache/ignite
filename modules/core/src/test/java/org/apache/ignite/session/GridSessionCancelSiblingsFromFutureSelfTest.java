@@ -94,6 +94,7 @@ public class GridSessionCancelSiblingsFromFutureSelfTest extends GridCommonAbstr
     /**
      * @throws Exception if failed
      */
+    @Test
     public void testCancelSiblings() throws Exception {
         refreshInitialData();
 
@@ -104,6 +105,7 @@ public class GridSessionCancelSiblingsFromFutureSelfTest extends GridCommonAbstr
     /**
      * @throws Exception if failed
      */
+    @Test
     public void testMultiThreaded() throws Exception {
         refreshInitialData();
 

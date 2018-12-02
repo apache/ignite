@@ -62,6 +62,7 @@ public abstract class IgniteCacheAbstractExecutionContextTest extends IgniteCach
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUsersClassLoader() throws Exception {
         UsersClassLoader testClassLdr = (UsersClassLoader)grid(0).configuration().getClassLoader();
 

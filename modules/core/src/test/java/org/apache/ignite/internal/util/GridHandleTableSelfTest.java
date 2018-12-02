@@ -26,6 +26,7 @@ public class GridHandleTableSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGrow() throws Exception {
         GridHandleTable table = new GridHandleTable(8, 2);
 

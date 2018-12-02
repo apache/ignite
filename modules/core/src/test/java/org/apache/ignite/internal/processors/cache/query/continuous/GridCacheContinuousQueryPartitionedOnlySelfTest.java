@@ -42,7 +42,8 @@ public class GridCacheContinuousQueryPartitionedOnlySelfTest extends GridCacheCo
     }
 
     /** {@inheritDoc} */
-    @Override public void testInternalKey() throws Exception {
+    @Override @Test
+    public void testInternalKey() throws Exception {
         // Disabled since data structures are not allowed in partitioned only mode.
     }
 }

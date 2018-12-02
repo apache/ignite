@@ -73,6 +73,7 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
     /**
      * Multithreaded test, used custom class loader
      */
+    @Test
     public void testMultithreadedUpdate() throws Exception {
         multithreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {

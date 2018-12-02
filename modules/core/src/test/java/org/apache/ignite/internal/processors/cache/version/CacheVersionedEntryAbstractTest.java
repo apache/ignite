@@ -54,6 +54,7 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvoke() throws Exception {
         Cache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -71,6 +72,7 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeAll() throws Exception {
         Cache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -95,6 +97,7 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalPeek() throws Exception {
         IgniteCache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -107,6 +110,7 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVersionComparision() throws Exception {
         IgniteCache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 

@@ -86,6 +86,7 @@ public abstract class IgniteCacheNoReadThroughAbstractTest extends IgniteCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoReadThrough() throws Exception {
         IgniteCache<Integer, Integer> cache = jcache(0);
 

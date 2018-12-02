@@ -49,6 +49,7 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<P
      * @throws Exception If failed.
      */
     @SuppressWarnings({"TooBroadScope"})
+    @Test
     public void testCollisionAttributeName() throws Exception {
         String taskAttrKey = "testTaskPriority";
         String jobAttrKey = "testJobPriority";
@@ -93,6 +94,7 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<P
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollision() throws Exception {
         List<CollisionJobContext> activeJobs = makeContextList(null);
         List<CollisionJobContext> passiveJobs = makeContextList(null);
@@ -115,6 +117,7 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<P
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollision0() throws Exception {
         List<CollisionJobContext> activeJobs = makeContextList(null);
         List<CollisionJobContext> passiveJobs = makeContextList(null);
@@ -137,6 +140,7 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<P
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollision1() throws Exception {
         List<CollisionJobContext> activeJobs = makeContextList(null);
         List<CollisionJobContext> passiveJobs = makeContextList(null);
@@ -175,6 +179,7 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<P
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollision2() throws Exception {
         List<CollisionJobContext> activeJobs = makeContextList(null);
         List<CollisionJobContext> passiveJobs = makeContextList(null);
@@ -197,6 +202,7 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<P
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollision3() throws Exception {
         List<CollisionJobContext> activeJobs = makeContextList(null);
         List<CollisionJobContext> passiveJobs = makeContextList(null);
@@ -219,6 +225,7 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<P
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollisionEmpty() throws Exception {
         Collection<CollisionJobContext> activeJobs = new ArrayList<>();
         Collection<CollisionJobContext> passiveJobs = new ArrayList<>();
@@ -232,6 +239,7 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<P
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollisionWithoutPriorityAttribute() throws Exception {
         List<CollisionJobContext> activeJobs = makeContextList(null);
         List<CollisionJobContext> passiveJobs = makeContextList(null);
@@ -278,6 +286,7 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<P
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollisionWithWrongPriorityAttribute() throws Exception {
         List<CollisionJobContext> activeJobs = makeContextList(null);
         List<CollisionJobContext> passiveJobs = makeContextList(null);
@@ -334,6 +343,7 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<P
      * @throws Exception If failed.
      */
     @SuppressWarnings({"TooBroadScope"})
+    @Test
     public void testCollision4() throws Exception {
         List<CollisionJobContext> activeJobs = makeContextList(null, false);
         List<CollisionJobContext> passiveJobs = makeContextList(null, false);
@@ -379,6 +389,7 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<P
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollision5() throws Exception {
         List<CollisionJobContext> activeJobs = makeContextList(null, false);
         List<CollisionJobContext> passiveJobs = makeContextList(null, false);

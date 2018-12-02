@@ -84,6 +84,7 @@ public abstract class CacheEnumOperationsAbstractTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomic() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, ATOMIC);
 
@@ -93,6 +94,7 @@ public abstract class CacheEnumOperationsAbstractTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTx() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL);
 
@@ -102,6 +104,7 @@ public abstract class CacheEnumOperationsAbstractTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMvccTx() throws Exception {
         if (!singleNode())
             fail("https://issues.apache.org/jira/browse/IGNITE-7187");

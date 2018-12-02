@@ -52,6 +52,7 @@ public class IgniteClientReconnectBinaryContexTest extends IgniteClientReconnect
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectCleaningUsersMetadata() throws Exception {
         Ignite client = grid(serverCount());
 

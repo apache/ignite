@@ -84,6 +84,7 @@ public class CacheConcurrentReadThroughTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentReadThrough() throws Exception {
         startGrid(0);
 

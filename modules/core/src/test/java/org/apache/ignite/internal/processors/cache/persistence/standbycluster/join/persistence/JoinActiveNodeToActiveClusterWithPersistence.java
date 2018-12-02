@@ -67,22 +67,26 @@ public class JoinActiveNodeToActiveClusterWithPersistence extends JoinActiveNode
     }
 
     /** {@inheritDoc} */
-    @Override public void testJoinWithOutConfiguration() throws Exception {
+    @Override @Test
+    public void testJoinWithOutConfiguration() throws Exception {
         withOutConfigurationTemplate().execute();
     }
 
     /** {@inheritDoc} */
-    @Override public void testJoinClientWithOutConfiguration() throws Exception {
+    @Override @Test
+    public void testJoinClientWithOutConfiguration() throws Exception {
         joinClientWithOutConfigurationTemplate().execute();
     }
 
     /** {@inheritDoc} */
-    @Override public void testJoinClientStaticCacheConfigurationDifferentOnBoth() throws Exception {
+    @Override @Test
+    public void testJoinClientStaticCacheConfigurationDifferentOnBoth() throws Exception {
         staticCacheConfigurationDifferentOnBothTemplate().execute();
     }
 
     /** {@inheritDoc} */
-    @Override public void testJoinClientStaticCacheConfigurationInCluster() throws Exception {
+    @Override @Test
+    public void testJoinClientStaticCacheConfigurationInCluster() throws Exception {
         staticCacheConfigurationInClusterTemplate().execute();
     }
 

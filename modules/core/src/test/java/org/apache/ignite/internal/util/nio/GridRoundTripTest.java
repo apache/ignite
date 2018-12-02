@@ -43,6 +43,7 @@ public class GridRoundTripTest extends TestCase {
      * @throws IOException If error occurs.
      * @throws InterruptedException If interrupted
      */
+    @Test
     public void testRunServer() throws IOException, InterruptedException {
         final ServerSocket sock = new ServerSocket();
 
@@ -74,6 +75,7 @@ public class GridRoundTripTest extends TestCase {
      * Runs client test
      */
     @SuppressWarnings("InfiniteLoopStatement")
+    @Test
     public void testRunClient() {
         Socket sock = new Socket();
 

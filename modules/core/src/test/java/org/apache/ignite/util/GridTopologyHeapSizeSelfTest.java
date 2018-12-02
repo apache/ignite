@@ -55,6 +55,7 @@ public class GridTopologyHeapSizeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTopologyHeapSizeInOneJvm() throws Exception {
         try {
             ClusterNode node1 = startGrid(1).cluster().node();
@@ -72,6 +73,7 @@ public class GridTopologyHeapSizeSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testTopologyHeapSizeForNodesWithDifferentPids() {
         GridTestNode node1 = getNode("123456789ABC", 1000);
         GridTestNode node2 = getNode("123456789ABC", 1001);
@@ -85,6 +87,7 @@ public class GridTopologyHeapSizeSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testTopologyHeapSizeForNodesWithDifferentMacs() {
         GridTestNode node1 = getNode("123456789ABC", 1000);
         GridTestNode node2 = getNode("CBA987654321", 1000);

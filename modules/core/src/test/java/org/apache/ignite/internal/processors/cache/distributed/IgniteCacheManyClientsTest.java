@@ -114,6 +114,7 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testManyClientsClientDiscovery() throws Throwable {
         clientDiscovery = true;
 
@@ -123,6 +124,7 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testManyClientsSequentiallyClientDiscovery() throws Exception {
         clientDiscovery = true;
 
@@ -132,6 +134,7 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testManyClientsForceServerMode() throws Throwable {
         manyClientsPutGet();
     }

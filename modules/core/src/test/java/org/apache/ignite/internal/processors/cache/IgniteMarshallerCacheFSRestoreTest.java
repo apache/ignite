@@ -128,6 +128,7 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
      *
      * This test must never hang on proposing of MarshallerMapping.
      */
+    @Test
     public void testFileMappingReadAndPropose() throws Exception {
         isPersistenceEnabled = false;
 
@@ -185,6 +186,7 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
      * @see <a href="https://issues.apache.org/jira/browse/IGNITE-6536">IGNITE-6536</a> JIRA provides more information
      * about this case.
      */
+    @Test
     public void testNodeStartFailsOnCorruptedStorage() throws Exception {
         isPersistenceEnabled = true;
 

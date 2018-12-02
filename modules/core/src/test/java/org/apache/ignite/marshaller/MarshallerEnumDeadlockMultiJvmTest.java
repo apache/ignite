@@ -44,6 +44,7 @@ public class MarshallerEnumDeadlockMultiJvmTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testJdkMarshaller() throws Exception {
         marshFactory = new JdkMarshallerFactory();
 
@@ -51,6 +52,7 @@ public class MarshallerEnumDeadlockMultiJvmTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testOptimizedMarshaller() throws Exception {
         marshFactory = new OptimizedMarshallerFactory();
 
@@ -58,6 +60,7 @@ public class MarshallerEnumDeadlockMultiJvmTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testBinaryMarshaller() throws Exception {
         marshFactory = new BinaryMarshallerFactory();
 

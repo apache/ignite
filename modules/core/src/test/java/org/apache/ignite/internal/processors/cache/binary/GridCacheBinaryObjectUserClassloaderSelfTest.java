@@ -140,6 +140,7 @@ public class GridCacheBinaryObjectUserClassloaderSelfTest extends GridCommonAbst
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testConfigurationRegistration() throws Exception {
         useWrappingLoader = false;
 
@@ -149,6 +150,7 @@ public class GridCacheBinaryObjectUserClassloaderSelfTest extends GridCommonAbst
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testConfigurationRegistrationWithWrappingLoader() throws Exception {
         useWrappingLoader = true;
 

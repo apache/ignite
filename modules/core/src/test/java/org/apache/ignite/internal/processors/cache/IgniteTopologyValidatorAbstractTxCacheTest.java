@@ -41,7 +41,8 @@ public abstract class IgniteTopologyValidatorAbstractTxCacheTest extends IgniteT
     }
 
     /** {@inheritDoc} */
-    @Override public void testTopologyValidator() throws Exception {
+    @Override @Test
+    public void testTopologyValidator() throws Exception {
         try (Transaction tx = grid(0).transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
             putValid(CACHE_NAME_1);
             commitFailed(tx);

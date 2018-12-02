@@ -72,6 +72,7 @@ public class CacheStartupInDeploymentModesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testStartedInIsolatedMode() throws Exception {
         deploymentMode = DeploymentMode.ISOLATED;
         marshaller = new BinaryMarshaller();
@@ -82,6 +83,7 @@ public class CacheStartupInDeploymentModesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testStartedInPrivateMode() throws Exception {
         deploymentMode = DeploymentMode.PRIVATE;
         marshaller = new BinaryMarshaller();

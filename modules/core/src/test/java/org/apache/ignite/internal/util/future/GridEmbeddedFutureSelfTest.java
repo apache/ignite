@@ -47,6 +47,7 @@ public class GridEmbeddedFutureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFutureChain() throws Exception {
         GridFutureAdapter<Integer> fut = new GridFutureAdapter<>();
 
@@ -70,6 +71,7 @@ public class GridEmbeddedFutureSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("ErrorNotRethrown")
+    @Test
     public void testFutureCompletesCorrectly() throws Exception {
         List<Throwable> list = Arrays.asList(
             null,

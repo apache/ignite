@@ -83,6 +83,7 @@ public class LongClientConnectToClusterTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClientConnectToCluster() throws Exception {
         clientMetricsUpdateCnt = 0;
 

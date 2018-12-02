@@ -102,6 +102,7 @@ public class GridManagerMxBeanIllegalArgumentHandleTest extends TestCase {
     }
 
     /** Creates minimal disco manager mock, checks illegal state is not propagated */
+    @Test
     public void testIllegalStateIsCatch() {
         final IgniteConfiguration cfg = new IgniteConfiguration();
         cfg.setDiscoverySpi(new TcpDiscoverySpi());

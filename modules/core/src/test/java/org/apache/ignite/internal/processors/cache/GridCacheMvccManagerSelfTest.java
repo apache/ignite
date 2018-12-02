@@ -72,6 +72,7 @@ public class GridCacheMvccManagerSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testLocalCache() throws Exception {
         mode = LOCAL;
 
@@ -79,6 +80,7 @@ public class GridCacheMvccManagerSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testReplicatedCache() throws Exception {
         mode = REPLICATED;
 
@@ -86,6 +88,7 @@ public class GridCacheMvccManagerSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPartitionedCache() throws Exception {
         mode = PARTITIONED;
 

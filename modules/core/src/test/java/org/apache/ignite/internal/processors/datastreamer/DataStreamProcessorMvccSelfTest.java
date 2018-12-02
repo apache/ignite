@@ -51,19 +51,22 @@ public class DataStreamProcessorMvccSelfTest extends DataStreamProcessorSelfTest
     }
 
     /** {@inheritDoc} */
-    @Override public void testUpdateStore() throws Exception {
+    @Override @Test
+    public void testUpdateStore() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-8582");
 
         super.testUpdateStore();
     }
 
     /** {@inheritDoc} */
-    @Override public void testFlushTimeout() {
+    @Override @Test
+    public void testFlushTimeout() {
         fail("https://issues.apache.org/jira/browse/IGNITE-9321");
     }
 
     /** {@inheritDoc} */
-    @Override public void testLocal() {
+    @Override @Test
+    public void testLocal() {
         // Do not check local caches with MVCC enabled.
     }
 }

@@ -66,6 +66,7 @@ public class GridFailoverSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJobFail() throws Exception {
         try {
             Ignite ignite1 = startGrid(1);

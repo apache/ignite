@@ -84,6 +84,7 @@ public class CacheGroupLocalConfigurationSelfTest extends GridCommonAbstractTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDefaultGroupLocalAttributesPreserved() throws Exception {
         useNonDfltCacheGrp = false;
 
@@ -96,6 +97,7 @@ public class CacheGroupLocalConfigurationSelfTest extends GridCommonAbstractTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNonDefaultGroupLocalAttributesPreserved() throws Exception {
         useNonDfltCacheGrp = true;
 

@@ -35,7 +35,8 @@ public class GridCacheEmptyEntriesPartitionedSelfTest extends GridCacheEmptyEntr
     }
 
     /** {@inheritDoc} */
-    @Override public void testFifo() throws Exception {
+    @Override @Test
+    public void testFifo() throws Exception {
         super.testFifo();
     }
 }

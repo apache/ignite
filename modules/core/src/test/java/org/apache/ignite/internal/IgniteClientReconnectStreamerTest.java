@@ -66,6 +66,7 @@ public class IgniteClientReconnectStreamerTest extends IgniteClientReconnectAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStreamerReconnect() throws Exception {
         final Ignite client = grid(serverCount());
 
@@ -130,6 +131,7 @@ public class IgniteClientReconnectStreamerTest extends IgniteClientReconnectAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStreamerReconnectInProgress() throws Exception {
         Ignite client = grid(serverCount());
 

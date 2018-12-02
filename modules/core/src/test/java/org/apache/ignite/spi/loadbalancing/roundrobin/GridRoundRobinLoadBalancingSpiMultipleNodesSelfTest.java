@@ -60,6 +60,7 @@ public class GridRoundRobinLoadBalancingSpiMultipleNodesSelfTest
      * @throws Exception If test failed.
      */
     @SuppressWarnings({"ObjectEquality"})
+    @Test
     public void testMultipleNodes() throws Exception {
         List<ClusterNode> allNodes = (List<ClusterNode>)getSpiContext().nodes();
 
@@ -89,6 +90,7 @@ public class GridRoundRobinLoadBalancingSpiMultipleNodesSelfTest
      * @throws Exception If test failed.
      */
     @SuppressWarnings({"ObjectEquality"})
+    @Test
     public void testMultipleTasks() throws Exception {
         ComputeTaskSession ses1 = new GridTestTaskSession(IgniteUuid.randomUuid());
         ComputeTaskSession ses2 = new GridTestTaskSession(IgniteUuid.randomUuid());

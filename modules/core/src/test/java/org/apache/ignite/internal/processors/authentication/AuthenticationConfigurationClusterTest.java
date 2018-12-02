@@ -96,6 +96,7 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerNodeJoinDisabled() throws Exception {
         checkNodeJoinDisabled(false);
     }
@@ -103,6 +104,7 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientNodeJoinDisabled() throws Exception {
         checkNodeJoinDisabled(true);
     }
@@ -110,6 +112,7 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerNodeJoinEnabled() throws Exception {
         checkNodeJoinEnabled(false);
     }
@@ -117,6 +120,7 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientNodeJoinEnabled() throws Exception {
         checkNodeJoinEnabled(true);
     }
@@ -160,6 +164,7 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDisabledAuthentication() throws Exception {
         startGrid(configuration(0, false, false));
 
@@ -205,6 +210,7 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEnableAuthenticationWithoutPersistence() throws Exception {
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {

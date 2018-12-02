@@ -65,6 +65,7 @@ public class GridAdaptiveLoadBalancingSpiSelfTest extends GridSpiAbstractTest<Ad
      * @throws Exception If failed.
      */
     @SuppressWarnings({"ObjectEquality"})
+    @Test
     public void testSingleNodeZeroWeight() throws Exception {
         GridTestNode node = (GridTestNode)getSpiContext().nodes().iterator().next();
 
@@ -90,6 +91,7 @@ public class GridAdaptiveLoadBalancingSpiSelfTest extends GridSpiAbstractTest<Ad
      * @throws Exception If failed.
      */
     @SuppressWarnings({"ObjectEquality"})
+    @Test
     public void testSingleNodeSameSession() throws Exception {
         GridTestNode node = (GridTestNode)getSpiContext().nodes().iterator().next();
 
@@ -115,6 +117,7 @@ public class GridAdaptiveLoadBalancingSpiSelfTest extends GridSpiAbstractTest<Ad
      * @throws Exception If failed.
      */
     @SuppressWarnings({"ObjectEquality"})
+    @Test
     public void testSingleNodeDifferentSession() throws Exception {
         GridTestNode node = (GridTestNode)getSpiContext().nodes().iterator().next();
 

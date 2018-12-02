@@ -106,6 +106,7 @@ public class IgfsBlockMessageSystemPoolStarvationSelfTest extends IgfsCommonAbst
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testStarvation() throws Exception {
         // 1. Create two IGFS file to make all system threads busy.
         CountDownLatch fileWriteLatch = new CountDownLatch(1);

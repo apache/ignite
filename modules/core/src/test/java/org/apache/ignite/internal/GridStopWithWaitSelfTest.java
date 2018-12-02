@@ -79,6 +79,7 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWait() throws Exception {
         jobStarted = new CountDownLatch(1);
 
@@ -113,6 +114,7 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWaitFailover() throws Exception {
         jobStarted = new CountDownLatch(1);
 

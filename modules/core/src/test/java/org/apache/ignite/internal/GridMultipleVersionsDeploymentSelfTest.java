@@ -101,6 +101,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
      * @throws Exception If test failed.
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testMultipleVersionsLocalDeploy() throws Exception {
         try {
             Ignite ignite = startGrid(1);
@@ -160,6 +161,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
      * @throws Exception If test failed.
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testMultipleVersionsP2PDeploy() throws Exception {
         try {
             Ignite g1 = startGrid(1);

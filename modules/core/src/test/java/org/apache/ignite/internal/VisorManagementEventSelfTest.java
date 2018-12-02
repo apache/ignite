@@ -86,6 +86,7 @@ public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testManagementOneNodeVisorTask() throws Exception {
         IgniteEx ignite = startGrid(0);
 
@@ -98,6 +99,7 @@ public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testManagementMultiNodeVisorTask() throws Exception {
         IgniteEx ignite = startGrid(0);
 
@@ -110,6 +112,7 @@ public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNotManagementOneNodeVisorTask() throws Exception {
         IgniteEx ignite = startGrid(0);
 
@@ -122,6 +125,7 @@ public class VisorManagementEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNotManagementMultiNodeVisorTask() throws Exception {
         IgniteEx ignite = startGrid(0);
 

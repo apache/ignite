@@ -72,6 +72,7 @@ public abstract class CacheAbstractRestartSelfTest extends IgniteCacheAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestart() throws Exception {
         final int clientGrid = gridCount() - 1;
 

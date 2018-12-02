@@ -41,6 +41,7 @@ public class GridHomePathSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testHomeOverride() throws Exception {
         try {
             startGrid(0);

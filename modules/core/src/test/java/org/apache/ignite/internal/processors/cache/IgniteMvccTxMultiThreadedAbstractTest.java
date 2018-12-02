@@ -49,6 +49,7 @@ public abstract class IgniteMvccTxMultiThreadedAbstractTest extends IgniteTxAbst
      /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testPessimisticRepeatableReadCommitMultithreaded() throws Exception {
         checkCommitMultithreaded(PESSIMISTIC, REPEATABLE_READ);
 
@@ -58,6 +59,7 @@ public abstract class IgniteMvccTxMultiThreadedAbstractTest extends IgniteTxAbst
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testPessimisticRepeatableReadRollbackMultithreaded() throws Exception {
         checkRollbackMultithreaded(PESSIMISTIC, REPEATABLE_READ);
 

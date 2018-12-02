@@ -122,6 +122,7 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case of exception.
      */
+    @Test
     public void testGlobalClearAllPartitioned() throws Exception {
         cacheMode = PARTITIONED;
 
@@ -135,6 +136,7 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case of exception.
      */
+    @Test
     public void testGlobalClearAllReplicated() throws Exception {
         cacheMode = REPLICATED;
 

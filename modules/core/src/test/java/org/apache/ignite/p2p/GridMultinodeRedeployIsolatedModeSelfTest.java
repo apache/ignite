@@ -31,6 +31,7 @@ public class GridMultinodeRedeployIsolatedModeSelfTest extends GridAbstractMulti
      *
      * @throws Throwable if error occur.
      */
+    @Test
     public void testIsolatedMode() throws Throwable {
         processTest(ISOLATED);
     }

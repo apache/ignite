@@ -123,6 +123,7 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAckOnIdle() throws Exception {
         checkAck(10, 2000, 9);
     }
@@ -130,6 +131,7 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAckOnCount() throws Exception {
         checkAck(10, 60_000, 10);
     }
@@ -257,6 +259,7 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueueOverflow() throws Exception {
         for (int i = 0; i < 3; i++) {
             try {

@@ -220,6 +220,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRollbackSimple() throws Exception {
         startClient();
 
@@ -324,6 +325,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testSynchronousRollback() throws Exception {
         Ignite client = startClient();
 
@@ -474,6 +476,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testEnlistManyRead() throws Exception {
         testEnlistMany(false, REPEATABLE_READ, PESSIMISTIC);
     }
@@ -481,6 +484,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testEnlistManyWrite() throws Exception {
         testEnlistMany(true, REPEATABLE_READ, PESSIMISTIC);
     }
@@ -488,6 +492,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testEnlistManyReadOptimistic() throws Exception {
         testEnlistMany(false, SERIALIZABLE, OPTIMISTIC);
     }
@@ -495,6 +500,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testEnlistManyWriteOptimistic() throws Exception {
         testEnlistMany(true, SERIALIZABLE, OPTIMISTIC);
     }
@@ -539,6 +545,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /**
      * Rollback tx while near lock request is delayed.
      */
+    @Test
     public void testRollbackDelayNearLockRequest() throws Exception {
         final Ignite client = startClient();
 
@@ -579,6 +586,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /**
      * Tests rollback with concurrent commit.
      */
+    @Test
     public void testRollbackDelayFinishRequest() throws Exception {
         final Ignite client = startClient();
 
@@ -638,6 +646,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testMixedAsyncRollbackTypes() throws Exception {
         final Ignite client = startClient();
 
@@ -818,6 +827,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /**
      * Tests proxy object returned by {@link IgniteTransactions#localActiveTransactions()}
      */
+    @Test
     public void testRollbackProxy() throws Exception {
         final CountDownLatch keyLocked = new CountDownLatch(1);
 
@@ -906,6 +916,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRollbackOnTopologyLockPessimistic() throws Exception {
         final Ignite client = startClient();
 

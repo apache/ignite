@@ -38,6 +38,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingletonUpdateTopology() throws Exception {
         String name = "serviceSingletonUpdateTopology";
 
@@ -82,6 +83,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityDeployUpdateTopology() throws Exception {
         Ignite g = randomGrid();
 
@@ -120,6 +122,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployOnEachNodeButClientUpdateTopology() throws Exception {
         // Prestart client node.
         Ignite client = startGrid("client", getConfiguration("client").setClientMode(true));
@@ -185,6 +188,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployOnEachProjectionNodeUpdateTopology() throws Exception {
         // Prestart client node.
         Ignite client = startGrid("client", getConfiguration("client").setClientMode(true));
@@ -252,6 +256,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployOnEachNodeUpdateTopology() throws Exception {
         // Prestart client node.
         Ignite client = startGrid("client", getConfiguration("client").setClientMode(true));
@@ -329,6 +334,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
      * @throws Exception If failed.
      */
     @SuppressWarnings("deprecation")
+    @Test
     public void testDeployLimits() throws Exception {
         final String name = "serviceWithLimitsUpdateTopology";
 

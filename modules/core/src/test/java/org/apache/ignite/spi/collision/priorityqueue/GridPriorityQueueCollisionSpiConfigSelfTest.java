@@ -29,6 +29,7 @@ public class GridPriorityQueueCollisionSpiConfigSelfTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNegativeConfig() throws Exception {
         checkNegativeSpiProperty(new PriorityQueueCollisionSpi(), "parallelJobsNumber", 0);
         checkNegativeSpiProperty(new PriorityQueueCollisionSpi(), "waitingJobsNumber", -1);

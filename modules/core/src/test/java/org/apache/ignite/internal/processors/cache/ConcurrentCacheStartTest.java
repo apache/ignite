@@ -32,6 +32,7 @@ public class ConcurrentCacheStartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void test() throws Exception {
         try {
             final IgniteEx ignite = (IgniteEx) startGrids(4);

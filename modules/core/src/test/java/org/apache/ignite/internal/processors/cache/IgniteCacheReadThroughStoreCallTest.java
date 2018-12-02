@@ -87,6 +87,7 @@ public class IgniteCacheReadThroughStoreCallTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiNode() throws Exception {
         startGridsMultiThreaded(4);
 

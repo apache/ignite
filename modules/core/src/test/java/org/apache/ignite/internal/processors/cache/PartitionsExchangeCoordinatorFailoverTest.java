@@ -75,6 +75,7 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
     /**
      * Tests that new coordinator is able to finish old exchanges in case of in-complete coordinator initialization.
      */
+    @Test
     public void testNewCoordinatorCompletedExchange() throws Exception {
         IgniteEx crd = (IgniteEx) startGrid("crd");
 
@@ -158,6 +159,7 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDelayedFullMessageReplacedIfCoordinatorChanged() throws Exception {
         IgniteEx crd = startGrid("crd");
 

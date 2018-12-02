@@ -131,6 +131,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryFullSync() throws Exception {
         checkRestarts(FULL_SYNC);
     }
@@ -138,6 +139,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryPrimarySync() throws Exception {
         checkRestarts(PRIMARY_SYNC);
     }
@@ -145,6 +147,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryFullAsync() throws Exception {
         checkRestarts(FULL_ASYNC);
     }

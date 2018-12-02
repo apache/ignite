@@ -68,6 +68,7 @@ public class GridCacheTxLoadFromStoreOnLockSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadedValueOneBackup() throws Exception {
         checkLoadedValue(1);
     }
@@ -75,6 +76,7 @@ public class GridCacheTxLoadFromStoreOnLockSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadedValueNoBackups() throws Exception {
         checkLoadedValue(0);
     }

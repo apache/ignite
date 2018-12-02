@@ -104,6 +104,7 @@ public class IgniteCachePutAllRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopNode() throws Exception {
         startGrids(NODES);
 
@@ -165,6 +166,7 @@ public class IgniteCachePutAllRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopOriginatingNode() throws Exception {
         startGrids(NODES);
 

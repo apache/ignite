@@ -108,6 +108,7 @@ public class GridCachePartitionedStorePutSelfTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutx() throws Throwable {
         info("Putting to the first node.");
 

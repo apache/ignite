@@ -176,6 +176,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testLocal() throws Exception {
         IgniteCache<Integer, Value> cache = testCache(false, LOCAL);
 
@@ -199,6 +200,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testReplicated() throws Exception {
         IgniteCache<Integer, Value> cache = testCache(false, REPLICATED);
 
@@ -222,6 +224,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPartitionedNearEnabled() throws Exception {
         IgniteCache<Integer, Value> cache = testCache(true, PARTITIONED);
 
@@ -274,6 +277,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPartitionedNearDisabled() throws Exception {
         IgniteCache<Integer, Value> cache = testCache(false, PARTITIONED);
 

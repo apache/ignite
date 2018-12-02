@@ -78,6 +78,7 @@ public class IgniteCacheContinuousQueryNoUnsubscribeTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoUnsubscribe() throws Exception {
        checkNoUnsubscribe(false);
     }
@@ -85,6 +86,7 @@ public class IgniteCacheContinuousQueryNoUnsubscribeTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoUnsubscribeClient() throws Exception {
         checkNoUnsubscribe(true);
     }

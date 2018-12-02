@@ -83,6 +83,7 @@ public class GridCachePartitionEvictionDuringReadThroughSelfTest extends GridCom
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testPartitionRent() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-5759");
 

@@ -60,6 +60,7 @@ public class GridCacheRebalancingPartitionDistributionTest extends GridRollingRe
      * The test performs rolling restart and checks no server drops out and the partitions are balanced during
      * redistribution.
      */
+    @Test
     public void testRollingRestart() throws InterruptedException {
         awaitPartitionMapExchange();
 
@@ -115,7 +116,8 @@ public class GridCacheRebalancingPartitionDistributionTest extends GridRollingRe
         }
 
         /** {@inheritDoc} */
-        @Override public void test() throws AssertionError {
+        @Override @Test
+    public void test() throws AssertionError {
             super.test();
 
             Affinity<?> affinity = ignite().affinity(CACHE_NAME);

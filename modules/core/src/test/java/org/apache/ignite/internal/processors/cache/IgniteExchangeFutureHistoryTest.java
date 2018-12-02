@@ -55,6 +55,7 @@ public class IgniteExchangeFutureHistoryTest extends IgniteCacheAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testExchangeFutures() throws Exception {
         GridCachePartitionExchangeManager mgr = ((IgniteKernal)grid(0)).internalCache(DEFAULT_CACHE_NAME).context().shared().exchange();
 

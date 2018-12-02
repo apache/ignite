@@ -81,6 +81,7 @@ public abstract class IgniteCacheLoaderWriterAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoaderWriter() throws Exception {
         IgniteCache<Object, Object> cache = jcache(0);
 
@@ -162,6 +163,7 @@ public abstract class IgniteCacheLoaderWriterAbstractTest extends IgniteCacheAbs
     /**
      *
      */
+    @Test
     public void testLoaderException() {
         IgniteCache<Object, Object> cache = jcache(0);
 
@@ -180,6 +182,7 @@ public abstract class IgniteCacheLoaderWriterAbstractTest extends IgniteCacheAbs
     /**
      *
      */
+    @Test
     public void testWriterException() {
         IgniteCache<Object, Object> cache = jcache(0);
 
@@ -198,6 +201,7 @@ public abstract class IgniteCacheLoaderWriterAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoaderWriterBulk() throws Exception {
         Map<Object, Object> vals = new HashMap<>();
 

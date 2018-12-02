@@ -143,6 +143,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInsert() throws Exception {
         map = newMap();
 
@@ -165,6 +166,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRehash() throws Exception {
         initCap = 10;
 
@@ -203,6 +205,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPointerAfterRehash() throws Exception {
         initCap = 10;
 
@@ -245,6 +248,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutRandomKeys() throws Exception {
         map = newMap();
 
@@ -274,6 +278,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGet() throws Exception {
         map = newMap();
 
@@ -296,6 +301,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPut1() throws Exception {
         map = newMap();
 
@@ -318,6 +324,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPut2() throws Exception {
         map = newMap();
 
@@ -348,6 +355,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemove() throws Exception {
         map = newMap();
 
@@ -379,6 +387,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemovex() throws Exception {
         map = newMap();
 
@@ -409,6 +418,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIterator() throws Exception {
         initCap = 10;
 
@@ -482,6 +492,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIteratorMultithreaded() throws Exception {
         initCap = 10;
 
@@ -579,6 +590,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIteratorRemoveMultithreaded() throws Exception {
         initCap = 10;
 
@@ -636,6 +648,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionIterator() throws Exception {
         initCap = 10;
 
@@ -710,6 +723,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionIteratorMultithreaded() throws Exception {
         initCap = 10;
 
@@ -785,6 +799,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      *
      */
+    @Test
     public void testInsertLoad() {
         mem = 0; // Disable LRU.
 
@@ -825,6 +840,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      *
      */
+    @Test
     public void testPutLoad() {
         mem = 0; // Disable LRU.
 
@@ -866,6 +882,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      *
      */
+    @Test
     public void testLru1() {
         lruStripes = 1;
         mem = 10;
@@ -910,6 +927,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      *
      */
+    @Test
     public void testLru2() {
         mem = 1000 + 64 * 16 * parts; // Add segment size.
 
@@ -949,6 +967,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLruMultithreaded() throws Exception {
         mem = 1000 + 64 * 16 * parts; // Add segment size.
 
@@ -1008,6 +1027,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
      *
      */
     @SuppressWarnings("TooBroadScope")
+    @Test
     public void testValuePointerEvict() {
         mem = 90;
 
@@ -1075,6 +1095,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
      *
      */
     @SuppressWarnings("TooBroadScope")
+    @Test
     public void testValuePointerEnableEviction() {
         mem = 90;
 
@@ -1141,6 +1162,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      *
      */
+    @Test
     public void testValuePointerRemove() {
         map = newMap();
 

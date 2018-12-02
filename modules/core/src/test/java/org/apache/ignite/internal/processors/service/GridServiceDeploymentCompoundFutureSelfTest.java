@@ -34,6 +34,7 @@ public class GridServiceDeploymentCompoundFutureSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWaitForCompletionOnFailingFuture() throws Exception {
         GridServiceDeploymentCompoundFuture compFut = new GridServiceDeploymentCompoundFuture();
 

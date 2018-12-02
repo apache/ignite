@@ -105,6 +105,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTwoTx() throws Exception {
         final IgniteCache<String, Integer> c = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -136,6 +137,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLockAndTx() throws Exception {
         final IgniteCache<String, Integer> c = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -212,6 +214,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLockAndTx1() throws Exception {
         final IgniteCache<String, Integer> c = grid(0).cache(DEFAULT_CACHE_NAME);
 

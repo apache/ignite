@@ -61,6 +61,7 @@ public abstract class GridCacheEntrySetAbstractSelfTest extends GridCacheAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEntrySet() throws Exception {
         for (int i = 0; i < 10; i++) {
             log.info("Iteration: " + i);

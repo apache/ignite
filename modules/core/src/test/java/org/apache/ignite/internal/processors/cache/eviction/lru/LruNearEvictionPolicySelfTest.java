@@ -86,6 +86,7 @@ public class LruNearEvictionPolicySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicNearEvictionMaxSize() throws Exception {
         atomicityMode = ATOMIC;
 
@@ -95,6 +96,7 @@ public class LruNearEvictionPolicySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransactionalNearEvictionMaxSize() throws Exception {
         atomicityMode = TRANSACTIONAL;
 

@@ -113,6 +113,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutFromClientNode() throws Exception {
         IgniteCache<Object, Object> nearOnly = nearOnlyCache();
 
@@ -155,6 +156,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetFromClientNode() throws Exception {
         IgniteCache<Object, Object> dht = dhtCache();
 
@@ -194,6 +196,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearOnlyAffinity() throws Exception {
         for (int i = 0; i < gridCount(); i++) {
             Ignite g = grid(i);

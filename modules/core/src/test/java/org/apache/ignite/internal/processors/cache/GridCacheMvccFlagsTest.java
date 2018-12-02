@@ -66,6 +66,7 @@ public class GridCacheMvccFlagsTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testAllTrueFlags() {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -107,6 +108,7 @@ public class GridCacheMvccFlagsTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testAllFalseFlags() {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 

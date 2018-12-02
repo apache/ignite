@@ -102,6 +102,7 @@ public abstract class GridCacheEvictionEventAbstractTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictionEvent() throws Exception {
         Ignite g = grid();
 

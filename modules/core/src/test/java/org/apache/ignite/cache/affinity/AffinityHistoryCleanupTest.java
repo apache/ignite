@@ -81,6 +81,7 @@ public class AffinityHistoryCleanupTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityHistoryCleanup() throws Exception {
         String histProp = System.getProperty(IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE);
 

@@ -187,6 +187,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSyncPreloadRestart() throws Exception {
         preloadMode = SYNC;
 
@@ -196,6 +197,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAsyncPreloadRestart() throws Exception {
         preloadMode = ASYNC;
 
@@ -205,6 +207,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDisabledPreloadRestart() throws Exception {
         if (MvccFeatureChecker.forcedMvcc())
             fail("https://issues.apache.org/jira/browse/IGNITE-10261");

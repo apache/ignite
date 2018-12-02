@@ -31,6 +31,7 @@ public class GridVersionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVersions() throws Exception {
         String propVal = System.getProperty(IGNITE_UPDATE_NOTIFIER);
 

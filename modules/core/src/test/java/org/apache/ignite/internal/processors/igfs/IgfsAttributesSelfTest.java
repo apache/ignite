@@ -39,6 +39,7 @@ public class IgfsAttributesSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSerialization() throws Exception {
         Map<String, IgfsMode> pathModes = new HashMap<>();
 

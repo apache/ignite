@@ -156,6 +156,7 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionDistribution() throws Exception {
         backups = 1;
 
@@ -205,6 +206,7 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionDistributionWithAffinityBackupFilter() throws Exception {
         backups = 3;
 
