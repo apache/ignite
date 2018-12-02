@@ -2314,8 +2314,8 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             restartFut.onDone();
         }
 
-        assert cacheName.equals(delegate.name()) && cacheName.equals(ctx.name()) :
-            "ctx.name=" + ctx.name() + ", delegate.name=" + delegate.name() + ", cacheName=" + cacheName;
+        assert delegate == null || cacheName.equals(delegate.name()) && cacheName.equals(ctx.name()) :
+                "ctx.name=" + ctx.name() + ", delegate.name=" + delegate.name() + ", cacheName=" + cacheName;
     }
 
     /**
