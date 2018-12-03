@@ -18,24 +18,15 @@
 package org.apache.ignite.yardstick.jdbc.vendors;
 
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.util.Map;
+import java.sql.SQLException;
 
 /**
  * Benchmark that performs select with filter by 'salary' field and inner join with Organization table.
  */
 public class SelectBySalaryWithJoinBenchmark extends BaseSelectRangeBenchmark {
     /** {@inheritDoc} */
-    @Override public boolean test(Map<Object, Object> map) throws Exception {
-        PreparedStatement select0 = select.get();
-
-        fillRandomSalaryRange(select0);
-
-        try (ResultSet rs = select0.executeQuery()) {
-            readResults(rs);
-        }
-
-        return true;
+    @Override protected void fillTestedQueryParams(PreparedStatement select) throws SQLException {
+        fillRandomSalaryRange(select);
     }
 
     /** {@inheritDoc} */

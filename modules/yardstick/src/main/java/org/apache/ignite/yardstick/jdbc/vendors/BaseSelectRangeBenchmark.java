@@ -26,6 +26,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.yardstick.IgniteBenchmarkArguments;
@@ -35,8 +36,8 @@ import org.yardstickframework.BenchmarkConfiguration;
 import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
- * Abstract benchmark for sql select operation, that has range in WHERE clause. Designed to compare Ignite and other
- * DBMSes. Children specify what exactly query gets executed.
+ * Base benchmark for sql select operation. Designed to compare Ignite and other DBMSes. Children specify what
+ * exactly query gets executed and how parameters are filled.
  */
 public abstract class BaseSelectRangeBenchmark extends AbstractJdbcBenchmark {
     /** Factory that hides all sql queries. */
@@ -71,11 +72,18 @@ public abstract class BaseSelectRangeBenchmark extends AbstractJdbcBenchmark {
 
     /**
      * Children implement this method to specify what statement to prepare. During benchmark run, this prepared
-     * statement gets executed with random parameters: minimum and maximum values for the field in WHERE clause.
+     * statement gets executed. Parameters are filled by {@link #fillTestedQueryParams(PreparedStatement)} method.
      *
-     * @return sql query with 2 parameters.
+     * @return sql query. Possibly with parameters.
      */
     protected abstract String testedSqlQuery();
+
+    /**
+     * Children implement this method to specify how to generate parameters of tested query.
+     *
+     * See {@link #testedSqlQuery()}.
+     */
+    protected abstract void fillTestedQueryParams(PreparedStatement select) throws SQLException;
 
     /** {@inheritDoc} */
     @Override protected void setupData() throws Exception {
@@ -168,7 +176,7 @@ public abstract class BaseSelectRangeBenchmark extends AbstractJdbcBenchmark {
     }
 
     /**
-     * Set auto commit if it is supported. Log warning otherwize.
+     * Set auto commit if it is supported. Log warning otherwise.
      *
      * @param conn Set auto commit mode to this connection.
      * @param autocommit Autocommit mode parameter value.
@@ -237,11 +245,27 @@ public abstract class BaseSelectRangeBenchmark extends AbstractJdbcBenchmark {
     }
 
     /**
+     * Template method for benchmark. Executes thread-local  PreparedStatement. Children are specifying what query with
+     * what parameters to execute and how to fill it's parameters.
+     */
+    @Override public final boolean test(Map<Object, Object> map) throws Exception {
+        PreparedStatement select0 = select.get();
+
+        fillTestedQueryParams(select0);
+
+        try (ResultSet res = select0.executeQuery()) {
+            readResults(res);
+        }
+
+        return true;
+    }
+
+    /**
      * Reads all the specified result set. Checks that result size is as expected.
      *
      * @param qryRes result set of executed select.
      */
-    protected void readResults(ResultSet qryRes) throws SQLException {
+    private void readResults(ResultSet qryRes) throws SQLException {
         long rsCnt = 0;
 
         while (qryRes.next())

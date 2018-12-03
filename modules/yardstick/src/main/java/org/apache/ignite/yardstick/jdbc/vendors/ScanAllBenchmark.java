@@ -18,8 +18,7 @@
 package org.apache.ignite.yardstick.jdbc.vendors;
 
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.util.Map;
+import java.sql.SQLException;
 import org.apache.ignite.yardstick.IgniteBenchmarkArguments;
 
 /**
@@ -29,14 +28,8 @@ import org.apache.ignite.yardstick.IgniteBenchmarkArguments;
  */
 public class ScanAllBenchmark extends BaseSelectRangeBenchmark {
     /** {@inheritDoc} */
-    @Override public boolean test(Map<Object, Object> map) throws Exception {
-        PreparedStatement selectAll = select.get();
-
-        try (ResultSet rs = selectAll.executeQuery()) {
-            readResults(rs);
-        }
-
-        return true;
+    @Override protected void fillTestedQueryParams(PreparedStatement select) throws SQLException {
+        //No-op, query doesn't have parameters to fill.
     }
 
     /** {@inheritDoc} */
