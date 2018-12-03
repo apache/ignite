@@ -819,7 +819,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         final boolean backup,
         final AffinityTopologyVersion topVer,
         final boolean keepBinary,
-        final MvccSnapshot mvccSnapshot) throws IgniteCheckedException {
+        @Nullable final MvccSnapshot mvccSnapshot) throws IgniteCheckedException {
         final Iterator<CacheDataRow> it = cacheIterator(cctx.cacheId(), primary, backup, topVer, mvccSnapshot);
 
         return new GridCloseableIteratorAdapter<Cache.Entry<K, V>>() {
