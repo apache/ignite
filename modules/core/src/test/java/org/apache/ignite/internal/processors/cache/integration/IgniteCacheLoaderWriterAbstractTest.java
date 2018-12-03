@@ -38,10 +38,14 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public abstract class IgniteCacheLoaderWriterAbstractTest extends IgniteCacheAbstractTest {
     /** */
     private static AtomicInteger ldrCallCnt = new AtomicInteger();

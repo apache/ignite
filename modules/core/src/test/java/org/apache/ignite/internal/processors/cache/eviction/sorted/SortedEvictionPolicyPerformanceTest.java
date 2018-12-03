@@ -30,10 +30,14 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * {@link SortedEvictionPolicy} performance test.
  */
+@RunWith(JUnit4.class)
 public class SortedEvictionPolicyPerformanceTest extends GridCommonAbstractTest {
     /** Threads. */
     private static final int THREADS = 8;
