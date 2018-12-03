@@ -42,11 +42,15 @@ import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
 @GridCommonTest(group = "Task Session")
+@RunWith(JUnit4.class)
 public class GridSessionFutureWaitTaskAttributeSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int WAIT_TIME = 2000;

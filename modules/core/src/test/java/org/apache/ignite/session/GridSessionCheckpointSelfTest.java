@@ -31,11 +31,15 @@ import org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpi;
 import org.apache.ignite.spi.checkpoint.sharedfs.SharedFsCheckpointSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.hsqldb.jdbc.jdbcDataSource;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Grid session checkpoint self test.
  */
 @GridCommonTest(group = "Task Session")
+@RunWith(JUnit4.class)
 public class GridSessionCheckpointSelfTest extends GridSessionCheckpointAbstractSelfTest {
     /**
      * @throws Exception If failed.

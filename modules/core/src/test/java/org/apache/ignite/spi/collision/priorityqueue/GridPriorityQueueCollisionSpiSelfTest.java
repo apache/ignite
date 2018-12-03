@@ -29,6 +29,9 @@ import org.apache.ignite.spi.collision.GridTestCollisionTaskSession;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.spi.collision.priorityqueue.PriorityQueueCollisionSpi.DFLT_JOB_PRIORITY_ATTRIBUTE_KEY;
 import static org.apache.ignite.spi.collision.priorityqueue.PriorityQueueCollisionSpi.DFLT_PARALLEL_JOBS_NUM;
@@ -39,6 +42,7 @@ import static org.apache.ignite.spi.collision.priorityqueue.PriorityQueueCollisi
  * Priority queue collision SPI test.
  */
 @GridSpiTest(spi = PriorityQueueCollisionSpi.class, group = "Collision SPI")
+@RunWith(JUnit4.class)
 public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<PriorityQueueCollisionSpi> {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {

@@ -44,12 +44,16 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests waiting for session attributes.
  */
 @GridCommonTest(group = "Task Session")
 @SuppressWarnings({"PublicInnerClass"})
+@RunWith(JUnit4.class)
 public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int ATTR_NUM = 100;

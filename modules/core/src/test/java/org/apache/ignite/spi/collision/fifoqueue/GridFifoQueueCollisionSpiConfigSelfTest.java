@@ -19,11 +19,15 @@ package org.apache.ignite.spi.collision.fifoqueue;
 
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for {@link FifoQueueCollisionSpi} config.
  */
 @GridSpiTest(spi = FifoQueueCollisionSpi.class, group = "Collision SPI")
+@RunWith(JUnit4.class)
 public class GridFifoQueueCollisionSpiConfigSelfTest extends GridSpiAbstractConfigTest<FifoQueueCollisionSpi> {
     /**
      * @throws Exception If failed.

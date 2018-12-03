@@ -19,11 +19,15 @@ package org.apache.ignite.spi.checkpoint;
 
 import org.apache.ignite.GridTestIoUtils;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Grid checkpoint SPI abstract test.
  * @param <T> Concrete SPI class.
  */
+@RunWith(JUnit4.class)
 public abstract class GridCheckpointSpiAbstractTest<T extends CheckpointSpi>
     extends GridSpiAbstractTest<T> {
     /** */

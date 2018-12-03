@@ -27,11 +27,15 @@ import org.apache.ignite.spi.checkpoint.GridCheckpointTestState;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests multiple shared directories.
  */
 @GridSpiTest(spi = SharedFsCheckpointSpi.class, group = "Checkpoint SPI")
+@RunWith(JUnit4.class)
 public class GridSharedFsCheckpointSpiMultipleDirectoriesSelfTest extends
     GridSpiAbstractTest<SharedFsCheckpointSpi> {
     /** */

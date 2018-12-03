@@ -40,6 +40,9 @@ import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SPI_CLASS;
 import static org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi.STEALING_ATTEMPT_COUNT_ATTR;
@@ -50,6 +53,7 @@ import static org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSp
  * Job stealing SPI test.
  */
 @GridSpiTest(spi = JobStealingCollisionSpi.class, group = "Collision SPI")
+@RunWith(JUnit4.class)
 public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<JobStealingCollisionSpi> {
     /** */
     public GridJobStealingCollisionSpiSelfTest() {

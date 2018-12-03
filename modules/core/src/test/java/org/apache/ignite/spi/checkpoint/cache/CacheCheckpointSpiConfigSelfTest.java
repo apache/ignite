@@ -19,11 +19,15 @@ package org.apache.ignite.spi.checkpoint.cache;
 
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Grid cache checkpoint SPI config self test.
  */
 @GridSpiTest(spi = CacheCheckpointSpi.class, group = "Checkpoint SPI")
+@RunWith(JUnit4.class)
 public class CacheCheckpointSpiConfigSelfTest extends GridSpiAbstractConfigTest<CacheCheckpointSpi> {
     /**
      * @throws Exception If failed.
