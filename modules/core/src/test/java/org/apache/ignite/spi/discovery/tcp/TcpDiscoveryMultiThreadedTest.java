@@ -58,6 +58,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_JOB_MAPPED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -68,6 +71,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
 /**
  * Test for {@link TcpDiscoverySpi}.
  */
+@RunWith(JUnit4.class)
 public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /** */
     private static final int GRID_CNT = 5;

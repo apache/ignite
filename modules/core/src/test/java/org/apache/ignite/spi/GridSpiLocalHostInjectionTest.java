@@ -24,10 +24,14 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * This class tests injection of {@code localHost} property to various SPIs.
  */
+@RunWith(JUnit4.class)
 public class GridSpiLocalHostInjectionTest extends GridCommonAbstractTest {
     /** Value to be set globally in config. */
     public static final String CONFIG_LOCAL_ADDR_VALUE = "127.0.0.3";

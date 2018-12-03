@@ -25,10 +25,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for {@link TcpDiscoverySpi}.
  */
+@RunWith(JUnit4.class)
 public class TcpDiscoveryConcurrentStartTest extends GridCommonAbstractTest {
     /** */
     private static final int TOP_SIZE = 3;

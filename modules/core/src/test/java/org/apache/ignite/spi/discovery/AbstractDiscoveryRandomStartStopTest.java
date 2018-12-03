@@ -30,11 +30,15 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Base discovery random start-stop test class.
  * @param <T> Discovery spi type.
  */
+@RunWith(JUnit4.class)
 public abstract class AbstractDiscoveryRandomStartStopTest<T extends DiscoverySpi> extends GridSpiAbstractTest<T> {
     /** */
     private static final int DFLT_MAX_INTERVAL = 10;

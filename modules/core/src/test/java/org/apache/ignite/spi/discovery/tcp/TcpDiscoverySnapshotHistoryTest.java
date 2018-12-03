@@ -26,12 +26,16 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.util.Collections;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_TOP_HISTORY_SIZE;
 
 /**
  * Tests for topology snapshots history.
  */
+@RunWith(JUnit4.class)
 public class TcpDiscoverySnapshotHistoryTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

@@ -32,12 +32,16 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.reconnectClientNode;
 
 /**
  * Checks whether on client reconnect node attributes from kernal context are sent.
  */
+@RunWith(JUnit4.class)
 public class TcpDiscoveryNodeAttributesUpdateOnReconnectTest extends GridCommonAbstractTest {
     /** */
     private volatile String rejoinAttr;

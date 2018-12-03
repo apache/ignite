@@ -36,11 +36,15 @@ import java.net.Socket;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test client connects to two nodes cluster during time more than the
  * {@link org.apache.ignite.configuration.IgniteConfiguration#clientFailureDetectionTimeout}.
  */
+@RunWith(JUnit4.class)
 public class LongClientConnectToClusterTest extends GridCommonAbstractTest {
     /** Client instance name. */
     public static final String CLIENT_INSTANCE_NAME = "client";

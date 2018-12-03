@@ -39,7 +39,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * We emulate that client receive message about joining to topology earlier than some server nodes in topology.
@@ -47,6 +49,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * To emulate this we connect client to second node in topology and pause sending message about joining finishing to
  * third node.
  */
+@RunWith(JUnit4.class)
 public class IgniteClientConnectTest extends GridCommonAbstractTest {
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);

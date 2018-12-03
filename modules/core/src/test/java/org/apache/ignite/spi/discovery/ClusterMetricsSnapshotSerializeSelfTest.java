@@ -21,11 +21,15 @@ import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Grid discovery metrics test.
  */
 @GridCommonTest(group = "Utils")
+@RunWith(JUnit4.class)
 public class ClusterMetricsSnapshotSerializeSelfTest extends GridCommonAbstractTest {
     /** Metrics serialized by Ignite 1.0 */
     private static final byte[] METRICS_V1 = {0, 0, 0, 22, 0, 0, 0, 8, 64, 0, 0, 0, 0, 0, 0, 27, 0, 0, 0, 15, 64,

@@ -36,10 +36,14 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestThread;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Client-based discovery SPI test with non-Ignite servers.
  */
+@RunWith(JUnit4.class)
 public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
     /** Non-Ignite Server port #1. */
     private static final int SERVER_PORT = 47500;

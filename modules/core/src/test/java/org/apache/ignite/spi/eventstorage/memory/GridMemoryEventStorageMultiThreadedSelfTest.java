@@ -25,11 +25,15 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Memory event storage load test.
  */
 @GridSpiTest(spi = MemoryEventStorageSpi.class, group = "EventStorage SPI")
+@RunWith(JUnit4.class)
 public class GridMemoryEventStorageMultiThreadedSelfTest extends GridSpiAbstractTest<MemoryEventStorageSpi> {
     /**
      * @throws Exception If test failed

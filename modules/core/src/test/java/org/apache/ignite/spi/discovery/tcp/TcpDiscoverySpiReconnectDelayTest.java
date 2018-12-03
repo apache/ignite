@@ -36,6 +36,9 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
@@ -47,6 +50,7 @@ import static org.apache.ignite.spi.discovery.tcp.TcpDiscoveryImpl.RES_WAIT;
 /**
  * Test for {@link TcpDiscoverySpi#setReconnectDelay(int)}.
  */
+@RunWith(JUnit4.class)
 public class TcpDiscoverySpiReconnectDelayTest extends GridCommonAbstractTest {
     /** Time to wait for events. */
     private static final int EVT_TIMEOUT = 120000;
